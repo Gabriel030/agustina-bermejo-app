@@ -24,4 +24,5 @@ public class Inscripcion {
 
     @Column(name = "activo")
     private Boolean activo;
+
 }
