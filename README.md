@@ -29,7 +29,9 @@ El proyecto sigue una arquitectura de tres capas:
 A continuación se muestra el diagrama entidad-relación del sistema:
 
 ```
-[PEGAR AQUÍ LA IMAGEN DEL MODELO DE DATOS]
+<img width="1538" height="854" alt="image" src="https://github.com/user-attachments/assets/36e9c47e-8d99-49d1-a024-994ef41b8f0b" />
+
+
 ```
 
 ## 🚀 Características Principales
