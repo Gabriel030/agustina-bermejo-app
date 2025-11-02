@@ -1,0 +1,155 @@
+@startuml
+' Configuración del diagrama
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classFontName Arial
+skinparam classFontSize 12
+skinparam classBackgroundColor White
+skinparam classBorderColor #000000
+skinparam arrowColor #000000
+
+' Definición de clases
+class Persona {
+  - Long personaId
+  - String legajo
+  - String nombre
+  - String apellido
+  - String sexo
+  - String celular
+  - String telefonoFijo
+  - String email
+  - String dni
+  - String direccion
+  - String numero
+  - String piso
+  - String departamento
+}
+
+class Carrera {
+  - Long carreraId
+  - String nombre
+  - Boolean status
+}
+
+class Materia {
+  - Long materiaId
+  - String nombre
+  - Integer cargaHoraria
+  - Integer duracion
+  - Boolean status
+  - String formaCalificacion
+  - Boolean aprobParcial
+  - Boolean aprobRecuperatorio
+  - Boolean aprobFinal
+}
+
+class Periodo {
+  - Long periodoId
+  - Integer anio
+  - String descripcion
+  - String tipo
+  - LocalDateTime inicio
+  - LocalDateTime fin
+  - Boolean status
+}
+
+class Curso {
+  - Long cursoId
+  - String nombre
+  - String horario
+  - Integer cupo
+  - Boolean status
+  - LocalDateTime inscripcionApertura
+  - LocalDateTime inscripcionCierre
+}
+
+class Inscripcion {
+  - Long inscripcionId
+  - Boolean activo
+}
+
+class Notas {
+  - Long personaId
+  - Long cursoId
+  - Double nota
+  - String tipo
+}
+
+class ProgramaEstudio {
+  - Long programaId
+  - String descripcion
+  - String grado
+  - Integer anio
+  - Boolean activo
+}
+
+class ProgramaEstudioCurso {
+  - Long programaEstudioCursoId
+  - Boolean activo
+}
+
+class MateriaCarrera {
+  - Long materiaCarreraId
+  - Boolean activo
+}
+
+class Institucion {
+  - Long institucionId
+  - String nombre
+  - String direccion
+  - String telefono
+  - String email
+  - String cuit
+  - String resolucion
+  - LocalDate fechaAlta
+  - LocalDate fechaBaja
+  - String logo
+  - String estado
+  - String web
+  - String facebook
+  - String instagram
+  - String twitter
+  - String linkedin
+  - String youtube
+}
+
+class Eventos {
+  - Long eventoId
+  - String titulo
+  - String descripcion
+  - LocalDateTime fechaInicio
+  - LocalDateTime fechaFin
+  - String lugar
+  - String tipo
+  - Boolean estado
+}
+
+' Relaciones
+Persona "1" -- "*" Inscripcion : tiene >
+Curso "1" -- "*" Inscripcion : tiene >
+
+Persona "1" -- "*" Notas : tiene >
+Curso "1" -- "*" Notas : tiene >
+
+Curso "*" -- "1" Carrera : pertenece a >
+Curso "*" -- "1" Materia : tiene >
+Curso "*" -- "1" Periodo : tiene >
+Curso "*" -- "1" Persona : docente >
+
+ProgramaEstudio "1" -- "*" ProgramaEstudioCurso : tiene >
+Curso "1" -- "*" ProgramaEstudioCurso : tiene >
+
+Carrera "1" -- "*" ProgramaEstudio : tiene >
+
+' Notas explicativas
+note top of Persona
+  Representa tanto a docentes como a estudiantes.
+  El tipo se puede identificar por el rol en la relación con Curso.
+end note
+
+note top of Inscripcion
+  Tabla intermedia entre Persona y Curso
+  para manejar la relación muchos a muchos.
+end note
+
+@enduml
