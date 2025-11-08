@@ -39,5 +39,11 @@ public class Student {
     @JoinColumn(name = "program_id")
     private List<ProgramEnrollment> programEnrollmentList;
 
+    @Column(name = "grant_final_exam_sign_up")
+    private Boolean grantFinalExamSignUp;
+
+    @Column(name = "defaulter")
+    private Boolean defaulter;
+
 
 }

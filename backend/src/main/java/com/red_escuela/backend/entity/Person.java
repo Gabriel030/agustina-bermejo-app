@@ -40,7 +40,7 @@ public class Person {
     private String nationality;
 
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Column(name = "rol_id")
     private Long rolId;
@@ -48,12 +48,8 @@ public class Person {
     @Column(name = "password")
     private String password;
 
-    @Column(name = "defaulter")
-    private Boolean defaulter;
-
     @Column(name = "grant_system_access")
     private Boolean grantSystemAccess;
 
-    @Column(name = "grant_final_exam_sign_up")
-    private Boolean grantFinalExamSignUp;
+
 }
