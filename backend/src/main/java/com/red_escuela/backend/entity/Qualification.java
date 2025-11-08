@@ -3,9 +3,9 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "notas")
+@Table(name = "qualification")
 @IdClass(NotasId.class) // clave compuesta persona + curso
-public class Notas {
+public class Qualification {
     @Id
     @Column(name = "persona_id")
     private Long personaId;
