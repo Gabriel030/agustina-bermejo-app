@@ -17,7 +17,8 @@ public class Institution {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "address")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
     private Address address;
 
     @Column(name = "phone_number")

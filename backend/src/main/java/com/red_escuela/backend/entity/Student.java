@@ -1,26 +1,31 @@
 package com.red_escuela.backend.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
+@Getter
+@Setter
+@Entity
+@Table(name = "student")
 public class Student {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "persona_id")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "person_id")
     private Person person;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_id")
-    private List<Program> programList;
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CourseEnrollment> courseEnrollments;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
-    private List<Course> courseList;
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProgramEnrollment> programEnrollments;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id")
@@ -33,10 +38,6 @@ public class Student {
     @OneToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "program_id")
     private List<ProgramEnrollment> programEnrollmentList;
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subjects")
-    private List<Subject> subjects;
 
 
 }

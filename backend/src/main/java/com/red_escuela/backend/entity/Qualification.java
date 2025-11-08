@@ -4,19 +4,22 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "qualification")
-@IdClass(NotasId.class) // clave compuesta persona + curso
 public class Qualification {
     @Id
-    @Column(name = "persona_id")
-    private Long personaId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Id
-    @Column(name = "curso_id")
-    private Long cursoId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id")
+    private Student student;
 
-    @Column(name = "nota")
-    private Double nota;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id")
+    private Subject subject;
 
-    @Column(name = "tipo")
-    private String tipo;
+    @Column(name = "score")
+    private Double score;
+
+    @Column(name = "type")
+    private String type;
 }

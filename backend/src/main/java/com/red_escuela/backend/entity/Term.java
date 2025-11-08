@@ -20,10 +20,10 @@ public class Term {
     private String type;
 
     @Column(name = "start_date")
-    private LocalDateTime start_date;
+    private LocalDateTime startDate;
 
     @Column(name = "end_date")
-    private LocalDateTime end_date;
+    private LocalDateTime endDate;
 
     @Column(name = "status")
     private Boolean status;

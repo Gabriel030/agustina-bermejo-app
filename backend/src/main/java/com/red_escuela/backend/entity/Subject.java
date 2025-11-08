@@ -1,13 +1,19 @@
 package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 
+import java.util.List;
+
 @Entity
-@Table(name = "subjetct")
+@Table(name = "subject")
 public class Subject {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private Course course;
 
     @Column(name = "name")
     private String name;
@@ -25,7 +31,7 @@ public class Subject {
     private Boolean status;
 
     @Column(name = "qualification_type")
-    private String qualification_type;
+    private String qualificationType;
 
     @Column(name = "first_exam_approved")
     private Boolean firstExamApproved;

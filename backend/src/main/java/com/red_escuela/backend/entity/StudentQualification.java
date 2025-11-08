@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+@Entity
 @Table(name = "student_qualification")
 public class StudentQualification {
     @Id
@@ -12,7 +13,7 @@ public class StudentQualification {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "student_id", referencedColumnName = "persona_id")
+    @JoinColumn(name = "student_id")
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -23,7 +24,8 @@ public class StudentQualification {
     @JoinColumn(name = "qualification_id")
     private Qualification qualification;
 
-    @Column(name = "term_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "term_id")
     private Term term;
 
     @Column(name = "created_at")

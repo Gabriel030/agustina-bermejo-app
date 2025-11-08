@@ -32,7 +32,8 @@ public class Person {
     @Column(name = "dni")
     private String dni;
 
-    @Column(name = "address")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
     private Address address;
 
     @Column(name = "nationality")
