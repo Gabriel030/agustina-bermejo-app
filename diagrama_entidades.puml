@@ -1,155 +1,260 @@
-@startuml
-' Configuración del diagrama
-skinparam classAttributeIconSize 0
-skinparam classFontStyle bold
-skinparam classFontName Arial
-skinparam classFontSize 12
-skinparam classBackgroundColor White
-skinparam classBorderColor #000000
-skinparam arrowColor #000000
-
-' Definición de clases
-class Persona {
-  - Long personaId
-  - String legajo
-  - String nombre
-  - String apellido
-  - String sexo
-  - String celular
-  - String telefonoFijo
-  - String email
-  - String dni
-  - String direccion
-  - String numero
-  - String piso
-  - String departamento
+// Enums
+Enum ProgramEnrollmentStatus {
+  ENROLLED
+  SUSPENDED
+  COMPLETED
+  DROPPED
 }
 
-class Carrera {
-  - Long carreraId
-  - String nombre
-  - Boolean status
+Enum CourseEnrollmentStatus {
+  ENROLLED
+  SUSPENDED
+  COMPLETED
+  DROPPED
 }
 
-class Materia {
-  - Long materiaId
-  - String nombre
-  - Integer cargaHoraria
-  - Integer duracion
-  - Boolean status
-  - String formaCalificacion
-  - Boolean aprobParcial
-  - Boolean aprobRecuperatorio
-  - Boolean aprobFinal
+Enum SectionEnrollmentStatus {
+  ENROLLED
+  IN_PROGRESS
+  COMPLETED
+  WITHDRAWN
+  FAILED
 }
 
-class Periodo {
-  - Long periodoId
-  - Integer anio
-  - String descripcion
-  - String tipo
-  - LocalDateTime inicio
-  - LocalDateTime fin
-  - Boolean status
+Enum GradeAggregationMethod {
+  WEIGHTED_AVERAGE
+  SIMPLE_AVERAGE
+  MAX
+  SUM
+  CUSTOM
 }
 
-class Curso {
-  - Long cursoId
-  - String nombre
-  - String horario
-  - Integer cupo
-  - Boolean status
-  - LocalDateTime inscripcionApertura
-  - LocalDateTime inscripcionCierre
+Enum RequirementType {
+  APPROVED
+  PASSED_COURSEWORK
 }
 
-class Inscripcion {
-  - Long inscripcionId
-  - Boolean activo
+Enum CurricularTerm {
+  ANNUAL
+  FIRST
+  SECOND
 }
 
-class Notas {
-  - Long personaId
-  - Long cursoId
-  - Double nota
-  - String tipo
+Enum SubjectRecurrence {
+  NONE
+  ALLOWED
 }
 
-class ProgramaEstudio {
-  - Long programaId
-  - String descripcion
-  - String grado
-  - Integer anio
-  - Boolean activo
+Enum InstructorRole {
+  LEAD
+  ASSISTANT
+  PRACTICAL
+  LAB
+  GUEST
+}
+// Catálogo
+Table program {
+  id bigserial [pk]
+  code varchar
+  name varchar
 }
 
-class ProgramaEstudioCurso {
-  - Long programaEstudioCursoId
-  - Boolean activo
+Table course {
+  id bigserial [pk]
+  code varchar
+  name varchar
 }
 
-class MateriaCarrera {
-  - Long materiaCarreraId
-  - Boolean activo
+Table program_subject {
+  id bigserial [pk]
+  program_id bigint [not null, ref: > program.id]
+  name varchar [not null]
+  curricular_year int
+  curricular_term CurricularTerm
+  sort_order int
+  subject_recurrence SubjectRecurrence
 }
 
-class Institucion {
-  - Long institucionId
-  - String nombre
-  - String direccion
-  - String telefono
-  - String email
-  - String cuit
-  - String resolucion
-  - LocalDate fechaAlta
-  - LocalDate fechaBaja
-  - String logo
-  - String estado
-  - String web
-  - String facebook
-  - String instagram
-  - String twitter
-  - String linkedin
-  - String youtube
+Table course_subject {
+  id bigserial [pk]
+  course_id bigint [not null, ref: > course.id]
+  name varchar [not null]
+  curricular_year int
+  curricular_term CurricularTerm
+  sort_order int
+  subject_recurrence SubjectRecurrence
 }
 
-class Eventos {
-  - Long eventoId
-  - String titulo
-  - String descripcion
-  - LocalDateTime fechaInicio
-  - LocalDateTime fechaFin
-  - String lugar
-  - String tipo
-  - Boolean estado
+// Personas
+Table person {
+  id bigserial [pk]
+  first_name varchar
+  last_name varchar
+  email varchar
 }
 
-' Relaciones
-Persona "1" -- "*" Inscripcion : tiene >
-Curso "1" -- "*" Inscripcion : tiene >
+Table student {
+  id bigserial [pk]
+  person_id bigint [not null, unique, ref: > person.id]
+}
 
-Persona "1" -- "*" Notas : tiene >
-Curso "1" -- "*" Notas : tiene >
+Table instructor {
+  id bigserial [pk]
+  person_id bigint [not null, unique, ref: > person.id]
+}
 
-Curso "*" -- "1" Carrera : pertenece a >
-Curso "*" -- "1" Materia : tiene >
-Curso "*" -- "1" Periodo : tiene >
-Curso "*" -- "1" Persona : docente >
+// Períodos
+Table term {
+  id bigserial [pk]
+  name varchar
+  start_date date
+  end_date date
+}
 
-ProgramaEstudio "1" -- "*" ProgramaEstudioCurso : tiene >
-Curso "1" -- "*" ProgramaEstudioCurso : tiene >
+// Oferta (secciones)
+Table program_section {
+  id bigserial [pk]
+  program_subject_id bigint [not null, ref: > program_subject.id]
+  term_id bigint [not null, ref: > term.id]
+  evaluation_scheme_id bigint [ref: > evaluation_scheme.id]
+  capacity int
+  instructor_id bigint [ref: > instructor.id] // LEAD opcional
+}
 
-Carrera "1" -- "*" ProgramaEstudio : tiene >
+Table course_section {
+  id bigserial [pk]
+  course_subject_id bigint [not null, ref: > course_subject.id]
+  term_id bigint [not null, ref: > term.id]
+  evaluation_scheme_id bigint [ref: > evaluation_scheme.id]
+  capacity int
+  instructor_id bigint [ref: > instructor.id] // LEAD opcional
+}
 
-' Notas explicativas
-note top of Persona
-  Representa tanto a docentes como a estudiantes.
-  El tipo se puede identificar por el rol en la relación con Curso.
-end note
+// Esquemas de evaluación
+Table evaluation_scheme {
+  id bigserial [pk]
+  name varchar
+  aggregation_method GradeAggregationMethod
+  weights_json text // opcional para pesos/estructura
+}
 
-note top of Inscripcion
-  Tabla intermedia entre Persona y Curso
-  para manejar la relación muchos a muchos.
-end note
+// Inscripciones de nivel programa/curso
+Table program_enrollment {
+  id bigserial [pk]
+  student_id bigint [not null, ref: > student.id]
+  program_id bigint [not null, ref: > program.id]
+  status ProgramEnrollmentStatus
+  start_date date
+  end_date date
+}
 
-@enduml
+Table course_enrollment {
+  id bigserial [pk]
+  student_id bigint [not null, ref: > student.id]
+  course_id bigint [not null, ref: > course.id]
+  status CourseEnrollmentStatus
+  start_date date
+  end_date date
+}
+
+// Inscripciones a secciones (con recursadas por attempt_number)
+Table program_section_enrollment {
+  id bigserial [pk]
+  student_id bigint [not null, ref: > student.id]
+  program_section_id bigint [not null, ref: > program_section.id]
+  program_enrollment_id bigint [not null, ref: > program_enrollment.id]
+  status SectionEnrollmentStatus
+  attempt_number int
+  final_score numeric(5,2)
+  enrolled_at date
+
+  Note: 'Unique por alumno+sección'
+  indexes {
+    (student_id, program_section_id) [unique, name: "uk_pse_student_section"]
+  }
+}
+
+Table course_section_enrollment {
+  id bigserial [pk]
+  student_id bigint [not null, ref: > student.id]
+  course_section_id bigint [not null, ref: > course_section.id]
+  course_enrollment_id bigint [not null, ref: > course_enrollment.id]
+  status SectionEnrollmentStatus
+  attempt_number int
+  final_score numeric(5,2)
+  enrolled_at date
+
+  Note: 'Unique por alumno+sección'
+  indexes {
+    (student_id, course_section_id) [unique, name: "uk_cse_student_section"]
+  }
+}
+
+// Calificaciones (referencia exclusiva a UNA inscripción)
+Table grade_item {
+  id bigserial [pk]
+  name varchar
+  weight numeric(6,3)
+  score numeric(5,2)
+  due_date date
+  aggregation_method GradeAggregationMethod
+  program_section_enrollment_id bigint [ref: > program_section_enrollment.id]
+  course_section_enrollment_id bigint [ref: > course_section_enrollment.id]
+
+  Note: 'Validación de negocio: exactamente una de las dos FKs debe estar seteada'
+}
+
+// Prerrequisitos (AND por múltiples filas)
+Table program_subject_prerequisite {
+  id bigserial [pk]
+  program_subject_id bigint [not null, ref: > program_subject.id]
+  prerequisite_program_subject_id bigint [not null, ref: > program_subject.id]
+  requirement_type RequirementType [not null]
+  min_grade numeric(5,2)
+  notes text
+
+  indexes {
+    (program_subject_id, prerequisite_program_subject_id, requirement_type) [unique, name: "uk_psp_unique_row"]
+  }
+}
+
+Table course_subject_prerequisite {
+  id bigserial [pk]
+  course_subject_id bigint [not null, ref: > course_subject.id]
+  prerequisite_course_subject_id bigint [not null, ref: > course_subject.id]
+  requirement_type RequirementType [not null]
+  min_grade numeric(5,2)
+  notes text
+
+  indexes {
+    (course_subject_id, prerequisite_course_subject_id, requirement_type) [unique, name: "uk_csp_unique_row"]
+  }
+}
+
+// Asignación rica de docentes
+Table program_section_instructor {
+  id bigserial [pk]
+  program_section_id bigint [not null, ref: > program_section.id]
+  instructor_id bigint [not null, ref: > instructor.id]
+  role InstructorRole [not null]
+  start_at date
+  end_at date
+  hours_per_week int
+  notes text
+
+  // Opcionalmente evitar duplicados del mismo rol
+  // indexes { (program_section_id, instructor_id, role) [unique, name: "uk_psi_sec_instr_role"] }
+}
+
+Table course_section_instructor {
+  id bigserial [pk]
+  course_section_id bigint [not null, ref: > course_section.id]
+  instructor_id bigint [not null, ref: > instructor.id]
+  role InstructorRole [not null]
+  start_at date
+  end_at date
+  hours_per_week int
+  notes text
+
+  // indexes { (course_section_id, instructor_id, role) [unique, name: "uk_csi_sec_instr_role"] }
+}
