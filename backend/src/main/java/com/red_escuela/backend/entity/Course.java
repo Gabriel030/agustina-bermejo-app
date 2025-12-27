@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,20 +22,12 @@ public class Course {
     @Column(name = "name")
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_id")
-    private Program program;
-
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Subject> subjectList;
+    private List<CourseSubject> courseSubjectList;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id")
     private Term term;
-
-    // Many-to-many with Instructor via join entity CourseInstructor
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<CourseInstructor> courseInstructors = new HashSet<>();
 
     @Column(name = "schedule")
     private String schedule;
@@ -50,4 +43,11 @@ public class Course {
 
     @Column(name = "registration_end")
     private LocalDateTime registrationEnd;
+
+    @Column(name = "price")
+    private BigDecimal price;
+
+    @Column(name = "duration_months")
+    private Integer durationMonths;
 }
+

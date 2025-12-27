@@ -26,18 +26,15 @@ public class Student {
     @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramEnrollment> programEnrollments;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id")
     private Institution institution;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
-    private List<CourseEnrollment> courseEnrollmentList;
+    @Column(name = "grant_final_exam_sign_up")
+    private Boolean grantFinalExamSignUp;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_id")
-    private List<ProgramEnrollment> programEnrollmentList;
+    @Column(name = "defaulter")
+    private Boolean defaulter;
 
 
 }

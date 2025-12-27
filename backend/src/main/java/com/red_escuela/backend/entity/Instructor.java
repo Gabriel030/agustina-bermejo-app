@@ -19,9 +19,4 @@ public class Instructor {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id")
     private Person person;
-
-    @OneToMany(mappedBy = "instructor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<CourseInstructor> courseInstructors = new HashSet<>();
-
-
 }

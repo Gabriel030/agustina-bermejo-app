@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,11 +25,18 @@ public class ProgramEnrollment {
     @JoinColumn(name = "program_id")
     private Program program;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private ProgramEnrollmentStatus status;
 
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;
+
+    @Column(name = "completion_date")
+    private LocalDateTime completionDate;
+
+    @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
+    private List<ProgramSubjectSectionEnrollment> sectionEnrollments;
 
 
 }
