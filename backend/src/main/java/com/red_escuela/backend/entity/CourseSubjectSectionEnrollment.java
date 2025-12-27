@@ -1,0 +1,57 @@
+package com.red_escuela.backend.entity;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@Entity
+@Table(
+    name = "course_section_enrollment",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_course_sec_enr_student_section",
+            columnNames = {"student_id", "course_section_id"}
+        )
+    }
+)
+public class CourseSubjectSectionEnrollment {
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "course_enrollment_id", nullable = false)
+    private CourseEnrollment courseEnrollment;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "course_section_id", nullable = false)
+    private CourseSubjectSection courseSubjectSection;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private SectionEnrollmentStatus status;
+
+    @Column(name = "enrolled_at")
+    private LocalDateTime enrolledAt;
+
+    @Column(name = "dropped_at")
+    private LocalDateTime droppedAt;
+
+    @Column(name = "attempt_number")
+    private Integer attemptNumber;
+
+    @Column(name = "final_score")
+    private Double finalScore;
+
+    @Column(name = "final_grade_type")
+    private String finalGradeType;
+}
