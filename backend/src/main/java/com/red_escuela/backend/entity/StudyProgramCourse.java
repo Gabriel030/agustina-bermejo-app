@@ -21,6 +21,7 @@ public class StudyProgramCourse {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 }

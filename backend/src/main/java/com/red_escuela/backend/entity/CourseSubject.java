@@ -42,8 +42,9 @@ public class CourseSubject {
     @Column(name = "weekly_workload")
     private Integer weeklyWorkload;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Column(name = "qualification_type")
     private String qualificationType;

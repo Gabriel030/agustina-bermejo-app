@@ -35,8 +35,9 @@ public class Course {
     @Column(name = "capacity")
     private Integer capacity;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean isActive;
+    private StatusType isActive;
 
     @Column(name = "registration_start")
     private LocalDateTime registrationStart;

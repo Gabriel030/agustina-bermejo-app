@@ -18,8 +18,9 @@ public class Program {
     @Column(name = "name")
     private String name;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Column(name = "price")
     private BigDecimal price;

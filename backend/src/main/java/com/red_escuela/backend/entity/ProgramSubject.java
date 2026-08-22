@@ -34,8 +34,9 @@ public class ProgramSubject {
     @Column(name = "sort_order")
     private Integer sortOrder;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "subject_recurrence")
