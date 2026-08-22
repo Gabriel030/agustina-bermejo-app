@@ -10,7 +10,7 @@ public class Term {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "year")
+    @Column(name = "year_number")
     private Integer year;
 
     @Column(name = "description")

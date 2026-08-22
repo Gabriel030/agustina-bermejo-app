@@ -1,6 +1,7 @@
 package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.entity.StatusType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,11 +14,11 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
-    // Get by ID only if active (active means linked person.status = true)
-    Optional<Student> findByIdAndPerson_StatusTrue(Long id);
+    // Get by ID only if la persona vinculada tiene el status pasado por parámetro (ej. StatusType.ACTIVE)
+    Optional<Student> findByIdAndPerson_Status(Long id, StatusType status);
 
-    // Get by DNI only if active
-    Optional<Student> findByPerson_DniAndPerson_StatusTrue(String dni);
+    // Get by DNI con el mismo filtro de status
+    Optional<Student> findByPerson_DniAndPerson_Status(String dni, StatusType status);
 
     // Get by File/Legajo
     Optional<Student> findByPerson_File(String file);
