@@ -24,7 +24,7 @@ public class StudyProgram {
     @JoinColumn(name = "program_id")
     private Program program;
 
-    @Column(name = "year")
+    @Column(name = "year_number")
     private Integer year;
 
     @Column(name = "status")

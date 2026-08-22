@@ -3,11 +3,13 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "evaluation_scheme")
+@Check(constraints = "final_weight IS NULL OR (final_weight >= 0 AND final_weight <= 1)")
 public class EvaluationScheme {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -26,19 +26,20 @@ public class Person {
     @Column(name = "sex")
     private String sex;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "dni")
+    @Column(name = "dni", unique = true)
     private String dni;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "address_id")
+    @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 
     @Column(name = "nationality")
     private String nationality;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StatusType status;
 

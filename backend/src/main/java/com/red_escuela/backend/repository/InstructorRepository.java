@@ -1,6 +1,7 @@
 package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.entity.StatusType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,9 +14,9 @@ import java.util.Optional;
 @Repository
 public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
-    Optional<Instructor> findByIdAndPerson_StatusTrue(Long id);
+    Optional<Instructor> findByIdAndPerson_Status(Long id, StatusType status);
 
-    Optional<Instructor> findByPerson_DniAndPerson_StatusTrue(String dni);
+    Optional<Instructor> findByPerson_DniAndPerson_Status(String dni, StatusType status);
 
     Optional<Instructor> findByPerson_File(String file);
 

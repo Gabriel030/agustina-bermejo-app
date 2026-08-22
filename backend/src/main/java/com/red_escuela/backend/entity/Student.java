@@ -17,7 +17,7 @@ public class Student {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "person_id")
+    @JoinColumn(name = "person_id", nullable = false, unique = true)
     private Person person;
 
     @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
@@ -27,7 +27,7 @@ public class Student {
     private List<ProgramEnrollment> programEnrollments;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "institution_id")
+    @JoinColumn(name = "institution_id", nullable = false)
     private Institution institution;
 
     @Column(name = "grant_final_exam_sign_up")

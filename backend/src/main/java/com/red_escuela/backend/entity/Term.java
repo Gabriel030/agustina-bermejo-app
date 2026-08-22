@@ -1,7 +1,11 @@
 package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "term")
 public class Term {
@@ -10,7 +14,7 @@ public class Term {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "year")
+    @Column(name = "year_number")
     private Integer year;
 
     @Column(name = "description")
