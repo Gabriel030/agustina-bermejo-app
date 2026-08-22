@@ -18,6 +18,10 @@ public class GradeItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     // Enlaza a UNA inscripción de sección de curso o programa (no a ambas)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_section_enrollment_id")

@@ -3,6 +3,8 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Getter
 @Setter
@@ -24,6 +26,7 @@ public class ProgramSubjectPrerequisite {
     // Materia objetivo (a la que quiero inscribirme)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_subject_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ProgramSubject programSubject;
 
     // Materia requerida (prerrequisito)

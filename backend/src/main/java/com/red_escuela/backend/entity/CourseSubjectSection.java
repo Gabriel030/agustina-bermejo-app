@@ -22,6 +22,10 @@ public class CourseSubjectSection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_subject_id", nullable = false)
     private CourseSubject courseSubject;
