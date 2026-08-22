@@ -11,8 +11,9 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "grade_item")
-@Check(constraints = "(course_section_enrollment_id IS NOT NULL AND program_section_enrollment_id IS NULL) "
-        + "OR (course_section_enrollment_id IS NULL AND program_section_enrollment_id IS NOT NULL)")
+@Check(constraints = "((course_section_enrollment_id IS NOT NULL AND program_section_enrollment_id IS NULL) "
+        + "OR (course_section_enrollment_id IS NULL AND program_section_enrollment_id IS NOT NULL)) "
+        + "AND (weight IS NULL OR (weight >= 0 AND weight <= 1))")
 public class GradeItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -3,6 +3,7 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -18,6 +19,7 @@ import org.hibernate.annotations.OnDeleteAction;
         )
     }
 )
+@Check(constraints = "min_grade IS NULL OR (min_grade >= 0 AND min_grade <= 10)")
 public class CourseSubjectPrerequisite {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
