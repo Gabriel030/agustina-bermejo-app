@@ -1,6 +1,10 @@
 package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "study_program_course")
 public class StudyProgramCourse {
