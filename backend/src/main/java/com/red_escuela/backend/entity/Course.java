@@ -26,7 +26,7 @@ public class Course {
     private List<CourseSubject> courseSubjectList;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "term_id")
+    @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
     @Column(name = "schedule")

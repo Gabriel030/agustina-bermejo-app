@@ -3,6 +3,7 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
@@ -10,6 +11,8 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "grade_item")
+@Check(constraints = "(course_section_enrollment_id IS NOT NULL AND program_section_enrollment_id IS NULL) "
+        + "OR (course_section_enrollment_id IS NULL AND program_section_enrollment_id IS NOT NULL)")
 public class GradeItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

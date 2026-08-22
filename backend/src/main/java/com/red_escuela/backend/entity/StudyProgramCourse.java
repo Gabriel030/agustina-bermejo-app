@@ -10,11 +10,11 @@ public class StudyProgramCourse {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_program_id")
+    @JoinColumn(name = "study_program_id", nullable = false)
     private StudyProgram studyProgram;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
     @Column(name = "status")
