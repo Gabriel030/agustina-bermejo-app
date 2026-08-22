@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -43,8 +46,13 @@ public class Person {
     @Column(name = "status")
     private StatusType status;
 
-    @Column(name = "rol_id")
-    private Long rolId;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "person_role",
+        joinColumns = @JoinColumn(name = "person_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     @Column(name = "password")
     private String password;
