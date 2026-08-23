@@ -16,13 +16,17 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Provisorio: todavía no hay endpoints de auth ni servicios que los usen.
-    // Se reemplaza por la matriz de permisos real (spec funcional, sección 3) cuando exista.
+    // Todavía no hay endpoints de negocio que proteger, así que todo sigue permitAll().
+    // /auth/** queda explícito aparte porque son el punto de entrada — no pueden requerir
+    // estar ya autenticado — y así queda documentado que tienen que seguir públicos el día
+    // que el resto se restrinja con la matriz de permisos real (spec funcional, sección 3).
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/**").permitAll()
+                .anyRequest().permitAll());
         return http.build();
     }
 }
