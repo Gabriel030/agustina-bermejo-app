@@ -1,9 +1,11 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.AuthResponse;
+import com.red_escuela.backend.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
+import com.red_escuela.backend.dto.ResetPasswordRequest;
 import com.red_escuela.backend.service.AuthService;
 import com.red_escuela.backend.service.AuthTokens;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,5 +43,18 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request.refreshToken());
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        // Siempre 202, exista o no el email: no filtrar qué emails están registrados.
+        authService.requestPasswordReset(request.email());
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
     }
 }

@@ -2,14 +2,19 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.LoginAttempt;
+import com.red_escuela.backend.entity.PasswordResetToken;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.RefreshToken;
 import com.red_escuela.backend.exception.InvalidCredentialsException;
+import com.red_escuela.backend.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.repository.LoginAttemptRepository;
+import com.red_escuela.backend.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.repository.PersonRepository;
 import com.red_escuela.backend.repository.RefreshTokenRepository;
 import com.red_escuela.backend.util.TokenHashUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,33 +32,41 @@ import java.util.Optional;
 @Service
 public class AuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
     private final PersonRepository personRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final LoginAttemptRepository loginAttemptRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final int lockoutMaxAttempts;
     private final long lockoutDurationMinutes;
     private final long refreshTokenExpirationDays;
+    private final long passwordResetTokenExpirationMinutes;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
             PersonRepository personRepository,
             RefreshTokenRepository refreshTokenRepository,
             LoginAttemptRepository loginAttemptRepository,
+            PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             @Value("${auth.lockout.max-attempts}") int lockoutMaxAttempts,
             @Value("${auth.lockout.duration-minutes}") long lockoutDurationMinutes,
-            @Value("${jwt.refresh-token-expiration-days}") long refreshTokenExpirationDays) {
+            @Value("${jwt.refresh-token-expiration-days}") long refreshTokenExpirationDays,
+            @Value("${jwt.password-reset-token-expiration-minutes}") long passwordResetTokenExpirationMinutes) {
         this.personRepository = personRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginAttemptRepository = loginAttemptRepository;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.lockoutMaxAttempts = lockoutMaxAttempts;
         this.lockoutDurationMinutes = lockoutDurationMinutes;
         this.refreshTokenExpirationDays = refreshTokenExpirationDays;
+        this.passwordResetTokenExpirationMinutes = passwordResetTokenExpirationMinutes;
     }
 
     @Transactional
@@ -109,6 +122,45 @@ public class AuthService {
         });
     }
 
+    @Transactional
+    public void requestPasswordReset(String email) {
+        Optional<Person> personOpt = personRepository.findByEmail(email);
+        if (personOpt.isEmpty()) {
+            // Anti-enumeración: no revela si el email existe, simplemente no genera nada.
+            return;
+        }
+        Person person = personOpt.get();
+
+        String rawToken = generateRandomToken();
+
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setPerson(person);
+        resetToken.setTokenHash(TokenHashUtil.sha256Hex(rawToken));
+        resetToken.setExpiresAt(LocalDateTime.now().plusMinutes(passwordResetTokenExpirationMinutes));
+        resetToken.setUsed(false);
+        resetToken.setCreatedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
+
+        // Placeholder hasta que exista envío real de email (RF-AUTH-03, fuera de esta spec).
+        log.info("Token de recuperación de password generado para person {}: {}", person.getId(), rawToken);
+    }
+
+    @Transactional
+    public void resetPassword(String rawToken, String newPassword) {
+        String hash = TokenHashUtil.sha256Hex(rawToken);
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(hash)
+                .filter(t -> !t.getUsed())
+                .filter(t -> t.getExpiresAt().isAfter(LocalDateTime.now()))
+                .orElseThrow(InvalidPasswordResetTokenException::new);
+
+        Person person = resetToken.getPerson();
+        person.setPassword(passwordEncoder.encode(newPassword));
+        personRepository.save(person);
+
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
+    }
+
     private AuthTokens issueTokens(Person person) {
         String accessToken = jwtService.generateAccessToken(person);
         String refreshToken = issueRefreshToken(person);
@@ -117,9 +169,7 @@ public class AuthService {
     }
 
     private String issueRefreshToken(Person person) {
-        byte[] randomBytes = new byte[32];
-        secureRandom.nextBytes(randomBytes);
-        String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+        String rawToken = generateRandomToken();
 
         RefreshToken entity = new RefreshToken();
         entity.setPerson(person);
@@ -130,6 +180,12 @@ public class AuthService {
         refreshTokenRepository.save(entity);
 
         return rawToken;
+    }
+
+    private String generateRandomToken() {
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     private boolean isLocked(Person person) {

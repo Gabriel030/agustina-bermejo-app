@@ -19,6 +19,11 @@ public class GlobalExceptionHandler {
     public void handleInvalidRefreshToken() {
     }
 
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public void handleInvalidPasswordResetToken() {
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleValidation() {

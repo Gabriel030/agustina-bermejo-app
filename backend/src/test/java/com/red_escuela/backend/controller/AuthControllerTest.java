@@ -2,9 +2,11 @@ package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.dto.AuthResponse;
+import com.red_escuela.backend.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
+import com.red_escuela.backend.dto.ResetPasswordRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.Person;
@@ -126,6 +128,29 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new RefreshRequest(tokens.refreshToken()))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void forgotPasswordDevuelve202SeaCualSeaElEmail() throws Exception {
+        persistPerson("controller5", "correcta123");
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ForgotPasswordRequest("controller5@example.com"))))
+                .andExpect(status().isAccepted());
+
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ForgotPasswordRequest("no-existe@example.com"))))
+                .andExpect(status().isAccepted());
+    }
+
+    @Test
+    void resetPasswordConTokenInvalidoDevuelve401() throws Exception {
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ResetPasswordRequest("token-que-no-existe", "nueva123"))))
                 .andExpect(status().isUnauthorized());
     }
 }
