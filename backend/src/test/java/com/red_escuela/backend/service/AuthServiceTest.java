@@ -1,5 +1,6 @@
 package com.red_escuela.backend.service;
 
+import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.LoginAttempt;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class AuthServiceTest {
+class AuthServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private AuthService authService;

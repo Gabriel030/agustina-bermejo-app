@@ -1,5 +1,6 @@
 package com.red_escuela.backend.service;
 
+import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.PasswordResetToken;
@@ -31,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class PasswordResetTest {
+class PasswordResetTest extends AbstractIntegrationTest {
 
     @Autowired
     private AuthService authService;

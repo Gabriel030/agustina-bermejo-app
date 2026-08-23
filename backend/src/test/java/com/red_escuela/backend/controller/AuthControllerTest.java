@@ -1,6 +1,7 @@
 package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.AuthResponse;
 import com.red_escuela.backend.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.dto.LoginRequest;
@@ -29,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class AuthControllerTest {
+class AuthControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
