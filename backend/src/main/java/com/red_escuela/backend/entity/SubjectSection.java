@@ -14,13 +14,14 @@ import java.util.List;
  * ProgramSubject) y una única SubjectSection admite alumnos de cualquiera de ellas.
  * Antes se llamaba ProgramSubjectSection y apuntaba a ProgramSubject — se renombró y
  * repuntó a Subject directamente al decidir que las materias se comparten entre
- * carreras (Spec Estructura académica, decisión 3). Se reutiliza la tabla física
- * "program_section" para no sumar una migración de rename sin necesidad real.
+ * carreras (Spec Estructura académica, decisión 3). La tabla física se llamó
+ * "program_section" hasta V20, que la renombró a "subject_section" para que dejara de
+ * desentonar con el nombre de la clase.
  */
 @Getter
 @Setter
 @Entity
-@Table(name = "program_section")
+@Table(name = "subject_section")
 public class SubjectSection {
     @Id
     @Column(name = "id")
@@ -58,6 +59,11 @@ public class SubjectSection {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    // Porcentaje máximo de ausentismo permitido; si es null, no se calcula "libre por
+    // inasistencias" para esta comisión (nunca un campo persistido, siempre derivado).
+    @Column(name = "max_absence_percentage")
+    private Double maxAbsencePercentage;
 
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SubjectSectionInstructor> instructors;

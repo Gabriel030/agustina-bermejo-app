@@ -22,4 +22,10 @@ public class Subject {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private StatusType status = StatusType.ACTIVE;
+
+    // Tope de reintentos para rendir el final de esta materia. Null = sin límite (no hay
+    // endpoint de configuración de materia en esta fase; se deja disponible para cargar
+    // directamente o para una fase posterior con su propio endpoint).
+    @Column(name = "max_final_exam_attempts")
+    private Integer maxFinalExamAttempts;
 }

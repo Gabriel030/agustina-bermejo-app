@@ -54,6 +54,11 @@ public class CourseSubjectSection {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    // Porcentaje máximo de ausentismo permitido; si es null, no se calcula "libre por
+    // inasistencias" para esta comisión (nunca un campo persistido, siempre derivado).
+    @Column(name = "max_absence_percentage")
+    private Double maxAbsencePercentage;
+
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CourseSubjectSectionInstructor> instructors;
 }
