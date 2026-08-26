@@ -7,16 +7,21 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/*
- * ProgramSubjectSection: comisión de una materia de un programa (ProgramSubject) en un Term.
- * Incluye datos operativos: instructor, cupo, horario y esquema de evaluación.
- * Nota: se reutiliza la misma tabla 'program_section' para evitar migraciones por ahora.
+/**
+ * Comisión de un Subject en un Term. A diferencia de CourseSubjectSection (módulo de
+ * un Course, que no se comparte entre cursos), esta comisión no pertenece a una carrera
+ * puntual: un Subject puede estar en el plan de varias Program distintas (ver
+ * ProgramSubject) y una única SubjectSection admite alumnos de cualquiera de ellas.
+ * Antes se llamaba ProgramSubjectSection y apuntaba a ProgramSubject — se renombró y
+ * repuntó a Subject directamente al decidir que las materias se comparten entre
+ * carreras (Spec Estructura académica, decisión 3). Se reutiliza la tabla física
+ * "program_section" para no sumar una migración de rename sin necesidad real.
  */
 @Getter
 @Setter
 @Entity
 @Table(name = "program_section")
-public class ProgramSubjectSection {
+public class SubjectSection {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,17 +31,16 @@ public class ProgramSubjectSection {
     @Column(name = "version")
     private Long version;
 
+    @Column(name = "name", nullable = false)
+    private String name;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "program_subject_id", nullable = false)
-    private ProgramSubject programSubject;
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instructor_id")
-    private Instructor instructor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evaluation_scheme_id")
@@ -56,5 +60,5 @@ public class ProgramSubjectSection {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProgramSubjectSectionInstructor> instructors;
+    private List<SubjectSectionInstructor> instructors;
 }

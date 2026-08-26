@@ -32,4 +32,10 @@ public class Term {
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StatusType status;
+
+    @Column(name = "enrollment_start")
+    private LocalDateTime enrollmentStart;
+
+    @Column(name = "enrollment_end")
+    private LocalDateTime enrollmentEnd;
 }
