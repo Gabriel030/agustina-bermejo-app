@@ -30,7 +30,7 @@ public class GradeItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "program_section_enrollment_id")
-    private ProgramSubjectSectionEnrollment programSubjectSectionEnrollment;
+    private SubjectSectionEnrollment programSubjectSectionEnrollment;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)

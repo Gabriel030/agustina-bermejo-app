@@ -24,6 +24,9 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     // Get by File/Legajo
     Optional<Student> findByPerson_File(String file);
 
+    // Resolver el Student a partir del personId del JWT (endpoints /me/...)
+    Optional<Student> findByPerson_Id(Long personId);
+
     // Logical delete: set person.status = false for the student's person
     @Modifying
     @Transactional
