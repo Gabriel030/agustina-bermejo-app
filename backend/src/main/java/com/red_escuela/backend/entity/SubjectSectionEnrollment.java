@@ -13,16 +13,16 @@ import java.time.LocalDateTime;
  * dentro del contexto de una ProgramEnrollment puntual (misma materia, dos carreras
  * distintas => dos filas distintas, una por cada ProgramEnrollment).
  *
- * Renombrada desde ProgramSubjectSectionEnrollment (spec Inscripciones académicas):
- * la tabla física sigue siendo program_section_enrollment y la columna
- * program_section_id — no se tocó nada a nivel de base, solo el nombre de la clase,
- * que ya no tenía sentido tras el rename de ProgramSubjectSection -> SubjectSection.
+ * Renombrada desde ProgramSubjectSectionEnrollment (spec Inscripciones académicas): al
+ * principio no se tocó nada a nivel de base, solo el nombre de la clase — pero la tabla
+ * física "program_section_enrollment" quedó desentonando con el nombre nuevo (Fase 3, V20
+ * la renombró a "subject_section_enrollment"). La columna program_section_id no se tocó.
  */
 @Getter
 @Setter
 @Entity
 @Table(
-    name = "program_section_enrollment",
+    name = "subject_section_enrollment",
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uk_prog_sec_enr_student_section",
