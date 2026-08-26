@@ -11,6 +11,7 @@ import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.CourseSubject;
 import com.red_escuela.backend.entity.CourseSubjectSection;
+import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Institution;
@@ -650,5 +651,86 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/me/program-enrollments").header("Authorization", "Bearer " + tokenAlumno))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void bajaYReinscripcionAlMismoCourseReactivaLasSubInscripcionesSinViolarConstraintUnica() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("50000019", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubject modulo = persistCourseSubject(course, "Módulo19");
+        CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, null);
+        entityManager.flush();
+        String token = tokenWithRole("preceptor-insc19", "PRECEPTOR");
+
+        String primeraMatricula = mockMvc.perform(post("/students/{id}/course-enrollments", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new CreateCourseEnrollmentRequest(course.getId(), null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long primerCourseEnrollmentId = objectMapper.readTree(primeraMatricula).get("id").asLong();
+
+        mockMvc.perform(post("/course-enrollments/{id}/withdraw", primerCourseEnrollmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        // Antes del fix, este segundo alta resolvía la MISMA CourseSubjectSection (mismo Term)
+        // e intentaba un INSERT nuevo, chocando con la fila WITHDRAWN existente contra el
+        // unique constraint (student_id, course_section_id) -> 500 no controlado.
+        mockMvc.perform(post("/students/{id}/course-enrollments", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new CreateCourseEnrollmentRequest(course.getId(), null))))
+                .andExpect(status().isCreated());
+
+        long totalFilas = entityManager
+                .createQuery("select count(e) from CourseSubjectSectionEnrollment e where e.courseSubjectSection.id = :sid", Long.class)
+                .setParameter("sid", seccion.getId())
+                .getSingleResult();
+        assertThat(totalFilas).isEqualTo(1L);
+    }
+
+    @Test
+    void bajaDeCourseLiberaCupoDeSusModulosYPromueveAlSiguienteEnListaDeEspera() throws Exception {
+        Institution institution = persistInstitution();
+        Student estudiante1 = persistStudent("50000020", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Student estudiante2 = persistStudent("50000021", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Term term = persistTerm(null, null);
+        Course course = persistCourse(term, null, null);
+        CourseSubject modulo = persistCourseSubject(course, "Módulo20");
+        CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, 1);
+        entityManager.flush();
+        String token = tokenWithRole("preceptor-insc20", "PRECEPTOR");
+
+        String matricula1 = mockMvc.perform(post("/students/{id}/course-enrollments", estudiante1.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new CreateCourseEnrollmentRequest(course.getId(), null))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long courseEnrollment1Id = objectMapper.readTree(matricula1).get("id").asLong();
+
+        mockMvc.perform(post("/students/{id}/course-enrollments", estudiante2.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new CreateCourseEnrollmentRequest(course.getId(), null))))
+                .andExpect(status().isCreated());
+
+        CourseSubjectSectionEnrollment subDeEstudiante2 = entityManager
+                .createQuery("select e from CourseSubjectSectionEnrollment e where e.student.id = :sid", CourseSubjectSectionEnrollment.class)
+                .setParameter("sid", estudiante2.getId())
+                .getSingleResult();
+        assertThat(subDeEstudiante2.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+
+        mockMvc.perform(post("/course-enrollments/{id}/withdraw", courseEnrollment1Id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        entityManager.flush();
+        entityManager.clear();
+        CourseSubjectSectionEnrollment promovida = entityManager.find(CourseSubjectSectionEnrollment.class, subDeEstudiante2.getId());
+        assertThat(promovida.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 }

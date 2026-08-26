@@ -46,7 +46,9 @@ public class GlobalExceptionHandler {
             ProgramEnrollmentRequiredException.class,
             PrerequisiteNotMetException.class,
             AmbiguousSectionException.class,
-            InvalidSectionChangeException.class
+            InvalidSectionChangeException.class,
+            SubjectNotInProgramPlanException.class,
+            InvalidWindowConfigurationException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {

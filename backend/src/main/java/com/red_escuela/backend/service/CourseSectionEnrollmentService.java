@@ -4,7 +4,9 @@ import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
+import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +23,13 @@ import java.util.List;
 public class CourseSectionEnrollmentService {
 
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final CourseSubjectSectionRepository courseSubjectSectionRepository;
 
-    public CourseSectionEnrollmentService(CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+    public CourseSectionEnrollmentService(
+            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+            CourseSubjectSectionRepository courseSubjectSectionRepository) {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.courseSubjectSectionRepository = courseSubjectSectionRepository;
     }
 
     public List<CourseSubjectSectionEnrollment> listarPorMatriculacion(Long courseEnrollmentId) {
@@ -44,6 +50,8 @@ public class CourseSectionEnrollmentService {
     }
 
     private void promoverSiguienteEnListaDeEspera(Long courseSubjectSectionId) {
+        courseSubjectSectionRepository.findByIdForUpdate(courseSubjectSectionId)
+                .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {

@@ -18,6 +18,8 @@ import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.IncompleteSectionSetupException;
+import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.StudentNotFoundException;
@@ -31,8 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * RF-PR-02: alta/baja de matriculación a Course (curso corto), exclusiva de Preceptor/
@@ -73,6 +77,12 @@ public class CourseEnrollmentService {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
 
+        if (course.getRegistrationStart() != null && course.getRegistrationEnd() != null
+                && course.getRegistrationStart().isAfter(course.getRegistrationEnd())) {
+            throw new InvalidWindowConfigurationException(
+                    "El curso " + course.getId() + " tiene la ventana de inscripción mal configurada "
+                            + "(registrationStart posterior a registrationEnd)");
+        }
         LocalDateTime now = LocalDateTime.now();
         if (course.getRegistrationStart() != null && now.isBefore(course.getRegistrationStart())
                 || course.getRegistrationEnd() != null && now.isAfter(course.getRegistrationEnd())) {
@@ -87,20 +97,26 @@ public class CourseEnrollmentService {
             throw new AlreadyEnrolledInCourseException(studentId, course.getId());
         }
 
+        // Resolver TODAS las comisiones antes de crear nada: si algún módulo falla (sin
+        // comisión / ambiguo), no debe quedar ninguna fila creada (todo o nada, decisión 15).
+        Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
+        for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
+            resueltas.put(courseSubject, resolverSeccion(courseSubject, course, request));
+        }
+
         CourseEnrollment enrollment = new CourseEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
         enrollment.setStatus(EnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
+        CourseEnrollment savedEnrollment = courseEnrollmentRepository.save(enrollment);
 
-        List<CourseSubjectSectionEnrollment> subEnrollments = new ArrayList<>();
-        for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
-            CourseSubjectSection elegida = resolverSeccion(courseSubject, course, request);
-            subEnrollments.add(crearSubInscripcion(student, enrollment, elegida, now));
+        for (CourseSubjectSection elegida : resueltas.values()) {
+            courseSubjectSectionEnrollmentRepository.save(
+                    crearOReactivarSubInscripcion(student, savedEnrollment, elegida, now));
         }
-        enrollment.setSectionEnrollments(subEnrollments);
 
-        return courseEnrollmentRepository.save(enrollment);
+        return savedEnrollment;
     }
 
     private CourseSubjectSection resolverSeccion(CourseSubject courseSubject, Course course, CreateCourseEnrollmentRequest request) {
@@ -127,23 +143,43 @@ public class CourseEnrollmentService {
                 .orElseThrow(() -> new AmbiguousSectionException(courseSubject.getId()));
     }
 
-    private CourseSubjectSectionEnrollment crearSubInscripcion(
+    private CourseSubjectSectionEnrollment crearOReactivarSubInscripcion(
             Student student, CourseEnrollment enrollment, CourseSubjectSection elegida, LocalDateTime now) {
+        Optional<CourseSubjectSectionEnrollment> existente = courseSubjectSectionEnrollmentRepository
+                .findByStudentIdAndCourseSubjectSectionId(student.getId(), elegida.getId());
+        if (existente.isPresent() && existente.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
+            // El unique constraint (student_id, course_section_id) no admite un INSERT nuevo
+            // para la misma comisión — reactivar la fila existente en vez de crear otra
+            // (mismo criterio que SubjectSectionEnrollmentService, decisión 7 por analogía).
+            CourseSubjectSectionEnrollment reactivada = existente.get();
+            reactivada.setCourseEnrollment(enrollment);
+            reactivada.setStatus(calcularStatusPorCupo(elegida));
+            reactivada.setDroppedAt(null);
+            return reactivada;
+        }
+
+        CourseSubjectSectionEnrollment nueva = new CourseSubjectSectionEnrollment();
+        nueva.setStudent(student);
+        nueva.setCourseEnrollment(enrollment);
+        nueva.setCourseSubjectSection(elegida);
+        nueva.setStatus(calcularStatusPorCupo(elegida));
+        nueva.setEnrolledAt(now);
+        nueva.setAttemptNumber(1);
+        return nueva;
+    }
+
+    private EnrollmentStatus calcularStatusPorCupo(CourseSubjectSection section) {
+        // Lock de fila: serializa altas/bajas/promociones concurrentes sobre la MISMA
+        // comisión — sin esto, dos altas simultáneas a capacity=1 pueden leer "ocupadas=0"
+        // ambas antes de que cualquiera haga commit, y las dos terminar ENROLLED.
+        courseSubjectSectionRepository.findByIdForUpdate(section.getId())
+                .orElseThrow(() -> new SectionNotFoundException(section.getId()));
         int ocupadas = courseSubjectSectionEnrollmentRepository
-                .findByCourseSubjectSectionIdAndStatusIn(elegida.getId(),
+                .findByCourseSubjectSectionIdAndStatusIn(section.getId(),
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
                 .size();
-        EnrollmentStatus status = elegida.getCapacity() == null || ocupadas < elegida.getCapacity()
+        return section.getCapacity() == null || ocupadas < section.getCapacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
-
-        CourseSubjectSectionEnrollment subEnrollment = new CourseSubjectSectionEnrollment();
-        subEnrollment.setStudent(student);
-        subEnrollment.setCourseEnrollment(enrollment);
-        subEnrollment.setCourseSubjectSection(elegida);
-        subEnrollment.setStatus(status);
-        subEnrollment.setEnrolledAt(now);
-        subEnrollment.setAttemptNumber(1);
-        return subEnrollment;
     }
 
     @Transactional
@@ -152,9 +188,39 @@ public class CourseEnrollmentService {
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED) {
             throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED, no se puede dar de baja");
         }
-        // Sin cascada a las CourseSubjectSectionEnrollment (mismo criterio que ProgramEnrollmentService).
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
+
+        // A diferencia de ProgramEnrollment (donde las SubjectSectionEnrollment las elige el
+        // alumno una por una y no se tocan al dar de baja la carrera, para preservar su
+        // historial de cursadas independiente), las CourseSubjectSectionEnrollment de un Course
+        // se crean TODAS juntas en una única alta automática (decisión 15) — son un detalle de
+        // esa alta, no elecciones independientes del alumno. Sin cascada acá, el cupo de cada
+        // módulo queda ocupado para siempre por alguien que ya no cursa nada.
+        LocalDateTime now = LocalDateTime.now();
+        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(id)) {
+            EnrollmentStatus estadoAnterior = sub.getStatus();
+            if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS
+                    || estadoAnterior == EnrollmentStatus.WAITLISTED) {
+                sub.setStatus(EnrollmentStatus.WITHDRAWN);
+                sub.setDroppedAt(now);
+                courseSubjectSectionEnrollmentRepository.save(sub);
+                if (estadoAnterior != EnrollmentStatus.WAITLISTED) {
+                    promoverSiguienteEnListaDeEspera(sub.getCourseSubjectSection().getId());
+                }
+            }
+        }
+    }
+
+    private void promoverSiguienteEnListaDeEspera(Long courseSubjectSectionId) {
+        courseSubjectSectionRepository.findByIdForUpdate(courseSubjectSectionId)
+                .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
+        courseSubjectSectionEnrollmentRepository
+                .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
+                .ifPresent(siguiente -> {
+                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
+                    courseSubjectSectionEnrollmentRepository.save(siguiente);
+                });
     }
 
     public CourseEnrollment verDetalle(Long id) {

@@ -18,6 +18,7 @@ import com.red_escuela.backend.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.exception.InvalidSectionChangeException;
+import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentRequiredException;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
+import com.red_escuela.backend.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramSubjectPrerequisiteRepository;
 import com.red_escuela.backend.repository.ProgramSubjectRepository;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,19 +104,35 @@ public class SubjectSectionEnrollmentService {
             return subjectSectionEnrollmentRepository.save(reactivada);
         }
 
-        int intentosPrevios = subjectSectionEnrollmentRepository
-                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, subjectId, List.of(EnrollmentStatus.FAILED, EnrollmentStatus.WITHDRAWN))
-                .size();
-
         SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
         nueva.setStudent(student);
         nueva.setProgramEnrollment(programEnrollment);
         nueva.setSubjectSection(section);
         nueva.setStatus(calcularStatusPorCupo(section));
         nueva.setEnrolledAt(LocalDateTime.now());
-        nueva.setAttemptNumber(intentosPrevios + 1);
+        nueva.setAttemptNumber(calcularAttemptNumber(programEnrollmentId, subjectId, section));
         return subjectSectionEnrollmentRepository.save(nueva);
+    }
+
+    /**
+     * Decisión 8: un intento nuevo solo ocurre al anotarse a una comisión de un Term
+     * DISTINTO para la misma materia, tras un intento anterior FAILED/WITHDRAWN. Si el
+     * intento anterior más reciente terminó en la MISMA Term que la comisión nueva —algo
+     * alcanzable dando de baja e inscribiendo manualmente sin pasar por cambiarComision—
+     * no es un intento nuevo: se reusa su attemptNumber, mismo criterio que cambiarComision.
+     */
+    private int calcularAttemptNumber(Long programEnrollmentId, Long subjectId, SubjectSection nuevaSeccion) {
+        List<SubjectSectionEnrollment> previas = subjectSectionEnrollmentRepository
+                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
+                        programEnrollmentId, subjectId, List.of(EnrollmentStatus.FAILED, EnrollmentStatus.WITHDRAWN));
+        if (previas.isEmpty()) {
+            return 1;
+        }
+        SubjectSectionEnrollment ultima = previas.stream()
+                .max(Comparator.comparing(SubjectSectionEnrollment::getEnrolledAt))
+                .orElseThrow();
+        boolean mismoTerm = ultima.getSubjectSection().getTerm().getId().equals(nuevaSeccion.getTerm().getId());
+        return mismoTerm ? ultima.getAttemptNumber() : ultima.getAttemptNumber() + 1;
     }
 
     @Transactional
@@ -136,6 +155,10 @@ public class SubjectSectionEnrollmentService {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
+        // A diferencia de darDeBaja (que tiene que poder cerrar una cursada aunque el alumno
+        // ya no esté activo), cambiarComision mueve al alumno a una plaza nueva — no tiene
+        // sentido dejar que alguien inactivo siga ocupando cupo de otras comisiones.
+        validarStudentHabilitado(origen.getStudent());
 
         SubjectSection destino = subjectSectionRepository.findById(request.newSectionId())
                 .orElseThrow(() -> new SectionNotFoundException(request.newSectionId()));
@@ -148,6 +171,13 @@ public class SubjectSectionEnrollmentService {
         // origen, y el alumno pierde su propia plaza a manos de quien estaba en la lista de espera.
         if (destino.getId().equals(origen.getSubjectSection().getId())) {
             return origen;
+        }
+        // Decisión 3: cambiarComision es "misma materia, MISMO período" por definición — saltar
+        // a otro Term es un intento nuevo (decisión 8), que corresponde a darDeBaja + inscribir,
+        // no a esta operación (que nunca recalcula attemptNumber).
+        if (!destino.getTerm().getId().equals(origen.getSubjectSection().getTerm().getId())) {
+            throw new InvalidSectionChangeException(
+                    "cambiarComision es solo para el mismo período (Term); para otro Term, dar de baja e inscribir de nuevo");
         }
         validarVentanaDeInscripcion(destino.getTerm());
 
@@ -196,6 +226,12 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void promoverSiguienteEnListaDeEspera(Long sectionId) {
+        // Lock de fila: serializa esta promoción contra cualquier otra alta/baja/promoción
+        // concurrente sobre la MISMA comisión (ver findByIdForUpdate) — sin esto, dos bajas
+        // simultáneas pueden leer el mismo "primero en la lista de espera" y promoverlo dos
+        // veces, o perder una promoción por un OptimisticLockException no controlado.
+        subjectSectionRepository.findByIdForUpdate(sectionId)
+                .orElseThrow(() -> new SectionNotFoundException(sectionId));
         subjectSectionEnrollmentRepository
                 .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
                 .ifPresent(siguiente -> {
@@ -205,6 +241,11 @@ public class SubjectSectionEnrollmentService {
     }
 
     private EnrollmentStatus calcularStatusPorCupo(SubjectSection section) {
+        // Mismo lock que promoverSiguienteEnListaDeEspera: sin serializar acá, dos altas
+        // concurrentes a una comisión con capacity=1 pueden leer "ocupadas=0" ambas antes de
+        // que cualquiera haga commit, y las dos terminar ENROLLED por encima del cupo real.
+        subjectSectionRepository.findByIdForUpdate(section.getId())
+                .orElseThrow(() -> new SectionNotFoundException(section.getId()));
         int ocupadas = subjectSectionEnrollmentRepository
                 .findBySubjectSectionIdAndStatusIn(section.getId(),
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
@@ -221,9 +262,8 @@ public class SubjectSectionEnrollmentService {
     private void validarCorrelatividades(ProgramEnrollment programEnrollment, SubjectSection section) {
         ProgramSubject programSubject = programSubjectRepository
                 .findByProgramIdAndSubjectId(programEnrollment.getProgram().getId(), section.getSubject().getId())
-                .orElseThrow(() -> new PrerequisiteNotMetException(
-                        "La materia " + section.getSubject().getId() + " no está en el plan de la carrera "
-                                + programEnrollment.getProgram().getId()));
+                .orElseThrow(() -> new SubjectNotInProgramPlanException(
+                        section.getSubject().getId(), programEnrollment.getProgram().getId()));
 
         for (ProgramSubjectPrerequisite prereq : prerequisiteRepository.findByProgramSubjectId(programSubject.getId())) {
             List<EnrollmentStatus> estadosQueSirven = prereq.getRequirementType() == RequirementType.APPROVED
@@ -250,6 +290,12 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validarVentanaDeInscripcion(Term term) {
+        if (term.getEnrollmentStart() != null && term.getEnrollmentEnd() != null
+                && term.getEnrollmentStart().isAfter(term.getEnrollmentEnd())) {
+            throw new InvalidWindowConfigurationException(
+                    "El Term " + term.getId() + " tiene la ventana de inscripción mal configurada "
+                            + "(enrollmentStart posterior a enrollmentEnd)");
+        }
         LocalDateTime now = LocalDateTime.now();
         if (term.getEnrollmentStart() != null && now.isBefore(term.getEnrollmentStart())
                 || term.getEnrollmentEnd() != null && now.isAfter(term.getEnrollmentEnd())) {

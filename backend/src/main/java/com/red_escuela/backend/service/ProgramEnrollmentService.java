@@ -15,6 +15,7 @@ import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
+import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
@@ -72,6 +73,12 @@ public class ProgramEnrollmentService {
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
 
+        if (program.getAdmissionStart() != null && program.getAdmissionEnd() != null
+                && program.getAdmissionStart().isAfter(program.getAdmissionEnd())) {
+            throw new InvalidWindowConfigurationException(
+                    "La carrera " + program.getId() + " tiene la ventana de admisión mal configurada "
+                            + "(admissionStart posterior a admissionEnd)");
+        }
         LocalDateTime now = LocalDateTime.now();
         if (program.getAdmissionStart() != null && now.isBefore(program.getAdmissionStart())
                 || program.getAdmissionEnd() != null && now.isAfter(program.getAdmissionEnd())) {
