@@ -143,6 +143,12 @@ public class SubjectSectionEnrollmentService {
             throw new InvalidSectionChangeException(
                     "La comisión destino tiene que ser de la misma materia que la comisión origen");
         }
+        // "Cambiar" a la comisión en la que ya está es un no-op: sin este corte, la baja+alta
+        // de abajo dispara la promoción FIFO sobre la MISMA sección antes de reactivar la fila
+        // origen, y el alumno pierde su propia plaza a manos de quien estaba en la lista de espera.
+        if (destino.getId().equals(origen.getSubjectSection().getId())) {
+            return origen;
+        }
         validarVentanaDeInscripcion(destino.getTerm());
 
         Student student = origen.getStudent();

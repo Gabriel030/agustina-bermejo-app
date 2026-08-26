@@ -456,6 +456,39 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void cambiarComisionALaMismaComisionEsNoOpYNoPierdeLaPlazaContraLaListaDeEspera() throws Exception {
+        Institution institution = persistInstitution();
+        Student estudiante1 = persistStudent("50000017", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Student estudiante2 = persistStudent("50000018", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("Materia17");
+        Program program = persistProgram("Carrera17", null, null, 100);
+        persistProgramSubject(program, subject, 10);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        ProgramEnrollment enrollment1 = persistProgramEnrollment(estudiante1, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment enrollment2 = persistProgramEnrollment(estudiante2, program, ProgramEnrollmentStatus.ENROLLED);
+        SubjectSectionEnrollment enrolled = persistSectionEnrollment(estudiante1, enrollment1, section, EnrollmentStatus.ENROLLED, 1);
+        SubjectSectionEnrollment waitlisted = persistSectionEnrollment(estudiante2, enrollment2, section, EnrollmentStatus.WAITLISTED, 1);
+        entityManager.flush();
+        String token = tokenWithRole("preceptor-insc17", "PRECEPTOR");
+
+        mockMvc.perform(post("/section-enrollments/{id}/change-section", enrolled.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new ChangeSectionRequest(section.getId()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(enrolled.getId()))
+                .andExpect(jsonPath("$.status").value("ENROLLED"));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, enrolled.getId()).getStatus())
+                .isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, waitlisted.getId()).getStatus())
+                .isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
     void bajaConNotaFinalCargadaDevuelve409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000009", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
