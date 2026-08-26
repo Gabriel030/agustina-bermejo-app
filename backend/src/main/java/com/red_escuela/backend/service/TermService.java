@@ -4,6 +4,7 @@ import com.red_escuela.backend.dto.CreateTermRequest;
 import com.red_escuela.backend.dto.UpdateTermRequest;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.exception.TermNotFoundException;
 import com.red_escuela.backend.repository.TermRepository;
 import org.springframework.stereotype.Service;
@@ -74,6 +75,29 @@ public class TermService {
     public void reactivar(Long id) {
         Term term = findOrThrow(id);
         term.setStatus(StatusType.ACTIVE);
+        termRepository.save(term);
+    }
+
+    // Decisión 5 (Spec Procesos administrativos): override manual con prioridad sobre la
+    // validación por fecha ya existente, mientras esté activo.
+    @Transactional
+    public void abrirInscripcion(Long id) {
+        Term term = findOrThrow(id);
+        term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
+        termRepository.save(term);
+    }
+
+    @Transactional
+    public void cerrarInscripcion(Long id) {
+        Term term = findOrThrow(id);
+        term.setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        termRepository.save(term);
+    }
+
+    @Transactional
+    public void quitarOverride(Long id) {
+        Term term = findOrThrow(id);
+        term.setEnrollmentOverride(null);
         termRepository.save(term);
     }
 

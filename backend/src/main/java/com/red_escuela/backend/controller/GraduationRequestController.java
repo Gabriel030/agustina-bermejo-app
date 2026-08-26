@@ -1,0 +1,50 @@
+package com.red_escuela.backend.controller;
+
+import com.red_escuela.backend.dto.GraduationRequestResponse;
+import com.red_escuela.backend.dto.RejectGraduationRequestRequest;
+import com.red_escuela.backend.service.GraduationRequestService;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/** RF-AL-15/RF-DI-05: verificación de deuda (Administrativo) y aprobación (Director). */
+@RestController
+public class GraduationRequestController {
+
+    private final GraduationRequestService graduationRequestService;
+
+    public GraduationRequestController(GraduationRequestService graduationRequestService) {
+        this.graduationRequestService = graduationRequestService;
+    }
+
+    @PostMapping("/graduation-requests/{id}/verify-debt")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public GraduationRequestResponse verificarDeuda(@PathVariable Long id) {
+        return GraduationRequestResponse.from(graduationRequestService.verificarDeuda(id));
+    }
+
+    @PostMapping("/graduation-requests/{id}/approve")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public GraduationRequestResponse aprobar(@PathVariable Long id) {
+        return GraduationRequestResponse.from(graduationRequestService.aprobar(id));
+    }
+
+    @PostMapping("/graduation-requests/{id}/reject")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public GraduationRequestResponse rechazar(@PathVariable Long id, @Valid @RequestBody RejectGraduationRequestRequest request) {
+        return GraduationRequestResponse.from(graduationRequestService.rechazar(id, request.motivo()));
+    }
+
+    @GetMapping("/program-enrollments/{id}/graduation-requests")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public List<GraduationRequestResponse> listar(@PathVariable Long id) {
+        return graduationRequestService.listarPorProgramEnrollment(id).stream()
+                .map(GraduationRequestResponse::from).toList();
+    }
+}

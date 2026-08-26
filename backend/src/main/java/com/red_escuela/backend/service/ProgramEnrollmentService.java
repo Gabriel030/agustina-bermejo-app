@@ -127,9 +127,7 @@ public class ProgramEnrollmentService {
         Program program = enrollment.getProgram();
 
         List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(program.getId());
-        List<ProgramSubject> aprobadas = entradas.stream()
-                .filter(entrada -> estaAprobada(enrollment.getId(), entrada))
-                .toList();
+        List<ProgramSubject> aprobadas = listarMateriasAprobadas(id);
 
         List<String> obligatoriasPendientes = entradas.stream()
                 .filter(entrada -> entrada.getElectiveGroup() == null && !aprobadas.contains(entrada))
@@ -160,6 +158,29 @@ public class ProgramEnrollmentService {
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,
                 obligatoriasPendientes, gruposElectivos, elegibleParaCompletar);
+    }
+
+    /**
+     * Reusado por CertificateService (constancia de alumno regular, ajuste de producto sobre la
+     * spec original): además de ProgramEnrollmentStatus.ENROLLED, exige tener una cursada
+     * puntual activa ahora mismo, no solo la matriculación a la carrera vigente.
+     */
+    public boolean tieneCursadaActiva(Long programEnrollmentId) {
+        return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
+                programEnrollmentId,
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
+    }
+
+    /**
+     * Reusado por CertificateService (constancia de materias aprobadas, Spec Procesos
+     * administrativos): mismo criterio de "aprobada" que calcularProgreso, sin duplicarlo.
+     */
+    public List<ProgramSubject> listarMateriasAprobadas(Long programEnrollmentId) {
+        ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(enrollment.getProgram().getId());
+        return entradas.stream()
+                .filter(entrada -> estaAprobada(programEnrollmentId, entrada))
+                .toList();
     }
 
     private boolean estaAprobada(Long programEnrollmentId, ProgramSubject entrada) {

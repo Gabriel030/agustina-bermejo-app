@@ -19,9 +19,11 @@ import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.exception.TermEnrollmentOverrideClosedException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -247,5 +249,65 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> subjectSectionEnrollmentService.cambiarComision(
                 original.getId(), new ChangeSectionRequest(seccionB.getId())))
                 .isInstanceOf(StudentNotActiveException.class);
+    }
+
+    // Decisión 5 de la Spec Procesos administrativos: override manual con prioridad sobre la
+    // validación por fecha ya existente, sin tocarla ni duplicarla.
+    @Test
+    void cerrarManualmenteLaVentanaRechazaLaInscripcionAunqueLaFechaSigaVigente() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000006", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaOverrideCerrado");
+        Program program = persistProgram("CarreraOverrideCerrado");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(1), now.plusDays(10));
+        term.setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(TermEnrollmentOverrideClosedException.class);
+    }
+
+    @Test
+    void abrirManualmenteLaVentanaPermiteInscribirseAunqueLaFechaYaHayaVencido() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000007", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaOverrideAbierto");
+        Program program = persistProgram("CarreraOverrideAbierto");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(20), now.minusDays(10));
+        term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        SubjectSectionEnrollment enrollmentResult = subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+        assertThat(enrollmentResult.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void sinOverrideSigueRigiendoSePorFechaComoAntes() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000008", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaSinOverride");
+        Program program = persistProgram("CarreraSinOverride");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        // Sin override (null, default) y fecha ya vencida: tiene que seguir rechazando por
+        // fecha, no por override (comportamiento previo a esta fase, sin cambios).
+        Term term = persistTerm(now.minusDays(20), now.minusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(com.red_escuela.backend.exception.EnrollmentWindowClosedException.class);
     }
 }
