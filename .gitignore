@@ -2,6 +2,7 @@
 backend/target/
 .idea/
 backend/*.iml
+backend/data/
 
 # Frontend (Vite/React)
 frontend/node_modules/

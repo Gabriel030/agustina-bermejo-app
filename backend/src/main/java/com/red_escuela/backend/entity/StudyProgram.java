@@ -27,7 +27,8 @@ public class StudyProgram {
     @Column(name = "year_number")
     private Integer year;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
 }

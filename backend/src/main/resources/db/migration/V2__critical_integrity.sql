@@ -31,4 +31,4 @@ alter table person alter column address_id set not null;
 alter table person add column status_str varchar(20);
 update person set status_str = case status when 0 then 'ACTIVE' when 1 then 'INACTIVE' when 2 then 'DELETED' end;
 alter table person drop column status;
-alter table person alter column status_str rename to status;
+alter table person rename column status_str to status;

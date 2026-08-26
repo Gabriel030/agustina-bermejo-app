@@ -48,8 +48,9 @@ public class ProgramSubjectSection {
     @Column(name = "capacity")
     private Integer capacity;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

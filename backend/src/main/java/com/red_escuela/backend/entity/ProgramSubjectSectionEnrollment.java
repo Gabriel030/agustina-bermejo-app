@@ -54,7 +54,7 @@ public class ProgramSubjectSectionEnrollment {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private SectionEnrollmentStatus status;
+    private EnrollmentStatus status;
 
     @Column(name = "enrolled_at")
     private LocalDateTime enrolledAt;

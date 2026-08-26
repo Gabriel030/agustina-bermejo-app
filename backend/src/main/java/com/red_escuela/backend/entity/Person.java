@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @Entity
@@ -43,8 +47,13 @@ public class Person {
     @Column(name = "status")
     private StatusType status;
 
-    @Column(name = "rol_id")
-    private Long rolId;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "person_role",
+        joinColumns = @JoinColumn(name = "person_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     @Column(name = "password")
     private String password;
@@ -52,5 +61,20 @@ public class Person {
     @Column(name = "grant_system_access")
     private Boolean grantSystemAccess;
 
+    @Column(name = "username", unique = true)
+    private String username;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
 
 }

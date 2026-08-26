@@ -36,5 +36,14 @@ public class Student {
     @Column(name = "defaulter")
     private Boolean defaulter;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "onboarding_status", nullable = false)
+    private StudentOnboardingStatus onboardingStatus = StudentOnboardingStatus.CONFIRMADO;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "withdrawal_reason")
+    private WithdrawalReason withdrawalReason;
+
+    @Column(name = "withdrawal_detail")
+    private String withdrawalDetail;
 }
