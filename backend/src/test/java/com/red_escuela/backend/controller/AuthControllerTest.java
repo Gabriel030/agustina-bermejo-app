@@ -11,6 +11,7 @@ import com.red_escuela.backend.dto.ResetPasswordRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
         person.setPassword(passwordEncoder.encode(rawPassword));
         person.setAuthProvider(AuthProvider.LOCAL);
         person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
         entityManager.persist(person);
         entityManager.flush();
     }

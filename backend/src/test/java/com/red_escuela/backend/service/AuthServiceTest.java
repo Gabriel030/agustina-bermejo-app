@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.LoginAttempt;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.InvalidCredentialsException;
 import com.red_escuela.backend.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.repository.LoginAttemptRepository;
@@ -52,6 +53,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
         person.setPassword(rawPassword == null ? null : passwordEncoder.encode(rawPassword));
         person.setAuthProvider(provider);
         person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
         entityManager.persist(person);
         entityManager.flush();
         return person;

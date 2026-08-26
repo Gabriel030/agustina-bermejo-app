@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.LoginAttempt;
 import com.red_escuela.backend.entity.PasswordResetToken;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.RefreshToken;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.InvalidCredentialsException;
 import com.red_escuela.backend.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.exception.InvalidRefreshTokenException;
@@ -80,9 +81,11 @@ public class AuthService {
 
         Person person = personOpt.get();
 
-        // Cuenta bloqueada, sin password (sin grant_system_access) o de otro auth
-        // provider (Google): se rechaza sin intentar el match, mismo error genérico.
-        if (isLocked(person) || person.getPassword() == null || person.getAuthProvider() != AuthProvider.LOCAL) {
+        // Cuenta bloqueada, sin password, de otro auth provider (Google) o dada de baja
+        // (Spec Gestión de personas, RF-PR-03: status != ACTIVE tras un withdraw) se
+        // rechaza sin intentar el match, mismo error genérico en todos los casos.
+        if (isLocked(person) || person.getPassword() == null || person.getAuthProvider() != AuthProvider.LOCAL
+                || person.getStatus() != StatusType.ACTIVE) {
             recordAttempt(username, person, false, ipAddress);
             throw new InvalidCredentialsException();
         }

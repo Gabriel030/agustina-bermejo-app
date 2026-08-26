@@ -2,6 +2,8 @@ package com.red_escuela.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -10,6 +12,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -23,19 +26,18 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Todavía no hay endpoints de negocio que proteger, así que todo sigue permitAll().
-    // /auth/** queda explícito aparte porque son el punto de entrada — no pueden requerir
-    // estar ya autenticado — y así queda documentado que tienen que seguir públicos el día
-    // que el resto se restrinja con la matriz de permisos real (spec funcional, sección 3).
-    // El filtro JWT igual se registra ya: arma el Authentication cuando hay un token válido,
-    // para que alcance con @PreAuthorize en los endpoints de negocio el día que existan.
+    // Spec Gestión de personas: primer cambio de comportamiento real de la security chain
+    // desde que se armó en la spec de auth — hasta acá todo pasaba. /auth/** y el alta
+    // pública de prospectos (POST /prospects, primer paso del proceso de matriculación,
+    // sección 5 de la spec funcional) quedan permitAll(); todo lo demás exige JWT válido.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
-                .anyRequest().permitAll())
+                .requestMatchers(HttpMethod.POST, "/prospects").permitAll()
+                .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

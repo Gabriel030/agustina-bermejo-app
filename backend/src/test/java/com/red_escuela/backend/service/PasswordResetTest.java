@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.PasswordResetToken;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.InvalidCredentialsException;
 import com.red_escuela.backend.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.repository.PasswordResetTokenRepository;
@@ -56,6 +57,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
         person.setPassword(passwordEncoder.encode(rawPassword));
         person.setAuthProvider(AuthProvider.LOCAL);
         person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
         entityManager.persist(person);
         entityManager.flush();
         return person;
