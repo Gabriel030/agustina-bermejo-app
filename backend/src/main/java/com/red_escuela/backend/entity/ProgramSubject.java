@@ -21,8 +21,19 @@ public class ProgramSubject {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Program program;
 
-    @Column(name = "name")
-    private String name;
+    // El Subject se comparte entre carreras (Spec Estructura académica, decisión 3):
+    // esta fila es "cómo ESTA carrera incluye ese Subject en su plan", no la materia en sí.
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "subject_id", nullable = false)
+    private Subject subject;
+
+    @Column(name = "credits", nullable = false)
+    private Integer credits = 0;
+
+    // Null = obligatoria (tiene que estar APPROVED sí o sí para egresar, ver decisión 4).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "elective_group_id")
+    private ElectiveGroup electiveGroup;
 
     @Column(name = "curricular_year")
     private Integer curricularYear;

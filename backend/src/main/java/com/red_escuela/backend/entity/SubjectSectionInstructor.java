@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "program_section_instructor")
-public class ProgramSubjectSectionInstructor {
+public class SubjectSectionInstructor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,7 +20,7 @@ public class ProgramSubjectSectionInstructor {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_section_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private ProgramSubjectSection section;
+    private SubjectSection section;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instructor_id", nullable = false)

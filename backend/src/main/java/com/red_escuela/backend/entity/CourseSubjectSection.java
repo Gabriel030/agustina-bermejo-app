@@ -26,6 +26,9 @@ public class CourseSubjectSection {
     @Column(name = "version")
     private Long version;
 
+    @Column(name = "name", nullable = false)
+    private String name;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_subject_id", nullable = false)
     private CourseSubject courseSubject;
@@ -33,10 +36,6 @@ public class CourseSubjectSection {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instructor_id")
-    private Instructor instructor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evaluation_scheme_id")
