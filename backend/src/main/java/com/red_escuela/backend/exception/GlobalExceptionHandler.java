@@ -48,7 +48,12 @@ public class GlobalExceptionHandler {
             AmbiguousSectionException.class,
             InvalidSectionChangeException.class,
             SubjectNotInProgramPlanException.class,
-            InvalidWindowConfigurationException.class
+            InvalidWindowConfigurationException.class,
+            StudentNotRegularException.class,
+            ExamBoardRegistrationWindowClosedException.class,
+            NoEvaluationSchemeException.class,
+            MaxExamAttemptsExceededException.class,
+            ExamBoardSubjectMismatchException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -73,7 +78,11 @@ public class GlobalExceptionHandler {
             SectionInstructorNotFoundException.class,
             ProgramEnrollmentNotFoundException.class,
             CourseEnrollmentNotFoundException.class,
-            SectionEnrollmentNotFoundException.class
+            SectionEnrollmentNotFoundException.class,
+            AttendanceNotFoundException.class,
+            ExamBoardNotFoundException.class,
+            ExamBoardRegistrationNotFoundException.class,
+            GradeItemNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -91,9 +100,18 @@ public class GlobalExceptionHandler {
             AlreadyEnrolledInCourseException.class,
             AlreadyEnrolledInSubjectException.class,
             CannotWithdrawException.class,
-            IncompleteSectionSetupException.class
+            IncompleteSectionSetupException.class,
+            AttendanceAlreadyRecordedException.class,
+            CannotJustifyException.class,
+            ExamBoardClosedException.class,
+            AlreadyRegisteredInExamBoardException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
+    }
+
+    @ExceptionHandler(NotOwnSectionException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public void handleForbidden() {
     }
 }

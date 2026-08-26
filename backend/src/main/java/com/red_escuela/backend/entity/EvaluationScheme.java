@@ -37,38 +37,17 @@ public class EvaluationScheme {
     @Column(name = "aggregation_method")
     private GradeAggregationMethod aggregationMethod;
 
-    @Column(name = "first_exam")
-    private Double firstExam;
+    // Umbral mínimo para quedar REGULAR tras la cursada. Piso institucional (4.0) seteado por
+    // default en V19; queda nullable en Java por si a futuro se permite un override explícito
+    // a "sin umbral" (el algoritmo de recálculo lo trata como guarda defensiva, no como el
+    // caso esperado en producción).
+    @Column(name = "min_regular_grade")
+    private Double minRegularGrade;
 
-    @Column(name = "first_exam_recovery")
-    private Double firstExamRecovery;
-
-    @Column(name = "second_exam")
-    private Double secondExam;
-
-    @Column(name = "second_exam_recovery")
-    private Double secondExamRecovery;
-
-    @Column(name = "third_exam")
-    private Double thirdExam;
-
-    @Column(name = "third_exam_recovery")
-    private Double thirdExamRecovery;
-
-    @Column(name = "final_exam")
-    private Double finalExam;
-
-    @Column(name = "final_exam_recovery_first_attempt")
-    private Double finalExamRecoveryFirstAttempt;
-
-    @Column(name = "final_exam_recovery_second_attempt")
-    private Double finalExamRecoverySecondAttempt;
-
-    @Column(name = "final_exam_recovery_third_attempt")
-    private Double finalExamRecoveryThirdAttempt;
-
-    @Column(name = "general_average")
-    private Double generalAverage;
+    // Umbral mínimo para quedar APPROVED (en el final, o en el promedio si hasFinal=false).
+    // Piso institucional (6.0) seteado por default en V19, mismo criterio que arriba.
+    @Column(name = "min_approval_grade")
+    private Double minApprovalGrade;
 
     @Column(name = "notes", length = 1000)
     private String notes;

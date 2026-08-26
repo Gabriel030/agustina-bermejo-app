@@ -56,6 +56,12 @@ public class GradeItem {
     @Column(name = "comments")
     private String comments;
 
+    // Solo se completa cuando el GradeItem (tipo FINAL) viene de una mesa de examen; cerrar
+    // el acta de la mesa (ExamBoard.status = CLOSED) bloquea altas/ediciones asociadas.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exam_board_id")
+    private ExamBoard examBoard;
+
     @PrePersist
     @PreUpdate
     private void validateSingleEnrollmentTarget() {
