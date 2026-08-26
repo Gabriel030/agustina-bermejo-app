@@ -8,10 +8,12 @@ import com.red_escuela.backend.entity.ElectiveGroup;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramSubject;
 import com.red_escuela.backend.entity.RequirementType;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.exception.ElectiveGroupNotAssignedException;
 import com.red_escuela.backend.exception.InvalidPrerequisiteException;
+import com.red_escuela.backend.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.exception.ProgramSubjectAlreadyExistsException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -167,5 +169,22 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaC.getId(),
                 new AddPrerequisiteRequest(entradaA.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(CircularPrerequisiteException.class);
+    }
+
+    @Test
+    void agregarMateriaDejaElStatusEnActive() {
+        Subject subject = persistSubject("Materia con status");
+        Program program = persistProgram("Tecnicatura I");
+        entityManager.flush();
+
+        ProgramSubject created = agregarMateria(program, subject, 1);
+
+        assertThat(created.getStatus()).isEqualTo(StatusType.ACTIVE);
+    }
+
+    @Test
+    void quitarCorrelatividadInexistenteFalla() {
+        assertThatThrownBy(() -> programSubjectService.quitarCorrelatividad(999999L))
+                .isInstanceOf(PrerequisiteNotFoundException.class);
     }
 }

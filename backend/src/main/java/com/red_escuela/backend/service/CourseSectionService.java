@@ -11,8 +11,10 @@ import com.red_escuela.backend.entity.Instructor;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.exception.CourseSubjectNotFoundException;
+import com.red_escuela.backend.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.exception.InstructorNotFoundException;
+import com.red_escuela.backend.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.exception.TermNotFoundException;
 import com.red_escuela.backend.repository.CourseSubjectRepository;
@@ -69,7 +71,7 @@ public class CourseSectionService {
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, request.evaluationSchemeId()));
+            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         return sectionRepository.save(section);
     }
@@ -87,7 +89,7 @@ public class CourseSectionService {
             section.setCapacity(request.capacity());
         }
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, request.evaluationSchemeId()));
+            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         return sectionRepository.save(section);
     }
@@ -135,10 +137,24 @@ public class CourseSectionService {
 
     @Transactional
     public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
-        sectionInstructorRepository.deleteById(instructorAssignmentId);
+        CourseSubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
+                .filter(a -> a.getSection().getId().equals(sectionId))
+                .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
+        sectionInstructorRepository.delete(assignment);
     }
 
     private CourseSubjectSection findOrThrow(Long id) {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    // Ver comentario equivalente en SubjectSectionService: getReference() no valida hasta
+    // el flush, dejando pasar un id inexistente como una DataIntegrityViolationException
+    // sin capturar (500) en vez de un 404 claro.
+    private EvaluationScheme resolveEvaluationScheme(Long id) {
+        EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
+        if (scheme == null) {
+            throw new EvaluationSchemeNotFoundException(id);
+        }
+        return scheme;
     }
 }

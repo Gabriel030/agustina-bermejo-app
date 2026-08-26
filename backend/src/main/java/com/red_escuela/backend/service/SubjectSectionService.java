@@ -10,8 +10,10 @@ import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.exception.InstructorNotFoundException;
+import com.red_escuela.backend.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.exception.SubjectNotFoundException;
 import com.red_escuela.backend.exception.TermNotFoundException;
@@ -69,7 +71,7 @@ public class SubjectSectionService {
         section.setStatus(StatusType.ACTIVE);
         section.setCreatedAt(LocalDateTime.now());
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, request.evaluationSchemeId()));
+            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         return sectionRepository.save(section);
     }
@@ -87,7 +89,7 @@ public class SubjectSectionService {
             section.setCapacity(request.capacity());
         }
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, request.evaluationSchemeId()));
+            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         return sectionRepository.save(section);
     }
@@ -135,10 +137,27 @@ public class SubjectSectionService {
 
     @Transactional
     public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
-        sectionInstructorRepository.deleteById(instructorAssignmentId);
+        // Antes no validaba nada: ni que la asignación existiera (deleteById no tira
+        // excepción si falta), ni que perteneciera a ESTA comisión — se podía borrar la
+        // asignación de otra sección con solo conocer su id, ignorando el sectionId de la URL.
+        SubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
+                .filter(a -> a.getSection().getId().equals(sectionId))
+                .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
+        sectionInstructorRepository.delete(assignment);
     }
 
     private SubjectSection findOrThrow(Long id) {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
+    }
+
+    // entityManager.getReference() no dispara la consulta hasta el flush, así que un id
+    // inexistente terminaba en una DataIntegrityViolationException sin capturar (500) en
+    // vez de un 404 claro. find() sí resuelve la fila ahora, permitiendo validar antes.
+    private EvaluationScheme resolveEvaluationScheme(Long id) {
+        EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
+        if (scheme == null) {
+            throw new EvaluationSchemeNotFoundException(id);
+        }
+        return scheme;
     }
 }

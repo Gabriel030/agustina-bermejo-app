@@ -69,6 +69,15 @@ public class ElectiveGroupService {
         return electiveGroupRepository.findAll();
     }
 
+    public ElectiveGroup verDetalle(Long id) {
+        return electiveGroupRepository.findById(id)
+                .orElseThrow(() -> new ElectiveGroupNotFoundException(id));
+    }
+
+    public List<ProgramElectiveGroup> listarPorCarrera(Long programId) {
+        return programElectiveGroupRepository.findByProgramId(programId);
+    }
+
     @Transactional
     public ProgramElectiveGroup asignarACarrera(Long programId, AssignElectiveGroupRequest request) {
         if (request.minRequired() > request.maxAllowed()) {

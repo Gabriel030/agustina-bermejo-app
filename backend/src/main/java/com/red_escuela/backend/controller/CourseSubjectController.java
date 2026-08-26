@@ -43,4 +43,9 @@ public class CourseSubjectController {
     public List<CourseSubjectResponse> listarPorCurso(@PathVariable Long id) {
         return courseSubjectService.listarPorCurso(id).stream().map(CourseSubjectResponse::from).toList();
     }
+
+    @GetMapping("/course-subjects/{id}")
+    public CourseSubjectResponse verDetalle(@PathVariable Long id) {
+        return CourseSubjectResponse.from(courseSubjectService.verDetalle(id));
+    }
 }

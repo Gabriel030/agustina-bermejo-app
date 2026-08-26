@@ -217,6 +217,85 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void crearComisionConEvaluationSchemeInexistenteDevuelve404() throws Exception {
+        Subject subject = new Subject();
+        subject.setName("Subject con esquema inválido");
+        entityManager.persist(subject);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026 term eval");
+        term.setType("1C");
+        term.setStartDate(LocalDateTime.now());
+        term.setEndDate(LocalDateTime.now().plusMonths(4));
+        entityManager.persist(term);
+        entityManager.flush();
+
+        String token = tokenWithRole("preceptor-eval-invalido", "PRECEPTOR");
+        CreateSectionRequest request = new CreateSectionRequest("Comisión A", term.getId(), null, 10, 999999L);
+
+        mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void quitarDocenteDeUnaComisionQueNoLeCorrespondeDevuelve404() throws Exception {
+        Subject subject = new Subject();
+        subject.setName("Subject para cruce de comisiones");
+        entityManager.persist(subject);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026 term cruce");
+        term.setType("1C");
+        term.setStartDate(LocalDateTime.now());
+        term.setEndDate(LocalDateTime.now().plusMonths(4));
+        entityManager.persist(term);
+
+        SubjectSection sectionReal = new SubjectSection();
+        sectionReal.setSubject(subject);
+        sectionReal.setTerm(term);
+        sectionReal.setName("Comisión Real");
+        sectionReal.setCapacity(20);
+        sectionReal.setStatus(StatusType.ACTIVE);
+        sectionReal.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(sectionReal);
+
+        SubjectSection otraSeccion = new SubjectSection();
+        otraSeccion.setSubject(subject);
+        otraSeccion.setTerm(term);
+        otraSeccion.setName("Otra Comisión");
+        otraSeccion.setCapacity(20);
+        otraSeccion.setStatus(StatusType.ACTIVE);
+        otraSeccion.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(otraSeccion);
+
+        Instructor instructor = persistInstructor("docente-cruce");
+        entityManager.flush();
+
+        String token = tokenWithRole("preceptor-cruce", "PRECEPTOR");
+        AssignInstructorRequest request = new AssignInstructorRequest(
+                instructor.getId(), InstructorRole.LEAD, null, null, null, null);
+
+        String body = mockMvc.perform(post("/program-sections/{id}/instructors", otraSeccion.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long assignmentId = objectMapper.readTree(body).get("id").asLong();
+
+        // La asignación pertenece a "otraSeccion", no a "sectionReal" -> tiene que fallar.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/program-sections/{id}/instructors/{aid}", sectionReal.getId(), assignmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void listarSeccionesConCualquierRolAutenticadoDevuelve200() throws Exception {
         Subject subject = new Subject();
         subject.setName("Subject para listar");

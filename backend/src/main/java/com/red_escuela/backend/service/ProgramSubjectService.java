@@ -7,6 +7,7 @@ import com.red_escuela.backend.entity.ElectiveGroup;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramSubject;
 import com.red_escuela.backend.entity.ProgramSubjectPrerequisite;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.exception.ElectiveGroupNotAssignedException;
@@ -15,6 +16,7 @@ import com.red_escuela.backend.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.exception.PrerequisiteAlreadyExistsException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.exception.ProgramSubjectAlreadyExistsException;
+import com.red_escuela.backend.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.exception.ProgramSubjectNotFoundException;
 import com.red_escuela.backend.exception.SubjectNotFoundException;
 import com.red_escuela.backend.repository.ElectiveGroupRepository;
@@ -88,6 +90,7 @@ public class ProgramSubjectService {
         programSubject.setSubjectRecurrence(request.subjectRecurrence());
         programSubject.setSortOrder(request.sortOrder());
         programSubject.setElectiveGroup(electiveGroup);
+        programSubject.setStatus(StatusType.ACTIVE);
 
         try {
             return programSubjectRepository.saveAndFlush(programSubject);
@@ -129,6 +132,10 @@ public class ProgramSubjectService {
 
     public List<ProgramSubject> listarPorCarrera(Long programId) {
         return programSubjectRepository.findByProgramId(programId);
+    }
+
+    public ProgramSubject verDetalle(Long id) {
+        return findOrThrow(id);
     }
 
     @Transactional
@@ -198,7 +205,11 @@ public class ProgramSubjectService {
 
     @Transactional
     public void quitarCorrelatividad(Long prerequisiteId) {
-        prerequisiteRepository.deleteById(prerequisiteId);
+        // deleteById no tira excepción si el id no existe (findById().ifPresent(...) por
+        // dentro) — sin este chequeo, borrar un id inexistente devolvería 204 igual.
+        ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)
+                .orElseThrow(() -> new PrerequisiteNotFoundException(prerequisiteId));
+        prerequisiteRepository.delete(prerequisite);
     }
 
     private ProgramSubject findOrThrow(Long id) {

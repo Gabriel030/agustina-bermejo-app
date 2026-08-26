@@ -66,6 +66,10 @@ public class CourseSubjectService {
         return courseSubjectRepository.findByCourseIdOrderBySortOrder(courseId);
     }
 
+    public CourseSubject verDetalle(Long id) {
+        return findOrThrow(id);
+    }
+
     private CourseSubject findOrThrow(Long id) {
         return courseSubjectRepository.findById(id)
                 .orElseThrow(() -> new CourseSubjectNotFoundException(id));

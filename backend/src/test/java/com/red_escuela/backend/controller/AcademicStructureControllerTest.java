@@ -2,13 +2,19 @@ package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.dto.CreateElectiveGroupRequest;
 import com.red_escuela.backend.dto.CreateProgramRequest;
 import com.red_escuela.backend.dto.CreateSubjectRequest;
 import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramSubject;
+import com.red_escuela.backend.entity.RequirementType;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.repository.RoleRepository;
 import com.red_escuela.backend.service.JwtService;
 import jakarta.persistence.EntityManager;
@@ -162,5 +168,88 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.minRequired").value(1))
                 .andExpect(jsonPath("$.maxAllowed").value(2));
+    }
+
+    @Test
+    void verDetalleDeGrupoElectivoYListarPorCarreraDevuelven200() throws Exception {
+        String token = tokenWithRole("admin-academico6", "ADMINISTRATIVO");
+
+        CreateElectiveGroupRequest groupRequest = new CreateElectiveGroupRequest("Optativas", null);
+        String groupBody = mockMvc.perform(post("/elective-groups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(groupRequest)))
+                .andReturn().getResponse().getContentAsString();
+        Long groupId = objectMapper.readTree(groupBody).get("id").asLong();
+
+        mockMvc.perform(get("/elective-groups/{id}", groupId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Optativas"));
+
+        CreateProgramRequest programRequest = new CreateProgramRequest(
+                "Tecnicatura Optativas", 4, null, 100, null, null);
+        String programBody = mockMvc.perform(post("/programs")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(programRequest)))
+                .andReturn().getResponse().getContentAsString();
+        Long programId = objectMapper.readTree(programBody).get("id").asLong();
+
+        String assignBody = "{\"electiveGroupId\":" + groupId + ",\"minRequired\":1,\"maxAllowed\":3}";
+        mockMvc.perform(post("/programs/{id}/elective-groups", programId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(assignBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/programs/{id}/elective-groups", programId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].maxAllowed").value(3));
+    }
+
+    @Test
+    void agregarCorrelatividadConMinGradeFueraDeRangoDevuelve400() throws Exception {
+        String token = tokenWithRole("admin-academico5", "ADMINISTRATIVO");
+
+        Program program = new Program();
+        program.setName("Tecnicatura para min grade");
+        program.setTotalYears(3);
+        entityManager.persist(program);
+
+        Subject subjectA = new Subject();
+        subjectA.setName("Materia MinGrade A");
+        entityManager.persist(subjectA);
+        Subject subjectB = new Subject();
+        subjectB.setName("Materia MinGrade B");
+        entityManager.persist(subjectB);
+
+        ProgramSubject entradaA = new ProgramSubject();
+        entradaA.setProgram(program);
+        entradaA.setSubject(subjectA);
+        entradaA.setCurricularYear(1);
+        entradaA.setCurricularTerm(CurricularTerm.FIRST);
+        entradaA.setCredits(5);
+        entradaA.setStatus(StatusType.ACTIVE);
+        entityManager.persist(entradaA);
+
+        ProgramSubject entradaB = new ProgramSubject();
+        entradaB.setProgram(program);
+        entradaB.setSubject(subjectB);
+        entradaB.setCurricularYear(1);
+        entradaB.setCurricularTerm(CurricularTerm.FIRST);
+        entradaB.setCredits(5);
+        entradaB.setStatus(StatusType.ACTIVE);
+        entityManager.persist(entradaB);
+        entityManager.flush();
+
+        AddPrerequisiteRequest request = new AddPrerequisiteRequest(
+                entradaB.getId(), RequirementType.APPROVED, 99.0, null);
+
+        mockMvc.perform(post("/program-subjects/{id}/prerequisites", entradaA.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }

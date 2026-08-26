@@ -47,6 +47,11 @@ public class ProgramSubjectController {
         return programSubjectService.listarPorCarrera(id).stream().map(ProgramSubjectResponse::from).toList();
     }
 
+    @GetMapping("/program-subjects/{id}")
+    public ProgramSubjectResponse verDetalle(@PathVariable Long id) {
+        return ProgramSubjectResponse.from(programSubjectService.verDetalle(id));
+    }
+
     @PostMapping("/program-subjects/{id}/prerequisites")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")

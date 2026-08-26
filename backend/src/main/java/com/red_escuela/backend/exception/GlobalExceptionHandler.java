@@ -57,7 +57,10 @@ public class GlobalExceptionHandler {
             ProgramSubjectNotFoundException.class,
             CourseSubjectNotFoundException.class,
             SectionNotFoundException.class,
-            InstructorNotFoundException.class
+            InstructorNotFoundException.class,
+            EvaluationSchemeNotFoundException.class,
+            PrerequisiteNotFoundException.class,
+            SectionInstructorNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {

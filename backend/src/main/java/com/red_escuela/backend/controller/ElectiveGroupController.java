@@ -47,6 +47,16 @@ public class ElectiveGroupController {
         return electiveGroupService.listar().stream().map(ElectiveGroupResponse::from).toList();
     }
 
+    @GetMapping("/elective-groups/{id}")
+    public ElectiveGroupResponse verDetalle(@PathVariable Long id) {
+        return ElectiveGroupResponse.from(electiveGroupService.verDetalle(id));
+    }
+
+    @GetMapping("/programs/{id}/elective-groups")
+    public List<ProgramElectiveGroupResponse> listarPorCarrera(@PathVariable Long id) {
+        return electiveGroupService.listarPorCarrera(id).stream().map(ProgramElectiveGroupResponse::from).toList();
+    }
+
     @PostMapping("/programs/{id}/elective-groups")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public ProgramElectiveGroupResponse asignarACarrera(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
