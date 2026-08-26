@@ -57,8 +57,8 @@ public class ProgramService {
         return programRepository.save(program);
     }
 
-    public List<Program> listar() {
-        return programRepository.findAll();
+    public List<Program> listar(StatusType status) {
+        return status == null ? programRepository.findAll() : programRepository.findByStatus(status);
     }
 
     public Program verDetalle(Long id) {
@@ -69,6 +69,13 @@ public class ProgramService {
     public void desactivar(Long id) {
         Program program = findOrThrow(id);
         program.setStatus(StatusType.INACTIVE);
+        programRepository.save(program);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        Program program = findOrThrow(id);
+        program.setStatus(StatusType.ACTIVE);
         programRepository.save(program);
     }
 

@@ -94,8 +94,10 @@ public class CourseSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<CourseSubjectSection> listarPorModulo(Long courseSubjectId) {
-        return sectionRepository.findByCourseSubjectId(courseSubjectId);
+    public List<CourseSubjectSection> listarPorModulo(Long courseSubjectId, StatusType status) {
+        return status == null
+                ? sectionRepository.findByCourseSubjectId(courseSubjectId)
+                : sectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, status);
     }
 
     public CourseSubjectSection verDetalle(Long id) {
@@ -106,6 +108,13 @@ public class CourseSectionService {
     public void desactivar(Long id) {
         CourseSubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
+        sectionRepository.save(section);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        CourseSubjectSection section = findOrThrow(id);
+        section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
     }
 

@@ -13,8 +13,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.red_escuela.backend.entity.StatusType;
 
 import java.util.List;
 
@@ -48,9 +51,16 @@ public class ProgramController {
         programService.desactivar(id);
     }
 
+    @PostMapping("/{id}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public void reactivar(@PathVariable Long id) {
+        programService.reactivar(id);
+    }
+
     @GetMapping
-    public List<ProgramResponse> listar() {
-        return programService.listar().stream().map(ProgramResponse::from).toList();
+    public List<ProgramResponse> listar(@RequestParam(required = false) StatusType status) {
+        return programService.listar(status).stream().map(ProgramResponse::from).toList();
     }
 
     @GetMapping("/{id}")

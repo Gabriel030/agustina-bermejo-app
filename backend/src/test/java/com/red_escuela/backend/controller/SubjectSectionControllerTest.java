@@ -308,4 +308,121 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void desactivarYReactivarComisionFuncionaYElListadoFiltraPorStatus() throws Exception {
+        Subject subject = new Subject();
+        subject.setName("Subject para baja de comisión");
+        entityManager.persist(subject);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026 term baja comisión");
+        term.setType("1C");
+        term.setStartDate(LocalDateTime.now());
+        term.setEndDate(LocalDateTime.now().plusMonths(4));
+        entityManager.persist(term);
+        entityManager.flush();
+
+        String token = tokenWithRole("preceptor-baja-comision", "PRECEPTOR");
+        CreateSectionRequest request = new CreateSectionRequest("Comisión Baja", term.getId(), null, 10, null);
+        String body = mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn().getResponse().getContentAsString();
+        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+
+        mockMvc.perform(post("/program-sections/{id}/deactivate", sectionId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/subjects/{id}/sections", subject.getId())
+                        .param("status", "ACTIVE")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.id == " + sectionId + ")]").isEmpty());
+        mockMvc.perform(get("/subjects/{id}/sections", subject.getId())
+                        .param("status", "INACTIVE")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[?(@.id == " + sectionId + ")]").isNotEmpty());
+
+        mockMvc.perform(post("/program-sections/{id}/activate", sectionId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/program-sections/{id}", sectionId).header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void listarDocentesDeUnaComisionDevuelve200() throws Exception {
+        Subject subject = new Subject();
+        subject.setName("Subject para listar docentes");
+        entityManager.persist(subject);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026 term listar docentes");
+        term.setType("1C");
+        term.setStartDate(LocalDateTime.now());
+        term.setEndDate(LocalDateTime.now().plusMonths(4));
+        entityManager.persist(term);
+
+        SubjectSection section = new SubjectSection();
+        section.setSubject(subject);
+        section.setTerm(term);
+        section.setName("Comisión con docentes");
+        section.setCapacity(20);
+        section.setStatus(StatusType.ACTIVE);
+        section.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(section);
+
+        Instructor instructor = persistInstructor("docente-listado");
+        entityManager.flush();
+
+        String token = tokenWithRole("preceptor-listar-docentes", "PRECEPTOR");
+        mockMvc.perform(post("/program-sections/{id}/instructors", section.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(new AssignInstructorRequest(
+                                instructor.getId(), InstructorRole.LEAD, null, null, null, null))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/program-sections/{id}/instructors", section.getId())
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].instructorId").value(instructor.getId()));
+    }
+
+    @Test
+    void editarComisionActualizaCampos() throws Exception {
+        Subject subject = new Subject();
+        subject.setName("Subject para editar comisión");
+        entityManager.persist(subject);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026 term editar comisión");
+        term.setType("1C");
+        term.setStartDate(LocalDateTime.now());
+        term.setEndDate(LocalDateTime.now().plusMonths(4));
+        entityManager.persist(term);
+        entityManager.flush();
+
+        String token = tokenWithRole("preceptor-editar-comision", "PRECEPTOR");
+        String body = mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(
+                                new CreateSectionRequest("Comisión Original", term.getId(), null, 10, null))))
+                .andReturn().getResponse().getContentAsString();
+        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/program-sections/{id}", sectionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"name\":\"Comisión Renombrada\",\"capacity\":40}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Comisión Renombrada"))
+                .andExpect(jsonPath("$.capacity").value(40));
+    }
 }

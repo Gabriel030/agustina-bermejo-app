@@ -3,6 +3,7 @@ package com.red_escuela.backend.controller;
 import com.red_escuela.backend.dto.CreateTermRequest;
 import com.red_escuela.backend.dto.TermResponse;
 import com.red_escuela.backend.dto.UpdateTermRequest;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.service.TermService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -48,9 +50,16 @@ public class TermController {
         termService.desactivar(id);
     }
 
+    @PostMapping("/{id}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void reactivar(@PathVariable Long id) {
+        termService.reactivar(id);
+    }
+
     @GetMapping
-    public List<TermResponse> listar() {
-        return termService.listar().stream().map(TermResponse::from).toList();
+    public List<TermResponse> listar(@RequestParam(required = false) StatusType status) {
+        return termService.listar(status).stream().map(TermResponse::from).toList();
     }
 
     @GetMapping("/{id}")

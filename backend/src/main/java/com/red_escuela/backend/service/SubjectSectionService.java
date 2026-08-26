@@ -94,8 +94,10 @@ public class SubjectSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<SubjectSection> listarPorMateria(Long subjectId) {
-        return sectionRepository.findBySubjectId(subjectId);
+    public List<SubjectSection> listarPorMateria(Long subjectId, StatusType status) {
+        return status == null
+                ? sectionRepository.findBySubjectId(subjectId)
+                : sectionRepository.findBySubjectIdAndStatus(subjectId, status);
     }
 
     public SubjectSection verDetalle(Long id) {
@@ -106,6 +108,13 @@ public class SubjectSectionService {
     public void desactivar(Long id) {
         SubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
+        sectionRepository.save(section);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        SubjectSection section = findOrThrow(id);
+        section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
     }
 

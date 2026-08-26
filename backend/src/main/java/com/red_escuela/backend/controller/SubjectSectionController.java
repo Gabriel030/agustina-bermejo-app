@@ -5,6 +5,7 @@ import com.red_escuela.backend.dto.CreateSectionRequest;
 import com.red_escuela.backend.dto.SectionInstructorResponse;
 import com.red_escuela.backend.dto.SubjectSectionResponse;
 import com.red_escuela.backend.dto.UpdateSectionRequest;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.service.SubjectSectionService;
 import jakarta.validation.Valid;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,9 +52,16 @@ public class SubjectSectionController {
         sectionService.desactivar(id);
     }
 
+    @PostMapping("/program-sections/{id}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void reactivar(@PathVariable Long id) {
+        sectionService.reactivar(id);
+    }
+
     @GetMapping("/subjects/{id}/sections")
-    public List<SubjectSectionResponse> listarPorMateria(@PathVariable Long id) {
-        return sectionService.listarPorMateria(id).stream().map(SubjectSectionResponse::from).toList();
+    public List<SubjectSectionResponse> listarPorMateria(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return sectionService.listarPorMateria(id, status).stream().map(SubjectSectionResponse::from).toList();
     }
 
     @GetMapping("/program-sections/{id}")

@@ -62,12 +62,28 @@ public class CourseSubjectService {
         return courseSubjectRepository.save(courseSubject);
     }
 
-    public List<CourseSubject> listarPorCurso(Long courseId) {
-        return courseSubjectRepository.findByCourseIdOrderBySortOrder(courseId);
+    public List<CourseSubject> listarPorCurso(Long courseId, StatusType status) {
+        return status == null
+                ? courseSubjectRepository.findByCourseIdOrderBySortOrder(courseId)
+                : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(courseId, status);
     }
 
     public CourseSubject verDetalle(Long id) {
         return findOrThrow(id);
+    }
+
+    @Transactional
+    public void desactivar(Long id) {
+        CourseSubject courseSubject = findOrThrow(id);
+        courseSubject.setStatus(StatusType.INACTIVE);
+        courseSubjectRepository.save(courseSubject);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        CourseSubject courseSubject = findOrThrow(id);
+        courseSubject.setStatus(StatusType.ACTIVE);
+        courseSubjectRepository.save(courseSubject);
     }
 
     private CourseSubject findOrThrow(Long id) {

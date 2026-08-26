@@ -55,8 +55,8 @@ public class TermService {
         return termRepository.save(term);
     }
 
-    public List<Term> listar() {
-        return termRepository.findAll();
+    public List<Term> listar(StatusType status) {
+        return status == null ? termRepository.findAll() : termRepository.findByStatus(status);
     }
 
     public Term verDetalle(Long id) {
@@ -67,6 +67,13 @@ public class TermService {
     public void desactivar(Long id) {
         Term term = findOrThrow(id);
         term.setStatus(StatusType.INACTIVE);
+        termRepository.save(term);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        Term term = findOrThrow(id);
+        term.setStatus(StatusType.ACTIVE);
         termRepository.save(term);
     }
 

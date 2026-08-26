@@ -70,8 +70,8 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public List<Course> listar() {
-        return courseRepository.findAll();
+    public List<Course> listar(StatusType status) {
+        return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
     }
 
     public Course verDetalle(Long id) {
@@ -82,6 +82,13 @@ public class CourseService {
     public void desactivar(Long id) {
         Course course = findOrThrow(id);
         course.setIsActive(StatusType.INACTIVE);
+        courseRepository.save(course);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        Course course = findOrThrow(id);
+        course.setIsActive(StatusType.ACTIVE);
         courseRepository.save(course);
     }
 

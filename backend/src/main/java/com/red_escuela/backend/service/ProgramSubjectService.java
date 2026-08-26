@@ -130,12 +130,28 @@ public class ProgramSubjectService {
         return programSubjectRepository.save(programSubject);
     }
 
-    public List<ProgramSubject> listarPorCarrera(Long programId) {
-        return programSubjectRepository.findByProgramId(programId);
+    public List<ProgramSubject> listarPorCarrera(Long programId, StatusType status) {
+        return status == null
+                ? programSubjectRepository.findByProgramId(programId)
+                : programSubjectRepository.findByProgramIdAndStatus(programId, status);
     }
 
     public ProgramSubject verDetalle(Long id) {
         return findOrThrow(id);
+    }
+
+    @Transactional
+    public void desactivar(Long id) {
+        ProgramSubject programSubject = findOrThrow(id);
+        programSubject.setStatus(StatusType.INACTIVE);
+        programSubjectRepository.save(programSubject);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        ProgramSubject programSubject = findOrThrow(id);
+        programSubject.setStatus(StatusType.ACTIVE);
+        programSubjectRepository.save(programSubject);
     }
 
     @Transactional

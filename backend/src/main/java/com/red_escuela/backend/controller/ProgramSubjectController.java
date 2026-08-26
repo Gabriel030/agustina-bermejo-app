@@ -5,6 +5,7 @@ import com.red_escuela.backend.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.dto.PrerequisiteResponse;
 import com.red_escuela.backend.dto.ProgramSubjectResponse;
 import com.red_escuela.backend.dto.UpdateProgramSubjectRequest;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.service.ProgramSubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,13 +45,27 @@ public class ProgramSubjectController {
     }
 
     @GetMapping("/programs/{id}/subjects")
-    public List<ProgramSubjectResponse> listarPorCarrera(@PathVariable Long id) {
-        return programSubjectService.listarPorCarrera(id).stream().map(ProgramSubjectResponse::from).toList();
+    public List<ProgramSubjectResponse> listarPorCarrera(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return programSubjectService.listarPorCarrera(id, status).stream().map(ProgramSubjectResponse::from).toList();
     }
 
     @GetMapping("/program-subjects/{id}")
     public ProgramSubjectResponse verDetalle(@PathVariable Long id) {
         return ProgramSubjectResponse.from(programSubjectService.verDetalle(id));
+    }
+
+    @PostMapping("/program-subjects/{id}/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public void desactivar(@PathVariable Long id) {
+        programSubjectService.desactivar(id);
+    }
+
+    @PostMapping("/program-subjects/{id}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public void reactivar(@PathVariable Long id) {
+        programSubjectService.reactivar(id);
     }
 
     @PostMapping("/program-subjects/{id}/prerequisites")

@@ -46,8 +46,8 @@ public class SubjectService {
         return subjectRepository.save(subject);
     }
 
-    public List<Subject> listar() {
-        return subjectRepository.findAll();
+    public List<Subject> listar(StatusType status) {
+        return status == null ? subjectRepository.findAll() : subjectRepository.findByStatus(status);
     }
 
     public Subject verDetalle(Long id) {
@@ -58,6 +58,13 @@ public class SubjectService {
     public void desactivar(Long id) {
         Subject subject = findOrThrow(id);
         subject.setStatus(StatusType.INACTIVE);
+        subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public void reactivar(Long id) {
+        Subject subject = findOrThrow(id);
+        subject.setStatus(StatusType.ACTIVE);
         subjectRepository.save(subject);
     }
 
