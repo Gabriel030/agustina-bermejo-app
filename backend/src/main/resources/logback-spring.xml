@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Logging centralizado: un único appender de consola con patrón estructurado, aplicado a
+    toda la app (antes corría con el pattern default de Spring Boot, sin ningún control
+    explícito). Solo consola (12-factor: los logs van a stdout, no a un archivo del
+    filesystem del contenedor) — coherente con que todavía no se definió el despliegue en
+    Docker (Fase 5, pendiente).
+-->
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Perfil "test": baja el ruido para no inundar la salida de mvn test, que ya es
+         verbosa por Flyway/Hibernate/Testcontainers. -->
+    <springProfile name="test">
+        <root level="WARN">
+            <appender-ref ref="CONSOLE" />
+        </root>
+        <logger name="com.red_escuela.backend" level="INFO" />
+    </springProfile>
+
+    <springProfile name="!test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+</configuration>

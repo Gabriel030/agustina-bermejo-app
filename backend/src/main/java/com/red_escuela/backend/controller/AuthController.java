@@ -6,8 +6,10 @@ import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
 import com.red_escuela.backend.dto.ResetPasswordRequest;
+import com.red_escuela.backend.exception.TooManyRequestsException;
 import com.red_escuela.backend.service.AuthService;
 import com.red_escuela.backend.service.AuthTokens;
+import com.red_escuela.backend.service.LoginRateLimiter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,14 +24,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final LoginRateLimiter rateLimiter;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, LoginRateLimiter rateLimiter) {
         this.authService = authService;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        AuthTokens tokens = authService.login(request.username(), request.password(), httpRequest.getRemoteAddr());
+        String ip = httpRequest.getRemoteAddr();
+        if (!rateLimiter.tryConsumeLogin(ip)) {
+            throw new TooManyRequestsException("Demasiados intentos de login, esperá un momento antes de reintentar");
+        }
+        AuthTokens tokens = authService.login(request.username(), request.password(), ip);
         return AuthResponse.from(tokens);
     }
 
@@ -47,7 +55,10 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiadas solicitudes de recuperación, esperá un momento antes de reintentar");
+        }
         // Siempre 202, exista o no el email: no filtrar qué emails están registrados.
         authService.requestPasswordReset(request.email());
     }
