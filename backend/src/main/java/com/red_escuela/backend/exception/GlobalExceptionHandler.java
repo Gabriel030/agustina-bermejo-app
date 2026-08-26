@@ -38,7 +38,15 @@ public class GlobalExceptionHandler {
             InvalidPrerequisiteException.class,
             CircularPrerequisiteException.class,
             ElectiveGroupNotAssignedException.class,
-            InvalidElectiveRangeException.class
+            InvalidElectiveRangeException.class,
+            StudentNotConfirmedException.class,
+            StudentNotActiveException.class,
+            AdmissionWindowClosedException.class,
+            EnrollmentWindowClosedException.class,
+            ProgramEnrollmentRequiredException.class,
+            PrerequisiteNotMetException.class,
+            AmbiguousSectionException.class,
+            InvalidSectionChangeException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -60,7 +68,10 @@ public class GlobalExceptionHandler {
             InstructorNotFoundException.class,
             EvaluationSchemeNotFoundException.class,
             PrerequisiteNotFoundException.class,
-            SectionInstructorNotFoundException.class
+            SectionInstructorNotFoundException.class,
+            ProgramEnrollmentNotFoundException.class,
+            CourseEnrollmentNotFoundException.class,
+            SectionEnrollmentNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -73,7 +84,12 @@ public class GlobalExceptionHandler {
             ElectiveGroupAlreadyExistsException.class,
             PrerequisiteAlreadyExistsException.class,
             InstructorAlreadyAssignedException.class,
-            ElectiveGroupInUseException.class
+            ElectiveGroupInUseException.class,
+            AlreadyEnrolledInProgramException.class,
+            AlreadyEnrolledInCourseException.class,
+            AlreadyEnrolledInSubjectException.class,
+            CannotWithdrawException.class,
+            IncompleteSectionSetupException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
