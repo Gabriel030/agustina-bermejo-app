@@ -24,10 +24,11 @@ public class StudyProgram {
     @JoinColumn(name = "program_id")
     private Program program;
 
-    @Column(name = "year")
+    @Column(name = "year_number")
     private Integer year;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
 }

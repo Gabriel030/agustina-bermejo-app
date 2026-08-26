@@ -3,6 +3,9 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Getter
 @Setter
@@ -16,6 +19,7 @@ import lombok.Setter;
         )
     }
 )
+@Check(constraints = "min_grade IS NULL OR (min_grade >= 0 AND min_grade <= 10)")
 public class ProgramSubjectPrerequisite {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +28,7 @@ public class ProgramSubjectPrerequisite {
     // Materia objetivo (a la que quiero inscribirme)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_subject_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ProgramSubject programSubject;
 
     // Materia requerida (prerrequisito)

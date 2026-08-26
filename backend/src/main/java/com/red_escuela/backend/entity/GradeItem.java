@@ -3,6 +3,7 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 
@@ -10,10 +11,17 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "grade_item")
+@Check(constraints = "((course_section_enrollment_id IS NOT NULL AND program_section_enrollment_id IS NULL) "
+        + "OR (course_section_enrollment_id IS NULL AND program_section_enrollment_id IS NOT NULL)) "
+        + "AND (weight IS NULL OR (weight >= 0 AND weight <= 1))")
 public class GradeItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     // Enlaza a UNA inscripción de sección de curso o programa (no a ambas)
     @ManyToOne(fetch = FetchType.LAZY)

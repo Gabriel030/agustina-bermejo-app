@@ -2,6 +2,8 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.List;
 
@@ -16,7 +18,8 @@ public class CourseSubject {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Course course;
 
     @Column(name = "name")
@@ -39,8 +42,9 @@ public class CourseSubject {
     @Column(name = "weekly_workload")
     private Integer weeklyWorkload;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
 
     @Column(name = "qualification_type")
     private String qualificationType;

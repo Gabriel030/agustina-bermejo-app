@@ -26,7 +26,7 @@ public class Course {
     private List<CourseSubject> courseSubjectList;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "term_id")
+    @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
     @Column(name = "schedule")
@@ -35,8 +35,9 @@ public class Course {
     @Column(name = "capacity")
     private Integer capacity;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean isActive;
+    private StatusType isActive;
 
     @Column(name = "registration_start")
     private LocalDateTime registrationStart;

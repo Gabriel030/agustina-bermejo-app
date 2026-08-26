@@ -3,6 +3,8 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -33,21 +35,30 @@ public class ProgramSubjectSectionEnrollment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_enrollment_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ProgramEnrollment programEnrollment;
 
+    // Spec Estructura académica: ProgramSubjectSection se renombró a SubjectSection y
+    // pasó a apuntar a Subject en vez de ProgramSubject (una comisión ahora se comparte
+    // entre carreras). Cambio mecánico para que compile — la lógica de esta entidad
+    // (inscripción de un alumno a una comisión) es de la futura spec de Inscripciones.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_section_id", nullable = false)
-    private ProgramSubjectSection programSubjectSection;
+    private SubjectSection subjectSection;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private SectionEnrollmentStatus status;
+    private EnrollmentStatus status;
 
     @Column(name = "enrolled_at")
     private LocalDateTime enrolledAt;

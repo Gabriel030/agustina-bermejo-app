@@ -1,7 +1,11 @@
 package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "term")
 public class Term {
@@ -10,7 +14,7 @@ public class Term {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "year")
+    @Column(name = "year_number")
     private Integer year;
 
     @Column(name = "description")
@@ -25,6 +29,13 @@ public class Term {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Boolean status;
+    private StatusType status;
+
+    @Column(name = "enrollment_start")
+    private LocalDateTime enrollmentStart;
+
+    @Column(name = "enrollment_end")
+    private LocalDateTime enrollmentEnd;
 }

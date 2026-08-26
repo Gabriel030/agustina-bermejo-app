@@ -3,6 +3,8 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -10,14 +12,15 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "program_section_instructor")
-public class ProgramSubjectSectionInstructor {
+public class SubjectSectionInstructor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_section_id", nullable = false)
-    private ProgramSubjectSection section;
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private SubjectSection section;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "instructor_id", nullable = false)
