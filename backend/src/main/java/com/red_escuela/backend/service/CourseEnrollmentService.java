@@ -52,6 +52,7 @@ public class CourseEnrollmentService {
     private final CourseSubjectRepository courseSubjectRepository;
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final PersonRoleGranter personRoleGranter;
 
     public CourseEnrollmentService(
             CourseEnrollmentRepository courseEnrollmentRepository,
@@ -59,13 +60,31 @@ public class CourseEnrollmentService {
             CourseRepository courseRepository,
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+            PersonRoleGranter personRoleGranter) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseSubjectRepository = courseSubjectRepository;
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.personRoleGranter = personRoleGranter;
+    }
+
+    // Épica 7: variante para MeEnrollmentController (autoservicio). No se agrega el
+    // otorgamiento de rol a matricular() en sí porque ese método también lo usa el
+    // alta directa por staff (CourseEnrollmentController), que no debe otorgar
+    // ALUMNO automáticamente — mismo criterio que ProgramEnrollmentApplicationService.aprobar
+    // vs. ProgramEnrollmentService.matricular. Una sola transacción: si el controller
+    // llamara a matricular() y al granter por separado, la mutación del rol quedaría
+    // fuera de la transacción de matricular() y nunca se flushearía (bug real, hallado
+    // en prueba manual — el commit de matricular() ya cerró la persistencia antes de
+    // que el controller intentara agregar el rol).
+    @Transactional
+    public CourseEnrollment matricularComoAutoservicio(Long studentId, CreateCourseEnrollmentRequest request) {
+        CourseEnrollment enrollment = matricular(studentId, request);
+        personRoleGranter.otorgarAlumnoSiNoLoTiene(enrollment.getStudent().getPerson());
+        return enrollment;
     }
 
     @Transactional
