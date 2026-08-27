@@ -27,4 +27,8 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     // Resolver la fila existente al reactivar tras una baja (misma comisión, WITHDRAWN -> ENROLLED).
     Optional<SubjectSectionEnrollment> findByStudentIdAndSubjectSectionId(Long studentId, Long subjectSectionId);
+
+    // Constancia REGULAR_STUDENT (CertificateService): el alumno tiene que estar cursando algo
+    // puntual ahora mismo, no solo tener la ProgramEnrollment en ENROLLED.
+    boolean existsByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<EnrollmentStatus> statuses);
 }

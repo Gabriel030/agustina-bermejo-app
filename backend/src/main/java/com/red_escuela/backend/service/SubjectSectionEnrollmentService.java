@@ -14,6 +14,7 @@ import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.EnrollmentWindowClosedException;
@@ -27,6 +28,7 @@ import com.red_escuela.backend.exception.SectionNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramSubjectPrerequisiteRepository;
 import com.red_escuela.backend.repository.ProgramSubjectRepository;
@@ -290,6 +292,14 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validarVentanaDeInscripcion(Term term) {
+        // Decisión 5 (Spec Procesos administrativos): el override manual tiene prioridad sobre
+        // la validación por fecha de acá abajo, sin tocarla ni duplicarla. null = sin cambios.
+        if (term.getEnrollmentOverride() == TermEnrollmentOverride.CLOSED) {
+            throw new TermEnrollmentOverrideClosedException(term.getId());
+        }
+        if (term.getEnrollmentOverride() == TermEnrollmentOverride.OPEN) {
+            return;
+        }
         if (term.getEnrollmentStart() != null && term.getEnrollmentEnd() != null
                 && term.getEnrollmentStart().isAfter(term.getEnrollmentEnd())) {
             throw new InvalidWindowConfigurationException(

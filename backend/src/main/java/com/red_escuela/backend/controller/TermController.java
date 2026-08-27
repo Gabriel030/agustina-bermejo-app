@@ -66,4 +66,27 @@ public class TermController {
     public TermResponse verDetalle(@PathVariable Long id) {
         return TermResponse.from(termService.verDetalle(id));
     }
+
+    // Decisión 5 (Spec Procesos administrativos): override manual de ventana de inscripción.
+    // Preceptor comparte esto con Administrativo (decisión académica, no financiera).
+    @PostMapping("/{id}/enrollment/open")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void abrirInscripcion(@PathVariable Long id) {
+        termService.abrirInscripcion(id);
+    }
+
+    @PostMapping("/{id}/enrollment/close")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void cerrarInscripcion(@PathVariable Long id) {
+        termService.cerrarInscripcion(id);
+    }
+
+    @PostMapping("/{id}/enrollment/clear-override")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void quitarOverride(@PathVariable Long id) {
+        termService.quitarOverride(id);
+    }
 }

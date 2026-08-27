@@ -53,7 +53,10 @@ public class GlobalExceptionHandler {
             ExamBoardRegistrationWindowClosedException.class,
             NoEvaluationSchemeException.class,
             MaxExamAttemptsExceededException.class,
-            ExamBoardSubjectMismatchException.class
+            ExamBoardSubjectMismatchException.class,
+            PaymentExceedsInvoiceBalanceException.class,
+            NotEligibleForGraduationException.class,
+            CertificateNotEligibleException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -82,7 +85,10 @@ public class GlobalExceptionHandler {
             AttendanceNotFoundException.class,
             ExamBoardNotFoundException.class,
             ExamBoardRegistrationNotFoundException.class,
-            GradeItemNotFoundException.class
+            GradeItemNotFoundException.class,
+            InvoiceNotFoundException.class,
+            GraduationRequestNotFoundException.class,
+            DirectorApprovalRequestNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -104,7 +110,13 @@ public class GlobalExceptionHandler {
             AttendanceAlreadyRecordedException.class,
             CannotJustifyException.class,
             ExamBoardClosedException.class,
-            AlreadyRegisteredInExamBoardException.class
+            AlreadyRegisteredInExamBoardException.class,
+            InvoiceAlreadyCancelledException.class,
+            PendingDebtException.class,
+            GraduationRequestAlreadyActiveException.class,
+            InvalidGraduationRequestStateException.class,
+            InvalidDirectorApprovalRequestStateException.class,
+            TermEnrollmentOverrideClosedException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
