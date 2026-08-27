@@ -1,0 +1,41 @@
+meta {
+  name: 9. DNI duplicado (400, no 409)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/staff
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("emailDniB", "bruno.dnib." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "DniB",
+    "email": "{{emailDniB}}",
+    "dni": "{{dniDuplicado}}",
+    "city": "CABA",
+    "role": "PRECEPTOR"
+  }
+}
+
+tests {
+  test("status 400 — DniAlreadyExistsException, inconsistente con el 409 de username/email duplicado en /auth/register pero es el comportamiento ya establecido", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Depende de que "8. Alta con DNI que luego se duplica" haya corrido antes
+  en la misma ejecución (`{{dniDuplicado}}`).
+}

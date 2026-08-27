@@ -1,0 +1,47 @@
+meta {
+  name: 3. Administrativo da de alta un Docente (201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/staff
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("dniDocente", "BRUNODOC" + Date.now());
+  bru.setVar("emailDocente", "bruno.docente." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Docente",
+    "email": "{{emailDocente}}",
+    "dni": "{{dniDocente}}",
+    "city": "CABA",
+    "role": "DOCENTE"
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("role devuelto es DOCENTE", function () {
+    expect(res.getBody().role).to.equal("DOCENTE");
+  });
+}
+
+docs {
+  RF-AD-05: Administrativo puede dar de alta Docente/Preceptor. Este alta
+  además crea el `Instructor` asociado (StaffService.altaPersonal) — no
+  verificado acá vía API (no hay endpoint que lo exponga directo), sí en
+  el Karate equivalente que puede consultarlo por JPA si hiciera falta.
+}

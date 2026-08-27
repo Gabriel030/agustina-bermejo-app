@@ -1,0 +1,21 @@
+meta {
+  name: 3. Documento sin sesion (403)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/prospects/{{prospectoId}}/documents?type=DNI
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  file: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+tests {
+  test("status 403 — endpoint exclusivo de Preceptor/Administrativo", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

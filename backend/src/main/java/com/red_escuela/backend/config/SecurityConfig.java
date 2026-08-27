@@ -72,6 +72,22 @@ public class SecurityConfig {
                 // Épica 7 Fase 2: Registrarse.jsx todavía no tiene sesión cuando arma el
                 // form, necesita resolver el institutionId de RegisterRequest antes.
                 .requestMatchers(HttpMethod.GET, "/institutions").permitAll()
+                // Sin esto, CUALQUIER excepción que Spring resuelve internamente vía
+                // response.sendError(...) — no solo una nuestra sin capturar, también las
+                // propias de Spring MVC (HttpMessageNotReadableException por JSON
+                // malformado, MethodArgumentTypeMismatchException por un path variable con
+                // tipo incorrecto, etc.) — dispara un redirect interno a /error, que sin
+                // este permitAll cae en anyRequest().authenticated() y devuelve un 403
+                // vacío y engañoso en vez del código real (400, 500, lo que corresponda).
+                // Confirmado con curl: un POST /staff con JSON malformado daba 403 en vez
+                // de 400. NO reintroducir acá un catch-all @ExceptionHandler(Exception.class)
+                // en GlobalExceptionHandler como "solución alternativa" a esto — se probó y
+                // rompe @PreAuthorize (AccessDeniedException se resuelve en el mismo
+                // dispatch de Spring MVC que un @RestControllerAdvice, ANTES de llegar a la
+                // capa de filtros — un catch-all ahí la intercepta y convierte 403 reales en
+                // 500). /error en cambio es un dispatch de servlet completamente aparte, sin
+                // pasar por ningún HandlerMethod ni @PreAuthorize — permitAll acá es seguro.
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -1,0 +1,33 @@
+meta {
+  name: 8. Confirmar de nuevo (409)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/prospects/{{prospectoId}}/confirm
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("dniConfirmacion2", "BRUNOPROSP2" + Date.now());
+}
+
+body:json {
+  {
+    "dni": "{{dniConfirmacion2}}",
+    "street": "Calle Falsa",
+    "city": "CABA"
+  }
+}
+
+tests {
+  test("status 409 — ProspectAlreadyConfirmedException, ya no está PROSPECTO", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

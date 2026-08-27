@@ -1,0 +1,28 @@
+meta {
+  name: 10. Preceptor da de baja (204)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/students/{{prospectoId}}/withdraw
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "reason": "ABANDONO",
+    "detail": "Prueba automatizada"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

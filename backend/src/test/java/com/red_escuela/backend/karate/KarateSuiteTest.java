@@ -68,4 +68,9 @@ class KarateSuiteTest {
     Karate testAutoservicio() {
         return Karate.run("classpath:karate/autoservicio");
     }
+
+    @Karate.Test
+    Karate testPersonas() {
+        return Karate.run("classpath:karate/personas");
+    }
 }

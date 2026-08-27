@@ -1,0 +1,33 @@
+meta {
+  name: 9. Director no puede dar de baja (403)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/students/{{prospectoId}}/withdraw
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessToken}}
+}
+
+body:json {
+  {
+    "reason": "ABANDONO"
+  }
+}
+
+tests {
+  test("status 403 — matriz: Director tiene R sobre legajo, no puede dar de baja (exclusivo Preceptor/Administrativo)", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  Depende de `{{directorAccessToken}}` — correr `2. Login director (setup)`
+  de la carpeta padre "Gestion de personas" primero, o toda la colección
+  junta.
+}

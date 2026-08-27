@@ -29,14 +29,26 @@ test de 200. `🟡 parcial` anota qué falta puntualmente.
 | CourseController | 6 | 🟡 (crear, vía setup) | 🟡 (GET) | editar/activar/desactivar sin cubrir |
 | TermController | 9 | 🟡 (crear, vía setup) | — | resto sin cubrir |
 
-## Gestión de personas — prioridad alta (alta de cuentas, roles)
+## Gestión de personas — cubierto (2026-08-27)
 
-| Controller | Endpoints | Karate | Bruno |
-|---|---|---|---|
-| PersonController | 2 | pendiente | pendiente |
-| StaffController | 2 | pendiente | pendiente |
-| ProspectController | 4 | pendiente | pendiente |
-| StudentController | 4 | pendiente | pendiente |
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| PersonController | 2 | ✅ | ✅ | GET/PUT /me, validación de email |
+| StaffController | 2 | ✅ | ✅ | reparto Administrativo/Director (RF-AD-05/RF-DI-04), cruzado 403, DNI duplicado (400, no 409 — inconsistencia real documentada) |
+| ProspectController | 4 | ✅ | ✅ | ciclo completo prospecto→documentos→confirmar→ALUMNO, tipo de archivo no soportado, reemplazo de documento |
+| StudentController | 4 | ✅ | ✅ | legajo (Director R), baja (Preceptor/Administrativo únicamente, Director 403) |
+
+**Bug real encontrado acá** (no de este dominio puntual, sistémico): cualquier
+excepción de Spring MVC no manejada explícitamente (JSON malformado,
+`MethodArgumentTypeMismatchException` por un path variable con tipo
+incorrecto) quedaba enmascarada como `403` vacío en vez del status real —
+mismo síntoma que el bug de `/error` de la Fase 2 de Épica 7, pero más
+amplio de lo que se había corregido ahí. Fix: `/error` vuelve a ser
+`permitAll()` (se había revertido por error junto con un catch-all que sí
+era peligroso), más handlers explícitos para `HttpMessageNotReadableException`
+y `MethodArgumentTypeMismatchException` en `GlobalExceptionHandler`. Ver el
+commit de esta sesión para el detalle completo — incluye por qué un
+catch-all de `Exception.class` NO es la solución (rompe `@PreAuthorize`).
 
 ## Procesos administrativos y financieros — prioridad alta (dinero)
 
