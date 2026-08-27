@@ -65,6 +65,20 @@ describe('Login', () => {
     await user.type(screen.getByPlaceholderText('••••••••'), 'Test1234');
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
-    await waitFor(() => expect(screen.getByRole('button')).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /ingresando/i })).toBeDisabled());
+  });
+
+  it('el ojito alterna el campo de contraseña entre oculto y visible', async () => {
+    const user = userEvent.setup();
+    renderLogin();
+
+    const passwordField = screen.getByPlaceholderText('••••••••');
+    expect(passwordField).toHaveAttribute('type', 'password');
+
+    await user.click(screen.getByRole('button', { name: /mostrar contraseña/i }));
+    expect(passwordField).toHaveAttribute('type', 'text');
+
+    await user.click(screen.getByRole('button', { name: /ocultar contraseña/i }));
+    expect(passwordField).toHaveAttribute('type', 'password');
   });
 });
