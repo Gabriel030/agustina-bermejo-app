@@ -1,0 +1,34 @@
+meta {
+  name: 11. Actualizar perfil propio (200)
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/me
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nuevoTelefono", "11-9999-" + Date.now());
+}
+
+body:json {
+  {
+    "telefono": "{{nuevoTelefono}}"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("el body devuelto refleja el cambio", function () {
+    expect(res.getBody().telefono).to.equal(bru.getVar("nuevoTelefono"));
+  });
+}

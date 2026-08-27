@@ -1,10 +1,12 @@
 package com.red_escuela.backend.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
@@ -28,6 +30,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleValidation() {
+    }
+
+    // Excepciones propias de Spring MVC (no de nuestro dominio) pero perfectamente
+    // alcanzables desde input de cliente real — JSON malformado o un path variable con
+    // el tipo incorrecto (ej. /students/abc en vez de /students/1). Sin esto caían en
+    // el manejo por default de Spring (response.sendError(400) vía
+    // DefaultHandlerExceptionResolver), que dispara un redirect interno a /error — y
+    // aunque /error ya es permitAll (ver SecurityConfig), Spring Boot expone ahí un
+    // body JSON de error por default (timestamp/status/error/message/path), rompiendo
+    // la convención del proyecto de nunca mandar body en errores. Encontrado probando
+    // con qa/bruno (un JSON con `+` de concatenación JS sin evaluar, típico error de
+    // escribir un test a mano, terminaba dando 403 antes del fix de /error).
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleMalformedBody() {
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handlePathVariableTypeMismatch() {
     }
 
     @ExceptionHandler({
@@ -154,10 +176,11 @@ public class GlobalExceptionHandler {
     // capturaría también AccessDeniedException (lanzada por @PreAuthorize) y
     // convertiría 403 reales en 500 — probado y confirmado con
     // unAlumnoNoPuedeAprobarSuPropiaSolicitud, que empezó a fallar apenas se agregó
-    // un catch-all así. Cualquier excepción realmente inesperada (no
-    // DataIntegrityViolationException) sigue devolviendo el 403 enmascarado de
-    // /error hasta que se identifique y se mapee explícito, mismo criterio que el
-    // resto de esta clase — no manejar lo que no se conoce todavía.
+    // un catch-all así. Cualquier excepción realmente inesperada (ni acá ni en la
+    // lista de arriba) ahora sí llega a /error con su status real (permitAll en
+    // SecurityConfig) — ya no queda enmascarada como 403, mismo criterio que el resto
+    // de esta clase de todas formas: no manejar lo que no se conoce todavía, dejar
+    // que Spring Boot muestre su error default en vez de inventar un mapeo a ciegas.
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleDataIntegrityViolation() {
