@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -97,6 +98,25 @@ class PersonControllerTest extends AbstractIntegrationTest {
         Person otroSinCambios = personRepository.findById(otro.getId()).orElseThrow();
         assertThat(otroSinCambios.getEmail()).isEqualTo("otro1@example.com");
         assertThat(otroSinCambios.getPhoneNumber()).isNull();
+    }
+
+    @Test
+    void getMeDevuelvePerfilPropioConRoles() throws Exception {
+        Person propio = persistPersonWithRole("propio2", "60555666", "PRECEPTOR");
+        String token = jwtService.generateAccessToken(propio);
+
+        mockMvc.perform(get("/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(propio.getId()))
+                .andExpect(jsonPath("$.nombre").value("Nombre"))
+                .andExpect(jsonPath("$.roles[0]").value("PRECEPTOR"));
+    }
+
+    @Test
+    void getMeSinAuthDevuelve401OForbidden() throws Exception {
+        mockMvc.perform(get("/me"))
+                .andExpect(status().is4xxClientError());
     }
 
     @Test
