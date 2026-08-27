@@ -73,69 +73,107 @@ se evalúa recién cuando haya CI armado para correrlo contra un backend real
 levantado (Docker Compose + Postgres). Hasta entonces, el nivel 3 de arriba
 (integration test con MSW) es el que blinda los flujos críticos.
 
-## QA de contrato HTTP (Bruno) — `qa/bruno/`
+## QA de contrato HTTP — dos herramientas, dos propósitos distintos
 
 Los tests de JUnit/Vitest verifican que el CÓDIGO se comporta como el código
 espera — no necesariamente que el CONTRATO HTTP real (status code exacto, body
 vacío en errores, endpoint público vs. protegido) sea el correcto, ni que un
-flujo de varios pasos siga siendo consistente cuando se lo corre contra el
-backend real, sin el paraguas de una transacción de test. Encontramos un caso
-real de esto en Épica 7 Fase 2: un test JUnit `@Transactional` a nivel de clase
-daba falso positivo en una aserción de rol otorgado, porque toda la prueba
-corría en una única transacción — nunca hubo un commit real de por medio. Correr
-la misma prueba contra el servidor real (con Bruno) sí lo atrapó.
+flujo de varios pasos siga siendo consistente cuando se lo corre sin el
+paraguas de una transacción de test. Encontramos esto de forma muy concreta en
+Épica 7 Fase 2: un test JUnit `@Transactional` a nivel de clase daba falso
+positivo en una aserción de rol otorgado, porque toda la prueba corría en una
+única transacción — nunca hubo un commit real de por medio.
 
-**`qa/bruno/` es una colección de [Bruno](https://www.usebruno.com/)** (CLI:
-`bru`, instalado con `npm install -g @usebruno/cli`; GUI opcional:
-`brew install --cask bruno`) con un request por caso de prueba — no un request
-por endpoint. Estructura:
+Se usan **dos herramientas, cada una para lo que sirve mejor** — no son
+redundantes, hay que mantener las dos actualizadas cuando se agrega o cambia
+un endpoint:
 
-```
-qa/bruno/
-  bruno.json
-  environments/Local.bru        # baseUrl=http://localhost:8080
-  00 - Setup/                   # bootstrap compartido (resuelve institutionId, etc.)
-  Auth/                         # un caso de prueba = un archivo .bru
-  <Dominio> - <sub-dominio>/
-    GET/POST sueltos ...        # request por endpoint, casos borde propios
-    Caso de uso - <flujo>/      # secuencia numerada (seq: 1, 2, 3...) que
-                                 # encadena varios requests + verifica estado
-                                 # final vía la API (no SQL directo — así corre
-                                 # en cualquier entorno)
-```
+- **[Karate](https://karatelabs.github.io/karate/)** (`backend/src/test/resources/karate/`)
+  es el gate de regresión **automático**: corre en CI dentro del job `backend`
+  existente (`KarateSuiteTest`, `@SpringBootTest` con `RANDOM_PORT`, Postgres
+  de Testcontainers propio — ver más abajo por qué propio y no el compartido).
+  Es donde vive la cobertura que tiene que sostenerse sola en cada PR, sin que
+  nadie la dispare a mano.
+- **[Bruno](https://www.usebruno.com/)** (`qa/bruno/`) es para **explorar a
+  mano** — CLI (`bru`, `npm install -g @usebruno/cli`) o GUI
+  (`brew install --cask bruno`) contra un backend real corriendo. Sirve para
+  investigar un bug interactivamente, probar algo puntual sin escribir código,
+  o que alguien no-técnico corra un caso reproducible. **No corre en CI** —
+  correrla ahí además de Karate pagaría el mismo costo dos veces por la misma
+  cobertura (ver "Antes de dar una tarea por terminada" más abajo: agregar a
+  ambas, no una u otra).
 
-**Convención de un `.bru`**: `docs` explica el caso de uso y el criterio de
-aceptación que prueba (no solo "qué" — el "por qué" de ese caso puntual,
-incluidos los bordes: campos faltantes, `null` explícito, tipos incorrectos,
-ids inexistentes, duplicados). `tests` afirma el status code exacto observado
-contra el backend real (nunca `[200, 201]` genérico salvo que el código
-realmente pueda variar por diseño) y las partes del body que importan.
-`script:post-response` encadena datos entre requests (`bru.setVar(...)`) para
-secuencias multi-paso.
+### Karate — regresión automática en CI
+
+Feature files en `backend/src/test/resources/karate/<dominio>/*.feature`,
+corridos por `KarateSuiteTest` (`backend/src/test/java/.../karate/`). Cada
+`Scenario` es un caso de uso con su criterio de aceptación en el nombre — la
+sintaxis Gherkin (`Given`/`When`/`Then`) es la documentación, no hace falta un
+comentario aparte explicando "qué" prueba. `Scenario Outline` + `Examples` para
+variantes con la misma aserción (ej. varios formatos de contraseña inválida,
+todos esperando 400) — no un Scenario por variante cuando el criterio es
+idéntico.
+
+**Por qué `KarateSuiteTest` NO extiende `AbstractIntegrationTest`** (el
+Postgres singleton compartido por el resto de la suite): la clase a propósito
+no es `@Transactional` — si lo fuera, todos los `.feature` correrían en una
+única transacción de test y enmascararían bugs reales de boundary
+transaccional, el mismo problema de arriba. Sin rollback, cada fila que un
+`.feature` crea queda en la base — y varios tests de otras clases asumen
+"cuento todas las filas de la tabla y espero exactamente N", asunción que
+dejaría de ser cierta si Karate ensuciara el Postgres compartido (confirmado:
+pasó de verdad al probarlo, 4 tests de otras clases empezaron a fallar). Fix:
+`KarateSuiteTest` levanta su propio contenedor de Testcontainers, nunca
+comparte el de `AbstractIntegrationTest` — nadie necesita limpiar nada
+manualmente, el contenedor entero se descarta al terminar la corrida.
+
+**Setup que no tiene sentido hacer por HTTP** (crear un token de staff sin un
+flujo de alta completo, sembrar una institución) vive en
+`KarateFixtures`/`KarateSpringContext` (puente Java, `Java.type(...)` desde el
+`.feature`) — usa los repositories (`.save()`, transaccionales por sí solos),
+nunca `EntityManager.persist()` crudo, por el mismo motivo de arriba (sin
+`@Transactional` en la clase, no hay transacción externa donde flushear).
 
 **Correr:**
 ```bash
-bru run "qa/bruno/00 - Setup" "qa/bruno/Auth" -r --env Local
-bru run "qa/bruno/<carpeta de caso de uso>" -r --env Local
-bru run qa/bruno -r --env Local   # toda la colección
+./mvnw test -Dtest=KarateSuiteTest              # toda la suite de Karate
+./mvnw test -Dtest=KarateSuiteTest#testAuth      # una sola carpeta/@Karate.Test
+./mvnw clean verify                              # la suite completa, incluye Karate
 ```
-Necesita el backend local corriendo (`mvn spring-boot:run`, perfil `local` para
-tener las cuentas demo sembradas — `preceptor.demo`/`administrativo.demo`/etc.,
-password `Test1234`) y Postgres arriba. **Cuidado con el rate limiter**: correr
-la colección completa varias veces seguidas en poco tiempo agota el bucket de
-`/auth/login`/`/auth/register` (capacidad 10-20/min, compartida en memoria para
-todo el proceso) y produce `429` en cascada que no son bugs reales — si eso
-pasa, esperar ~1 minuto o reiniciar el backend.
+Genera un reporte HTML en `target/karate-reports/karate-summary.html` en cada
+corrida.
 
-**Cuándo escribir casos nuevos acá**: cualquier endpoint nuevo o tocado en una
-fase, con su happy path + los bordes reales del dominio (no solo "campo
-faltante" genérico — pensar como QA senior: ¿qué pasa si mando un id que
-pertenece a otra entidad? ¿un duplicado por una vía que el código no valida
-explícito pero que un constraint de DB sí rechaza? ¿el status code de "sin
-sesión" es el mismo en todos los endpoints protegidos, o depende de si hay un
-`AuthenticationEntryPoint` configurado?). Un caso de uso que involucra alta +
-baja + verificación de estado va en su propia subcarpeta "Caso de uso - ...",
-no como requests sueltos.
+### Bruno — exploración manual
+
+Un request por caso de prueba (no un request por endpoint), en
+`qa/bruno/<Dominio>/`, con `docs{}` explicando el criterio de aceptación y
+`tests{}` afirmando el status code exacto. Secuencias multi-paso van en
+subcarpetas `Caso de uso - <flujo>/` (`seq:` numerado).
+
+**Correr contra una base descartable, nunca la de desarrollo persistente**
+(evita dejar instituciones/carreras/alumnos de prueba mezclados con datos
+reales — la mayoría de las entidades no tienen endpoint de borrado):
+```bash
+docker compose -f docker-compose.qa.yml up -d   # Postgres descartable, puerto 5433
+DB_URL=jdbc:postgresql://localhost:5433/agustina_bermejo mvn spring-boot:run -Dspring-boot.run.profiles=local
+bru run qa/bruno -r --env Local
+docker compose -f docker-compose.qa.yml down    # tira todo, sin dejar rastro
+```
+**Cuidado con el rate limiter**: correr la colección completa varias veces
+seguidas en poco tiempo agota el bucket de `/auth/login`/`/auth/register`
+(capacidad 10-20/min, compartida en memoria para todo el proceso) y produce
+`429` en cascada que no son bugs reales.
+
+### Cuándo escribir casos nuevos
+
+Cualquier endpoint nuevo o tocado en una fase, con su happy path + los bordes
+reales del dominio (no solo "campo faltante" genérico — pensar como QA senior:
+¿qué pasa si mando un id que pertenece a otra entidad? ¿un duplicado por una
+vía que el código no valida explícito pero que un constraint de DB sí
+rechaza? ¿el status code de "sin sesión" es el mismo en todos los endpoints
+protegidos?) — **en las dos herramientas**, Karate y Bruno, no solo una. Ver
+`qa/bruno/BACKFILL.md` para el estado de cobertura sobre los endpoints
+existentes.
 
 ## Antes de dar una tarea por terminada
 

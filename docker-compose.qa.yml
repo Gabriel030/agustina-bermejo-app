@@ -1,0 +1,12 @@
+services:
+  postgres-qa:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agustina_bermejo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    # A propósito sin volumen persistente: `docker compose -f docker-compose.qa.yml down`
+    # tira todo, no queda basura de corridas manuales de Bruno acumulándose. Karate no
+    # necesita esto — ya usa Postgres efímero de Testcontainers en cada corrida.
