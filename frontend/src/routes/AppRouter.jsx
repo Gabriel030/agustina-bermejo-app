@@ -28,7 +28,7 @@ export function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/no-autorizado" element={<NoAutorizado />} />
 
       {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas }]) => (

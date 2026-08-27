@@ -18,4 +18,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  test: {
+    environment: 'jsdom',
+    environmentOptions: {
+      jsdom: { url: 'http://localhost:5173' },
+    },
+    setupFiles: ['./src/test/setup.js'],
+    globals: false,
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: ['src/components/ui/**', 'src/test/**', '**/*.config.js'],
+    },
+  },
 })

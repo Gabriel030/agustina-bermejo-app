@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
@@ -16,18 +16,26 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [enviando, setEnviando] = useState(false);
-  const { login } = useAuth();
+  const { usuario, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Única fuente de verdad para la navegación post-login: cubre tanto "recién
+  // logueado" como "ya logueado y entró a /login a mano". AppRouter no
+  // duplica este redirect — dos navegaciones compitiendo por el mismo cambio
+  // de `usuario` es una carrera real (una puede pisar el `from` de la otra).
+  useEffect(() => {
+    if (!usuario) return;
+    const destino = location.state?.from?.pathname ?? `/${usuario.roles[0]?.toLowerCase()}/inicio`;
+    navigate(destino, { replace: true });
+  }, [usuario, location.state, navigate]);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     setEnviando(true);
     try {
-      const perfil = await login(username, password);
-      const destino = location.state?.from?.pathname ?? `/${perfil.roles[0]?.toLowerCase()}/inicio`;
-      navigate(destino, { replace: true });
+      await login(username, password);
     } catch (err) {
       setError(
         err instanceof RateLimitedError
