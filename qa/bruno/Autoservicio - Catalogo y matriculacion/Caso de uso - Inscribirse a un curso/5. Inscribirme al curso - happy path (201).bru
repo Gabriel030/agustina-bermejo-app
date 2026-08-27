@@ -1,0 +1,28 @@
+meta {
+  name: 5. Inscribirme al curso - happy path (201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/me/course-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+body:json {
+  {
+    "courseId": {{courseIdQA}},
+    "sectionOverrides": {}
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

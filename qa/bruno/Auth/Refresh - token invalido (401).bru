@@ -1,0 +1,31 @@
+meta {
+  name: Refresh - token invalido (401)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "esto-no-es-un-token-valido"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
+
+docs {
+  # Refresh — token inválido
+
+  String arbitrario, ni siquiera con forma de JWT. Confirma que
+  `JwtService` rechaza antes de intentar parsear nada que rompa con una
+  excepción sin manejar.
+}

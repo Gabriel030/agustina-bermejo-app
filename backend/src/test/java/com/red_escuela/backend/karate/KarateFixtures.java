@@ -1,0 +1,75 @@
+package com.red_escuela.backend.karate;
+
+import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.Role;
+import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.repository.InstitutionRepository;
+import com.red_escuela.backend.repository.PersonRepository;
+import com.red_escuela.backend.repository.RoleRepository;
+import com.red_escuela.backend.service.JwtService;
+import org.springframework.context.ApplicationContext;
+
+/**
+ * Puente Java para setup que no tiene sentido hacer vía HTTP desde un .feature de Karate
+ * (crear un token de staff sin pasar por un flujo de alta completo, sembrar una
+ * institución) — mismo criterio que RegistrationFlowTest.persistInstitution()/
+ * tokenDePreceptor(), reusado acá porque Karate llama a métodos Java estáticos
+ * directamente (Java.type(...) desde el .feature o karate-config.js).
+ *
+ * Usa los repositories (cada método de un JpaRepository es transaccional por sí solo,
+ * SimpleJpaRepository lo anota @Transactional) en vez de EntityManager.persist() crudo
+ * a propósito: KarateSuiteTest NO es @Transactional (si lo fuera, toda la corrida
+ * compartiría una única transacción de test y enmascararía bugs reales de boundary
+ * transaccional — exactamente el problema que encontramos con RegistrationFlowTest
+ * y el bug del rol ALUMNO no otorgado). Sin @Transactional en el test, un
+ * EntityManager.persist() suelto no tiene transacción activa donde flushear.
+ *
+ * KarateSpringContext.set(...) lo llama el runner (@BeforeEach) para dejar disponible el
+ * ApplicationContext de la corrida — Karate no inyecta beans de Spring por sí solo.
+ */
+public class KarateFixtures {
+
+    private static ApplicationContext context() {
+        ApplicationContext context = KarateSpringContext.get();
+        if (context == null) {
+            throw new IllegalStateException(
+                    "KarateSpringContext no está seteado — el runner tiene que llamar a "
+                            + "KarateSpringContext.set(applicationContext) en un @BeforeEach.");
+        }
+        return context;
+    }
+
+    public static Long crearInstitucion() {
+        InstitutionRepository institutionRepository = context().getBean(InstitutionRepository.class);
+        Institution institution = new Institution();
+        institution.setName("Karate - Institución de prueba " + System.nanoTime());
+        return institutionRepository.save(institution).getId();
+    }
+
+    // rol: "PRECEPTOR", "ADMINISTRATIVO", etc. — mismo criterio que
+    // RegistrationFlowTest.tokenDePreceptor(), generalizado a cualquier rol de staff.
+    public static String tokenParaRol(String rol) {
+        AddressRepository addressRepository = context().getBean(AddressRepository.class);
+        PersonRepository personRepository = context().getBean(PersonRepository.class);
+        RoleRepository roleRepository = context().getBean(RoleRepository.class);
+        JwtService jwtService = context().getBean(JwtService.class);
+
+        Address address = addressRepository.save(new Address());
+
+        Person person = new Person();
+        String username = "karate." + rol.toLowerCase() + "." + System.nanoTime();
+        person.setUsername(username);
+        person.setEmail(username + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        Role role = roleRepository.findByName(rol).orElseThrow(
+                () -> new IllegalStateException("Rol sembrado por Flyway no encontrado: " + rol));
+        person.getRoles().add(role);
+        person = personRepository.save(person);
+
+        return jwtService.generateAccessToken(person);
+    }
+}

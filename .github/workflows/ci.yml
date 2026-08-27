@@ -50,3 +50,11 @@ jobs:
       - name: Run frontend test suite
         working-directory: frontend
         run: npm run test
+
+  # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
+  # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a
+  # propósito: correrla acá además de Karate sería pagar el mismo costo dos veces
+  # (levantar el backend real completo) por la misma cobertura. La regresión
+  # automática de contrato HTTP vive en Karate, dentro del job `backend` de arriba
+  # (KarateSuiteTest, @SpringBootTest RANDOM_PORT + el mismo Testcontainers que ya
+  # usa el resto de la suite) — ver docs/context/testing.md.

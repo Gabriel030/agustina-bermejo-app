@@ -1,0 +1,29 @@
+meta {
+  name: Caso de uso - Solicitar alta en carrera
+}
+
+docs {
+  # Caso de uso — Solicitar alta en carrera
+
+  **Correr con:** `bru run "Autoservicio - Catalogo y matriculacion/Caso de uso - Solicitar alta en carrera" -r --env Local`
+  (después de `00 - Setup` y de `Auth/Login - happy path` para tener
+  `{{institutionId}}` y `{{preceptorAccessToken}}` — o correr la
+  colección completa con `bru run . -r`, que respeta el orden).
+
+  ## Criterios de aceptación cubiertos (de la spec funcional de Épica 7)
+
+  1. Un alumno recién registrado, sin rol, puede solicitar alta a una
+     carrera activa → queda `PENDING`.
+  2. No puede tener dos solicitudes `PENDING` a la misma carrera al mismo
+     tiempo (constraint de negocio, no solo de UI).
+  3. Su bandeja (`GET /me/program-enrollment-applications`) refleja el
+     estado real en todo momento — se verifica ANTES y DESPUÉS de la
+     decisión, no se asume.
+  4. Un Preceptor puede aprobar la solicitud.
+  5. Al aprobar, el alumno recibe el rol `ALUMNO` automáticamente (sin
+     que nadie se lo asigne a mano) — este es el flujo hermano del bug
+     real que encontramos en `POST /me/course-enrollments` (ver el otro
+     caso de uso), así que se verifica explícitamente acá también.
+  6. Un Alumno no puede aprobar su propia solicitud (ni la de nadie) —
+     el endpoint de aprobación es exclusivo de Preceptor/Administrativo.
+}

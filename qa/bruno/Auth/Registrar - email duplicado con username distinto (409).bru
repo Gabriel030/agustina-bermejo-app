@@ -1,0 +1,53 @@
+meta {
+  name: Registrar - email duplicado con username distinto (409)
+  type: http
+  seq: 7.5
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("usernameUnico", "qa.emailduplicado." + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "EmailDuplicado",
+    "email": "preceptor.demo@demo.local",
+    "username": "{{usernameUnico}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+tests {
+  test("status 409 — constraint uk_person_email a nivel DB, capturado como DataIntegrityViolationException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  # Registrar — email duplicado, username distinto
+
+  **Por qué este caso es distinto del anterior:**
+  `RegistrationService.registrar` solo valida unicidad de forma explícita
+  por `username` (`personRepository.findByUsername(...)`) — NO hay un
+  chequeo explícito de `email` en el código de servicio. Pero la tabla
+  `person` sí tiene `uk_person_email` (unique constraint a nivel DB), así
+  que un email duplicado con username distinto todavía se rechaza: cae en
+  el catch de `DataIntegrityViolationException` del método, que lo mapea
+  a `UsernameAlreadyExistsException` (409) — un nombre de excepción algo
+  engañoso para esta causa real (es email, no username), pero el status
+  code que le llega al cliente es el correcto.
+
+  Este caso confirma que el fallback del catch funciona para la vía que
+  el código no valida explícitamente — importante dejarlo probado porque
+  si alguien reemplaza `saveAndFlush` por algo que no dispare el
+  constraint (ej. un flujo con caché o batch), este caso dejaría de
+  protegerse silenciosamente.
+}

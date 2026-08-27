@@ -139,4 +139,27 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
     public void handleTooManyRequests() {
     }
+
+    // DataIntegrityViolationException sin capturar en el service (ej. un constraint
+    // único violado que el código no anticipó explícitamente, como pasó en
+    // RegistrationService con uk_person_email — ver su historial) mapea a 409, no a
+    // 500: semánticamente es lo correcto para cualquier violación de unicidad a nivel
+    // DB, y evita que la excepción escape sin manejar hasta el servlet container
+    // (que redirige a /error, el cual cae en anyRequest().authenticated() de
+    // SecurityConfig y devuelve un 403 vacío y engañoso — parece un problema de
+    // permisos cuando es un error de datos). Encontrado probando con qa/bruno.
+    //
+    // A propósito NO se agrega acá un catch-all de Exception.class: un
+    // @RestControllerAdvice corre dentro del dispatch de Spring MVC, así que
+    // capturaría también AccessDeniedException (lanzada por @PreAuthorize) y
+    // convertiría 403 reales en 500 — probado y confirmado con
+    // unAlumnoNoPuedeAprobarSuPropiaSolicitud, que empezó a fallar apenas se agregó
+    // un catch-all así. Cualquier excepción realmente inesperada (no
+    // DataIntegrityViolationException) sigue devolviendo el 403 enmascarado de
+    // /error hasta que se identifique y se mapee explícito, mismo criterio que el
+    // resto de esta clase — no manejar lo que no se conoce todavía.
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public void handleDataIntegrityViolation() {
+    }
 }

@@ -1,0 +1,50 @@
+meta {
+  name: 2. Crear carrera de prueba (setup, 201)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCarreraQA", "QA Bruno - Carrera " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCarreraQA}}",
+    "totalYears": 3,
+    "price": 50000,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programIdQA", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status por default queda ACTIVE (sin mandarlo explícito)", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}
+
+docs {
+  Setup: sin `admissionStart`/`admissionEnd` a propósito — confirma que
+  `Catalogo.jsx` no depende de esos campos para mostrar el botón
+  "Solicitar alta" (`ProgramEnrollmentApplicationService.solicitar` no
+  valida ventana de admisión, ver Nota de implementación de la Fase 1).
+}

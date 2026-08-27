@@ -1,0 +1,35 @@
+meta {
+  name: Login - credenciales invalidas (401)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "preceptor.demo",
+    "password": "contraseña-incorrecta"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+  test("body vacío — el backend no manda detalle en errores (ver docs/context/backend.md)", function () {
+    expect(res.getBody() == null || res.getBody() === "").to.be.true;
+  });
+}
+
+docs {
+  # Login — credenciales inválidas
+
+  **Criterio de aceptación:** `401`, sin body (contrato del backend: nunca
+  confirma si el username existe o no vía el mensaje de error — mismo
+  criterio en toda la API).
+}
