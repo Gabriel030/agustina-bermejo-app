@@ -4,7 +4,7 @@ Todo lo que es **producto** (qué pantallas hay, qué flujo sigue una feature, q
 épica bloquea a cuál, criterios de aceptación) vive en Obsidian, no en este repo:
 
 ```
-~/Documents/Proyecto-lectura/agustina-bermejo-app/
+~/Documentos No SYNC/Obsidian-vault/agustina-bermejo-app/
   Roadmap frontend/
     Indice.md                                    ← punto de entrada del roadmap
     Documento maestro - Stack y sistema de diseño.md
