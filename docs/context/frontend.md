@@ -109,6 +109,30 @@ necesite de verdad.
 - Archivos de componentes/páginas/layouts: `PascalCase.jsx`. Hooks, utils, clientes:
   `camelCase.js`. Un componente por archivo, nombre de archivo = nombre exportado.
 
+## Responsive — obligatorio en toda pantalla nueva
+
+El proyecto termina empaquetado en nativo vía Capacitor (ver stack) — nunca
+se implementa una pantalla "solo desktop" para adaptarla después. Breakpoints
+Tailwind default, mobile-first (clases sin prefijo = mobile, `md:`/`lg:`
+agregan desde ahí, nunca al revés):
+
+- **Layouts por rol** (`Sidebar.jsx` + contenido): el sidebar fijo a la
+  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a una
+  **bottom tab bar** con los mismos ítems — no un hamburger menu, es la
+  convención nativa iOS/Android, coherente con el empaquetado final.
+- **Pantallas centradas sin sidebar** (Login, Registrarse): `GlassCard`
+  pasa de ancho fijo a `w-full` con padding en mobile, ancho fijo recién en
+  `md:`+.
+- **Grillas de cards**: `grid-cols-1` mobile → `grid-cols-2` `md:` →
+  `grid-cols-3` `lg:`. Nunca scroll horizontal de cards.
+- **Tablas densas**: patrón "card por fila" en mobile en vez de scroll
+  horizontal — se resuelve puntual por pantalla al implementarla, no hay una
+  solución genérica forzada para todas.
+
+Mockup de referencia del patrón "card centrada": ver `Login (mobile)` en
+[[Diseño UI - Vidrio Líquido]] (Obsidian) antes de implementar cualquier
+pantalla de ese tipo.
+
 ## Motion / animación
 
 Solo las transiciones ya definidas en el sistema de diseño (spring

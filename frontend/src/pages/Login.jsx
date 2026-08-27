@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/context/AuthContext';
 import { RateLimitedError } from '@/api/client';
 
@@ -74,8 +75,7 @@ export function Login() {
           </div>
           <div>
             <div className="mb-1.5 text-xs font-semibold text-ink-soft">Contraseña</div>
-            <Input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"

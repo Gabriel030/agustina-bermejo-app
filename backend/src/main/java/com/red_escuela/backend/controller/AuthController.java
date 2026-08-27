@@ -5,11 +5,13 @@ import com.red_escuela.backend.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
+import com.red_escuela.backend.dto.RegisterRequest;
 import com.red_escuela.backend.dto.ResetPasswordRequest;
 import com.red_escuela.backend.exception.TooManyRequestsException;
 import com.red_escuela.backend.service.AuthService;
 import com.red_escuela.backend.service.AuthTokens;
 import com.red_escuela.backend.service.LoginRateLimiter;
+import com.red_escuela.backend.service.RegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,11 +26,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RegistrationService registrationService;
     private final LoginRateLimiter rateLimiter;
 
-    public AuthController(AuthService authService, LoginRateLimiter rateLimiter) {
+    public AuthController(AuthService authService, RegistrationService registrationService, LoginRateLimiter rateLimiter) {
         this.authService = authService;
+        this.registrationService = registrationService;
         this.rateLimiter = rateLimiter;
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
+        }
+        AuthTokens tokens = registrationService.registrar(request);
+        return AuthResponse.from(tokens);
     }
 
     @PostMapping("/login")

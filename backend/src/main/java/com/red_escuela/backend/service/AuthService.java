@@ -175,7 +175,9 @@ public class AuthService {
         passwordResetTokenRepository.save(resetToken);
     }
 
-    private AuthTokens issueTokens(Person person) {
+    // Package-private (no private): RegistrationService reusa exactamente este
+    // mismo mecanismo para loguear a alguien recién registrado, sin duplicarlo.
+    AuthTokens issueTokens(Person person) {
         String accessToken = jwtService.generateAccessToken(person);
         String refreshToken = issueRefreshToken(person);
         long expiresIn = Duration.ofMinutes(jwtService.getAccessTokenExpirationMinutes()).toSeconds();
@@ -197,7 +199,8 @@ public class AuthService {
     }
 
     // RF-AUTH-05: política mínima configurable (auth.password.*), no hardcodeada.
-    private void validarPoliticaDePassword(String rawPassword) {
+    // Package-private: RegistrationService la reusa para el registro independiente.
+    void validarPoliticaDePassword(String rawPassword) {
         if (rawPassword.length() < passwordMinLength) {
             throw new InvalidPasswordPolicyException(
                     "La contraseña tiene que tener al menos " + passwordMinLength + " caracteres");

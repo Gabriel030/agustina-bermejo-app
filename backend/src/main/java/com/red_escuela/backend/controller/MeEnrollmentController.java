@@ -1,6 +1,8 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.ChangeSectionRequest;
+import com.red_escuela.backend.dto.CourseEnrollmentResponse;
+import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.dto.CreateOwnSectionEnrollmentRequest;
 import com.red_escuela.backend.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
@@ -11,7 +13,9 @@ import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
+import com.red_escuela.backend.service.CourseEnrollmentService;
 import com.red_escuela.backend.service.CurrentStudentService;
+import com.red_escuela.backend.service.PersonRoleGranter;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
 import com.red_escuela.backend.service.SubjectSectionEnrollmentService;
 import jakarta.validation.Valid;
@@ -39,14 +43,32 @@ public class MeEnrollmentController {
     private final CurrentStudentService currentStudentService;
     private final ProgramEnrollmentService programEnrollmentService;
     private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
+    private final CourseEnrollmentService courseEnrollmentService;
+    private final PersonRoleGranter personRoleGranter;
 
     public MeEnrollmentController(
             CurrentStudentService currentStudentService,
             ProgramEnrollmentService programEnrollmentService,
-            SubjectSectionEnrollmentService subjectSectionEnrollmentService) {
+            SubjectSectionEnrollmentService subjectSectionEnrollmentService,
+            CourseEnrollmentService courseEnrollmentService,
+            PersonRoleGranter personRoleGranter) {
         this.currentStudentService = currentStudentService;
         this.programEnrollmentService = programEnrollmentService;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
+        this.courseEnrollmentService = courseEnrollmentService;
+        this.personRoleGranter = personRoleGranter;
+    }
+
+    // Épica 7: inscripción a un curso con cupo, sin aprobación — el propio Alumno
+    // la dispara (antes solo staff podía, ver CourseEnrollmentService.matricular).
+    // Si todavía no tenía ningún rol (recién registrado), lo obtiene acá.
+    @PostMapping("/course-enrollments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CourseEnrollmentResponse inscribirmeAUnCurso(@Valid @RequestBody CreateCourseEnrollmentRequest request) {
+        Student student = currentStudentService.resolveCurrentStudent();
+        var enrollment = courseEnrollmentService.matricular(student.getId(), request);
+        personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+        return CourseEnrollmentResponse.from(enrollment);
     }
 
     @GetMapping("/program-enrollments")
