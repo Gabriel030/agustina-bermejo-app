@@ -81,6 +81,7 @@ public class GlobalExceptionHandler {
             PrerequisiteNotFoundException.class,
             SectionInstructorNotFoundException.class,
             ProgramEnrollmentNotFoundException.class,
+            ProgramEnrollmentApplicationNotFoundException.class,
             CourseEnrollmentNotFoundException.class,
             SectionEnrollmentNotFoundException.class,
             AttendanceNotFoundException.class,
@@ -117,6 +118,9 @@ public class GlobalExceptionHandler {
             GraduationRequestAlreadyActiveException.class,
             InvalidGraduationRequestStateException.class,
             InvalidDirectorApprovalRequestStateException.class,
+            InvalidProgramEnrollmentApplicationStateException.class,
+            AlreadyHasPendingApplicationException.class,
+            UsernameAlreadyExistsException.class,
             TermEnrollmentOverrideClosedException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
