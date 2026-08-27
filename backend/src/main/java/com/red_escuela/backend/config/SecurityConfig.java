@@ -69,6 +69,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/prospects").permitAll()
+                // Épica 7 Fase 2: Registrarse.jsx todavía no tiene sesión cuando arma el
+                // form, necesita resolver el institutionId de RegisterRequest antes.
+                .requestMatchers(HttpMethod.GET, "/institutions").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

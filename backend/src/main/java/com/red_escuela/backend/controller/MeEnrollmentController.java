@@ -15,7 +15,6 @@ import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.service.CourseEnrollmentService;
 import com.red_escuela.backend.service.CurrentStudentService;
-import com.red_escuela.backend.service.PersonRoleGranter;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
 import com.red_escuela.backend.service.SubjectSectionEnrollmentService;
 import jakarta.validation.Valid;
@@ -44,30 +43,28 @@ public class MeEnrollmentController {
     private final ProgramEnrollmentService programEnrollmentService;
     private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
     private final CourseEnrollmentService courseEnrollmentService;
-    private final PersonRoleGranter personRoleGranter;
 
     public MeEnrollmentController(
             CurrentStudentService currentStudentService,
             ProgramEnrollmentService programEnrollmentService,
             SubjectSectionEnrollmentService subjectSectionEnrollmentService,
-            CourseEnrollmentService courseEnrollmentService,
-            PersonRoleGranter personRoleGranter) {
+            CourseEnrollmentService courseEnrollmentService) {
         this.currentStudentService = currentStudentService;
         this.programEnrollmentService = programEnrollmentService;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
         this.courseEnrollmentService = courseEnrollmentService;
-        this.personRoleGranter = personRoleGranter;
     }
 
     // Épica 7: inscripción a un curso con cupo, sin aprobación — el propio Alumno
     // la dispara (antes solo staff podía, ver CourseEnrollmentService.matricular).
-    // Si todavía no tenía ningún rol (recién registrado), lo obtiene acá.
+    // Si todavía no tenía ningún rol (recién registrado), lo obtiene acá —
+    // matricularComoAutoservicio hace matricular()+otorgar rol en una sola
+    // transacción (ver comentario ahí: separarlos perdía el rol otorgado).
     @PostMapping("/course-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     public CourseEnrollmentResponse inscribirmeAUnCurso(@Valid @RequestBody CreateCourseEnrollmentRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        var enrollment = courseEnrollmentService.matricular(student.getId(), request);
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+        var enrollment = courseEnrollmentService.matricularComoAutoservicio(student.getId(), request);
         return CourseEnrollmentResponse.from(enrollment);
     }
 

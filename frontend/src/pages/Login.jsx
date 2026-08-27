@@ -118,6 +118,12 @@ export function Login() {
         </form>
 
         <div className="mt-6 text-center text-xs text-ink-faint">
+          ¿No tenés cuenta?{' '}
+          <a href="/registrarse" className="font-semibold text-accent hover:text-accent-2">
+            Registrate
+          </a>
+        </div>
+        <div className="mt-2 text-center text-xs text-ink-faint">
           ¿Problemas para ingresar? Consultá en Secretaría.
         </div>
       </GlassCard>

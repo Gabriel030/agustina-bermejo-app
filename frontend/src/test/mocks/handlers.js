@@ -25,4 +25,10 @@ export const handlers = [
       roles: ['PRECEPTOR'],
     }),
   ),
+  http.post(`${API}/auth/register`, () =>
+    HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
+  ),
+  http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
+  http.get(`${API}/programs`, () => HttpResponse.json([])),
+  http.get(`${API}/courses`, () => HttpResponse.json([])),
 ];
