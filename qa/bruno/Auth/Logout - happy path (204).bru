@@ -1,0 +1,33 @@
+meta {
+  name: Logout - happy path (204)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{preceptorRefreshToken}}"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+  test("body vacío", function () {
+    expect(res.getBody() == null || res.getBody() === "").to.be.true;
+  });
+}
+
+docs {
+  # Logout — happy path
+
+  **Depende de** `Login - happy path (200).bru` habiendo corrido antes en
+  la misma ejecución.
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Login - usuario inexistente (401)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "no.existe.qa",
+    "password": "Test1234"
+  }
+}
+
+tests {
+  test("status 401 — mismo código que credenciales inválidas, no 404", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
+
+docs {
+  # Login — usuario inexistente
+
+  **Por qué existe este caso separado del anterior:** un QA senior tiene
+  que confirmar explícitamente que "usuario no existe" y "usuario existe
+  pero contraseña incorrecta" devuelven el MISMO status (`401`) — si
+  devolvieran códigos distintos, sería una fuga de información (permite
+  enumerar usuarios válidos por fuerza bruta). Ver RF-AUTH-05 / hardening
+  de auth.
+}

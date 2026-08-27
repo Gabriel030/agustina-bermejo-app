@@ -1,0 +1,54 @@
+meta {
+  name: Login - happy path (200)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "preceptor.demo",
+    "password": "Test1234"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("preceptorAccessToken", res.getBody().accessToken);
+    bru.setVar("preceptorRefreshToken", res.getBody().refreshToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("body trae accessToken, refreshToken y expiresIn", function () {
+    const body = res.getBody();
+    expect(body).to.have.property("accessToken").that.is.a("string").and.not.empty;
+    expect(body).to.have.property("refreshToken").that.is.a("string").and.not.empty;
+    expect(body).to.have.property("expiresIn");
+  });
+}
+
+docs {
+  # Login — happy path
+
+  **Caso de uso:** una cuenta demo sembrada por LocalSeedRunner
+  (`preceptor.demo` / `Test1234`, perfil `local`) se loguea con
+  credenciales correctas.
+
+  **Criterio de aceptación:** `200`, body con `accessToken`/
+  `refreshToken`/`expiresIn`, tokens usables de inmediato (lo confirma
+  `GET /me - con token de preceptor (200).bru`).
+
+  **Precondición:** backend corriendo con `spring.profiles.active=local`
+  (o el perfil que sembró estas cuentas) — si falla con `401`, primero
+  confirmar que las cuentas demo existen (`docker exec ... psql -c
+  "select username from person where username like '%.demo'"`).
+}

@@ -1,0 +1,34 @@
+meta {
+  name: GET Programs - con sesion, listado (200)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/programs?status=ACTIVE
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("body es un array", function () {
+    expect(res.getBody()).to.be.an("array");
+  });
+  test("si hay items, ninguno tiene status distinto de ACTIVE (filtro respetado)", function () {
+    const body = res.getBody();
+    body.forEach((p) => expect(p.status).to.equal("ACTIVE"));
+  });
+}
+
+docs {
+  # GET Programs — con sesión, filtrado por status
+
+  **Depende de** `Auth/Login - happy path (200).bru` habiendo corrido
+  antes en la misma ejecución (`{{preceptorAccessToken}}`).
+}

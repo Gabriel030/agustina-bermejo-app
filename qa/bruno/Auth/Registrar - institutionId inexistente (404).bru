@@ -1,0 +1,41 @@
+meta {
+  name: Registrar - institutionId inexistente (404)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("emailUnico", "qa.instinexistente." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "InstitutionInexistente",
+    "email": "{{emailUnico}}",
+    "username": "{{emailUnico}}",
+    "password": "Test1234",
+    "institutionId": 999999
+  }
+}
+
+tests {
+  test("status 404 — InstitutionNotFoundException", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  # Registrar — institutionId que no existe
+
+  Caso borde de integridad referencial en el body: un id sintácticamente
+  válido pero que no existe en la tabla `institution`. Confirma que
+  `RegistrationService` valida el `findById` antes de crear nada (no deja
+  un `Person`/`Student` huérfano si esto falla).
+}

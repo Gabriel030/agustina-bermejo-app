@@ -1,0 +1,24 @@
+meta {
+  name: Caso de uso - Inscribirse a un curso
+}
+
+docs {
+  # Caso de uso — Inscribirse a un curso
+
+  **Correr con:** `bru run "Autoservicio - Catalogo y matriculacion/Caso de uso - Inscribirse a un curso" -r --env Local`.
+
+  Este es el flujo donde encontramos el bug real (rol `ALUMNO` no
+  otorgado — ver [[QA - Fase 2, registro y catálogo]] en Obsidian y el
+  commit del fix). El paso 6 (`Alumno ahora tiene rol ALUMNO`) es el que
+  hubiera atrapado ese bug si esta colección hubiera existido antes de
+  mergear la Fase 2 — queda acá como regresión permanente.
+
+  ## Criterios de aceptación cubiertos
+
+  1. Inscribirse a un curso con cupo, sin aprobación previa (a diferencia
+     de una carrera, que necesita el flujo de solicitud/aprobación).
+  2. Otorga el rol `ALUMNO` automáticamente, en la misma operación.
+  3. No permite inscribirse dos veces al mismo curso.
+  4. Inscribirse a un curso inexistente da `404`, no `500` ni un `201`
+     fantasma.
+}

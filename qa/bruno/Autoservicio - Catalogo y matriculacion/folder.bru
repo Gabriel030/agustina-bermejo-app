@@ -1,0 +1,25 @@
+meta {
+  name: Autoservicio - Catalogo y matriculacion
+}
+
+docs {
+  # Autoservicio — Catálogo y matriculación
+
+  Épica 7: registro independiente, catálogo (`/programs`, `/courses`),
+  solicitud de alta en carrera y inscripción directa a curso. Los
+  requests sueltos de esta carpeta prueban cada endpoint por separado;
+  las subcarpetas "Caso de uso - ..." prueban flujos de punta a punta
+  (varios requests encadenados + verificación de estado final), que es
+  donde vive la cobertura más valiosa — un endpoint puede devolver el
+  status code correcto de forma aislada y aun así el flujo completo estar
+  roto (ej. el bug real que encontramos: `POST /me/course-enrollments`
+  devolvía `201` correcto, pero el rol `ALUMNO` nunca quedaba otorgado).
+
+  **Nota sobre validación de base de datos:** esta colección valida
+  estado a través de la API (ej. `GET /me` para confirmar el rol
+  otorgado), no pegándole a Postgres directo — así corre en cualquier
+  entorno sin depender de `psql`/Docker. Cuando un invariante SOLO es
+  observable por SQL directo (no hay endpoint que lo exponga), se
+  documenta en el `docs` del request como paso manual, no se automatiza
+  acá.
+}

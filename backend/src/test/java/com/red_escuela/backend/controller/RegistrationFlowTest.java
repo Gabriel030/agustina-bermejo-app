@@ -168,6 +168,30 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
+    // Regresión (encontrado probando con qa/bruno, no por este test): a diferencia del
+    // caso de arriba, acá el username es distinto — la única colisión es el email. El
+    // servicio no valida esto de forma explícita (solo chequea username), pero el
+    // constraint uk_person_email a nivel DB sí lo rechaza. Antes del fix, esto escapaba
+    // sin manejar como DataIntegrityViolationException (Person.id es IDENTITY, el
+    // insert se ejecuta antes de llegar al try/catch de RegistrationService) y, por un
+    // bug separado y sistémico (/error no era permitAll), el 500 real quedaba
+    // enmascarado como un 403 vacío y engañoso.
+    @Test
+    void registrarseConEmailYaExistenteYUsernameDistintoDevuelve409() throws Exception {
+        Long institutionId = persistInstitution();
+        RegisterRequest primero = registroValido("email-dup-a", institutionId);
+        mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(primero)))
+                .andExpect(status().isCreated());
+
+        RegisterRequest segundoConMismoEmail = new RegisterRequest(
+                "Otra", "Persona", primero.email(), "username-distinto-email-dup-b", "Test1234", institutionId);
+
+        mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(segundoConMismoEmail)))
+                .andExpect(status().isConflict());
+    }
+
     @Test
     void registrarseConPasswordDebilDevuelve400() throws Exception {
         Long institutionId = persistInstitution();

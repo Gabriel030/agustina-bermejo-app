@@ -34,7 +34,7 @@ Correr todo: `./mvnw test` desde `backend/`. Necesita Docker corriendo (Testcont
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
-## Frontend (a instalar — todavía no hay tests)
+## Frontend (Vitest + RTL + MSW, instalado desde la Fase 1)
 
 Stack propuesto: **Vitest** (nativo de Vite, mismo config/transform que el build,
 sin duplicar setup) + **React Testing Library** (testea comportamiento visible al
@@ -73,6 +73,70 @@ se evalúa recién cuando haya CI armado para correrlo contra un backend real
 levantado (Docker Compose + Postgres). Hasta entonces, el nivel 3 de arriba
 (integration test con MSW) es el que blinda los flujos críticos.
 
+## QA de contrato HTTP (Bruno) — `qa/bruno/`
+
+Los tests de JUnit/Vitest verifican que el CÓDIGO se comporta como el código
+espera — no necesariamente que el CONTRATO HTTP real (status code exacto, body
+vacío en errores, endpoint público vs. protegido) sea el correcto, ni que un
+flujo de varios pasos siga siendo consistente cuando se lo corre contra el
+backend real, sin el paraguas de una transacción de test. Encontramos un caso
+real de esto en Épica 7 Fase 2: un test JUnit `@Transactional` a nivel de clase
+daba falso positivo en una aserción de rol otorgado, porque toda la prueba
+corría en una única transacción — nunca hubo un commit real de por medio. Correr
+la misma prueba contra el servidor real (con Bruno) sí lo atrapó.
+
+**`qa/bruno/` es una colección de [Bruno](https://www.usebruno.com/)** (CLI:
+`bru`, instalado con `npm install -g @usebruno/cli`; GUI opcional:
+`brew install --cask bruno`) con un request por caso de prueba — no un request
+por endpoint. Estructura:
+
+```
+qa/bruno/
+  bruno.json
+  environments/Local.bru        # baseUrl=http://localhost:8080
+  00 - Setup/                   # bootstrap compartido (resuelve institutionId, etc.)
+  Auth/                         # un caso de prueba = un archivo .bru
+  <Dominio> - <sub-dominio>/
+    GET/POST sueltos ...        # request por endpoint, casos borde propios
+    Caso de uso - <flujo>/      # secuencia numerada (seq: 1, 2, 3...) que
+                                 # encadena varios requests + verifica estado
+                                 # final vía la API (no SQL directo — así corre
+                                 # en cualquier entorno)
+```
+
+**Convención de un `.bru`**: `docs` explica el caso de uso y el criterio de
+aceptación que prueba (no solo "qué" — el "por qué" de ese caso puntual,
+incluidos los bordes: campos faltantes, `null` explícito, tipos incorrectos,
+ids inexistentes, duplicados). `tests` afirma el status code exacto observado
+contra el backend real (nunca `[200, 201]` genérico salvo que el código
+realmente pueda variar por diseño) y las partes del body que importan.
+`script:post-response` encadena datos entre requests (`bru.setVar(...)`) para
+secuencias multi-paso.
+
+**Correr:**
+```bash
+bru run "qa/bruno/00 - Setup" "qa/bruno/Auth" -r --env Local
+bru run "qa/bruno/<carpeta de caso de uso>" -r --env Local
+bru run qa/bruno -r --env Local   # toda la colección
+```
+Necesita el backend local corriendo (`mvn spring-boot:run`, perfil `local` para
+tener las cuentas demo sembradas — `preceptor.demo`/`administrativo.demo`/etc.,
+password `Test1234`) y Postgres arriba. **Cuidado con el rate limiter**: correr
+la colección completa varias veces seguidas en poco tiempo agota el bucket de
+`/auth/login`/`/auth/register` (capacidad 10-20/min, compartida en memoria para
+todo el proceso) y produce `429` en cascada que no son bugs reales — si eso
+pasa, esperar ~1 minuto o reiniciar el backend.
+
+**Cuándo escribir casos nuevos acá**: cualquier endpoint nuevo o tocado en una
+fase, con su happy path + los bordes reales del dominio (no solo "campo
+faltante" genérico — pensar como QA senior: ¿qué pasa si mando un id que
+pertenece a otra entidad? ¿un duplicado por una vía que el código no valida
+explícito pero que un constraint de DB sí rechaza? ¿el status code de "sin
+sesión" es el mismo en todos los endpoints protegidos, o depende de si hay un
+`AuthenticationEntryPoint` configurado?). Un caso de uso que involucra alta +
+baja + verificación de estado va en su propia subcarpeta "Caso de uso - ...",
+no como requests sueltos.
+
 ## Antes de dar una tarea por terminada
 
 Si tocaste backend: `./mvnw test` en verde. Si tocaste frontend: `npm run test`
@@ -80,3 +144,31 @@ en verde + `npm run build` sin errores (ver [docs/context/frontend.md](frontend.
 para dónde va cada tipo de componente/hook nuevo, así el test queda en el lugar
 correcto). Si el cambio toca un flujo de la lista de integration tests críticos
 de arriba, ese test específico se corre y se muestra el resultado, no se asume.
+
+## Checklist de QA obligatorio al cerrar una fase
+
+Antes de pedir el merge de un PR que cierra una fase del roadmap:
+
+1. **Cada endpoint nuevo o tocado tiene su carpeta/requests en `qa/bruno/`**
+   (ver arriba) — happy path + casos borde +, si aplica, un "Caso de uso -
+   ..." de punta a punta con verificación de estado real (no asumido).
+2. **`bru run` de esa carpeta, en verde, contra el backend local real** —
+   no alcanza con que los tests de JUnit/Vitest pasen; hay que confirmar el
+   contrato HTTP real (status code exacto, body vacío o no en errores,
+   público vs. protegido) corriendo contra el servidor real, sin el
+   paraguas de una transacción de test.
+3. **Reporte de QA de la fase** — nota nueva en Obsidian,
+   `QA - <nombre de la fase>.md`, en la carpeta de esa fase, linkeada desde
+   su spec técnica. Tabla por endpoint: caso probado → cómo se probó →
+   resultado. Sección explícita de gaps (qué NO se probó y por qué) — no
+   dar a entender cobertura total si no la hay.
+4. **Todo bug real encontrado en el camino** (no solo en el endpoint que se
+   estaba construyendo — un bug preexistente que aparece mientras se prueba
+   se corrige ahí mismo si el alcance es chico, o se documenta como hallazgo
+   explícito si es mayor) queda con: causa raíz, fix, y un caso de prueba
+   nuevo (Bruno y/o JUnit/Vitest) que lo hubiera atrapado — explicando por
+   qué la cobertura existente no lo atrapaba.
+5. **`./mvnw test` completo** (no solo los tests del área tocada) — un fix
+   de alcance amplio (ej. un `@ExceptionHandler` nuevo) puede tener efectos
+   secundarios en código no relacionado; correr toda la suite es la única
+   forma de confirmarlo, no asumirlo.

@@ -1,0 +1,18 @@
+meta {
+  name: Auth
+}
+
+docs {
+  # Auth
+
+  Login, registro independiente, refresh, logout y recuperación de
+  contraseña. Ver `docs/context/backend.md` (Spec - JWT y login) para las
+  reglas de negocio completas — acá solo se documentan los casos de prueba.
+
+  **Convención de esta colección:** cada request es UN caso de prueba
+  (happy path o un caso borde puntual), nombrado como
+  `<Verbo/endpoint> - <caso> (<status esperado>).bru`. Las secuencias que
+  necesitan varios pasos encadenados (alta → verificar → baja → verificar)
+  viven en subcarpetas "Caso de uso - ...", numeradas por `seq` para
+  correr en orden con `bru run <carpeta> -r`.
+}

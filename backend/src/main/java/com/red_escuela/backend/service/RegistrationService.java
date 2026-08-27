@@ -60,24 +60,32 @@ public class RegistrationService {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
-        Person person = personFactory.crearPersonConCredenciales(
-                request.nombre(), request.apellido(), request.email(),
-                request.username(), passwordEncoder.encode(request.password()));
-
-        Student student = new Student();
-        student.setPerson(person);
-        student.setInstitution(institution);
-        // CONFIRMADO, no PROSPECTO: a diferencia de Prospect, acá no hay revisión
-        // de documentación pendiente para la cuenta en sí — eso ocurre recién si
-        // pide una carrera (ProgramEnrollmentApplication), no antes.
-        student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
-
+        // El try/catch envuelve también la creación de Person (no solo el save de
+        // Student): Person.id es GenerationType.IDENTITY, así que
+        // personRepository.save(...) dentro de PersonFactory.crearPersonBase ejecuta
+        // el INSERT de inmediato (Hibernate no puede diferir/batchear un id IDENTITY),
+        // no en el flush posterior de studentRepository.saveAndFlush(). Un email
+        // duplicado con username distinto (uk_person_email, sin chequeo explícito acá
+        // porque solo se valida unicidad de username) violaba el constraint ahí mismo,
+        // afuera del try/catch original — DataIntegrityViolationException sin manejar,
+        // encontrado probando la colección de Bruno (ver qa/bruno).
         try {
+            Person person = personFactory.crearPersonConCredenciales(
+                    request.nombre(), request.apellido(), request.email(),
+                    request.username(), passwordEncoder.encode(request.password()));
+
+            Student student = new Student();
+            student.setPerson(person);
+            student.setInstitution(institution);
+            // CONFIRMADO, no PROSPECTO: a diferencia de Prospect, acá no hay revisión
+            // de documentación pendiente para la cuenta en sí — eso ocurre recién si
+            // pide una carrera (ProgramEnrollmentApplication), no antes.
+            student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             studentRepository.saveAndFlush(student);
+
+            return authService.issueTokens(person);
         } catch (DataIntegrityViolationException e) {
             throw new UsernameAlreadyExistsException(request.username());
         }
-
-        return authService.issueTokens(person);
     }
 }

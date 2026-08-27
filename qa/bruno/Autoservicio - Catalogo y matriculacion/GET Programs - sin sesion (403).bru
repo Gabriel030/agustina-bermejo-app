@@ -1,0 +1,38 @@
+meta {
+  name: GET Programs - sin sesion (403)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/programs
+  auth: none
+}
+
+tests {
+  test("status 403 — Spring Security deniega sin AuthenticationEntryPoint propio configurado (verificado con curl -i)", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+  test("body vacío — nunca filtra datos de carreras sin sesión", function () {
+    expect(res.getBody() == null || res.getBody() === "").to.be.true;
+  });
+}
+
+docs {
+  # GET Programs — sin sesión
+
+  A diferencia de `/institutions`, este endpoint SÍ exige sesión (no está
+  en `permitAll()`) — `Catalogo.jsx` solo lo pega con `usuario` ya
+  logueado.
+
+  **Por qué 403 y no 401:** sin un `AuthenticationEntryPoint` propio
+  configurado en `SecurityConfig`, Spring Security 6 devuelve `403` para
+  cualquier request sin credenciales contra un endpoint que exige
+  `authenticated()` — no hay un desafío `WWW-Authenticate` de vuelta.
+  Confirmado con `curl -i` directo (no asumido). No es necesariamente el
+  código "ideal" desde un punto de vista REST estricto (`401` sería más
+  preciso semánticamente para "no autenticado" vs `403` para "autenticado
+  pero sin permiso"), pero es el comportamiento REAL y consistente hoy —
+  si algún día se agrega un `AuthenticationEntryPoint` propio, este test
+  tiene que actualizarse a propósito, no fallar en silencio.
+}

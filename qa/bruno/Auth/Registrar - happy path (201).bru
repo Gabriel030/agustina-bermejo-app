@@ -1,0 +1,53 @@
+meta {
+  name: Registrar - happy path (201)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("emailUnico", "qa.registro." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Bruno",
+    "email": "{{emailUnico}}",
+    "username": "{{emailUnico}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("qaAccessToken", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("body trae tokens usables de inmediato", function () {
+    expect(res.getBody()).to.have.property("accessToken").that.is.a("string").and.not.empty;
+  });
+}
+
+docs {
+  # Registrar — happy path
+
+  **Precondición:** requiere la var de entorno `institutionId` seteada
+  (ver `Local.bru` — hay que correr una vez
+  `GET Institutions - sin sesion (200).bru` de la carpeta Autoservicio y
+  copiar un id real, o sembrar uno por SQL si la base está vacía).
+
+  **Criterio de aceptación:** `201`, tokens usables sin volver a loguearse
+  (RF de la Fase 1 — "al confirmar, entra directo al sistema").
+}

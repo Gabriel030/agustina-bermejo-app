@@ -1,0 +1,42 @@
+meta {
+  name: 3. Crear curso de prueba (setup, 201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/courses
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCursoQA", "QA Bruno - Curso " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCursoQA}}",
+    "termId": {{termIdQA}},
+    "schedule": "Sáb 10-13hs",
+    "capacity": 20,
+    "price": 15000,
+    "durationMonths": 3
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("courseIdQA", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

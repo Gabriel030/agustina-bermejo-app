@@ -1,0 +1,30 @@
+meta {
+  name: Login - body vacio (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+tests {
+  test("status 400 — Bean Validation rechaza username/password en blanco", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  # Login — body vacío
+
+  **Criterio de aceptación:** `400`, no `500` ni una excepción sin
+  manejar — confirma que `@NotBlank` en `LoginRequest` está activo y que
+  `GlobalExceptionHandler` lo mapea a 400 antes de llegar a la lógica de
+  negocio.
+}

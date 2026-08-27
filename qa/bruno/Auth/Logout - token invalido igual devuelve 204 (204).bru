@@ -1,0 +1,35 @@
+meta {
+  name: Logout - token invalido igual devuelve 204 (204)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "token-que-no-existe-en-la-base"
+  }
+}
+
+tests {
+  test("status 204 — idempotente/anti-enumeración a propósito", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  # Logout — token inválido/inexistente
+
+  **Por qué este caso importa:** `AuthService.logout` usa
+  `.ifPresent(...)` — un token que no existe en `refresh_token` no tira
+  error, simplemente no revoca nada y devuelve `204` igual. Es
+  intencional (mismo criterio anti-enumeración que login/forgot-password:
+  el cliente nunca puede usar la respuesta de logout para confirmar si un
+  token existió alguna vez). Un QA que no conozca esto podría reportarlo
+  como bug — este request documenta que es comportamiento esperado.
+}
