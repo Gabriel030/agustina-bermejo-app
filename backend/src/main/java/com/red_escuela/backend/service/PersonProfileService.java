@@ -23,6 +23,10 @@ public class PersonProfileService {
         this.personRepository = personRepository;
     }
 
+    public Person verPerfilPropio() {
+        return resolveAuthenticatedPerson();
+    }
+
     @Transactional
     public Person actualizarDatosPropios(UpdateOwnProfileRequest request) {
         Person person = resolveAuthenticatedPerson();

@@ -4,6 +4,7 @@ import com.red_escuela.backend.dto.PersonResponse;
 import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.service.PersonProfileService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,11 @@ public class PersonController {
 
     public PersonController(PersonProfileService personProfileService) {
         this.personProfileService = personProfileService;
+    }
+
+    @GetMapping
+    public PersonResponse verPerfilPropio() {
+        return PersonResponse.from(personProfileService.verPerfilPropio());
     }
 
     @PutMapping

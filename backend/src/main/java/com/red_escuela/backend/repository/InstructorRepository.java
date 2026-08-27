@@ -16,6 +16,9 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     Optional<Instructor> findByIdAndPerson_Status(Long id, StatusType status);
 
+    // Resolver el Instructor a partir del personId del JWT (endpoints propios del Docente).
+    Optional<Instructor> findByPerson_Id(Long personId);
+
     Optional<Instructor> findByPerson_DniAndPerson_Status(String dni, StatusType status);
 
     Optional<Instructor> findByPerson_File(String file);

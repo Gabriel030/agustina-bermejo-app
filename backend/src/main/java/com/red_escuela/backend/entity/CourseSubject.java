@@ -57,5 +57,10 @@ public class CourseSubject {
     @OneToMany(mappedBy = "prerequisiteCourseSubject", fetch = FetchType.LAZY)
     private List<CourseSubjectPrerequisite> requiredBy;
 
+    // Tope de reintentos para rendir el final de este módulo. Null = sin límite, mismo
+    // criterio que Subject.maxFinalExamAttempts.
+    @Column(name = "max_final_exam_attempts")
+    private Integer maxFinalExamAttempts;
+
 }
 

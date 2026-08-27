@@ -38,7 +38,26 @@ public class GlobalExceptionHandler {
             InvalidPrerequisiteException.class,
             CircularPrerequisiteException.class,
             ElectiveGroupNotAssignedException.class,
-            InvalidElectiveRangeException.class
+            InvalidElectiveRangeException.class,
+            StudentNotConfirmedException.class,
+            StudentNotActiveException.class,
+            AdmissionWindowClosedException.class,
+            EnrollmentWindowClosedException.class,
+            ProgramEnrollmentRequiredException.class,
+            PrerequisiteNotMetException.class,
+            AmbiguousSectionException.class,
+            InvalidSectionChangeException.class,
+            SubjectNotInProgramPlanException.class,
+            InvalidWindowConfigurationException.class,
+            StudentNotRegularException.class,
+            ExamBoardRegistrationWindowClosedException.class,
+            NoEvaluationSchemeException.class,
+            MaxExamAttemptsExceededException.class,
+            ExamBoardSubjectMismatchException.class,
+            PaymentExceedsInvoiceBalanceException.class,
+            NotEligibleForGraduationException.class,
+            CertificateNotEligibleException.class,
+            InvalidPasswordPolicyException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -60,7 +79,17 @@ public class GlobalExceptionHandler {
             InstructorNotFoundException.class,
             EvaluationSchemeNotFoundException.class,
             PrerequisiteNotFoundException.class,
-            SectionInstructorNotFoundException.class
+            SectionInstructorNotFoundException.class,
+            ProgramEnrollmentNotFoundException.class,
+            CourseEnrollmentNotFoundException.class,
+            SectionEnrollmentNotFoundException.class,
+            AttendanceNotFoundException.class,
+            ExamBoardNotFoundException.class,
+            ExamBoardRegistrationNotFoundException.class,
+            GradeItemNotFoundException.class,
+            InvoiceNotFoundException.class,
+            GraduationRequestNotFoundException.class,
+            DirectorApprovalRequestNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -73,9 +102,37 @@ public class GlobalExceptionHandler {
             ElectiveGroupAlreadyExistsException.class,
             PrerequisiteAlreadyExistsException.class,
             InstructorAlreadyAssignedException.class,
-            ElectiveGroupInUseException.class
+            ElectiveGroupInUseException.class,
+            AlreadyEnrolledInProgramException.class,
+            AlreadyEnrolledInCourseException.class,
+            AlreadyEnrolledInSubjectException.class,
+            CannotWithdrawException.class,
+            IncompleteSectionSetupException.class,
+            AttendanceAlreadyRecordedException.class,
+            CannotJustifyException.class,
+            ExamBoardClosedException.class,
+            AlreadyRegisteredInExamBoardException.class,
+            InvoiceAlreadyCancelledException.class,
+            PendingDebtException.class,
+            GraduationRequestAlreadyActiveException.class,
+            InvalidGraduationRequestStateException.class,
+            InvalidDirectorApprovalRequestStateException.class,
+            TermEnrollmentOverrideClosedException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
+    }
+
+    @ExceptionHandler({
+            NotOwnSectionException.class,
+            RoleNotAssignableByActorException.class
+    })
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public void handleForbidden() {
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public void handleTooManyRequests() {
     }
 }

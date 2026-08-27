@@ -38,4 +38,9 @@ public class Term {
 
     @Column(name = "enrollment_end")
     private LocalDateTime enrollmentEnd;
+
+    // null = sin override, se sigue validando por enrollmentStart/enrollmentEnd (default).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "enrollment_override")
+    private TermEnrollmentOverride enrollmentOverride;
 }

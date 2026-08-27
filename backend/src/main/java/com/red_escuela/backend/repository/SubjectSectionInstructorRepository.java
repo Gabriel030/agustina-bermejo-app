@@ -10,4 +10,9 @@ import java.util.List;
 public interface SubjectSectionInstructorRepository extends JpaRepository<SubjectSectionInstructor, Long> {
 
     List<SubjectSectionInstructor> findBySectionId(Long sectionId);
+
+    // Resolver las comisiones propias del Docente, para la autorización de "comisión propia".
+    List<SubjectSectionInstructor> findByInstructorId(Long instructorId);
+
+    boolean existsBySectionIdAndInstructorId(Long sectionId, Long instructorId);
 }

@@ -6,5 +6,6 @@ public enum EnrollmentStatus {
     REGULAR,
     APPROVED,
     FAILED,
-    WITHDRAWN
+    WITHDRAWN,
+    WAITLISTED
 }

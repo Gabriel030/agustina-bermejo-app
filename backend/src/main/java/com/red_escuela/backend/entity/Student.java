@@ -33,9 +33,6 @@ public class Student {
     @Column(name = "grant_final_exam_sign_up")
     private Boolean grantFinalExamSignUp;
 
-    @Column(name = "defaulter")
-    private Boolean defaulter;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", nullable = false)
     private StudentOnboardingStatus onboardingStatus = StudentOnboardingStatus.CONFIRMADO;

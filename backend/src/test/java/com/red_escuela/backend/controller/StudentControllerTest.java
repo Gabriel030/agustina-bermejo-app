@@ -130,6 +130,28 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Revisión de matriz de permisos: el Director tiene R sobre el legajo (matriz sección 3),
+    // a diferencia de Preceptor/Administrativo que además pueden dar de baja/resetear password.
+    @Test
+    void directorPuedeListarYVerLegajoPeroNoPuedeDarDeBaja() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(
+                "42111222", "42111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("director1", "DIRECTOR");
+
+        mockMvc.perform(get("/students").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        WithdrawStudentRequest request = new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "motivo");
+        mockMvc.perform(post("/students/{id}/withdraw", student.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
     @Test
     void listarSinFiltroTraeSoloConfirmados() throws Exception {
         Institution institution = persistInstitution();

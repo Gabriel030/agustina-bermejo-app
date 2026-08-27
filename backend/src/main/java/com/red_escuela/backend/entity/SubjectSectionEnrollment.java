@@ -8,20 +8,21 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
-
 /*
-* Qué representa:
-        Un rango de fechas con identidad propia: “2025 1er cuatrimestre”,
-        *  “2025 2do cuatrimestre”, “2025 invierno”, etc.
-        Se usa para agrupar todas las secciones que se ofrecen en ese período
-        * y para consultar inscripciones/notas por período.
-
-*/
+ * Inscripción de un alumno a una comisión (SubjectSection) de una materia de carrera,
+ * dentro del contexto de una ProgramEnrollment puntual (misma materia, dos carreras
+ * distintas => dos filas distintas, una por cada ProgramEnrollment).
+ *
+ * Renombrada desde ProgramSubjectSectionEnrollment (spec Inscripciones académicas): al
+ * principio no se tocó nada a nivel de base, solo el nombre de la clase — pero la tabla
+ * física "program_section_enrollment" quedó desentonando con el nombre nuevo (Fase 3, V20
+ * la renombró a "subject_section_enrollment"). La columna program_section_id no se tocó.
+ */
 @Getter
 @Setter
 @Entity
 @Table(
-    name = "program_section_enrollment",
+    name = "subject_section_enrollment",
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uk_prog_sec_enr_student_section",
@@ -29,7 +30,7 @@ import java.time.LocalDateTime;
         )
     }
 )
-public class ProgramSubjectSectionEnrollment {
+public class SubjectSectionEnrollment {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,10 +49,6 @@ public class ProgramSubjectSectionEnrollment {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private ProgramEnrollment programEnrollment;
 
-    // Spec Estructura académica: ProgramSubjectSection se renombró a SubjectSection y
-    // pasó a apuntar a Subject en vez de ProgramSubject (una comisión ahora se comparte
-    // entre carreras). Cambio mecánico para que compile — la lógica de esta entidad
-    // (inscripción de un alumno a una comisión) es de la futura spec de Inscripciones.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_section_id", nullable = false)
     private SubjectSection subjectSection;

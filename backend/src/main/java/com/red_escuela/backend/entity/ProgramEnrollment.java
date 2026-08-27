@@ -43,7 +43,7 @@ public class ProgramEnrollment {
     private LocalDateTime completionDate;
 
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<ProgramSubjectSectionEnrollment> sectionEnrollments;
+    private List<SubjectSectionEnrollment> sectionEnrollments;
 
 
 }
