@@ -21,7 +21,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/students")
-@PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
 public class StudentController {
 
     private final StudentService studentService;
@@ -30,7 +29,11 @@ public class StudentController {
         this.studentService = studentService;
     }
 
+    // Matriz de permisos (sección 3): Director tiene R sobre el legajo de un alumno, a
+    // diferencia de las operaciones de escritura de abajo (baja/reset), que son exclusivas
+    // de Preceptor/Administrativo.
     @GetMapping
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<StudentResponse> listar(
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus) {
@@ -38,18 +41,21 @@ public class StudentController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StudentResponse verLegajo(@PathVariable Long id) {
         return StudentResponse.from(studentService.verLegajo(id));
     }
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
         studentService.bajaAlumno(id, request);
     }
 
     @PostMapping("/{id}/reset-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void resetearPassword(@PathVariable Long id) {
         studentService.resetearPassword(id);
     }

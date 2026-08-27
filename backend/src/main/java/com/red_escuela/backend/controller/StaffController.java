@@ -21,10 +21,12 @@ import java.util.Set;
 
 @RestController
 @RequestMapping("/staff")
-@PreAuthorize("hasRole('ADMINISTRATIVO')")
 public class StaffController {
 
-    private static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR");
+    // Administrativo (Docente/Preceptor) y Director (Administrativo) según RF-AD-05/RF-DI-04
+    // — el @PreAuthorize solo exige "alguno de los dos", la regla de "cuál rol exacto" vive
+    // en StaffService.exigirPuedeAsignar.
+    private static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO");
 
     private final StaffService staffService;
 
@@ -34,12 +36,14 @@ public class StaffController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffResponse altaPersonal(@Valid @RequestBody CreateStaffRequest request) {
         Person person = staffService.altaPersonal(request);
         return StaffResponse.from(person, request.role());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StaffResponse editarPersonal(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
         Person person = staffService.editarPersonal(id, request);
         return StaffResponse.from(person, resolveStaffRole(person));

@@ -56,7 +56,8 @@ public class GlobalExceptionHandler {
             ExamBoardSubjectMismatchException.class,
             PaymentExceedsInvoiceBalanceException.class,
             NotEligibleForGraduationException.class,
-            CertificateNotEligibleException.class
+            CertificateNotEligibleException.class,
+            InvalidPasswordPolicyException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -122,8 +123,16 @@ public class GlobalExceptionHandler {
     public void handleConflict() {
     }
 
-    @ExceptionHandler(NotOwnSectionException.class)
+    @ExceptionHandler({
+            NotOwnSectionException.class,
+            RoleNotAssignableByActorException.class
+    })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public void handleTooManyRequests() {
     }
 }

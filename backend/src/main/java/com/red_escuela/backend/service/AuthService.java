@@ -7,6 +7,7 @@ import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.RefreshToken;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.InvalidCredentialsException;
+import com.red_escuela.backend.exception.InvalidPasswordPolicyException;
 import com.red_escuela.backend.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.repository.LoginAttemptRepository;
@@ -45,6 +46,8 @@ public class AuthService {
     private final long lockoutDurationMinutes;
     private final long refreshTokenExpirationDays;
     private final long passwordResetTokenExpirationMinutes;
+    private final int passwordMinLength;
+    private final boolean passwordRequireLetterAndDigit;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
@@ -57,7 +60,9 @@ public class AuthService {
             @Value("${auth.lockout.max-attempts}") int lockoutMaxAttempts,
             @Value("${auth.lockout.duration-minutes}") long lockoutDurationMinutes,
             @Value("${jwt.refresh-token-expiration-days}") long refreshTokenExpirationDays,
-            @Value("${jwt.password-reset-token-expiration-minutes}") long passwordResetTokenExpirationMinutes) {
+            @Value("${jwt.password-reset-token-expiration-minutes}") long passwordResetTokenExpirationMinutes,
+            @Value("${auth.password.min-length}") int passwordMinLength,
+            @Value("${auth.password.require-letter-and-digit}") boolean passwordRequireLetterAndDigit) {
         this.personRepository = personRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.loginAttemptRepository = loginAttemptRepository;
@@ -68,6 +73,8 @@ public class AuthService {
         this.lockoutDurationMinutes = lockoutDurationMinutes;
         this.refreshTokenExpirationDays = refreshTokenExpirationDays;
         this.passwordResetTokenExpirationMinutes = passwordResetTokenExpirationMinutes;
+        this.passwordMinLength = passwordMinLength;
+        this.passwordRequireLetterAndDigit = passwordRequireLetterAndDigit;
     }
 
     @Transactional
@@ -150,6 +157,10 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(String rawToken, String newPassword) {
+        // Se valida la política ANTES de tocar el token: una contraseña inválida no debería
+        // consumir un token de reset de un solo uso (RF-AUTH-05).
+        validarPoliticaDePassword(newPassword);
+
         String hash = TokenHashUtil.sha256Hex(rawToken);
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(hash)
                 .filter(t -> !t.getUsed())
@@ -183,6 +194,22 @@ public class AuthService {
         refreshTokenRepository.save(entity);
 
         return rawToken;
+    }
+
+    // RF-AUTH-05: política mínima configurable (auth.password.*), no hardcodeada.
+    private void validarPoliticaDePassword(String rawPassword) {
+        if (rawPassword.length() < passwordMinLength) {
+            throw new InvalidPasswordPolicyException(
+                    "La contraseña tiene que tener al menos " + passwordMinLength + " caracteres");
+        }
+        if (passwordRequireLetterAndDigit) {
+            boolean tieneLetra = rawPassword.chars().anyMatch(Character::isLetter);
+            boolean tieneDigito = rawPassword.chars().anyMatch(Character::isDigit);
+            if (!tieneLetra || !tieneDigito) {
+                throw new InvalidPasswordPolicyException(
+                        "La contraseña tiene que tener al menos una letra y un número");
+            }
+        }
     }
 
     private String generateRandomToken() {
