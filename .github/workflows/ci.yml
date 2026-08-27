@@ -50,3 +50,75 @@ jobs:
       - name: Run frontend test suite
         working-directory: frontend
         run: npm run test
+
+  # Regresión de contrato HTTP contra el backend REAL corriendo (no MockMvc) —
+  # ver docs/context/testing.md, "QA de contrato HTTP (Bruno)". Complementa
+  # (no reemplaza) el job `backend`: JUnit prueba que el código hace lo que el
+  # código espera, esto prueba que el status code/body real que le llega a un
+  # cliente HTTP es el correcto — encontramos un bug real (Épica 7 Fase 2) que
+  # JUnit no atrapaba por el paraguas de @Transactional en los tests.
+  qa-bruno:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: agustina_bermejo
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      JWT_SECRET: ci-only-secret-nunca-usar-en-produccion-0123456789
+      SPRING_PROFILES_ACTIVE: local
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Set up Node (Bruno CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Bruno CLI
+        run: npm install -g @usebruno/cli
+
+      - name: Levantar el backend en segundo plano
+        working-directory: backend
+        run: |
+          nohup ./mvnw spring-boot:run > /tmp/backend-ci.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/institutions > /dev/null; then
+              echo "Backend arriba."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El backend no respondió a tiempo — log:"
+          cat /tmp/backend-ci.log
+          exit 1
+
+      - name: Sembrar institución de prueba
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d agustina_bermejo \
+            -c "insert into institution (name) values ('CI Bruno') on conflict do nothing;"
+
+      - name: Correr la colección Bruno completa
+        run: bru run qa/bruno -r --env Local
+
+      - name: Mostrar el log del backend si algo falló
+        if: failure()
+        run: cat /tmp/backend-ci.log
