@@ -175,6 +175,18 @@ protegidos?) — **en las dos herramientas**, Karate y Bruno, no solo una. Ver
 `qa/bruno/BACKFILL.md` para el estado de cobertura sobre los endpoints
 existentes.
 
+### Inconsistencias o limitaciones reales encontradas durante el QA
+
+Si el backfill de un endpoint revela un comportamiento real del backend que
+no es lo que "debería" ser (un status code inconsistente con el resto del
+sistema, un endpoint que falta para poder armar una feature de frontend,
+una semántica de update que no permite lo que parece que debería permitir)
+pero **no** es un bug bloqueante para el PR en curso, no se documenta solo
+en el PR ni en `BACKFILL.md` — se agrega también como entrada nueva en
+[Deuda técnica y gaps de QA](~/Documentos%20No%20SYNC/Obsidian-vault/agustina-bermejo-app/Roadmap%20frontend/Deuda%20técnica%20y%20gaps%20de%20QA.md)
+(vault de Obsidian, linkeado desde `Roadmap frontend/Indice.md`) — para que
+quede visible en el roadmap y no se pierda en el historial de PRs.
+
 ## Antes de dar una tarea por terminada
 
 Si tocaste backend: `./mvnw test` en verde. Si tocaste frontend: `npm run test`
