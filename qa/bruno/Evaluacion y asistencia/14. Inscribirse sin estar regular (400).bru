@@ -1,0 +1,28 @@
+meta {
+  name: 14. Inscribirse sin estar regular (400)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/exam-boards/{{examBoardId}}/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "examBoardId": {{examBoardId}},
+    "programSectionEnrollmentId": {{sectionEnrollmentId}}
+  }
+}
+
+tests {
+  test("status 400 — StudentNotRegularException, la cursada sigue ENROLLED", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: 17. Cerrar el acta de nuevo es idempotente (204)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/exam-boards/{{examBoardId}}/close
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204 — cerrar un acta ya cerrada no es un error de negocio", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

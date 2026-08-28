@@ -1,0 +1,41 @@
+meta {
+  name: 21. Crear mesa nueva para autoservicio (setup, 201)
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/exam-boards
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectId}},
+    "termId": {{termId}},
+    "examDate": "2026-07-01T00:00:00"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("examBoardAutoservicioId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Mesa nueva, no la del paso 12 (ya quedó CLOSED en el paso 16) — cerrada
+  daría 409 antes de llegar al chequeo de "no regular" que se quiere
+  probar en el paso siguiente.
+}

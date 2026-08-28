@@ -1,0 +1,28 @@
+meta {
+  name: 20. Inscribirse con ventana vencida (400)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/exam-boards/{{examBoardVentanaCerradaId}}/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "examBoardId": {{examBoardVentanaCerradaId}},
+    "programSectionEnrollmentId": {{sectionEnrollmentId}}
+  }
+}
+
+tests {
+  test("status 400 — ExamBoardRegistrationWindowClosedException", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

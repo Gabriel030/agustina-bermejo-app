@@ -1,0 +1,37 @@
+meta {
+  name: 19. Crear mesa con ventana de inscripcion vencida (setup, 201)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/exam-boards
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectId}},
+    "termId": {{termId}},
+    "examDate": "2026-07-01T00:00:00",
+    "registrationStart": "2020-01-01T00:00:00",
+    "registrationEnd": "2020-02-01T00:00:00"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("examBoardVentanaCerradaId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201 — la mesa se crea igual, la ventana solo afecta la inscripción", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
