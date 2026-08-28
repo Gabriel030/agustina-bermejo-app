@@ -1,0 +1,39 @@
+meta {
+  name: 19. Crear carrera 2 (setup, 201)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreProgramaComparte2", "Carrera QA comparte 2 " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreProgramaComparte2}}",
+    "totalYears": 1,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programComparte2Id", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: 14. Alumno no puede crear una comision (403)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/course-subjects/{{courseSubjectId}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Comisión no autorizada",
+    "termId": {{termId}},
+    "capacity": 20
+  }
+}
+
+tests {
+  test("status 403 — exclusivo de Preceptor/Administrativo", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

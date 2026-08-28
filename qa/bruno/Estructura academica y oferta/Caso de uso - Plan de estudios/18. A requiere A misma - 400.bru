@@ -1,0 +1,28 @@
+meta {
+  name: 18. A requiere A misma - 400
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/program-subjects/{{programSubjectAId}}/prerequisites
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "prerequisiteProgramSubjectId": {{programSubjectAId}},
+    "requirementType": "APPROVED"
+  }
+}
+
+tests {
+  test("status 400 — InvalidPrerequisiteException, materia prerrequisito de sí misma", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

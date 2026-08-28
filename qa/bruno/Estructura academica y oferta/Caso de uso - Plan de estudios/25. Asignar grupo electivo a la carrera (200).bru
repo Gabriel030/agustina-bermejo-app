@@ -1,0 +1,29 @@
+meta {
+  name: 25. Asignar grupo electivo a la carrera (200)
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/elective-groups
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "electiveGroupId": {{groupId}},
+    "minRequired": 1,
+    "maxAllowed": 2
+  }
+}
+
+tests {
+  test("status 200 — no 201, este alta puntual no lleva @ResponseStatus CREATED", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

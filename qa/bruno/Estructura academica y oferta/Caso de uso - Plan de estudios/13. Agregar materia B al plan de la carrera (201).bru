@@ -1,0 +1,36 @@
+meta {
+  name: 13. Agregar materia B al plan de la carrera (201)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectBId}},
+    "curricularYear": 1,
+    "curricularTerm": "FIRST",
+    "credits": 6
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programSubjectBId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

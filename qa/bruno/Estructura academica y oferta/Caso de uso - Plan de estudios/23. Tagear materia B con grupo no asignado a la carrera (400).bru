@@ -1,0 +1,33 @@
+meta {
+  name: 23. Tagear materia B con grupo no asignado a la carrera (400)
+  type: http
+  seq: 23
+}
+
+put {
+  url: {{baseUrl}}/program-subjects/{{programSubjectBId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "electiveGroupId": {{groupId}}
+  }
+}
+
+tests {
+  test("status 400 — ElectiveGroupNotAssignedException, decisión 8", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Decisión 8: no se puede tagear una materia del plan con un grupo
+  electivo que la carrera todavía no asignó (rango min/max) — quedaría una
+  electiva huérfana sin regla de cuántas hay que aprobar.
+}

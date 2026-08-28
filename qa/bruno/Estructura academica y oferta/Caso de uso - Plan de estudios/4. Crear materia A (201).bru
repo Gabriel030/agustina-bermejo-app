@@ -1,0 +1,41 @@
+meta {
+  name: 4. Crear materia A (201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreMateriaA", "Materia A " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreMateriaA}}",
+    "description": "Materia troncal"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("subjectAId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial ACTIVE", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}
