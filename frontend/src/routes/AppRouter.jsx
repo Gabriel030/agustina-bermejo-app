@@ -5,6 +5,8 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { Catalogo } from '@/pages/Catalogo';
+import { MisSolicitudes } from '@/pages/MisSolicitudes';
+import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
 import { NoAutorizado } from '@/pages/NoAutorizado';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
@@ -47,7 +49,8 @@ export function AppRouter() {
         }
       >
         <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/mis-solicitudes" element={<Placeholder titulo="Mis solicitudes" />} />
+        <Route path="/mis-solicitudes" element={<MisSolicitudes />} />
+        <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
       </Route>
 
       {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas }]) => (
