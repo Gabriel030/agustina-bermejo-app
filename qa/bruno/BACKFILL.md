@@ -52,14 +52,30 @@ catch-all de `Exception.class` NO es la solución (rompe `@PreAuthorize`).
 
 ## Procesos administrativos y financieros — prioridad alta (dinero)
 
-| Controller | Endpoints | Karate | Bruno |
-|---|---|---|---|
-| InvoiceController | 5 | pendiente | pendiente |
-| MeInvoiceController | 3 | pendiente | pendiente |
-| MeCertificateController | 2 | pendiente | pendiente |
-| GraduationRequestController | 4 | pendiente | pendiente |
-| MeGraduationRequestController | 1 | pendiente | pendiente |
-| DirectorApprovalRequestController | 4 | pendiente | pendiente |
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| InvoiceController | 5 | ✅ | ✅ | ciclo completo crear→pago parcial→exceder saldo (400)→completar→cancelar bloqueado (409); Preceptor sin acceso (403, decisión 14); Director R sin W (403); alumno inexistente (404) |
+| MeInvoiceController | 3 | ✅ | ✅ | autoservicio: `/me/invoices`, `/me/invoices/debt-summary`, `/me/payment-standing` — cubiertos como parte del mismo ciclo de arriba |
+| MeCertificateController | 2 | pendiente | pendiente | |
+| GraduationRequestController | 4 | pendiente | pendiente | |
+| MeGraduationRequestController | 1 | pendiente | pendiente | |
+| DirectorApprovalRequestController | 4 | pendiente | pendiente | |
+
+**Nota de setup (Bruno)**: el alumno de prueba se crea vía `POST
+/auth/register` (no `/prospects`) porque hace falta loguearse como ese
+alumno para probar `/me/invoices` — `/prospects` deja `password` en null.
+`/auth/register` no devuelve `studentId`, así que se resuelve con `GET
+/students?onboardingStatus=CONFIRMADO` filtrando por `username` en el
+script de Bruno (`StudentResponse.username`, dto ya expone ese campo).
+
+**Nota sobre el rate limiter, confirmada acá**: la colección completa
+(`bru run qa/bruno -r`) pega justo en el límite de `auth.rate-limit.login`
+(capacidad 10/min) — Auth + Autoservicio + Gestión de personas ya consumen
+los 10 logins antes de llegar a esta carpeta. Correr esta carpeta sola
+(`bru run "Procesos administrativos y financieros" -r`) da 25/25 verde;
+correr todo junto sin reiniciar el backend entre medio pega 429 a partir de
+acá — no es un bug nuevo, es el límite ya documentado arriba en este mismo
+archivo ("Cuidado con el rate limiter" en `docs/context/testing.md`).
 
 ## Estructura académica / oferta
 
@@ -95,5 +111,7 @@ catch-all de `Exception.class` NO es la solución (rompe `@PreAuthorize`).
 ## Total
 
 155 endpoints, 33 controllers. Con cobertura de rigor completo en ambas
-herramientas: 1 de 33 (AuthController). El resto: parcial o pendiente — ver
-tablas de arriba.
+herramientas: 7 de 33 (AuthController; PersonController, StaffController,
+ProspectController, StudentController de Gestión de personas;
+InvoiceController, MeInvoiceController de Procesos administrativos). El
+resto: parcial o pendiente — ver tablas de arriba.

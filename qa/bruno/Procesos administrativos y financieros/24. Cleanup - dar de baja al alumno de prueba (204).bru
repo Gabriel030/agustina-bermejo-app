@@ -1,0 +1,36 @@
+meta {
+  name: 24. Cleanup - dar de baja al alumno de prueba (204)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/withdraw
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "reason": "ABANDONO",
+    "detail": "Cleanup de colección Bruno — no dejar legajo activo de prueba"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Las facturas/pagos de prueba quedan en la base (no hay endpoint de borrado,
+  ni debería haberlo para dinero real) — por eso esta colección corre contra
+  `docker-compose.qa.yml` (Postgres descartable), nunca contra una base real.
+  Este paso solo evita que el alumno de prueba quede con onboardingStatus
+  CONFIRMADO activo si se reusa la misma base entre corridas.
+}

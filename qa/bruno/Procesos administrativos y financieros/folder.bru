@@ -1,0 +1,22 @@
+meta {
+  name: Procesos administrativos y financieros
+}
+
+docs {
+  # Procesos administrativos y financieros
+
+  Facturación y pagos (`/students/{id}/invoices`, `/invoices/{id}/payments`,
+  `/me/invoices`) — RF-AL-09/RF-AD-08/RF-AL-10. Ver
+  `backend/src/test/resources/karate/procesos-administrativos/` para la
+  versión Karate (misma cobertura, corre automático en CI) — mantener ambas
+  al día.
+
+  El alumno usado en esta carpeta se crea vía `/auth/register` (no vía
+  `/prospects`) porque necesitamos loguearnos como ese alumno para probar
+  `/me/invoices` — el flujo de `/prospects` deja password en null (requiere
+  reset), el de `/auth/register` deja la cuenta lista para loguear de
+  inmediato. El `studentId` no lo devuelve `/auth/register`, así que se
+  resuelve con `GET /students?onboardingStatus=CONFIRMADO` como
+  Administrativo, filtrando por `username` en el script — ver
+  "5. Resolver studentId del alumno nuevo (setup)".
+}

@@ -1,0 +1,45 @@
+meta {
+  name: 4. Registrar alumno nuevo (setup, 201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("usernameAlumnoFacturacion", "bruno.facturacion." + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Facturacion",
+    "email": "{{usernameAlumnoFacturacion}}@example.com",
+    "username": "{{usernameAlumnoFacturacion}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("alumnoAccessToken", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  `/auth/register` (RegistrationService.registrar) crea el Student con
+  onboardingStatus CONFIRMADO de una — a diferencia de `/prospects`, acá no
+  hace falta revisión de documentación para la cuenta en sí. No devuelve
+  `studentId` (solo tokens), se resuelve en el paso siguiente.
+}

@@ -5,12 +5,18 @@ import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.repository.InstitutionRepository;
 import com.red_escuela.backend.repository.PersonRepository;
 import com.red_escuela.backend.repository.RoleRepository;
+import com.red_escuela.backend.repository.StudentRepository;
 import com.red_escuela.backend.service.JwtService;
 import org.springframework.context.ApplicationContext;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Puente Java para setup que no tiene sentido hacer vía HTTP desde un .feature de Karate
@@ -71,5 +77,41 @@ public class KarateFixtures {
         person = personRepository.save(person);
 
         return jwtService.generateAccessToken(person);
+    }
+
+    // Alumno CONFIRMADO con studentId conocido, sin pasar por /auth/register (que no
+    // devuelve el studentId en la respuesta, solo tokens) — necesario para casos que
+    // arman datos vía staff (facturas, notas) contra un id de alumno concreto.
+    public static Map<String, Object> crearAlumnoConfirmado(Long institutionId) {
+        AddressRepository addressRepository = context().getBean(AddressRepository.class);
+        PersonRepository personRepository = context().getBean(PersonRepository.class);
+        RoleRepository roleRepository = context().getBean(RoleRepository.class);
+        StudentRepository studentRepository = context().getBean(StudentRepository.class);
+        InstitutionRepository institutionRepository = context().getBean(InstitutionRepository.class);
+        JwtService jwtService = context().getBean(JwtService.class);
+
+        Address address = addressRepository.save(new Address());
+
+        Person person = new Person();
+        String username = "karate.alumno." + System.nanoTime();
+        person.setUsername(username);
+        person.setEmail(username + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        Role role = roleRepository.findByName("ALUMNO").orElseThrow(
+                () -> new IllegalStateException("Rol sembrado por Flyway no encontrado: ALUMNO"));
+        person.getRoles().add(role);
+        person = personRepository.save(person);
+
+        Student student = new Student();
+        student.setPerson(person);
+        student.setInstitution(institutionRepository.findById(institutionId).orElseThrow());
+        student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+        student = studentRepository.save(student);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("studentId", student.getId());
+        result.put("accessToken", jwtService.generateAccessToken(person));
+        return result;
     }
 }
