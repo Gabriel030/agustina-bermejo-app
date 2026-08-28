@@ -1,0 +1,37 @@
+meta {
+  name: 15. Rechazar con motivo (200)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/program-enrollment-applications/{{applicationIdDocAlta}}/reject
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenDocAlta}}
+}
+
+body:json {
+  {
+    "reason": "Documentación ilegible"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status REJECTED", function () {
+    expect(res.getBody().status).to.equal("REJECTED");
+  });
+}
+
+docs {
+  Rechazar la solicitud NO toca el comprobante de pago (ver
+  `ProgramEnrollmentApplicationService.rechazar`, sin cambios en esta
+  fase) — el `PaymentReceipt` asociado sigue `PENDING_REVIEW` después de
+  este request, fuera de alcance de esta colección revisarlo.
+}

@@ -1,0 +1,26 @@
+meta {
+  name: 14. Inscribirme a un curso inexistente (404)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/me/course-enrollments
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+body:multipart-form {
+  courseId: 999999
+  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+tests {
+  test("status 404 — CourseNotFoundException", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

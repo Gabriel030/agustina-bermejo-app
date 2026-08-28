@@ -1,33 +1,43 @@
 package com.red_escuela.backend.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.dto.ChangeSectionRequest;
-import com.red_escuela.backend.dto.CourseEnrollmentResponse;
+import com.red_escuela.backend.dto.CourseEnrollmentApplicationResponse;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.dto.CreateOwnSectionEnrollmentRequest;
 import com.red_escuela.backend.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
 import com.red_escuela.backend.dto.SectionEnrollmentResponse;
+import com.red_escuela.backend.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.service.CourseEnrollmentService;
+import com.red_escuela.backend.service.CourseEnrollmentApplicationService;
 import com.red_escuela.backend.service.CurrentStudentService;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
 import com.red_escuela.backend.service.SubjectSectionEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Autoservicio del alumno (decisión 12): cualquier rol autenticado puede pegarle
@@ -42,30 +52,56 @@ public class MeEnrollmentController {
     private final CurrentStudentService currentStudentService;
     private final ProgramEnrollmentService programEnrollmentService;
     private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
-    private final CourseEnrollmentService courseEnrollmentService;
+    private final CourseEnrollmentApplicationService courseEnrollmentApplicationService;
+    private final ObjectMapper objectMapper;
 
     public MeEnrollmentController(
             CurrentStudentService currentStudentService,
             ProgramEnrollmentService programEnrollmentService,
             SubjectSectionEnrollmentService subjectSectionEnrollmentService,
-            CourseEnrollmentService courseEnrollmentService) {
+            CourseEnrollmentApplicationService courseEnrollmentApplicationService,
+            ObjectMapper objectMapper) {
         this.currentStudentService = currentStudentService;
         this.programEnrollmentService = programEnrollmentService;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
-        this.courseEnrollmentService = courseEnrollmentService;
+        this.courseEnrollmentApplicationService = courseEnrollmentApplicationService;
+        this.objectMapper = objectMapper;
     }
 
-    // Épica 7: inscripción a un curso con cupo, sin aprobación — el propio Alumno
-    // la dispara (antes solo staff podía, ver CourseEnrollmentService.matricular).
-    // Si todavía no tenía ningún rol (recién registrado), lo obtiene acá —
-    // matricularComoAutoservicio hace matricular()+otorgar rol en una sola
-    // transacción (ver comentario ahí: separarlos perdía el rol otorgado).
-    @PostMapping("/course-enrollments")
+    // Épica 7 Fase 3: ya NO matricula en el momento — el pago de la primera cuota es
+    // un paso bloqueante (ver spec técnica), la matriculación real recién ocurre
+    // cuando el comprobante se aprueba (PaymentReceiptService.aprobar). Multipart:
+    // sectionOverrides viaja como JSON string (`{"12":5,"13":9}`) porque no hay una
+    // forma razonable de mandar un Map en multipart sin agregar infra nueva.
+    @PostMapping(value = "/course-enrollments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public CourseEnrollmentResponse inscribirmeAUnCurso(@Valid @RequestBody CreateCourseEnrollmentRequest request) {
+    public CourseEnrollmentApplicationResponse inscribirmeAUnCurso(
+            @RequestParam Long courseId,
+            @RequestParam(required = false) String sectionOverrides,
+            @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        var enrollment = courseEnrollmentService.matricularComoAutoservicio(student.getId(), request);
-        return CourseEnrollmentResponse.from(enrollment);
+        CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializarOverrides(sectionOverrides));
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(student.getId(), request, comprobante);
+        return CourseEnrollmentApplicationResponse.from(application);
+    }
+
+    @GetMapping("/course-enrollment-applications")
+    public List<CourseEnrollmentApplicationResponse> misSolicitudesDeCurso() {
+        Student student = currentStudentService.resolveCurrentStudent();
+        return courseEnrollmentApplicationService.listarPropias(student.getId()).stream()
+                .map(CourseEnrollmentApplicationResponse::from).toList();
+    }
+
+    private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {
+        if (sectionOverridesJson == null || sectionOverridesJson.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(sectionOverridesJson, new TypeReference<Map<Long, Long>>() {
+            });
+        } catch (JsonProcessingException e) {
+            throw new InvalidSectionOverridesException(sectionOverridesJson, e);
+        }
     }
 
     @GetMapping("/program-enrollments")

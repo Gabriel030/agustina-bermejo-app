@@ -1,0 +1,33 @@
+meta {
+  name: 12. Mi solicitud de curso aparece aprobada (200)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/me/course-enrollment-applications
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("paymentStatus APPROVED y courseEnrollmentId presente", function () {
+    const propia = res.getBody().find((s) => s.courseId === bru.getVar("courseIdQA"));
+    expect(propia).to.exist;
+    expect(propia.paymentStatus).to.equal("APPROVED");
+    expect(propia.courseEnrollmentId).to.not.be.null;
+  });
+}
+
+docs {
+  Criterio de aceptación: el tab "Mis solicitudes" del Catálogo refleja
+  el estado real combinado solicitud+pago en un único campo de UI
+  (`paymentStatus`) — nunca dos estados separados que el frontend tenga
+  que combinar a mano (ver `CourseEnrollmentApplicationResponse`).
+}

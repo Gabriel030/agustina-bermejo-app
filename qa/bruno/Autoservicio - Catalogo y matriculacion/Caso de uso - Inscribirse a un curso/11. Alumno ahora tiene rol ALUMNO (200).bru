@@ -1,0 +1,40 @@
+meta {
+  name: 11. Alumno ahora tiene rol ALUMNO (200)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/me
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("roles incluye ALUMNO — este es el request que hubiera atrapado el bug real", function () {
+    expect(res.getBody().roles).to.include("ALUMNO");
+  });
+}
+
+docs {
+  # El request que hubiera atrapado el bug
+
+  Antes del fix (Épica 7 Fase 2), `MeEnrollmentController.inscribirmeAUnCurso`
+  llamaba a `courseEnrollmentService.matricular(...)` y a
+  `personRoleGranter.otorgarAlumnoSiNoLoTiene(...)` como dos pasos
+  separados, sin una transacción que los envolviera juntos — la
+  mutación del rol nunca se persistía. Fix real:
+  `CourseEnrollmentService.matricularComoAutoservicio()`, un único
+  método `@Transactional` que hace ambas cosas juntas.
+
+  Desde Épica 7 Fase 3, ese método se llama recién al aprobar el
+  comprobante (paso 10), no al inscribirse — el criterio de esta
+  aserción sigue vigente, solo que se verifica un paso más tarde en el
+  flujo.
+}

@@ -1,0 +1,39 @@
+meta {
+  name: 5. Crear primera cuota del curso (201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/fee-schedules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessTokenCursoQA}}
+}
+
+body:json {
+  {
+    "courseId": {{courseIdQA}},
+    "concept": "CUOTA_MENSUAL",
+    "amount": 15000,
+    "vigenteDesde": "2020-01-01"
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("amount 15000", function () {
+    expect(res.getBody().amount).to.equal(15000);
+  });
+}
+
+docs {
+  Setup: la primera cuota sale de FeeSchedule, no de `Course.price` (dato
+  legado sin usar desde Épica 7 Fase 3) — sin esto,
+  `CourseEnrollmentApplicationService.solicitarConPago` falla 404.
+}

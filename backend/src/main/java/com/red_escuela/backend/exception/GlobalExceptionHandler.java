@@ -80,7 +80,8 @@ public class GlobalExceptionHandler {
             NotEligibleForGraduationException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
-            InvalidPricingTargetException.class
+            InvalidPricingTargetException.class,
+            InvalidSectionOverridesException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {

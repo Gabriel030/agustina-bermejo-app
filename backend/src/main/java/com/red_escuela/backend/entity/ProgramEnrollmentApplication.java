@@ -52,6 +52,13 @@ public class ProgramEnrollmentApplication {
     @Column(name = "rejection_reason")
     private String rejectionReason;
 
+    // Nullable: filas viejas (de antes de esta fase) pueden no tener comprobante.
+    // El código nuevo siempre lo setea al crear la solicitud (ver
+    // ProgramEnrollmentApplicationService.solicitarConPago).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_receipt_id")
+    private PaymentReceipt paymentReceipt;
+
     public void aprobar(Person decidedBy) {
         exigirPendiente();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;

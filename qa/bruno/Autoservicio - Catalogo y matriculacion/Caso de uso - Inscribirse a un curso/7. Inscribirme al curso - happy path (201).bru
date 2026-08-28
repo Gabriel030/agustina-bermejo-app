@@ -1,0 +1,38 @@
+meta {
+  name: 7. Inscribirme al curso - happy path (201)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/me/course-enrollments
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+body:multipart-form {
+  courseId: {{courseIdQA}}
+  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("paymentStatus PENDING_REVIEW — todavia no matricula", function () {
+    expect(res.getBody().paymentStatus).to.equal("PENDING_REVIEW");
+  });
+  test("courseEnrollmentId null — todavia no hay CourseEnrollment real", function () {
+    expect(res.getBody().courseEnrollmentId).to.be.null;
+  });
+}
+
+docs {
+  Épica 7 Fase 3: ya NO matricula en el momento — multipart, el pago de
+  la primera cuota es un paso bloqueante. `matricularComoAutoservicio()`
+  recién se llama cuando el comprobante se aprueba (ver paso 10).
+}

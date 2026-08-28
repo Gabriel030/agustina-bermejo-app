@@ -1,0 +1,20 @@
+meta {
+  name: 13. Alumno no puede listar pendientes (403)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/program-enrollment-applications
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+tests {
+  test("status 403", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

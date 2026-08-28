@@ -1,0 +1,33 @@
+meta {
+  name: 11. Login preceptor (setup)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "preceptor.demo",
+    "password": "Test1234"
+  }
+}
+
+script:post-response {
+  bru.setVar("preceptorAccessToken", res.getBody().accessToken);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Login propio (no depende de que la carpeta `Auth` haya corrido antes)
+  para que este caso de uso sea corrible de forma aislada.
+}

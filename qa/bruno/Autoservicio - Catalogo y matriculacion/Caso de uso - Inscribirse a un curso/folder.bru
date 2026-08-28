@@ -9,16 +9,27 @@ docs {
 
   Este es el flujo donde encontramos el bug real (rol `ALUMNO` no
   otorgado — ver [[QA - Fase 2, registro y catálogo]] en Obsidian y el
-  commit del fix). El paso 6 (`Alumno ahora tiene rol ALUMNO`) es el que
+  commit del fix). El paso 11 (`Alumno ahora tiene rol ALUMNO`) es el que
   hubiera atrapado ese bug si esta colección hubiera existido antes de
   mergear la Fase 2 — queda acá como regresión permanente.
 
+  ## Épica 7 Fase 3 — flujo revisado
+
+  Ya NO matricula en el momento: inscribirse (paso 7) sube el comprobante
+  de la primera cuota y queda "en revisión" (`PENDING_REVIEW`), sin rol ni
+  `CourseEnrollment` real (paso 8). Recién cuando Administración aprueba
+  el comprobante (pasos 9-10) se dispara la matriculación real y se
+  otorga el rol (paso 11) — el bug histórico de arriba ahora se verifica
+  en ese momento, no en la inscripción.
+
   ## Criterios de aceptación cubiertos
 
-  1. Inscribirse a un curso con cupo, sin aprobación previa (a diferencia
-     de una carrera, que necesita el flujo de solicitud/aprobación).
-  2. Otorga el rol `ALUMNO` automáticamente, en la misma operación.
-  3. No permite inscribirse dos veces al mismo curso.
+  1. Inscribirse a un curso con cupo sube un comprobante y queda "en
+     revisión" — sin aprobación de una "solicitud" (no existe tal cosa
+     para curso), pero sin acceso hasta que se aprueba el pago.
+  2. Otorga el rol `ALUMNO` y crea el `CourseEnrollment` recién al
+     aprobar el comprobante, en la misma operación.
+  3. No permite inscribirse dos veces al mismo curso una vez matriculado.
   4. Inscribirse a un curso inexistente da `404`, no `500` ni un `201`
      fantasma.
 }

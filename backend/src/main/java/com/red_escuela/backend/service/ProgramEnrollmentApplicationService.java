@@ -1,7 +1,11 @@
 package com.red_escuela.backend.service;
 
+import com.red_escuela.backend.dto.CreateInvoiceFromFeeScheduleRequest;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.entity.DocumentType;
+import com.red_escuela.backend.entity.FeeScheduleConcept;
+import com.red_escuela.backend.entity.Invoice;
+import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +31,8 @@ import java.util.List;
  * Al aprobar, delega la creación del ProgramEnrollment real a
  * {@link ProgramEnrollmentService#matricular} — misma lógica de ventana de
  * admisión y duplicados que ya usa el alta directa por staff, no se duplica acá.
+ * Desde la Fase 3, el pago de la matrícula es un paso bloqueante de la propia
+ * solicitud (ver {@link #solicitarConPago}) — sin comprobante no hay solicitud.
  */
 @Service
 public class ProgramEnrollmentApplicationService {
@@ -36,6 +43,8 @@ public class ProgramEnrollmentApplicationService {
     private final FileStorageService fileStorageService;
     private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
+    private final InvoiceService invoiceService;
+    private final PaymentReceiptService paymentReceiptService;
 
     public ProgramEnrollmentApplicationService(
             ProgramEnrollmentApplicationRepository applicationRepository,
@@ -43,17 +52,24 @@ public class ProgramEnrollmentApplicationService {
             StudentDocumentRepository studentDocumentRepository,
             FileStorageService fileStorageService,
             ProgramEnrollmentService programEnrollmentService,
-            PersonRoleGranter personRoleGranter) {
+            PersonRoleGranter personRoleGranter,
+            InvoiceService invoiceService,
+            PaymentReceiptService paymentReceiptService) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.fileStorageService = fileStorageService;
         this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
+        this.invoiceService = invoiceService;
+        this.paymentReceiptService = paymentReceiptService;
     }
 
+    // Matrícula vence hoy: se paga en el momento, junto con la solicitud (a
+    // diferencia de una cuota regular, que vence a futuro) — ver spec técnica,
+    // "el Invoice + PaymentReceipt se crean en la MISMA request que solicitar()".
     @Transactional
-    public ProgramEnrollmentApplication solicitar(Student student, Long programId) {
+    public ProgramEnrollmentApplication solicitarConPago(Student student, Long programId, MultipartFile comprobante) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
 
@@ -63,11 +79,16 @@ public class ProgramEnrollmentApplicationService {
                     throw new AlreadyHasPendingApplicationException(student.getId(), programId);
                 });
 
+        Invoice invoice = invoiceService.crearDesdeFeeSchedule(student.getId(),
+                new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()));
+        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);
         application.setProgram(program);
         application.setStatus(ProgramEnrollmentApplicationStatus.PENDING);
         application.setRequestedAt(LocalDateTime.now());
+        application.setPaymentReceipt(receipt);
         return applicationRepository.save(application);
     }
 
@@ -115,6 +136,13 @@ public class ProgramEnrollmentApplicationService {
         Student student = application.getStudent();
         programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(application.getProgram().getId()));
         personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+
+        // Documentación + comprobante se deciden juntos, una sola decisión (ver spec
+        // funcional) — aprobar la solicitud aprueba también el comprobante en la MISMA
+        // transacción, lo que crea el Payment real (PaymentReceiptService.aprobar).
+        if (application.getPaymentReceipt() != null) {
+            paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), decidedBy);
+        }
 
         return application;
     }
