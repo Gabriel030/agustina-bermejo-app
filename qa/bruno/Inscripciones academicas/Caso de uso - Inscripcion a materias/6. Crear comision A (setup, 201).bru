@@ -1,0 +1,35 @@
+meta {
+  name: 6. Crear comision A (setup, 201)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectId}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Comisión A",
+    "termId": {{termId}},
+    "capacity": 20
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionAId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

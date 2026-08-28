@@ -1,0 +1,27 @@
+meta {
+  name: 12. Inscribirse a la comision B de la misma materia (409)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "sectionId": {{sectionBId}}
+  }
+}
+
+tests {
+  test("status 409 — AlreadyEnrolledInSubjectException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

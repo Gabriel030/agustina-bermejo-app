@@ -1,0 +1,27 @@
+meta {
+  name: 15. Curso inexistente (404)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/course-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "courseId": 999999
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

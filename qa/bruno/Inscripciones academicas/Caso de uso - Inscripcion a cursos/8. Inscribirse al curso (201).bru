@@ -1,0 +1,36 @@
+meta {
+  name: 8. Inscribirse al curso (201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/course-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "courseId": {{courseId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("courseEnrollmentId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial ENROLLED", function () {
+    expect(res.getBody().status).to.equal("ENROLLED");
+  });
+}

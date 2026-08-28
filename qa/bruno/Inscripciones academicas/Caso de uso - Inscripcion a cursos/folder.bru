@@ -1,0 +1,11 @@
+meta {
+  name: Caso de uso - Inscripcion a cursos
+}
+
+docs {
+  CourseEnrollmentController + CourseSectionEnrollmentController. El alta
+  inscribe automáticamente en TODOS los módulos ACTIVE del curso (decisión
+  15), todo o nada. Ver
+  `backend/src/test/resources/karate/inscripciones-academicas/inscripcion-a-cursos.feature`
+  (9 escenarios) para la cobertura exhaustiva de casos borde.
+}

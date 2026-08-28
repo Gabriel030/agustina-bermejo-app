@@ -1,0 +1,30 @@
+meta {
+  name: 11. Listar inscripciones de modulo (200)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/course-enrollments/{{courseEnrollmentId}}/section-enrollments
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200 && res.getBody().length > 0) {
+    bru.setVar("sectionEnrollmentId", res.getBody()[0].id);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("el alta automática inscribió en el único módulo del curso", function () {
+    expect(res.getBody()).to.have.lengthOf(1);
+    expect(res.getBody()[0].sectionId).to.equal(bru.getVar("sectionId"));
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: 19. Dar de baja la matriculacion a la carrera (204)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
