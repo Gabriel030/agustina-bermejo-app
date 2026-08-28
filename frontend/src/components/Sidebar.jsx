@@ -12,7 +12,7 @@ export function Sidebar({ titulo, items }) {
   const { usuario, logout } = useAuth();
 
   return (
-    <GlassCard className="flex h-full w-64 shrink-0 flex-col gap-6 p-5">
+    <GlassCard className="flex w-64 shrink-0 flex-col gap-6 p-5">
       <div>
         <div className="text-sm font-semibold text-ink-faint">{titulo}</div>
         {usuario && (
