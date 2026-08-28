@@ -15,8 +15,10 @@ import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.exception.FeeScheduleNotFoundException;
+import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.PaymentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.RoleRepository;
@@ -55,6 +57,9 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private InvoiceRepository invoiceRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -155,6 +160,24 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), comprobante()))
                 .isInstanceOf(FeeScheduleNotFoundException.class);
+    }
+
+    @Test
+    void solicitarConPagoFueraDeLaVentanaDeAdmisionFallaSinGenerarInvoiceNiComprobante() {
+        Student student = persistStudent("81000005");
+        Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
+        // Ventana ya cerrada hace una semana — nadie debería poder pagar matrícula de una
+        // carrera con inscripciones cerradas, ni aunque tenga FeeSchedule configurado.
+        program.setAdmissionStart(LocalDateTime.now().minusDays(30));
+        program.setAdmissionEnd(LocalDateTime.now().minusDays(7));
+        Person director = persistPersonBase("DIR" + System.nanoTime());
+        persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), comprobante()))
+                .isInstanceOf(AdmissionWindowClosedException.class);
+
+        assertThat(invoiceRepository.findByStudentId(student.getId())).isEmpty();
     }
 
     @Test

@@ -29,8 +29,13 @@ import java.util.List;
 /**
  * Solicitud de alta en una carrera para el registro independiente (Épica 7).
  * Al aprobar, delega la creación del ProgramEnrollment real a
- * {@link ProgramEnrollmentService#matricular} — misma lógica de ventana de
- * admisión y duplicados que ya usa el alta directa por staff, no se duplica acá.
+ * {@link ProgramEnrollmentService#matricular} — misma lógica de duplicados que ya
+ * usa el alta directa por staff, no se duplica acá. La ventana de admisión sí se
+ * valida en los dos puntos de entrada por separado ({@link #solicitarConPago} y
+ * {@code matricular}), reusando {@link ProgramEnrollmentService#validarVentanaDeAdmision}
+ * — hace falta en los dos: sin la validación acá, se le pediría comprobante (y se
+ * le cobraría) a alguien fuera de la ventana de admisión, mucho antes de que
+ * {@code aprobar()} llegue a rechazarlo.
  * Desde la Fase 3, el pago de la matrícula es un paso bloqueante de la propia
  * solicitud (ver {@link #solicitarConPago}) — sin comprobante no hay solicitud.
  */
@@ -72,6 +77,7 @@ public class ProgramEnrollmentApplicationService {
     public ProgramEnrollmentApplication solicitarConPago(Student student, Long programId, MultipartFile comprobante) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
+        programEnrollmentService.validarVentanaDeAdmision(program);
 
         applicationRepository
                 .findByStudentIdAndProgramIdAndStatus(student.getId(), programId, ProgramEnrollmentApplicationStatus.PENDING)

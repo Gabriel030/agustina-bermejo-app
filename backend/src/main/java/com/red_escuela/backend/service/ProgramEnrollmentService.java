@@ -72,20 +72,9 @@ public class ProgramEnrollmentService {
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
+        validarVentanaDeAdmision(program);
 
-        if (program.getAdmissionStart() != null && program.getAdmissionEnd() != null
-                && program.getAdmissionStart().isAfter(program.getAdmissionEnd())) {
-            throw new InvalidWindowConfigurationException(
-                    "La carrera " + program.getId() + " tiene la ventana de admisión mal configurada "
-                            + "(admissionStart posterior a admissionEnd)");
-        }
         LocalDateTime now = LocalDateTime.now();
-        if (program.getAdmissionStart() != null && now.isBefore(program.getAdmissionStart())
-                || program.getAdmissionEnd() != null && now.isAfter(program.getAdmissionEnd())) {
-            throw new AdmissionWindowClosedException(
-                    "Fuera de la ventana de admisión de la carrera " + program.getId());
-        }
-
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 studentId, program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED));
         if (!activas.isEmpty()) {
@@ -188,6 +177,26 @@ public class ProgramEnrollmentService {
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, entrada.getSubject().getId(), List.of(EnrollmentStatus.APPROVED))
                 .isEmpty();
+    }
+
+    // Package-private (no private): ProgramEnrollmentApplicationService.solicitarConPago la
+    // reusa para no cobrarle matrícula a nadie fuera de la ventana de admisión — antes solo se
+    // validaba acá, en matricular(), que recién corre cuando el Preceptor aprueba la solicitud
+    // (tarde: el comprobante ya se había pedido y subido). Mismo criterio que
+    // CourseEnrollmentService.validarPuedeMatricular.
+    void validarVentanaDeAdmision(Program program) {
+        if (program.getAdmissionStart() != null && program.getAdmissionEnd() != null
+                && program.getAdmissionStart().isAfter(program.getAdmissionEnd())) {
+            throw new InvalidWindowConfigurationException(
+                    "La carrera " + program.getId() + " tiene la ventana de admisión mal configurada "
+                            + "(admissionStart posterior a admissionEnd)");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (program.getAdmissionStart() != null && now.isBefore(program.getAdmissionStart())
+                || program.getAdmissionEnd() != null && now.isAfter(program.getAdmissionEnd())) {
+            throw new AdmissionWindowClosedException(
+                    "Fuera de la ventana de admisión de la carrera " + program.getId());
+        }
     }
 
     private void validarStudentHabilitado(Student student) {
