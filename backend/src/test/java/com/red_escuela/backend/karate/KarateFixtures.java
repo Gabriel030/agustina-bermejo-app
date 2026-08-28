@@ -1,6 +1,8 @@
 package com.red_escuela.backend.karate;
 
 import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.entity.EvaluationScheme;
+import com.red_escuela.backend.entity.GradeAggregationMethod;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Instructor;
 import com.red_escuela.backend.entity.Person;
@@ -9,6 +11,7 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.repository.EvaluationSchemeTestRepository;
 import com.red_escuela.backend.repository.InstitutionRepository;
 import com.red_escuela.backend.repository.InstructorRepository;
 import com.red_escuela.backend.repository.PersonRepository;
@@ -141,5 +144,60 @@ public class KarateFixtures {
         Instructor instructor = new Instructor();
         instructor.setPerson(person);
         return instructorRepository.save(instructor).getId();
+    }
+
+    // A diferencia de crearInstructor(), acá el Docente SÍ necesita loguearse: carga
+    // asistencia/notas vía AttendanceController/GradeItemController, que resuelven el
+    // Instructor autenticado por JWT (CurrentInstructorService), no por un id de la URL.
+    public static Map<String, Object> crearDocenteConToken() {
+        AddressRepository addressRepository = context().getBean(AddressRepository.class);
+        PersonRepository personRepository = context().getBean(PersonRepository.class);
+        RoleRepository roleRepository = context().getBean(RoleRepository.class);
+        InstructorRepository instructorRepository = context().getBean(InstructorRepository.class);
+        JwtService jwtService = context().getBean(JwtService.class);
+
+        Address address = addressRepository.save(new Address());
+
+        Person person = new Person();
+        String username = "karate.docente." + System.nanoTime();
+        person.setName("Docente");
+        person.setLastname("Karate");
+        person.setUsername(username);
+        person.setEmail(username + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        Role role = roleRepository.findByName("DOCENTE").orElseThrow(
+                () -> new IllegalStateException("Rol sembrado por Flyway no encontrado: DOCENTE"));
+        person.getRoles().add(role);
+        person = personRepository.save(person);
+
+        Instructor instructor = new Instructor();
+        instructor.setPerson(person);
+        instructor = instructorRepository.save(instructor);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("instructorId", instructor.getId());
+        result.put("accessToken", jwtService.generateAccessToken(person));
+        return result;
+    }
+
+    // No hay ningún endpoint de alta para EvaluationScheme (se referencia por id, opcional,
+    // desde CreateSectionRequest/UpdateSectionRequest — ver "Deuda técnica y gaps de QA" en
+    // Obsidian) — sin uno, GradeItemService.cargarNota* rechaza con NoEvaluationSchemeException
+    // cualquier carga de nota sobre una comisión sin esquema asignado.
+    public static Long crearEvaluationScheme() {
+        EvaluationSchemeTestRepository evaluationSchemeRepository =
+                context().getBean(EvaluationSchemeTestRepository.class);
+
+        EvaluationScheme scheme = new EvaluationScheme();
+        scheme.setName("Esquema Karate " + System.nanoTime());
+        scheme.setExamCountExpected(2);
+        scheme.setTpCountExpected(1);
+        scheme.setHasFinal(true);
+        scheme.setFinalWeight(0.5);
+        scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
+        scheme.setMinRegularGrade(4.0);
+        scheme.setMinApprovalGrade(6.0);
+        return evaluationSchemeRepository.save(scheme).getId();
     }
 }

@@ -1,0 +1,42 @@
+meta {
+  name: 13. Cambiar a la comision B (200)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/section-enrollments/{{sectionEnrollmentId}}/change-section
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "newSectionId": {{sectionBId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("sectionEnrollmentTrasCambioId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("sectionId actualizado a B", function () {
+    expect(res.getBody().sectionId).to.equal(bru.getVar("sectionBId"));
+  });
+}
+
+docs {
+  El cambio de comisión da de baja la fila origen y crea una fila nueva
+  para el destino — los pasos siguientes tienen que operar sobre
+  `sectionEnrollmentTrasCambioId`, no sobre el id original.
+}

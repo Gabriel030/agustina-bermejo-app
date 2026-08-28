@@ -1,0 +1,31 @@
+meta {
+  name: 15. Reinscribirse a la misma comision reactiva la fila (201)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "sectionId": {{sectionBId}}
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("reactiva la fila existente (constraint único), no crea una nueva", function () {
+    expect(res.getBody().id).to.equal(bru.getVar("sectionEnrollmentTrasCambioId"));
+    expect(res.getBody().status).to.equal("ENROLLED");
+  });
+}

@@ -127,15 +127,37 @@ controllers con dependencias combinatorias — Bruno cubre flujos
 principales y reglas de negocio clave (54 requests), Karate tiene el
 detalle exhaustivo de casos borde (28 escenarios).
 
-## Inscripciones académicas
+## Inscripciones académicas — cubierto (2026-08-28)
 
-| Controller | Endpoints | Karate | Bruno |
-|---|---|---|---|
-| ProgramEnrollmentController | 5 | pendiente | pendiente |
-| CourseEnrollmentController | 5 | pendiente | pendiente |
-| SubjectSectionEnrollmentController | 4 | pendiente | pendiente |
-| CourseSectionEnrollmentController | 2 | pendiente | pendiente |
-| MeAcademicRecordController | 2 | pendiente | pendiente |
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| ProgramEnrollmentController | 5 | ✅ | ✅ | matricular, listar, detalle, progreso, baja — completa lo que había quedado parcial en el backfill de Facturación |
+| CourseEnrollmentController | 5 | ✅ | ✅ | alta automática "todo o nada" en todos los módulos (decisión 15), duplicado (409), módulo sin comisión (409), módulo ambiguo con sectionOverrides (400→201), ventana cerrada (400), baja con cascada |
+| CourseSectionEnrollmentController | 2 | ✅ | ✅ | baja puntual de un módulo, doble baja (409), listar por módulo |
+| SubjectSectionEnrollmentController | 4 | ✅ | ✅ | correlatividad no cumplida (400), materia fuera del plan (400), ya inscripto en otra comisión (409), cambio de comisión (200, crea fila nueva y da de baja la origen), cupo lleno con lista de espera FIFO y promoción automática al dar de baja (solo Karate) |
+| MeAcademicRecordController | 2 | ✅ | pendiente | ownership 404 (no 403), caso vacío y caso con datos reales (asistencia+nota cargada por un Docente) — ver gap de `EvaluationScheme` abajo |
+
+**Gap real encontrado (bloqueante de UI, no solo de testing)**: no existe
+ningún endpoint que exponga o permita crear un `EvaluationScheme` — sin
+uno asignado a la comisión, `GradeItemService` rechaza cualquier carga de
+nota. Karate lo resolvió con un fixture Java nuevo
+(`KarateFixtures.crearEvaluationScheme()`, vía un repository de solo
+test, `EvaluationSchemeTestRepository`) — Bruno no tiene forma de
+replicarlo, así que `MeAcademicRecordController` queda sin colección
+Bruno por ahora. Detalle completo en "Deuda técnica y gaps de QA"
+(Obsidian), entrada 5.
+
+**Hallazgo operativo importante**: agregar los 3 features de Karate de
+este dominio (23 escenarios) hizo que la suite completa (`mvn test`, una
+sola JVM) fallara con `429` en `/auth/register` — el rate limiter
+(`auth.rate-limit.register.capacity=20`) no tiene override en el perfil
+`test`, y todos los `POST /auth/register` de toda la suite comparten el
+mismo bucket. Se corrigió reemplazando los `/auth/register` de
+`mi-cursada.feature` (que no necesitaban el endpoint real) por
+`KarateFixtures.crearAlumnoConfirmado(...)`. Ver entrada 6 de "Deuda
+técnica y gaps de QA" — **a tener en cuenta en cualquier backfill
+futuro**: preferir el fixture Java sobre `/auth/register` real salvo que
+el escenario testee específicamente ese endpoint.
 
 ## Evaluación y asistencia
 
@@ -150,12 +172,16 @@ detalle exhaustivo de casos borde (28 escenarios).
 ## Total
 
 155 endpoints, 33 controllers. Con cobertura de rigor completo en ambas
-herramientas: 17 de 33 (AuthController; PersonController, StaffController,
+herramientas: 22 de 33 (AuthController; PersonController, StaffController,
 ProspectController, StudentController de Gestión de personas;
 InvoiceController, MeInvoiceController, DirectorApprovalRequestController,
 MeCertificateController, GraduationRequestController,
 MeGraduationRequestController de Procesos administrativos; SubjectController,
 ProgramSubjectController, ElectiveGroupController, CourseSubjectController,
 CourseSectionController, SubjectSectionController de Estructura académica —
-estos 2 últimos con Bruno acotado, ver nota de asignación de docente). El
-resto: parcial o pendiente — ver tablas de arriba.
+estos 2 últimos con Bruno acotado, ver nota de asignación de docente;
+ProgramEnrollmentController, CourseEnrollmentController,
+CourseSectionEnrollmentController, SubjectSectionEnrollmentController de
+Inscripciones académicas). `MeAcademicRecordController` tiene Karate
+completo pero sin Bruno (gap de `EvaluationScheme`, ver arriba). El resto:
+parcial o pendiente — ver tablas de arriba.
