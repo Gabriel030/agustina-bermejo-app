@@ -1,0 +1,24 @@
+meta {
+  name: Catalogo
+}
+
+docs {
+  # Catálogo — Carreras, cursos y períodos lectivos
+
+  **Correr con:** `bru run "Catalogo" -r --env Local` (después de `00 - Setup`
+  y `Auth/Login - happy path`, o como parte de la colección completa
+  `bru run . -r`, que respeta el orden).
+
+  Cubre lo que faltaba de `ProgramController`/`CourseController`/
+  `TermController` más allá del alta (ya usada como setup en `Autoservicio`
+  y en el resto de dominios) — editar, desactivar/reactivar (idempotentes,
+  sin chequeo de estado previo, ver `ProgramService`/`CourseService`/
+  `TermService`), listar con filtro de `status`, 403 (solo ADMINISTRATIVO
+  edita carreras/cursos; PRECEPTOR o ADMINISTRATIVO edita períodos) y 404.
+
+  Espejo exacto de `backend/src/test/resources/karate/catalogo/` — mismo
+  alcance, reducido a los casos más representativos de cada flujo (criterio
+  ya documentado en `Estructura academica y oferta/folder.bru`: la
+  cobertura exhaustiva vive en Karate, Bruno prioriza los flujos que un QA
+  humano ejecutaría a mano).
+}

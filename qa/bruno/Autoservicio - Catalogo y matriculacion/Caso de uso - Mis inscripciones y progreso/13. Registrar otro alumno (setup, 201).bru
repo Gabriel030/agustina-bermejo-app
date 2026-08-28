@@ -1,0 +1,32 @@
+meta {
+  name: 13. Registrar otro alumno (setup, 201)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("usernameOtroAlumnoMisInsc", "qa.otroalumnomisinsc." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Otro",
+    "email": "{{usernameOtroAlumnoMisInsc}}",
+    "username": "{{usernameOtroAlumnoMisInsc}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

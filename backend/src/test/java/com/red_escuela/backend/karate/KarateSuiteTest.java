@@ -93,4 +93,9 @@ class KarateSuiteTest {
     Karate testEvaluacionYAsistencia() {
         return Karate.run("classpath:karate/evaluacion-y-asistencia");
     }
+
+    @Karate.Test
+    Karate testCatalogo() {
+        return Karate.run("classpath:karate/catalogo");
+    }
 }

@@ -1,0 +1,27 @@
+meta {
+  name: 6. Editar periodo inexistente (404)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/terms/999999
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+body:json {
+  {
+    "description": "no existe"
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

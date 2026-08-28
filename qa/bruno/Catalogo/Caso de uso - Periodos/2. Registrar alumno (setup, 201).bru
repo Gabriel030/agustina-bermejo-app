@@ -1,0 +1,38 @@
+meta {
+  name: 2. Registrar alumno (setup, 201)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("emailAlumnoCatalogoPeriodo", "qa.catalogoperiodo." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "CatalogoPeriodo",
+    "email": "{{emailAlumnoCatalogoPeriodo}}",
+    "username": "{{emailAlumnoCatalogoPeriodo}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("alumnoAccessTokenCatalogoPeriodo", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

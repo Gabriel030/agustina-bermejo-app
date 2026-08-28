@@ -1,0 +1,27 @@
+meta {
+  name: 5. Editar sin permiso - alumno (403)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenCatalogoPeriodo}}
+}
+
+body:json {
+  {
+    "description": "no debería aplicar"
+  }
+}
+
+tests {
+  test("status 403 — un Alumno no opera sobre periodos", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

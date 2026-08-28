@@ -1,0 +1,41 @@
+meta {
+  name: 6. Crear comision A (setup, 201)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectIdMisInsc}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "name": "Comisión A",
+    "termId": {{termIdMisInsc}},
+    "capacity": 20
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionAIdMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Sin `evaluationSchemeId` a propósito — no hay endpoint HTTP para crear un
+  `EvaluationScheme` (deuda técnica entrada 5), y este caso de uso no
+  necesita cargar notas, solo probar inscripción/cambio/baja de comisión.
+}

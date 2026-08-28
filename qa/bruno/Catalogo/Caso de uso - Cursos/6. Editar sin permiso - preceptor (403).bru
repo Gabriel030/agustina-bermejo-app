@@ -1,0 +1,27 @@
+meta {
+  name: 6. Editar sin permiso - preceptor (403)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/courses/{{courseIdCatalogo}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenCatalogoCurso}}
+}
+
+body:json {
+  {
+    "capacity": 10
+  }
+}
+
+tests {
+  test("status 403 — solo ADMINISTRATIVO edita cursos", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

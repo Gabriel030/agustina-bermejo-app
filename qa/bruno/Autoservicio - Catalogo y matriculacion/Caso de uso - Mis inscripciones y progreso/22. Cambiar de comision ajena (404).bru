@@ -1,0 +1,27 @@
+meta {
+  name: 22. Cambiar de comision ajena (404)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/me/section-enrollments/{{nuevaSectionEnrollmentIdMisInsc}}/change-section
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{otroAlumnoAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "newSectionId": {{sectionAIdMisInsc}}
+  }
+}
+
+tests {
+  test("status 404 — ownership, no 403", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

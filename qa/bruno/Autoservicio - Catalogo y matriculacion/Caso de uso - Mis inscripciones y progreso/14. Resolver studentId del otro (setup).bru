@@ -1,0 +1,33 @@
+meta {
+  name: 14. Resolver studentId del otro (setup)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/students?onboardingStatus=CONFIRMADO
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenMisInsc}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const alumnos = res.getBody();
+    const otro = alumnos.find(function (a) { return a.username === bru.getVar("usernameOtroAlumnoMisInsc"); });
+    if (otro) {
+      bru.setVar("otroStudentIdMisInsc", otro.id);
+    }
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("encontró al otro alumno", function () {
+    expect(bru.getVar("otroStudentIdMisInsc")).to.not.be.undefined;
+  });
+}

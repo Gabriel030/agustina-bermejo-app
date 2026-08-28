@@ -1,0 +1,40 @@
+meta {
+  name: 3. Crear carrera (setup, 201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenDocAlta}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCarreraDocAlta", "QA Bruno - Carrera documentos " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCarreraDocAlta}}",
+    "totalYears": 3,
+    "price": 50000,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programIdDocAlta", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

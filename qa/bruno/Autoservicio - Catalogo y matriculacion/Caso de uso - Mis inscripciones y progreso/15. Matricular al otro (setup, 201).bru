@@ -1,0 +1,33 @@
+meta {
+  name: 15. Matricular al otro (setup, 201)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/students/{{otroStudentIdMisInsc}}/program-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "programId": {{programIdMisInsc}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("otraMatriculaIdMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,34 @@
+meta {
+  name: 21. Login del otro alumno (setup)
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{usernameOtroAlumnoMisInsc}}",
+    "password": "Test1234"
+  }
+}
+
+script:post-response {
+  bru.setVar("otroAlumnoAccessTokenMisInsc", res.getBody().accessToken);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  El registro (paso 13) ya devuelve accessToken, pero se descartó a
+  propósito ahí (ver ese request) para simplificar — logueamos de nuevo
+  acá, justo antes de necesitarlo.
+}

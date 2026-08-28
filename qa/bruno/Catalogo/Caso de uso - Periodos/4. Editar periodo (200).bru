@@ -1,0 +1,34 @@
+meta {
+  name: 4. Editar periodo (200)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+script:pre-request {
+  bru.setVar("descripcionPeriodoEditada", bru.getVar("descripcionPeriodoCatalogo") + " (editado)");
+}
+
+body:json {
+  {
+    "description": "{{descripcionPeriodoEditada}}"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("descripción actualizada", function () {
+    expect(res.getBody().description).to.equal(bru.getVar("descripcionPeriodoEditada"));
+  });
+}

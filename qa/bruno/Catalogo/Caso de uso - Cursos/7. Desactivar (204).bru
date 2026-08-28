@@ -1,0 +1,20 @@
+meta {
+  name: 7. Desactivar (204)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/courses/{{courseIdCatalogo}}/deactivate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoCurso}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
