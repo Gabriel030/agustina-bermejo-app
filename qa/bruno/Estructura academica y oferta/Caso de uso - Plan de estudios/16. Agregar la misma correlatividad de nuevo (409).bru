@@ -1,0 +1,28 @@
+meta {
+  name: 16. Agregar la misma correlatividad de nuevo (409)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/program-subjects/{{programSubjectAId}}/prerequisites
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "prerequisiteProgramSubjectId": {{programSubjectBId}},
+    "requirementType": "APPROVED"
+  }
+}
+
+tests {
+  test("status 409 — PrerequisiteAlreadyExistsException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

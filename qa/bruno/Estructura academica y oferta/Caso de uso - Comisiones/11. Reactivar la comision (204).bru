@@ -1,0 +1,20 @@
+meta {
+  name: 11. Reactivar la comision (204)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/course-sections/{{sectionId}}/activate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

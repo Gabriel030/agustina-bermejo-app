@@ -1,0 +1,30 @@
+meta {
+  name: 26. Tagear materia B con el grupo ya asignado (200)
+  type: http
+  seq: 26
+}
+
+put {
+  url: {{baseUrl}}/program-subjects/{{programSubjectBId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "electiveGroupId": {{groupId}}
+  }
+}
+
+tests {
+  test("status 200 — ahora sí, el grupo ya tiene rango asignado a la carrera", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("electiveGroupId reflejado", function () {
+    expect(res.getBody().electiveGroupId).to.equal(bru.getVar("groupId"));
+  });
+}

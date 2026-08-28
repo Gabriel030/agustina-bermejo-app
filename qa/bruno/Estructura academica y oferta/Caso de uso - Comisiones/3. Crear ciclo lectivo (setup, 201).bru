@@ -1,0 +1,41 @@
+meta {
+  name: 3. Crear ciclo lectivo (setup, 201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/terms
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("descripcionCiclo", "Bruno QA - Ciclo " + Date.now());
+}
+
+body:json {
+  {
+    "year": 2026,
+    "description": "{{descripcionCiclo}}",
+    "type": "ANUAL",
+    "startDate": "2026-03-01T00:00:00",
+    "endDate": "2026-07-01T00:00:00"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("termId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

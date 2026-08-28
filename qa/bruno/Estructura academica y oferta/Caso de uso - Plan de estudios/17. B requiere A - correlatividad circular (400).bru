@@ -1,0 +1,28 @@
+meta {
+  name: 17. B requiere A - correlatividad circular (400)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/program-subjects/{{programSubjectBId}}/prerequisites
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "prerequisiteProgramSubjectId": {{programSubjectAId}},
+    "requirementType": "APPROVED"
+  }
+}
+
+tests {
+  test("status 400 — CircularPrerequisiteException, A ya requiere B", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

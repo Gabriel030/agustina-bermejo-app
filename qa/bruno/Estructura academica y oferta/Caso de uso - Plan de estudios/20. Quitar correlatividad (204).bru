@@ -1,0 +1,20 @@
+meta {
+  name: 20. Quitar correlatividad (204)
+  type: http
+  seq: 20
+}
+
+delete {
+  url: {{baseUrl}}/program-subjects/prerequisites/{{prerequisiteId}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

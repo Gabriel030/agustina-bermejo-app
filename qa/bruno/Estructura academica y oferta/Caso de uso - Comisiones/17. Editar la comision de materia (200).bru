@@ -1,0 +1,30 @@
+meta {
+  name: 17. Editar la comision de materia (200)
+  type: http
+  seq: 17
+}
+
+put {
+  url: {{baseUrl}}/program-sections/{{subjectSectionId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "capacity": 45
+  }
+}
+
+tests {
+  test("status 200 — el path de edición usa /program-sections, nombre heredado", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("capacity actualizada", function () {
+    expect(res.getBody().capacity).to.equal(45);
+  });
+}

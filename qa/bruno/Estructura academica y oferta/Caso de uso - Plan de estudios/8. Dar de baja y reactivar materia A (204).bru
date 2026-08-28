@@ -1,0 +1,26 @@
+meta {
+  name: 8. Dar de baja y reactivar materia A (204)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectAId}}/deactivate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Cubre solo la baja acá — la reactivación (`POST .../activate`) es el
+  mismo patrón, no se repite como request aparte para no inflar la
+  colección; queda cubierta en el Karate equivalente.
+}

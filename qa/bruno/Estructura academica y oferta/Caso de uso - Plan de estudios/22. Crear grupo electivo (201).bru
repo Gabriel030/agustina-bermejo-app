@@ -1,0 +1,37 @@
+meta {
+  name: 22. Crear grupo electivo (201)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/elective-groups
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreGrupo", "Optativas de Idioma " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreGrupo}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("groupId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

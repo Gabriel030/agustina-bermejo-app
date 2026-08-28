@@ -1,0 +1,38 @@
+meta {
+  name: 16. Crear comision de la materia (201)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectId}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Comisión Única",
+    "termId": {{termId}},
+    "capacity": 40
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("subjectSectionId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("subjectId reflejado", function () {
+    expect(res.getBody().subjectId).to.equal(bru.getVar("subjectId"));
+  });
+}

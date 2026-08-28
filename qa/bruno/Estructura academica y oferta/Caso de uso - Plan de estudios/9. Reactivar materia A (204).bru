@@ -1,0 +1,20 @@
+meta {
+  name: 9. Reactivar materia A (204)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectAId}}/activate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

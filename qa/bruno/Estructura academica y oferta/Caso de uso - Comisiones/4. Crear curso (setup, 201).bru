@@ -1,0 +1,39 @@
+meta {
+  name: 4. Crear curso (setup, 201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/courses
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCurso", "Bruno QA - Curso " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCurso}}",
+    "termId": {{termId}},
+    "capacity": 20
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("courseId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

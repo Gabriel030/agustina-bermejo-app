@@ -1,0 +1,28 @@
+meta {
+  name: 28. Quitar grupo electivo en uso - 409
+  type: http
+  seq: 28
+}
+
+delete {
+  url: {{baseUrl}}/programs/{{programId}}/elective-groups/{{groupId}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 409 — ElectiveGroupInUseException, materia B sigue tageada", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  No hay forma vía API de destagear la materia para reintentar: un PUT
+  a `/program-subjects/{id}` con `electiveGroupId: null` se ignora
+  (`editarMateria` solo pisa campos no-nulos — es "PATCH parcial", nunca
+  "borrar este campo", ver `ProgramSubjectService.java:121`). Limitación
+  real del producto, no un bug de este test.
+}

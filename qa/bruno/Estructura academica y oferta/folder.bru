@@ -1,0 +1,23 @@
+meta {
+  name: Estructura academica y oferta
+}
+
+docs {
+  # Estructura académica y oferta
+
+  SubjectController, ProgramSubjectController, ElectiveGroupController,
+  CourseSubjectController, CourseSectionController, SubjectSectionController.
+  Ver `backend/src/test/resources/karate/estructura-academica/` para la
+  versión Karate — ahí sí está el detalle exhaustivo de casos borde (28
+  escenarios entre `plan-de-estudios.feature` y `comisiones.feature`).
+
+  **Cobertura de Bruno reducida a propósito**: este dominio tiene 46
+  endpoints en 6 controllers con dependencias combinatorias entre sí
+  (materia → plan de carrera → correlatividad → grupo electivo; curso/
+  materia → comisión → docente). Replicar 1:1 cada caso borde de Karate acá
+  significaría ~125 requests solo para este dominio. En su lugar, Bruno
+  cubre los flujos principales de cada caso de uso (ciclos completos y las
+  reglas de negocio más importantes) para exploración manual — el rigor
+  exhaustivo de casos borde (permisos cruzados, 404/409/400 de cada
+  combinación) vive en Karate, que corre automático en CI.
+}

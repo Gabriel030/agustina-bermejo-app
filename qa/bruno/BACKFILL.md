@@ -90,16 +90,42 @@ correr todo junto sin reiniciar el backend entre medio pega 429 a partir de
 acá — no es un bug nuevo, es el límite ya documentado arriba en este mismo
 archivo ("Cuidado con el rate limiter" en `docs/context/testing.md`).
 
-## Estructura académica / oferta
+## Estructura académica / oferta — cubierto (2026-08-28)
 
-| Controller | Endpoints | Karate | Bruno |
-|---|---|---|---|
-| SubjectController | 6 | pendiente | pendiente |
-| ProgramSubjectController | 9 | pendiente | pendiente |
-| CourseSubjectController | 6 | pendiente | pendiente |
-| ElectiveGroupController | 7 | pendiente | pendiente |
-| CourseSectionController | 9 | pendiente | pendiente |
-| SubjectSectionController | 9 | pendiente | pendiente |
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| SubjectController | 6 | ✅ | ✅ | ciclo completo, nombre duplicado (409), 404, Preceptor sin acceso (403) |
+| ProgramSubjectController | 9 | ✅ | ✅ | alta/edición/baja, duplicado (409), correlatividades (agregar/listar/quitar), prereq de sí misma y circular (400), correlatividad entre carreras distintas (400, solo Karate) |
+| ElectiveGroupController | 7 | ✅ | ✅ | ciclo completo, rango inválido (400), no se puede tagear sin asignar a la carrera (decisión 8, 400), en uso no se puede quitar (409) |
+| CourseSubjectController | 6 | ✅ | ✅ | ciclo completo, curso/módulo inexistente (404) |
+| CourseSectionController | 9 | ✅ | ✅ (sin asignación de docente) | ciclo completo, docente ya asignado (409, solo Karate), quitar asignación de otra comisión (404, solo Karate), Alumno sin acceso (403) |
+| SubjectSectionController | 9 | ✅ | ✅ (sin asignación de docente) | ciclo completo, regla de diseño "una comisión por materia, no por carrera" (solo Karate), quitar asignación ajena (404, solo Karate) |
+
+**Gap real encontrado (no un bug, una limitación documentada)**: no existe
+ningún endpoint que exponga el `id` de un `Instructor` — `StaffResponse.id`
+es el id de `Person`, no el de `Instructor` (comentario explícito en
+`StaffResponse.java`). Karate lo resuelve con un fixture Java nuevo
+(`KarateFixtures.crearInstructor()`); Bruno **no puede** probar la
+asignación de docente a una comisión sin ese id — por eso las carpetas de
+Bruno de este dominio cubren todo el ciclo de la comisión (crear, editar,
+baja/alta) pero **no** el alta/baja de `SectionInstructor`. Si en algún
+momento se agrega un endpoint de listado de instructores, revisar esto.
+
+**Otro gap real (limitación del producto, no de este test)**:
+`UpdateProgramSubjectRequest.electiveGroupId` con JSON `null` se ignora —
+`editarMateria` solo pisa campos no-nulos (`ProgramSubjectService.java:121`),
+es "PATCH parcial", nunca "borrar este campo". No hay forma vía API de
+destagear una materia de un grupo electivo ya asignado.
+
+**Nota de setup (Bruno)**: el `type` de `/terms` (`CreateTermRequest.type`)
+es un `String` libre, no un enum — se usa `'ANUAL'` por convención ya
+establecida en el resto de la colección, no porque el backend lo exija.
+
+**Cobertura de Bruno reducida a propósito** (documentado también en
+`qa/bruno/Estructura academica y oferta/folder.bru`): 46 endpoints en 6
+controllers con dependencias combinatorias — Bruno cubre flujos
+principales y reglas de negocio clave (54 requests), Karate tiene el
+detalle exhaustivo de casos borde (28 escenarios).
 
 ## Inscripciones académicas
 
@@ -124,9 +150,12 @@ archivo ("Cuidado con el rate limiter" en `docs/context/testing.md`).
 ## Total
 
 155 endpoints, 33 controllers. Con cobertura de rigor completo en ambas
-herramientas: 11 de 33 (AuthController; PersonController, StaffController,
+herramientas: 17 de 33 (AuthController; PersonController, StaffController,
 ProspectController, StudentController de Gestión de personas;
 InvoiceController, MeInvoiceController, DirectorApprovalRequestController,
 MeCertificateController, GraduationRequestController,
-MeGraduationRequestController de Procesos administrativos — dominio
-completo). El resto: parcial o pendiente — ver tablas de arriba.
+MeGraduationRequestController de Procesos administrativos; SubjectController,
+ProgramSubjectController, ElectiveGroupController, CourseSubjectController,
+CourseSectionController, SubjectSectionController de Estructura académica —
+estos 2 últimos con Bruno acotado, ver nota de asignación de docente). El
+resto: parcial o pendiente — ver tablas de arriba.

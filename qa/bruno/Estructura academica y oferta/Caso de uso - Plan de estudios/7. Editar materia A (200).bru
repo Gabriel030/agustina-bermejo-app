@@ -1,0 +1,28 @@
+meta {
+  name: 7. Editar materia A (200)
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/subjects/{{subjectAId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "{{nombreMateriaA}} (editada)",
+    "description": "Descripción actualizada"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -2,6 +2,7 @@ package com.red_escuela.backend.karate;
 
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.entity.Instructor;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
@@ -9,6 +10,7 @@ import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.repository.InstitutionRepository;
+import com.red_escuela.backend.repository.InstructorRepository;
 import com.red_escuela.backend.repository.PersonRepository;
 import com.red_escuela.backend.repository.RoleRepository;
 import com.red_escuela.backend.repository.StudentRepository;
@@ -113,5 +115,31 @@ public class KarateFixtures {
         result.put("studentId", student.getId());
         result.put("accessToken", jwtService.generateAccessToken(person));
         return result;
+    }
+
+    // Instructor sin credenciales de login — solo hace falta el id para asignarlo a una
+    // comisión (CourseSectionController/SubjectSectionController). No pasa por /staff porque
+    // StaffResponse.id es el id de Person, no de Instructor (ver comentario en StaffResponse) y
+    // acá necesitamos el id de Instructor directo.
+    public static Long crearInstructor() {
+        AddressRepository addressRepository = context().getBean(AddressRepository.class);
+        PersonRepository personRepository = context().getBean(PersonRepository.class);
+        InstructorRepository instructorRepository = context().getBean(InstructorRepository.class);
+
+        Address address = addressRepository.save(new Address());
+
+        Person person = new Person();
+        String username = "karate.instructor." + System.nanoTime();
+        person.setName("Docente");
+        person.setLastname("Karate");
+        person.setUsername(username);
+        person.setEmail(username + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        person = personRepository.save(person);
+
+        Instructor instructor = new Instructor();
+        instructor.setPerson(person);
+        return instructorRepository.save(instructor).getId();
     }
 }

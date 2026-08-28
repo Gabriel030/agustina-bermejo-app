@@ -1,0 +1,29 @@
+meta {
+  name: 12. Modulo o ciclo inexistente al crear comision (404)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/course-subjects/999999/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "x",
+    "termId": {{termId}},
+    "capacity": 10
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
