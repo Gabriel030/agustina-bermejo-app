@@ -97,7 +97,7 @@ public class ProgramEnrollmentApplicationService {
             studentDocumentRepository.delete(existing);
         });
 
-        String relativePath = fileStorageService.store(studentId, type, file);
+        String relativePath = fileStorageService.store(studentId, type.name(), file);
 
         StudentDocument document = new StudentDocument();
         document.setStudent(application.getStudent());

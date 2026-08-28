@@ -1,0 +1,30 @@
+meta {
+  name: 6. Administrativo no puede crear FeeSchedule (403)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/fee-schedules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenPrecios}}
+}
+
+body:json {
+  {
+    "programId": {{programIdPrecios}},
+    "concept": "MATRICULA",
+    "amount": 50000,
+    "vigenteDesde": "2020-01-01"
+  }
+}
+
+tests {
+  test("status 403 — solo el Director define precios", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
