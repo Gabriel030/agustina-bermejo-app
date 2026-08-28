@@ -1,0 +1,29 @@
+meta {
+  name: 6. Preceptor no tiene acceso a facturacion (403)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/invoices
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "concept": "Cuota",
+    "amount": 10000,
+    "dueDate": "2026-12-31"
+  }
+}
+
+tests {
+  test("status 403 — decisión 14, ni el Preceptor tiene acceso a facturación", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

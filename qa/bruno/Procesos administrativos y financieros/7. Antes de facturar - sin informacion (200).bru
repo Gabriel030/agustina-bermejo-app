@@ -1,0 +1,23 @@
+meta {
+  name: 7. Antes de facturar - sin informacion (200)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/students/{{studentId}}/payment-standing
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("standing SIN_INFORMACION antes de la primera factura", function () {
+    expect(res.getBody().standing).to.equal("SIN_INFORMACION");
+  });
+}

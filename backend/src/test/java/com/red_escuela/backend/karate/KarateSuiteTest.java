@@ -73,4 +73,9 @@ class KarateSuiteTest {
     Karate testPersonas() {
         return Karate.run("classpath:karate/personas");
     }
+
+    @Karate.Test
+    Karate testProcesosAdministrativos() {
+        return Karate.run("classpath:karate/procesos-administrativos");
+    }
 }

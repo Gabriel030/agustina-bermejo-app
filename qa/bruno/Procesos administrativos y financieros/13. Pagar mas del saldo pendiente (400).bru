@@ -1,0 +1,28 @@
+meta {
+  name: 13. Pagar mas del saldo pendiente (400)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/invoices/{{invoiceId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "amount": 9999,
+    "method": "CASH"
+  }
+}
+
+tests {
+  test("status 400 — saldo pendiente es 6000, no se puede pagar de más", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

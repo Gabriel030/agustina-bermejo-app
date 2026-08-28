@@ -1,0 +1,27 @@
+meta {
+  name: 22. Campos faltantes al crear factura (400)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/invoices
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "concept": ""
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
