@@ -1,0 +1,20 @@
+meta {
+  name: 23. Autoservicio - dar de baja inscripcion inexistente (404)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/me/exam-board-registrations/999999/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

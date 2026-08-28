@@ -1,0 +1,35 @@
+meta {
+  name: Evaluacion y asistencia
+}
+
+docs {
+  # Evaluación y asistencia
+
+  AttendanceController, GradeItemController, ExamBoardController,
+  ExamBoardRegistrationController, MeExamBoardRegistrationController. Ver
+  `backend/src/test/resources/karate/evaluacion-y-asistencia/` (2 features,
+  17 escenarios) para la cobertura exhaustiva.
+
+  **`AttendanceController` y `GradeItemController` no tienen cobertura
+  Bruno — gap real, no un descuido**: ambos exigen `@PreAuthorize
+  hasRole('DOCENTE')` + que el Docente autenticado integre la comisión
+  (`NotOwnSectionException` si no). Para lograr eso por HTTP puro hacen
+  falta DOS cosas que Bruno no puede conseguir:
+  1. Un `Instructor` con credenciales de login funcionales — `POST /staff`
+     (rol DOCENTE) sí crea el `Instructor`, pero deja `password` en null
+     (mismo criterio que el resto de altas de staff) — solo se puede
+     loguear completando el flujo real de `forgot-password`/
+     `reset-password`, que exige leer el token de un email (o, en local,
+     del log del backend — algo que un script de Bruno no puede hacer).
+  2. Un `EvaluationScheme` asignado a la comisión — no existe ningún
+     endpoint HTTP para crear uno (ver "Deuda técnica y gaps de QA",
+     entrada 5).
+
+  Karate resuelve ambos con fixtures Java
+  (`crearDocenteConToken()`, `crearEvaluationScheme()`) que no tienen
+  equivalente posible en Bruno. Por eso acá solo se cubre lo que SÍ es
+  alcanzable por HTTP puro: `ExamBoardController` (crear, cerrar,
+  listar) y las validaciones de `ExamBoardRegistrationController`/
+  `MeExamBoardRegistrationController` que no requieren una cursada
+  REGULAR (que a su vez requeriría el mismo Docente inalcanzable).
+}

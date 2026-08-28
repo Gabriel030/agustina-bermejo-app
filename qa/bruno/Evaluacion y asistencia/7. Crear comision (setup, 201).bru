@@ -1,0 +1,41 @@
+meta {
+  name: 7. Crear comision (setup, 201)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/subjects/{{subjectId}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Comisión evaluación",
+    "termId": {{termId}},
+    "capacity": 20
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Sin `evaluationSchemeId` a propósito — no hay endpoint HTTP para crear
+  uno (ver folder.bru de esta carpeta). No hace falta para lo que se
+  prueba acá (no se carga ninguna nota vía Bruno).
+}

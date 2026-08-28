@@ -159,29 +159,68 @@ técnica y gaps de QA" — **a tener en cuenta en cualquier backfill
 futuro**: preferir el fixture Java sobre `/auth/register` real salvo que
 el escenario testee específicamente ese endpoint.
 
-## Evaluación y asistencia
+## Evaluación y asistencia — cubierto (2026-08-28)
 
-| Controller | Endpoints | Karate | Bruno |
-|---|---|---|---|
-| AttendanceController | 7 | pendiente | pendiente |
-| GradeItemController | 4 | pendiente | pendiente |
-| ExamBoardController | 4 | pendiente | pendiente |
-| ExamBoardRegistrationController | 2 | pendiente | pendiente |
-| MeExamBoardRegistrationController | 2 | pendiente | pendiente |
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| AttendanceController | 7 | ✅ | ❌ (gap) | comisión propia (403 NotOwnSectionException), justificar ausencia, listar por Preceptor/Administrativo/Director, riesgo de libre |
+| GradeItemController | 4 | ✅ | ❌ (gap) | recálculo automático de status verificado end-to-end: 3 parciales aprobados → REGULAR, promedio insuficiente → FAILED sin llegar al final, final aprobado/desaprobado → APPROVED/FAILED |
+| ExamBoardController | 4 | ✅ | ✅ | crear (organizada por Subject+Term, no por comisión — decisión 7), asignar tribunal, cerrar acta (idempotente), listar inscriptos |
+| ExamBoardRegistrationController | 2 | ✅ | ✅ (parcial) | no-regular (400), materia no coincide (400, solo Karate), mesa cerrada (409), ventana vencida (400), doble inscripción (409, solo Karate), reinscripción tras baja reactiva la fila (solo Karate) |
+| MeExamBoardRegistrationController | 2 | ✅ | ✅ (parcial) | mismo service que la versión staff; ownership es 404 no 403 (solo Karate) |
+
+**Gap real, no un descuido**: `AttendanceController` y
+`GradeItemController` quedan **sin ninguna cobertura Bruno** — ambos
+exigen un Docente autenticado que integre la comisión, y no hay forma de
+conseguir eso por HTTP puro (ver entradas 5 y 7 de "Deuda técnica y gaps
+de QA": no hay endpoint para `EvaluationScheme`, y no hay forma de
+loguearse como Docente sin completar el flujo real de
+`forgot-password`/`reset-password`, que exige leer un token de un
+email). Karate lo resuelve con fixtures Java
+(`crearDocenteConToken()`, `crearEvaluationScheme()`).
+
+También documentado: `Subject.maxFinalExamAttempts` no es configurable
+por API (`CreateSubjectRequest`/`UpdateSubjectRequest` no lo exponen) —
+la regla de tope de reintentos está implementada y probada a nivel
+service, pero nunca se puede activar desde ninguna pantalla hoy. Entrada
+8 de "Deuda técnica y gaps de QA".
 
 ## Total
 
-155 endpoints, 33 controllers. Con cobertura de rigor completo en ambas
-herramientas: 22 de 33 (AuthController; PersonController, StaffController,
-ProspectController, StudentController de Gestión de personas;
-InvoiceController, MeInvoiceController, DirectorApprovalRequestController,
-MeCertificateController, GraduationRequestController,
-MeGraduationRequestController de Procesos administrativos; SubjectController,
-ProgramSubjectController, ElectiveGroupController, CourseSubjectController,
-CourseSectionController, SubjectSectionController de Estructura académica —
-estos 2 últimos con Bruno acotado, ver nota de asignación de docente;
-ProgramEnrollmentController, CourseEnrollmentController,
-CourseSectionEnrollmentController, SubjectSectionEnrollmentController de
-Inscripciones académicas). `MeAcademicRecordController` tiene Karate
-completo pero sin Bruno (gap de `EvaluationScheme`, ver arriba). El resto:
-parcial o pendiente — ver tablas de arriba.
+155 endpoints, 33 controllers.
+
+- **Cobertura de rigor completo en ambas herramientas: 24 de 33** —
+  AuthController; PersonController, StaffController, ProspectController,
+  StudentController (Gestión de personas); InvoiceController,
+  MeInvoiceController, DirectorApprovalRequestController,
+  MeCertificateController, GraduationRequestController,
+  MeGraduationRequestController (Procesos administrativos);
+  SubjectController, ProgramSubjectController, ElectiveGroupController,
+  CourseSubjectController, CourseSectionController,
+  SubjectSectionController (Estructura académica — estos 2 últimos con
+  Bruno acotado, sin asignación de docente); ProgramEnrollmentController,
+  CourseEnrollmentController, CourseSectionEnrollmentController,
+  SubjectSectionEnrollmentController (Inscripciones académicas);
+  ExamBoardController, ExamBoardRegistrationController,
+  MeExamBoardRegistrationController (Evaluación y asistencia — estos 2
+  últimos con Bruno parcial).
+- **Karate completo pero sin Bruno: 3** —
+  `MeAcademicRecordController`, `AttendanceController`,
+  `GradeItemController`. Mismo tipo de gap real en los 3 (entidad sin
+  endpoint HTTP de alta, o rol sin forma de loguearse por HTTP puro —
+  ver "Deuda técnica y gaps de QA" en Obsidian, entradas 5 y 7).
+- **Pendiente, sin backfill todavía: 6** — del dominio original "Auth +
+  Autoservicio (Épica 7)", quedaron en `🟡 parcial` desde antes de que
+  arrancara este backfill sistemático y nunca se retomaron:
+  `InstitutionController`, `ProgramEnrollmentApplicationController`,
+  `MeEnrollmentController`, `ProgramController`, `CourseController`,
+  `TermController` — ver el detalle puntual de qué falta de cada uno en
+  la tabla "Auth + Autoservicio" arriba (ej. `TermController` solo tiene
+  cubierto el alta usada como setup por otros dominios, el resto de sus
+  9 endpoints sin tocar).
+
+Con esto se cierra el backfill de los 5 dominios grandes trabajados en
+esta ronda de sesiones (Gestión de personas, Procesos administrativos,
+Estructura académica, Inscripciones académicas, Evaluación y
+asistencia) — el dominio original de Auth + Autoservicio queda como el
+único con deuda pendiente real, ya acotada y explícita arriba.

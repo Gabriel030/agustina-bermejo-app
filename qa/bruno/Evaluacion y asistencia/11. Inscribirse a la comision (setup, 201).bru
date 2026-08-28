@@ -1,0 +1,36 @@
+meta {
+  name: 11. Inscribirse a la comision (setup, 201)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "sectionId": {{sectionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionEnrollmentId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("queda ENROLLED, no REGULAR — sin Docente no se puede cargar nota vía Bruno", function () {
+    expect(res.getBody().status).to.equal("ENROLLED");
+  });
+}
