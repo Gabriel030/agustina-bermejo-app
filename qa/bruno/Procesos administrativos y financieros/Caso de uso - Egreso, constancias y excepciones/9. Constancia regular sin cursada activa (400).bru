@@ -1,0 +1,20 @@
+meta {
+  name: 9. Constancia regular sin cursada activa (400)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId}}/certificates/regular
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 400 — CertificateNotEligibleException, no tiene cursada activa", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

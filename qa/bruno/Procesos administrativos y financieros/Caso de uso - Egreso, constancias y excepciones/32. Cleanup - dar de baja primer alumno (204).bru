@@ -1,0 +1,28 @@
+meta {
+  name: 32. Cleanup - dar de baja primer alumno (204)
+  type: http
+  seq: 32
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/withdraw
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "reason": "ABANDONO",
+    "detail": "Cleanup de colección Bruno — no dejar legajo activo de prueba"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

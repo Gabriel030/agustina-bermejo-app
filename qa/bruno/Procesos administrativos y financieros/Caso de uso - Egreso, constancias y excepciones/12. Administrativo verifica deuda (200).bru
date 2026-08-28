@@ -1,0 +1,23 @@
+meta {
+  name: 12. Administrativo verifica deuda (200)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/graduation-requests/{{graduationRequestId}}/verify-debt
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status pasa a ADMIN_VERIFIED", function () {
+    expect(res.getBody().status).to.equal("ADMIN_VERIFIED");
+  });
+}

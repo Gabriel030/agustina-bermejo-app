@@ -50,7 +50,7 @@ y `MethodArgumentTypeMismatchException` en `GlobalExceptionHandler`. Ver el
 commit de esta sesión para el detalle completo — incluye por qué un
 catch-all de `Exception.class` NO es la solución (rompe `@PreAuthorize`).
 
-## Procesos administrativos y financieros — prioridad alta (dinero)
+## Procesos administrativos y financieros — cubierto (2026-08-28)
 
 | Controller | Endpoints | Karate | Bruno | Notas |
 |---|---|---|---|---|
@@ -59,7 +59,20 @@ catch-all de `Exception.class` NO es la solución (rompe `@PreAuthorize`).
 | MeCertificateController | 2 | pendiente | pendiente | |
 | GraduationRequestController | 4 | pendiente | pendiente | |
 | MeGraduationRequestController | 1 | pendiente | pendiente | |
-| DirectorApprovalRequestController | 4 | pendiente | pendiente | |
+| DirectorApprovalRequestController | 4 | ✅ | ✅ | solicitar (Preceptor/Administrativo), listar pendientes/aprobar/rechazar (Director), 403 Alumno, 409 decidir dos veces, 404 matriculación inexistente |
+| MeCertificateController | 2 | ✅ | ✅ | regular (400 sin cursada activa), materias-aprobadas (200 aun sin materias), 404 matriculación ajena |
+| GraduationRequestController | 4 | ✅ | ✅ | ciclo REQUESTED→ADMIN_VERIFIED→APPROVED (matriculación pasa a COMPLETED en la misma transacción), 400 no elegible por créditos, 409 ya activo / deuda pendiente (decisión 10, sigue en REQUESTED) / decidir dos veces, 403 Preceptor no aprueba, 404 inexistente |
+| MeGraduationRequestController | 1 | ✅ | ✅ | mismo ciclo de arriba, disparado por el propio Alumno |
+
+**Nota de setup (Bruno/Karate, Egreso y excepciones)**: la matriculación se
+arma directo vía `POST /students/{id}/program-enrollments`
+(Preceptor/Administrativo), no vía el flujo de solicitud+aprobación de
+`ProgramEnrollmentApplicationController` (ya cubierto aparte). Una carrera
+con `totalCreditsRequired: 0` y sin `ProgramSubject` hace
+`elegibleParaCompletar` trivialmente verdadero (mismo criterio que
+`GraduationRequestServiceTest.persistProgramSinRequisitos` en el backend) —
+evita tener que armar materias/cursada completa solo para probar el flujo
+de egreso.
 
 **Nota de setup (Bruno)**: el alumno de prueba se crea vía `POST
 /auth/register` (no `/prospects`) porque hace falta loguearse como ese
@@ -111,7 +124,9 @@ archivo ("Cuidado con el rate limiter" en `docs/context/testing.md`).
 ## Total
 
 155 endpoints, 33 controllers. Con cobertura de rigor completo en ambas
-herramientas: 7 de 33 (AuthController; PersonController, StaffController,
+herramientas: 11 de 33 (AuthController; PersonController, StaffController,
 ProspectController, StudentController de Gestión de personas;
-InvoiceController, MeInvoiceController de Procesos administrativos). El
-resto: parcial o pendiente — ver tablas de arriba.
+InvoiceController, MeInvoiceController, DirectorApprovalRequestController,
+MeCertificateController, GraduationRequestController,
+MeGraduationRequestController de Procesos administrativos — dominio
+completo). El resto: parcial o pendiente — ver tablas de arriba.

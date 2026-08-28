@@ -1,0 +1,26 @@
+meta {
+  name: 26. Solicitar egreso del segundo alumno (201)
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId2}}/graduation-request
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumno2AccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("graduationRequestId2", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: 19. Alumno no puede solicitar excepcion (403)
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/director-approval-requests
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+body:json {
+  {
+    "type": "PREREQUISITE_WAIVER",
+    "programEnrollmentId": {{programEnrollmentId}},
+    "justification": "Intento no autorizado"
+  }
+}
+
+tests {
+  test("status 403 — @PreAuthorize hasRole PRECEPTOR/ADMINISTRATIVO", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

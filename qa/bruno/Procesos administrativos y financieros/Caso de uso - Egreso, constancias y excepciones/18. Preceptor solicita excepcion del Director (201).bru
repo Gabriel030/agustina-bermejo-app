@@ -1,0 +1,38 @@
+meta {
+  name: 18. Preceptor solicita excepcion del Director (201)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/director-approval-requests
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "type": "LATE_EXAM",
+    "programEnrollmentId": {{programEnrollmentId}},
+    "justification": "Alumno con certificado médico"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("exceptionId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial REQUESTED", function () {
+    expect(res.getBody().status).to.equal("REQUESTED");
+  });
+}

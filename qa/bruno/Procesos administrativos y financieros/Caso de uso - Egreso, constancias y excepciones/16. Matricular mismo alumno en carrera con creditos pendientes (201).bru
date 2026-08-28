@@ -1,0 +1,33 @@
+meta {
+  name: 16. Matricular mismo alumno en carrera con creditos pendientes (201)
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/program-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "programId": {{programConCreditosId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programEnrollmentConCreditosId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

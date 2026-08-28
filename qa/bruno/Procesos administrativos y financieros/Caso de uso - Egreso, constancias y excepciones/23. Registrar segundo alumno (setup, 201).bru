@@ -1,0 +1,38 @@
+meta {
+  name: 23. Registrar segundo alumno (setup, 201)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("usernameAlumnoEgreso2", "bruno.egreso2." + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Egreso2",
+    "email": "{{usernameAlumnoEgreso2}}@example.com",
+    "username": "{{usernameAlumnoEgreso2}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("alumno2AccessToken", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
