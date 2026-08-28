@@ -1,0 +1,20 @@
+meta {
+  name: 11. Ver detalle inexistente (404)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/programs/999999
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

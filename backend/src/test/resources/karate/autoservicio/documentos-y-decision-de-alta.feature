@@ -1,0 +1,111 @@
+Feature: Caso de uso — Documentación y decisión de una solicitud de alta
+
+  # Complementa solicitar-alta-carrera.feature (que ya cubre solicitar/aprobar) con lo
+  # que faltaba de ProgramEnrollmentApplicationController: agregarDocumento (multipart,
+  # mismo patrón que ProspectController), rechazar (con motivo obligatorio) y
+  # listarPendientes.
+
+  Background:
+    * url baseUrl
+    * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
+    * def institutionId = fixtures.crearInstitucion()
+    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+
+    * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def programId = response.id
+
+    # El flujo real de registro (/auth/register) y el criterio de "no otorga rol hasta
+    # aprobar" ya están cubiertos en solicitar-alta-carrera.feature — acá alcanza con un
+    # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
+    # sobre el rate limiter compartido de /auth/register para algo que este feature no
+    # está probando).
+    * def alumnoToken = fixtures.crearAlumnoConfirmado(institutionId).accessToken
+
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And request { programId: '#(programId)' }
+    When method post
+    Then status 201
+    * def applicationId = response.id
+
+  Scenario: Agregar documentación propia, no ajena; listar pendientes; rechazar con motivo
+    # Sin sesión — 403
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And param type = 'DNI'
+    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 403
+
+    # El propio alumno puede subir su documento — 201
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And param type = 'DNI'
+    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 201
+
+    # Otro alumno no puede subir documentación a una solicitud ajena — 404, no 403
+    # (mismo criterio de ownership que el resto de /me/..., no revela que existe). No
+    # hace falta pasar por /auth/register acá (solo se necesita un token válido de otro
+    # alumno) — mismo criterio ya documentado como deuda técnica (entrada 6, rate
+    # limiter compartido): usar el fixture de Java en vez del endpoint real cuando el
+    # endpoint en sí no es lo que se está probando.
+    * def otroAlumno = fixtures.crearAlumnoConfirmado(institutionId)
+
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + otroAlumno.accessToken
+    And param type = 'FOTO'
+    And multipart file file = { value: 'contenido de prueba', filename: 'foto.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 404
+
+    # La solicitud aparece en la bandeja de pendientes del staff
+    Given path '/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method get
+    Then status 200
+    * def pendiente = response.filter(function(x){ return x.id == applicationId })[0]
+    And match pendiente.status == 'PENDING'
+
+    # Un Alumno no puede listar pendientes — 403
+    Given path '/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 403
+
+    # Rechazar sin motivo — 400 (validación @NotBlank)
+    Given path '/program-enrollment-applications', applicationId, 'reject'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { reason: '' }
+    When method post
+    Then status 400
+
+    # Rechazar con motivo — 200, status REJECTED
+    Given path '/program-enrollment-applications', applicationId, 'reject'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { reason: 'Documentación ilegible' }
+    When method post
+    Then status 200
+    And match response.status == 'REJECTED'
+
+    # La bandeja de pendientes ya no la incluye
+    Given path '/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method get
+    Then status 200
+    * def yaNoPendiente = response.filter(function(x){ return x.id == applicationId })
+    And match yaNoPendiente == '#[0]'
+
+    # El alumno ve REJECTED en su propia bandeja
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def propiaRechazada = response.filter(function(x){ return x.id == applicationId })[0]
+    And match propiaRechazada.status == 'REJECTED'

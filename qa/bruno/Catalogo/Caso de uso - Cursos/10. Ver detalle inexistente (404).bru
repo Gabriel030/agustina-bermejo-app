@@ -1,0 +1,20 @@
+meta {
+  name: 10. Ver detalle inexistente (404)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/courses/999999
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoCurso}}
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

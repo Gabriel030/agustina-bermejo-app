@@ -1,0 +1,18 @@
+meta {
+  name: Caso de uso - Mis inscripciones y progreso
+}
+
+docs {
+  # Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnrollmentController)
+
+  **Correr con:** `bru run "00 - Setup" "Autoservicio - Catalogo y
+  matriculacion/Caso de uso - Mis inscripciones y progreso" -r --env
+  Local` (necesita `{{institutionId}}` de `00 - Setup`).
+
+  Cubre lo que faltaba de `MeEnrollmentController` más allá de `POST
+  /course-enrollments` (ya cubierto en "Caso de uso - Inscribirse a un
+  curso"): listar mis matriculaciones a carrera, ver mi progreso,
+  inscribirme/cambiar de comisión/listar/darme de baja — todo resuelto
+  contra el Student del JWT, nunca un id de la URL, con 404 (no 403) en
+  cada intento de operar sobre algo ajeno.
+}

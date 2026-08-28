@@ -17,17 +17,25 @@ path + bordes reales (auth, ownership, validación, duplicados, ids
 inexistentes) para cada endpoint, en Karate Y en Bruno — no solo un smoke
 test de 200. `🟡 parcial` anota qué falta puntualmente.
 
-## Auth + Autoservicio (Épica 7) — cubierto
+## Auth + Autoservicio (Épica 7) — cubierto (2026-08-28)
 
 | Controller | Endpoints | Karate | Bruno | Notas |
 |---|---|---|---|---|
 | AuthController | 6 | ✅ | ✅ | login, register, refresh, logout — falta forgot-password/reset-password |
-| InstitutionController | 1 | 🟡 (vía fixture, no feature propio) | ✅ | |
-| ProgramEnrollmentApplicationController | 6 | 🟡 (flujo principal) | ✅ | falta `agregarDocumento`, `rechazar`, `listarPendientes` |
-| MeEnrollmentController | 7 | 🟡 (`course-enrollments`) | 🟡 (`course-enrollments`) | `program-enrollments` GET, `section-enrollments` sin cubrir |
-| ProgramController | 6 | 🟡 (crear, vía setup) | 🟡 (GET) | editar/activar/desactivar sin cubrir |
-| CourseController | 6 | 🟡 (crear, vía setup) | 🟡 (GET) | editar/activar/desactivar sin cubrir |
-| TermController | 9 | 🟡 (crear, vía setup) | — | resto sin cubrir |
+| InstitutionController | 1 | ✅ | ✅ | `GET /institutions` es `permitAll()` a propósito (catálogo público, Épica 7) — único endpoint público de la API además de `/auth/**` |
+| ProgramEnrollmentApplicationController | 6 | ✅ | ✅ | ciclo completo: solicitar, documentos (multipart, propio vs ajeno 404), listar pendientes (403 Alumno), aprobar/rechazar (400 sin motivo, 200 con motivo) |
+| MeEnrollmentController | 7 | ✅ | ✅ | `course-enrollments` (ya cubierto antes) + `program-enrollments` GET/progreso, `section-enrollments` alta/cambio (nuevo id)/baja/listado, ownership 404 en los 5 |
+| ProgramController | 6 | ✅ | ✅ | editar (PATCH-si-presente), desactivar/reactivar (idempotentes), listar filtrado por status, 403 (solo ADMINISTRATIVO edita), 404 |
+| CourseController | 6 | ✅ | ✅ | mismo patrón que ProgramController |
+| TermController | 9 | ✅ | ✅ | editar, desactivar/reactivar, listar filtrado, override manual de ventana de inscripción (open/close/clear-override, solo status code — `TermResponse` no expone el campo), 403 (PRECEPTOR o ADMINISTRATIVO), 404 |
+
+**Nota de diseño (`GET /institutions`)**: es el único endpoint de la API,
+aparte de `/auth/**`, con `permitAll()` explícito en `SecurityConfig` — a
+propósito, para que `Registrarse.jsx` pueda resolver `institutionId` antes
+de tener sesión (comentario en el propio `SecurityConfig.java`). El primer
+Karate escrito para este endpoint asumía 403 sin token (como el resto de la
+API) y falló contra el comportamiento real — no era un bug, era una
+verificación equivocada sobre una excepción de diseño ya documentada.
 
 ## Gestión de personas — cubierto (2026-08-27)
 
@@ -189,8 +197,10 @@ service, pero nunca se puede activar desde ninguna pantalla hoy. Entrada
 
 155 endpoints, 33 controllers.
 
-- **Cobertura de rigor completo en ambas herramientas: 24 de 33** —
-  AuthController; PersonController, StaffController, ProspectController,
+- **Cobertura de rigor completo en ambas herramientas: 30 de 33** —
+  AuthController, InstitutionController, ProgramEnrollmentApplicationController,
+  MeEnrollmentController, ProgramController, CourseController, TermController
+  (Auth + Autoservicio); PersonController, StaffController, ProspectController,
   StudentController (Gestión de personas); InvoiceController,
   MeInvoiceController, DirectorApprovalRequestController,
   MeCertificateController, GraduationRequestController,
@@ -209,18 +219,31 @@ service, pero nunca se puede activar desde ninguna pantalla hoy. Entrada
   `GradeItemController`. Mismo tipo de gap real en los 3 (entidad sin
   endpoint HTTP de alta, o rol sin forma de loguearse por HTTP puro —
   ver "Deuda técnica y gaps de QA" en Obsidian, entradas 5 y 7).
-- **Pendiente, sin backfill todavía: 6** — del dominio original "Auth +
-  Autoservicio (Épica 7)", quedaron en `🟡 parcial` desde antes de que
-  arrancara este backfill sistemático y nunca se retomaron:
-  `InstitutionController`, `ProgramEnrollmentApplicationController`,
-  `MeEnrollmentController`, `ProgramController`, `CourseController`,
-  `TermController` — ver el detalle puntual de qué falta de cada uno en
-  la tabla "Auth + Autoservicio" arriba (ej. `TermController` solo tiene
-  cubierto el alta usada como setup por otros dominios, el resto de sus
-  9 endpoints sin tocar).
+- **Pendiente: 0.**
 
-Con esto se cierra el backfill de los 5 dominios grandes trabajados en
-esta ronda de sesiones (Gestión de personas, Procesos administrativos,
-Estructura académica, Inscripciones académicas, Evaluación y
-asistencia) — el dominio original de Auth + Autoservicio queda como el
-único con deuda pendiente real, ya acotada y explícita arriba.
+Con esto se cierra el backfill sistemático de QA sobre los 6 dominios
+grandes trabajados en esta ronda de sesiones (Auth + Autoservicio, Gestión
+de personas, Procesos administrativos, Estructura académica, Inscripciones
+académicas, Evaluación y asistencia). Los 3 controllers sin Bruno quedan
+como deuda técnica real y acotada (entradas 5 y 7 de "Deuda técnica y gaps
+de QA" en Obsidian), no como backfill pendiente.
+
+### Auth + Autoservicio — nuevos hallazgos (2026-08-28)
+
+- **`GET /institutions` es público a propósito** (`permitAll()` en
+  `SecurityConfig`) — el único endpoint de la API, aparte de `/auth/**`,
+  sin JWT. No es un gap, es la excepción de diseño ya documentada en el
+  propio archivo de configuración; el primer intento de Karate para este
+  endpoint asumía 403 sin sesión (como el resto de la API) y quedó
+  corregido a 200.
+- **`change-section` de `MeEnrollmentController` reemplaza la fila** (no
+  la muta) — mismo comportamiento ya documentado para el endpoint
+  equivalente de staff (`SubjectSectionEnrollmentService.cambiarComision`,
+  ver Deuda técnica de Inscripciones académicas): hay que capturar el
+  nuevo `id` de la respuesta para operar sobre la inscripción después de
+  un cambio de comisión.
+- Se reutilizó el criterio ya establecido (Deuda técnica entrada 6): los
+  Karate de este dominio usan `KarateFixtures.crearAlumnoConfirmado(...)`
+  en vez de `/auth/register` real cuando el registro en sí no es lo que
+  el escenario prueba — evita presionar el rate limiter compartido de
+  `/auth/register` sin necesidad.

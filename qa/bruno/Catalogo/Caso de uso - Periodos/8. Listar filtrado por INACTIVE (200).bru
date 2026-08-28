@@ -1,0 +1,28 @@
+meta {
+  name: 8. Listar filtrado por INACTIVE (200)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/terms?status=INACTIVE
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+params:query {
+  status: INACTIVE
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("incluye el período recién desactivado", function () {
+    const ids = res.getBody().map(t => t.id);
+    expect(ids).to.include(bru.getVar("termIdCatalogo"));
+  });
+}

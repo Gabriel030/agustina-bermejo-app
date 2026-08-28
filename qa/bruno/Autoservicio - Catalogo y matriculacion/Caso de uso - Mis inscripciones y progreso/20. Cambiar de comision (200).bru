@@ -1,0 +1,42 @@
+meta {
+  name: 20. Cambiar de comision (200)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/me/section-enrollments/{{sectionEnrollmentIdMisInsc}}/change-section
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "newSectionId": {{sectionBIdMisInsc}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("nuevaSectionEnrollmentIdMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("nueva comisión es B", function () {
+    expect(res.getBody().sectionId).to.equal(bru.getVar("sectionBIdMisInsc"));
+  });
+}
+
+docs {
+  El service reemplaza la fila (nuevo id), no la muta — mismo comportamiento
+  ya documentado para el endpoint equivalente de staff. Por eso el id
+  cambia y hay que capturarlo de nuevo para el paso de baja.
+}

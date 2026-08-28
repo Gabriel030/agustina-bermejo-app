@@ -1,0 +1,34 @@
+meta {
+  name: 17. Inscribirme a la comision A (201)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/me/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "programEnrollmentId": {{programEnrollmentIdMisInsc}},
+    "sectionId": {{sectionAIdMisInsc}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionEnrollmentIdMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

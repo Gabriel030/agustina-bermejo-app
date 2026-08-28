@@ -1,0 +1,20 @@
+meta {
+  name: 13. Override sobre periodo inexistente (404)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/terms/999999/enrollment/open
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

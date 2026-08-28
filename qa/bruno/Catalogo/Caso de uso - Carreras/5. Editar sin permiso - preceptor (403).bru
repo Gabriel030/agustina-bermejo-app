@@ -1,0 +1,27 @@
+meta {
+  name: 5. Editar sin permiso - preceptor (403)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/programs/{{programIdCatalogo}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenCatalogo}}
+}
+
+body:json {
+  {
+    "totalYears": 3
+  }
+}
+
+tests {
+  test("status 403 — solo ADMINISTRATIVO edita carreras", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

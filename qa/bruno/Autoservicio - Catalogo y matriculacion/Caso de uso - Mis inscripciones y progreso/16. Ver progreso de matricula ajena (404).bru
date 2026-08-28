@@ -1,0 +1,20 @@
+meta {
+  name: 16. Ver progreso de matricula ajena (404)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollments/{{otraMatriculaIdMisInsc}}/progress
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+tests {
+  test("status 404 — ownership, no 403", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

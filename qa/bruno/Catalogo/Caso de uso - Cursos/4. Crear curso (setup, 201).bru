@@ -1,0 +1,45 @@
+meta {
+  name: 4. Crear curso (setup, 201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/courses
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoCurso}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCursoCatalogo", "QA Bruno - Curso catálogo " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCursoCatalogo}}",
+    "termId": {{termIdCatalogoCurso}},
+    "schedule": "Lun 18-21hs",
+    "capacity": 15,
+    "price": 20000,
+    "durationMonths": 2
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("courseIdCatalogo", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial ACTIVE", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}

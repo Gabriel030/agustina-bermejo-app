@@ -1,0 +1,23 @@
+meta {
+  name: 8. Ver detalle - queda INACTIVE (200)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/programs/{{programIdCatalogo}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status INACTIVE", function () {
+    expect(res.getBody().status).to.equal("INACTIVE");
+  });
+}
