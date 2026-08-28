@@ -79,7 +79,8 @@ public class GlobalExceptionHandler {
             PaymentExceedsInvoiceBalanceException.class,
             NotEligibleForGraduationException.class,
             CertificateNotEligibleException.class,
-            InvalidPasswordPolicyException.class
+            InvalidPasswordPolicyException.class,
+            InvalidPricingTargetException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -112,7 +113,9 @@ public class GlobalExceptionHandler {
             GradeItemNotFoundException.class,
             InvoiceNotFoundException.class,
             GraduationRequestNotFoundException.class,
-            DirectorApprovalRequestNotFoundException.class
+            DirectorApprovalRequestNotFoundException.class,
+            FeeScheduleNotFoundException.class,
+            PaymentReceiptNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -143,7 +146,9 @@ public class GlobalExceptionHandler {
             InvalidProgramEnrollmentApplicationStateException.class,
             AlreadyHasPendingApplicationException.class,
             UsernameAlreadyExistsException.class,
-            TermEnrollmentOverrideClosedException.class
+            TermEnrollmentOverrideClosedException.class,
+            InvalidPaymentReceiptStateException.class,
+            PaymentReceiptAlreadyPendingException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {

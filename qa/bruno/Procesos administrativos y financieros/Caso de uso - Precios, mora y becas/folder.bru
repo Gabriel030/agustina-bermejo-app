@@ -1,0 +1,25 @@
+meta {
+  name: Caso de uso - Precios, mora y becas
+}
+
+docs {
+  # Caso de uso — Precios, mora y becas (Épica 8 Fase 1)
+
+  **Correr con:** `bru run "00 - Setup" "Procesos administrativos y
+  financieros/Caso de uso - Precios, mora y becas" -r --env Local` (necesita
+  `{{institutionId}}` de `00 - Setup`).
+
+  Ciclo completo: solo el Director crea `FeeSchedule` (403 para
+  Administrativo) → matrícula de una carrera → beca individual (20%) +
+  promoción segmentada (10%) se suman → generar factura desde el
+  `FeeSchedule` refleja el 30% de descuento total → subir comprobante (queda
+  `PENDING_REVIEW`, no se puede subir un segundo mientras el primero sigue
+  abierto) → rechazar (con motivo, no crea ningún `Payment`) → reintento sin
+  límite → aprobar (crea el `Payment` real, la factura pasa a `PAID`).
+
+  No cubre acá (ver Karate para el detalle exhaustivo,
+  `backend/src/test/resources/karate/procesos-administrativos/precios-mora-becas.feature`):
+  versionado de `FeeSchedule` por fecha (varios precios vigentes en el
+  tiempo), `LateFeePolicy`/`BillingPeriod` (CRUD simple sin flujo de negocio
+  encadenado), promoción de otra carrera que no aplica, curso sin matrícula.
+}

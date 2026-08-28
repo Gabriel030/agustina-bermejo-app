@@ -193,9 +193,25 @@ la regla de tope de reintentos está implementada y probada a nivel
 service, pero nunca se puede activar desde ninguna pantalla hoy. Entrada
 8 de "Deuda técnica y gaps de QA".
 
+## Épica 8 Fase 1 — Precios, mora y becas (nuevo, 2026-08-28)
+
+| Controller | Endpoints | Karate | Bruno | Notas |
+|---|---|---|---|---|
+| PricingController | 10 | 🟡 (FeeSchedule + Discount + Promotion, flujo principal) | 🟡 (mismo flujo) | LateFeePolicy/BillingPeriod son CRUD simple sin flujo de negocio encadenado, sin cobertura propia todavía — bajo riesgo (altas triviales, sin cálculo) |
+| PaymentReceiptController | 5 | ✅ | ✅ | subir, no duplicar mientras está en revisión (409), rechazar con motivo + reintento sin límite, aprobar crea el Payment real |
+| InvoiceController | +1 (`from-fee-schedule`) | ✅ | ✅ | resuelve FeeSchedule vigente + descuentos/promociones sumados; sin FeeSchedule vigente → 404 |
+
+No se agregan a la tabla de Total todavía (no son de los 33 controllers ya
+contados en el backfill original de esta ronda) — Épica 8 es trabajo de
+producto nuevo, no backfill sobre lo ya implementado. Ver `LateFeeCalculator`/
+`PricingCalculator` para la lógica de mora/descuentos, cubiertos con tests
+unitarios puros (`PricingCalculatorTest`/`LateFeeCalculatorTest`, sin
+Spring/Postgres — no aplica backfill de Karate/Bruno a lógica sin HTTP).
+
 ## Total
 
-155 endpoints, 33 controllers.
+155 endpoints, 33 controllers (backfill original — no incluye Épica 8, ver
+sección propia arriba).
 
 - **Cobertura de rigor completo en ambas herramientas: 30 de 33** —
   AuthController, InstitutionController, ProgramEnrollmentApplicationController,

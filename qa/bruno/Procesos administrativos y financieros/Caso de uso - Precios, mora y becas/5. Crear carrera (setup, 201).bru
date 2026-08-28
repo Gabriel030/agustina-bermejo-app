@@ -1,0 +1,39 @@
+meta {
+  name: 5. Crear carrera (setup, 201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenPrecios}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCarreraPrecios", "QA Bruno - Carrera precios " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCarreraPrecios}}",
+    "totalYears": 3,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programIdPrecios", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

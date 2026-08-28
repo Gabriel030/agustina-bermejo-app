@@ -1,0 +1,31 @@
+meta {
+  name: 14. Reintentar con un comprobante nuevo (201)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/invoices/{{invoiceIdPrecios}}/payment-receipts
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenPrecios}}
+}
+
+body:multipart-form {
+  file: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("segundoReceiptIdPrecios", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201 — reintento sin límite tras un rechazo", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

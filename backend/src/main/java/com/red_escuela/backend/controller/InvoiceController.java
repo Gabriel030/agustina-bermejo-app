@@ -1,5 +1,6 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.dto.CreateInvoiceFromFeeScheduleRequest;
 import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.dto.InvoiceResponse;
 import com.red_escuela.backend.dto.PaymentResponse;
@@ -36,6 +37,18 @@ public class InvoiceController {
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public InvoiceResponse crear(@PathVariable Long id, @Valid @RequestBody CreateInvoiceRequest request) {
         var invoice = invoiceService.crear(id, request);
+        return InvoiceResponse.from(invoice, invoice.getAmount());
+    }
+
+    // Resuelve el precio vigente (matrícula o cuota) más descuentos/promociones
+    // aplicables, en vez del monto libre de `crear` — pensado para el flujo de
+    // Épica 7 Fase 3 (matrícula/primera cuota al inscribirse) y Épica 8 Fase 2
+    // (cuotas regulares), no reemplaza el alta manual existente.
+    @PostMapping("/students/{id}/invoices/from-fee-schedule")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public InvoiceResponse crearDesdeFeeSchedule(@PathVariable Long id, @Valid @RequestBody CreateInvoiceFromFeeScheduleRequest request) {
+        var invoice = invoiceService.crearDesdeFeeSchedule(id, request);
         return InvoiceResponse.from(invoice, invoice.getAmount());
     }
 
