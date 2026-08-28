@@ -1,0 +1,24 @@
+meta {
+  name: 20. Director lista pendientes - incluye la excepcion (200)
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/director-approval-requests
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("la excepción solicitada en el paso 18 aparece pendiente", function () {
+    const ids = res.getBody().map(function (r) { return r.id; });
+    expect(ids).to.include(bru.getVar("exceptionId"));
+  });
+}

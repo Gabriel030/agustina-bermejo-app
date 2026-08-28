@@ -1,0 +1,21 @@
+meta {
+  name: Caso de uso - Egreso, constancias y excepciones
+}
+
+docs {
+  # Egreso, constancias y excepciones del Director
+
+  RF-AL-12/RF-AL-15/RF-DI-03/RF-DI-05 — GraduationRequestController,
+  MeGraduationRequestController, MeCertificateController,
+  DirectorApprovalRequestController. Ver
+  `backend/src/test/resources/karate/procesos-administrativos/graduacion-y-excepciones.feature`
+  para la versión Karate (misma cobertura, corre automático en CI).
+
+  El alumno se matricula directo vía `POST /students/{id}/program-enrollments`
+  (Preceptor/Administrativo) en vez de pasar por el flujo de solicitud+aprobación
+  de `ProgramEnrollmentApplicationController` — es más corto y este caso de uso
+  no necesita probar ese flujo (ya cubierto en
+  "Autoservicio - Catalogo y matriculacion"). El `studentId` se resuelve igual
+  que en la carpeta de Facturación: `/auth/register` + `GET
+  /students?onboardingStatus=CONFIRMADO` filtrando por username.
+}

@@ -1,0 +1,29 @@
+meta {
+  name: 10. Solicitar egreso (201)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId}}/graduation-request
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("graduationRequestId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial REQUESTED", function () {
+    expect(res.getBody().status).to.equal("REQUESTED");
+  });
+}

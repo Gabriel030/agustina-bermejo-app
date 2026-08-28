@@ -1,0 +1,35 @@
+meta {
+  name: 5. Crear carrera con creditos pendientes (setup, 201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Bruno QA - Carrera con creditos pendientes",
+    "totalYears": 1,
+    "totalCreditsRequired": 5
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programConCreditosId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

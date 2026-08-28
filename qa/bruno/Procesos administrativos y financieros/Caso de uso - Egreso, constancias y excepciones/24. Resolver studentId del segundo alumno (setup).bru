@@ -1,0 +1,33 @@
+meta {
+  name: 24. Resolver studentId del segundo alumno (setup)
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{baseUrl}}/students?onboardingStatus=CONFIRMADO
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const alumnos = res.getBody();
+    const propio = alumnos.find(function (a) { return a.username === bru.getVar("usernameAlumnoEgreso2"); });
+    if (propio) {
+      bru.setVar("studentId2", propio.id);
+    }
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("encontró el segundo alumno por username", function () {
+    expect(bru.getVar("studentId2")).to.not.be.undefined;
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: 17. No elegible para egreso - creditos insuficientes (400)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentConCreditosId}}/graduation-request
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 400 — NotEligibleForGraduationException, 0 de 5 créditos requeridos", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

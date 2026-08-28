@@ -1,0 +1,41 @@
+meta {
+  name: 4. Crear carrera sin requisitos (setup, 201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Bruno QA - Carrera sin requisitos",
+    "totalYears": 1,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programSinRequisitosId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  totalCreditsRequired 0 y sin ProgramSubject: elegibleParaCompletar da true
+  trivialmente (ver GraduationRequestServiceTest.persistProgramSinRequisitos
+  en el backend, mismo criterio armado acá vía HTTP).
+}

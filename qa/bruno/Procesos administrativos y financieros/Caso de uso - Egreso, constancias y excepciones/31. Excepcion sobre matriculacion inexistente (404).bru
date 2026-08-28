@@ -1,0 +1,29 @@
+meta {
+  name: 31. Excepcion sobre matriculacion inexistente (404)
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{baseUrl}}/director-approval-requests
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "type": "LATE_EXAM",
+    "programEnrollmentId": 999999,
+    "justification": "Matriculación inexistente"
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

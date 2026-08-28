@@ -1,0 +1,23 @@
+meta {
+  name: 27. Verificar deuda del segundo alumno (200)
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/graduation-requests/{{graduationRequestId2}}/verify-debt
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status pasa a ADMIN_VERIFIED", function () {
+    expect(res.getBody().status).to.equal("ADMIN_VERIFIED");
+  });
+}

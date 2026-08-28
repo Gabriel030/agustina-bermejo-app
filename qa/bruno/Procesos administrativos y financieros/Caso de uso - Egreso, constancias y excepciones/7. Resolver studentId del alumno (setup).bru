@@ -1,0 +1,33 @@
+meta {
+  name: 7. Resolver studentId del alumno (setup)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/students?onboardingStatus=CONFIRMADO
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const alumnos = res.getBody();
+    const propio = alumnos.find(function (a) { return a.username === bru.getVar("usernameAlumnoEgreso"); });
+    if (propio) {
+      bru.setVar("studentId", propio.id);
+    }
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("encontró el alumno recién registrado por username", function () {
+    expect(bru.getVar("studentId")).to.not.be.undefined;
+  });
+}

@@ -1,0 +1,20 @@
+meta {
+  name: 28. Preceptor no puede aprobar egreso (403)
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{baseUrl}}/graduation-requests/{{graduationRequestId2}}/approve
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+tests {
+  test("status 403 — @PreAuthorize hasRole DIRECTOR únicamente", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
