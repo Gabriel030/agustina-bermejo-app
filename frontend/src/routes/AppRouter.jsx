@@ -5,6 +5,8 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { Catalogo } from '@/pages/Catalogo';
+import { MisSolicitudes } from '@/pages/MisSolicitudes';
+import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
 import { NoAutorizado } from '@/pages/NoAutorizado';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
@@ -25,6 +27,20 @@ const RUTAS_POR_ROL = {
   director: { Layout: DirectorLayout, paginas: ['inicio', 'aprobaciones'] },
 };
 
+// /catalogo y /mis-solicitudes* son rutas compartidas (decisión 1 de la Spec
+// técnica de Épica 7 Fase 2): quien todavía no tiene ningún rol ve el sidebar
+// reducido de AutoservicioLayout (Catálogo + Mis solicitudes, nada más existe
+// para esa persona todavía); quien YA tiene un rol (ej. Alumno cursando que
+// quiere sumarse a un curso suelto) tiene que seguir viendo SU sidebar
+// completo (Inicio, Mis cursos, etc.) — perderlo de vista acá sería sacarle
+// la navegación principal solo por visitar el catálogo.
+function AutoservicioOCapaDelRol() {
+  const { usuario } = useAuth();
+  const rol = usuario?.roles[0]?.toLowerCase();
+  const Layout = (rol && RUTAS_POR_ROL[rol]?.Layout) || AutoservicioLayout;
+  return <Layout />;
+}
+
 export function AppRouter() {
   const { cargando, usuario } = useAuth();
 
@@ -36,18 +52,16 @@ export function AppRouter() {
       <Route path="/registrarse" element={<Registrarse />} />
       <Route path="/no-autorizado" element={<NoAutorizado />} />
 
-      {/* Autoservicio (Épica 7 Fase 2): fuera de RUTAS_POR_ROL a propósito — cualquier
-          persona con sesión entra, tenga rol asignado o no (ver Spec técnica - Frontend,
-          registro y catálogo de autoservicio). */}
       <Route
         element={
           <AnyAuthenticatedRoute>
-            <AutoservicioLayout />
+            <AutoservicioOCapaDelRol />
           </AnyAuthenticatedRoute>
         }
       >
         <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/mis-solicitudes" element={<Placeholder titulo="Mis solicitudes" />} />
+        <Route path="/mis-solicitudes" element={<MisSolicitudes />} />
+        <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
       </Route>
 
       {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas }]) => (

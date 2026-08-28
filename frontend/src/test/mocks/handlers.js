@@ -31,4 +31,6 @@ export const handlers = [
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
+  http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.post(`${API}/me/program-enrollment-applications/:id/documents`, () => new HttpResponse(null, { status: 201 })),
 ];

@@ -48,7 +48,10 @@ async function rawFetch(path, options) {
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
-  if (options.body && !headers.has('Content-Type')) {
+  // FormData (multipart, ver DetalleSolicitud.jsx) nunca lleva Content-Type a mano —
+  // el browser tiene que fijar el boundary por sí solo, forzar 'application/json' acá
+  // rompería el parseo multipart del backend.
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   return fetch(`${API_BASE_URL}${path}`, { ...options, headers });
