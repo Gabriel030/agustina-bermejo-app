@@ -32,6 +32,10 @@ public class ProgramEnrollment {
     @JoinColumn(name = "program_id", nullable = false)
     private Program program;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "program_cohort_id")
+    private ProgramCohort programCohort;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private ProgramEnrollmentStatus status;

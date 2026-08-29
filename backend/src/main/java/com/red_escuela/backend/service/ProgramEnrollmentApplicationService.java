@@ -8,6 +8,7 @@ import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.entity.Student;
@@ -50,6 +51,7 @@ public class ProgramEnrollmentApplicationService {
     private final PersonRoleGranter personRoleGranter;
     private final InvoiceService invoiceService;
     private final PaymentReceiptService paymentReceiptService;
+    private final ProgramCohortService programCohortService;
 
     public ProgramEnrollmentApplicationService(
             ProgramEnrollmentApplicationRepository applicationRepository,
@@ -59,7 +61,8 @@ public class ProgramEnrollmentApplicationService {
             ProgramEnrollmentService programEnrollmentService,
             PersonRoleGranter personRoleGranter,
             InvoiceService invoiceService,
-            PaymentReceiptService paymentReceiptService) {
+            PaymentReceiptService paymentReceiptService,
+            ProgramCohortService programCohortService) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
         this.studentDocumentRepository = studentDocumentRepository;
@@ -68,16 +71,18 @@ public class ProgramEnrollmentApplicationService {
         this.personRoleGranter = personRoleGranter;
         this.invoiceService = invoiceService;
         this.paymentReceiptService = paymentReceiptService;
+        this.programCohortService = programCohortService;
     }
 
     // Matrícula vence hoy: se paga en el momento, junto con la solicitud (a
     // diferencia de una cuota regular, que vence a futuro) — ver spec técnica,
     // "el Invoice + PaymentReceipt se crean en la MISMA request que solicitar()".
     @Transactional
-    public ProgramEnrollmentApplication solicitarConPago(Student student, Long programId, MultipartFile comprobante) {
+    public ProgramEnrollmentApplication solicitarConPago(Student student, Long programId, Long cohortId, MultipartFile comprobante) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
-        programEnrollmentService.validarVentanaDeAdmision(program);
+        ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
+        programEnrollmentService.validarVentanaDeAdmision(cohort);
 
         applicationRepository
                 .findByStudentIdAndProgramIdAndStatus(student.getId(), programId, ProgramEnrollmentApplicationStatus.PENDING)
@@ -86,12 +91,14 @@ public class ProgramEnrollmentApplicationService {
                 });
 
         Invoice invoice = invoiceService.crearDesdeFeeSchedule(student.getId(),
-                new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()));
+                new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()),
+                cohort, null, null, null, null);
         PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);
         application.setProgram(program);
+        application.setProgramCohort(cohort);
         application.setStatus(ProgramEnrollmentApplicationStatus.PENDING);
         application.setRequestedAt(LocalDateTime.now());
         application.setPaymentReceipt(receipt);
@@ -140,8 +147,17 @@ public class ProgramEnrollmentApplicationService {
         application.aprobar(decidedBy);
 
         Student student = application.getStudent();
-        programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(application.getProgram().getId()));
+        Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
+        var enrollment = programEnrollmentService.matricular(student.getId(),
+                new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
         personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+
+        // Recién ahora existe el ProgramEnrollment — la factura de matrícula (generada
+        // al solicitar, sin vínculo posible en ese momento) se completa retroactivamente,
+        // mismo criterio que PaymentReceiptService.matricularCurso para el caso de curso.
+        if (application.getPaymentReceipt() != null) {
+            application.getPaymentReceipt().getInvoice().setProgramEnrollment(enrollment);
+        }
 
         // Documentación + comprobante se deciden juntos, una sola decisión (ver spec
         // funcional) — aprobar la solicitud aprueba también el comprobante en la MISMA

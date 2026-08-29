@@ -81,7 +81,8 @@ public class GlobalExceptionHandler {
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
             InvalidPricingTargetException.class,
-            InvalidSectionOverridesException.class
+            InvalidSectionOverridesException.class,
+            InvalidProgramCohortException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -116,7 +117,8 @@ public class GlobalExceptionHandler {
             GraduationRequestNotFoundException.class,
             DirectorApprovalRequestNotFoundException.class,
             FeeScheduleNotFoundException.class,
-            PaymentReceiptNotFoundException.class
+            PaymentReceiptNotFoundException.class,
+            ProgramCohortNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {

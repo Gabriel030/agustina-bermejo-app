@@ -1,0 +1,40 @@
+meta {
+  name: 8. Crear cohorte de la carrera (201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/program-cohorts
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessTokenDocAlta}}
+}
+
+body:json {
+  {
+    "programId": {{programIdDocAlta}},
+    "label": "Cohorte QA marzo",
+    "ordenEnAnio": 1,
+    "cursadaStart": "2026-03-01"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("cohortIdDocAlta", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Épica 8 Fase 2: solicitar alta exige una cohorte concreta.
+}

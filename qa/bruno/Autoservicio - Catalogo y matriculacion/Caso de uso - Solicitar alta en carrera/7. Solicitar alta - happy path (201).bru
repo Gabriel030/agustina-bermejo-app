@@ -1,7 +1,7 @@
 meta {
-  name: 6. Solicitar alta - happy path (201)
+  name: 7. Solicitar alta - happy path (201)
   type: http
-  seq: 6
+  seq: 7
 }
 
 post {
@@ -16,6 +16,7 @@ headers {
 
 body:multipart-form {
   programId: {{programIdQA}}
+  cohortId: {{cohortIdQA}}
   comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 

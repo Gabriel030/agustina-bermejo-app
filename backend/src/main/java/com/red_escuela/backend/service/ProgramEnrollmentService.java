@@ -4,6 +4,7 @@ import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
@@ -16,11 +17,13 @@ import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.StudentNotFoundException;
+import com.red_escuela.backend.repository.ProgramCohortRepository;
 import com.red_escuela.backend.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
@@ -48,6 +51,7 @@ public class ProgramEnrollmentService {
     private final ProgramSubjectRepository programSubjectRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramElectiveGroupRepository programElectiveGroupRepository;
+    private final ProgramCohortRepository programCohortRepository;
 
     public ProgramEnrollmentService(
             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -55,13 +59,15 @@ public class ProgramEnrollmentService {
             ProgramRepository programRepository,
             ProgramSubjectRepository programSubjectRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            ProgramElectiveGroupRepository programElectiveGroupRepository) {
+            ProgramElectiveGroupRepository programElectiveGroupRepository,
+            ProgramCohortRepository programCohortRepository) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
         this.programSubjectRepository = programSubjectRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programElectiveGroupRepository = programElectiveGroupRepository;
+        this.programCohortRepository = programCohortRepository;
     }
 
     @Transactional
@@ -72,7 +78,17 @@ public class ProgramEnrollmentService {
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
-        validarVentanaDeAdmision(program);
+
+        // cohortId nullable (ver CreateProgramEnrollmentRequest): un alta directa
+        // por staff puede no especificar cohorte, y en ese caso no queda atada a
+        // ninguna ventana de admisión de autoservicio — es una decisión explícita
+        // del staff, no algo que el sistema deba bloquear.
+        ProgramCohort cohort = null;
+        if (request.cohortId() != null) {
+            cohort = programCohortRepository.findById(request.cohortId())
+                    .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
+            validarVentanaDeAdmision(cohort);
+        }
 
         LocalDateTime now = LocalDateTime.now();
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
@@ -84,6 +100,7 @@ public class ProgramEnrollmentService {
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
         enrollment.setProgram(program);
+        enrollment.setProgramCohort(cohort);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
         return programEnrollmentRepository.save(enrollment);
@@ -183,19 +200,20 @@ public class ProgramEnrollmentService {
     // reusa para no cobrarle matrícula a nadie fuera de la ventana de admisión — antes solo se
     // validaba acá, en matricular(), que recién corre cuando el Preceptor aprueba la solicitud
     // (tarde: el comprobante ya se había pedido y subido). Mismo criterio que
-    // CourseEnrollmentService.validarPuedeMatricular.
-    void validarVentanaDeAdmision(Program program) {
-        if (program.getAdmissionStart() != null && program.getAdmissionEnd() != null
-                && program.getAdmissionStart().isAfter(program.getAdmissionEnd())) {
+    // CourseEnrollmentService.validarPuedeMatricular. Desde Épica 8 Fase 2 la ventana vive en
+    // ProgramCohort, no en Program (una carrera tiene 2 cohortes por año, cada una con la suya).
+    void validarVentanaDeAdmision(ProgramCohort cohort) {
+        if (cohort.getAdmissionStart() != null && cohort.getAdmissionEnd() != null
+                && cohort.getAdmissionStart().isAfter(cohort.getAdmissionEnd())) {
             throw new InvalidWindowConfigurationException(
-                    "La carrera " + program.getId() + " tiene la ventana de admisión mal configurada "
+                    "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
         LocalDateTime now = LocalDateTime.now();
-        if (program.getAdmissionStart() != null && now.isBefore(program.getAdmissionStart())
-                || program.getAdmissionEnd() != null && now.isAfter(program.getAdmissionEnd())) {
+        if (cohort.getAdmissionStart() != null && now.isBefore(cohort.getAdmissionStart())
+                || cohort.getAdmissionEnd() != null && now.isAfter(cohort.getAdmissionEnd())) {
             throw new AdmissionWindowClosedException(
-                    "Fuera de la ventana de admisión de la carrera " + program.getId());
+                    "Fuera de la ventana de admisión de la cohorte " + cohort.getId());
         }
     }
 

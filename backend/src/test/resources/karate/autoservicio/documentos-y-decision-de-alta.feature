@@ -28,6 +28,14 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     When method post
     Then status 201
 
+    # Épica 8 Fase 2: solicitar exige una cohorte concreta.
+    Given path '/program-cohorts'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { programId: '#(programId)', label: 'Cohorte de prueba', ordenEnAnio: 1, cursadaStart: '2026-03-01' }
+    When method post
+    Then status 201
+    * def cohortId = response.id
+
     # El flujo real de registro (/auth/register) y el criterio de "no otorga rol hasta
     # aprobar" ya están cubiertos en solicitar-alta-carrera.feature — acá alcanza con un
     # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
@@ -39,6 +47,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
+    And multipart field cohortId = cohortId
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201

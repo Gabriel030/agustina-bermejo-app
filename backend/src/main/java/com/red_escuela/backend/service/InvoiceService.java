@@ -5,6 +5,7 @@ import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.dto.DebtSummaryResponse;
 import com.red_escuela.backend.dto.InvoiceResponse;
 import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.Discount;
 import com.red_escuela.backend.entity.FeeSchedule;
 import com.red_escuela.backend.entity.FeeScheduleConcept;
@@ -13,6 +14,8 @@ import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.LateFeePolicy;
 import com.red_escuela.backend.entity.PaymentStanding;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.Promotion;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.exception.CourseNotFoundException;
@@ -93,6 +96,21 @@ public class InvoiceService {
      */
     @Transactional
     public Invoice crearDesdeFeeSchedule(Long studentId, CreateInvoiceFromFeeScheduleRequest request) {
+        return crearDesdeFeeSchedule(studentId, request, null, null, null, null, null);
+    }
+
+    /**
+     * Épica 8 Fase 2: variante interna (no expuesta por controller — el endpoint
+     * público de facturación ad-hoc no necesita conocer cohortes ni plan de
+     * pagos) usada por {@link ProgramEnrollmentApplicationService#solicitarConPago}
+     * (matrícula de una cohorte concreta) y por {@code RecurringBillingService}
+     * (cuota mensual, vinculada a la matriculación con su número de cuota).
+     */
+    @Transactional
+    Invoice crearDesdeFeeSchedule(
+            Long studentId, CreateInvoiceFromFeeScheduleRequest request, ProgramCohort cohort,
+            ProgramEnrollment programEnrollment, CourseEnrollment courseEnrollment,
+            Integer installmentNumber, Integer totalInstallments) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
 
@@ -122,8 +140,15 @@ public class InvoiceService {
             conceptoTexto = "Cuota — " + course.getName();
         }
 
+        // Matrícula de la segunda cohorte del año (quien entra a mitad de año) va
+        // al 50% ANTES de aplicar descuentos/promociones (spec técnica Épica 8
+        // Fase 2, decisión 6) — el resto de conceptos no tiene cohorte asociada.
+        BigDecimal montoBase = (request.concept() == FeeScheduleConcept.MATRICULA && cohort != null)
+                ? PricingCalculator.calcularMontoMatricula(feeSchedule.getAmount(), cohort)
+                : feeSchedule.getAmount();
+
         List<Discount> descuentosVigentes = discountService.vigentesParaAlumno(studentId, hoy);
-        BigDecimal montoFinal = PricingCalculator.calcularMontoFinal(feeSchedule.getAmount(), descuentosVigentes, promocionesVigentes);
+        BigDecimal montoFinal = PricingCalculator.calcularMontoFinal(montoBase, descuentosVigentes, promocionesVigentes);
 
         Invoice invoice = new Invoice();
         invoice.setStudent(student);
@@ -132,6 +157,10 @@ public class InvoiceService {
         invoice.setDueDate(request.dueDate());
         invoice.setIssuedAt(LocalDateTime.now());
         invoice.setStatus(InvoiceStatus.PENDING);
+        invoice.setProgramEnrollment(programEnrollment);
+        invoice.setCourseEnrollment(courseEnrollment);
+        invoice.setInstallmentNumber(installmentNumber);
+        invoice.setTotalInstallments(totalInstallments);
         return invoiceRepository.save(invoice);
     }
 

@@ -34,6 +34,15 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method post
     Then status 201
 
+    # Épica 8 Fase 2: solicitar exige una cohorte concreta — la ventana de admisión
+    # vive acá, no en la carrera.
+    Given path '/program-cohorts'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { programId: '#(programId)', label: 'Cohorte de prueba', ordenEnAnio: 1, cursadaStart: '2026-03-01' }
+    When method post
+    Then status 201
+    * def cohortId = response.id
+
     # Alumno recién registrado, sin sesión previa
     * def emailAlumno = 'karate.solicitaralta.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
@@ -48,6 +57,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
+    And multipart field cohortId = cohortId
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
@@ -58,6 +68,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
+    And multipart field cohortId = cohortId
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
