@@ -26,4 +26,8 @@ docs {
      caso de uso), así que se verifica explícitamente acá también.
   6. Un Alumno no puede aprobar su propia solicitud (ni la de nadie) —
      el endpoint de aprobación es exclusivo de Preceptor/Administrativo.
+  7. Épica 7 Fase 3: el pago de la matrícula es un paso bloqueante de la
+     misma request — sin FeeSchedule definido por el Director, o sin
+     comprobante adjunto, no se puede solicitar. Al aprobar, se aprueba
+     también el comprobante y se crea el Payment real (misma transacción).
 }

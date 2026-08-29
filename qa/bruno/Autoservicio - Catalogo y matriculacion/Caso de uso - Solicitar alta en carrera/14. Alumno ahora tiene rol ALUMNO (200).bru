@@ -1,0 +1,34 @@
+meta {
+  name: 14. Alumno ahora tiene rol ALUMNO (200)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/me
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("roles incluye ALUMNO — otorgado automáticamente al aprobar", function () {
+    expect(res.getBody().roles).to.include("ALUMNO");
+  });
+}
+
+docs {
+  Criterio de aceptación clave de la Épica 7: aprobar la solicitud tiene
+  que otorgar el rol sin intervención manual de nadie. Mismo tipo de
+  aserción que atrapó el bug real en el otro caso de uso
+  (`Caso de uso - Inscribirse a un curso`) — acá el flujo SÍ tenía
+  cobertura real (no enmascarada por transacción de test), porque el
+  otorgamiento vive dentro de `ProgramEnrollmentApplicationService.aprobar`,
+  un único método `@Transactional`, a diferencia del bug que sí existía
+  en `MeEnrollmentController` (ver spec técnica, Nota de implementación).
+}

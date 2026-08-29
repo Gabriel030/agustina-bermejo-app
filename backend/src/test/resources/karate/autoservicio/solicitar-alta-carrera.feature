@@ -14,6 +14,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def institutionId = fixtures.crearInstitucion()
     * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
     * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
 
     # Carrera de prueba (staff)
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
@@ -25,6 +26,14 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match response.status == 'ACTIVE'
     * def programId = response.id
 
+    # Épica 7 Fase 3: solicitar exige que el Director haya definido la matrícula
+    # (FeeSchedule) de esta carrera — sin esto, crearDesdeFeeSchedule() falla 404.
+    Given path '/fee-schedules'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { programId: '#(programId)', concept: 'MATRICULA', amount: 50000, vigenteDesde: '2020-01-01' }
+    When method post
+    Then status 201
+
     # Alumno recién registrado, sin sesión previa
     * def emailAlumno = 'karate.solicitaralta.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
@@ -34,10 +43,12 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def alumnoToken = response.accessToken
 
   Scenario: Flujo completo — solicitar, ver PENDING, aprobar, ver APPROVED, rol otorgado
-    # Solicitar — 201, PENDING
+    # Solicitar — 201, PENDING. Épica 7 Fase 3: multipart, el comprobante de la
+    # matrícula viaja en la misma request que la solicitud (paso bloqueante).
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { programId: '#(programId)' }
+    And multipart field programId = programId
+    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
     And match response.status == 'PENDING'
@@ -46,7 +57,8 @@ Feature: Caso de uso — Solicitar alta en carrera
     # Solicitar la misma carrera de nuevo — 409, duplicado pendiente
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { programId: '#(programId)' }
+    And multipart field programId = programId
+    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
 

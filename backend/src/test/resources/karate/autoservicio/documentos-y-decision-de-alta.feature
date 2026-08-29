@@ -11,6 +11,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def institutionId = fixtures.crearInstitucion()
     * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
     * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
 
     * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
     Given path '/programs'
@@ -20,6 +21,13 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Then status 201
     * def programId = response.id
 
+    # Épica 7 Fase 3: solicitar exige matrícula (FeeSchedule) ya definida.
+    Given path '/fee-schedules'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { programId: '#(programId)', concept: 'MATRICULA', amount: 50000, vigenteDesde: '2020-01-01' }
+    When method post
+    Then status 201
+
     # El flujo real de registro (/auth/register) y el criterio de "no otorga rol hasta
     # aprobar" ya están cubiertos en solicitar-alta-carrera.feature — acá alcanza con un
     # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
@@ -27,9 +35,11 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # está probando).
     * def alumnoToken = fixtures.crearAlumnoConfirmado(institutionId).accessToken
 
+    # Solicitar — multipart desde Épica 7 Fase 3, comprobante bloqueante.
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { programId: '#(programId)' }
+    And multipart field programId = programId
+    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
     * def applicationId = response.id

@@ -1,0 +1,32 @@
+meta {
+  name: 8. Solicitar alta (setup, 201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+body:multipart-form {
+  programId: {{programIdDocAlta}}
+  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("applicationIdDocAlta", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,33 @@
+meta {
+  name: 6. Login director (setup)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "director.demo",
+    "password": "Test1234"
+  }
+}
+
+script:post-response {
+  bru.setVar("directorAccessTokenDocAlta", res.getBody().accessToken);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Setup: Épica 7 Fase 3 exige un FeeSchedule (MATRICULA) vigente antes de
+  poder solicitar alta.
+}

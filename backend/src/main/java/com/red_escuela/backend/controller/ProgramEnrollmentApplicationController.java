@@ -1,6 +1,5 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.CreateProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentApplicationResponse;
 import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.DocumentType;
@@ -13,6 +12,7 @@ import com.red_escuela.backend.service.CurrentStudentService;
 import com.red_escuela.backend.service.ProgramEnrollmentApplicationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,11 +49,14 @@ public class ProgramEnrollmentApplicationController {
         this.applicationService = applicationService;
     }
 
-    @PostMapping("/me/program-enrollment-applications")
+    // Multipart desde la Fase 3: el pago de la matrícula es un paso bloqueante de
+    // la misma request (ver spec técnica) — ya no hay un solicitar() sin comprobante.
+    @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public ProgramEnrollmentApplicationResponse solicitar(@Valid @RequestBody CreateProgramEnrollmentApplicationRequest request) {
+    public ProgramEnrollmentApplicationResponse solicitar(
+            @RequestParam Long programId, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollmentApplication application = applicationService.solicitar(student, request.programId());
+        ProgramEnrollmentApplication application = applicationService.solicitarConPago(student, programId, comprobante);
         return ProgramEnrollmentApplicationResponse.from(application);
     }
 
