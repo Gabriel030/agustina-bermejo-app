@@ -9,10 +9,14 @@ import com.red_escuela.backend.dto.CreatePromotionRequest;
 import com.red_escuela.backend.dto.DiscountResponse;
 import com.red_escuela.backend.dto.FeeScheduleResponse;
 import com.red_escuela.backend.dto.LateFeePolicyResponse;
+import com.red_escuela.backend.dto.CoursePricingResponse;
 import com.red_escuela.backend.dto.CreateProgramCohortRequest;
 import com.red_escuela.backend.dto.ProgramCohortResponse;
+import com.red_escuela.backend.dto.ProgramPricingResponse;
 import com.red_escuela.backend.dto.PromotionResponse;
+import com.red_escuela.backend.entity.FeeScheduleConcept;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.exception.FeeScheduleNotFoundException;
 import com.red_escuela.backend.service.BillingPeriodService;
 import com.red_escuela.backend.service.CurrentPersonService;
 import com.red_escuela.backend.service.DiscountService;
@@ -30,7 +34,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Precios, mora, ventana de emisión, becas y promociones — todo alta/edición es
@@ -136,10 +143,44 @@ public class PricingController {
         return ProgramCohortResponse.from(programCohortService.crear(request));
     }
 
+    // Sin @PreAuthorize a propósito (mismo criterio que /me/...): cualquier alumno
+    // tiene que poder ver las cohortes disponibles de una carrera antes de
+    // inscribirse — no es información sensible, solo fechas y orden.
     @GetMapping("/programs/{id}/cohorts")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
     public List<ProgramCohortResponse> listarProgramCohorts(@PathVariable Long id) {
         return programCohortService.listarPorPrograma(id).stream().map(ProgramCohortResponse::from).toList();
+    }
+
+    // Consulta pública de precios (sin @PreAuthorize): el alumno necesita saber
+    // cuánto pagar ANTES de transferir y subir el comprobante — separado del CRUD
+    // de FeeSchedule (Director-only). Épica 7 Fase 3.
+    @GetMapping("/programs/{id}/pricing")
+    public ProgramPricingResponse pricingDePrograma(@PathVariable Long id) {
+        LocalDate hoy = LocalDate.now();
+        BigDecimal matriculaCohorte1 = montoOSiNoHayFeeSchedule(() -> feeScheduleService.montoMatriculaVigente(id, 1, hoy));
+        BigDecimal matriculaCohorte2 = montoOSiNoHayFeeSchedule(() -> feeScheduleService.montoMatriculaVigente(id, 2, hoy));
+        BigDecimal cuotaMensual = montoOSiNoHayFeeSchedule(
+                () -> feeScheduleService.vigenteParaPrograma(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
+        return new ProgramPricingResponse(id, matriculaCohorte1, matriculaCohorte2, cuotaMensual);
+    }
+
+    @GetMapping("/courses/{id}/pricing")
+    public CoursePricingResponse pricingDeCurso(@PathVariable Long id) {
+        LocalDate hoy = LocalDate.now();
+        BigDecimal cuotaMensual = montoOSiNoHayFeeSchedule(
+                () -> feeScheduleService.vigenteParaCurso(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
+        return new CoursePricingResponse(id, cuotaMensual);
+    }
+
+    // El Director puede no haber configurado un precio todavía — la pantalla de
+    // detalle tiene que poder mostrar "sin definir" en vez de un 404 que rompa
+    // toda la carga de la pantalla por un solo concepto faltante.
+    private BigDecimal montoOSiNoHayFeeSchedule(Supplier<BigDecimal> resolver) {
+        try {
+            return resolver.get();
+        } catch (FeeScheduleNotFoundException e) {
+            return null;
+        }
     }
 
     private Person actor() {

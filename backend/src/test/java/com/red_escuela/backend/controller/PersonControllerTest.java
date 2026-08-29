@@ -78,7 +78,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "nuevo.email@example.com", "1155556666", "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                "nuevo.email@example.com", "1155556666", null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,6 +98,43 @@ class PersonControllerTest extends AbstractIntegrationTest {
         Person otroSinCambios = personRepository.findById(otro.getId()).orElseThrow();
         assertThat(otroSinCambios.getEmail()).isEqualTo("otro1@example.com");
         assertThat(otroSinCambios.getPhoneNumber()).isNull();
+    }
+
+    @Test
+    void putMeActualizaElDniPropio() throws Exception {
+        Person propio = persistPersonWithRole("propio3", "60777888", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                null, null, "60999000", null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dni").value("60999000"));
+
+        entityManager.flush();
+        entityManager.clear();
+        Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
+        assertThat(propioActualizado.getDni()).isEqualTo("60999000");
+    }
+
+    @Test
+    void putMeConDniYaExistenteDevuelve400() throws Exception {
+        persistPersonWithRole("propio4", "60111333", "ALUMNO");
+        Person propio = persistPersonWithRole("propio5", "60222444", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                null, null, "60111333", null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -122,7 +159,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     @Test
     void putMeSinAuthDevuelve401OForbidden() throws Exception {
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "x@example.com", null, null, null, null, null, null, null, null);
+                "x@example.com", null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)

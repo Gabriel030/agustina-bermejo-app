@@ -13,3 +13,13 @@ export function formatFecha(isoString) {
     new Date(isoString),
   );
 }
+
+// Épica 7 Fase 3: montos de matrícula/cuota en el Detalle de carrera/curso y el
+// wizard de pago. null (Director no configuró el precio todavía) se maneja en
+// el componente que lo llama, no acá.
+export function formatMonto(amount) {
+  if (amount == null) return '';
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(
+    amount,
+  );
+}

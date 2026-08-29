@@ -6,6 +6,7 @@ import com.red_escuela.backend.entity.FeeSchedule;
 import com.red_escuela.backend.entity.FeeScheduleConcept;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.FeeScheduleNotFoundException;
 import com.red_escuela.backend.exception.InvalidPricingTargetException;
@@ -16,6 +17,7 @@ import com.red_escuela.backend.repository.ProgramRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -86,5 +88,26 @@ public class FeeScheduleService {
         return feeScheduleRepository
                 .findFirstByCourseIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(courseId, concept, fecha)
                 .orElseThrow(() -> new FeeScheduleNotFoundException("course " + courseId + ", concepto " + concept));
+    }
+
+    /**
+     * Épica 7 Fase 3: matrícula vigente ya ajustada por cohorte (ver
+     * {@link PricingCalculator#calcularMontoMatricula}, Épica 8 Fase 2 — 50%
+     * para la segunda cohorte del año). Cualquier alumno tiene que poder ver
+     * este monto ANTES de transferir, no solo Director/Administrativo — por
+     * eso es un método público separado, sin las restricciones del resto de
+     * esta clase (que sí es Director-only para crear/editar).
+     * {@code ordenEnAnioCohorte} nullable: sin cohorte elegida todavía
+     * (ej. la pantalla de Detalle, antes de arrancar el wizard), devuelve el
+     * monto base sin prorratear.
+     */
+    public BigDecimal montoMatriculaVigente(Long programId, Integer ordenEnAnioCohorte, LocalDate fecha) {
+        FeeSchedule feeSchedule = vigenteParaPrograma(programId, FeeScheduleConcept.MATRICULA, fecha);
+        if (ordenEnAnioCohorte == null) {
+            return feeSchedule.getAmount();
+        }
+        ProgramCohort cohorteTransitoria = new ProgramCohort();
+        cohorteTransitoria.setOrdenEnAnio(ordenEnAnioCohorte);
+        return PricingCalculator.calcularMontoMatricula(feeSchedule.getAmount(), cohorteTransitoria);
     }
 }

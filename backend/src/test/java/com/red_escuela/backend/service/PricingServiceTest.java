@@ -157,6 +157,23 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void montoMatriculaVigenteAplicaElProrrateoDeLaSegundaCohorte() {
+        Person director = persistPersonBase("DIR" + System.nanoTime());
+        Program program = persistProgram("Carrera QA " + System.nanoTime());
+        entityManager.flush();
+
+        feeScheduleService.crear(new CreateFeeScheduleRequest(
+                program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000), LocalDate.now().minusDays(1)), director);
+
+        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), null, LocalDate.now()))
+                .isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), 1, LocalDate.now()))
+                .isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), 2, LocalDate.now()))
+                .isEqualByComparingTo(BigDecimal.valueOf(25000));
+    }
+
+    @Test
     void sinFeeScheduleVigenteFallaAlIntentarGenerarLaFactura() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera sin precio " + System.nanoTime());

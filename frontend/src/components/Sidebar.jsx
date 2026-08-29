@@ -12,8 +12,13 @@ export function Sidebar({ titulo, items }) {
   const { usuario, logout } = useAuth();
 
   return (
-    <GlassCard className="flex w-64 shrink-0 flex-col gap-6 p-5">
-      <div>
+    // hidden lg:flex: en base/md este layout colapsa al menú hamburguesa
+    // (MobileMenu, ver RoleShell.jsx) — nunca conviven los dos.
+    // h-full + min-h-0: dentro del shell (h-screen), el sidebar ocupa toda la
+    // altura disponible pero no la excede — habilita que solo el <nav> de abajo
+    // scrollee cuando hay muchos ítems, dejando título y "Cerrar sesión" fijos.
+    <GlassCard className="hidden h-full w-64 shrink-0 flex-col gap-6 overflow-hidden p-5 lg:flex">
+      <div className="shrink-0">
         <div className="text-sm font-semibold text-ink-faint">{titulo}</div>
         {usuario && (
           <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
@@ -22,14 +27,14 @@ export function Sidebar({ titulo, items }) {
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {items.map(({ to, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               cn(
-                'rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:translate-x-[3px] hover:bg-accent hover:text-ink',
+                'shrink-0 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:translate-x-[3px] hover:bg-accent hover:text-ink',
                 isActive && 'bg-accent text-ink',
               )
             }
@@ -42,7 +47,7 @@ export function Sidebar({ titulo, items }) {
       <button
         type="button"
         onClick={logout}
-        className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
+        className="shrink-0 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
       >
         Cerrar sesión
       </button>

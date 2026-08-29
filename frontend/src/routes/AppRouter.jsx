@@ -5,7 +5,10 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { Catalogo } from '@/pages/Catalogo';
-import { MisSolicitudes } from '@/pages/MisSolicitudes';
+import { DetalleCarrera } from '@/pages/DetalleCarrera';
+import { DetalleCurso } from '@/pages/DetalleCurso';
+import { InscripcionCarrera } from '@/pages/InscripcionCarrera';
+import { InscripcionCurso } from '@/pages/InscripcionCurso';
 import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
 import { NoAutorizado } from '@/pages/NoAutorizado';
 import { CargaInicial } from '@/pages/CargaInicial';
@@ -60,7 +63,13 @@ export function AppRouter() {
         }
       >
         <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/mis-solicitudes" element={<MisSolicitudes />} />
+        <Route path="/catalogo/carreras/:id" element={<DetalleCarrera />} />
+        <Route path="/catalogo/carreras/:id/inscribirme" element={<InscripcionCarrera />} />
+        <Route path="/catalogo/cursos/:id" element={<DetalleCurso />} />
+        <Route path="/catalogo/cursos/:id/inscribirme" element={<InscripcionCurso />} />
+        {/* "Mis solicitudes" pasó a ser una tab de /catalogo (Épica 7 Fase 3) —
+            la ruta vieja redirige en vez de 404 para no romper bookmarks. */}
+        <Route path="/mis-solicitudes" element={<Navigate to="/catalogo?tab=mis-solicitudes" replace />} />
         <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
       </Route>
 

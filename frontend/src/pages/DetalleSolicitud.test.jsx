@@ -30,9 +30,9 @@ describe('DetalleSolicitud', () => {
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
-    expect(screen.getByText('DNI')).toBeInTheDocument();
-    expect(screen.getByText('Analítico de secundario')).toBeInTheDocument();
-    expect(screen.getByText('Foto')).toBeInTheDocument();
+    expect(screen.getByText('DNI — frente')).toBeInTheDocument();
+    expect(screen.getByText('DNI — dorso')).toBeInTheDocument();
+    expect(screen.getByText('Analítico del secundario')).toBeInTheDocument();
   });
 
   it('muestra el motivo de rechazo sin la lista de documentos cuando está rechazada', async () => {
@@ -52,7 +52,7 @@ describe('DetalleSolicitud', () => {
     renderDetalle('2');
 
     expect(await screen.findByText(/Documentación ilegible/)).toBeInTheDocument();
-    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.queryByText('DNI — frente')).not.toBeInTheDocument();
   });
 
   it('muestra "no encontrada" para un id que no está en la lista propia', async () => {
@@ -76,8 +76,8 @@ describe('DetalleSolicitud', () => {
     const user = userEvent.setup();
     renderDetalle('1');
 
-    await screen.findByText('DNI');
-    // DNI es el primer TIPOS_DOCUMENTO — mismo orden que los inputs en el DOM.
+    await screen.findByText('DNI — frente');
+    // DNI frente es el primer TIPOS_DOCUMENTO — mismo orden que los inputs en el DOM.
     const [fileInput] = document.querySelectorAll('input[type="file"]');
     const file = new File(['contenido'], 'dni-frente.pdf', { type: 'application/pdf' });
 
