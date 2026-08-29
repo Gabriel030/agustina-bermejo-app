@@ -128,7 +128,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
                 return "dni.pdf";
             }
         });
-        body.add("type", "DNI");
+        body.add("type", "DNI_FRENTE");
 
         ResponseEntity<String> response = restTemplate.postForEntity(
                 "/prospects/{id}/documents", new HttpEntity<>(body, headers), String.class, student.getId());

@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { PageContainer } from '@/components/PageContainer';
 import { TabCarreras } from '@/components/catalogo/TabCarreras';
 import { TabCursos } from '@/components/catalogo/TabCursos';
 import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
@@ -34,10 +35,7 @@ export function Catalogo() {
   }
 
   return (
-    // min-w-0: este div es a su vez un flex item dentro de <main> (RoleShell) —
-    // sin esto, hereda el mismo problema que se acaba de arreglar ahí un nivel
-    // más abajo (ver comentario en RoleShell.jsx).
-    <div className="flex min-w-0 flex-1 flex-col gap-6">
+    <PageContainer>
       <div>
         <div className="font-heading text-2xl font-bold tracking-tight text-ink">Catálogo</div>
         <div className="mt-1 text-sm text-ink-faint">
@@ -63,6 +61,6 @@ export function Catalogo() {
       {tab === 'carreras' && <TabCarreras search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}
       {tab === 'cursos' && <TabCursos search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}
       {tab === 'mis-solicitudes' && <TabMisSolicitudes />}
-    </div>
+    </PageContainer>
   );
 }

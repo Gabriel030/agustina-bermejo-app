@@ -117,9 +117,10 @@ Tailwind default, mobile-first (clases sin prefijo = mobile, `md:`/`lg:`
 agregan desde ahí, nunca al revés):
 
 - **Layouts por rol** (`Sidebar.jsx` + contenido): el sidebar fijo a la
-  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a una
-  **bottom tab bar** con los mismos ítems — no un hamburger menu, es la
-  convención nativa iOS/Android, coherente con el empaquetado final.
+  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
+  **menú hamburguesa** (`MobileMenu.jsx`, drawer lateral con los mismos
+  ítems) — decisión revisada con el usuario; la versión anterior de esta
+  convención pedía una bottom tab bar, descartada a pedido explícito.
 - **Pantallas centradas sin sidebar** (Login, Registrarse): `GlassCard`
   pasa de ancho fijo a `w-full` con padding en mobile, ancho fijo recién en
   `md:`+.

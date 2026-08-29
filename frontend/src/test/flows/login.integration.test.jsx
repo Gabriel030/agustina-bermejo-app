@@ -33,7 +33,10 @@ describe('flujo de login end-to-end', () => {
     renderApp();
     await login();
 
-    expect(await screen.findByText('Preceptor')).toBeInTheDocument();
+    // "Preceptor" aparece 2 veces en el DOM a la vez (Sidebar desktop + topbar
+    // del menú hamburguesa mobile, RoleShell.jsx) — la visibilidad entre ambos
+    // es puramente CSS (hidden/lg:hidden), jsdom no oculta ninguno de los dos.
+    expect(await screen.findAllByText('Preceptor')).toHaveLength(2);
     expect(screen.getByText('Prueba Login')).toBeInTheDocument();
   });
 

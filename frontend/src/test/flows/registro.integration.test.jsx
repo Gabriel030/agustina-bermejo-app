@@ -69,9 +69,13 @@ describe('flujo de registro end-to-end', () => {
         HttpResponse.json([{ id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' }]),
       ),
       http.get(`${API}/programs/1/subjects`, () => HttpResponse.json([])),
+      http.put(`${API}/me`, () =>
+        HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', dni: '30111222', roles: [] }),
+      ),
       http.post(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json({ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING' }, { status: 201 }),
       ),
+      http.post(`${API}/me/program-enrollment-applications/:id/documents`, () => new HttpResponse(null, { status: 201 })),
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([{ id: 42, programId: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
       ),
@@ -86,18 +90,35 @@ describe('flujo de registro end-to-end', () => {
     await user.click(await screen.findByText('Diseño Gráfico'));
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
 
-    // Wizard: elegir cohorte → subir comprobante → confirmar
-    const dialog = await screen.findByRole('dialog');
-    await user.click(await within(dialog).findByText('Marzo 2026'));
-    const file = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
-    const [fileInput] = dialog.querySelectorAll('input[type="file"]');
-    await user.upload(fileInput, file);
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar inscripción' }));
-    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Entendido' }));
+    // Página de inscripción (no modal): cohorte → documentación → pago → confirmar
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(await screen.findByText('Marzo 2026'));
 
-    // Volver al catálogo y revisar la tab Mis solicitudes
-    await user.click(screen.getByRole('link', { name: 'Catálogo' }));
+    // Email ya viene precargado de /me (Sofía se registró con email) — solo falta DNI/dirección.
+    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
+    await user.type(calleInput, 'Calle Falsa');
+    await user.type(numeroInput, '123');
+    await user.type(ciudadInput, 'Ciudad');
+    const dniFrente = new File(['contenido'], 'dni-frente.jpg', { type: 'image/jpeg' });
+    const dniDorso = new File(['contenido'], 'dni-dorso.jpg', { type: 'image/jpeg' });
+    const analitico = new File(['contenido'], 'analitico.pdf', { type: 'application/pdf' });
+    const inputsDocs = document.querySelectorAll('input[type="file"]');
+    await user.upload(inputsDocs[0], dniFrente);
+    await user.upload(inputsDocs[1], dniDorso);
+    await user.upload(inputsDocs[2], analitico);
+    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
+
+    const comprobante = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
+    const [comprobanteInput] = document.querySelectorAll('input[type="file"]');
+    await user.upload(comprobanteInput, comprobante);
+    await user.click(await screen.findByRole('button', { name: 'Confirmar solicitud' }));
+    const modalConfirmar = await screen.findByRole('dialog');
+    await user.click(within(modalConfirmar).getByRole('button', { name: 'Sí, confirmar' }));
+    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
+
+    // Revisar la tab Mis solicitudes
     await user.click(await screen.findByRole('button', { name: 'Mis solicitudes' }));
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();

@@ -1,15 +1,13 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
+import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
-import { WizardInscripcion } from '@/components/catalogo/WizardInscripcion';
 import { useCurso, useCursoPricing, useCursoTemario } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
 
 export function DetalleCurso() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [wizardAbierto, setWizardAbierto] = useState(false);
 
   const { data: curso, isLoading, isError } = useCurso(id);
   const { data: pricing } = useCursoPricing(id);
@@ -23,7 +21,7 @@ export function DetalleCurso() {
   }
 
   return (
-    <div className="flex max-w-[860px] flex-1 flex-col gap-6">
+    <PageContainer>
       <button
         type="button"
         onClick={() => navigate('/catalogo?tab=cursos')}
@@ -44,7 +42,7 @@ export function DetalleCurso() {
           </div>
         </div>
         <Button
-          onClick={() => setWizardAbierto(true)}
+          onClick={() => navigate(`/catalogo/cursos/${id}/inscribirme`)}
           className="w-full rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-5 text-[13.5px] font-semibold text-white md:w-auto"
         >
           Inscribirme
@@ -74,14 +72,6 @@ export function DetalleCurso() {
           </div>
         ))}
       </GlassCard>
-
-      <WizardInscripcion
-        tipo="curso"
-        target={{ id: curso.id, name: curso.name }}
-        pricing={pricing}
-        open={wizardAbierto}
-        onOpenChange={setWizardAbierto}
-      />
-    </div>
+    </PageContainer>
   );
 }

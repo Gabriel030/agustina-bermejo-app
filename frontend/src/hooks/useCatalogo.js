@@ -78,3 +78,29 @@ export function useInscribirmeCurso() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] }),
   });
 }
+
+// Paso 1 del wizard de inscripción (Documentación): actualiza/completa datos que
+// el Registro no pide (dni, dirección) — PUT /me ya soportaba dirección, se le
+// agregó dni en esta misma fase (ver PersonProfileService.actualizarDatosPropios).
+export function useActualizarPerfilPropio() {
+  return useMutation({
+    mutationFn: (datos) => apiFetch('/me', { method: 'PUT', body: JSON.stringify(datos) }),
+  });
+}
+
+// Documentos de una ProgramEnrollmentApplication ya creada (DNI frente/dorso,
+// analítico) — solo carrera; los cursos no piden documentación (ver
+// TabMisSolicitudes.jsx). Subida secuencial desde el wizard, después de crear
+// la solicitud, no antes — el endpoint necesita el id de la solicitud.
+export function useAgregarDocumentoSolicitudCarrera() {
+  return useMutation({
+    mutationFn: ({ applicationId, type, file }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiFetch(`/me/program-enrollment-applications/${applicationId}/documents?type=${type}`, {
+        method: 'POST',
+        body: formData,
+      });
+    },
+  });
+}

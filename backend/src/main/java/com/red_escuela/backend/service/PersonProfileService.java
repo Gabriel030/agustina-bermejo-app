@@ -2,8 +2,10 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.exception.PersonNotFoundException;
 import com.red_escuela.backend.repository.PersonRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,9 @@ public class PersonProfileService {
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());
         }
+        if (request.dni() != null) {
+            person.setDni(request.dni());
+        }
 
         var address = person.getAddress();
         if (request.street() != null) {
@@ -61,7 +66,11 @@ public class PersonProfileService {
             address.setCountry(request.country());
         }
 
-        return personRepository.save(person);
+        try {
+            return personRepository.saveAndFlush(person);
+        } catch (DataIntegrityViolationException e) {
+            throw new DniAlreadyExistsException(request.dni());
+        }
     }
 
     private Person resolveAuthenticatedPerson() {

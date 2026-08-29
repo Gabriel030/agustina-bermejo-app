@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { Buscador } from '@/components/catalogo/Buscador';

@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
+import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
-import { WizardInscripcion } from '@/components/catalogo/WizardInscripcion';
 import { usePrograma, useProgramaPricing, useProgramaCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
 
@@ -11,7 +10,6 @@ import { formatMonto } from '@/lib/utils';
 export function DetalleCarrera() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [wizardAbierto, setWizardAbierto] = useState(false);
 
   const { data: programa, isLoading, isError } = usePrograma(id);
   const { data: pricing } = useProgramaPricing(id);
@@ -32,7 +30,7 @@ export function DetalleCarrera() {
   }, {});
 
   return (
-    <div className="flex max-w-[860px] flex-1 flex-col gap-6">
+    <PageContainer>
       <button
         type="button"
         onClick={() => navigate('/catalogo?tab=carreras')}
@@ -50,12 +48,18 @@ export function DetalleCarrera() {
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{programa.name}</div>
           <div className="mt-1 text-sm text-ink-faint">{programa.totalYears} años · Título oficial</div>
         </div>
-        <Button
-          onClick={() => setWizardAbierto(true)}
-          className="w-full rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-5 text-[13.5px] font-semibold text-white md:w-auto"
-        >
-          Inscribirme
-        </Button>
+        <div className="flex w-full flex-col items-end gap-1.5 md:w-auto">
+          <Button
+            onClick={() => navigate(`/catalogo/carreras/${id}/inscribirme`)}
+            disabled={!cohorts?.length}
+            className="w-full rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-5 text-[13.5px] font-semibold text-white md:w-auto"
+          >
+            Inscribirme
+          </Button>
+          {cohorts && cohorts.length === 0 && (
+            <span className="text-xs font-medium text-ink-faint">Todavía no hay cohortes abiertas para esta carrera.</span>
+          )}
+        </div>
       </div>
 
       <GlassCard className="flex flex-wrap gap-6 p-5">
@@ -88,15 +92,6 @@ export function DetalleCarrera() {
           ))}
         </GlassCard>
       ))}
-
-      <WizardInscripcion
-        tipo="carrera"
-        target={{ id: programa.id, name: programa.name }}
-        cohorts={cohorts}
-        pricing={pricing}
-        open={wizardAbierto}
-        onOpenChange={setWizardAbierto}
-      />
-    </div>
+    </PageContainer>
   );
 }

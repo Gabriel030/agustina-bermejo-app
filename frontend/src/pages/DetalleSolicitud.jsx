@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
+import { PageContainer } from '@/components/PageContainer';
 import { EstadoSolicitudBadge } from '@/components/EstadoSolicitudBadge';
 import { apiFetch } from '@/api/client';
 import { formatFecha } from '@/lib/utils';
 
-// DocumentType del backend (entity.DocumentType) — mismos 3 tipos que ya usa
-// el flujo de Prospecto, sin tipos nuevos.
+// DocumentType del backend (entity.DocumentType) — mismos 3 tipos que pide el
+// wizard de inscripción (InscripcionWizard.jsx): DNI frente/dorso, analítico.
 const TIPOS_DOCUMENTO = [
-  { type: 'DNI', label: 'DNI' },
-  { type: 'ANALITICO_SECUNDARIO', label: 'Analítico de secundario' },
-  { type: 'FOTO', label: 'Foto' },
+  { type: 'DNI_FRENTE', label: 'DNI — frente' },
+  { type: 'DNI_DORSO', label: 'DNI — dorso' },
+  { type: 'ANALITICO_SECUNDARIO', label: 'Analítico del secundario' },
 ];
 
 // Mapeo 1:1 a Detalle de solicitud.dc.html.
@@ -91,7 +92,7 @@ export function DetalleSolicitud() {
   }
 
   return (
-    <div className="flex max-w-[760px] flex-1 flex-col gap-6">
+    <PageContainer>
       <button
         type="button"
         onClick={() => navigate('/mis-solicitudes')}
@@ -160,6 +161,6 @@ export function DetalleSolicitud() {
           </GlassCard>
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

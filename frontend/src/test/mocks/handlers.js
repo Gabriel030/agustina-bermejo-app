@@ -25,6 +25,16 @@ export const handlers = [
       roles: ['PRECEPTOR'],
     }),
   ),
+  http.put(`${API}/me`, () =>
+    HttpResponse.json({
+      id: 1,
+      nombre: 'Prueba',
+      apellido: 'Login',
+      email: 'prueba@example.com',
+      dni: '30111222',
+      roles: ['PRECEPTOR'],
+    }),
+  ),
   http.post(`${API}/auth/register`, () =>
     HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }),
   ),
