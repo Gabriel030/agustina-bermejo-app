@@ -19,6 +19,7 @@ import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.exception.AlreadyRegisteredInAnotherExamBoardException;
 import com.red_escuela.backend.exception.AlreadyRegisteredInExamBoardException;
 import com.red_escuela.backend.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.exception.MaxExamAttemptsExceededException;
@@ -87,6 +88,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name, Integer maxFinalExamAttempts) {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName(name);
         subject.setMaxFinalExamAttempts(maxFinalExamAttempts);
         entityManager.persist(subject);
@@ -266,6 +268,49 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
         // El intento en mesa1 fue WITHDRAWN (no cuenta) — inscribirse a mesa2 tiene que poder.
         ExamBoardRegistration segunda = examBoardRegistrationService.inscribirProgramEnrollment(mesa2.getId(), enrollment.getId());
+        assertThat(segunda.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
+    // Pedido explícito del usuario: "para esa materia no se puede inscribir a otro llamado, a
+    // menos que se dé de baja de esa mesa y se dé de alta en otro llamado".
+    @Test
+    void inscribirseAOtroLlamadoDeLaMismaMateriaTeniendoUnoActivoFalla() {
+        Student student = persistStudent("90000007");
+        Subject subject = persistSubject("MateriaDosLlamadosDisponibles", null);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard llamado1 = persistExamBoard(subject, term);
+        ExamBoard llamado2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraDosLlamadosDisponibles");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        examBoardRegistrationService.inscribirProgramEnrollment(llamado1.getId(), enrollment.getId());
+
+        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(llamado2.getId(), enrollment.getId()))
+                .isInstanceOf(AlreadyRegisteredInAnotherExamBoardException.class);
+    }
+
+    // Darse de baja del llamado 1 sí tiene que habilitar anotarse al llamado 2.
+    @Test
+    void darseDeBajaDeUnLlamadoHabilitaInscribirseAOtroDeLaMismaMateria() {
+        Student student = persistStudent("90000008");
+        Subject subject = persistSubject("MateriaCambioDeLlamado", null);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard llamado1 = persistExamBoard(subject, term);
+        ExamBoard llamado2 = persistExamBoard(subject, term);
+        Program program = persistProgram("CarreraCambioDeLlamado");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        ExamBoardRegistration primera = examBoardRegistrationService.inscribirProgramEnrollment(llamado1.getId(), enrollment.getId());
+        examBoardRegistrationService.darDeBaja(primera.getId());
+
+        ExamBoardRegistration segunda = examBoardRegistrationService.inscribirProgramEnrollment(llamado2.getId(), enrollment.getId());
+        assertThat(segunda.getExamBoard().getId()).isEqualTo(llamado2.getId());
         assertThat(segunda.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }
 }

@@ -14,6 +14,8 @@ import { NoAutorizado } from '@/pages/NoAutorizado';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
 import { AlumnoInicio } from '@/pages/AlumnoInicio';
+import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
+import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
 import { PreceptorLayout } from '@/layouts/PreceptorLayout';
@@ -28,8 +30,11 @@ import { AutoservicioLayout } from '@/layouts/AutoservicioLayout';
 const RUTAS_POR_ROL = {
   alumno: {
     Layout: AlumnoLayout,
-    paginas: ['inicio', 'mis-cursos', 'notas', 'asistencia', 'mesas-de-examen', 'opciones'],
-    paginasReales: { inicio: AlumnoInicio },
+    // Notas, Asistencia y Mesas de examen dejaron de ser páginas de nav de primer
+    // nivel (Épica 2 Fase 2) — ahora son pestañas dentro de Mis carreras, ver
+    // AlumnoMisCarreras.jsx y el comentario más abajo sobre la ruta de detalle.
+    paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'opciones'],
+    paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras },
   },
   docente: { Layout: DocenteLayout, paginas: ['inicio', 'tomar-asistencia'] },
   preceptor: { Layout: PreceptorLayout, paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'] },
@@ -95,6 +100,10 @@ export function AppRouter() {
             const PaginaReal = paginasReales?.[pagina];
             return <Route key={pagina} path={pagina} element={PaginaReal ? <PaginaReal /> : <Placeholder titulo={pagina} />} />;
           })}
+          {/* Detalle de una materia puntual (Épica 2 Fase 2) — no es una "página" plana del
+              nav como el resto de `paginas`, cuelga de la pestaña Materias dentro de Mis
+              carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
+          {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
         </Route>
       ))}
 

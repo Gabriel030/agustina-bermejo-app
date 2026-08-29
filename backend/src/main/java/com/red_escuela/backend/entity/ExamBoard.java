@@ -41,6 +41,11 @@ public class ExamBoard {
     @Column(name = "exam_date", nullable = false)
     private LocalDateTime examDate;
 
+    // Texto libre por ahora (todavía no está definido quién/cómo se asigna el aula real de
+    // cada mesa) — nullable, se completa cuando se sepa.
+    @Column(name = "classroom")
+    private String classroom;
+
     @Column(name = "registration_start")
     private LocalDateTime registrationStart;
 

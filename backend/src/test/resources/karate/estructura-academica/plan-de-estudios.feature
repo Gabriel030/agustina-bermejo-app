@@ -110,9 +110,13 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     Then status 201
     * def subjectBId = response.id
 
+    # A en el 2do cuatrimestre de 1er año — para que B (1er cuatrimestre, más abajo)
+    # pueda ser su correlativa sin violar la validación de orden cronológico (una
+    # correlativa tiene que terminar de cursarse antes de que empiece la materia que
+    # la requiere, no puede compartir cuatrimestre con ella).
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectAId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 8 }
+    And request { subjectId: '#(subjectAId)', curricularYear: 1, curricularTerm: 'SECOND', credits: 8 }
     When method post
     Then status 201
     * def programSubjectAId = response.id
@@ -268,16 +272,19 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     Then status 201
     * def subjectDId = response.id
 
+    # C en 2do año y D en 1ro — D tiene que ser cronológicamente anterior a C para
+    # poder ser su correlativa (ver validación de orden cronológico agregada a
+    # ProgramSubjectService.agregarCorrelatividad).
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectCId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { subjectId: '#(subjectCId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectCId = response.id
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectDId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
+    And request { subjectId: '#(subjectDId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectDId = response.id

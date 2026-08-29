@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
+import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { usePrograma, useProgramaPricing, useProgramaCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
@@ -20,7 +21,17 @@ export function DetalleCarrera() {
     return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar la carrera. Probá recargar la página.</GlassCard>;
   }
   if (isLoading || !programa) {
-    return <div className="text-sm text-ink-faint">Cargando…</div>;
+    return (
+      <PageContainer>
+        <Skeleton className="h-9 w-72" />
+        <Skeleton className="h-48" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      </PageContainer>
+    );
   }
 
   const materiasPorAnio = (planDeEstudio ?? []).reduce((acc, materia) => {
@@ -52,7 +63,8 @@ export function DetalleCarrera() {
           <Button
             onClick={() => navigate(`/catalogo/carreras/${id}/inscribirme`)}
             disabled={!cohorts?.length}
-            className="w-full rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 py-5 text-[13.5px] font-semibold text-white md:w-auto"
+            variant="gradient"
+            className="w-full px-6 py-5 text-[13.5px] md:w-auto"
           >
             Inscribirme
           </Button>

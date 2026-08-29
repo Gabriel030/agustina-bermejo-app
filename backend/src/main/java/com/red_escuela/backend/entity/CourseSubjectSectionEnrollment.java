@@ -59,6 +59,7 @@ public class CourseSubjectSectionEnrollment {
     @Column(name = "final_score")
     private Double finalScore;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "final_grade_type")
-    private String finalGradeType;
+    private FinalGradeType finalGradeType;
 }

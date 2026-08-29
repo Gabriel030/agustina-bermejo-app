@@ -49,6 +49,16 @@ public class EvaluationScheme {
     @Column(name = "min_approval_grade")
     private Double minApprovalGrade;
 
+    // Nota de corte para promocionar SIN rendir final — atajo opcional, independiente de
+    // hasFinal (una materia puede tener final Y ofrecer promoción al mismo tiempo). null =
+    // esta materia no ofrece promoción, siempre requiere final. Si está seteado, promociona
+    // cuando TODOS los exámenes (parciales) llegan INDIVIDUALMENTE a esta nota — no alcanza
+    // con que el promedio la alcance, cada uno tiene que aprobarla por separado (pedido
+    // explícito del usuario). Si no llega a promocionar pero sí al piso de minRegularGrade,
+    // sigue el camino normal (Regular → rendir final).
+    @Column(name = "promotion_min_grade")
+    private Double promotionMinGrade;
+
     @Column(name = "notes", length = 1000)
     private String notes;
 }

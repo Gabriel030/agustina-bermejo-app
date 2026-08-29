@@ -6,5 +6,6 @@ import java.time.LocalDateTime;
 
 public record CreateExamBoardRequest(
         Long subjectId, Long courseSubjectId, @NotNull Long termId,
-        @NotNull LocalDateTime examDate, LocalDateTime registrationStart, LocalDateTime registrationEnd) {
+        @NotNull LocalDateTime examDate, LocalDateTime registrationStart, LocalDateTime registrationEnd,
+        String classroom) {
 }

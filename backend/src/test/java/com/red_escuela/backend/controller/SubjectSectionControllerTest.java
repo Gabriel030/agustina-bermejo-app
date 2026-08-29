@@ -102,6 +102,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void crearComisionSobreSubjectCompartidoPorDosCarrerasQuedaComoUnaSolaFila() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Inglés Compartido");
         entityManager.persist(subject);
 
@@ -159,6 +160,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void asignarElMismoDocenteConElMismoRolDosVecesDevuelve409() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para docentes");
         entityManager.persist(subject);
 
@@ -202,6 +204,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void crearComisionSinRolPreceptorNiAdministrativoDevuelve403() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject sin permiso");
         entityManager.persist(subject);
         entityManager.flush();
@@ -219,6 +222,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void crearComisionConEvaluationSchemeInexistenteDevuelve404() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject con esquema inválido");
         entityManager.persist(subject);
 
@@ -244,6 +248,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void quitarDocenteDeUnaComisionQueNoLeCorrespondeDevuelve404() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para cruce de comisiones");
         entityManager.persist(subject);
 
@@ -298,6 +303,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void listarSeccionesConCualquierRolAutenticadoDevuelve200() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para listar");
         entityManager.persist(subject);
         entityManager.flush();
@@ -312,6 +318,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void desactivarYReactivarComisionFuncionaYElListadoFiltraPorStatus() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para baja de comisión");
         entityManager.persist(subject);
 
@@ -354,6 +361,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void listarDocentesDeUnaComisionDevuelve200() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para listar docentes");
         entityManager.persist(subject);
 
@@ -395,6 +403,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void editarComisionActualizaCampos() throws Exception {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para editar comisión");
         entityManager.persist(subject);
 

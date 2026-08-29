@@ -5,6 +5,7 @@ import com.red_escuela.backend.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.ProgramSubject;
 import com.red_escuela.backend.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.entity.RequirementType;
@@ -221,6 +222,28 @@ public class SubjectSectionEnrollmentService {
     // Autoservicio /me: abarca todas las carreras activas del alumno.
     public List<SubjectSectionEnrollment> listarPorAlumno(Long studentId) {
         return subjectSectionEnrollmentRepository.findByStudentId(studentId);
+    }
+
+    // Épica 2 Fase 1 (Alumno · Mis carreras): el año curricular no vive en la inscripción
+    // ni en la comisión — es propio del plan de LA carrera de esa inscripción puntual
+    // (ProgramSubject.curricularYear, ver comentario de SubjectSection: una materia se
+    // comparte entre carreras). Puede no existir (materia que ya no está en el plan
+    // vigente, o vino de otra vía) — null en ese caso, el frontend lo trata como opcional.
+    public Integer resolverAnioCurricular(SubjectSectionEnrollment enrollment) {
+        return resolverProgramSubject(enrollment).map(ProgramSubject::getCurricularYear).orElse(null);
+    }
+
+    // Cuatrimestre curricular de la materia dentro del plan de ESTA carrera puntual — mismo
+    // criterio/lookup que resolverAnioCurricular (ProgramSubject depende del Program, una
+    // materia compartida entre carreras puede tener año/cuatrimestre distinto en cada una).
+    public CurricularTerm resolverCuatrimestreCurricular(SubjectSectionEnrollment enrollment) {
+        return resolverProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
+    }
+
+    private java.util.Optional<ProgramSubject> resolverProgramSubject(SubjectSectionEnrollment enrollment) {
+        return programSubjectRepository.findByProgramIdAndSubjectId(
+                enrollment.getProgramEnrollment().getProgram().getId(),
+                enrollment.getSubjectSection().getSubject().getId());
     }
 
     public SubjectSectionEnrollment verDetalle(Long id) {

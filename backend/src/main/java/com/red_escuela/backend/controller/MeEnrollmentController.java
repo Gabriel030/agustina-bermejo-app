@@ -150,7 +150,11 @@ public class MeEnrollmentController {
     public List<SectionEnrollmentResponse> misInscripciones() {
         Student student = currentStudentService.resolveCurrentStudent();
         return subjectSectionEnrollmentService.listarPorAlumno(student.getId()).stream()
-                .map(SectionEnrollmentResponse::from).toList();
+                .map(enrollment -> SectionEnrollmentResponse.from(
+                        enrollment,
+                        subjectSectionEnrollmentService.resolverAnioCurricular(enrollment),
+                        subjectSectionEnrollmentService.resolverCuatrimestreCurricular(enrollment)))
+                .toList();
     }
 
     // 404 (no 403) si el recurso no es del alumno autenticado: mismo criterio de no

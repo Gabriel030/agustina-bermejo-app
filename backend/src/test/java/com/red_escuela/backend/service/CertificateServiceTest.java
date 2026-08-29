@@ -125,6 +125,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
 
     private void persistCursadaActiva(Student student, ProgramEnrollment enrollment) {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("MateriaCursandoAhora" + System.nanoTime());
         entityManager.persist(subject);
         Term term = persistTerm();

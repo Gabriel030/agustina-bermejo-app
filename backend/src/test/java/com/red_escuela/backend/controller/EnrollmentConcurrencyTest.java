@@ -134,6 +134,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
         Student estudiante2 = persistStudent("70000002");
 
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("MateriaConcurrencia-" + System.nanoTime());
         subject = subjectRepository.save(subject);
 
