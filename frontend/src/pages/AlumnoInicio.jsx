@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
+import { BannerCarousel } from '@/components/BannerCarousel';
+import { StatusPill } from '@/components/StatusPill';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { usePaymentStanding, useDebtSummary, useMisCursos } from '@/hooks/useAlumno';
 
@@ -15,10 +19,10 @@ const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'WAITLISTED', '
 // pendiente (no vencida) es un estado propio ("Cuota pendiente"), distinto de
 // AL_DIA sin deuda ("Al día") — el backend no distingue los dos, la UI sí.
 function estadoDePago(standing, tieneDeuda) {
-  if (standing === 'MOROSO') return { label: 'Atrasado', bg: 'bg-danger-bg', dot: 'bg-danger', text: 'text-danger' };
-  if (standing === 'AL_DIA' && tieneDeuda) return { label: 'Cuota pendiente', bg: 'bg-warning-bg', dot: 'bg-warning', text: 'text-warning' };
-  if (standing === 'AL_DIA') return { label: 'Al día', bg: 'bg-success-bg', dot: 'bg-success', text: 'text-success' };
-  return { label: 'Sin información', bg: 'bg-neutral-bg', dot: 'bg-neutral-ink', text: 'text-ink-faint' };
+  if (standing === 'MOROSO') return { label: 'Atrasado', tone: 'danger' };
+  if (standing === 'AL_DIA' && tieneDeuda) return { label: 'Cuota pendiente', tone: 'warning' };
+  if (standing === 'AL_DIA') return { label: 'Al día', tone: 'success' };
+  return { label: 'Sin información', tone: 'neutral' };
 }
 
 function iniciales(nombre, apellido) {
@@ -43,18 +47,10 @@ export function AlumnoInicio() {
 
   return (
     <PageContainer>
-      {/* Banner institucional — placeholder genérico por ahora; el carrusel
-          configurable por Administrativo/Director es una feature aparte (ver spec). */}
-      <GlassCard className="relative overflow-hidden bg-gradient-to-br from-accent to-accent-2 p-6 text-white">
-        <div className="text-[11px] font-bold uppercase tracking-wide text-white/75">Novedad institucional</div>
-        <div className="mt-1 font-heading text-lg font-bold">¡Bienvenido/a a Agustina Bermejo!</div>
-        <div className="mt-1 text-[13px] text-white/85">Pronto vas a ver acá novedades de tu institución.</div>
-        <div className="mt-4 flex gap-1.5">
-          <span className="h-1.5 w-5 rounded-full bg-white" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-          <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
-        </div>
-      </GlassCard>
+      {/* Contenido de cada slide: placeholder genérico por ahora; el carrusel
+          configurable por Administrativo/Director es una feature aparte (ver spec).
+          La mecánica (auto-avance, flechas, dots) sí es real. */}
+      <BannerCarousel />
 
       {/* Identidad + estado de pago */}
       <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -71,13 +67,12 @@ export function AlumnoInicio() {
         </div>
 
         {cargandoPago ? (
-          <div className="text-xs text-ink-faint">Cargando estado de pago…</div>
+          <Skeleton className="h-7 w-32" />
         ) : (
           pago && (
-            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold ${pago.bg} ${pago.text}`}>
-              <span className={`h-2 w-2 rounded-full ${pago.dot}`} />
+            <StatusPill tone={pago.tone} dot className="px-3.5 py-1.5 text-[12px]">
               {pago.label}
-            </span>
+            </StatusPill>
           )
         )}
       </GlassCard>
@@ -87,7 +82,7 @@ export function AlumnoInicio() {
           <span className="text-[13px] font-semibold text-ink-soft">
             Tenés {cursosActivos.length} curso{cursosActivos.length === 1 ? '' : 's'} en curso
           </span>
-          <Link to="/alumno/mis-cursos" className="text-xs font-bold text-accent hover:underline">
+          <Link to="/alumno/mis-cursos" className="text-xs font-bold text-primary hover:underline">
             Ver mis cursos →
           </Link>
         </GlassCard>
@@ -96,18 +91,18 @@ export function AlumnoInicio() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
         <GlassCard className="flex flex-col p-5">
           <div className="mb-1 font-heading text-[15px] font-semibold text-ink">Novedades</div>
-          <div className="flex flex-1 flex-col items-center justify-center gap-1.5 py-8 text-center">
-            <span className="text-2xl">🔔</span>
-            <span className="text-[13px] font-semibold text-ink-soft">Todavía no hay novedades</span>
-            <span className="max-w-[280px] text-xs text-ink-faint">
-              Acá vas a ver avisos de tus docentes y recordatorios de tu institución.
-            </span>
-          </div>
+          <EmptyState
+            icon="🔔"
+            title="Todavía no hay novedades"
+            description="Acá vas a ver avisos de tus docentes y recordatorios de tu institución."
+          />
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-3 p-5">
           <div className="font-heading text-[15px] font-semibold text-ink">Estado de cuenta</div>
-          {deuda?.tieneDeuda ? (
+          {cargandoDeuda ? (
+            <Skeleton className="h-14 w-full" />
+          ) : deuda?.tieneDeuda ? (
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
               <div className="font-heading text-xl font-bold text-ink">
@@ -125,7 +120,7 @@ export function AlumnoInicio() {
       <GlassCard className="p-5">
         <div className="flex items-center justify-between">
           <div className="font-heading text-[15px] font-semibold text-ink">De tu interés</div>
-          <Link to="/catalogo?tab=cursos" className="text-xs font-bold text-accent hover:underline">
+          <Link to="/catalogo?tab=cursos" className="text-xs font-bold text-primary hover:underline">
             Ver todos los cursos →
           </Link>
         </div>

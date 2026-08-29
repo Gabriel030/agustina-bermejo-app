@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.EvaluationScheme;
 import com.red_escuela.backend.entity.ExamBoard;
+import com.red_escuela.backend.entity.FinalGradeType;
 import com.red_escuela.backend.entity.GradeAggregationMethod;
 import com.red_escuela.backend.entity.GradeItem;
 import com.red_escuela.backend.entity.GradeItemType;
@@ -25,6 +26,7 @@ import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -86,7 +88,8 @@ public class GradeItemService {
         gradeItem = gradeItemRepository.save(gradeItem);
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
-        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus());
+        Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
+        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -121,7 +124,8 @@ public class GradeItemService {
         gradeItem = gradeItemRepository.save(gradeItem);
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
-        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus());
+        Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
+        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -178,7 +182,7 @@ public class GradeItemService {
         gradeItem.setExamBoard(examBoard);
     }
 
-    private record ResultadoCursada(EnrollmentStatus status, Double finalScore, String finalGradeType) {
+    private record ResultadoCursada(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
     }
 
     /**
@@ -186,20 +190,31 @@ public class GradeItemService {
      * del GradeItem, leyendo el conjunto de notas más reciente vía la misma EntityManager —
      * necesario para no perder una carga concurrente de otra nota. Devuelve null si no hay
      * cambio de estado (cursada ya en estado terminal, o todavía no se completaron las
-     * condiciones para recalcular).
+     * condiciones para recalcular). `maxFinalExamAttempts` viene de Subject/CourseSubject
+     * (mismo campo que ya usa ExamBoardRegistrationService para topear cuántas mesas puede
+     * pedir un alumno) — acá se usa para saber si un final desaprobado deja la cursada
+     * directamente FAILED o si todavía le queda otro llamado disponible.
+     * <p>
+     * Los TPs son siempre un requisito de cursada, nunca se promedian con la nota final ni con
+     * los parciales: tienen que estar aprobados INDIVIDUALMENTE (no alcanza con que el
+     * promedio general los compense) para poder avanzar, sea cual sea el esquema — pedido
+     * explícito del usuario ("si no se aprueban [los TPs] no permiten al alumno rendir el
+     * final"). Ese gate se valida acá, antes de evaluar el atajo de promoción
+     * ({@link #evaluarPromocion}) y, si no promocionó, el camino normal
+     * ({@link #calcularConFinal} / {@link #calcularSinFinal} según tenga final o no).
      */
-    private ResultadoCursada calcularResultado(EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus estadoActual) {
+    private ResultadoCursada calcularResultado(
+            EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
         if (estadoActual != EnrollmentStatus.ENROLLED
                 && estadoActual != EnrollmentStatus.IN_PROGRESS
                 && estadoActual != EnrollmentStatus.REGULAR) {
             return null;
         }
 
-        List<GradeItem> parciales = items.stream()
-                .filter(i -> i.getType() == GradeItemType.EXAM || i.getType() == GradeItemType.TP)
-                .toList();
-        GradeItem finalItem = items.stream()
-                .filter(i -> i.getType() == GradeItemType.FINAL)
+        List<GradeItem> examenes = items.stream().filter(i -> i.getType() == GradeItemType.EXAM).toList();
+        List<GradeItem> tps = items.stream().filter(i -> i.getType() == GradeItemType.TP).toList();
+        List<GradeItem> finales = items.stream().filter(i -> i.getType() == GradeItemType.FINAL).toList();
+        GradeItem ultimoFinal = finales.stream()
                 .max(Comparator.comparing(i -> i.getSequenceNumber() == null ? 0 : i.getSequenceNumber()))
                 .orElse(null);
 
@@ -207,46 +222,118 @@ public class GradeItemService {
         int tpCountExpected = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
         int cantidadEsperada = examCountExpected + tpCountExpected;
         // Un esquema "solo final" (cantidadEsperada == 0) no tiene parciales que evaluar: sin
-        // este guard, parciales.size() >= 0 da true trivialmente y el promedio de una lista
-        // vacía se computaría como 0.0, reprobando la cursada sin que haya nada que reprobar.
-        boolean todosLosParcialesCargados = cantidadEsperada > 0 && parciales.size() >= cantidadEsperada;
+        // este guard, el tamaño de una lista vacía cumpliría trivialmente ">= 0" más abajo.
+        boolean todosLosParcialesCargados = cantidadEsperada > 0
+                && (examenes.size() + tps.size()) >= cantidadEsperada;
 
-        EnrollmentStatus nuevoStatus = null;
-        Double nuevoFinalScore = null;
-        String nuevoFinalGradeType = null;
+        if (todosLosParcialesCargados && tpCountExpected > 0 && scheme.getMinRegularGrade() != null
+                && !todosAprobadosIndividualmente(tps, scheme.getMinRegularGrade())) {
+            return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+        }
+
+        ResultadoCursada promocion = evaluarPromocion(scheme, examenes, todosLosParcialesCargados, examCountExpected);
+        if (promocion != null) {
+            return promocion;
+        }
+
+        return Boolean.TRUE.equals(scheme.getHasFinal())
+                ? calcularConFinal(scheme, examenes, todosLosParcialesCargados, ultimoFinal, finales.size(), estadoActual, maxFinalExamAttempts)
+                : calcularSinFinal(scheme, examenes, tps, todosLosParcialesCargados);
+    }
+
+    // Atajo de promoción sin final — opcional (EvaluationScheme.promotionMinGrade nullable) e
+    // INDEPENDIENTE de hasFinal: una materia puede tener final configurado y además ofrecer
+    // promoción. Pedido explícito del usuario: "si ambos parciales son aprobados con una nota
+    // igual o mayor a 7 entonces PROMOCIONADA... el alumno aprueba con una nota final que es
+    // el promedio de las 2 notas" — cada examen tiene que llegar a esa nota INDIVIDUALMENTE
+    // (no alcanza con que el promedio la alcance), y ese promedio final es el promedio simple
+    // de los exámenes, no el GradeAggregationMethod configurado (ese sigue existiendo para
+    // REGULAR/el camino con final). Si no promociona, devuelve null para que el llamador siga
+    // el camino normal (Regular → final, o el esquema sin final de siempre).
+    private ResultadoCursada evaluarPromocion(
+            EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados, int examCountExpected) {
+        if (!todosLosParcialesCargados || examCountExpected == 0 || scheme.getPromotionMinGrade() == null) {
+            return null;
+        }
+        if (!todosAprobadosIndividualmente(examenes, scheme.getPromotionMinGrade())) {
+            return null;
+        }
+        double promedio = examenes.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
+        return new ResultadoCursada(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+    }
+
+    // Materia con final obligatorio (o que no llegó a promocionar): cursada completa
+    // (parciales + TPs, gate de TPs ya validado) habilita REGULAR si el promedio de los
+    // EXÁMENES (nunca los TPs, que son solo gate) llega a minRegularGrade; ya REGULAR, rendir
+    // el FINAL con minApprovalGrade o más aprueba la materia — la nota final es la del examen
+    // en sí, sin promediar con nada más (pedido explícito del usuario). Un final desaprobado
+    // NO desaprueba la materia de una: si todavía quedan llamados disponibles
+    // (maxFinalExamAttempts, o sin tope si es null), la cursada se queda en REGULAR esperando
+    // que el alumno se anote a la próxima mesa (pedido explícito: "si no se aprueba el
+    // primero, se tiene un segundo intento") — recién al agotar los llamados pasa a FAILED.
+    private ResultadoCursada calcularConFinal(
+            EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados,
+            GradeItem ultimoFinal, int intentosFinalUsados, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
+        boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
 
         if (todosLosParcialesCargados && scheme.getMinRegularGrade() != null) {
-            double promedio = aplicarAgregacion(scheme.getAggregationMethod(), parciales);
+            double promedio = aplicarAgregacion(scheme.getAggregationMethod(), examenes);
             if (promedio < scheme.getMinRegularGrade()) {
                 return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
             }
-            if (estadoActual != EnrollmentStatus.REGULAR) {
-                nuevoStatus = EnrollmentStatus.REGULAR;
-            }
+            regularAlcanzado = true;
         }
 
-        if (Boolean.TRUE.equals(scheme.getHasFinal()) && finalItem != null && scheme.getMinApprovalGrade() != null) {
-            if (finalItem.getScore() != null && finalItem.getScore() >= scheme.getMinApprovalGrade()) {
-                nuevoStatus = EnrollmentStatus.APPROVED;
-                nuevoFinalScore = finalItem.getScore();
-                nuevoFinalGradeType = finalItem.getType().name();
-            } else {
-                nuevoStatus = EnrollmentStatus.FAILED;
-            }
-        } else if (!Boolean.TRUE.equals(scheme.getHasFinal()) && todosLosParcialesCargados
-                && scheme.getMinApprovalGrade() != null) {
-            double promedio = aplicarAgregacion(scheme.getAggregationMethod(), parciales);
-            if (promedio >= scheme.getMinApprovalGrade()) {
-                nuevoStatus = EnrollmentStatus.APPROVED;
-                nuevoFinalScore = promedio;
-                nuevoFinalGradeType = "PROMOCION_DIRECTA";
-            }
+        if (ultimoFinal == null || scheme.getMinApprovalGrade() == null) {
+            return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
+                    ? new ResultadoCursada(EnrollmentStatus.REGULAR, null, null)
+                    : null;
         }
 
-        if (nuevoStatus == null) {
+        if (ultimoFinal.getScore() != null && ultimoFinal.getScore() >= scheme.getMinApprovalGrade()) {
+            return new ResultadoCursada(EnrollmentStatus.APPROVED, ultimoFinal.getScore(), FinalGradeType.FINAL_EXAM);
+        }
+
+        boolean quedanIntentos = maxFinalExamAttempts == null || intentosFinalUsados < maxFinalExamAttempts;
+        if (quedanIntentos) {
+            return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
+                    ? new ResultadoCursada(EnrollmentStatus.REGULAR, null, null)
+                    : null;
+        }
+        return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+    }
+
+    // Materia SIN instancia de final (EvaluationScheme.hasFinal = false, caso legacy/distinto
+    // de "promocionable" — ver evaluarPromocion): no hay nada que rendir más allá de la
+    // cursada, así que el promedio de parciales+TPs combinado se compara directo contra
+    // minRegularGrade (desaprueba si no llega) y minApprovalGrade (aprueba si lo alcanza) —
+    // mismo criterio que ya existía antes de esta feature, sin cambios de comportamiento.
+    private ResultadoCursada calcularSinFinal(
+            EvaluationScheme scheme, List<GradeItem> examenes, List<GradeItem> tps, boolean todosLosParcialesCargados) {
+        if (!todosLosParcialesCargados) {
             return null;
         }
-        return new ResultadoCursada(nuevoStatus, nuevoFinalScore, nuevoFinalGradeType);
+        List<GradeItem> todos = new ArrayList<>(examenes);
+        todos.addAll(tps);
+
+        if (scheme.getMinRegularGrade() != null) {
+            double promedioRegular = aplicarAgregacion(scheme.getAggregationMethod(), todos);
+            if (promedioRegular < scheme.getMinRegularGrade()) {
+                return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+            }
+        }
+        if (scheme.getMinApprovalGrade() == null) {
+            return null;
+        }
+        double promedio = aplicarAgregacion(scheme.getAggregationMethod(), todos);
+        if (promedio >= scheme.getMinApprovalGrade()) {
+            return new ResultadoCursada(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+        }
+        return null;
+    }
+
+    private boolean todosAprobadosIndividualmente(List<GradeItem> items, double umbral) {
+        return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore() >= umbral);
     }
 
     // Las 4 estrategias se implementan con su significado literal: promedio simple, promedio

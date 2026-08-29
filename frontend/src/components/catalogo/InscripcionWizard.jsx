@@ -201,10 +201,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             ? 'Tu comprobante y tu documentación quedan en revisión. Cuando los aprueben, vas a quedar inscripto.'
             : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
-        <Button
-          onClick={() => navigate('/catalogo?tab=mis-solicitudes')}
-          className="mt-2 rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 font-semibold text-white"
-        >
+        <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
           Ir a mis solicitudes
         </Button>
       </PageContainer>
@@ -384,7 +381,8 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <Button
               onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
               disabled={!documentacionCompleta()}
-              className="rounded-xl bg-gradient-to-br from-accent to-accent-2 px-6 font-semibold text-white"
+              variant="gradient"
+              className="px-6"
             >
               Continuar →
             </Button>
@@ -450,7 +448,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <Button
               onClick={() => setModalConfirmarAbierto(true)}
               disabled={!solicitudCompleta() || state.enviando}
-              className="rounded-xl bg-gradient-to-br from-accent to-accent-2 font-semibold text-white transition-transform duration-200 hover:scale-[1.02] disabled:pointer-events-none disabled:opacity-50"
+              variant="gradient"
             >
               {state.enviando ? 'Enviando…' : 'Confirmar solicitud'}
             </Button>
@@ -472,7 +470,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={confirmarSolicitud} className="rounded-xl bg-gradient-to-br from-accent to-accent-2 font-semibold text-white">
+            <Button onClick={confirmarSolicitud} variant="gradient">
               Sí, confirmar
             </Button>
           </DialogFooter>

@@ -158,6 +158,10 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
+    public Attendance verDetalle(Long id) {
+        return findOrThrow(id);
+    }
+
     public List<Attendance> listarPorProgramEnrollment(Long enrollmentId) {
         return attendanceRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
     }
@@ -171,7 +175,7 @@ public class AttendanceService {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getSubjectSection().getMaxAbsencePercentage();
         if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null);
+            return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository
@@ -184,7 +188,7 @@ public class AttendanceService {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getCourseSubjectSection().getMaxAbsencePercentage();
         if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null);
+            return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository
@@ -196,10 +200,10 @@ public class AttendanceService {
     // producto): solo ABSENT computa como ausente en el numerador del porcentaje.
     private AttendanceRiskResponse calcularRiesgo(long total, long ausentes, double maxAbsencePercentage) {
         if (total == 0) {
-            return new AttendanceRiskResponse(true, false, 0.0);
+            return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
         }
         double porcentaje = (double) ausentes / total;
-        return new AttendanceRiskResponse(true, porcentaje > maxAbsencePercentage, porcentaje);
+        return new AttendanceRiskResponse(true, porcentaje > maxAbsencePercentage, porcentaje, maxAbsencePercentage);
     }
 
     private Instructor resolveInstructor(Long instructorId) {

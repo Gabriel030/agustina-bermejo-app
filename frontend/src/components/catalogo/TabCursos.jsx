@@ -1,11 +1,16 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
+import { Skeleton } from '@/components/Skeleton';
 import { Buscador } from '@/components/catalogo/Buscador';
 import { Paginador } from '@/components/catalogo/Paginador';
 import { useCursos } from '@/hooks/useCatalogo';
 
-const POR_PAGINA = 9;
+// 2 columnas en vez de 3, POR_PAGINA más chico — cards más grandes con más
+// aire para la info (decisión de producto: menos cards por pantalla, mejor
+// legibilidad, en vez de una grilla densa de tarjetas chicas).
+const POR_PAGINA = 6;
 
 export function TabCursos({ search, onSearchChange, page, onPageChange }) {
   const navigate = useNavigate();
@@ -26,20 +31,23 @@ export function TabCursos({ search, onSearchChange, page, onPageChange }) {
     <div className="flex flex-col gap-4">
       <Buscador value={search} onChange={onSearchChange} placeholder="Buscar curso…" />
 
-      {isLoading && <div className="text-sm text-ink-faint">Cargando…</div>}
       {!isLoading && filtrados.length === 0 && (
         <div className="text-sm text-ink-faint">No hay cursos que coincidan con la búsqueda.</div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
         {pagina.map((curso) => (
           <GlassCard
             key={curso.id}
             onClick={() => navigate(`/catalogo/cursos/${curso.id}`)}
-            className="flex cursor-pointer flex-col gap-2 p-5 hover:bg-neutral-bg"
+            className="flex cursor-pointer flex-col gap-3 p-6 hover:bg-neutral-bg"
           >
-            <div className="font-heading text-base font-bold text-ink">{curso.name}</div>
-            <div className="text-xs text-ink-faint">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-primary">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div className="font-heading text-lg font-bold text-ink">{curso.name}</div>
+            <div className="text-[13px] text-ink-faint">
               {curso.durationMonths} meses{curso.schedule ? ` · ${curso.schedule}` : ''}
             </div>
           </GlassCard>

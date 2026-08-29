@@ -3,6 +3,7 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.dto.UpdateProgramSubjectRequest;
+import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.ElectiveGroup;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramSubject;
@@ -166,6 +167,7 @@ public class ProgramSubjectService {
             throw new InvalidPrerequisiteException(
                     "Las correlatividades solo pueden darse entre materias de la misma carrera");
         }
+        validarOrdenCronologico(objetivo, prerequisitePropuesto);
         if (prerequisiteRepository.existsByProgramSubjectIdAndPrerequisiteProgramSubjectIdAndRequirementType(
                 objetivo.getId(), prerequisitePropuesto.getId(), request.requirementType())) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
@@ -186,6 +188,47 @@ public class ProgramSubjectService {
         } catch (DataIntegrityViolationException e) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
         }
+    }
+
+    /**
+     * Una correlativa tiene que haber terminado de cursarse antes de que empiece la
+     * materia que la requiere — no alcanza con "año anterior o igual", hace falta que
+     * los períodos de cursada no se toquen. Pedido explícito del usuario: una materia
+     * anual de 1er año no puede ser correlativa de otra anual de 1er año (se cursan al
+     * mismo tiempo), pero sí puede depender del cuatrimestre anterior del mismo año, o
+     * del año anterior en el mismo cuatrimestre.
+     * <p>
+     * Se modela cada (año, cuatrimestre) como un rango de "medios años" dentro del plan
+     * (1er cuatrimestre de año Y ocupa un solo medio-año, 2do cuatrimestre el siguiente,
+     * anual ocupa los dos medios-años de ese Y) y se exige que la correlativa termine
+     * estrictamente antes de que arranque la materia objetivo — eso además cubre, sin
+     * necesidad de un caso aparte, combinaciones que el usuario no mencionó explícitamente
+     * pero tienen el mismo problema de fondo (ej. 1er cuatrimestre correlativa de la
+     * anual del mismo año: se solapan igual, aunque no compartan el mismo "tipo").
+     * Si a alguna de las dos materias le falta año/cuatrimestre en el plan, no hay con
+     * qué validar — se deja pasar (esa incompletitud no es responsabilidad de esta
+     * validación).
+     */
+    private void validarOrdenCronologico(ProgramSubject objetivo, ProgramSubject prerequisito) {
+        if (objetivo.getCurricularYear() == null || objetivo.getCurricularTerm() == null
+                || prerequisito.getCurricularYear() == null || prerequisito.getCurricularTerm() == null) {
+            return;
+        }
+        if (finCronologico(prerequisito) >= inicioCronologico(objetivo)) {
+            throw new InvalidPrerequisiteException(
+                    "\"" + prerequisito.getSubject().getName() + "\" no puede ser correlativa de \""
+                            + objetivo.getSubject().getName()
+                            + "\": tiene que cursarse y terminar antes de que empiece, no puede compartir "
+                            + "cuatrimestre ni año de cursada con ella");
+        }
+    }
+
+    private int inicioCronologico(ProgramSubject ps) {
+        return (ps.getCurricularYear() - 1) * 2 + (ps.getCurricularTerm() == CurricularTerm.SECOND ? 2 : 1);
+    }
+
+    private int finCronologico(ProgramSubject ps) {
+        return (ps.getCurricularYear() - 1) * 2 + (ps.getCurricularTerm() == CurricularTerm.FIRST ? 1 : 2);
     }
 
     /**

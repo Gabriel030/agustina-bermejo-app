@@ -14,4 +14,6 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     Optional<Subject> findByName(String name);
 
     List<Subject> findByStatus(StatusType status);
+
+    Optional<Subject> findTopByOrderByCodeDesc();
 }

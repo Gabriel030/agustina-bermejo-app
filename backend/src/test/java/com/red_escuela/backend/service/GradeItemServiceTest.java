@@ -101,6 +101,10 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     private EvaluationScheme persistScheme(int examCount, int tpCount, boolean hasFinal) {
+        return persistScheme(examCount, tpCount, hasFinal, null);
+    }
+
+    private EvaluationScheme persistScheme(int examCount, int tpCount, boolean hasFinal, Double promotionMinGrade) {
         EvaluationScheme scheme = new EvaluationScheme();
         scheme.setName("Esquema de prueba");
         scheme.setExamCountExpected(examCount);
@@ -109,13 +113,20 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
         scheme.setMinRegularGrade(4.0);
         scheme.setMinApprovalGrade(6.0);
+        scheme.setPromotionMinGrade(promotionMinGrade);
         entityManager.persist(scheme);
         return scheme;
     }
 
     private Subject persistSubject(String name) {
+        return persistSubject(name, null);
+    }
+
+    private Subject persistSubject(String name, Integer maxFinalExamAttempts) {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName(name);
+        subject.setMaxFinalExamAttempts(maxFinalExamAttempts);
         entityManager.persist(subject);
         return subject;
     }
@@ -322,5 +333,173 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(enrollment.getFinalScore()).isEqualTo(8.0);
+    }
+
+    // --- Promoción sin final (EvaluationScheme.promotionMinGrade) ---
+
+    @Test
+    void ambosParcialesPorEncimaDeLaNotaDePromocionPromocionaSinFinal() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000013", institution);
+        Instructor instructor = persistInstructor("71000014");
+        Subject subject = persistSubject("MateriaPromocionable");
+        Term term = persistTerm();
+        // hasFinal=true (la materia SÍ tiene final, la promoción es un atajo por encima) +
+        // promotionMinGrade=7: ambos parciales >= 7 promociona directo sin pasar por Regular.
+        EvaluationScheme scheme = persistScheme(2, 0, true, 7.0);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraPromocionable");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(enrollment.getFinalScore()).isEqualTo(7.5);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.entity.FinalGradeType.PROMOTION);
+    }
+
+    // Pedido explícito del usuario: "si un alumno no promociona una materia cuatrimestral,
+    // saca 6 y 5, el alumno aprobó la cursada pero no la materia aún, requiere final".
+    @Test
+    void parcialesQueNoLleganALaNotaDePromocionPeroSiAlPisoRegularQuedanEnRegular() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000015", institution);
+        Instructor instructor = persistInstructor("71000016");
+        Subject subject = persistSubject("MateriaCasiPromociona");
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(2, 0, true, 7.0);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraCasiPromociona");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 6.0, 10.0, null, null));
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 5.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    // --- TPs como gate individual (no se promedian, tienen que aprobarse cada uno) ---
+
+    @Test
+    void unTpDesaprobadoDejaLaCursadaEnFailedAunqueElPromedioGeneralAlcance() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000017", institution);
+        Instructor instructor = persistInstructor("71000018");
+        Subject subject = persistSubject("MateriaConTpBajo");
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(1, 1, true);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraConTpBajo");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+
+        // Exam = 10 (muy por encima del piso), TP = 1 (muy por debajo) — el promedio general
+        // (5.5) superaría minRegularGrade (4.0), pero el TP individualmente no llega, así que
+        // tiene que desaprobar igual.
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 10.0, 10.0, null, null));
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), 1.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+    }
+
+    // --- Final con más de un llamado (Subject.maxFinalExamAttempts) ---
+
+    @Test
+    void desaprobarElPrimerLlamadoDelFinalDejaLaCursadaEnRegularSiQuedanIntentos() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000019", institution);
+        Instructor instructor = persistInstructor("71000020");
+        Subject subject = persistSubject("MateriaDosLlamados", 2);
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(0, 0, true);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraDosLlamados");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    @Test
+    void aprobarElSegundoLlamadoDelFinalApruebaLaMateriaConEsaNota() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000021", institution);
+        Instructor instructor = persistInstructor("71000022");
+        Subject subject = persistSubject("MateriaSegundoLlamadoOk", 2);
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(0, 0, true);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraSegundoLlamadoOk");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(enrollment.getFinalScore()).isEqualTo(7.0);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.entity.FinalGradeType.FINAL_EXAM);
+    }
+
+    @Test
+    void desaprobarLosDosLlamadosDelFinalDejaLaMateriaEnFailed() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000023", institution);
+        Instructor instructor = persistInstructor("71000024");
+        Subject subject = persistSubject("MateriaDosLlamadosFallidos", 2);
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(0, 0, true);
+        SubjectSection section = persistSection(subject, term, scheme);
+        asignarDocente(section, instructor);
+        Program program = persistProgram("CarreraDosLlamadosFallidos");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 2.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
     }
 }

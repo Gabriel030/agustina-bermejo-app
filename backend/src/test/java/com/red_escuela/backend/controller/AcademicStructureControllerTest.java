@@ -225,9 +225,11 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subjectA = new Subject();
+        subjectA.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subjectA.setName("Materia MinGrade A");
         entityManager.persist(subjectA);
         Subject subjectB = new Subject();
+        subjectB.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subjectB.setName("Materia MinGrade B");
         entityManager.persist(subjectB);
 
@@ -235,11 +237,14 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entradaA.setProgram(program);
         entradaA.setSubject(subjectA);
         entradaA.setCurricularYear(1);
-        entradaA.setCurricularTerm(CurricularTerm.FIRST);
+        entradaA.setCurricularTerm(CurricularTerm.SECOND);
         entradaA.setCredits(5);
         entradaA.setStatus(StatusType.ACTIVE);
         entityManager.persist(entradaA);
 
+        // entradaB en el cuatrimestre ANTERIOR de entradaA (mismo año) — cronológicamente
+        // válida como correlativa, para que este test ejercite específicamente la
+        // validación de minGrade fuera de rango y no la de orden cronológico.
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(program);
         entradaB.setSubject(subjectB);
@@ -449,6 +454,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Materia ProgramSubject Baja");
         entityManager.persist(subject);
         entityManager.flush();
@@ -644,6 +650,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Materia del grupo en uso");
         entityManager.persist(subject);
         entityManager.flush();

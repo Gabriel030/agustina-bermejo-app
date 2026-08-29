@@ -223,6 +223,20 @@ public class SubjectSectionEnrollmentService {
         return subjectSectionEnrollmentRepository.findByStudentId(studentId);
     }
 
+    // Épica 2 Fase 1 (Alumno · Mis carreras): el año curricular no vive en la inscripción
+    // ni en la comisión — es propio del plan de LA carrera de esa inscripción puntual
+    // (ProgramSubject.curricularYear, ver comentario de SubjectSection: una materia se
+    // comparte entre carreras). Puede no existir (materia que ya no está en el plan
+    // vigente, o vino de otra vía) — null en ese caso, el frontend lo trata como opcional.
+    public Integer resolverAnioCurricular(SubjectSectionEnrollment enrollment) {
+        return programSubjectRepository
+                .findByProgramIdAndSubjectId(
+                        enrollment.getProgramEnrollment().getProgram().getId(),
+                        enrollment.getSubjectSection().getSubject().getId())
+                .map(ProgramSubject::getCurricularYear)
+                .orElse(null);
+    }
+
     public SubjectSectionEnrollment verDetalle(Long id) {
         return findOrThrow(id);
     }

@@ -87,6 +87,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name, Integer maxFinalExamAttempts) {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName(name);
         subject.setMaxFinalExamAttempts(maxFinalExamAttempts);
         entityManager.persist(subject);

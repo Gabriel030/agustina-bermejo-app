@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
+import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -52,14 +53,8 @@ export function Login() {
     <div className="flex min-h-screen items-center justify-center">
       <MeshBackground />
       <GlassCard className="w-[436px] p-10 pb-9">
-        <div className="mb-7 flex flex-col items-center gap-3.5">
-          <div className="flex h-[52px] w-[52px] items-center justify-center rounded-[17px] bg-gradient-to-br from-accent-2 to-accent font-heading text-xl font-bold text-white">
-            AB
-          </div>
-          <div className="text-center">
-            <div className="font-heading text-lg font-bold tracking-tight text-ink">Agustina Bermejo</div>
-            <div className="mt-0.5 text-sm text-ink-faint">Ingresá a tu cuenta</div>
-          </div>
+        <div className="mb-7">
+          <InstitutionBrand subtitulo="Ingresá a tu cuenta" />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">

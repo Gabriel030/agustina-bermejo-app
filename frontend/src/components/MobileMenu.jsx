@@ -3,7 +3,23 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import { NavLink } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { useAuth } from '@/context/AuthContext';
+
+// Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
+// pill pálido de antes) — ver comentario ahí.
+const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-accent to-accent-2 text-white shadow-sm';
+const NAV_ITEM_BASE =
+  'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink';
+
+function ItemNav({ to, label, icon: Icon, onNavigate }) {
+  return (
+    <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => cn(NAV_ITEM_BASE, isActive && NAV_ITEM_ACTIVO)}>
+      {Icon && <Icon className="h-4 w-4 shrink-0" />}
+      <span className="truncate">{label}</span>
+    </NavLink>
+  );
+}
 
 // Colapso del Sidebar en mobile/tablet (base/md) — decisión revisada con el
 // usuario: un menú hamburguesa que abre un drawer lateral, no una bottom tab
@@ -14,6 +30,9 @@ import { useAuth } from '@/context/AuthContext';
 export function MobileMenu({ titulo, items }) {
   const [open, setOpen] = useState(false);
   const { usuario, logout } = useAuth();
+
+  const principales = items.filter((item) => item.label !== 'Opciones');
+  const opciones = items.find((item) => item.label === 'Opciones');
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -33,14 +52,17 @@ export function MobileMenu({ titulo, items }) {
           className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-5 shadow-2xl backdrop-blur-[28px] backdrop-saturate-[1.6] duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
         >
           <div className="flex items-start justify-between">
-            <div>
-              <DialogPrimitive.Title className="text-sm font-semibold text-ink-faint">{titulo}</DialogPrimitive.Title>
-              {usuario && (
-                <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
-                  {usuario.nombre} {usuario.apellido}
-                </div>
-              )}
-            </div>
+            <DialogPrimitive.Title asChild>
+              <div>
+                <InstitutionBrand layout="horizontal" />
+                <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>
+                {usuario && (
+                  <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
+                    {usuario.nombre} {usuario.apellido}
+                  </div>
+                )}
+              </div>
+            </DialogPrimitive.Title>
             <DialogPrimitive.Close asChild>
               <button type="button" aria-label="Cerrar menú" className="rounded-lg p-1.5 text-ink-faint hover:text-ink">
                 <X className="h-5 w-5" />
@@ -49,33 +71,24 @@ export function MobileMenu({ titulo, items }) {
           </div>
 
           <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-            {items.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  cn(
-                    'shrink-0 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-accent hover:text-ink',
-                    isActive && 'bg-accent text-ink',
-                  )
-                }
-              >
-                {label}
-              </NavLink>
+            {principales.map((item) => (
+              <ItemNav key={item.to} {...item} onNavigate={() => setOpen(false)} />
             ))}
           </nav>
 
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              logout();
-            }}
-            className="shrink-0 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
-          >
-            Cerrar sesión
-          </button>
+          <div className="shrink-0 border-t border-border pt-3">
+            {opciones && <ItemNav {...opciones} onNavigate={() => setOpen(false)} />}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
+              className="mt-1 flex w-full shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
+            >
+              Cerrar sesión
+            </button>
+          </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

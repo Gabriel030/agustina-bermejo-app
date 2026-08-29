@@ -4,7 +4,7 @@ import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.ProgramSubject;
 
 public record ProgramSubjectResponse(
-        Long id, Long programId, Long subjectId, String subjectName,
+        Long id, Long programId, Long subjectId, String subjectCode, String subjectName,
         Integer curricularYear, CurricularTerm curricularTerm, Integer credits,
         Long electiveGroupId, String status) {
 
@@ -13,6 +13,7 @@ public record ProgramSubjectResponse(
                 programSubject.getId(),
                 programSubject.getProgram().getId(),
                 programSubject.getSubject().getId(),
+                programSubject.getSubject().getCode(),
                 programSubject.getSubject().getName(),
                 programSubject.getCurricularYear(),
                 programSubject.getCurricularTerm(),

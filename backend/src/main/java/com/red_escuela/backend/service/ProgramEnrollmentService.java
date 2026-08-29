@@ -161,9 +161,12 @@ public class ProgramEnrollmentService {
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
+        // esRegular reusa tieneCursadaActiva (Épica 2 Fase 1, Alumno · Mis carreras) — mismo
+        // criterio que ya usaba CertificateService para la constancia de alumno regular, ahora
+        // también expuesto acá para mostrarlo como condición en la pantalla.
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,
-                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar);
+                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, tieneCursadaActiva(id));
     }
 
     /**

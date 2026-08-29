@@ -155,6 +155,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName(name);
         entityManager.persist(subject);
         return subject;

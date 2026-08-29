@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { EstadoSolicitudBadge } from '@/components/EstadoSolicitudBadge';
+import { Skeleton } from '@/components/Skeleton';
 import { apiFetch } from '@/api/client';
 import { formatFecha } from '@/lib/utils';
 
@@ -80,7 +81,7 @@ export function DetalleSolicitud() {
     return (
       <GlassCard className="flex flex-1 flex-col items-center justify-center gap-2 p-12 text-center">
         <div className="font-heading text-xl font-semibold text-ink">Solicitud no encontrada</div>
-        <button type="button" onClick={() => navigate('/mis-solicitudes')} className="text-sm font-semibold text-accent">
+        <button type="button" onClick={() => navigate('/mis-solicitudes')} className="text-sm font-semibold text-primary">
           Volver a Mis solicitudes
         </button>
       </GlassCard>
@@ -88,7 +89,13 @@ export function DetalleSolicitud() {
   }
 
   if (!solicitud) {
-    return <div className="text-sm text-ink-faint">Cargando…</div>;
+    return (
+      <PageContainer>
+        <Skeleton className="h-9 w-72" />
+        <Skeleton className="h-40" />
+        <Skeleton className="h-40" />
+      </PageContainer>
+    );
   }
 
   return (

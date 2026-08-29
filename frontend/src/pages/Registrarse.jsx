@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
+import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -85,14 +86,8 @@ export function Registrarse() {
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
       <MeshBackground />
       <GlassCard className="w-full max-w-[480px] p-6 pb-7 sm:p-10 sm:pb-8">
-        <div className="mb-6 flex flex-col items-center gap-3">
-          <div className="flex h-[52px] w-[52px] items-center justify-center rounded-[17px] bg-gradient-to-br from-accent-2 to-accent font-heading text-xl font-bold text-white">
-            AB
-          </div>
-          <div className="text-center">
-            <div className="font-heading text-lg font-bold tracking-tight text-ink">Creá tu cuenta</div>
-            <div className="mt-0.5 text-sm text-ink-faint">Registrate para solicitar una carrera o anotarte a un curso</div>
-          </div>
+        <div className="mb-6">
+          <InstitutionBrand titulo="Creá tu cuenta" subtitulo="Registrate para solicitar una carrera o anotarte a un curso" />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
