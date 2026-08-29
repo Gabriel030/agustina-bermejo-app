@@ -43,6 +43,6 @@ public class MeInvoiceController {
     @GetMapping("/payment-standing")
     public PaymentStandingResponse miEstadoDePago() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return new PaymentStandingResponse(invoiceService.calcularEstadoDePago(student.getId()).name());
+        return new PaymentStandingResponse(student.getId(), invoiceService.calcularEstadoDePago(student.getId()).name());
     }
 }
