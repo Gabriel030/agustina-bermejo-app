@@ -76,6 +76,6 @@ public class InvoiceController {
     @GetMapping("/students/{id}/payment-standing")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public PaymentStandingResponse verEstadoDePago(@PathVariable Long id) {
-        return new PaymentStandingResponse(invoiceService.calcularEstadoDePago(id).name());
+        return new PaymentStandingResponse(id, invoiceService.calcularEstadoDePago(id).name());
     }
 }

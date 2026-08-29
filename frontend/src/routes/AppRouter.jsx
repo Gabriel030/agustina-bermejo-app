@@ -13,6 +13,7 @@ import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
 import { NoAutorizado } from '@/pages/NoAutorizado';
 import { CargaInicial } from '@/pages/CargaInicial';
 import { Placeholder } from '@/pages/Placeholder';
+import { AlumnoInicio } from '@/pages/AlumnoInicio';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
 import { PreceptorLayout } from '@/layouts/PreceptorLayout';
@@ -21,9 +22,15 @@ import { DirectorLayout } from '@/layouts/DirectorLayout';
 import { AutoservicioLayout } from '@/layouts/AutoservicioLayout';
 
 // path -> título de pantalla mostrado en el placeholder, hasta que la fase
-// correspondiente del roadmap implemente la pantalla real.
+// correspondiente del roadmap implemente la pantalla real. `paginasReales`
+// (opcional) pisa el Placeholder para las páginas ya implementadas — Épica 2
+// Fase 1 empieza por "inicio", el resto de Alumno sigue en placeholder.
 const RUTAS_POR_ROL = {
-  alumno: { Layout: AlumnoLayout, paginas: ['inicio', 'mis-cursos', 'notas', 'asistencia', 'mesas-de-examen', 'opciones'] },
+  alumno: {
+    Layout: AlumnoLayout,
+    paginas: ['inicio', 'mis-cursos', 'notas', 'asistencia', 'mesas-de-examen', 'opciones'],
+    paginasReales: { inicio: AlumnoInicio },
+  },
   docente: { Layout: DocenteLayout, paginas: ['inicio', 'tomar-asistencia'] },
   preceptor: { Layout: PreceptorLayout, paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'] },
   administrativo: { Layout: AdministrativoLayout, paginas: ['inicio', 'alumnos', 'facturacion', 'constancias'] },
@@ -73,7 +80,7 @@ export function AppRouter() {
         <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
       </Route>
 
-      {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas }]) => (
+      {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas, paginasReales }]) => (
         <Route
           key={rol}
           path={`/${rol}`}
@@ -84,9 +91,10 @@ export function AppRouter() {
           }
         >
           <Route index element={<Navigate to={paginas[0]} replace />} />
-          {paginas.map((pagina) => (
-            <Route key={pagina} path={pagina} element={<Placeholder titulo={pagina} />} />
-          ))}
+          {paginas.map((pagina) => {
+            const PaginaReal = paginasReales?.[pagina];
+            return <Route key={pagina} path={pagina} element={PaginaReal ? <PaginaReal /> : <Placeholder titulo={pagina} />} />;
+          })}
         </Route>
       ))}
 
