@@ -43,8 +43,7 @@ tests {
 }
 
 docs {
-  Setup: sin `admissionStart`/`admissionEnd` a propósito — confirma que
-  `Catalogo.jsx` no depende de esos campos para mostrar el botón
-  "Solicitar alta" (`ProgramEnrollmentApplicationService.solicitar` no
-  valida ventana de admisión, ver Nota de implementación de la Fase 1).
+  Setup: `Program` ya no tiene `admissionStart`/`admissionEnd` (Épica 8
+  Fase 2, migraron a `ProgramCohort`) — la ventana de admisión se define
+  en el request 5 (crear cohorte), no acá.
 }

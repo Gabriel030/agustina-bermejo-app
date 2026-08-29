@@ -1,7 +1,7 @@
 meta {
-  name: 8. Solicitar de nuevo la misma carrera - duplicado pendiente (409)
+  name: 9. Solicitar de nuevo la misma carrera - duplicado pendiente (409)
   type: http
-  seq: 8
+  seq: 9
 }
 
 post {
@@ -16,6 +16,7 @@ headers {
 
 body:multipart-form {
   programId: {{programIdQA}}
+  cohortId: {{cohortIdQA}}
   comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 

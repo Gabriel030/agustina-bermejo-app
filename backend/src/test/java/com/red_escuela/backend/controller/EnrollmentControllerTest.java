@@ -17,6 +17,7 @@ import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
@@ -131,15 +132,25 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(student.getPerson());
     }
 
-    private Program persistProgram(String name, LocalDateTime admissionStart, LocalDateTime admissionEnd, int totalCredits) {
+    private Program persistProgram(String name, int totalCredits) {
         Program program = new Program();
         program.setName(name);
         program.setTotalYears(3);
         program.setTotalCreditsRequired(totalCredits);
-        program.setAdmissionStart(admissionStart);
-        program.setAdmissionEnd(admissionEnd);
         entityManager.persist(program);
         return program;
+    }
+
+    // Épica 8 Fase 2: la ventana de admisión vive en ProgramCohort, no en Program.
+    private ProgramCohort persistProgramCohort(Program program, LocalDateTime admissionStart, LocalDateTime admissionEnd) {
+        ProgramCohort cohort = new ProgramCohort();
+        cohort.setProgram(program);
+        cohort.setOrdenEnAnio(1);
+        cohort.setAdmissionStart(admissionStart);
+        cohort.setAdmissionEnd(admissionEnd);
+        cohort.setCursadaStart(java.time.LocalDate.now());
+        entityManager.persist(cohort);
+        return cohort;
     }
 
     private Subject persistSubject(String name) {
@@ -253,7 +264,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     void matricularProspectoDevuelve400() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000001", StudentOnboardingStatus.PROSPECTO, StatusType.ACTIVE, institution);
-        Program program = persistProgram("Tecnicatura", null, null, 100);
+        Program program = persistProgram("Tecnicatura", 100);
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc1", "PRECEPTOR");
 
@@ -268,7 +279,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     void matricularDosVecesMismaCarreraDevuelve409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000002", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
-        Program program = persistProgram("Tecnicatura2", null, null, 100);
+        Program program = persistProgram("Tecnicatura2", 100);
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc2", "PRECEPTOR");
         CreateProgramEnrollmentRequest request = new CreateProgramEnrollmentRequest(program.getId());
@@ -291,14 +302,15 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000003", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         LocalDateTime now = LocalDateTime.now();
-        Program program = persistProgram("Tecnicatura3", now.minusDays(30), now.minusDays(10), 100);
+        Program program = persistProgram("Tecnicatura3", 100);
+        ProgramCohort cohort = persistProgramCohort(program, now.minusDays(30), now.minusDays(10));
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc3", "PRECEPTOR");
 
         mockMvc.perform(post("/students/{id}/program-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(new CreateProgramEnrollmentRequest(program.getId()))))
+                        .content(objectMapper.writeValueAsString(new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -306,7 +318,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     void inscribirSinProgramEnrollmentEnrolledDevuelve400() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000004", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
-        Program program = persistProgram("Tecnicatura4", null, null, 100);
+        Program program = persistProgram("Tecnicatura4", 100);
         Subject subject = persistSubject("Materia4");
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
@@ -329,12 +341,12 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Subject compartida = persistSubject("Física I compartida");
         Subject avanzada = persistSubject("Física II");
 
-        Program carreraA = persistProgram("Carrera A", null, null, 100);
+        Program carreraA = persistProgram("Carrera A", 100);
         ProgramSubject psFisicaIA = persistProgramSubject(carreraA, compartida, 10);
         ProgramSubject psFisicaIIA = persistProgramSubject(carreraA, avanzada, 10);
         persistPrerequisite(psFisicaIIA, psFisicaIA, RequirementType.APPROVED);
 
-        Program carreraB = persistProgram("Carrera B", null, null, 100);
+        Program carreraB = persistProgram("Carrera B", 100);
         ProgramSubject psFisicaIB = persistProgramSubject(carreraB, compartida, 10);
         ProgramSubject psFisicaIIB = persistProgramSubject(carreraB, avanzada, 10);
         persistPrerequisite(psFisicaIIB, psFisicaIB, RequirementType.APPROVED);
@@ -372,7 +384,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000006", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia6");
-        Program program = persistProgram("Carrera6", null, null, 100);
+        Program program = persistProgram("Carrera6", 100);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection seccionA = persistSubjectSection(subject, term, null);
@@ -415,7 +427,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Student estudiante1 = persistStudent("50000007", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student estudiante2 = persistStudent("50000008", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia7");
-        Program program = persistProgram("Carrera7", null, null, 100);
+        Program program = persistProgram("Carrera7", 100);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subject, term, 1);
@@ -462,7 +474,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Student estudiante1 = persistStudent("50000017", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student estudiante2 = persistStudent("50000018", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia17");
-        Program program = persistProgram("Carrera17", null, null, 100);
+        Program program = persistProgram("Carrera17", 100);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subject, term, 1);
@@ -494,7 +506,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000009", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia9");
-        Program program = persistProgram("Carrera9", null, null, 100);
+        Program program = persistProgram("Carrera9", 100);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subject, term, null);
@@ -513,7 +525,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000010", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia10");
-        Program program = persistProgram("Carrera10", null, null, 100);
+        Program program = persistProgram("Carrera10", 100);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subject, term, null);
@@ -599,7 +611,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000013", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia13");
-        Program program = persistProgram("Carrera13", null, null, 10);
+        Program program = persistProgram("Carrera13", 10);
         persistProgramSubject(program, subject, 10);
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subject, term, null);
@@ -624,7 +636,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student duenio = persistStudent("50000014", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student otro = persistStudent("50000015", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
-        Program program = persistProgram("Carrera14", null, null, 100);
+        Program program = persistProgram("Carrera14", 100);
         ProgramEnrollment enrollment = persistProgramEnrollment(duenio, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
@@ -639,7 +651,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     void endpointsDeMatriculacionSinRolCorrectoDevuelven403YMeConCualquierRolFunciona() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000016", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
-        Program program = persistProgram("Carrera16", null, null, 100);
+        Program program = persistProgram("Carrera16", 100);
         entityManager.flush();
         String tokenAlumno = tokenForStudent(student);
 

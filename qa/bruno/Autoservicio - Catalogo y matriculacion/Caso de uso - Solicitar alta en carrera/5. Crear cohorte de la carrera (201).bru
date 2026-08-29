@@ -1,0 +1,45 @@
+meta {
+  name: 5. Crear cohorte de la carrera (201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/program-cohorts
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessTokenQA}}
+}
+
+body:json {
+  {
+    "programId": {{programIdQA}},
+    "label": "Cohorte QA marzo",
+    "ordenEnAnio": 1,
+    "cursadaStart": "2026-03-01"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("cohortIdQA", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("ordenEnAnio 1", function () {
+    expect(res.getBody().ordenEnAnio).to.equal(1);
+  });
+}
+
+docs {
+  Épica 8 Fase 2: solicitar alta exige una cohorte concreta — la ventana
+  de admisión pasó a vivir acá, no en la carrera (`Program` ya no tiene
+  `admissionStart`/`admissionEnd`).
+}

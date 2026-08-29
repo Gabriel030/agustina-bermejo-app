@@ -1,7 +1,7 @@
 meta {
-  name: 8. Solicitar alta (setup, 201)
+  name: 9. Solicitar alta (setup, 201)
   type: http
-  seq: 8
+  seq: 9
 }
 
 post {
@@ -16,6 +16,7 @@ headers {
 
 body:multipart-form {
   programId: {{programIdDocAlta}}
+  cohortId: {{cohortIdDocAlta}}
   comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 

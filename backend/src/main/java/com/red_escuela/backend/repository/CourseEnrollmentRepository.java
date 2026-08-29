@@ -14,4 +14,8 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusIn(
             Long studentId, Long courseId, List<EnrollmentStatus> statuses);
+
+    // Motor de facturación recurrente (Épica 8 Fase 2): solo ENROLLED recibe
+    // cuotas nuevas.
+    List<CourseEnrollment> findByStatus(EnrollmentStatus status);
 }

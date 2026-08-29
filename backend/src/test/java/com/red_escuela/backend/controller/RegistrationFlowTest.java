@@ -11,6 +11,7 @@ import com.red_escuela.backend.entity.FeeScheduleConcept;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.entity.Role;
@@ -97,6 +98,17 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         program.setTotalCreditsRequired(0);
         return programRepository.save(program);
+    }
+
+    // Épica 8 Fase 2: solicitar alta en carrera exige una cohorte concreta.
+    private ProgramCohort persistCohort(Program program) {
+        ProgramCohort cohort = new ProgramCohort();
+        cohort.setProgram(program);
+        cohort.setOrdenEnAnio(1);
+        cohort.setCursadaStart(LocalDate.now());
+        entityManager.persist(cohort);
+        entityManager.flush();
+        return cohort;
     }
 
     private Course persistCurso(int capacity) {
@@ -255,6 +267,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void flujoCompletoSolicitudDeCarreraAprobada() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
+        ProgramCohort cohort = persistCohort(program);
         persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
@@ -266,6 +279,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
                         .file(comprobante())
                         .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PENDING"))
@@ -276,6 +290,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(multipart("/me/program-enrollment-applications")
                         .file(comprobante())
                         .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict());
 
@@ -308,6 +323,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void rechazarSolicitudNoCreaMatriculaNiOtorgaRol() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
+        ProgramCohort cohort = persistCohort(program);
         persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
@@ -319,6 +335,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
                         .file(comprobante())
                         .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();
@@ -348,6 +365,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void unAlumnoNoPuedeAprobarSuPropiaSolicitud() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
+        ProgramCohort cohort = persistCohort(program);
         persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
@@ -359,6 +377,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
                         .file(comprobante())
                         .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();

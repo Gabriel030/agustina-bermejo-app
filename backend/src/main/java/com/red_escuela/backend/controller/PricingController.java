@@ -9,6 +9,8 @@ import com.red_escuela.backend.dto.CreatePromotionRequest;
 import com.red_escuela.backend.dto.DiscountResponse;
 import com.red_escuela.backend.dto.FeeScheduleResponse;
 import com.red_escuela.backend.dto.LateFeePolicyResponse;
+import com.red_escuela.backend.dto.CreateProgramCohortRequest;
+import com.red_escuela.backend.dto.ProgramCohortResponse;
 import com.red_escuela.backend.dto.PromotionResponse;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.service.BillingPeriodService;
@@ -16,6 +18,7 @@ import com.red_escuela.backend.service.CurrentPersonService;
 import com.red_escuela.backend.service.DiscountService;
 import com.red_escuela.backend.service.FeeScheduleService;
 import com.red_escuela.backend.service.LateFeePolicyService;
+import com.red_escuela.backend.service.ProgramCohortService;
 import com.red_escuela.backend.service.PromotionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -44,17 +47,20 @@ public class PricingController {
     private final BillingPeriodService billingPeriodService;
     private final DiscountService discountService;
     private final PromotionService promotionService;
+    private final ProgramCohortService programCohortService;
     private final CurrentPersonService currentPersonService;
 
     public PricingController(
             FeeScheduleService feeScheduleService, LateFeePolicyService lateFeePolicyService,
             BillingPeriodService billingPeriodService, DiscountService discountService,
-            PromotionService promotionService, CurrentPersonService currentPersonService) {
+            PromotionService promotionService, ProgramCohortService programCohortService,
+            CurrentPersonService currentPersonService) {
         this.feeScheduleService = feeScheduleService;
         this.lateFeePolicyService = lateFeePolicyService;
         this.billingPeriodService = billingPeriodService;
         this.discountService = discountService;
         this.promotionService = promotionService;
+        this.programCohortService = programCohortService;
         this.currentPersonService = currentPersonService;
     }
 
@@ -121,6 +127,19 @@ public class PricingController {
     @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
     public List<PromotionResponse> listarPromotions() {
         return promotionService.listar().stream().map(PromotionResponse::from).toList();
+    }
+
+    @PostMapping("/program-cohorts")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ProgramCohortResponse crearProgramCohort(@Valid @RequestBody CreateProgramCohortRequest request) {
+        return ProgramCohortResponse.from(programCohortService.crear(request));
+    }
+
+    @GetMapping("/programs/{id}/cohorts")
+    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    public List<ProgramCohortResponse> listarProgramCohorts(@PathVariable Long id) {
+        return programCohortService.listarPorPrograma(id).stream().map(ProgramCohortResponse::from).toList();
     }
 
     private Person actor() {

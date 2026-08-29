@@ -125,6 +125,17 @@ public class PaymentReceiptService {
                 intent.getStudent().getId(), new CreateCourseEnrollmentRequest(intent.getCourse().getId(), overrides));
         intent.setCourseEnrollment(enrollment);
         courseEnrollmentApplicationRepository.save(intent);
+
+        // Épica 8 Fase 2: recién ahora existe el CourseEnrollment — la factura de la
+        // primera cuota (generada al solicitar, sin ningún vínculo posible en ese
+        // momento porque el CourseEnrollment no existía todavía) se completa retroactivamente
+        // con el vínculo y "cuota 1 de N". Sin esto, el motor de facturación recurrente no
+        // tendría forma de saber que la cuota 1 ya se cobró, y generaría una duplicada.
+        Invoice invoice = intent.getPaymentReceipt().getInvoice();
+        invoice.setCourseEnrollment(enrollment);
+        invoice.setInstallmentNumber(1);
+        invoice.setTotalInstallments(intent.getCourse().getDurationMonths());
+        invoiceRepository.save(invoice);
     }
 
     private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {

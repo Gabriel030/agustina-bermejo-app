@@ -2,6 +2,7 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.Discount;
 import com.red_escuela.backend.entity.DiscountType;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.Promotion;
 import org.junit.jupiter.api.Test;
 
@@ -77,5 +78,23 @@ class PricingCalculatorTest {
         BigDecimal resultado = PricingCalculator.calcularMontoFinal(
                 BigDecimal.valueOf(1000), List.of(descuento(DiscountType.MONTO_FIJO, BigDecimal.valueOf(5000))), List.of());
         assertThat(resultado).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    private ProgramCohort cohorte(int ordenEnAnio) {
+        ProgramCohort cohort = new ProgramCohort();
+        cohort.setOrdenEnAnio(ordenEnAnio);
+        return cohort;
+    }
+
+    @Test
+    void matriculaDeLaPrimeraCohorteDelAnioEsElMontoCompleto() {
+        BigDecimal resultado = PricingCalculator.calcularMontoMatricula(BigDecimal.valueOf(50000), cohorte(1));
+        assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(50000));
+    }
+
+    @Test
+    void matriculaDeLaSegundaCohorteDelAnioEsLaMitad() {
+        BigDecimal resultado = PricingCalculator.calcularMontoMatricula(BigDecimal.valueOf(50000), cohorte(2));
+        assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(25000));
     }
 }

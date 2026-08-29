@@ -2,6 +2,7 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.Discount;
 import com.red_escuela.backend.entity.DiscountType;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.Promotion;
 
 import java.math.BigDecimal;
@@ -57,5 +58,20 @@ final class PricingCalculator {
 
         BigDecimal montoFinal = precioBase.subtract(descuentoPorPorcentaje).subtract(totalMontoFijo);
         return montoFinal.max(BigDecimal.ZERO);
+    }
+
+    /**
+     * Épica 8 Fase 2: la matrícula de la segunda cohorte del año (quien entra a
+     * mitad de año lectivo) cuesta la mitad de la primera — prorrateo automático,
+     * no un {@code FeeSchedule} separado por cohorte (evita que alguien actualice
+     * el precio de la carrera y se olvide de actualizar también el de la segunda
+     * cohorte). Se aplica ANTES de descuentos/promociones (mismo orden que hoy:
+     * esos se calculan sobre el monto ya prorrateado).
+     */
+    static BigDecimal calcularMontoMatricula(BigDecimal montoBase, ProgramCohort cohort) {
+        if (cohort.getOrdenEnAnio() == 2) {
+            return montoBase.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+        }
+        return montoBase;
     }
 }

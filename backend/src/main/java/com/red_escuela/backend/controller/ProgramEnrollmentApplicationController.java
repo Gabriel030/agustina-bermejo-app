@@ -54,9 +54,9 @@ public class ProgramEnrollmentApplicationController {
     @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ProgramEnrollmentApplicationResponse solicitar(
-            @RequestParam Long programId, @RequestPart MultipartFile comprobante) {
+            @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollmentApplication application = applicationService.solicitarConPago(student, programId, comprobante);
+        ProgramEnrollmentApplication application = applicationService.solicitarConPago(student, programId, cohortId, comprobante);
         return ProgramEnrollmentApplicationResponse.from(application);
     }
 
