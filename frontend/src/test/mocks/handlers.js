@@ -30,7 +30,32 @@ export const handlers = [
   ),
   http.get(`${API}/institutions`, () => HttpResponse.json([{ id: 1, name: 'Instituto de prueba' }])),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
+  http.get(`${API}/programs/:id`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), name: 'Carrera de prueba', totalYears: 3, totalCreditsRequired: 0 }),
+  ),
+  http.get(`${API}/programs/:id/pricing`, ({ params }) =>
+    HttpResponse.json({ programId: Number(params.id), matriculaCohorte1: 50000, matriculaCohorte2: 25000, cuotaMensual: 15000 }),
+  ),
+  http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
+    HttpResponse.json([
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01' },
+    ]),
+  ),
+  http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
+  http.get(`${API}/courses/:id`, ({ params }) =>
+    HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3 }),
+  ),
+  http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: 8000 })),
+  http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.post(`${API}/me/program-enrollment-applications`, () =>
+    HttpResponse.json({ id: 1, status: 'PENDING' }, { status: 201 }),
+  ),
   http.post(`${API}/me/program-enrollment-applications/:id/documents`, () => new HttpResponse(null, { status: 201 })),
+  http.get(`${API}/me/course-enrollment-applications`, () => HttpResponse.json([])),
+  http.post(`${API}/me/course-enrollments`, () =>
+    HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
+  ),
 ];
