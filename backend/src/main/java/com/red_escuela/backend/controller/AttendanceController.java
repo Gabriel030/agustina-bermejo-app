@@ -61,6 +61,18 @@ public class AttendanceController {
         return AttendanceResponse.from(attendanceService.justificar(id, request.reason(), request.attachmentUrl()));
     }
 
+    @PostMapping("/attendance/{id}/approve-justification")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public AttendanceResponse aprobarJustificacion(@PathVariable Long id) {
+        return AttendanceResponse.from(attendanceService.aprobarJustificacion(id));
+    }
+
+    @PostMapping("/attendance/{id}/reject-justification")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public AttendanceResponse rechazarJustificacion(@PathVariable Long id) {
+        return AttendanceResponse.from(attendanceService.rechazarJustificacion(id));
+    }
+
     @GetMapping("/section-enrollments/{id}/attendance")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<AttendanceResponse> listarAsistenciaProgramEnrollment(@PathVariable Long id) {

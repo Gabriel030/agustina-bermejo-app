@@ -150,7 +150,10 @@ public class MeEnrollmentController {
     public List<SectionEnrollmentResponse> misInscripciones() {
         Student student = currentStudentService.resolveCurrentStudent();
         return subjectSectionEnrollmentService.listarPorAlumno(student.getId()).stream()
-                .map(enrollment -> SectionEnrollmentResponse.from(enrollment, subjectSectionEnrollmentService.resolverAnioCurricular(enrollment)))
+                .map(enrollment -> SectionEnrollmentResponse.from(
+                        enrollment,
+                        subjectSectionEnrollmentService.resolverAnioCurricular(enrollment),
+                        subjectSectionEnrollmentService.resolverCuatrimestreCurricular(enrollment)))
                 .toList();
     }
 

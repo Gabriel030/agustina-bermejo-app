@@ -105,6 +105,40 @@ export function useMiRiesgoDeAsistencia(sectionEnrollmentId) {
   });
 }
 
+// Mesas SCHEDULED de una materia puntual — solo tiene sentido pedirlo para una
+// materia donde el alumno está Regular (el chequeo real de elegibilidad lo
+// hace el backend al inscribirse, esto es solo el listado para elegir llamado).
+export function useMesasDisponibles(subjectId) {
+  return useQuery({
+    queryKey: ['me', 'exam-boards', subjectId],
+    queryFn: () => apiFetch(`/me/exam-boards?subjectId=${subjectId}`),
+    enabled: !!subjectId,
+  });
+}
+
+// Mis inscripciones a mesas (todas las materias, pasadas y presentes) — cada una
+// ya trae la mesa completa (fecha/aula) y la nota si el alumno ya rindió.
+export function useMisInscripcionesAMesas() {
+  return useQuery({ queryKey: ['me', 'exam-board-registrations'], queryFn: () => apiFetch('/me/exam-board-registrations') });
+}
+
+export function useInscribirmeAMesa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ examBoardId, programSectionEnrollmentId }) =>
+      apiFetch('/me/exam-board-registrations', { method: 'POST', body: JSON.stringify({ examBoardId, programSectionEnrollmentId }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'exam-board-registrations'] }),
+  });
+}
+
+export function useDarmeDeBajaDeMesa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (registrationId) => apiFetch(`/me/exam-board-registrations/${registrationId}/withdraw`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'exam-board-registrations'] }),
+  });
+}
+
 // Justificar una inasistencia propia con un comprobante (solo PDF, validado en el
 // backend) — antes esto era exclusivo de Preceptor/Administrativo.
 export function useJustificarInasistencia() {

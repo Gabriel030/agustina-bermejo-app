@@ -10,13 +10,20 @@ const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
-// PRESENT/LATE cuentan como presente (llegar tarde sigue siendo haber ido a la
-// clase) — mismo criterio que ya usa TabAsistencia.jsx para el resumen.
 const COLOR_DIA = {
   PRESENT: 'bg-success-bg text-success',
   LATE: 'bg-success-bg text-success',
   ABSENT: 'cursor-pointer bg-danger-bg text-danger transition-opacity hover:opacity-70',
-  JUSTIFIED: 'bg-warning-bg text-warning',
+  JUSTIFICATION_PENDING: 'bg-warning-bg text-warning',
+  JUSTIFIED: 'bg-success-bg text-success',
+};
+
+const TITULO_DIA = {
+  PRESENT: 'Presente',
+  LATE: 'Llegada tarde',
+  ABSENT: 'Justificar',
+  JUSTIFICATION_PENDING: 'Justificación pendiente de aprobación',
+  JUSTIFIED: 'Ausencia justificada',
 };
 
 function agruparPorMes(registros) {
@@ -48,12 +55,32 @@ function GraficoDeTorta({ porcentaje, enRiesgo }) {
   );
 }
 
-// Sección de asistencia por materia (Épica 2 Fase 2) — resumen + gráfico de
-// torta con el % requerido por la institución (real, no un 70% fijo) +
-// calendario horizontal scrolleable por mes, con cada día de clase en verde
-// (presente) o rojo (ausente); un día rojo se puede clickear para subir un
-// comprobante (solo PDF) y justificarlo — antes esto era exclusivo de
-// Preceptoría, ahora también autoservicio del alumno.
+function InasistenciasJustificadas({ registros }) {
+  const justificadas = (registros ?? [])
+    .filter((r) => r.status === 'JUSTIFICATION_PENDING' || r.status === 'JUSTIFIED')
+    .sort((a, b) => b.classDate.localeCompare(a.classDate));
+
+  if (justificadas.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-2 text-xs font-semibold text-ink-faint">Inasistencias justificadas</div>
+      <div className="flex flex-col gap-1.5">
+        {justificadas.map((r) => (
+          <div key={r.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-[13px]">
+            <span className="text-ink">
+              {new Date(`${r.classDate}T00:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+            <span className={`font-semibold ${r.status === 'JUSTIFIED' ? 'text-success' : 'text-warning'}`}>
+              {r.status === 'JUSTIFIED' ? 'Aprobada' : 'Pendiente de aprobación'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function SeccionAsistencia({ sectionEnrollmentId }) {
   const { data: registros, isLoading: cargandoAsistencia } = useMiAsistencia(sectionEnrollmentId);
   const { data: riesgo, isLoading: cargandoRiesgo } = useMiRiesgoDeAsistencia(sectionEnrollmentId);
@@ -141,7 +168,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
                         type="button"
                         disabled={dia.status !== 'ABSENT'}
                         onClick={() => setDiaSeleccionado(dia)}
-                        title={dia.status === 'JUSTIFIED' ? 'Ausencia justificada' : dia.status === 'ABSENT' ? 'Justificar' : dia.status}
+                        title={TITULO_DIA[dia.status] ?? 'Justificar'}
                         className={`flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold ${COLOR_DIA[dia.status] ?? 'bg-neutral-bg text-ink-faint'}`}
                       >
                         {Number(dia.classDate.split('-')[2])}
@@ -152,6 +179,8 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
               ))}
             </div>
           </div>
+
+          <InasistenciasJustificadas registros={registros} />
         </>
       )}
 
@@ -176,8 +205,8 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
           >
             <Upload className="h-5 w-5 text-ink-faint" />
             <span className="text-[13px] font-semibold text-ink">{archivo ? archivo.name : 'Subir comprobante'}</span>
-            <span className="text-xs text-ink-faint">Solo PDF, hasta 5MB</span>
-            <input type="file" accept="application/pdf" className="hidden" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
+            <span className="text-xs text-ink-faint">PDF o JPG, hasta 5MB</span>
+            <input type="file" accept="application/pdf,image/jpeg" className="hidden" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
           </label>
           {justificar.isError && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">

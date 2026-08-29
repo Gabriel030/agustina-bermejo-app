@@ -11,6 +11,7 @@ import { TabMaterias } from '@/components/alumno/TabMaterias';
 import { TabPlanDeEstudio } from '@/components/alumno/TabPlanDeEstudio';
 import { TabNotas } from '@/components/alumno/TabNotas';
 import { TabAsistencia } from '@/components/alumno/TabAsistencia';
+import { TabMesasDeExamen } from '@/components/alumno/TabMesasDeExamen';
 import { useMisMatriculaciones, useMiProgreso } from '@/hooks/useAlumno';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
@@ -173,11 +174,7 @@ export function AlumnoMisCarreras() {
       {tab === 'plan-de-estudio' && <TabPlanDeEstudio key={matricula.id} carreraId={matricula.id} />}
       {tab === 'notas' && <TabNotas key={matricula.id} carreraId={matricula.id} />}
       {tab === 'asistencia' && <TabAsistencia key={matricula.id} carreraId={matricula.id} />}
-      {tab === 'mesas-de-examen' && (
-        <GlassCard className="flex flex-1 flex-col p-12">
-          <EmptyState title="Mesas de examen" description="Esta pestaña todavía no está implementada — es parte de una fase posterior del roadmap." />
-        </GlassCard>
-      )}
+      {tab === 'mesas-de-examen' && <TabMesasDeExamen key={matricula.id} carreraId={matricula.id} />}
     </PageContainer>
   );
 }

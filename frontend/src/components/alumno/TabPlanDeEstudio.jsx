@@ -12,6 +12,7 @@ import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
 import { SortableColumnHeader } from '@/components/alumno/SortableColumnHeader';
 import { apiFetch } from '@/api/client';
 import { useGrillaDeMaterias } from '@/hooks/useGrillaDeMaterias';
+import { TIPOLOGIA_LABEL } from '@/lib/notas';
 
 const ESTADO_PILL = {
   'en-curso': { label: 'En curso', tone: 'accent' },
@@ -20,13 +21,6 @@ const ESTADO_PILL = {
   disponible: { label: 'Disponible', tone: 'accent' },
   bloqueada: { label: 'Bloqueada', tone: 'neutral' },
 };
-
-// Tipología = Cuatrimestral o Anual (si se cursa en un solo cuatrimestre o
-// todo el año lectivo) — CurricularTerm.FIRST/SECOND son los dos casos
-// "Cuatrimestral", distinguidos entre paréntesis; ANNUAL es la única
-// tipología "Anual". Antes esta columna mostraba "1er/2do cuatrimestre"
-// como si esa fuera la tipología, confundiendo el CUÁNDO con el QUÉ TIPO.
-const TIPOLOGIA = { FIRST: 'Cuatrimestral (1°)', SECOND: 'Cuatrimestral (2°)', ANNUAL: 'Anual' };
 
 // Horas semanales — MOCK, no existe ese dato en el backend todavía (ProgramSubject
 // no tiene un campo de carga horaria). Determinístico por créditos, para que la
@@ -176,7 +170,7 @@ export function TabPlanDeEstudio({ carreraId }) {
                             correlativas.map((c) => `${c.prerequisiteSubjectName} (${c.prerequisiteSubjectCode})`).join(', ')
                           )}
                         </td>
-                        <td className="px-3 py-3 text-[13px] text-ink-faint">{TIPOLOGIA[fila.curricularTerm] ?? '—'}</td>
+                        <td className="px-3 py-3 text-[13px] text-ink-faint">{TIPOLOGIA_LABEL[fila.curricularTerm] ?? '—'}</td>
                         <td className="px-3 py-3">
                           <StatusPill tone={pill.tone} dot={fila.estado === 'bloqueada'}>
                             {fila.estado === 'bloqueada' && <Lock className="h-3 w-3" />}

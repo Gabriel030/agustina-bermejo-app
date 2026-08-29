@@ -149,6 +149,19 @@ public class GradeItemService {
         return findOrThrow(id);
     }
 
+    // Nota que el alumno sacó en UNA mesa puntual, si ya rindió — null si todavía no cargaron
+    // el FINAL de esa mesa. Usado por "mis inscripciones a mesas" (ver
+    // ExamBoardRegistrationService.listarMisInscripciones): ExamBoardRegistrationStatus.GRADED
+    // nunca se setea en el código actual, así que esto es la única fuente real.
+    public Double obtenerNotaDeMesa(Long examBoardId, Long enrollmentId) {
+        return gradeItemRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId)
+                .stream()
+                .map(GradeItem::getScore)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
     // Si viene examBoardId: valida que la mesa exista, no esté cerrada, y que el instructor
     // integre su tribunal. Si no viene: valida "comisión propia" del Docente, igual que
     // AttendanceService.

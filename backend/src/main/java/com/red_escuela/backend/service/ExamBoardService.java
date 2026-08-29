@@ -84,8 +84,16 @@ public class ExamBoardService {
         examBoard.setExamDate(request.examDate());
         examBoard.setRegistrationStart(request.registrationStart());
         examBoard.setRegistrationEnd(request.registrationEnd());
+        examBoard.setClassroom(request.classroom());
         examBoard.setStatus(ExamBoardStatus.SCHEDULED);
         return examBoardRepository.save(examBoard);
+    }
+
+    // Mesas SCHEDULED de una materia — para que el alumno vea a qué llamado anotarse. Solo
+    // tiene sentido para materias donde ya está REGULAR (ese chequeo vive en
+    // ExamBoardRegistrationService, acá solo se lista lo que hay ofrecido).
+    public List<ExamBoard> listarDisponiblesPorSubject(Long subjectId) {
+        return examBoardRepository.findBySubjectIdAndStatus(subjectId, ExamBoardStatus.SCHEDULED);
     }
 
     @Transactional

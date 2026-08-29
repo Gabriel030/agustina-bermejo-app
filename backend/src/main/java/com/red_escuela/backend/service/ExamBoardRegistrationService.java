@@ -7,6 +7,7 @@ import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.entity.ExamBoardStatus;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.exception.AlreadyRegisteredInAnotherExamBoardException;
 import com.red_escuela.backend.exception.AlreadyRegisteredInExamBoardException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.ExamBoardClosedException;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * RF-AL-05/06: inscripción/baja de un alumno a una mesa de examen, validando regularidad
@@ -75,6 +77,16 @@ public class ExamBoardRegistrationService {
                 throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
             }
         }
+
+        examBoardRegistrationRepository
+                .findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(
+                        enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.REGISTERED)
+                .stream()
+                .filter(r -> !r.getExamBoard().getId().equals(examBoardId))
+                .findFirst()
+                .ifPresent(otra -> {
+                    throw new AlreadyRegisteredInAnotherExamBoardException(subjectId, otra.getExamBoard().getId());
+                });
 
         var existente = examBoardRegistrationRepository
                 .findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId);
@@ -128,6 +140,13 @@ public class ExamBoardRegistrationService {
             }
         }
 
+        examBoardRegistrationRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
+                .filter(r -> r.getStatus() == ExamBoardRegistrationStatus.REGISTERED && !r.getExamBoard().getId().equals(examBoardId))
+                .findFirst()
+                .ifPresent(otra -> {
+                    throw new AlreadyRegisteredInAnotherExamBoardException(courseSubjectId, otra.getExamBoard().getId());
+                });
+
         var existente = examBoardRegistrationRepository
                 .findByExamBoardIdAndCourseSubjectSectionEnrollmentId(examBoardId, enrollmentId);
         if (existente.isPresent()) {
@@ -167,6 +186,13 @@ public class ExamBoardRegistrationService {
     public ExamBoardRegistration verDetalle(Long id) {
         return examBoardRegistrationRepository.findById(id)
                 .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(id));
+    }
+
+    // Todas las inscripciones a mesas de UN alumno (cualquier carrera, pasadas y presentes) —
+    // para GET /me/exam-board-registrations. Alcance limitado al lado "program" (mismo
+    // criterio que el resto de /me/exam-board-registrations, ver MeExamBoardRegistrationController).
+    public List<ExamBoardRegistration> listarMisInscripciones(Long studentId) {
+        return examBoardRegistrationRepository.findByProgramSubjectSectionEnrollment_ProgramEnrollment_Student_Id(studentId);
     }
 
     private ExamBoard findExamBoardOrThrow(Long examBoardId) {

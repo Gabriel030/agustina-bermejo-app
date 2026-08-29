@@ -77,26 +77,20 @@ public class MeAcademicRecordController {
         return gradeItemService.listarPorProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
-    // Autoservicio del alumno para justificar su propia inasistencia con un comprobante —
-    // antes solo Preceptor/Administrativo podían justificar (AttendanceController.justificar,
-    // con un attachmentUrl de texto libre, sin subida real de archivo). Acá SÍ es una subida
-    // real (mismo FileStorageService que PaymentReceiptService), pero solo PDF — pedido
-    // explícito del usuario ("el comprobante solo pdf"), más restrictivo que el resto de los
-    // uploads del sistema (que también aceptan jpg/png), por eso se valida acá y no se
-    // relaja el tipo permitido en FileStorageService. El tope de tamaño (5MB) ya lo aplica
-    // Spring globalmente (spring.servlet.multipart.max-file-size), no hace falta repetirlo.
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public AttendanceResponse justificarMiInasistencia(
             @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
         Attendance attendance = attendanceService.verDetalle(id);
         exigirPropietarioDeAsistencia(attendance, student);
-        if (!MediaType.APPLICATION_PDF_VALUE.equals(comprobante.getContentType())) {
-            throw new UnsupportedFileTypeException(comprobante.getContentType());
+        String tipo = comprobante.getContentType();
+        boolean tipoPermitido = MediaType.APPLICATION_PDF_VALUE.equals(tipo) || MediaType.IMAGE_JPEG_VALUE.equals(tipo);
+        if (!tipoPermitido) {
+            throw new UnsupportedFileTypeException(tipo);
         }
         String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", comprobante);
         String motivo = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
-        return AttendanceResponse.from(attendanceService.justificar(id, motivo, relativePath));
+        return AttendanceResponse.from(attendanceService.subirComprobante(id, motivo, relativePath));
     }
 
     // 404 (no 403) si la cursada no es del alumno autenticado — mismo criterio que

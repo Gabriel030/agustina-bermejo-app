@@ -158,6 +158,47 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
+    @Transactional
+    public Attendance subirComprobante(Long attendanceId, String reason, String attachmentUrl) {
+        Attendance attendance = findOrThrow(attendanceId);
+        if (attendance.getStatus() != AttendanceStatus.ABSENT) {
+            throw new CannotJustifyException(
+                    "La asistencia " + attendanceId + " no está ABSENT, no se puede justificar");
+        }
+        attendance.setStatus(AttendanceStatus.JUSTIFICATION_PENDING);
+        attendance.setJustificationReason(reason);
+        attendance.setJustificationAttachmentUrl(attachmentUrl);
+        return attendanceRepository.save(attendance);
+    }
+
+    @Transactional
+    public Attendance aprobarJustificacion(Long attendanceId) {
+        Attendance attendance = findOrThrow(attendanceId);
+        if (attendance.getStatus() != AttendanceStatus.JUSTIFICATION_PENDING) {
+            throw new CannotJustifyException(
+                    "La asistencia " + attendanceId + " no tiene una justificación pendiente");
+        }
+        Long personId = Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName());
+        Person justifiedBy = personRepository.findById(personId)
+                .orElseThrow(() -> new PersonNotFoundException(personId));
+
+        attendance.setStatus(AttendanceStatus.JUSTIFIED);
+        attendance.setJustifiedBy(justifiedBy);
+        attendance.setJustifiedAt(LocalDateTime.now());
+        return attendanceRepository.save(attendance);
+    }
+
+    @Transactional
+    public Attendance rechazarJustificacion(Long attendanceId) {
+        Attendance attendance = findOrThrow(attendanceId);
+        if (attendance.getStatus() != AttendanceStatus.JUSTIFICATION_PENDING) {
+            throw new CannotJustifyException(
+                    "La asistencia " + attendanceId + " no tiene una justificación pendiente");
+        }
+        attendance.setStatus(AttendanceStatus.ABSENT);
+        return attendanceRepository.save(attendance);
+    }
+
     public Attendance verDetalle(Long id) {
         return findOrThrow(id);
     }
@@ -178,8 +219,8 @@ public class AttendanceService {
             return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
-        long ausentes = attendanceRepository
-                .countByProgramSubjectSectionEnrollmentIdAndStatus(enrollmentId, AttendanceStatus.ABSENT);
+        long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
+                enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
         return calcularRiesgo(total, ausentes, maxAbsencePercentage);
     }
 
@@ -191,13 +232,11 @@ public class AttendanceService {
             return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
-        long ausentes = attendanceRepository
-                .countByCourseSubjectSectionEnrollmentIdAndStatus(enrollmentId, AttendanceStatus.ABSENT);
+        long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
+                enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
         return calcularRiesgo(total, ausentes, maxAbsencePercentage);
     }
 
-    // LATE cuenta como presente, JUSTIFIED no cuenta ni a favor ni en contra (decisión de
-    // producto): solo ABSENT computa como ausente en el numerador del porcentaje.
     private AttendanceRiskResponse calcularRiesgo(long total, long ausentes, double maxAbsencePercentage) {
         if (total == 0) {
             return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);

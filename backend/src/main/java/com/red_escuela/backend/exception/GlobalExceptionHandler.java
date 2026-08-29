@@ -141,6 +141,7 @@ public class GlobalExceptionHandler {
             CannotJustifyException.class,
             ExamBoardClosedException.class,
             AlreadyRegisteredInExamBoardException.class,
+            AlreadyRegisteredInAnotherExamBoardException.class,
             InvoiceAlreadyCancelledException.class,
             PendingDebtException.class,
             GraduationRequestAlreadyActiveException.class,

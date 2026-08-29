@@ -26,6 +26,11 @@ export const COLUMNAS_NOTAS = [
 // pill "Aprobada" en vez de inventar un estado nuevo (ver SectionEnrollmentResponse.finalGradeType).
 export const FINAL_GRADE_TYPE_LABEL = { PROMOTION: 'por promoción', FINAL_EXAM: 'por examen final' };
 
+// Espejo del enum de backend CurricularTerm (FIRST/SECOND/ANNUAL) — compartido por Plan de
+// estudio (columna Tipología) y Mesas de examen (para aclarar de qué año/cuatrimestre es la
+// materia que se está por rendir).
+export const TIPOLOGIA_LABEL = { FIRST: 'Cuatrimestral (1°)', SECOND: 'Cuatrimestral (2°)', ANNUAL: 'Anual' };
+
 // Opciones del filtro de estado (EstadoColumnFilter.jsx, embebido en el header
 // de la columna "Estado" de TabMaterias.jsx/TabNotas.jsx).
 export const TABS_ESTADO = [

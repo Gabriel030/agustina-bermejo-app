@@ -7,8 +7,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ExamBoardResponse(
-        Long id, Long subjectId, Long courseSubjectId, Long termId,
-        LocalDateTime examDate, String status, List<Long> tribunalInstructorIds) {
+        Long id, Long subjectId, String subjectName, Long courseSubjectId, Long termId,
+        LocalDateTime examDate, LocalDateTime registrationStart, LocalDateTime registrationEnd,
+        String classroom, String status, List<Long> tribunalInstructorIds) {
 
     public static ExamBoardResponse from(ExamBoard examBoard) {
         List<Long> tribunal = examBoard.getTribunal() == null
@@ -18,9 +19,13 @@ public record ExamBoardResponse(
         return new ExamBoardResponse(
                 examBoard.getId(),
                 examBoard.getSubject() == null ? null : examBoard.getSubject().getId(),
+                examBoard.getSubject() == null ? null : examBoard.getSubject().getName(),
                 examBoard.getCourseSubject() == null ? null : examBoard.getCourseSubject().getId(),
                 examBoard.getTerm().getId(),
                 examBoard.getExamDate(),
+                examBoard.getRegistrationStart(),
+                examBoard.getRegistrationEnd(),
+                examBoard.getClassroom(),
                 examBoard.getStatus().name(),
                 tribunal);
     }
