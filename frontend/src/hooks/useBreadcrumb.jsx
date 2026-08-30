@@ -1,5 +1,7 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useMiInscripcion } from '@/hooks/useAlumno';
+import { useConfiguracionComision } from '@/hooks/useDocente';
+import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
 import { Skeleton } from '@/components/Skeleton';
 
 const ETIQUETA_TAB = {
@@ -28,6 +30,26 @@ export function useBreadcrumb() {
   // CUALQUIER rol) le pega a /me/section-enrollments (endpoint solo-Alumno) incluso
   // logueado como Preceptor/Docente/etc., rompiendo esas pantallas.
   const { data: inscripcion } = useMiInscripcion(params.id, enDetalleMateria);
+
+  const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname);
+  const { data: comision } = useConfiguracionComision(enDetalleComision ? params.sectionId : undefined);
+
+  const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
+  const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
+
+  if (enDetalleComision) {
+    return [
+      { label: 'Mis comisiones', to: '/docente/mis-comisiones' },
+      { label: comision ? `${comision.subjectName} · ${comision.sectionName}` : <Skeleton className="h-4 w-24" /> },
+    ];
+  }
+
+  if (enRevisarConfiguracion) {
+    return [
+      { label: 'Aprobaciones', to: '/director/aprobaciones' },
+      { label: configRevisar ? `${configRevisar.subjectName} · ${configRevisar.sectionName}` : <Skeleton className="h-4 w-24" /> },
+    ];
+  }
 
   if (enDetalleMateria) {
     return [

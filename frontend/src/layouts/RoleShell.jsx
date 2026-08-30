@@ -1,9 +1,9 @@
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
-import { MobileMenu } from '@/components/MobileMenu';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
@@ -32,16 +32,13 @@ export function RoleShell({ titulo, items }) {
     <div className="flex h-screen flex-col gap-5 overflow-hidden p-5 lg:flex-row">
       <MeshBackground />
       <Sidebar titulo={titulo} items={items} />
-      {/* lg:contents: en desktop este wrapper desaparece del layout (sus hijos —
-          la topbar lg:hidden y <main> — quedan directamente en el flex-row de
-          arriba, igual que antes de agregar el menú mobile); en base/md sí es
-          un contenedor real (flex-col) que apila la topbar del hamburguesa
-          arriba de <main>. */}
-      <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden lg:contents">
-        <div className="flex shrink-0 items-center gap-3 lg:hidden">
-          <MobileMenu titulo={titulo} items={items} />
-          <div className="font-heading text-base font-bold text-ink">{titulo}</div>
-        </div>
+      {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
+          apila TopHeader arriba de <main>. Antes este wrapper colapsaba con
+          lg:contents porque solo contenía <main>; con TopHeader también
+          persistiendo en desktop, colapsarlo lo deja como columna angosta
+          suelta en el flex-row de arriba en vez de ocupar el resto del ancho. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-5 overflow-hidden">
+        <TopHeader titulo={titulo} items={items} />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
             intrínseco de su contenido (default min-width:auto) — con una
             pantalla de contenido ancho (ej. Catálogo, Épica 7 Fase 3) esto

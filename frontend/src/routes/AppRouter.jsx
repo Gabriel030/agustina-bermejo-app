@@ -16,6 +16,11 @@ import { Placeholder } from '@/pages/Placeholder';
 import { AlumnoInicio } from '@/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
+import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
+import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
+import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
+import { DirectorEsquemasEvaluacion } from '@/pages/DirectorEsquemasEvaluacion';
+import { DirectorRevisarConfiguracion } from '@/pages/DirectorRevisarConfiguracion';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
 import { PreceptorLayout } from '@/layouts/PreceptorLayout';
@@ -36,10 +41,18 @@ const RUTAS_POR_ROL = {
     paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'opciones'],
     paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras },
   },
-  docente: { Layout: DocenteLayout, paginas: ['inicio', 'tomar-asistencia'] },
+  docente: {
+    Layout: DocenteLayout,
+    paginas: ['inicio', 'mis-comisiones', 'tomar-asistencia'],
+    paginasReales: { 'mis-comisiones': DocenteMisComisiones },
+  },
   preceptor: { Layout: PreceptorLayout, paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'] },
   administrativo: { Layout: AdministrativoLayout, paginas: ['inicio', 'alumnos', 'facturacion', 'constancias'] },
-  director: { Layout: DirectorLayout, paginas: ['inicio', 'aprobaciones'] },
+  director: {
+    Layout: DirectorLayout,
+    paginas: ['inicio', 'aprobaciones', 'esquemas-evaluacion'],
+    paginasReales: { aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+  },
 };
 
 // /catalogo y /mis-solicitudes* son rutas compartidas (decisión 1 de la Spec
@@ -104,6 +117,8 @@ export function AppRouter() {
               nav como el resto de `paginas`, cuelga de la pestaña Materias dentro de Mis
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
+          {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
+          {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
         </Route>
       ))}
 

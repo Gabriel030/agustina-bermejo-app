@@ -1,0 +1,25 @@
+package com.red_escuela.backend.notification;
+
+import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.repository.PersonRepository;
+
+import java.util.List;
+
+public enum NotificationTopic implements NotificationRecipient {
+    DIRECTOR_APPROVALS(new RoleRecipient("DIRECTOR")),
+    EVALUATION_CONFIG_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO"));
+
+    private final List<NotificationRecipient> members;
+
+    NotificationTopic(NotificationRecipient... members) {
+        this.members = List.of(members);
+    }
+
+    @Override
+    public List<Person> resolve(PersonRepository personRepository) {
+        return members.stream()
+                .flatMap(member -> member.resolve(personRepository).stream())
+                .distinct()
+                .toList();
+    }
+}

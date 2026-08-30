@@ -68,4 +68,6 @@ export const handlers = [
   http.post(`${API}/me/course-enrollments`, () =>
     HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
   ),
+  http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
+  http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
 ];

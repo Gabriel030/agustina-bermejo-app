@@ -1,5 +1,6 @@
 package com.red_escuela.backend.repository;
 
+import com.red_escuela.backend.entity.InstructorRole;
 import com.red_escuela.backend.entity.SubjectSectionInstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,6 @@ public interface SubjectSectionInstructorRepository extends JpaRepository<Subjec
     List<SubjectSectionInstructor> findByInstructorId(Long instructorId);
 
     boolean existsBySectionIdAndInstructorId(Long sectionId, Long instructorId);
+
+    boolean existsBySectionIdAndInstructorIdAndRole(Long sectionId, Long instructorId, InstructorRole role);
 }
