@@ -32,10 +32,10 @@ public class Program {
     private Integer totalCreditsRequired = 0;
 
     // Épica 8 Fase 2: junto a totalYears arma el plan de pagos completo
-    // (total de cuotas = totalYears × cuotasPorAnioLectivo). La ventana de admisión
+    // (total de cuotas = totalYears × installmentsPerAcademicYear). La ventana de admisión
     // pasó a vivir en ProgramCohort — una carrera tiene exactamente 2 por año.
-    @Column(name = "cuotas_por_anio_lectivo")
-    private Integer cuotasPorAnioLectivo;
+    @Column(name = "installments_per_academic_year")
+    private Integer installmentsPerAcademicYear;
 
     @OneToMany(mappedBy = "program", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubject> programSubjectsList;
