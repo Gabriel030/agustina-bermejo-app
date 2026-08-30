@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -74,13 +73,7 @@ export function DirectorRevisarConfiguracion() {
   return (
     <PageContainer>
       <div>
-        <button
-          onClick={() => navigate('/director/aprobaciones')}
-          className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink-faint hover:text-ink"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" /> Aprobaciones
-        </button>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-heading text-2xl font-bold text-ink">
             {config.subjectName} · {config.sectionName}
           </h1>

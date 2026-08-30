@@ -41,11 +41,14 @@ describe('flujo de login end-to-end', () => {
     renderApp();
     await login();
 
-    // "Preceptor" aparece 2 veces en el DOM a la vez (Sidebar desktop + topbar
-    // del menú hamburguesa mobile, RoleShell.jsx) — la visibilidad entre ambos
-    // es puramente CSS (hidden/lg:hidden), jsdom no oculta ninguno de los dos.
-    expect(await screen.findAllByText('Preceptor')).toHaveLength(2);
-    expect(screen.getByText('Prueba Login')).toBeInTheDocument();
+    // "Preceptor" aparece 3 veces en el DOM a la vez (Sidebar desktop + título
+    // mobile de TopHeader + rol junto al nombre en TopHeader, RoleShell.jsx) —
+    // la visibilidad entre ellos es puramente CSS (hidden/lg:hidden/sm:block),
+    // jsdom no oculta ninguno.
+    expect(await screen.findAllByText('Preceptor')).toHaveLength(3);
+    // "Prueba Login" aparece 2 veces (Sidebar desktop + TopHeader) — mismo
+    // criterio que "Preceptor" arriba.
+    expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);
   });
 
   it('un Preceptor logueado que entra a /director/aprobaciones es redirigido a No autorizado', async () => {
@@ -60,6 +63,6 @@ describe('flujo de login end-to-end', () => {
     localStorage.setItem('refreshToken', 'refresh-1');
     renderApp('/preceptor/inicio');
 
-    expect(await screen.findByText('Prueba Login')).toBeInTheDocument();
+    expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);
   });
 });

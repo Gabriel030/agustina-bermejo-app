@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Check } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -9,14 +9,9 @@ import { Button } from '@/components/ui/button';
 import { CalendarioConfiguracion } from '@/components/docente/CalendarioConfiguracion';
 import { useConfiguracionComision, useGuardarBorradorComision, useEnviarComisionAAprobacion, useHolidays } from '@/hooks/useDocente';
 import { ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL, formatearFecha } from '@/lib/comisiones';
-import { useAuth } from '@/context/AuthContext';
 
 function campoFecha(valor) {
   return valor ?? '';
-}
-
-function iniciales(nombre, apellido) {
-  return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
 }
 
 const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' };
@@ -44,8 +39,6 @@ function CampoFecha({ label, value, onChange, disabled }) {
 
 export function DocenteConfiguracionEvaluacion() {
   const { sectionId } = useParams();
-  const navigate = useNavigate();
-  const { usuario } = useAuth();
   const { data: config, isLoading } = useConfiguracionComision(sectionId);
   const { data: feriados } = useHolidays();
   const guardarBorrador = useGuardarBorradorComision(sectionId);
@@ -113,45 +106,24 @@ export function DocenteConfiguracionEvaluacion() {
 
   return (
     <PageContainer>
-      <div className="flex items-start justify-between">
-        <div>
-          <button
-            onClick={() => navigate('/docente/mis-comisiones')}
-            className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink-faint hover:text-ink"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" /> Mis comisiones
-          </button>
-          <div className="flex items-center gap-3">
-            <h1 className="font-heading text-2xl font-bold text-ink">
-              {config.subjectName} · {config.sectionName}
-            </h1>
-            <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-          </div>
-          {config.rejectionReason && (
-            <div className="mt-1.5 text-sm font-semibold text-danger">Rechazada: "{config.rejectionReason}"</div>
-          )}
-          {config.instructors?.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-[11.5px] font-semibold text-ink-faint">Instructores:</span>
-              {config.instructors.map((i) => (
-                <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-bold text-primary">
-                  {i.name} <span className="font-semibold opacity-75">· {ROL_INSTRUCTOR_LABEL[i.role] ?? i.role}</span>
-                </span>
-              ))}
-            </div>
-          )}
+      <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-heading text-2xl font-bold text-ink">
+            {config.subjectName} · {config.sectionName}
+          </h1>
+          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         </div>
-        {usuario && (
-          <div className="flex shrink-0 items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-heading text-sm font-bold text-white">
-              {iniciales(usuario.nombre, usuario.apellido)}
-            </div>
-            <div>
-              <div className="text-[13px] font-bold text-ink">
-                Prof. {usuario.nombre} {usuario.apellido}
-              </div>
-              <div className="text-[11px] text-ink-faint">Docente</div>
-            </div>
+        {config.rejectionReason && (
+          <div className="mt-1.5 text-sm font-semibold text-danger">Rechazada: "{config.rejectionReason}"</div>
+        )}
+        {config.instructors?.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-[11.5px] font-semibold text-ink-faint">Instructores:</span>
+            {config.instructors.map((i) => (
+              <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-bold text-primary">
+                {i.name} <span className="font-semibold opacity-75">· {ROL_INSTRUCTOR_LABEL[i.role] ?? i.role}</span>
+              </span>
+            ))}
           </div>
         )}
       </div>

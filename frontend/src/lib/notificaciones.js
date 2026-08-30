@@ -5,6 +5,13 @@ export const TIPO_NOTIFICACION_LABEL = {
   SECTION_EVAL_CONFIG_REMINDER: 'Recordatorio',
 };
 
+export const TONO_NOTIFICACION = {
+  SECTION_EVAL_CONFIG_PROPOSED: 'warning',
+  SECTION_EVAL_CONFIG_APPROVED: 'success',
+  SECTION_EVAL_CONFIG_REJECTED: 'danger',
+  SECTION_EVAL_CONFIG_REMINDER: 'accent2',
+};
+
 export function tiempoRelativo(fechaIso) {
   const diffMs = Date.now() - new Date(fechaIso).getTime();
   const minutos = Math.floor(diffMs / 60000);
