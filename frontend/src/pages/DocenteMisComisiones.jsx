@@ -11,7 +11,6 @@ import { agruparComisionesPorFase, diasHastaVencimientoMasProximo, formatearFech
 
 function FilaComision({ comision }) {
   const pill = ESTADO_CONFIG_LABEL[comision.status] ?? { label: comision.status, tone: 'neutral' };
-  const titular = comision.instructors?.find((i) => i.role === 'LEAD');
   const coDictantes = comision.instructors?.filter((i) => i.role !== 'LEAD') ?? [];
 
   return (

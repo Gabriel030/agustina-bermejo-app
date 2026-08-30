@@ -114,7 +114,7 @@ export function DocenteConfiguracionEvaluacion() {
           <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         </div>
         {config.rejectionReason && (
-          <div className="mt-1.5 text-sm font-semibold text-danger">Rechazada: "{config.rejectionReason}"</div>
+          <div className="mt-1.5 text-sm font-semibold text-danger">Rechazada: &ldquo;{config.rejectionReason}&rdquo;</div>
         )}
         {config.instructors?.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2">

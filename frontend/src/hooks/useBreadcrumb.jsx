@@ -34,15 +34,15 @@ export function useBreadcrumb() {
   const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname);
   const { data: comision } = useConfiguracionComision(enDetalleComision ? params.sectionId : undefined);
 
+  const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
+  const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
+
   if (enDetalleComision) {
     return [
       { label: 'Mis comisiones', to: '/docente/mis-comisiones' },
       { label: comision ? `${comision.subjectName} · ${comision.sectionName}` : <Skeleton className="h-4 w-24" /> },
     ];
   }
-
-  const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
-  const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
 
   if (enRevisarConfiguracion) {
     return [

@@ -52,7 +52,7 @@ function FilaHistorial({ c }) {
           {c.reviewedByName ? `Decidido por ${c.reviewedByName}` : 'Sin registro de quién decidió'} · {formatearFecha(c.reviewedAt) ?? '—'}
         </div>
         {c.status === 'REJECTED' && c.rejectionReason && (
-          <div className="mt-0.5 text-[12px] font-semibold text-danger">Motivo: "{c.rejectionReason}"</div>
+          <div className="mt-0.5 text-[12px] font-semibold text-danger">Motivo: &ldquo;{c.rejectionReason}&rdquo;</div>
         )}
       </div>
       <div className="flex items-center gap-3">

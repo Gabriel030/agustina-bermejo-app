@@ -104,7 +104,7 @@ export function DirectorEsquemasEvaluacion() {
             ))
           )}
           <div className="px-4 py-3 text-[11.5px] text-ink-faint">
-            Un esquema "En uso" ya está asignado a alguna comisión y no se puede editar más — creá uno nuevo si cambia la normativa.
+            Un esquema &ldquo;En uso&rdquo; ya está asignado a alguna comisión y no se puede editar más — creá uno nuevo si cambia la normativa.
           </div>
         </GlassCard>
 
