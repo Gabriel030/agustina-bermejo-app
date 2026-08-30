@@ -27,7 +27,7 @@ public class ProgramService {
         program.setTotalYears(request.totalYears());
         program.setPrice(request.price());
         program.setTotalCreditsRequired(request.totalCreditsRequired());
-        program.setCuotasPorAnioLectivo(request.cuotasPorAnioLectivo());
+        program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         program.setStatus(StatusType.ACTIVE);
         return programRepository.save(program);
     }
@@ -47,8 +47,8 @@ public class ProgramService {
         if (request.totalCreditsRequired() != null) {
             program.setTotalCreditsRequired(request.totalCreditsRequired());
         }
-        if (request.cuotasPorAnioLectivo() != null) {
-            program.setCuotasPorAnioLectivo(request.cuotasPorAnioLectivo());
+        if (request.installmentsPerAcademicYear() != null) {
+            program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         }
         return programRepository.save(program);
     }

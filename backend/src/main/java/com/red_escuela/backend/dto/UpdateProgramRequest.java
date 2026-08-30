@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 
 public record UpdateProgramRequest(
         String name, Integer totalYears, BigDecimal price,
-        Integer totalCreditsRequired, Integer cuotasPorAnioLectivo) {
+        Integer totalCreditsRequired, Integer installmentsPerAcademicYear) {
 }

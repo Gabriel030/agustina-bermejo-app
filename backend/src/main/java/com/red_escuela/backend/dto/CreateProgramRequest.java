@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 public record CreateProgramRequest(
         @NotBlank String name, @NotNull @Positive Integer totalYears,
         BigDecimal price, @NotNull @Min(0) Integer totalCreditsRequired,
-        Integer cuotasPorAnioLectivo) {
+        Integer installmentsPerAcademicYear) {
 }

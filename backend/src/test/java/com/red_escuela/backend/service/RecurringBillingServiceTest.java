@@ -83,12 +83,12 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
         return student;
     }
 
-    private Program persistPrograma(int totalYears, int cuotasPorAnioLectivo) {
+    private Program persistPrograma(int totalYears, int installmentsPerAcademicYear) {
         Program program = new Program();
         program.setName("Diseño Gráfico " + System.nanoTime());
         program.setTotalYears(totalYears);
         program.setTotalCreditsRequired(0);
-        program.setCuotasPorAnioLectivo(cuotasPorAnioLectivo);
+        program.setInstallmentsPerAcademicYear(installmentsPerAcademicYear);
         entityManager.persist(program);
         return program;
     }

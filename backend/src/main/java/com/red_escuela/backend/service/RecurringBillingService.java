@@ -98,13 +98,13 @@ public class RecurringBillingService {
         ProgramCohort cohort = enrollment.getProgramCohort();
         Program program = enrollment.getProgram();
         // Alta directa por staff sin cohorte, o carrera sin plan de pagos configurado
-        // (totalYears/cuotasPorAnioLectivo): fuera del alcance del motor, mismo
+        // (totalYears/installmentsPerAcademicYear): fuera del alcance del motor, mismo
         // criterio que un curso sin FeeSchedule — no hay de dónde derivar el plan.
-        if (cohort == null || program.getTotalYears() == null || program.getCuotasPorAnioLectivo() == null) {
+        if (cohort == null || program.getTotalYears() == null || program.getInstallmentsPerAcademicYear() == null) {
             return false;
         }
 
-        int totalCuotas = program.getTotalYears() * program.getCuotasPorAnioLectivo();
+        int totalCuotas = program.getTotalYears() * program.getInstallmentsPerAcademicYear();
         Integer numeroCuota = InstallmentScheduleCalculator.calcularNumeroDeCuota(cohort.getCursadaStart(), totalCuotas, hoy);
         if (numeroCuota == null) {
             return false;
