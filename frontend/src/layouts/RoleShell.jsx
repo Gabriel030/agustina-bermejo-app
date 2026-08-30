@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { MobileMenu } from '@/components/MobileMenu';
 import { MeshBackground } from '@/components/MeshBackground';
 import { Breadcrumb } from '@/components/Breadcrumb';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
@@ -31,6 +32,9 @@ export function RoleShell({ titulo, items }) {
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
     <div className="flex h-screen flex-col gap-5 overflow-hidden p-5 lg:flex-row">
       <MeshBackground />
+      <div className="fixed right-6 top-6 z-40">
+        <NotificationBell />
+      </div>
       <Sidebar titulo={titulo} items={items} />
       {/* lg:contents: en desktop este wrapper desaparece del layout (sus hijos —
           la topbar lg:hidden y <main> — quedan directamente en el flex-row de

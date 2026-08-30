@@ -82,7 +82,10 @@ public class GlobalExceptionHandler {
             InvalidPasswordPolicyException.class,
             InvalidPricingTargetException.class,
             InvalidSectionOverridesException.class,
-            InvalidProgramCohortException.class
+            InvalidProgramCohortException.class,
+            InvalidEvaluationDateException.class,
+            SubmissionWindowClosedException.class,
+            InvalidSectionEvaluationConfigTransitionException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -118,7 +121,9 @@ public class GlobalExceptionHandler {
             DirectorApprovalRequestNotFoundException.class,
             FeeScheduleNotFoundException.class,
             PaymentReceiptNotFoundException.class,
-            ProgramCohortNotFoundException.class
+            ProgramCohortNotFoundException.class,
+            SectionEvaluationConfigNotFoundException.class,
+            NotificationNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -152,7 +157,8 @@ public class GlobalExceptionHandler {
             UsernameAlreadyExistsException.class,
             TermEnrollmentOverrideClosedException.class,
             InvalidPaymentReceiptStateException.class,
-            PaymentReceiptAlreadyPendingException.class
+            PaymentReceiptAlreadyPendingException.class,
+            EvaluationSchemeInUseException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
@@ -160,7 +166,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             NotOwnSectionException.class,
-            RoleNotAssignableByActorException.class
+            RoleNotAssignableByActorException.class,
+            NotSectionLeadInstructorException.class,
+            NotOwnNotificationException.class
     })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {

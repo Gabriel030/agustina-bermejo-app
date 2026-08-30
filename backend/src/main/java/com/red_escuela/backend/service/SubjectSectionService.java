@@ -39,6 +39,7 @@ public class SubjectSectionService {
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
+    private final SectionEvaluationConfigService sectionEvaluationConfigService;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -46,13 +47,15 @@ public class SubjectSectionService {
             TermRepository termRepository,
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            SectionEvaluationConfigService sectionEvaluationConfigService) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
+        this.sectionEvaluationConfigService = sectionEvaluationConfigService;
     }
 
     @Transactional
@@ -73,7 +76,9 @@ public class SubjectSectionService {
         if (request.evaluationSchemeId() != null) {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
-        return sectionRepository.save(section);
+        SubjectSection guardada = sectionRepository.save(section);
+        sectionEvaluationConfigService.createInitialDraft(guardada);
+        return guardada;
     }
 
     @Transactional

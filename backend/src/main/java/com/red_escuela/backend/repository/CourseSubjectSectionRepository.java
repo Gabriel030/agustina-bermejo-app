@@ -21,6 +21,8 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
 
     List<CourseSubjectSection> findByTermId(Long termId);
 
+    boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
+
     // Ver SubjectSectionRepository.findByIdForUpdate: mismo propósito de serialización de cupo.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseSubjectSection s where s.id = :id")

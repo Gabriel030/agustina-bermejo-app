@@ -1,19 +1,22 @@
 // Columnas fijas de notas (decisión de producto, Épica 2 Fase 2: "columnas
 // fijas" en vez de una grilla con cantidad de columnas variable por materia).
-// Un GradeItem que no encaja en ninguna de estas casillas (ej. un 4to TP,
-// poco común pero posible) cae en `extras` — nunca se pierde, pero tampoco
-// rompe el ancho fijo de la grilla.
+// Un GradeItem que no encaja en ninguna de estas casillas cae en `extras` —
+// nunca se pierde, pero tampoco rompe el ancho fijo de la grilla.
 //
-// TP 1/2/3: EvaluationScheme.tpCountExpected es configurable por materia (el
-// docente puede pedir 1, 2 o 3 TPs) — la grilla siempre muestra las 3
-// columnas para que el ancho sea uniforme entre materias con distinta
-// cantidad configurada; las que no llegan a pedir un TP puntual muestran "—"
-// en esa columna. Final 1/2: hasta 2 llamados (Subject.maxFinalExamAttempts)
-// — si el primero se desaprueba, el segundo llamado es un GradeItem FINAL
-// con sequenceNumber=2, no un reemplazo del primero.
+// Parcial 1-4: EvaluationScheme.examCountExpected distingue cuatrimestral (2)
+// de anual (hasta 4, ver Spec - Docente, configuración de evaluación y
+// mesas) — la grilla siempre muestra las 4 columnas para que el ancho sea
+// uniforme entre materias cuatrimestrales y anuales; las cuatrimestrales
+// muestran "—" en Parcial 3/4. TP 1/2/3: EvaluationScheme.tpCountExpected es
+// configurable por materia (el docente puede pedir 1, 2 o 3 TPs) — mismo
+// criterio. Final 1/2: hasta 2 llamados (Subject.maxFinalExamAttempts) — si
+// el primero se desaprueba, el segundo llamado es un GradeItem FINAL con
+// sequenceNumber=2, no un reemplazo del primero.
 export const COLUMNAS_NOTAS = [
   { key: 'parcial1', label: 'Parcial 1', match: (g) => g.type === 'EXAM' && g.sequenceNumber === 1 },
   { key: 'parcial2', label: 'Parcial 2', match: (g) => g.type === 'EXAM' && g.sequenceNumber === 2 },
+  { key: 'parcial3', label: 'Parcial 3', match: (g) => g.type === 'EXAM' && g.sequenceNumber === 3 },
+  { key: 'parcial4', label: 'Parcial 4', match: (g) => g.type === 'EXAM' && g.sequenceNumber === 4 },
   { key: 'tp1', label: 'TP 1', match: (g) => g.type === 'TP' && g.sequenceNumber === 1 },
   { key: 'tp2', label: 'TP 2', match: (g) => g.type === 'TP' && g.sequenceNumber === 2 },
   { key: 'tp3', label: 'TP 3', match: (g) => g.type === 'TP' && g.sequenceNumber === 3 },
