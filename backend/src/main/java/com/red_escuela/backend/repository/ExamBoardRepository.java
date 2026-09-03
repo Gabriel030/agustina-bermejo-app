@@ -17,4 +17,9 @@ public interface ExamBoardRepository extends JpaRepository<ExamBoard, Long> {
     // Mesas ofrecidas de una materia sin importar el Term (una mesa puede ser de un turno
     // posterior al que se cursó) — usado para que el alumno vea a qué llamado anotarse.
     List<ExamBoard> findBySubjectIdAndStatus(Long subjectId, ExamBoardStatus status);
+
+    // Selector de mesa para Preceptor/Administrativo — no hay scoping por "mi mesa".
+    List<ExamBoard> findAllByOrderByExamDateDesc();
+
+    List<ExamBoard> findByStatusOrderByExamDateDesc(ExamBoardStatus status);
 }

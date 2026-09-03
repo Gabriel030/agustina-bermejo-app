@@ -1,12 +1,14 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.CreateExamBoardRequest;
+import com.red_escuela.backend.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.entity.CourseSubject;
 import com.red_escuela.backend.entity.ExamBoard;
 import com.red_escuela.backend.entity.ExamBoardInstructor;
 import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.entity.ExamBoardStatus;
 import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.exception.CourseSubjectNotFoundException;
@@ -125,8 +127,37 @@ public class ExamBoardService {
         return examBoardRegistrationRepository.findByExamBoardId(examBoardId);
     }
 
+    public List<ExamBoardRegistrationSummaryResponse> listarAnotadosConDetalle(Long examBoardId) {
+        return listarAnotados(examBoardId).stream().map(this::aResumen).toList();
+    }
+
     public ExamBoard verDetalle(Long id) {
         return findOrThrow(id);
+    }
+
+    public List<ExamBoard> listar(ExamBoardStatus status) {
+        return status == null ? examBoardRepository.findAllByOrderByExamDateDesc()
+                : examBoardRepository.findByStatusOrderByExamDateDesc(status);
+    }
+
+    private ExamBoardRegistrationSummaryResponse aResumen(ExamBoardRegistration registration) {
+        String carrera;
+        Integer attemptNumber;
+        Person person;
+        if (registration.getProgramSubjectSectionEnrollment() != null) {
+            var enrollment = registration.getProgramSubjectSectionEnrollment();
+            carrera = enrollment.getProgramEnrollment().getProgram().getName();
+            attemptNumber = enrollment.getAttemptNumber();
+            person = enrollment.getStudent().getPerson();
+        } else {
+            var enrollment = registration.getCourseSubjectSectionEnrollment();
+            carrera = "Curso suelto";
+            attemptNumber = enrollment.getAttemptNumber();
+            person = enrollment.getStudent().getPerson();
+        }
+        return new ExamBoardRegistrationSummaryResponse(
+                registration.getId(), person.getName() + " " + person.getLastname(), person.getDni(),
+                carrera, attemptNumber, registration.getStatus().name());
     }
 
     private ExamBoard findOrThrow(Long id) {

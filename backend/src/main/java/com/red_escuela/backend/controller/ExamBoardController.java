@@ -2,8 +2,9 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.AssignTribunalRequest;
 import com.red_escuela.backend.dto.CreateExamBoardRequest;
-import com.red_escuela.backend.dto.ExamBoardRegistrationResponse;
+import com.red_escuela.backend.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.dto.ExamBoardResponse;
+import com.red_escuela.backend.entity.ExamBoardStatus;
 import com.red_escuela.backend.service.ExamBoardService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,6 +36,18 @@ public class ExamBoardController {
         return ExamBoardResponse.from(examBoardService.crear(request));
     }
 
+    @GetMapping("/exam-boards")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
+    public List<ExamBoardResponse> listar(@RequestParam(required = false) ExamBoardStatus status) {
+        return examBoardService.listar(status).stream().map(ExamBoardResponse::from).toList();
+    }
+
+    @GetMapping("/exam-boards/{id}")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
+    public ExamBoardResponse verDetalle(@PathVariable Long id) {
+        return ExamBoardResponse.from(examBoardService.verDetalle(id));
+    }
+
     @PostMapping("/exam-boards/{id}/tribunal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
@@ -50,7 +64,7 @@ public class ExamBoardController {
 
     @GetMapping("/exam-boards/{id}/registrations")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardRegistrationResponse> listarAnotados(@PathVariable Long id) {
-        return examBoardService.listarAnotados(id).stream().map(ExamBoardRegistrationResponse::from).toList();
+    public List<ExamBoardRegistrationSummaryResponse> listarAnotados(@PathVariable Long id) {
+        return examBoardService.listarAnotadosConDetalle(id);
     }
 }

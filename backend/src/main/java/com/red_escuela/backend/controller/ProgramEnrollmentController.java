@@ -3,6 +3,7 @@ package com.red_escuela.backend.controller;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
+import com.red_escuela.backend.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -55,5 +56,11 @@ public class ProgramEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public ProgramProgressResponse verProgreso(@PathVariable Long id) {
         return programEnrollmentService.calcularProgreso(id);
+    }
+
+    @GetMapping("/program-enrollments/{id}/attendance-summary")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public List<SubjectAttendanceSummaryResponse> verResumenAsistencia(@PathVariable Long id) {
+        return programEnrollmentService.resumenAsistenciaPorMateria(id);
     }
 }

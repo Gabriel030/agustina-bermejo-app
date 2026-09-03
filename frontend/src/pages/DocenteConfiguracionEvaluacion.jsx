@@ -196,7 +196,7 @@ export function DocenteConfiguracionEvaluacion() {
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
                   className={`rounded-lg px-4 py-2 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-gradient-to-br from-primary to-accent text-white ring-2 ring-success ring-offset-2'
+                      ? 'bg-gradient-to-br from-primary to-brand text-white ring-2 ring-success ring-offset-2'
                       : 'bg-neutral-bg text-ink-faint'
                   } disabled:opacity-60 disabled:ring-0`}
                 >

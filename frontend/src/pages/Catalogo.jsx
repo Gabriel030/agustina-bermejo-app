@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TabCarreras } from '@/components/catalogo/TabCarreras';
 import { TabCursos } from '@/components/catalogo/TabCursos';
 import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
@@ -10,12 +11,6 @@ import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
 // Mis solicitudes se integra acá, deja de ser un ítem de sidebar aparte.
 // Tab/búsqueda/página viven en la URL (?tab=&search=&page=) para que sea
 // recargable/compartible sin perder el estado.
-const TABS = [
-  { id: 'carreras', label: 'Carreras' },
-  { id: 'cursos', label: 'Cursos' },
-  { id: 'mis-solicitudes', label: 'Mis solicitudes' },
-];
-
 export function Catalogo() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') ?? 'carreras';
@@ -43,20 +38,13 @@ export function Catalogo() {
         </div>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => cambiarTab(id)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors ${
-              tab === id ? 'bg-gradient-to-br from-accent to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={cambiarTab}>
+        <TabsList variant="line">
+          <TabsTrigger value="carreras">Carreras</TabsTrigger>
+          <TabsTrigger value="cursos">Cursos</TabsTrigger>
+          <TabsTrigger value="mis-solicitudes">Mis solicitudes</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {tab === 'carreras' && <TabCarreras search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}
       {tab === 'cursos' && <TabCursos search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}

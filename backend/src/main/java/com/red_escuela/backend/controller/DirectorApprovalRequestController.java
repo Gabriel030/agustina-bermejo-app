@@ -3,6 +3,7 @@ package com.red_escuela.backend.controller;
 import com.red_escuela.backend.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.dto.DecideDirectorApprovalRequestRequest;
 import com.red_escuela.backend.dto.DirectorApprovalRequestResponse;
+import com.red_escuela.backend.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.service.DirectorApprovalRequestService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,9 +43,15 @@ public class DirectorApprovalRequestController {
 
     @GetMapping
     @PreAuthorize("hasRole('DIRECTOR')")
-    public List<DirectorApprovalRequestResponse> listarPendientes() {
-        return directorApprovalRequestService.listarPendientes().stream()
+    public List<DirectorApprovalRequestResponse> listar(@RequestParam(required = false) DirectorApprovalRequestStatus status) {
+        return directorApprovalRequestService.listar(status).stream()
                 .map(DirectorApprovalRequestResponse::from).toList();
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public DirectorApprovalRequestResponse verDetalle(@PathVariable Long id) {
+        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.verDetalle(id));
     }
 
     @PostMapping("/{id}/approve")

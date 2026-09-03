@@ -31,7 +31,7 @@ describe('Catalogo', () => {
     const user = userEvent.setup();
     renderCatalogo();
 
-    await user.click(screen.getByRole('button', { name: 'Cursos' }));
+    await user.click(screen.getByRole('tab', { name: 'Cursos' }));
 
     expect(await screen.findByText('Illustrator desde cero')).toBeInTheDocument();
   });
@@ -48,7 +48,7 @@ describe('Catalogo', () => {
     const user = userEvent.setup();
     renderCatalogo();
 
-    await user.click(screen.getByRole('button', { name: 'Mis solicitudes' }));
+    await user.click(screen.getByRole('tab', { name: 'Mis solicitudes' }));
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('Illustrator desde cero')).toBeInTheDocument();
