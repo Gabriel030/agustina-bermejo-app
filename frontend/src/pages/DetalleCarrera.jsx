@@ -50,7 +50,7 @@ export function DetalleCarrera() {
         ← Catálogo
       </button>
 
-      <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-accent/20 to-accent-2/20 flex items-center justify-center">
+      <div className="aspect-video w-full rounded-xl bg-gradient-to-br from-brand/20 to-accent-2/20 flex items-center justify-center">
         <span className="text-sm font-semibold text-ink-faint">Video introductorio próximamente</span>
       </div>
 

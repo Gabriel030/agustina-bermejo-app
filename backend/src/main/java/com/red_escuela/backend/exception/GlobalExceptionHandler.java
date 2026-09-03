@@ -27,6 +27,16 @@ public class GlobalExceptionHandler {
     public void handleInvalidPasswordResetToken() {
     }
 
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public void handleInvalidGoogleToken() {
+    }
+
+    @ExceptionHandler(GoogleAccountNotLinkedException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleGoogleAccountNotLinked() {
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleValidation() {
@@ -123,7 +133,9 @@ public class GlobalExceptionHandler {
             PaymentReceiptNotFoundException.class,
             ProgramCohortNotFoundException.class,
             SectionEvaluationConfigNotFoundException.class,
-            NotificationNotFoundException.class
+            NotificationNotFoundException.class,
+            ClassSessionNotFoundException.class,
+            AttendanceChangeRequestNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -150,6 +162,7 @@ public class GlobalExceptionHandler {
             InvoiceAlreadyCancelledException.class,
             PendingDebtException.class,
             GraduationRequestAlreadyActiveException.class,
+            DirectorApprovalRequestAlreadyActiveException.class,
             InvalidGraduationRequestStateException.class,
             InvalidDirectorApprovalRequestStateException.class,
             InvalidProgramEnrollmentApplicationStateException.class,
@@ -158,7 +171,9 @@ public class GlobalExceptionHandler {
             TermEnrollmentOverrideClosedException.class,
             InvalidPaymentReceiptStateException.class,
             PaymentReceiptAlreadyPendingException.class,
-            EvaluationSchemeInUseException.class
+            EvaluationSchemeInUseException.class,
+            ClassSessionAlreadyCanceledException.class,
+            InvalidAttendanceChangeRequestStateException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {

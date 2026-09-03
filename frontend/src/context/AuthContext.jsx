@@ -72,6 +72,32 @@ export function AuthProvider({ children }) {
     return perfil;
   }, []);
 
+  // Épica 1 Fase 2: mismo patrón que login()/register() — la diferencia entre las dos es solo
+  // qué endpoint golpean, el manejo de tokens/perfil es idéntico.
+  const loginWithGoogle = useCallback(async (idToken) => {
+    const tokens = await apiFetch('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    setAccessToken(tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
+  const registerWithGoogle = useCallback(async (idToken, institutionId) => {
+    const tokens = await apiFetch('/auth/google/register', {
+      method: 'POST',
+      body: JSON.stringify({ idToken, institutionId }),
+    });
+    setAccessToken(tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
   // Re-hidrata `usuario` sin pasar por login — lo necesita Catálogo después de
   // una inscripción a curso, que puede otorgar el rol ALUMNO en el momento
   // (ver PersonRoleGranter) y el usuario no debería tener que desloguearse
@@ -96,8 +122,8 @@ export function AuthProvider({ children }) {
   }, [limpiarSesion]);
 
   const value = useMemo(
-    () => ({ usuario, roles: usuario?.roles ?? [], login, register, refrescarPerfil, logout, cargando }),
-    [usuario, login, register, refrescarPerfil, logout, cargando],
+    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando }),
+    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

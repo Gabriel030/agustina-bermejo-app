@@ -61,4 +61,18 @@ public class PersonFactory {
         person.setPassword(passwordHasheada);
         return personRepository.save(person);
     }
+
+    /**
+     * Épica 1 Fase 2 (Login con Google): igual que {@link #crearPersonConCredenciales} pero sin
+     * password — la persona nunca elige una, entra siempre por Google. {@code username} es el
+     * email (mismo criterio que el registro independiente, no hay campo de usuario separado).
+     */
+    @Transactional
+    public Person crearPersonConGoogle(String nombre, String apellido, String email, String googleSubjectId) {
+        Person person = crearPersonBase(nombre, apellido, email);
+        person.setUsername(email);
+        person.setAuthProvider(AuthProvider.GOOGLE);
+        person.setGoogleSubjectId(googleSubjectId);
+        return personRepository.save(person);
+    }
 }

@@ -30,7 +30,7 @@ export function InstitutionBrand({
     <div className={cn('flex items-center gap-3', layout === 'vertical' && 'flex-col text-center', className)}>
       <div
         className={cn(
-          'flex shrink-0 items-center justify-center bg-gradient-to-br from-accent-2 to-accent font-heading font-bold text-white',
+          'flex shrink-0 items-center justify-center bg-gradient-to-br from-accent-2 to-brand font-heading font-bold text-white',
           t.avatar,
         )}
       >

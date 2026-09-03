@@ -55,7 +55,7 @@ export function AlumnoInicio() {
       {/* Identidad + estado de pago */}
       <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-2 to-accent font-heading text-base font-bold text-white">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-2 to-brand font-heading text-base font-bold text-white">
             {iniciales(usuario?.nombre, usuario?.apellido)}
           </div>
           <div>

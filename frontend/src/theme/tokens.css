@@ -20,9 +20,14 @@
   --ink-soft: oklch(46% 0.025 260);
   --ink-faint: oklch(62% 0.02 260);
 
-  /* Acento de marca */
-  --accent: oklch(62% 0.135 225);
-  --accent-2: oklch(64% 0.13 292);
+  /* Acento de marca — lightness bajado de 62%/64% a 46%/48%: en 62% el
+     texto de los links (Login, Registrarse, Recuperar contraseña) quedaba
+     casi invisible sobre el fondo mesh claro (contraste real ~2:1, muy por
+     debajo del mínimo de WCAG AA de 4.5:1 para texto). Los botones con
+     gradiente y texto blanco no pierden legibilidad al oscurecer el
+     acento — al contrario, ganan más contraste. */
+  --accent: oklch(46% 0.16 225);
+  --accent-2: oklch(48% 0.15 292);
   --accent-soft: oklch(93% 0.045 225);
 
   /* Semántica de estado — independiente del acento, nunca se usa

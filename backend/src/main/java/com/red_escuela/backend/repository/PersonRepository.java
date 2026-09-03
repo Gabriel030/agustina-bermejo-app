@@ -14,5 +14,7 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
     Optional<Person> findByEmail(String email);
 
+    Optional<Person> findByGoogleSubjectId(String googleSubjectId);
+
     List<Person> findByRolesName(String roleName);
 }

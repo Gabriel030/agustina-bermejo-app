@@ -51,11 +51,11 @@ export function RoleShell({ titulo, items }) {
               ruta→items. No forma parte de la animación de entrada/salida de abajo
               (es chrome de navegación, no contenido de la pantalla) y devuelve null
               para cualquier ruta sin un patrón conocido, así que no aparece en
-              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[960px]
+              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[1200px]
               replica el ancho de PageContainer para que quede alineado con el
               contenido de abajo. */}
           {breadcrumbItems.length > 0 && (
-            <div className="w-full max-w-[960px] pb-3">
+            <div className="mx-auto w-full max-w-[1200px] pb-3">
               <Breadcrumb items={breadcrumbItems} />
             </div>
           )}

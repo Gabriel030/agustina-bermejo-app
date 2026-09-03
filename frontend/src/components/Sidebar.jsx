@@ -6,9 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 
 // Clase del ítem activo — degradé + blanco (mismo tratamiento que el resto de
 // los elementos "seleccionados" del sistema, ej. tabs de Catálogo), no el pill
-// pálido (bg-accent = --accent-soft, muy claro) que se usaba antes: el usuario
+// pálido (bg-brand = --accent-soft, muy claro) que se usaba antes: el usuario
 // encontró que el texto se leía mal encima de ese fondo tan claro.
-const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-accent to-accent-2 text-white shadow-sm';
+const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-brand to-accent-2 text-white shadow-sm';
 const NAV_ITEM_BASE =
   'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:translate-x-[3px] hover:bg-neutral-bg hover:text-ink';
 

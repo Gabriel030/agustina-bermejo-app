@@ -33,8 +33,8 @@ export function Stepper({ pasos, pasoActual, pasosVisitados, onStepClick }) {
                 aria-hidden="true"
                 className={cn(
                   'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                  completado && 'bg-gradient-to-br from-accent to-accent-2 text-white',
-                  activo && 'bg-gradient-to-br from-accent to-accent-2 text-white ring-4 ring-accent-soft',
+                  completado && 'bg-gradient-to-br from-brand to-accent-2 text-white',
+                  activo && 'bg-gradient-to-br from-brand to-accent-2 text-white ring-4 ring-accent-soft',
                   !completado && !activo && 'bg-neutral-bg text-ink-faint',
                 )}
               >
@@ -53,7 +53,7 @@ export function Stepper({ pasos, pasoActual, pasosVisitados, onStepClick }) {
               <div className="mx-2 h-[2px] flex-1 -translate-y-2.5 overflow-hidden rounded-full bg-neutral-bg">
                 <div
                   className={cn(
-                    'h-full bg-gradient-to-r from-accent to-accent-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    'h-full bg-gradient-to-r from-brand to-accent-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
                     completado ? 'w-full' : 'w-0',
                   )}
                 />

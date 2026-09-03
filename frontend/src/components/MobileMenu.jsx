@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 
 // Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
 // pill pálido de antes) — ver comentario ahí.
-const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-accent to-accent-2 text-white shadow-sm';
+const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-brand to-accent-2 text-white shadow-sm';
 const NAV_ITEM_BASE =
   'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink';
 

@@ -10,7 +10,7 @@ import {
   esFeriado,
 } from '@/lib/calendario';
 
-const TONO_BG = { success: 'bg-success text-white', warning: 'bg-warning text-white', accent: 'bg-accent text-white', accent2: 'bg-accent-2 text-white' };
+const TONO_BG = { success: 'bg-success text-white', warning: 'bg-warning text-white', accent: 'bg-brand text-white', accent2: 'bg-accent-2 text-white' };
 const MESES_POR_PAGINA = 5;
 
 function DiaCelda({ dia, eventos, feriado }) {
@@ -60,7 +60,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
             <span className="h-2 w-2 rounded-full bg-warning" /> TP
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-accent" /> Parcial
+            <span className="h-2 w-2 rounded-full bg-brand" /> Parcial
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-accent-2" /> Llamado a final

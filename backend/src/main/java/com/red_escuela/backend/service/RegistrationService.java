@@ -33,6 +33,7 @@ public class RegistrationService {
     private final PersonFactory personFactory;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final GoogleIdTokenService googleIdTokenService;
 
     public RegistrationService(
             PersonRepository personRepository,
@@ -40,13 +41,15 @@ public class RegistrationService {
             InstitutionRepository institutionRepository,
             PersonFactory personFactory,
             PasswordEncoder passwordEncoder,
-            AuthService authService) {
+            AuthService authService,
+            GoogleIdTokenService googleIdTokenService) {
         this.personRepository = personRepository;
         this.studentRepository = studentRepository;
         this.institutionRepository = institutionRepository;
         this.personFactory = personFactory;
         this.passwordEncoder = passwordEncoder;
         this.authService = authService;
+        this.googleIdTokenService = googleIdTokenService;
     }
 
     @Transactional
@@ -86,6 +89,38 @@ public class RegistrationService {
             return authService.issueTokens(person);
         } catch (DataIntegrityViolationException e) {
             throw new UsernameAlreadyExistsException(request.username());
+        }
+    }
+
+    // Épica 1 Fase 2 (Login con Google): mismo flujo que registrar(), para cuando alguien
+    // confirma explícitamente que quiere crear una cuenta nueva con un email de Google que no
+    // coincide con ningún Person existente (AuthService.loginWithGoogle tira
+    // GoogleAccountNotLinkedException antes de llegar acá, el frontend le muestra la
+    // confirmación al usuario y recién ahí llama a este método con el mismo idToken).
+    @Transactional
+    public AuthTokens registrarConGoogle(String idToken, Long institutionId) {
+        var profile = googleIdTokenService.verify(idToken);
+
+        if (personRepository.findByEmail(profile.email()).isPresent()) {
+            throw new UsernameAlreadyExistsException(profile.email());
+        }
+
+        Institution institution = institutionRepository.findById(institutionId)
+                .orElseThrow(() -> new InstitutionNotFoundException(institutionId));
+
+        try {
+            Person person = personFactory.crearPersonConGoogle(
+                    profile.givenName(), profile.familyName(), profile.email(), profile.subject());
+
+            Student student = new Student();
+            student.setPerson(person);
+            student.setInstitution(institution);
+            student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
+            studentRepository.saveAndFlush(student);
+
+            return authService.issueTokens(person);
+        } catch (DataIntegrityViolationException e) {
+            throw new UsernameAlreadyExistsException(profile.email());
         }
     }
 }

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { Login } from '@/pages/Login';
@@ -11,11 +12,13 @@ const API = 'http://localhost:8080';
 
 function renderLogin() {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <AuthProvider>
-        <Login />
-      </AuthProvider>
-    </MemoryRouter>,
+    <GoogleOAuthProvider clientId="test-client-id">
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthProvider>
+          <Login />
+        </AuthProvider>
+      </MemoryRouter>
+    </GoogleOAuthProvider>,
   );
 }
 
@@ -42,11 +45,6 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
     expect(await screen.findByText(/demasiados intentos/i)).toBeInTheDocument();
-  });
-
-  it('el botón de Google está deshabilitado — el backend hoy solo soporta AuthProvider.LOCAL', () => {
-    renderLogin();
-    expect(screen.getByText('Continuar con Google').closest('div')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('con credenciales válidas, deshabilita el botón mientras envía', async () => {

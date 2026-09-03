@@ -89,12 +89,25 @@ class AuthServiceTest extends AbstractIntegrationTest {
         assertThat(attempts).allMatch(a -> !a.getSuccessful());
     }
 
+    // Épica 1 Fase 4: authProvider dejó de gatear login() — el gate real es tener
+    // password seteado o no. Una Person de alta Google que consiguió password (por
+    // ejemplo vía "olvidé mi contraseña") entra local igual, ver [[Spec técnica -
+    // Recuperar contraseña]].
     @Test
-    void loginSobrePersonaConAuthProviderGoogleRechazaIgual() {
-        persistPerson("googleuser", "correcta123", AuthProvider.GOOGLE);
+    void loginSobrePersonaGoogleSinPasswordRechaza() {
+        persistPerson("googleuser", null, AuthProvider.GOOGLE);
 
-        assertThatThrownBy(() -> authService.login("googleuser", "correcta123", "127.0.0.1"))
+        assertThatThrownBy(() -> authService.login("googleuser", "cualquiera", "127.0.0.1"))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void loginSobrePersonaGoogleConPasswordSeteadaFunciona() {
+        persistPerson("googleuser2", "correcta123", AuthProvider.GOOGLE);
+
+        AuthTokens tokens = authService.login("googleuser2", "correcta123", "127.0.0.1");
+
+        assertThat(tokens.accessToken()).isNotBlank();
     }
 
     @Test
