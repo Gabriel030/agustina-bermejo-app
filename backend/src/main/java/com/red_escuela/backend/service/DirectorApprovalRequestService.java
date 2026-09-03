@@ -5,18 +5,23 @@ import com.red_escuela.backend.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.Subject;
+import com.red_escuela.backend.exception.DirectorApprovalRequestAlreadyActiveException;
 import com.red_escuela.backend.exception.DirectorApprovalRequestNotFoundException;
 import com.red_escuela.backend.exception.InvalidDirectorApprovalRequestStateException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.SubjectNotFoundException;
+import com.red_escuela.backend.notification.DirectorApprovalRequestApprovedEvent;
+import com.red_escuela.backend.notification.DirectorApprovalRequestRejectedEvent;
 import com.red_escuela.backend.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.SubjectRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * RF-DI-03: excepciones del Director (LATE_EXAM, PREREQUISITE_WAIVER), catálogo abierto
@@ -31,15 +36,17 @@ public class DirectorApprovalRequestService {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final SubjectRepository subjectRepository;
     private final CurrentPersonService currentPersonService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public DirectorApprovalRequestService(
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             ProgramEnrollmentRepository programEnrollmentRepository, SubjectRepository subjectRepository,
-            CurrentPersonService currentPersonService) {
+            CurrentPersonService currentPersonService, ApplicationEventPublisher eventPublisher) {
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectRepository = subjectRepository;
         this.currentPersonService = currentPersonService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -50,6 +57,19 @@ public class DirectorApprovalRequestService {
         if (request.subjectId() != null) {
             subject = subjectRepository.findById(request.subjectId())
                     .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
+        }
+
+        // Un mismo alumno puede tener a la vez excepciones activas de tipos distintos (o del
+        // mismo tipo sobre materias distintas) — solo se bloquea el duplicado exacto: mismo
+        // tipo + misma materia (o ninguna) + mismo trámite todavía REQUESTED.
+        boolean yaActiva = directorApprovalRequestRepository
+                .findByProgramEnrollmentIdAndTypeAndStatus(
+                        request.programEnrollmentId(), request.type(), DirectorApprovalRequestStatus.REQUESTED)
+                .stream()
+                .anyMatch(existing -> Objects.equals(
+                        existing.getSubject() != null ? existing.getSubject().getId() : null, request.subjectId()));
+        if (yaActiva) {
+            throw new DirectorApprovalRequestAlreadyActiveException(request.programEnrollmentId());
         }
 
         DirectorApprovalRequest entity = new DirectorApprovalRequest();
@@ -82,15 +102,26 @@ public class DirectorApprovalRequestService {
         entity.setDecidedBy(currentPersonService.resolveCurrentPerson());
         entity.setDecidedAt(LocalDateTime.now());
         entity.setDecisionNotes(notas);
-        return directorApprovalRequestRepository.save(entity);
+        DirectorApprovalRequest saved = directorApprovalRequestRepository.save(entity);
+
+        if (nuevoStatus == DirectorApprovalRequestStatus.APPROVED) {
+            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved, saved.getRequestedBy()));
+        } else {
+            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved, saved.getRequestedBy()));
+        }
+        return saved;
     }
 
-    public List<DirectorApprovalRequest> listarPendientes() {
-        return directorApprovalRequestRepository.findByStatus(DirectorApprovalRequestStatus.REQUESTED);
+    public List<DirectorApprovalRequest> listar(DirectorApprovalRequestStatus status) {
+        return directorApprovalRequestRepository.findByStatus(status != null ? status : DirectorApprovalRequestStatus.REQUESTED);
     }
 
     public List<DirectorApprovalRequest> listarPorProgramEnrollment(Long programEnrollmentId) {
         return directorApprovalRequestRepository.findByProgramEnrollmentId(programEnrollmentId);
+    }
+
+    public DirectorApprovalRequest verDetalle(Long id) {
+        return findOrThrow(id);
     }
 
     private DirectorApprovalRequest findOrThrow(Long id) {

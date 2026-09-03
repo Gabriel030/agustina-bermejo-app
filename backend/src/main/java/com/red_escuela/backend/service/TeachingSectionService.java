@@ -1,0 +1,32 @@
+package com.red_escuela.backend.service;
+
+import com.red_escuela.backend.dto.TeachingSectionResponse;
+import com.red_escuela.backend.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class TeachingSectionService {
+
+    private final SubjectSectionInstructorRepository subjectSectionInstructorRepository;
+    private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
+
+    public TeachingSectionService(
+            SubjectSectionInstructorRepository subjectSectionInstructorRepository,
+            CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository) {
+        this.subjectSectionInstructorRepository = subjectSectionInstructorRepository;
+        this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
+    }
+
+    public List<TeachingSectionResponse> listarPorInstructor(Long instructorId) {
+        List<TeachingSectionResponse> sections = new ArrayList<>();
+        subjectSectionInstructorRepository.findByInstructorId(instructorId)
+                .forEach(link -> sections.add(TeachingSectionResponse.fromSubjectSection(link.getSection())));
+        courseSubjectSectionInstructorRepository.findByInstructorId(instructorId)
+                .forEach(link -> sections.add(TeachingSectionResponse.fromCourseSubjectSection(link.getSection())));
+        return sections;
+    }
+}

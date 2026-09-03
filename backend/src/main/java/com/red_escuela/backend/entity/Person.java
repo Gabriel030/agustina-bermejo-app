@@ -68,6 +68,9 @@ public class Person {
     @Column(name = "auth_provider", nullable = false)
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
+    @Column(name = "google_subject_id", unique = true)
+    private String googleSubjectId;
+
     @Column(name = "failed_login_attempts", nullable = false)
     private Integer failedLoginAttempts = 0;
 

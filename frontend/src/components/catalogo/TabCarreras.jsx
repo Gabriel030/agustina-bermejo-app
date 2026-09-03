@@ -28,7 +28,7 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-full flex-1 flex-col gap-4">
       <Buscador value={search} onChange={onSearchChange} placeholder="Buscar carrera…" />
 
       {!isLoading && filtradas.length === 0 && (
@@ -47,7 +47,12 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
               <GraduationCap className="h-5 w-5" />
             </div>
             <div className="font-heading text-lg font-bold text-ink">{programa.name}</div>
-            <div className="text-[13px] text-ink-faint">{programa.totalYears} años · Título oficial</div>
+            {/* mt-auto: la grilla ya estira las cards de una misma fila a la
+                misma altura (default de CSS Grid), esto ancla la meta al pie
+                de CADA card en vez de quedar pegada al título — si el título
+                de al lado ocupa 2 líneas, sin esto la meta queda "flotando"
+                en alturas distintas entre cards de la misma fila. */}
+            <div className="mt-auto text-[13px] text-ink-faint">{programa.totalYears} años · Título oficial</div>
           </GlassCard>
         ))}
       </div>

@@ -44,6 +44,124 @@ export function useHistorialAprobaciones() {
   return { data: historial, isLoading: cargando };
 }
 
+export function useEgresosPendientes() {
+  return useQuery({
+    queryKey: ['graduation-requests', 'ADMIN_VERIFIED'],
+    queryFn: () => apiFetch('/graduation-requests?status=ADMIN_VERIFIED'),
+  });
+}
+
+export function useHistorialEgresos() {
+  const aprobados = useQuery({
+    queryKey: ['graduation-requests', 'APPROVED'],
+    queryFn: () => apiFetch('/graduation-requests?status=APPROVED'),
+  });
+  const rechazados = useQuery({
+    queryKey: ['graduation-requests', 'REJECTED'],
+    queryFn: () => apiFetch('/graduation-requests?status=REJECTED'),
+  });
+  const cargando = aprobados.isLoading || rechazados.isLoading;
+  const historial = [...(aprobados.data ?? []), ...(rechazados.data ?? [])].sort(
+    (a, b) => new Date(b.decidedAt ?? 0) - new Date(a.decidedAt ?? 0),
+  );
+  return { data: historial, isLoading: cargando };
+}
+
+export function useEgreso(id) {
+  return useQuery({
+    queryKey: ['graduation-requests', 'detalle', id],
+    queryFn: () => apiFetch(`/graduation-requests/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useAprobarEgreso(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`/graduation-requests/${id}/approve`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
+  });
+}
+
+export function useRechazarEgreso(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (motivo) => apiFetch(`/graduation-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ motivo }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
+  });
+}
+
+export function useExcepcionesPendientes() {
+  return useQuery({
+    queryKey: ['director-approval-requests', 'REQUESTED'],
+    queryFn: () => apiFetch('/director-approval-requests'),
+  });
+}
+
+export function useHistorialExcepciones() {
+  const aprobadas = useQuery({
+    queryKey: ['director-approval-requests', 'APPROVED'],
+    queryFn: () => apiFetch('/director-approval-requests?status=APPROVED'),
+  });
+  const rechazadas = useQuery({
+    queryKey: ['director-approval-requests', 'REJECTED'],
+    queryFn: () => apiFetch('/director-approval-requests?status=REJECTED'),
+  });
+  const cargando = aprobadas.isLoading || rechazadas.isLoading;
+  const historial = [...(aprobadas.data ?? []), ...(rechazadas.data ?? [])].sort(
+    (a, b) => new Date(b.decidedAt ?? 0) - new Date(a.decidedAt ?? 0),
+  );
+  return { data: historial, isLoading: cargando };
+}
+
+export function useExcepcion(id) {
+  return useQuery({
+    queryKey: ['director-approval-requests', 'detalle', id],
+    queryFn: () => apiFetch(`/director-approval-requests/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useAprobarExcepcion(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notas) => apiFetch(`/director-approval-requests/${id}/approve`, { method: 'POST', body: JSON.stringify({ notas }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
+  });
+}
+
+export function useRechazarExcepcion(id) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notas) => apiFetch(`/director-approval-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ notas }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
+  });
+}
+
+export function useProgresoStaff(programEnrollmentId) {
+  return useQuery({
+    queryKey: ['program-enrollments', programEnrollmentId, 'progress'],
+    queryFn: () => apiFetch(`/program-enrollments/${programEnrollmentId}/progress`),
+    enabled: !!programEnrollmentId,
+  });
+}
+
+export function useAsistenciaPorMateria(programEnrollmentId) {
+  return useQuery({
+    queryKey: ['program-enrollments', programEnrollmentId, 'attendance-summary'],
+    queryFn: () => apiFetch(`/program-enrollments/${programEnrollmentId}/attendance-summary`),
+    enabled: !!programEnrollmentId,
+  });
+}
+
+export function useEstadoDePago(studentId) {
+  return useQuery({
+    queryKey: ['students', studentId, 'payment-standing'],
+    queryFn: () => apiFetch(`/students/${studentId}/payment-standing`),
+    enabled: !!studentId,
+  });
+}
+
 export function useConfiguracionComisionStaff(sectionId) {
   return useQuery({
     queryKey: ['section-evaluation-configs', sectionId],

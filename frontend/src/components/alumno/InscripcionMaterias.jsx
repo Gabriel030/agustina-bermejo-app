@@ -96,7 +96,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                   key={fila.key}
                   type="button"
                   onClick={() => elegirMateria(fila)}
-                  className="flex items-center justify-between rounded-xl border border-border px-4 py-3 text-left transition-colors hover:border-accent hover:bg-neutral-bg"
+                  className="flex items-center justify-between rounded-xl border border-border px-4 py-3 text-left transition-colors hover:border-brand hover:bg-neutral-bg"
                 >
                   <div>
                     <div className="text-[13.5px] font-semibold text-ink">{fila.subjectName}</div>
@@ -146,8 +146,8 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                       conflicto
                         ? 'cursor-not-allowed border-border bg-neutral-bg opacity-60'
                         : seleccionada
-                          ? 'border-accent bg-accent-soft'
-                          : 'border-border hover:border-accent hover:bg-neutral-bg'
+                          ? 'border-brand bg-accent-soft'
+                          : 'border-border hover:border-brand hover:bg-neutral-bg'
                     }`}
                   >
                     <div className="flex items-center justify-between">

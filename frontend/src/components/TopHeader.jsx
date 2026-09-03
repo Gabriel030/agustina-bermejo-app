@@ -11,7 +11,7 @@ export function TopHeader({ titulo, items }) {
   const { usuario } = useAuth();
 
   return (
-    <div className="w-full max-w-[960px] shrink-0">
+    <div className="mx-auto w-full max-w-[1200px] shrink-0">
       <GlassCard className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <MobileMenu titulo={titulo} items={items} />
@@ -21,7 +21,7 @@ export function TopHeader({ titulo, items }) {
         <div className="flex shrink-0 items-center gap-3">
           {usuario && (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-heading text-[13px] font-bold text-white">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-brand font-heading text-[13px] font-bold text-white">
                 {iniciales(usuario.nombre, usuario.apellido)}
               </div>
               <div className="hidden sm:block">

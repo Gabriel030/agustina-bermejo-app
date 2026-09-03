@@ -86,7 +86,7 @@ export function TabPlanDeEstudio({ carreraId }) {
   let anioAnterior;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-full flex-1 flex-col gap-5">
       <GlassCard className="flex flex-col p-1">
         {/* El header (con los filtros de Año/Estado embebidos) se renderiza SIEMPRE —
             ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}

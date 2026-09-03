@@ -62,7 +62,7 @@ export function NotificationBell() {
                   } ${!n.read ? 'bg-accent-soft/30' : ''}`}
                 >
                   <div className="flex items-center gap-2">
-                    {!n.read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />}
+                    {!n.read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />}
                     <span className={`text-[12px] font-bold ${TEXTO_TONO[tono]}`}>{TIPO_NOTIFICACION_LABEL[n.type] ?? n.type}</span>
                   </div>
                   <div className="text-[12px] text-ink-soft">{n.message}</div>

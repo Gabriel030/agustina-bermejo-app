@@ -31,7 +31,7 @@ function ChipSelector({ opciones, valor, onChange }) {
           type="button"
           onClick={() => onChange(op.value)}
           className={`rounded-lg px-4 py-2 text-sm font-bold ${
-            valor === op.value ? 'bg-gradient-to-br from-primary to-accent text-white' : 'bg-neutral-bg text-ink-faint'
+            valor === op.value ? 'bg-gradient-to-br from-primary to-brand text-white' : 'bg-neutral-bg text-ink-faint'
           }`}
         >
           {op.label}

@@ -119,7 +119,7 @@ describe('flujo de registro end-to-end', () => {
     await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
 
     // Revisar la tab Mis solicitudes
-    await user.click(await screen.findByRole('button', { name: 'Mis solicitudes' }));
+    await user.click(await screen.findByRole('tab', { name: 'Mis solicitudes' }));
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('Pendiente')).toBeInTheDocument();

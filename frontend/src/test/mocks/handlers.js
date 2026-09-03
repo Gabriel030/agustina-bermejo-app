@@ -16,6 +16,9 @@ export const handlers = [
     HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 }),
   ),
   http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API}/auth/forgot-password`, () => new HttpResponse(null, { status: 202 })),
+  http.post(`${API}/auth/verify-reset-code`, () => HttpResponse.json({ resetToken: 'reset-token-1' })),
+  http.post(`${API}/auth/reset-password`, () => new HttpResponse(null, { status: 204 })),
   http.get(`${API}/me`, () =>
     HttpResponse.json({
       id: 1,

@@ -41,6 +41,14 @@
   --color-ink-faint: var(--ink-faint);
   --color-accent-2: var(--accent-2);
   --color-accent-soft: var(--accent-soft);
+  /* `--color-accent` (arriba) está reservado por las primitivas de shadcn/ui
+     para el fondo pálido de estados hover (mapea a --accent-soft, ~93% de
+     lightness) — NO es el acento de marca. Cualquier texto que quiera el
+     color de marca (links, "Registrate", etc.) tiene que usar `text-brand`,
+     nunca `text-accent`: usar `text-accent` ahí da texto casi invisible
+     sobre fondo claro (bug real, encontrado por captura de pantalla real —
+     ver Spec técnica - Recuperar contraseña, Decisión 12/14). */
+  --color-brand: var(--accent);
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
@@ -63,5 +71,29 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+  }
+
+  /* Scrollbar nativa fina y discreta en vez del track gris sólido por default
+     de Chrome/Windows (feedback explícito del usuario) — cross-app, se aplica
+     a cualquier contenedor con overflow (el <main> de RoleShell es el caso
+     principal, pero no el único). Firefox vía scrollbar-width/-color,
+     Chrome/Safari/Edge vía ::-webkit-scrollbar. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-faint);
   }
 }

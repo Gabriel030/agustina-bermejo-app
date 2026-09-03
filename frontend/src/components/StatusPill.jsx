@@ -17,7 +17,7 @@ const COLOR_DOT = {
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',
-  accent: 'bg-accent',
+  accent: 'bg-brand',
   neutral: 'bg-neutral-ink',
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
 import { MeshBackground } from '@/components/MeshBackground';
@@ -11,11 +11,11 @@ import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/api/client';
 
 const PASSWORD_MIN_LENGTH = 8;
-// Mismo criterio que auth.password.require-letter-and-digit del backend
-// (RF-AUTH-05) — se valida temprano en el cliente para no hacerle esperar
+// Mismo criterio que auth.password.require-letter-and-digit/require-uppercase del
+// backend (RF-AUTH-05) — se valida temprano en el cliente para no hacerle esperar
 // el viaje de red por un error que ya se puede saber acá, pero la fuente de
 // verdad sigue siendo el backend (ver docs/context/frontend.md, manejo de errores).
-const PASSWORD_TIENE_LETRA_Y_DIGITO = /(?=.*[A-Za-z])(?=.*\d)/;
+const PASSWORD_TIENE_MAYUSCULA_Y_DIGITO = /(?=.*[A-Z])(?=.*\d)/;
 
 // Mapeo 1:1 a Registrarse.dc.html. Sin verificación de email (decisión del
 // usuario: se descartó por complejidad) y sin institutionId visible — el
@@ -54,7 +54,7 @@ export function Registrarse() {
   function validar() {
     if (password !== repetirPassword) return 'Las contraseñas no coinciden.';
     if (password.length < PASSWORD_MIN_LENGTH) return `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
-    if (!PASSWORD_TIENE_LETRA_Y_DIGITO.test(password)) return 'La contraseña debe tener letras y números.';
+    if (!PASSWORD_TIENE_MAYUSCULA_Y_DIGITO.test(password)) return 'La contraseña debe tener al menos una mayúscula y un número.';
     return null;
   }
 
@@ -150,7 +150,7 @@ export function Registrarse() {
               />
             </div>
           </div>
-          <div className="-mt-1.5 text-[11.5px] text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con letras y números.</div>
+          <div className="-mt-1.5 text-[11.5px] text-ink-faint">Mínimo {PASSWORD_MIN_LENGTH} caracteres, con una mayúscula y un número.</div>
 
           {errorInstitucion && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
@@ -163,7 +163,7 @@ export function Registrarse() {
             <Button
               type="submit"
               disabled={enviando || !institutionId}
-              className="w-full rounded-2xl bg-gradient-to-br from-accent to-accent-2 py-6 text-[14.5px] font-bold text-white"
+              className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>
@@ -176,9 +176,9 @@ export function Registrarse() {
 
         <div className="mt-6 text-center text-xs text-ink-faint">
           ¿Ya tenés cuenta?{' '}
-          <a href="/login" className="font-semibold text-accent hover:text-accent-2">
+          <Link to="/login" className="font-semibold text-brand hover:text-accent-2">
             Ingresá
-          </a>
+          </Link>
         </div>
       </GlassCard>
     </div>

@@ -73,14 +73,22 @@ async function refreshSession() {
   return true;
 }
 
-export async function apiFetch(path, options = {}) {
+async function fetchWithAuth(path, options) {
   let response = await rawFetch(path, options);
 
-  if (response.status === 401 && !path.startsWith('/auth/')) {
+  // El backend nunca manda body en sus errores, así que un token expirado y un rol
+  // realmente insuficiente son indistinguibles acá: ambos casos caen en el mismo
+  // JwtAuthenticationFilter (limpia el contexto ante un JWT inválido/vencido en vez de
+  // cortar la request, ver JwtAuthenticationFilter.java) y terminan en 403 vía
+  // @PreAuthorize, no en 401. Reintentar refresh también en 403 es lo único que
+  // recupera la sesión vencida sin pedirle al usuario que vuelva a loguearse a mano;
+  // el costo en el caso de rol insuficiente es un round-trip de más (refresh exitoso,
+  // reintento que vuelve a dar 403 legítimo).
+  if ((response.status === 401 || response.status === 403) && !path.startsWith('/auth/')) {
     const refreshed = await refreshSession();
     if (refreshed) {
       response = await rawFetch(path, options);
-    } else {
+    } else if (response.status === 401) {
       onSessionExpired?.();
       throw new AuthError();
     }
@@ -91,10 +99,26 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(messageForStatus(response.status));
+    const error = new Error(messageForStatus(response.status));
+    error.status = response.status;
+    throw error;
   }
 
+  return response;
+}
+
+export async function apiFetch(path, options = {}) {
+  const response = await fetchWithAuth(path, options);
   if (response.status === 204) return null;
   const text = await response.text();
   return text ? JSON.parse(text) : null;
+}
+
+// Descarga de archivos (ej. exportar asistencia a PDF/XLS) — a diferencia de apiFetch, el body
+// de la respuesta no es JSON, así que no puede pasar por el mismo parseo.
+export async function apiFetchBlob(path, options = {}) {
+  const response = await fetchWithAuth(path, options);
+  const filename = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ?? 'archivo';
+  const blob = await response.blob();
+  return { blob, filename };
 }

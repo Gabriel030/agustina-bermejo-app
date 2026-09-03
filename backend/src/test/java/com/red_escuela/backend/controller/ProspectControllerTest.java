@@ -239,13 +239,14 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         List<PasswordResetToken> resetTokens = passwordResetTokenRepository.findAll();
         assertThat(resetTokens).hasSize(1);
 
-        String rawPasswordResetToken = "raw-para-test-confirmacion";
+        String rawPasswordResetCode = "123456";
         PasswordResetToken existing = resetTokens.get(0);
-        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetToken));
+        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
         entityManager.merge(existing);
         entityManager.flush();
 
-        authService.resetPassword(rawPasswordResetToken, "nuevaPassword123");
+        String exchangeToken = authService.verifyResetCode(confirmado.getPerson().getEmail(), rawPasswordResetCode);
+        authService.resetPassword(exchangeToken, "nuevaPassword123");
         AuthTokens tokens = authService.login("30111222", "nuevaPassword123", "127.0.0.1");
         assertThat(tokens.accessToken()).isNotBlank();
     }

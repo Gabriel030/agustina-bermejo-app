@@ -8,7 +8,7 @@ export function Buscador({ value, onChange, placeholder = 'Buscar…' }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/40 md:max-w-xs"
+      className="w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand/40 md:max-w-xs"
     />
   );
 }

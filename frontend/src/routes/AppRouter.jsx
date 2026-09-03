@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
+import { ForgotPassword } from '@/pages/ForgotPassword';
 import { Catalogo } from '@/pages/Catalogo';
 import { DetalleCarrera } from '@/pages/DetalleCarrera';
 import { DetalleCurso } from '@/pages/DetalleCurso';
@@ -18,9 +19,18 @@ import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
 import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
+import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
+import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
+import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
+import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
+import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
+import { DirectorEgresoDetalle } from '@/pages/DirectorEgresoDetalle';
+import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExcepciones';
+import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
 import { DirectorEsquemasEvaluacion } from '@/pages/DirectorEsquemasEvaluacion';
 import { DirectorRevisarConfiguracion } from '@/pages/DirectorRevisarConfiguracion';
+import { PublicLayout } from '@/layouts/PublicLayout';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
 import { PreceptorLayout } from '@/layouts/PreceptorLayout';
@@ -44,10 +54,18 @@ const RUTAS_POR_ROL = {
   docente: {
     Layout: DocenteLayout,
     paginas: ['inicio', 'mis-comisiones', 'tomar-asistencia'],
-    paginasReales: { 'mis-comisiones': DocenteMisComisiones },
+    paginasReales: { 'mis-comisiones': DocenteMisComisiones, 'tomar-asistencia': DocenteTomarAsistencia },
   },
-  preceptor: { Layout: PreceptorLayout, paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'] },
-  administrativo: { Layout: AdministrativoLayout, paginas: ['inicio', 'alumnos', 'facturacion', 'constancias'] },
+  preceptor: {
+    Layout: PreceptorLayout,
+    paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
+    paginasReales: { 'mesas-de-examen': PreceptorMesaExamen },
+  },
+  administrativo: {
+    Layout: AdministrativoLayout,
+    paginas: ['inicio', 'alumnos', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
+    paginasReales: { 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+  },
   director: {
     Layout: DirectorLayout,
     paginas: ['inicio', 'aprobaciones', 'esquemas-evaluacion'],
@@ -76,9 +94,12 @@ export function AppRouter() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/registrarse" element={<Registrarse />} />
-      <Route path="/no-autorizado" element={<NoAutorizado />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/registrarse" element={<Registrarse />} />
+        <Route path="/olvide-mi-contrasena" element={<ForgotPassword />} />
+        <Route path="/no-autorizado" element={<NoAutorizado />} />
+      </Route>
 
       <Route
         element={
@@ -119,10 +140,29 @@ export function AppRouter() {
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
+          {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
+          {rol === 'director' && <Route path="aprobaciones/egresos" element={<DirectorAprobacionesEgresos />} />}
+          {rol === 'director' && <Route path="aprobaciones/egresos/:id" element={<DirectorEgresoDetalle />} />}
+          {rol === 'director' && <Route path="aprobaciones/excepciones" element={<DirectorAprobacionesExcepciones />} />}
+          {rol === 'director' && <Route path="aprobaciones/excepciones/:id" element={<DirectorExcepcionDetalle />} />}
         </Route>
       ))}
 
-      <Route path="/" element={<Navigate to={usuario ? `/${usuario.roles[0]?.toLowerCase()}/inicio` : '/login'} replace />} />
+      <Route
+        path="/"
+        element={
+          <Navigate
+            to={
+              !usuario
+                ? '/login'
+                : usuario.roles.length
+                  ? `/${usuario.roles[0].toLowerCase()}/inicio`
+                  : '/catalogo'
+            }
+            replace
+          />
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

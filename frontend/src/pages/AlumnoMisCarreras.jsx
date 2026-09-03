@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TabMaterias } from '@/components/alumno/TabMaterias';
 import { TabPlanDeEstudio } from '@/components/alumno/TabPlanDeEstudio';
 import { TabNotas } from '@/components/alumno/TabNotas';
@@ -23,14 +24,6 @@ import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
 // carrera elegida arriba. Reemplaza el layout anterior de 2 cards resumen
 // (Materias aprobadas/en curso) — esa info ahora vive completa en la pestaña
 // Materias, no hace falta duplicarla acá.
-const TABS = [
-  { id: 'materias', label: 'Materias' },
-  { id: 'notas', label: 'Notas' },
-  { id: 'mesas-de-examen', label: 'Mesas de examen' },
-  { id: 'asistencia', label: 'Asistencia' },
-  { id: 'plan-de-estudio', label: 'Plan de estudio' },
-];
-
 export function AlumnoMisCarreras() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: matriculaciones, isLoading: cargandoMatriculaciones } = useMisMatriculaciones();
@@ -89,7 +82,7 @@ export function AlumnoMisCarreras() {
             description="Elegí una carrera en el Catálogo para solicitar tu alta."
             action={
               <Button asChild variant="gradient">
-                <a href="/catalogo?tab=carreras">Ir al Catálogo</a>
+                <Link to="/catalogo?tab=carreras">Ir al Catálogo</Link>
               </Button>
             }
           />
@@ -146,25 +139,20 @@ export function AlumnoMisCarreras() {
         </StatCard>
         <StatCard label="Avance del plan">
           <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-bg">
-            <div className="h-full rounded-full bg-gradient-to-r from-accent to-accent-2" style={{ width: `${porcentajeAvance}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-brand to-accent-2" style={{ width: `${porcentajeAvance}%` }} />
           </div>
         </StatCard>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-border bg-surface p-1">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => cambiarTab(id)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-[13px] font-semibold transition-colors ${
-              tab === id ? 'bg-gradient-to-br from-accent to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={cambiarTab}>
+        <TabsList variant="line">
+          <TabsTrigger value="materias">Materias</TabsTrigger>
+          <TabsTrigger value="notas">Notas</TabsTrigger>
+          <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>
+          <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
+          <TabsTrigger value="plan-de-estudio">Plan de estudio</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* key={matricula.id}: fuerza remount al cambiar de carrera, para que la página
           interna de paginación de cada pestaña arranque de nuevo (si no, quedarse en

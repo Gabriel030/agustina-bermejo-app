@@ -39,7 +39,7 @@ export function BannerCarousel() {
 
   return (
     <GlassCard
-      className="relative overflow-hidden bg-gradient-to-br from-accent to-accent-2 p-6 text-white"
+      className="relative overflow-hidden bg-gradient-to-br from-brand to-accent-2 p-6 text-white"
       onMouseEnter={() => setPausado(true)}
       onMouseLeave={() => setPausado(false)}
     >

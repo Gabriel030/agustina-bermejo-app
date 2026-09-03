@@ -47,6 +47,7 @@ public class GradeItemService {
     private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
+    private final GraduationRequestService graduationRequestService;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -55,7 +56,8 @@ public class GradeItemService {
             SubjectSectionInstructorRepository subjectSectionInstructorRepository,
             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
             ExamBoardRepository examBoardRepository,
-            ExamBoardInstructorRepository examBoardInstructorRepository) {
+            ExamBoardInstructorRepository examBoardInstructorRepository,
+            GraduationRequestService graduationRequestService) {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -63,6 +65,7 @@ public class GradeItemService {
         this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
+        this.graduationRequestService = graduationRequestService;
     }
 
     @Transactional
@@ -97,6 +100,9 @@ public class GradeItemService {
                 enrollment.setFinalGradeType(resultado.finalGradeType());
             }
             subjectSectionEnrollmentRepository.save(enrollment);
+            if (resultado.status() == EnrollmentStatus.APPROVED) {
+                graduationRequestService.createGraduationRequestIfEligible(enrollment.getProgramEnrollment().getId());
+            }
         }
         return gradeItem;
     }

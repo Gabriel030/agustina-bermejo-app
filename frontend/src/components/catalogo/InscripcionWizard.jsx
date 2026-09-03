@@ -245,7 +245,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               onClick={() => dispatch({ type: 'ELEGIR_COHORTE', cohortId: cohort.id })}
               className={cn(
                 'flex flex-col rounded-xl border px-4 py-3 text-left transition-colors hover:bg-neutral-bg',
-                cohort.id === state.cohortId ? 'border-accent bg-accent-soft' : 'border-border bg-surface',
+                cohort.id === state.cohortId ? 'border-brand bg-accent-soft' : 'border-border bg-surface',
               )}
             >
               <span className="text-[13.5px] font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
@@ -403,8 +403,8 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             {/* Único método disponible por ahora — se muestra como selector (no
                 como texto fijo) para que agregar otro método el día de mañana no
                 implique rediseñar este paso. */}
-            <div className="flex items-center gap-3 rounded-xl border border-accent bg-accent-soft px-4 py-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent-2 text-sm text-white">
+            <div className="flex items-center gap-3 rounded-xl border border-brand bg-accent-soft px-4 py-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-accent-2 text-sm text-white">
                 ✓
               </div>
               <div>

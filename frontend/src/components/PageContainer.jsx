@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 // uno a otro se sentía como si la pantalla "se achicara". Todas las páginas
 // de contenido (no los placeholders, que centran su propio mensaje) usan
 // este mismo ancho máximo.
-const ANCHO_MAXIMO = 'max-w-[960px]';
+const ANCHO_MAXIMO = 'max-w-[1200px]';
 
 export function PageContainer({ children, className }) {
-  return <div className={cn('flex min-w-0 w-full flex-1 flex-col gap-6', ANCHO_MAXIMO, className)}>{children}</div>;
+  return <div className={cn('mx-auto flex min-w-0 w-full flex-1 flex-col gap-6', ANCHO_MAXIMO, className)}>{children}</div>;
 }

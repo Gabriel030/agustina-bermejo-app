@@ -2,6 +2,7 @@ package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.entity.DirectorApprovalRequestStatus;
+import com.red_escuela.backend.entity.ExceptionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +14,7 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
     List<DirectorApprovalRequest> findByProgramEnrollmentId(Long programEnrollmentId);
 
     List<DirectorApprovalRequest> findByStatus(DirectorApprovalRequestStatus status);
+
+    List<DirectorApprovalRequest> findByProgramEnrollmentIdAndTypeAndStatus(
+            Long programEnrollmentId, ExceptionType type, DirectorApprovalRequestStatus status);
 }

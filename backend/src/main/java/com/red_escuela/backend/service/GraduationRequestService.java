@@ -12,8 +12,11 @@ import com.red_escuela.backend.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.exception.PendingDebtException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.notification.GraduationRequestApprovedEvent;
+import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
 import com.red_escuela.backend.repository.GraduationRequestRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,16 +38,18 @@ public class GraduationRequestService {
     private final ProgramEnrollmentService programEnrollmentService;
     private final InvoiceService invoiceService;
     private final CurrentPersonService currentPersonService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GraduationRequestService(
             GraduationRequestRepository graduationRequestRepository, ProgramEnrollmentRepository programEnrollmentRepository,
             ProgramEnrollmentService programEnrollmentService, InvoiceService invoiceService,
-            CurrentPersonService currentPersonService) {
+            CurrentPersonService currentPersonService, ApplicationEventPublisher eventPublisher) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.invoiceService = invoiceService;
         this.currentPersonService = currentPersonService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -68,6 +73,23 @@ public class GraduationRequestService {
             return graduationRequestRepository.saveAndFlush(request);
         } catch (DataIntegrityViolationException e) {
             throw new GraduationRequestAlreadyActiveException(programEnrollmentId);
+        }
+    }
+
+    // Épica 3 Fase 4 (feedback de producto): el trámite de egreso deja de depender de que el
+    // alumno lo pida a mano — se dispara solo apenas la matriculación queda elegible (ver
+    // GradeItemService.cargarNotaProgramEnrollment, se llama al aprobarse una materia). Si ya
+    // hay un trámite activo (no rechazado) no hace nada — mismo criterio de "un solo trámite
+    // activo por matriculación" que ya aplica `solicitar`.
+    @Transactional
+    public void createGraduationRequestIfEligible(Long programEnrollmentId) {
+        if (!programEnrollmentService.calcularProgreso(programEnrollmentId).elegibleParaCompletar()) {
+            return;
+        }
+        try {
+            solicitar(programEnrollmentId);
+        } catch (GraduationRequestAlreadyActiveException e) {
+            // Ya hay un trámite en curso para esta matriculación — nada que hacer.
         }
     }
 
@@ -110,6 +132,7 @@ public class GraduationRequestService {
         programEnrollment.setCompletionDate(LocalDateTime.now());
         programEnrollmentRepository.save(programEnrollment);
 
+        eventPublisher.publishEvent(new GraduationRequestApprovedEvent(request, programEnrollment.getStudent().getPerson()));
         return request;
     }
 
@@ -124,11 +147,18 @@ public class GraduationRequestService {
         request.setDecidedBy(currentPersonService.resolveCurrentPerson());
         request.setDecidedAt(LocalDateTime.now());
         request.setRejectionReason(motivo);
-        return graduationRequestRepository.save(request);
+        GraduationRequest saved = graduationRequestRepository.save(request);
+
+        eventPublisher.publishEvent(new GraduationRequestRejectedEvent(saved, saved.getProgramEnrollment().getStudent().getPerson()));
+        return saved;
     }
 
     public List<GraduationRequest> listarPorProgramEnrollment(Long programEnrollmentId) {
         return graduationRequestRepository.findByProgramEnrollmentId(programEnrollmentId);
+    }
+
+    public List<GraduationRequest> listar(GraduationRequestStatus status) {
+        return graduationRequestRepository.findByStatus(status);
     }
 
     public GraduationRequest verDetalle(Long id) {

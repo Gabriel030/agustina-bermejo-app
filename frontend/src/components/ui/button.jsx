@@ -22,7 +22,7 @@ const buttonVariants = cva(
         // CTA principal del sistema de diseño (Vidrio Líquido) — antes repetido a
         // mano en cada pantalla (Catálogo, Detalle, wizard, Mis carreras...).
         gradient:
-          "rounded-xl bg-gradient-to-br from-accent to-accent-2 font-semibold text-white shadow-sm hover:scale-[1.02] hover:shadow-md",
+          "rounded-xl bg-gradient-to-br from-brand to-accent-2 font-semibold text-white shadow-sm hover:scale-[1.02] hover:shadow-md",
       },
       size: {
         default:

@@ -3,6 +3,7 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
+import com.red_escuela.backend.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramElectiveGroup;
@@ -13,6 +14,7 @@ import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
@@ -52,6 +54,7 @@ public class ProgramEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramElectiveGroupRepository programElectiveGroupRepository;
     private final ProgramCohortRepository programCohortRepository;
+    private final AttendanceService attendanceService;
 
     public ProgramEnrollmentService(
             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -60,7 +63,8 @@ public class ProgramEnrollmentService {
             ProgramSubjectRepository programSubjectRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramElectiveGroupRepository programElectiveGroupRepository,
-            ProgramCohortRepository programCohortRepository) {
+            ProgramCohortRepository programCohortRepository,
+            AttendanceService attendanceService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -68,6 +72,7 @@ public class ProgramEnrollmentService {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programElectiveGroupRepository = programElectiveGroupRepository;
         this.programCohortRepository = programCohortRepository;
+        this.attendanceService = attendanceService;
     }
 
     @Transactional
@@ -161,12 +166,33 @@ public class ProgramEnrollmentService {
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
+        var notasFinales = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
+                .map(SubjectSectionEnrollment::getFinalScore)
+                .filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue)
+                .average();
+        Double promedioGeneral = notasFinales.isPresent() ? notasFinales.getAsDouble() : null;
+
         // esRegular reusa tieneCursadaActiva (Épica 2 Fase 1, Alumno · Mis carreras) — mismo
         // criterio que ya usaba CertificateService para la constancia de alumno regular, ahora
         // también expuesto acá para mostrarlo como condición en la pantalla.
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,
-                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, tieneCursadaActiva(id));
+                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, tieneCursadaActiva(id), promedioGeneral);
+    }
+
+    // Épica 3 Fase 4: resumen de asistencia por materia para la vista de detalle de egreso del
+    // Director — reusa el cálculo de riesgo de libre ya existente por cursada, agregándolo acá
+    // en vez de duplicar la lógica de asistencia.
+    public List<SubjectAttendanceSummaryResponse> resumenAsistenciaPorMateria(Long programEnrollmentId) {
+        return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
+                .map(enrollment -> {
+                    var riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+                    Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
+                    return new SubjectAttendanceSummaryResponse(
+                            enrollment.getSubjectSection().getSubject().getName(), asistencia);
+                })
+                .toList();
     }
 
     /**

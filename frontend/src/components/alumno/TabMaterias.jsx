@@ -70,7 +70,7 @@ export function TabMaterias({ carreraId }) {
               type="button"
               onClick={() => setSubTab(id)}
               className={`rounded-lg px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-                subTab === id ? 'bg-gradient-to-br from-accent to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
+                subTab === id ? 'bg-gradient-to-br from-brand to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
               }`}
             >
               {label}
