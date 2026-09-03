@@ -1,0 +1,24 @@
+meta {
+  name: 12. Ver mi progreso (200)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentIdMisInsc}}/progress
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("0 créditos acumulados todavía", function () {
+    expect(res.getBody().programEnrollmentId).to.equal(bru.getVar("programEnrollmentIdMisInsc"));
+    expect(res.getBody().creditosAcumulados).to.equal(0);
+  });
+}

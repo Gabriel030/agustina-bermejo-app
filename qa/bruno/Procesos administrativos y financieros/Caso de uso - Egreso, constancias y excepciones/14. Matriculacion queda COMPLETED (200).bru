@@ -1,0 +1,24 @@
+meta {
+  name: 14. Matriculacion queda COMPLETED (200)
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("aprobar el egreso completa la carrera en la misma transacción", function () {
+    expect(res.getBody().status).to.equal("COMPLETED");
+    expect(res.getBody().completionDate).to.not.be.null;
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: 6. Agregar materia al plan (setup, 201)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectId}},
+    "curricularYear": 1,
+    "curricularTerm": "FIRST",
+    "credits": 5
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

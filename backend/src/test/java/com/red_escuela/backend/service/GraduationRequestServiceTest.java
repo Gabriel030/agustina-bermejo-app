@@ -110,6 +110,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Materia pendiente " + name);
         entityManager.persist(subject);
 

@@ -1,0 +1,27 @@
+meta {
+  name: 12. Perfil propio - email invalido (400)
+  type: http
+  seq: 12
+}
+
+put {
+  url: {{baseUrl}}/me
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+body:json {
+  {
+    "email": "no-es-un-email"
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

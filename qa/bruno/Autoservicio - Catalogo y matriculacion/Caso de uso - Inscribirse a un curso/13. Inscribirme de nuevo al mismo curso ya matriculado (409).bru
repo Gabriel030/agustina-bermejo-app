@@ -1,0 +1,33 @@
+meta {
+  name: 13. Inscribirme de nuevo al mismo curso ya matriculado (409)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/me/course-enrollments
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+body:multipart-form {
+  courseId: {{courseIdQA}}
+  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+tests {
+  test("status 409 — AlreadyEnrolledInCourseException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  A esta altura ya hay un CourseEnrollment ENROLLED real (paso 10 lo
+  creó) — `validarPuedeMatricular` (reusado desde
+  `CourseEnrollmentApplicationService.solicitarConPago`) lo rechaza antes
+  de generar ningún Invoice/PaymentReceipt nuevo.
+}

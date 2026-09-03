@@ -1,0 +1,33 @@
+meta {
+  name: 24. Inscribir al otro en comision A (setup, 201)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{otraMatriculaIdMisInsc}}/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenMisInsc}}
+}
+
+body:json {
+  {
+    "sectionId": {{sectionAIdMisInsc}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("seccionDelOtroMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

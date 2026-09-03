@@ -12,6 +12,8 @@ public interface GraduationRequestRepository extends JpaRepository<GraduationReq
 
     List<GraduationRequest> findByProgramEnrollmentId(Long programEnrollmentId);
 
+    List<GraduationRequest> findByStatus(GraduationRequestStatus status);
+
     // Resolver si ya hay un trámite activo antes del alta — red de seguridad adicional al
     // índice único parcial de la migración (decisión 11), mismo patrón que ProgramSubjectService.
     List<GraduationRequest> findByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);

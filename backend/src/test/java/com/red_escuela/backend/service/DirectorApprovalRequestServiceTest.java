@@ -145,6 +145,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
 
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("MateriaExcepcion" + System.nanoTime());
         entityManager.persist(subject);
         Term term = new Term();

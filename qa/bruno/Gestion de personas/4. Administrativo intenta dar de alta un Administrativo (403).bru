@@ -1,0 +1,43 @@
+meta {
+  name: 4. Administrativo intenta dar de alta un Administrativo (403)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/staff
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("emailAdmin2", "bruno.admin2." + Date.now() + "@example.com");
+  bru.setVar("dniAdmin2", "BRUNOADM" + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Admin",
+    "email": "{{emailAdmin2}}",
+    "dni": "{{dniAdmin2}}",
+    "city": "CABA",
+    "role": "ADMINISTRATIVO"
+  }
+}
+
+tests {
+  test("status 403 — rol válido, actor no autorizado para asignar ESE rol (RoleNotAssignableByActorException)", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  RF-AD-05/RF-DI-04: el reparto es exacto — Administrativo solo puede
+  crear Docente/Preceptor, nunca otro Administrativo. Distinto de un
+  `role` inválido (eso da 400, ver el request de "Rol inexistente").
+}

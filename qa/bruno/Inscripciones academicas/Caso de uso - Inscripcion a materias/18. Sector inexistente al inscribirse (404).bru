@@ -1,0 +1,27 @@
+meta {
+  name: 18. Sector inexistente al inscribirse (404)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/section-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "sectionId": 999999
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

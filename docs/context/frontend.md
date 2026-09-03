@@ -109,6 +109,54 @@ necesite de verdad.
 - Archivos de componentes/páginas/layouts: `PascalCase.jsx`. Hooks, utils, clientes:
   `camelCase.js`. Un componente por archivo, nombre de archivo = nombre exportado.
 
+## Responsive — obligatorio en toda pantalla nueva
+
+El proyecto termina empaquetado en nativo vía Capacitor (ver stack) — nunca
+se implementa una pantalla "solo desktop" para adaptarla después. Breakpoints
+Tailwind default, mobile-first (clases sin prefijo = mobile, `md:`/`lg:`
+agregan desde ahí, nunca al revés):
+
+- **Layouts por rol** (`Sidebar.jsx` + contenido): el sidebar fijo a la
+  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
+  **menú hamburguesa** (`MobileMenu.jsx`, drawer lateral con los mismos
+  ítems) — decisión revisada con el usuario; la versión anterior de esta
+  convención pedía una bottom tab bar, descartada a pedido explícito.
+- **Pantallas centradas sin sidebar** (Login, Registrarse): `GlassCard`
+  pasa de ancho fijo a `w-full` con padding en mobile, ancho fijo recién en
+  `md:`+.
+- **Grillas de cards**: `grid-cols-1` mobile → `grid-cols-2` `md:` →
+  `grid-cols-3` `lg:`. Nunca scroll horizontal de cards.
+- **Tablas densas**: patrón "card por fila" en mobile en vez de scroll
+  horizontal — se resuelve puntual por pantalla al implementarla, no hay una
+  solución genérica forzada para todas.
+
+Mockup de referencia del patrón "card centrada": ver `Login (mobile)` en
+[[Diseño UI - Vidrio Líquido]] (Obsidian) antes de implementar cualquier
+pantalla de ese tipo.
+
+## Tabs / navegación secundaria por pestañas
+
+**Siempre el componente `Tabs`/`TabsList`/`TabsTrigger` de shadcn
+(`components/ui/tabs.jsx`), con `<TabsList variant="line">`** (subrayado bajo la
+opción activa) — nunca un grupo de `<button>` hecho a mano, aunque sea "solo
+para filtrar una lista" y no para partir contenido en paneles separados. Antes
+de esta regla había tres implementaciones distintas conviviendo (botones
+píldora con gradiente en Catálogo/Mis carreras, botones píldora blancos en
+Director/Aprobaciones, y el `Tabs` de shadcn en Docente/Asistencia) — se
+probó también la variante píldora por defecto (`bg-muted`, sin `variant`) como
+estándar único, pero el estado activo no se distinguía lo suficiente del
+inactivo, así que se descartó a favor de `variant="line"`.
+
+Aplica tanto si las pestañas separan paneles de contenido distintos (ej.
+Asistencia/Historial/Reporte en Docente) como si solo cambian el filtro de una
+misma lista (ej. Agendadas/Cerradas en Preceptor/Mesa de examen,
+Pendientes/Historial en Director/Aprobaciones) — visualmente son la misma
+interacción para el usuario y tienen que verse igual.
+
+Nota para tests: `TabsTrigger` renderiza `role="tab"` (semántica ARIA real de
+Radix), no `role="button"` — los tests que interactúan con una tab usan
+`screen.getByRole('tab', { name: '...' })`, no `'button'`.
+
 ## Motion / animación
 
 Solo las transiciones ya definidas en el sistema de diseño (spring

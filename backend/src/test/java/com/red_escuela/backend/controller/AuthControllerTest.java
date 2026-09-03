@@ -8,6 +8,7 @@ import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
 import com.red_escuela.backend.dto.ResetPasswordRequest;
+import com.red_escuela.backend.dto.VerifyResetCodeRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.AuthProvider;
 import com.red_escuela.backend.entity.Person;
@@ -150,10 +151,18 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConTokenInvalidoDevuelve401() throws Exception {
+    void verifyResetCodeConEmailInexistenteDevuelve401() throws Exception {
+        mockMvc.perform(post("/auth/verify-reset-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new VerifyResetCodeRequest("no-existe@example.com", "000000"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void resetPasswordConTokenDeIntercambioInvalidoDevuelve401() throws Exception {
         mockMvc.perform(post("/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ResetPasswordRequest("token-que-no-existe", "nueva123"))))
+                        .content(objectMapper.writeValueAsString(new ResetPasswordRequest("token-que-no-existe", "Nueva123"))))
                 .andExpect(status().isUnauthorized());
     }
 }

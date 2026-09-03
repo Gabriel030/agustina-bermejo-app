@@ -1,0 +1,24 @@
+meta {
+  name: 10. Alumno ve su resumen de deuda (200)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/me/invoices/debt-summary
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("tieneDeuda true y montoAdeudado refleja la factura sin pagar", function () {
+    expect(res.getBody().tieneDeuda).to.equal(true);
+    expect(res.getBody().montoAdeudado).to.equal(10000);
+  });
+}

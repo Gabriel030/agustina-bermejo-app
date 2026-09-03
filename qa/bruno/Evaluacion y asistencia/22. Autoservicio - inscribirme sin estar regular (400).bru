@@ -1,0 +1,28 @@
+meta {
+  name: 22. Autoservicio - inscribirme sin estar regular (400)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/me/exam-board-registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+body:json {
+  {
+    "examBoardId": {{examBoardAutoservicioId}},
+    "programSectionEnrollmentId": {{sectionEnrollmentId}}
+  }
+}
+
+tests {
+  test("status 400 — mismo StudentNotRegularException, self-service o vía staff comparten el mismo service", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

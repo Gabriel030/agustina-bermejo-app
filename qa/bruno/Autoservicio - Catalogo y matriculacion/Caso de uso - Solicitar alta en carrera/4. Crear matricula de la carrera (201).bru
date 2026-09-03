@@ -1,0 +1,39 @@
+meta {
+  name: 4. Crear matricula de la carrera (201)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/fee-schedules
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessTokenQA}}
+}
+
+body:json {
+  {
+    "programId": {{programIdQA}},
+    "concept": "MATRICULA",
+    "amount": 50000,
+    "vigenteDesde": "2020-01-01"
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("amount 50000", function () {
+    expect(res.getBody().amount).to.equal(50000);
+  });
+}
+
+docs {
+  Setup: sin esto, `solicitarConPago` falla 404
+  (FeeScheduleNotFoundException) al intentar generar la factura de
+  matrícula — ver `ProgramEnrollmentApplicationService.solicitarConPago`.
+}

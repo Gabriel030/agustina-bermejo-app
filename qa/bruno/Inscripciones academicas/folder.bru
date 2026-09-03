@@ -1,0 +1,20 @@
+meta {
+  name: Inscripciones academicas
+}
+
+docs {
+  # Inscripciones académicas
+
+  ProgramEnrollmentController (ya cubierto en Facturación/Egreso), CourseEnrollmentController,
+  CourseSectionEnrollmentController, SubjectSectionEnrollmentController,
+  MeAcademicRecordController. Ver
+  `backend/src/test/resources/karate/inscripciones-academicas/` para la
+  cobertura exhaustiva (23 escenarios en 3 features).
+
+  **`MeAcademicRecordController` no tiene cobertura Bruno**: para tener datos
+  reales (asistencia/notas) hace falta un `EvaluationScheme` asignado a la
+  comisión, y no existe ningún endpoint HTTP para crear uno — mismo tipo de
+  gap que el `Instructor` de Estructura académica (ver "Deuda técnica y gaps
+  de QA" en Obsidian). Karate lo resuelve con un fixture Java nuevo
+  (`KarateFixtures.crearEvaluationScheme()`, vía un repository de solo test).
+}

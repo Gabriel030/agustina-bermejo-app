@@ -1,0 +1,25 @@
+meta {
+  name: 19. Listar mis inscripciones (200)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/me/section-enrollments
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("aparece la inscripción a la Comisión A", function () {
+    const propia = res.getBody().find(e => e.id === bru.getVar("sectionEnrollmentIdMisInsc"));
+    expect(propia).to.not.be.undefined;
+    expect(propia.sectionId).to.equal(bru.getVar("sectionAIdMisInsc"));
+  });
+}

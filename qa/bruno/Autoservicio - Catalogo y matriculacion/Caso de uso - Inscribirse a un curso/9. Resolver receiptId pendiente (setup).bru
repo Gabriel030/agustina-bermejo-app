@@ -1,0 +1,35 @@
+meta {
+  name: 9. Resolver receiptId pendiente (setup)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/payment-receipts
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const receipts = res.getBody();
+    const maxId = Math.max(...receipts.map((r) => r.id));
+    bru.setVar("receiptIdCursoQA", maxId);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Setup: la bandeja `GET /payment-receipts?status=PENDING_REVIEW` es
+  global (sin filtro por alumno, ver spec técnica) — se toma el de id más
+  alto, que es el propio (creado en el paso 7), porque ningún otro
+  comprobante se crea entre ese paso y este dentro de esta corrida.
+}

@@ -1,0 +1,20 @@
+meta {
+  name: 13. Baja puntual de nuevo - ya dado de baja (409)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/course-section-enrollments/{{sectionEnrollmentId}}/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 409 — CannotWithdrawException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

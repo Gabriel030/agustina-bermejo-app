@@ -27,8 +27,7 @@ public class ProgramService {
         program.setTotalYears(request.totalYears());
         program.setPrice(request.price());
         program.setTotalCreditsRequired(request.totalCreditsRequired());
-        program.setAdmissionStart(request.admissionStart());
-        program.setAdmissionEnd(request.admissionEnd());
+        program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         program.setStatus(StatusType.ACTIVE);
         return programRepository.save(program);
     }
@@ -48,11 +47,8 @@ public class ProgramService {
         if (request.totalCreditsRequired() != null) {
             program.setTotalCreditsRequired(request.totalCreditsRequired());
         }
-        if (request.admissionStart() != null) {
-            program.setAdmissionStart(request.admissionStart());
-        }
-        if (request.admissionEnd() != null) {
-            program.setAdmissionEnd(request.admissionEnd());
+        if (request.installmentsPerAcademicYear() != null) {
+            program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         }
         return programRepository.save(program);
     }

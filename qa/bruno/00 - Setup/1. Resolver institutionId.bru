@@ -1,0 +1,34 @@
+meta {
+  name: 1. Resolver institutionId
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/institutions
+  auth: none
+}
+
+script:post-response {
+  const instituciones = res.getBody();
+  if (Array.isArray(instituciones) && instituciones.length > 0) {
+    bru.setVar("institutionId", instituciones[0].id);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("hay al menos una institución sembrada — si falla, sembrar antes de seguir", function () {
+    expect(res.getBody()).to.be.an("array").that.is.not.empty;
+  });
+}
+
+docs {
+  # Resolver institutionId
+
+  Bootstrap de toda la colección — sin esto, `Registrar - happy path` y
+  cualquier request de `Autoservicio` que dependa de crear una cuenta
+  nueva no tienen `institutionId` para mandar.
+}

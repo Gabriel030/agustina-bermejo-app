@@ -1,0 +1,20 @@
+meta {
+  name: 10. Reactivar (204)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programIdCatalogo}}/activate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

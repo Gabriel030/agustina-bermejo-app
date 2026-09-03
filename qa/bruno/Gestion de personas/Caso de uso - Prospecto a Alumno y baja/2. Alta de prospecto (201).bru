@@ -1,0 +1,45 @@
+meta {
+  name: 2. Alta de prospecto (201)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/prospects
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("emailProspecto", "bruno.prospecto." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Prospecto",
+    "email": "{{emailProspecto}}",
+    "telefono": "11-5555-5555",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("prospectoId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201 — público, sin sesión", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("onboardingStatus inicial es PROSPECTO", function () {
+    expect(res.getBody().onboardingStatus).to.equal("PROSPECTO");
+  });
+}
+
+docs {
+  Depende de `institutionId` — correr `00 - Setup` primero, o toda la
+  colección junta.
+}

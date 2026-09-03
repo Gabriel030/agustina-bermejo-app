@@ -1,0 +1,20 @@
+meta {
+  name: 14. Dar de baja la inscripcion (204)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/section-enrollments/{{sectionEnrollmentTrasCambioId}}/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

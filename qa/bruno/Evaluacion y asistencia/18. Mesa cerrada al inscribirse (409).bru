@@ -1,0 +1,28 @@
+meta {
+  name: 18. Mesa cerrada al inscribirse (409)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/exam-boards/{{examBoardId}}/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "examBoardId": {{examBoardId}},
+    "programSectionEnrollmentId": {{sectionEnrollmentId}}
+  }
+}
+
+tests {
+  test("status 409 — ExamBoardClosedException (aunque también fallaría por no-regular; la mesa cerrada es el primer chequeo)", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

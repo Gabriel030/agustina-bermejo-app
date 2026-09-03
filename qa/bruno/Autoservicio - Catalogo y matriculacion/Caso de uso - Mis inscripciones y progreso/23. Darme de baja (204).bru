@@ -1,0 +1,20 @@
+meta {
+  name: 23. Darme de baja (204)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/me/section-enrollments/{{nuevaSectionEnrollmentIdMisInsc}}/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenMisInsc}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

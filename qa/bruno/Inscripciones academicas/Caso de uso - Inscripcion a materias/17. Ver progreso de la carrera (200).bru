@@ -1,0 +1,20 @@
+meta {
+  name: 17. Ver progreso de la carrera (200)
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/program-enrollments/{{programEnrollmentId}}/progress
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

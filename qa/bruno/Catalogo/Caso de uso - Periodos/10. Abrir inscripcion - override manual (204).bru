@@ -1,0 +1,27 @@
+meta {
+  name: 10. Abrir inscripcion - override manual (204)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}/enrollment/open
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Override manual de ventana de inscripción (decisión 5 de la spec de
+  Procesos administrativos). No hay campo expuesto en `TermResponse` para
+  verificar el efecto acá — ya se verifica por comportamiento real en el
+  dominio Inscripciones académicas.
+}

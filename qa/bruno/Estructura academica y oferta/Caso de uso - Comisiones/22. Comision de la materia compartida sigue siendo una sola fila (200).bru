@@ -1,0 +1,23 @@
+meta {
+  name: 22. Comision de la materia compartida sigue siendo una sola fila (200)
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/subjects/{{subjectId}}/sections
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("una sola comisión aunque la materia ahora esté en el plan de 2 carreras — SubjectSection no referencia Program", function () {
+    expect(res.getBody()).to.have.lengthOf(1);
+  });
+}

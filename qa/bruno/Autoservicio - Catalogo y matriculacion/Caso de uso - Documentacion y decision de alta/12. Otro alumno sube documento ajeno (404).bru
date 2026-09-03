@@ -1,0 +1,25 @@
+meta {
+  name: 12. Otro alumno sube documento ajeno (404)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications/{{applicationIdDocAlta}}/documents?type=FOTO
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{otroAlumnoAccessTokenDocAlta}}
+}
+
+body:multipart-form {
+  file: @file(Gestion de personas/fixtures/dni-dummy.pdf)
+}
+
+tests {
+  test("status 404 — ownership, no revela que la solicitud existe", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: 6. Listar documentos - un mismo tipo no duplica (200)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/prospects/{{prospectoId}}/documents
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("un solo documento DNI — el segundo upload reemplazó al primero", function () {
+    expect(res.getBody().length).to.equal(1);
+  });
+}
+
+docs {
+  El "5. Documento valido" corrió una sola vez en esta secuencia — para
+  probar el reemplazo real (2 uploads del mismo tipo, 1 solo queda) ver
+  el Karate equivalente, que lo hace en el mismo Scenario sin necesitar
+  2 archivos .bru idénticos.
+}

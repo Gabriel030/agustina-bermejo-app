@@ -1,0 +1,17 @@
+meta {
+  name: Caso de uso - Documentacion y decision de alta
+}
+
+docs {
+  # Caso de uso — Documentación y decisión de una solicitud de alta
+
+  **Correr con:** `bru run "00 - Setup" "Autoservicio - Catalogo y
+  matriculacion/Caso de uso - Documentacion y decision de alta" -r --env
+  Local` (necesita `{{institutionId}}` de `00 - Setup`).
+
+  Complementa "Caso de uso - Solicitar alta en carrera" (que ya cubre
+  solicitar/aprobar) con lo que faltaba de
+  `ProgramEnrollmentApplicationController`: `agregarDocumento` (multipart,
+  mismo patrón que Prospecto), `rechazar` (motivo obligatorio) y
+  `listarPendientes`.
+}

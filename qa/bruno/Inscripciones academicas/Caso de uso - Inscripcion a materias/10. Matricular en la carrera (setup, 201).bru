@@ -1,0 +1,33 @@
+meta {
+  name: 10. Matricular en la carrera (setup, 201)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/program-enrollments
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "programId": {{programId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programEnrollmentId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

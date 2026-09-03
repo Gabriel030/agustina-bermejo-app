@@ -1,0 +1,28 @@
+meta {
+  name: 15. Mesa inexistente al inscribirse (404)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/exam-boards/999999/registrations
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "examBoardId": 999999,
+    "programSectionEnrollmentId": {{sectionEnrollmentId}}
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

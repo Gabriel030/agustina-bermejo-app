@@ -1,0 +1,36 @@
+meta {
+  name: 4. Editar carrera (200)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/programs/{{programIdCatalogo}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+body:json {
+  {
+    "totalYears": 5
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("solo el campo enviado cambia", function () {
+    expect(res.getBody().totalYears).to.equal(5);
+    expect(res.getBody().name).to.equal(bru.getVar("nombreCarreraCatalogo"));
+  });
+}
+
+docs {
+  Editar es PATCH-si-viene-presente (ver `ProgramService.editarCarrera`) —
+  mandar solo `totalYears` no borra `name` ni el resto de los campos.
+}

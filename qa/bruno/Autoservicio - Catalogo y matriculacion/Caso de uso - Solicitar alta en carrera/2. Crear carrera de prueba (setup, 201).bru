@@ -1,0 +1,49 @@
+meta {
+  name: 2. Crear carrera de prueba (setup, 201)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCarreraQA", "QA Bruno - Carrera " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCarreraQA}}",
+    "totalYears": 3,
+    "price": 50000,
+    "totalCreditsRequired": 0
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programIdQA", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status por default queda ACTIVE (sin mandarlo explícito)", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}
+
+docs {
+  Setup: `Program` ya no tiene `admissionStart`/`admissionEnd` (Épica 8
+  Fase 2, migraron a `ProgramCohort`) — la ventana de admisión se define
+  en el request 5 (crear cohorte), no acá.
+}

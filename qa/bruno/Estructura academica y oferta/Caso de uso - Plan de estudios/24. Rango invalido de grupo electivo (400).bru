@@ -1,0 +1,29 @@
+meta {
+  name: 24. Rango invalido de grupo electivo (400)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/elective-groups
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "electiveGroupId": {{groupId}},
+    "minRequired": 5,
+    "maxAllowed": 1
+  }
+}
+
+tests {
+  test("status 400 — InvalidElectiveRangeException, minRequired > maxAllowed", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

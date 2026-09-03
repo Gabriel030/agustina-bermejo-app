@@ -1,6 +1,5 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.entity.DocumentType;
 import com.red_escuela.backend.exception.UnsupportedFileTypeException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,7 +33,13 @@ public class FileStorageService {
         this.uploadsDirectory = Path.of(uploadsDirectory);
     }
 
-    public String store(Long studentId, DocumentType type, MultipartFile file) {
+    // `carpeta` agrupa el archivo dentro del directorio del alumno (hoy: el nombre
+    // de un DocumentType para documentos de alta, o "comprobantes" para
+    // PaymentReceipt) — generalizado desde un DocumentType tipado porque un
+    // comprobante de pago no es un "documento de alumno" en el mismo sentido, no
+    // tiene por qué acoplar este service a ese enum (ver Deuda técnica / spec
+    // técnica de Épica 7 Fase 3).
+    public String store(Long studentId, String carpeta, MultipartFile file) {
         String extension = ALLOWED_CONTENT_TYPES.get(file.getContentType());
         if (extension == null) {
             throw new UnsupportedFileTypeException(file.getContentType());
@@ -43,7 +48,7 @@ public class FileStorageService {
         Path studentDirectory = uploadsDirectory.resolve("students").resolve(studentId.toString());
         try {
             Files.createDirectories(studentDirectory);
-            String fileName = type + "_" + System.currentTimeMillis() + "." + extension;
+            String fileName = carpeta + "_" + System.currentTimeMillis() + "." + extension;
             Path destination = studentDirectory.resolve(fileName);
             file.transferTo(destination);
             return uploadsDirectory.relativize(destination).toString();

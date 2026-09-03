@@ -1,0 +1,33 @@
+meta {
+  name: Login - tipos incorrectos en el body (400)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": 12345,
+    "password": null
+  }
+}
+
+tests {
+  test("status 400 — Jackson no puede deserializar / password null cae en @NotBlank", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  # Login — tipos incorrectos / null explícito
+
+  Caso borde clásico que un cliente HTTP mal escrito puede mandar sin
+  querer: `username` como número, `password` como `null` explícito (no
+  ausente). Confirma que el deserializador de Jackson + Bean Validation
+  no dejan pasar esto silenciosamente ni tiran `500`.
+}

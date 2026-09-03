@@ -1,0 +1,53 @@
+meta {
+  name: GET Programs - sin sesion (403)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/programs
+  auth: none
+}
+
+tests {
+  test("status 403 — Spring Security deniega sin AuthenticationEntryPoint propio configurado (verificado con curl -i)", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+  test("body no filtra datos de carreras — solo el error genérico de Spring Boot (timestamp/status/error/message/path)", function () {
+    const body = res.getBody();
+    if (body && typeof body === "object") {
+      expect(Object.keys(body).sort()).to.deep.equal(["error", "message", "path", "status", "timestamp"]);
+    }
+  });
+}
+
+docs {
+  # GET Programs — sin sesión
+
+  A diferencia de `/institutions`, este endpoint SÍ exige sesión (no está
+  en `permitAll()`) — `Catalogo.jsx` solo lo pega con `usuario` ya
+  logueado.
+
+  **Por qué 403 y no 401:** sin un `AuthenticationEntryPoint` propio
+  configurado en `SecurityConfig`, Spring Security 6 devuelve `403` para
+  cualquier request sin credenciales contra un endpoint que exige
+  `authenticated()` — no hay un desafío `WWW-Authenticate` de vuelta.
+  Confirmado con `curl -i` directo (no asumido). No es necesariamente el
+  código "ideal" desde un punto de vista REST estricto (`401` sería más
+  preciso semánticamente para "no autenticado" vs `403` para "autenticado
+  pero sin permiso"), pero es el comportamiento REAL y consistente hoy —
+  si algún día se agrega un `AuthenticationEntryPoint` propio, este test
+  tiene que actualizarse a propósito, no fallar en silencio.
+
+  **Por qué SÍ tiene body ahora (no vacío):** `/error` es `permitAll()`
+  (ver SecurityConfig, agregado para un bug distinto — excepciones de
+  Spring MVC sin manejar quedaban enmascaradas como 403 vacío en vez de
+  su status real). Efecto secundario esperado: los errores puramente de
+  seguridad (como este) también pasan ahora por el `BasicErrorController`
+  default de Spring Boot, que sí arma un body genérico
+  (`timestamp/status/error/message/path`). No es una fuga de datos — el
+  criterio de "sin body" sigue vigente para las excepciones de dominio
+  propias (`GlobalExceptionHandler`, todas con handler vacío), este es
+  el comportamiento default de Spring Boot para lo que no se maneja
+  explícito, aceptado a propósito en vez de suprimirlo con más código.
+}

@@ -169,7 +169,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(file)
-                        .param("type", "DNI")
+                        .param("type", "DNI_FRENTE")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
     }
@@ -185,10 +185,10 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
                         .file(file)
-                        .param("type", "DNI")
+                        .param("type", "DNI_FRENTE")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.type").value("DNI"));
+                .andExpect(jsonPath("$.type").value("DNI_FRENTE"));
 
         List<StudentDocument> documents = studentDocumentRepository.findByStudentId(student.getId());
         assertThat(documents).hasSize(1);
@@ -203,12 +203,12 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         MockMultipartFile primero = new MockMultipartFile("file", "dni1.pdf", "application/pdf", "uno".getBytes());
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
-                        .file(primero).param("type", "DNI").header("Authorization", "Bearer " + token))
+                        .file(primero).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
 
         MockMultipartFile segundo = new MockMultipartFile("file", "dni2.pdf", "application/pdf", "dos".getBytes());
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
-                        .file(segundo).param("type", "DNI").header("Authorization", "Bearer " + token))
+                        .file(segundo).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
 
         List<StudentDocument> documents = studentDocumentRepository.findByStudentId(student.getId());
@@ -239,13 +239,14 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         List<PasswordResetToken> resetTokens = passwordResetTokenRepository.findAll();
         assertThat(resetTokens).hasSize(1);
 
-        String rawPasswordResetToken = "raw-para-test-confirmacion";
+        String rawPasswordResetCode = "123456";
         PasswordResetToken existing = resetTokens.get(0);
-        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetToken));
+        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
         entityManager.merge(existing);
         entityManager.flush();
 
-        authService.resetPassword(rawPasswordResetToken, "nuevaPassword123");
+        String exchangeToken = authService.verifyResetCode(confirmado.getPerson().getEmail(), rawPasswordResetCode);
+        authService.resetPassword(exchangeToken, "nuevaPassword123");
         AuthTokens tokens = authService.login("30111222", "nuevaPassword123", "127.0.0.1");
         assertThat(tokens.accessToken()).isNotBlank();
     }
@@ -284,7 +285,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         MockMultipartFile file = new MockMultipartFile("file", "dni.pdf", "application/pdf", "contenido".getBytes());
 
         mockMvc.perform(multipart("/prospects/{id}/documents", student.getId())
-                        .file(file).param("type", "DNI").header("Authorization", "Bearer " + token))
+                        .file(file).param("type", "DNI_FRENTE").header("Authorization", "Bearer " + token))
                 .andExpect(status().isCreated());
     }
 }

@@ -1,0 +1,30 @@
+meta {
+  name: 8. Sin acceso todavia - ni rol ni CourseEnrollment (200)
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/me
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoCursoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("roles vacío — inscribirse por sí solo no otorga nada hasta que se aprueba el pago", function () {
+    expect(res.getBody().roles).to.be.an("array").that.is.empty;
+  });
+}
+
+docs {
+  Criterio de aceptación revisado de la spec funcional (el borrador
+  anterior asumía inscripción inmediata para curso, el usuario lo
+  corrigió explícitamente): ni carrera ni curso otorgan acceso hasta que
+  el comprobante se aprueba.
+}

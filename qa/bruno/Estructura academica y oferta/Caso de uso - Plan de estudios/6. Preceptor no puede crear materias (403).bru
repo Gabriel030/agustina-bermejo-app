@@ -1,0 +1,27 @@
+meta {
+  name: 6. Preceptor no puede crear materias (403)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Intento no autorizado"
+  }
+}
+
+tests {
+  test("status 403 — exclusivo de Administrativo", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}

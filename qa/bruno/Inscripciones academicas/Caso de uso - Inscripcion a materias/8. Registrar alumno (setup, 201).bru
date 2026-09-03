@@ -1,0 +1,43 @@
+meta {
+  name: 8. Registrar alumno (setup, 201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("usernameAlumno", "bruno.inscripcionmateria." + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "InscripcionMateria",
+    "email": "{{usernameAlumno}}@example.com",
+    "username": "{{usernameAlumno}}",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("alumnoAccessToken", res.getBody().accessToken);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Depende de `institutionId` — correr `00 - Setup` primero, o toda la
+  colección junta.
+}

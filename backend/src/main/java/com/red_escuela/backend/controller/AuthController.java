@@ -2,14 +2,20 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.AuthResponse;
 import com.red_escuela.backend.dto.ForgotPasswordRequest;
+import com.red_escuela.backend.dto.GoogleLoginRequest;
+import com.red_escuela.backend.dto.GoogleRegisterRequest;
 import com.red_escuela.backend.dto.LoginRequest;
 import com.red_escuela.backend.dto.LogoutRequest;
 import com.red_escuela.backend.dto.RefreshRequest;
+import com.red_escuela.backend.dto.RegisterRequest;
 import com.red_escuela.backend.dto.ResetPasswordRequest;
+import com.red_escuela.backend.dto.VerifyResetCodeRequest;
+import com.red_escuela.backend.dto.VerifyResetCodeResponse;
 import com.red_escuela.backend.exception.TooManyRequestsException;
 import com.red_escuela.backend.service.AuthService;
 import com.red_escuela.backend.service.AuthTokens;
 import com.red_escuela.backend.service.LoginRateLimiter;
+import com.red_escuela.backend.service.RegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,11 +30,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final RegistrationService registrationService;
     private final LoginRateLimiter rateLimiter;
 
-    public AuthController(AuthService authService, LoginRateLimiter rateLimiter) {
+    public AuthController(AuthService authService, RegistrationService registrationService, LoginRateLimiter rateLimiter) {
         this.authService = authService;
+        this.registrationService = registrationService;
         this.rateLimiter = rateLimiter;
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
+        }
+        AuthTokens tokens = registrationService.registrar(request);
+        return AuthResponse.from(tokens);
     }
 
     @PostMapping("/login")
@@ -38,6 +56,25 @@ public class AuthController {
             throw new TooManyRequestsException("Demasiados intentos de login, esperá un momento antes de reintentar");
         }
         AuthTokens tokens = authService.login(request.username(), request.password(), ip);
+        return AuthResponse.from(tokens);
+    }
+
+    @PostMapping("/google")
+    public AuthResponse loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeLogin(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiados intentos de login, esperá un momento antes de reintentar");
+        }
+        AuthTokens tokens = authService.loginWithGoogle(request.idToken());
+        return AuthResponse.from(tokens);
+    }
+
+    @PostMapping("/google/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse registerWithGoogle(@Valid @RequestBody GoogleRegisterRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
+        }
+        AuthTokens tokens = registrationService.registrarConGoogle(request.idToken(), request.institutionId());
         return AuthResponse.from(tokens);
     }
 
@@ -63,9 +100,18 @@ public class AuthController {
         authService.requestPasswordReset(request.email());
     }
 
+    @PostMapping("/verify-reset-code")
+    public VerifyResetCodeResponse verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request, HttpServletRequest httpRequest) {
+        if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
+            throw new TooManyRequestsException("Demasiados intentos, esperá un momento antes de reintentar");
+        }
+        String resetToken = authService.verifyResetCode(request.email(), request.code());
+        return VerifyResetCodeResponse.from(resetToken);
+    }
+
     @PostMapping("/reset-password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        authService.resetPassword(request.token(), request.newPassword());
+        authService.resetPassword(request.resetToken(), request.newPassword());
     }
 }

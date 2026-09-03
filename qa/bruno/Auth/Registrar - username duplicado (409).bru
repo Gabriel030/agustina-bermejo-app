@@ -1,0 +1,47 @@
+meta {
+  name: Registrar - username duplicado (409)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Duplicado",
+    "email": "cualquier.email.valido@example.com",
+    "username": "preceptor.demo",
+    "password": "Test1234",
+    "institutionId": {{institutionId}}
+  }
+}
+
+tests {
+  test("status 409 — username ya existe", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  # Registrar — username duplicado
+
+  Usa `preceptor.demo` (cuenta sembrada, siempre existe) como `username`
+  en conflicto — no depende de haber corrido antes el happy path de
+  Registrar, así que puede correr de forma aislada. `email` va con
+  formato válido a propósito: `RegistrationService.registrar` valida
+  unicidad por `username`, no por `email` — si se manda un `email` mal
+  formado acá, `@Email` lo rechaza con `400` ANTES de llegar al chequeo
+  de unicidad, dando un falso `400` que no prueba lo que este caso quiere
+  probar (encontrado corriendo esta colección por primera vez: la
+  primera versión de este request usaba "preceptor.demo" también como
+  `email`, y el `400` resultante casi se reporta como bug del producto
+  cuando en realidad era un dato de prueba inválido).
+
+  **Criterio de aceptación:** `409`, no `500` ni un `201` que pise la
+  cuenta existente.
+}

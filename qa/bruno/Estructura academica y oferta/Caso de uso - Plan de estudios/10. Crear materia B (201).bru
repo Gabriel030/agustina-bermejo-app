@@ -1,0 +1,37 @@
+meta {
+  name: 10. Crear materia B (201)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreMateriaB", "Materia B " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreMateriaB}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("subjectBId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,38 @@
+meta {
+  name: 8. Crear factura (201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/students/{{studentId}}/invoices
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "concept": "Cuota Marzo",
+    "amount": 10000,
+    "dueDate": "2026-12-31"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("invoiceId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial PENDING", function () {
+    expect(res.getBody().status).to.equal("PENDING");
+  });
+}

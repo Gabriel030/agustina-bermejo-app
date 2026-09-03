@@ -1,0 +1,37 @@
+meta {
+  name: 5. Director da de alta un Administrativo (201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/staff
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("emailAdmin3", "bruno.admin3." + Date.now() + "@example.com");
+  bru.setVar("dniAdmin3", "BRUNOADM2" + Date.now());
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "Admin",
+    "email": "{{emailAdmin3}}",
+    "dni": "{{dniAdmin3}}",
+    "city": "CABA",
+    "role": "ADMINISTRATIVO"
+  }
+}
+
+tests {
+  test("status 201 — RF-DI-04, caso antes imposible", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

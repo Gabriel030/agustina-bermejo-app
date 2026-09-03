@@ -1,0 +1,16 @@
+meta {
+  name: Caso de uso - Periodos
+}
+
+docs {
+  # Caso de uso — Períodos lectivos (TermController)
+
+  **Correr con:** `bru run "Catalogo/Caso de uso - Periodos" -r --env Local`
+  (después de `00 - Setup`, necesita `{{institutionId}}`).
+
+  Mismo criterio que carreras/cursos, más el override manual de ventana de
+  inscripción (`enrollment/open|close|clear-override`, decisión 5 de la
+  spec de Procesos administrativos) — acá solo por status code, ya que
+  `TermResponse` no expone el campo `enrollmentOverride`; el permiso
+  (PRECEPTOR o ADMINISTRATIVO, nunca Alumno) sí se verifica.
+}

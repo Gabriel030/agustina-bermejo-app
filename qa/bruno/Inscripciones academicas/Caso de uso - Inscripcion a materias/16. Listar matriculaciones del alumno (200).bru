@@ -1,0 +1,24 @@
+meta {
+  name: 16. Listar matriculaciones del alumno (200)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/students/{{studentId}}/program-enrollments
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("incluye la matriculación creada", function () {
+    const ids = res.getBody().map(function (p) { return p.id; });
+    expect(ids).to.include(bru.getVar("programEnrollmentId"));
+  });
+}

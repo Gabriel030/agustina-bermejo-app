@@ -1,0 +1,20 @@
+meta {
+  name: 9. Reactivar (204)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}/activate
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

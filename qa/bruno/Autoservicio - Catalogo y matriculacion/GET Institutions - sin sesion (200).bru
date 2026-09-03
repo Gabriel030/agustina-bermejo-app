@@ -1,0 +1,31 @@
+meta {
+  name: GET Institutions - sin sesion (200)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/institutions
+  auth: none
+}
+
+tests {
+  test("status 200 — publico a proposito, sin esto Registrarse.jsx no puede armar el form", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("cada item expone solo id y name, nada sensible de Institution", function () {
+    const body = res.getBody();
+    if (Array.isArray(body) && body.length > 0) {
+      expect(Object.keys(body[0]).sort()).to.deep.equal(["id", "name"]);
+    }
+  });
+}
+
+docs {
+  # GET Institutions — sin sesión
+
+  Ver `00 - Setup/1. Resolver institutionId.bru` — este request es
+  redundante con ese (mismo endpoint) pero vive acá también para que la
+  carpeta de Autoservicio sea corrible de forma completamente aislada,
+  sin depender de correr "00 - Setup" primero.
+}

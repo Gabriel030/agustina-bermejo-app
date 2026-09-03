@@ -6,7 +6,7 @@ import com.red_escuela.backend.entity.Role;
 import java.util.List;
 
 public record PersonResponse(
-        Long id, String nombre, String apellido, String email, String telefono,
+        Long id, String nombre, String apellido, String email, String telefono, String dni,
         String street, String number, String floor, String city, String state,
         String postalCode, String country, List<String> roles) {
 
@@ -18,6 +18,7 @@ public record PersonResponse(
                 person.getLastname(),
                 person.getEmail(),
                 person.getPhoneNumber(),
+                person.getDni(),
                 address == null ? null : address.getStreet(),
                 address == null ? null : address.getNumber(),
                 address == null ? null : address.getFloor(),

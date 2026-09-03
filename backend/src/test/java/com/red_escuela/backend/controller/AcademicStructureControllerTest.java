@@ -123,10 +123,10 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCarreraConCreditosYVentanaDeAdmisionPersisteTodosLosCampos() throws Exception {
+    void crearCarreraConCreditosPersisteTodosLosCampos() throws Exception {
         String token = tokenWithRole("admin-academico3", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest(
-                "Tecnicatura en Sistemas", 3, null, 240, null, null);
+                "Tecnicatura en Sistemas", 3, null, 240, null);
 
         mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -159,7 +159,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         Long groupId = objectMapper.readTree(groupBody).get("id").asLong();
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura con Electivas", 4, null, 200, null, null);
+                "Tecnicatura con Electivas", 4, null, 200, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -194,7 +194,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Optativas"));
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura Optativas", 4, null, 100, null, null);
+                "Tecnicatura Optativas", 4, null, 100, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -225,9 +225,11 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subjectA = new Subject();
+        subjectA.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subjectA.setName("Materia MinGrade A");
         entityManager.persist(subjectA);
         Subject subjectB = new Subject();
+        subjectB.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subjectB.setName("Materia MinGrade B");
         entityManager.persist(subjectB);
 
@@ -235,11 +237,14 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entradaA.setProgram(program);
         entradaA.setSubject(subjectA);
         entradaA.setCurricularYear(1);
-        entradaA.setCurricularTerm(CurricularTerm.FIRST);
+        entradaA.setCurricularTerm(CurricularTerm.SECOND);
         entradaA.setCredits(5);
         entradaA.setStatus(StatusType.ACTIVE);
         entityManager.persist(entradaA);
 
+        // entradaB en el cuatrimestre ANTERIOR de entradaA (mismo año) — cronológicamente
+        // válida como correlativa, para que este test ejercite específicamente la
+        // validación de minGrade fuera de rango y no la de orden cronológico.
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(program);
         entradaB.setSubject(subjectB);
@@ -267,7 +272,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void desactivarYReactivarProgramaFuncionaYElListadoFiltraPorStatus() throws Exception {
         String token = tokenWithRole("admin-baja1", "ADMINISTRATIVO");
-        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, 100, null, null);
+        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, 100, null);
         String body = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -297,7 +302,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, 100, null, null))))
+                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, 100, null))))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).get("id").asLong();
 
@@ -449,6 +454,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Materia ProgramSubject Baja");
         entityManager.persist(subject);
         entityManager.flush();
@@ -609,7 +615,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, 50, null, null))))
+                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, 50, null))))
                 .andReturn().getResponse().getContentAsString();
         Long programId = objectMapper.readTree(programBody).get("id").asLong();
 
@@ -644,6 +650,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Materia del grupo en uso");
         entityManager.persist(subject);
         entityManager.flush();

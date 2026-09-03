@@ -1,0 +1,18 @@
+meta {
+  name: 00 - Setup
+}
+
+docs {
+  # Setup
+
+  Correr esta carpeta primero (`bru run "00 - Setup" -r --env Local`) antes
+  de cualquier otra carpeta que dependa de `institutionId` — hoy eso es
+  toda la carpeta `Auth` (Registrar) y `Autoservicio - Catalogo y
+  matriculacion`. Resuelve `institutionId` desde el `GET /institutions`
+  público y lo deja seteado como variable de entorno para el resto de la
+  colección, sin que haya que copiarlo a mano.
+
+  Si `GET /institutions` devuelve `[]` (base recién creada), este request
+  falla con un mensaje explícito — hay que sembrar una institución antes
+  (ver `docs/context/debugging.md`).
+}

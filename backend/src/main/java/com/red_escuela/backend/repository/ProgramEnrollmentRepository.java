@@ -14,4 +14,8 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusIn(
             Long studentId, Long programId, List<ProgramEnrollmentStatus> statuses);
+
+    // Motor de facturación recurrente (Épica 8 Fase 2): solo ENROLLED recibe
+    // cuotas nuevas — ni PAUSED ni WITHDRAWN (ver spec técnica, decisión 8).
+    List<ProgramEnrollment> findByStatus(ProgramEnrollmentStatus status);
 }

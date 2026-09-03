@@ -1,0 +1,27 @@
+meta {
+  name: 6. Editar modulo del curso (200)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/course-subjects/{{courseSubjectId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "{{nombreModulo}} (editado)"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

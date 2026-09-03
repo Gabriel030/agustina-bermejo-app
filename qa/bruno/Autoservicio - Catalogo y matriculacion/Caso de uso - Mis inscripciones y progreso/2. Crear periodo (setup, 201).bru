@@ -1,0 +1,41 @@
+meta {
+  name: 2. Crear periodo (setup, 201)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/terms
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenMisInsc}}
+}
+
+script:pre-request {
+  bru.setVar("nombreTermMisInsc", "QA Bruno - Ciclo mis inscripciones " + Date.now());
+}
+
+body:json {
+  {
+    "year": 2026,
+    "description": "{{nombreTermMisInsc}}",
+    "type": "ANUAL",
+    "startDate": "2026-01-01T00:00:00",
+    "endDate": "2026-12-31T00:00:00"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("termIdMisInsc", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

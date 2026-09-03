@@ -1,0 +1,28 @@
+meta {
+  name: 9. Listar filtrado por INACTIVE (200)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/programs?status=INACTIVE
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+params:query {
+  status: INACTIVE
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("incluye la carrera recién desactivada", function () {
+    const ids = res.getBody().map(p => p.id);
+    expect(ids).to.include(bru.getVar("programIdCatalogo"));
+  });
+}

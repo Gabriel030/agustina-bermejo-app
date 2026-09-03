@@ -1,0 +1,25 @@
+meta {
+  name: 4. Documento tipo no soportado (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/prospects/{{prospectoId}}/documents?type=DNI
+  body: multipartForm
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:multipart-form {
+  file: @file(Gestion de personas/fixtures/dni-dummy.exe)
+}
+
+tests {
+  test("status 400 — UnsupportedFileTypeException (solo pdf/jpeg/png)", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 11. Legajo refleja la baja (200)
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/students/{{prospectoId}}
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status del Person pasa a DELETED", function () {
+    expect(res.getBody().status).to.equal("DELETED");
+  });
+}

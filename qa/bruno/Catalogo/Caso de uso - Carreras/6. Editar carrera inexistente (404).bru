@@ -1,0 +1,27 @@
+meta {
+  name: 6. Editar carrera inexistente (404)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/programs/999999
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+body:json {
+  {
+    "totalYears": 3
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

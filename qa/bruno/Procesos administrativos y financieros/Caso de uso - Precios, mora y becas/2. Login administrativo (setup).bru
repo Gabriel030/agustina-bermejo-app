@@ -1,0 +1,28 @@
+meta {
+  name: 2. Login administrativo (setup)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "administrativo.demo",
+    "password": "Test1234"
+  }
+}
+
+script:post-response {
+  bru.setVar("adminAccessTokenPrecios", res.getBody().accessToken);
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

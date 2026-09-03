@@ -1,0 +1,20 @@
+meta {
+  name: 22. Decidir de nuevo ya aprobada (409)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/director-approval-requests/{{exceptionId}}/reject
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessToken}}
+}
+
+tests {
+  test("status 409 — InvalidDirectorApprovalRequestStateException, ya no está REQUESTED", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

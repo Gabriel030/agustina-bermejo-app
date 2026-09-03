@@ -3,7 +3,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -32,11 +31,11 @@ public class Program {
     @Column(name = "total_credits_required", nullable = false)
     private Integer totalCreditsRequired = 0;
 
-    @Column(name = "admission_start")
-    private LocalDateTime admissionStart;
-
-    @Column(name = "admission_end")
-    private LocalDateTime admissionEnd;
+    // Épica 8 Fase 2: junto a totalYears arma el plan de pagos completo
+    // (total de cuotas = totalYears × installmentsPerAcademicYear). La ventana de admisión
+    // pasó a vivir en ProgramCohort — una carrera tiene exactamente 2 por año.
+    @Column(name = "installments_per_academic_year")
+    private Integer installmentsPerAcademicYear;
 
     @OneToMany(mappedBy = "program", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubject> programSubjectsList;

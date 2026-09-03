@@ -57,6 +57,57 @@ export function AuthProvider({ children }) {
     return perfil;
   }, []);
 
+  // Mismo patrón que login(): guarda tokens y le pide el perfil a /me. A
+  // diferencia de login, la persona queda sin roles hasta su primera
+  // aprobación (ver ProgramEnrollmentApplicationService / CourseEnrollmentService).
+  const register = useCallback(async ({ nombre, apellido, email, username, password, institutionId }) => {
+    const tokens = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ nombre, apellido, email, username, password, institutionId }),
+    });
+    setAccessToken(tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
+  // Épica 1 Fase 2: mismo patrón que login()/register() — la diferencia entre las dos es solo
+  // qué endpoint golpean, el manejo de tokens/perfil es idéntico.
+  const loginWithGoogle = useCallback(async (idToken) => {
+    const tokens = await apiFetch('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    setAccessToken(tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
+  const registerWithGoogle = useCallback(async (idToken, institutionId) => {
+    const tokens = await apiFetch('/auth/google/register', {
+      method: 'POST',
+      body: JSON.stringify({ idToken, institutionId }),
+    });
+    setAccessToken(tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
+  // Re-hidrata `usuario` sin pasar por login — lo necesita Catálogo después de
+  // una inscripción a curso, que puede otorgar el rol ALUMNO en el momento
+  // (ver PersonRoleGranter) y el usuario no debería tener que desloguearse
+  // para que el resto de la app vea su rol nuevo.
+  const refrescarPerfil = useCallback(async () => {
+    const perfil = await apiFetch('/me');
+    setUsuario(perfil);
+    return perfil;
+  }, []);
+
   const logout = useCallback(async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     limpiarSesion();
@@ -71,8 +122,8 @@ export function AuthProvider({ children }) {
   }, [limpiarSesion]);
 
   const value = useMemo(
-    () => ({ usuario, roles: usuario?.roles ?? [], login, logout, cargando }),
-    [usuario, login, logout, cargando],
+    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando }),
+    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,0 +1,20 @@
+meta {
+  name: 12. Quitar override (204)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}/enrollment/clear-override
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

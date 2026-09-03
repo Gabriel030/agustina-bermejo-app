@@ -1,0 +1,23 @@
+meta {
+  name: 13. Director aprueba egreso (200)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/graduation-requests/{{graduationRequestId}}/approve
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{directorAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("status pasa a APPROVED", function () {
+    expect(res.getBody().status).to.equal("APPROVED");
+  });
+}

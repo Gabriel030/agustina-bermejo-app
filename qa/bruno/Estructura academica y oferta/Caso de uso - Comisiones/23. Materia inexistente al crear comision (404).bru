@@ -1,0 +1,29 @@
+meta {
+  name: 23. Materia inexistente al crear comision (404)
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/subjects/999999/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "x",
+    "termId": {{termId}},
+    "capacity": 10
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

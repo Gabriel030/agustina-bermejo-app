@@ -1,0 +1,27 @@
+meta {
+  name: 29. Materia inexistente al editar (404)
+  type: http
+  seq: 29
+}
+
+put {
+  url: {{baseUrl}}/subjects/999999
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "name": "x"
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

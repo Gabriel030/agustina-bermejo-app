@@ -1,0 +1,20 @@
+meta {
+  name: 11. Solicitar egreso de nuevo - ya activo (409)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId}}/graduation-request
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 409 — GraduationRequestAlreadyActiveException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

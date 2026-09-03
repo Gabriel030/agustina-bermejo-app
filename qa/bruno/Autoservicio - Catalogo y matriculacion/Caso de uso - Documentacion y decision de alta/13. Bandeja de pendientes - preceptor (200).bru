@@ -1,0 +1,25 @@
+meta {
+  name: 13. Bandeja de pendientes - preceptor (200)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/program-enrollment-applications
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenDocAlta}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("incluye la solicitud como PENDING", function () {
+    const propia = res.getBody().find(a => a.id === bru.getVar("applicationIdDocAlta"));
+    expect(propia).to.not.be.undefined;
+    expect(propia.status).to.equal("PENDING");
+  });
+}

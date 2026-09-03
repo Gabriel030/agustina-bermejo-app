@@ -34,4 +34,15 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
 
     long countByCourseSubjectSectionEnrollment_CourseEnrollment_IdAndCourseSubjectSectionEnrollment_CourseSubjectSection_CourseSubject_IdAndStatusNot(
             Long courseEnrollmentId, Long courseSubjectId, ExamBoardRegistrationStatus status);
+
+    // Mis inscripciones a mesas (todas las materias, cualquier carrera) — para
+    // GET /me/exam-board-registrations.
+    List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_Student_Id(Long studentId);
+
+    // Un alumno solo puede estar anotado a UN llamado por vez para la misma materia — antes de
+    // inscribirlo a una mesa nueva hay que chequear que no tenga otra REGISTERED para el mismo
+    // subject (pedido explícito del usuario: "para esa materia no se puede inscribir a otro
+    // llamado, a menos que se dé de baja de esa mesa y se dé de alta en otro llamado").
+    List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(
+            Long programEnrollmentId, Long subjectId, ExamBoardRegistrationStatus status);
 }

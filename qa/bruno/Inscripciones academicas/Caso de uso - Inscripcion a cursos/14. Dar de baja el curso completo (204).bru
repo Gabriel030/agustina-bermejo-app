@@ -1,0 +1,26 @@
+meta {
+  name: 14. Dar de baja el curso completo (204)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/course-enrollments/{{courseEnrollmentId}}/withdraw
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  A diferencia de ProgramEnrollment, la baja de CourseEnrollment cascadea a
+  TODAS sus inscripciones de módulo activas — se verifica en el paso
+  siguiente.
+}

@@ -1,0 +1,34 @@
+meta {
+  name: 15. Agregar correlatividad - A requiere B (201)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/program-subjects/{{programSubjectAId}}/prerequisites
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "prerequisiteProgramSubjectId": {{programSubjectBId}},
+    "requirementType": "APPROVED"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("prerequisiteId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

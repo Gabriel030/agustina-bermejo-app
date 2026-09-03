@@ -1,0 +1,43 @@
+meta {
+  name: 3. Crear carrera (setup, 201)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/programs
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogo}}
+}
+
+script:pre-request {
+  bru.setVar("nombreCarreraCatalogo", "QA Bruno - Carrera catálogo " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreCarreraCatalogo}}",
+    "totalYears": 4,
+    "price": 60000,
+    "totalCreditsRequired": 120
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("programIdCatalogo", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial ACTIVE", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: 14. Editar creditos de materia A en el plan (200)
+  type: http
+  seq: 14
+}
+
+put {
+  url: {{baseUrl}}/program-subjects/{{programSubjectAId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "credits": 10
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("credits actualizado", function () {
+    expect(res.getBody().credits).to.equal(10);
+  });
+}

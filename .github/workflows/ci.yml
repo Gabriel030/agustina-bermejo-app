@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +16,45 @@ jobs:
           distribution: temurin
           java-version: |
             21
+          cache: maven
+          cache-dependency-path: backend/pom.xml
 
       - name: Run backend test suite
         working-directory: backend
         run: ./mvnw clean verify
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run frontend test suite
+        working-directory: frontend
+        run: npm run test
+
+  # Nota: qa/bruno/ es la colección de exploración MANUAL (GUI/CLI local, contra
+  # docker-compose.qa.yml — Postgres descartable, ver ese archivo). No corre en CI a
+  # propósito: correrla acá además de Karate sería pagar el mismo costo dos veces
+  # (levantar el backend real completo) por la misma cobertura. La regresión
+  # automática de contrato HTTP vive en Karate, dentro del job `backend` de arriba
+  # (KarateSuiteTest, @SpringBootTest RANDOM_PORT + el mismo Testcontainers que ya
+  # usa el resto de la suite) — ver docs/context/testing.md.

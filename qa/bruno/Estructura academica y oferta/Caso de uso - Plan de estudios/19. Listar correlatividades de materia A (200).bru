@@ -1,0 +1,23 @@
+meta {
+  name: 19. Listar correlatividades de materia A (200)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/program-subjects/{{programSubjectAId}}/prerequisites
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("incluye la correlatividad con B", function () {
+    expect(res.getBody()[0].prerequisiteProgramSubjectId).to.equal(bru.getVar("programSubjectBId"));
+  });
+}

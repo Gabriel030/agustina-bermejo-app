@@ -1,0 +1,37 @@
+meta {
+  name: 8. Alta con DNI que luego se duplica (setup, 201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/staff
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("dniDuplicado", "BRUNODUP" + Date.now());
+  bru.setVar("emailDniA", "bruno.dnia." + Date.now() + "@example.com");
+}
+
+body:json {
+  {
+    "nombre": "QA",
+    "apellido": "DniA",
+    "email": "{{emailDniA}}",
+    "dni": "{{dniDuplicado}}",
+    "city": "CABA",
+    "role": "DOCENTE"
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,41 @@
+meta {
+  name: 5. Agregar modulo al curso (201)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/courses/{{courseId}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+script:pre-request {
+  bru.setVar("nombreModulo", "Módulo 1 " + Date.now());
+}
+
+body:json {
+  {
+    "name": "{{nombreModulo}}",
+    "sortOrder": 1
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("courseSubjectId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("status inicial ACTIVE", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}

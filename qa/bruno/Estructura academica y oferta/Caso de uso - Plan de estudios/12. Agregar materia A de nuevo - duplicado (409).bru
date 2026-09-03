@@ -1,0 +1,30 @@
+meta {
+  name: 12. Agregar materia A de nuevo - duplicado (409)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/subjects
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectAId}},
+    "curricularYear": 1,
+    "curricularTerm": "FIRST",
+    "credits": 8
+  }
+}
+
+tests {
+  test("status 409 — ProgramSubjectAlreadyExistsException", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: 9. Editar capacidad de la comision (200)
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/course-sections/{{sectionId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "capacity": 30
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("capacity actualizada", function () {
+    expect(res.getBody().capacity).to.equal(30);
+  });
+}

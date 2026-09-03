@@ -1,0 +1,20 @@
+meta {
+  name: 11. Cerrar inscripcion - override manual (204)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/terms/{{termIdCatalogo}}/enrollment/close
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenCatalogoPeriodo}}
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,24 @@
+meta {
+  name: 12. Factura pasa a PARTIALLY_PAID (200)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/students/{{studentId}}/invoices
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("la factura recalculó su status en la misma transacción del pago (decisión 4)", function () {
+    const factura = res.getBody().find(function (f) { return f.id === bru.getVar("invoiceId"); });
+    expect(factura.status).to.equal("PARTIALLY_PAID");
+  });
+}

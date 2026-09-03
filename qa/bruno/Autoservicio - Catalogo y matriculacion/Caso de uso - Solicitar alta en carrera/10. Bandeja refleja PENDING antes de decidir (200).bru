@@ -1,0 +1,31 @@
+meta {
+  name: 10. Bandeja refleja PENDING antes de decidir (200)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollment-applications
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("la solicitud creada en el paso 6 aparece con status PENDING", function () {
+    const propia = res.getBody().find((s) => s.id === bru.getVar("applicationIdQA"));
+    expect(propia).to.exist;
+    expect(propia.status).to.equal("PENDING");
+  });
+}
+
+docs {
+  Criterio de aceptación: "mi bandeja de solicitudes refleja el estado
+  real en todo momento" — se verifica ANTES de la decisión acá, y de
+  nuevo DESPUÉS en el paso 13, comparando explícitamente que cambió.
+}

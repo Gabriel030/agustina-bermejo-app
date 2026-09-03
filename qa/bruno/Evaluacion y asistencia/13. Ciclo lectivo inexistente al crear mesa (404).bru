@@ -1,0 +1,29 @@
+meta {
+  name: 13. Ciclo lectivo inexistente al crear mesa (404)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/exam-boards
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessToken}}
+}
+
+body:json {
+  {
+    "subjectId": {{subjectId}},
+    "termId": 999999,
+    "examDate": "2026-07-01T00:00:00"
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

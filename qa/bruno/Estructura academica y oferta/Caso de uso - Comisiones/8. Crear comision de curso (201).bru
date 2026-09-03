@@ -1,0 +1,38 @@
+meta {
+  name: 8. Crear comision de curso (201)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/course-subjects/{{courseSubjectId}}/sections
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessToken}}
+}
+
+body:json {
+  {
+    "name": "Comisión A",
+    "termId": {{termId}},
+    "capacity": 25
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("sectionId", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("un Preceptor puede crear la comisión — a diferencia del plan de estudios", function () {
+    expect(res.getBody().status).to.equal("ACTIVE");
+  });
+}

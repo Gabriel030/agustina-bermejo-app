@@ -1,0 +1,1 @@
+ALTER TABLE program RENAME COLUMN cuotas_por_anio_lectivo TO installments_per_academic_year;

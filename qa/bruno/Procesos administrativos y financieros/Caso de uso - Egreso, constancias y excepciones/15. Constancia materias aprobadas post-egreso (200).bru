@@ -1,0 +1,23 @@
+meta {
+  name: 15. Constancia materias aprobadas post-egreso (200)
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId}}/certificates/approved-subjects
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 200 — sin exigir cursada activa, a diferencia de la constancia regular", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("devuelve un PDF", function () {
+    expect(res.getHeader("content-type")).to.include("application/pdf");
+  });
+}
