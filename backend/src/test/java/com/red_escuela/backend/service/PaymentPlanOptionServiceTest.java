@@ -98,12 +98,20 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     void upfrontConVentanaValidaSeCreaCorrectamente() {
         autenticarComo(persistDirector("director.plan3." + System.nanoTime()));
         Program program = persistPrograma();
+        LocalDate start = LocalDate.now();
+        LocalDate end = LocalDate.now().plusDays(30);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now(), LocalDate.now().plusDays(30));
+                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, start, end);
 
         var option = paymentPlanOptionService.crearParaCarrera(program.getId(), request);
 
+        // Corrección 2026-09-04 (auditoría de calidad de tests): el único assert previo miraba
+        // isUpfrontWindowEnabled() (un booleano ajeno a las fechas) — un bug que dejara
+        // upfrontWindowStart/End sin persistir (exactamente el tipo de bug que motivó la
+        // validación de PaymentPlanOptionService.validateUpfrontWindow) hubiera pasado inadvertido.
         assertThat(option.isUpfrontWindowEnabled()).isTrue();
+        assertThat(option.getUpfrontWindowStart()).isEqualTo(start);
+        assertThat(option.getUpfrontWindowEnd()).isEqualTo(end);
     }
 
     @Test

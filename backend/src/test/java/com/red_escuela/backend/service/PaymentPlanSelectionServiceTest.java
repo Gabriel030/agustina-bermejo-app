@@ -245,9 +245,13 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(UpfrontWindowClosedException.class);
     }
 
-    // 32. bordeInclusiveInicioYFinDeVentanaAceptan
+    // 32. bordeInclusiveInicioYFinDeVentanaAceptan — corrección 2026-09-04 (auditoría de calidad
+    // de tests): la versión original solo probaba el borde de INICIO (hoy == upfrontWindowStart);
+    // el borde de FIN (hoy == upfrontWindowEnd) quedaba sin ejercitar pese a que el nombre lo
+    // promete — un error de borde en `today.isAfter(option.getUpfrontWindowEnd())` (ej. cambiado
+    // por error a una comparación no-inclusive del lado equivocado) no se hubiera detectado.
     @Test
-    void bordeInclusiveInicioYFinDeVentanaAceptan() {
+    void bordeInclusiveInicioDeVentanaAcepta() {
         Person director = persistPersonBase("DIR32" + System.nanoTime());
         Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
         Student student = persistStudent("82200006");
@@ -259,6 +263,23 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         var selection = paymentPlanSelectionService.seleccionarParaCurso(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6));
         assertThat(selection).isNotNull();
+        assertThat(selection.getPaymentPlanOption().getId()).isEqualTo(option.getId());
+    }
+
+    @Test
+    void bordeInclusiveFinDeVentanaAcepta() {
+        Person director = persistPersonBase("DIR32B" + System.nanoTime());
+        Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
+        Student student = persistStudent("82200019");
+        CourseEnrollment enrollment = persistCourseEnrollment(student, course);
+        // hoy == upfrontWindowEnd
+        PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(10), LocalDate.now(), director);
+        autenticarComoPersona(director);
+
+        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+                enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6));
+        assertThat(selection).isNotNull();
+        assertThat(selection.getPaymentPlanOption().getId()).isEqualTo(option.getId());
     }
 
     // 35. scopeMonthsIgualATodoElAñoGeneraElAñoCompletoDeUna
@@ -296,9 +317,17 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
 
-    // 41. bloqueUpfrontYCorridaMonthlyPosteriorNoDuplican
+    // 41. Corrección 2026-09-04 (auditoría de calidad de tests): el nombre original
+    // ("bloqueUpfrontYCorridaMonthlyPosteriorNoDuplican") prometía una transición UPFRONT→MONTHLY,
+    // pero PaymentPlanSelectionService.seleccionarParaCurso lanza CoursePaymentPlanAlreadySetException
+    // si ya existe una selección abierta para ese CourseEnrollment ("A course's payment plan is
+    // unique and immutable for the life of the enrollment", línea 70) — a diferencia de una carrera
+    // (ver ProgramCohortBillingTest.cambioDeMonthlyAUpfrontAMitadDeAñoTambiénFunciona), un curso NO
+    // admite cambiar de plan de pago, así que esa transición es arquitectónicamente imposible acá.
+    // Lo que el test realmente ejercitaba (y sigue ejercitando, ahora con el nombre correcto) es la
+    // idempotencia de volver a correr la generación sobre el mismo mes.
     @Test
-    void bloqueUpfrontYCorridaMonthlyPosteriorNoDuplican() {
+    void correrDosVecesElMismoMesSobreUnBloqueUpfrontNoDuplica() {
         Person director = persistPersonBase("DIR41" + System.nanoTime());
         Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
         Student student = persistStudent("82200009");
@@ -454,7 +483,12 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         var selection = paymentPlanSelectionService.seleccionarParaCurso(
                 enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
-        assertThat(selection).isNotNull();
+        // Corrección 2026-09-04 (auditoría de calidad de tests): el único assert previo
+        // (isNotNull()) solo confirmaba que no se lanzó excepción, sin verificar ningún campo real
+        // de la selección creada.
+        assertThat(selection.getPaymentPlanOption().getId()).isEqualTo(mensual.getId());
+        assertThat(selection.getCourseEnrollment().getId()).isEqualTo(enrollment.getId());
+        assertThat(selection.getCreatedBy().getId()).isEqualTo(student.getPerson().getId());
     }
 
     @Test

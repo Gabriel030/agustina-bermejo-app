@@ -189,8 +189,12 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
+    // Test 132 de la spec (el nombre original de la spec dice "tres", pero su propia descripción
+    // en prosa pide "un alumno con 2 Invoice OVERDUE recientes" con suspensionAfterInvoiceCount=2
+    // — inconsistencia de la spec misma, no del test; se corrige acá el nombre del método para que
+    // coincida con lo que realmente se ejercita, auditoría de calidad de tests 2026-09-04).
     @Test
-    void tresInvoicesOverdueSimultaneasSuspendenAunqueNingunaSeaMuyVieja() {
+    void dosInvoicesOverdueSimultaneasSuspendenAunqueNingunaSeaMuyVieja() {
         Person director = persistPerson("director.compliance4." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000104");
@@ -282,8 +286,13 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
     }
 
+    // Test 5 de la spec. Corrección 2026-09-04 (auditoría de calidad de tests): el nombre original
+    // ("...SinImportarCombinacionDePlanes") sugería variar tipo de plan (MONTHLY/UPFRONT) — esa
+    // variación real la cubre alumnoQueCambiaDePlanDePagoAMitadDeCarreraSigueAlDiaConsistentemente
+    // (arriba); este test solo verifica una progresión lineal de cuotas pagas + una pendiente
+    // futura consultada en tres momentos distintos, sin variar el tipo de plan.
     @Test
-    void calcularEstadoDePagoEsCorrectoSinImportarCombinacionDePlanes() {
+    void billingStandingSeMantieneUpToDateConsultadoEnTresMomentosDistintos() {
         Person director = persistPerson("director.compliance8." + System.nanoTime());
         persistPolicy(director, 10, 2, 30, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000108");

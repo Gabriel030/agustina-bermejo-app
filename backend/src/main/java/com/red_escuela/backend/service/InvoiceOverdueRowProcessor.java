@@ -2,8 +2,6 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.CollectionsPolicy;
 import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.repository.InvoiceRepository;
@@ -27,9 +25,7 @@ public class InvoiceOverdueRowProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(Long invoiceId, CollectionsPolicy policy) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-        invoice.setStatus(InvoiceStatus.OVERDUE);
-        invoice.applyAdjustment(InvoiceAdjustmentType.SURCHARGE,
-                new MonetaryAdjustmentValue.PercentageAmount(policy.getSurchargePercentage()), "Mora automática", null);
+        invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(policy.getSurchargePercentage()), "Mora automática");
         invoiceRepository.save(invoice);
     }
 }

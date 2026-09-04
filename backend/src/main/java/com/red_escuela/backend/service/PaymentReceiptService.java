@@ -8,22 +8,16 @@ import com.red_escuela.backend.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.PaymentMethod;
 import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.PaymentReceiptStatus;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.exception.InvalidSectionOverridesException;
-import com.red_escuela.backend.exception.InvoiceNotFoundException;
-import com.red_escuela.backend.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.exception.PaymentReceiptAlreadyPendingException;
 import com.red_escuela.backend.exception.PaymentReceiptNotFoundException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.PaymentReceiptRepository;
-import com.red_escuela.backend.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,21 +31,21 @@ public class PaymentReceiptService {
 
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final InvoiceRepository invoiceRepository;
-    private final StudentRepository studentRepository;
     private final FileStorageService fileStorageService;
+    private final PaymentReceiptPersister paymentReceiptPersister;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final CourseEnrollmentService courseEnrollmentService;
     private final PaymentService paymentService;
     private final ObjectMapper objectMapper;
 
     public PaymentReceiptService(PaymentReceiptRepository paymentReceiptRepository, InvoiceRepository invoiceRepository,
-                                  StudentRepository studentRepository, FileStorageService fileStorageService,
+                                  FileStorageService fileStorageService, PaymentReceiptPersister paymentReceiptPersister,
                                   CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
                                   CourseEnrollmentService courseEnrollmentService, PaymentService paymentService, ObjectMapper objectMapper) {
         this.paymentReceiptRepository = paymentReceiptRepository;
         this.invoiceRepository = invoiceRepository;
-        this.studentRepository = studentRepository;
         this.fileStorageService = fileStorageService;
+        this.paymentReceiptPersister = paymentReceiptPersister;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.paymentService = paymentService;
@@ -64,34 +58,17 @@ public class PaymentReceiptService {
     // así que ese vínculo puede no existir todavía en este punto — en ese caso, ownership no se
     // puede validar contra la Invoice y se confía en el caller (ya resolvió el Student por su
     // cuenta antes de llegar acá).
-    @Transactional
+    //
+    // Sin @Transactional acá a propósito (corrección 2026-09-04, auditoría): el upload real del
+    // archivo es I/O potencialmente lento y no debe correr con el lock pesimista de la Invoice
+    // sostenido — antes, todo el método (upload incluido) corría dentro de una única transacción
+    // con findByIdForUpdate al principio, bloqueando cualquier otra operación sobre esa Invoice
+    // (un pago, un ajuste, otro comprobante) mientras durara el upload. Ahora el upload corre
+    // primero, sin transacción abierta, y PaymentReceiptPersister.persist (transacción propia,
+    // corta) valida todo bajo lock justo antes de persistir.
     public PaymentReceipt subir(Long invoiceId, Long studentId, MultipartFile comprobante) {
-        Invoice invoice = invoiceRepository.findByIdForUpdate(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-        validateOwnership(invoice, studentId);
-        if (invoice.getStatus() != InvoiceStatus.PENDING && invoice.getStatus() != InvoiceStatus.OVERDUE) {
-            throw new InvoiceNotPayableException(invoiceId, invoice.getStatus().name());
-        }
-        if (paymentReceiptRepository.existsByInvoiceIdAndStatus(invoiceId, PaymentReceiptStatus.PENDING_REVIEW)) {
-            throw new PaymentReceiptAlreadyPendingException(invoiceId);
-        }
         String filePath = fileStorageService.store(studentId, "comprobantes", comprobante);
-
-        PaymentReceipt receipt = new PaymentReceipt();
-        receipt.setInvoice(invoice);
-        receipt.setFilePath(filePath);
-        receipt.setStatus(PaymentReceiptStatus.PENDING_REVIEW);
-        receipt.setUploadedBy(studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId)).getPerson());
-        return paymentReceiptRepository.save(receipt);
-    }
-
-    private void validateOwnership(Invoice invoice, Long studentId) {
-        Long ownerId = invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
-                : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
-                : null;
-        if (ownerId != null && !ownerId.equals(studentId)) {
-            throw new InvoiceNotFoundException(invoice.getId());
-        }
+        return paymentReceiptPersister.persist(invoiceId, studentId, filePath);
     }
 
     @Transactional

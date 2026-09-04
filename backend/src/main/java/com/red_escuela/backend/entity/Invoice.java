@@ -138,6 +138,16 @@ public class Invoice {
         return allocation;
     }
 
+    // Corrección 2026-09-04 (auditoría, segunda pasada): InvoiceOverdueRowProcessor seteaba
+    // status=OVERDUE directo desde afuera, el único otro lugar (junto al ya corregido PAID) donde
+    // se violaba la invariante de Aggregate Root que esta clase declara — la transición a OVERDUE
+    // y el recargo automático que la acompaña son un único paso de dominio, no dos mutaciones
+    // independientes desde el service.
+    public void markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+        status = InvoiceStatus.OVERDUE;
+        applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
+    }
+
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
         // SCHOLARSHIP/DISCOUNT resolve against baseAmount (order-independent from each other).
         // SURCHARGE resolves against getRemainingBalance() computed BEFORE adding it — a partial
