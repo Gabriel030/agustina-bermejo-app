@@ -10,6 +10,7 @@ import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.CoursePaymentPlanAlreadySetException;
 import com.red_escuela.backend.exception.InvalidPaymentPlanScopeException;
+import com.red_escuela.backend.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.exception.PaymentPlanOptionMismatchException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.UpfrontWindowClosedException;
@@ -30,12 +31,13 @@ public class PaymentPlanSelectionService {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CurrentPersonService currentPersonService;
+    private final CurrentStudentService currentStudentService;
     private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
     private final RecurringFeeWindowService recurringFeeWindowService;
 
     public PaymentPlanSelectionService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionService paymentPlanOptionService,
                                         CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                                        CurrentPersonService currentPersonService,
+                                        CurrentPersonService currentPersonService, CurrentStudentService currentStudentService,
                                         ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler,
                                         RecurringFeeWindowService recurringFeeWindowService) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
@@ -43,14 +45,27 @@ public class PaymentPlanSelectionService {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.currentPersonService = currentPersonService;
+        this.currentStudentService = currentStudentService;
         this.programEnrollmentBillingScheduler = programEnrollmentBillingScheduler;
         this.recurringFeeWindowService = recurringFeeWindowService;
+    }
+
+    // Endpoint compartido (spec: "ADMINISTRATIVO|autoservicio alumno") — Optional.empty() de
+    // findCurrentStudent() significa que el actor es staff (Administrativo/Director, sin fila
+    // Student propia), que puede operar sobre cualquier matriculación sin restricción.
+    private void validarPropiaSiEsAlumno(Long ownerStudentId, Long enrollmentId) {
+        currentStudentService.findCurrentStudent().ifPresent(student -> {
+            if (!student.getId().equals(ownerStudentId)) {
+                throw new NotOwnEnrollmentException(student.getId(), enrollmentId);
+            }
+        });
     }
 
     @Transactional
     public PaymentPlanSelection seleccionarParaCurso(Long courseEnrollmentId, SelectPaymentPlanRequest request) {
         CourseEnrollment courseEnrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
+        validarPropiaSiEsAlumno(courseEnrollment.getStudent().getId(), courseEnrollmentId);
         // A course's payment plan is unique and immutable for the life of the enrollment.
         if (paymentPlanSelectionRepository.findByCourseEnrollmentIdAndEffectiveToIsNull(courseEnrollmentId).isPresent()) {
             throw new CoursePaymentPlanAlreadySetException(courseEnrollmentId);
@@ -77,6 +92,7 @@ public class PaymentPlanSelectionService {
     public PaymentPlanSelection seleccionarParaCarrera(Long programEnrollmentId, SelectPaymentPlanRequest request) {
         ProgramEnrollment programEnrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
+        validarPropiaSiEsAlumno(programEnrollment.getStudent().getId(), programEnrollmentId);
         PaymentPlanOption option = paymentPlanOptionService.findOrThrow(request.paymentPlanOptionId());
         if (option.getProgram() == null || !option.getProgram().getId().equals(programEnrollment.getProgram().getId())) {
             throw new PaymentPlanOptionMismatchException(option.getId());

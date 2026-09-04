@@ -439,4 +439,36 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())).hasSize(3);
     }
+
+    // ---------- decisión 2026-09-04: autoservicio del alumno en payment-plan ----------
+
+    @Test
+    void unAlumnoPuedeElegirSuPropioPlanDePago() {
+        Person director = persistPersonBase("DIROWN1" + System.nanoTime());
+        Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
+        Student student = persistStudent("82200016");
+        CourseEnrollment enrollment = persistCourseEnrollment(student, course);
+        PaymentPlanOption mensual = persistMonthlyOption(course, director);
+
+        autenticarComoPersona(student.getPerson());
+        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+                enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+
+        assertThat(selection).isNotNull();
+    }
+
+    @Test
+    void unAlumnoNoPuedeElegirElPlanDePagoDeOtroAlumno() {
+        Person director = persistPersonBase("DIROWN2" + System.nanoTime());
+        Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
+        Student dueño = persistStudent("82200017");
+        Student intruso = persistStudent("82200018");
+        CourseEnrollment enrollment = persistCourseEnrollment(dueño, course);
+        PaymentPlanOption mensual = persistMonthlyOption(course, director);
+
+        autenticarComoPersona(intruso.getPerson());
+        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+                enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null)))
+                .isInstanceOf(com.red_escuela.backend.exception.NotOwnEnrollmentException.class);
+    }
 }

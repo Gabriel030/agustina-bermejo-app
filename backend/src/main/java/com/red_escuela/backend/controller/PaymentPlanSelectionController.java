@@ -21,21 +21,20 @@ public class PaymentPlanSelectionController {
         this.paymentPlanSelectionService = paymentPlanSelectionService;
     }
 
-    // ADMINISTRATIVO-only for now: the spec calls for "ADMINISTRATIVO|autoservicio alumno" on
-    // this same path, but that needs an ownership check (this enrollment belongs to the
-    // authenticated student) that isn't implemented yet — opening it to ALUMNO without it would
-    // let any student act on any other student's enrollment. Left as a follow-up before this
-    // phase closes.
+    // Spec: "ADMINISTRATIVO|autoservicio alumno" sobre el mismo path — el chequeo de ownership
+    // (esta matriculación es del alumno autenticado) vive en el service
+    // (PaymentPlanSelectionService.validarPropiaSiEsAlumno), no acá: un Administrativo no tiene
+    // fila Student propia, así que el mismo código sirve para ambos roles sin ramificar.
     @PostMapping("/course-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
     public PaymentPlanSelectionResponse seleccionarParaCurso(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
         return PaymentPlanSelectionResponse.from(paymentPlanSelectionService.seleccionarParaCurso(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
     public PaymentPlanSelectionResponse seleccionarParaCarrera(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
         return PaymentPlanSelectionResponse.from(paymentPlanSelectionService.seleccionarParaCarrera(id, request));
     }
