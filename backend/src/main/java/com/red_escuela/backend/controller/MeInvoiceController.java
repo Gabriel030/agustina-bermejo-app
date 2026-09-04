@@ -2,13 +2,21 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.dto.InvoiceResponse;
+import com.red_escuela.backend.dto.PaymentReceiptResponse;
+import com.red_escuela.backend.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.service.CurrentStudentService;
 import com.red_escuela.backend.service.InvoiceQueryService;
+import com.red_escuela.backend.service.PaymentReceiptService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,10 +27,32 @@ public class MeInvoiceController {
 
     private final InvoiceQueryService invoiceQueryService;
     private final CurrentStudentService currentStudentService;
+    private final PaymentReceiptService paymentReceiptService;
 
-    public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService) {
+    public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
+                                PaymentReceiptService paymentReceiptService) {
         this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
+        this.paymentReceiptService = paymentReceiptService;
+    }
+
+    @PostMapping("/invoices/{id}/payment-receipts")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PaymentReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return PaymentReceiptResponse.from(paymentReceiptService.subir(id, studentId, comprobante));
+    }
+
+    @GetMapping("/payment-receipts")
+    public List<PaymentReceiptResponse> myReceipts() {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return paymentReceiptService.findOwn(studentId).stream().map(PaymentReceiptResponse::from).toList();
+    }
+
+    @GetMapping("/invoices/{id}/price-breakdown")
+    public PriceBreakdownResponse priceBreakdown(@PathVariable Long id) {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return invoiceQueryService.ownPriceBreakdown(studentId, id);
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")

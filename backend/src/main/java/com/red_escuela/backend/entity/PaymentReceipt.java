@@ -6,9 +6,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-// Minimal placeholder so the Épica 7 Fase 3 enrollment-with-payment wizard keeps compiling and
-// working against the new Invoice — Fase 6.2 (Pagos y allocations) replaces this with the real
-// design (rejection reason, unlimited retries, PaymentService.registrarPago on approval).
 @Getter
 @Setter
 @Entity
@@ -43,6 +40,13 @@ public class PaymentReceipt {
 
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
+
+    // El propio Alumno, vía CurrentStudentService — nunca un id de la URL. Nullable solo por
+    // retrocompatibilidad con las filas del flujo ad-hoc de Épica 7 Fase 3, donde la Invoice
+    // todavía no tiene enrollment vinculado y el studentId se recibe explícito.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploaded_by_id")
+    private Person uploadedBy;
 
     @PrePersist
     void onCreate() {

@@ -29,11 +29,18 @@ public class CurrentStudentService {
     }
 
     // Variante no-throwing para endpoints compartidos entre staff y autoservicio (ej.
-    // PaymentPlanSelectionService): un Administrativo/Director autenticado no tiene fila
-    // Student — Optional.empty() en ese caso es la señal de "es staff, no hace falta chequear
-    // ownership", en vez de forzar al caller a capturar StudentNotFoundException para lo mismo.
+    // PaymentPlanSelectionService, PaymentService): un Administrativo/Director autenticado no
+    // tiene fila Student — Optional.empty() en ese caso es la señal de "es staff, no hace falta
+    // chequear ownership", en vez de forzar al caller a capturar StudentNotFoundException para
+    // lo mismo. También cubre el caso de un caller interno sin ningún contexto de seguridad
+    // seteado (ej. PaymentReceiptService.aprobar llamado directo desde un flujo de sistema, sin
+    // pasar por un controller) — sin autenticación, tampoco hay ownership que chequear.
     public Optional<Student> findCurrentStudent() {
-        Long personId = Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName());
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return Optional.empty();
+        }
+        Long personId = Long.valueOf(authentication.getName());
         return studentRepository.findByPerson_Id(personId);
     }
 }

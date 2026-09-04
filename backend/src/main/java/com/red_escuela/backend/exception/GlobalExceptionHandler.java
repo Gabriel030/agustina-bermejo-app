@@ -96,6 +96,7 @@ public class GlobalExceptionHandler {
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
             ProgramYearBillingTemplateExceedsTermSpanException.class,
+            PaymentExceedsInvoiceBalanceException.class,
             // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
             // combination by throwing IllegalArgumentException from its own constructors — mapped
             // here rather than wrapped in a domain exception, since the Value Object itself is the
@@ -141,7 +142,8 @@ public class GlobalExceptionHandler {
             SectionEvaluationConfigNotFoundException.class,
             NotificationNotFoundException.class,
             ClassSessionNotFoundException.class,
-            AttendanceChangeRequestNotFoundException.class
+            AttendanceChangeRequestNotFoundException.class,
+            PaymentReceiptNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -183,7 +185,10 @@ public class GlobalExceptionHandler {
             CohortAdmissionWindowClosedException.class,
             PaymentPlanOptionMismatchException.class,
             ProgramEnrollmentMissingCohortException.class,
-            ProgramYearBillingTemplateMismatchException.class
+            ProgramYearBillingTemplateMismatchException.class,
+            InvoiceNotPayableException.class,
+            PaymentReceiptAlreadyPendingException.class,
+            InvalidPaymentReceiptStateException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {

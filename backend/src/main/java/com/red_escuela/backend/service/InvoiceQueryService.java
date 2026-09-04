@@ -1,10 +1,18 @@
 package com.red_escuela.backend.service;
 
+import com.red_escuela.backend.dto.PriceBreakdownLineResponse;
+import com.red_escuela.backend.dto.PriceBreakdownPaymentResponse;
+import com.red_escuela.backend.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.Invoice;
+import com.red_escuela.backend.entity.InvoiceAdjustment;
+import com.red_escuela.backend.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.entity.InvoiceStatus;
+import com.red_escuela.backend.entity.PaymentAllocation;
+import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
@@ -44,6 +52,58 @@ public class InvoiceQueryService {
             throw new NotOwnEnrollmentException(studentId, courseEnrollmentId);
         }
         return invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollmentId);
+    }
+
+    // "Transparencia de precio" (Fase 6.2): no es un cálculo nuevo, ordena y le pone nombre
+    // humano-legible a datos que ya existen (baseAmount, cada InvoiceAdjustment,
+    // cada PaymentAllocation) — el pipeline de líneas sigue el orden
+    // SCHOLARSHIP/PROMOTION/DISCOUNT/SURCHARGE aunque esta fase solo ejercite DISCOUNT/SURCHARGE
+    // (SCHOLARSHIP/PROMOTION se completan en Fases 6.4/6.5 sin cambiar este DTO).
+    public PriceBreakdownResponse priceBreakdown(Long invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        List<PriceBreakdownLineResponse> lines = invoice.getAdjustments().stream()
+                .sorted((a, b) -> Integer.compare(pipelineOrder(a.getType()), pipelineOrder(b.getType())))
+                .map(this::toLine)
+                .toList();
+        List<PriceBreakdownPaymentResponse> payments = invoice.getAllocations().stream()
+                .map(this::toPayment)
+                .toList();
+        return new PriceBreakdownResponse(
+                invoice.getId(), invoice.getFeeType().name(), invoice.getPeriod().toString(), invoice.getBaseAmount(),
+                lines, invoice.getAmountDue(), payments, invoice.getRemainingBalance(), invoice.getStatus().name());
+    }
+
+    public PriceBreakdownResponse ownPriceBreakdown(Long studentId, Long invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        Long ownerId = invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
+                : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
+                : null;
+        if (!studentId.equals(ownerId)) {
+            throw new InvoiceNotFoundException(invoiceId);
+        }
+        return priceBreakdown(invoiceId);
+    }
+
+    private int pipelineOrder(InvoiceAdjustmentType type) {
+        return switch (type) {
+            case SCHOLARSHIP -> 0;
+            case PROMOTION -> 1;
+            case DISCOUNT, WAIVE_DEBT -> 2;
+            case SURCHARGE -> 3;
+        };
+    }
+
+    private PriceBreakdownLineResponse toLine(InvoiceAdjustment adjustment) {
+        Person appliedBy = adjustment.getAppliedBy();
+        String source = appliedBy != null ? appliedBy.getName() + " " + appliedBy.getLastname() : "Sistema (mora automática)";
+        return new PriceBreakdownLineResponse(
+                adjustment.getType().name(), adjustment.signedAmount(), adjustment.getReason(), source, adjustment.getAppliedAt());
+    }
+
+    private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
+        return new PriceBreakdownPaymentResponse(
+                allocation.getPayment().getId(), allocation.getAmountApplied(),
+                allocation.getPayment().getMethod().name(), allocation.getPayment().getPaidAt());
     }
 
     public List<Invoice> porCarreraPropia(Long studentId, Long programEnrollmentId) {
