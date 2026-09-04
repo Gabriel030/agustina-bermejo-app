@@ -7,10 +7,9 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
-// admissionStart/admissionEnd migraron a ProgramCohort (Épica 8 Fase 2) — la
-// ventana de admisión ya no es un dato de la carrera en sí, es por cohorte.
+// admissionStart/admissionEnd live in ProgramCohort (Fase 6.1) — the admission window is not a
+// property of the program itself, it's per cohort.
 public record CreateProgramRequest(
         @NotBlank String name, @NotNull @Positive Integer totalYears,
-        BigDecimal price, @NotNull @Min(0) Integer totalCreditsRequired,
-        Integer installmentsPerAcademicYear) {
+        BigDecimal price, BigDecimal enrollmentFeeAmount, @NotNull @Min(0) Integer totalCreditsRequired) {
 }

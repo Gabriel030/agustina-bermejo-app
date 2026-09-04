@@ -1,12 +1,14 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.CurricularTerm;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.GraduationRequest;
 import com.red_escuela.backend.entity.GraduationRequestStatus;
 import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.entity.Invoice;
+import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
@@ -48,9 +50,6 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private GraduationRequestService graduationRequestService;
-
-    @Autowired
-    private InvoiceService invoiceService;
 
     @Autowired
     private EntityManager entityManager;
@@ -135,6 +134,17 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         return enrollment;
     }
 
+    private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
+        Invoice invoice = new Invoice();
+        invoice.setProgramEnrollment(enrollment);
+        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setPeriod(java.time.YearMonth.from(dueDate));
+        invoice.setDueDate(dueDate);
+        invoice.setBaseAmount(BigDecimal.valueOf(100));
+        invoice.setStatus(InvoiceStatus.PENDING);
+        entityManager.persist(invoice);
+    }
+
     private void autenticarComoPersona(String dni) {
         Person persona = persistPersonBase(dni);
         entityManager.flush();
@@ -174,7 +184,8 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         GraduationRequest request = graduationRequestService.solicitar(enrollment.getId());
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota impaga", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
+        persistInvoice(enrollment, LocalDate.now().plusDays(30));
+        entityManager.flush();
 
         assertThatThrownBy(() -> graduationRequestService.verificarDeuda(request.getId()))
                 .isInstanceOf(PendingDebtException.class);

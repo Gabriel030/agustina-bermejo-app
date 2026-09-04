@@ -200,4 +200,29 @@ public class KarateFixtures {
         scheme.setMinApprovalGrade(6.0);
         return evaluationSchemeRepository.save(scheme).getId();
     }
+
+    // Fase 6.0: ya no hay POST /students/{id}/invoices (Fase 4, eliminado) — una Invoice
+    // real nace siempre de un plan de pagos (Fase 6.1), demasiada carga para un fixture de
+    // un solo escenario. Este atajo persiste una Invoice PENDING directo contra un
+    // ProgramEnrollment concreto, usado por graduacion-y-excepciones.feature para simular
+    // "tiene una cuota impaga" sin armar todo el plan de facturación.
+    public static Long crearInvoicePendiente(Long programEnrollmentId, String dueDate) {
+        com.red_escuela.backend.repository.ProgramEnrollmentRepository programEnrollmentRepository =
+                context().getBean(com.red_escuela.backend.repository.ProgramEnrollmentRepository.class);
+        com.red_escuela.backend.repository.InvoiceRepository invoiceRepository =
+                context().getBean(com.red_escuela.backend.repository.InvoiceRepository.class);
+
+        var enrollment = programEnrollmentRepository.findById(programEnrollmentId)
+                .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
+
+        com.red_escuela.backend.entity.Invoice invoice = new com.red_escuela.backend.entity.Invoice();
+        invoice.setProgramEnrollment(enrollment);
+        invoice.setFeeType(com.red_escuela.backend.entity.FeeType.RECURRING_FEE);
+        java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
+        invoice.setPeriod(java.time.YearMonth.from(due));
+        invoice.setDueDate(due);
+        invoice.setBaseAmount(java.math.BigDecimal.valueOf(5000));
+        invoice.setStatus(com.red_escuela.backend.entity.InvoiceStatus.PENDING);
+        return invoiceRepository.save(invoice).getId();
+    }
 }

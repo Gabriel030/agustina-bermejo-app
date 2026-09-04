@@ -10,18 +10,21 @@ import com.red_escuela.backend.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
+import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.exception.AdmissionWindowClosedException;
+import com.red_escuela.backend.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
+import com.red_escuela.backend.exception.ProgramYearBillingTemplateMismatchException;
+import com.red_escuela.backend.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.StudentNotFoundException;
@@ -30,11 +33,13 @@ import com.red_escuela.backend.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
 import com.red_escuela.backend.repository.ProgramSubjectRepository;
+import com.red_escuela.backend.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.repository.StudentRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -54,6 +59,7 @@ public class ProgramEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramElectiveGroupRepository programElectiveGroupRepository;
     private final ProgramCohortRepository programCohortRepository;
+    private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final AttendanceService attendanceService;
 
     public ProgramEnrollmentService(
@@ -64,6 +70,7 @@ public class ProgramEnrollmentService {
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramElectiveGroupRepository programElectiveGroupRepository,
             ProgramCohortRepository programCohortRepository,
+            ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             AttendanceService attendanceService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -72,6 +79,7 @@ public class ProgramEnrollmentService {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programElectiveGroupRepository = programElectiveGroupRepository;
         this.programCohortRepository = programCohortRepository;
+        this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.attendanceService = attendanceService;
     }
 
@@ -88,6 +96,16 @@ public class ProgramEnrollmentService {
         // por staff puede no especificar cohorte, y en ese caso no queda atada a
         // ninguna ventana de admisión de autoservicio — es una decisión explícita
         // del staff, no algo que el sistema deba bloquear.
+        //
+        // Desviación deliberada de Fase 6.1 ("ProgramEnrollment gana la FK nueva:
+        // program_cohort_id, obligatoria al matricularse"): la columna se dejó nullable a
+        // propósito, no NOT NULL — hacerla obligatoria a nivel DB rompe en cascada el fixture
+        // compartido (persistProgramEnrollment) de EnrollmentControllerTest y otros ~10 archivos
+        // de test de Épica 2 (Inscripciones académicas) que no tienen nada que ver con
+        // facturación. La regla de negocio real ("no se genera ninguna cuota sin cohorte") ya
+        // queda garantizada donde importa: ProgramEnrollmentBillingScheduler.generarMatricula
+        // exige enrollment.getProgramCohort() no nulo (NPE si no está, ver ese método). Pendiente
+        // de decidir si vale la pena forzar NOT NULL más adelante rehaciendo esos fixtures.
         ProgramCohort cohort = null;
         if (request.cohortId() != null) {
             cohort = programCohortRepository.findById(request.cohortId())
@@ -229,21 +247,43 @@ public class ProgramEnrollmentService {
     // reusa para no cobrarle matrícula a nadie fuera de la ventana de admisión — antes solo se
     // validaba acá, en matricular(), que recién corre cuando el Preceptor aprueba la solicitud
     // (tarde: el comprobante ya se había pedido y subido). Mismo criterio que
-    // CourseEnrollmentService.validarPuedeMatricular. Desde Épica 8 Fase 2 la ventana vive en
-    // ProgramCohort, no en Program (una carrera tiene 2 cohortes por año, cada una con la suya).
+    // CourseEnrollmentService.validarPuedeMatricular. Desde Fase 6.1 la ventana vive en
+    // ProgramCohort (LocalDate, no LocalDateTime), no en Program — una carrera tiene 2 cohortes
+    // por año, cada una con la suya.
     void validarVentanaDeAdmision(ProgramCohort cohort) {
-        if (cohort.getAdmissionStart() != null && cohort.getAdmissionEnd() != null
-                && cohort.getAdmissionStart().isAfter(cohort.getAdmissionEnd())) {
+        if (cohort.getAdmissionStart().isAfter(cohort.getAdmissionEnd())) {
             throw new InvalidWindowConfigurationException(
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (cohort.getAdmissionStart() != null && now.isBefore(cohort.getAdmissionStart())
-                || cohort.getAdmissionEnd() != null && now.isAfter(cohort.getAdmissionEnd())) {
-            throw new AdmissionWindowClosedException(
-                    "Fuera de la ventana de admisión de la cohorte " + cohort.getId());
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(cohort.getAdmissionStart()) || today.isAfter(cohort.getAdmissionEnd())) {
+            // Bug real encontrado en auditoría (2026-09-03): esto lanzaba AdmissionWindowClosedException
+            // (mapea a 400), pero la spec de Fase 6.1 (test 138) pide 409 vía la excepción dedicada
+            // CohortAdmissionWindowClosedException — ya declarada y registrada en
+            // GlobalExceptionHandler, pero nunca usada hasta ahora.
+            throw new CohortAdmissionWindowClosedException(cohort.getId());
         }
+    }
+
+    // Decisión 2026-09-03, tras investigar cómo lo modela la industria (Postsecondary Data
+    // Partnership / National Student Clearinghouse: "a student's cohort year and cohort term...
+    // do not change unless the student is re-admitted"): programCohort queda fijo desde la
+    // matriculación — identifica cuándo entró el alumno, no en qué año de cursada está ahora.
+    // Este método es lo que SÍ avanza: sirve tanto para progresar al año que sigue como para
+    // asignar la plantilla de un año repetido (rendir de nuevo las mismas materias) — ambos casos
+    // son, a efectos de facturación, "cambiar a qué plantilla anual se le factura ahora", sin
+    // tocar la cohorte de origen ni volver a cobrar matrícula.
+    @Transactional
+    public ProgramEnrollment avanzarAñoLectivo(Long programEnrollmentId, Long newTemplateId) {
+        ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        ProgramYearBillingTemplate template = programYearBillingTemplateRepository.findById(newTemplateId)
+                .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(newTemplateId));
+        if (!template.getProgram().getId().equals(enrollment.getProgram().getId())) {
+            throw new ProgramYearBillingTemplateMismatchException(newTemplateId);
+        }
+        enrollment.setCurrentBillingTemplate(template);
+        return programEnrollmentRepository.save(enrollment);
     }
 
     private void validarStudentHabilitado(Student student) {

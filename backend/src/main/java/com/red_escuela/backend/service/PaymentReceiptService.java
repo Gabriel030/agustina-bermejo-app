@@ -7,135 +7,104 @@ import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.InvoiceStatus;
-import com.red_escuela.backend.entity.Payment;
-import com.red_escuela.backend.entity.PaymentMethod;
+import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.PaymentReceiptStatus;
-import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.exception.InvalidSectionOverridesException;
-import com.red_escuela.backend.exception.PaymentReceiptAlreadyPendingException;
-import com.red_escuela.backend.exception.PaymentReceiptNotFoundException;
+import com.red_escuela.backend.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.PaymentReceiptRepository;
-import com.red_escuela.backend.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Comprobante de pago subido por el propio Alumno — paso previo sin confirmar
- * (ver {@link PaymentReceipt}). Al aprobar, construye el {@link Payment} real
- * (Factory Method, ver spec técnica) reusando el mismo cálculo de saldo que ya
- * usa {@link InvoiceService}/{@link PaymentService} para un pago cargado por
- * staff — un comprobante aprobado se convierte en un pago confirmado exactamente
- * igual que si Administración lo hubiera tipeado a mano. Desde la Fase 3 de
- * Épica 7, aprobar el comprobante de la primera cuota de un curso es también el
- * único disparador de la matriculación real ({@link CourseEnrollmentApplication}) —
- * curso no tiene una "solicitud" separada que alguien decida, el comprobante mismo
- * cumple ese rol (ver spec funcional, decisión de negocio).
- */
+// Minimal placeholder — Fase 6.2 (Pagos y allocations) replaces "aprobar" with the real flow
+// (PaymentService.registrarPago building a real Payment + PaymentAllocation, rejection with
+// mandatory reason, unlimited retries). For now, approving sets the Invoice straight to PAID —
+// a deliberate, commented bypass of Invoice's own state machine (Fase 6.1), acceptable only
+// because this whole class is itself a temporary bridge until Fase 6.2 lands.
 @Service
 public class PaymentReceiptService {
 
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final InvoiceRepository invoiceRepository;
-    private final PaymentRepository paymentRepository;
-    private final InvoiceService invoiceService;
     private final FileStorageService fileStorageService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final CourseEnrollmentService courseEnrollmentService;
     private final ObjectMapper objectMapper;
 
-    public PaymentReceiptService(
-            PaymentReceiptRepository paymentReceiptRepository, InvoiceRepository invoiceRepository,
-            PaymentRepository paymentRepository, InvoiceService invoiceService, FileStorageService fileStorageService,
-            CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            CourseEnrollmentService courseEnrollmentService, ObjectMapper objectMapper) {
+    public PaymentReceiptService(PaymentReceiptRepository paymentReceiptRepository, InvoiceRepository invoiceRepository,
+                                  FileStorageService fileStorageService, CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
+                                  CourseEnrollmentService courseEnrollmentService, ObjectMapper objectMapper) {
         this.paymentReceiptRepository = paymentReceiptRepository;
         this.invoiceRepository = invoiceRepository;
-        this.paymentRepository = paymentRepository;
-        this.invoiceService = invoiceService;
         this.fileStorageService = fileStorageService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.objectMapper = objectMapper;
     }
 
+    // studentId se recibe explícito, no se deriva de invoice.getCourseEnrollment()/
+    // getProgramEnrollment() — el flujo de Épica 7 Fase 3 sube el comprobante contra una
+    // Invoice ad-hoc todavía sin ningún enrollment vinculado (ver InvoiceFactory.crearAdHocPara*),
+    // así que ese vínculo puede no existir todavía en este punto.
     @Transactional
-    public PaymentReceipt subir(Long invoiceId, MultipartFile file) {
-        Invoice invoice = invoiceService.findOrThrow(invoiceId);
-
-        paymentReceiptRepository.findByInvoiceIdAndStatus(invoiceId, PaymentReceiptStatus.PENDING_REVIEW)
-                .ifPresent(existing -> {
-                    throw new PaymentReceiptAlreadyPendingException(invoiceId);
-                });
-
-        String relativePath = fileStorageService.store(invoice.getStudent().getId(), "comprobantes", file);
+    public PaymentReceipt subir(Long invoiceId, Long studentId, MultipartFile comprobante) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        String filePath = fileStorageService.store(studentId, "comprobantes", comprobante);
 
         PaymentReceipt receipt = new PaymentReceipt();
         receipt.setInvoice(invoice);
-        receipt.setFilePath(relativePath);
-        receipt.setUploadedAt(LocalDateTime.now());
+        receipt.setFilePath(filePath);
         receipt.setStatus(PaymentReceiptStatus.PENDING_REVIEW);
         return paymentReceiptRepository.save(receipt);
     }
 
-    // Al aprobar, crea el Payment real por el monto total de la factura — un
-    // comprobante siempre se sube por el monto completo de la cuota/matrícula
-    // (no hay pago parcial vía comprobante en esta fase, a diferencia del
-    // registro manual de PaymentService que sí lo permite).
     @Transactional
-    public PaymentReceipt aprobar(Long id, Person reviewedBy) {
-        PaymentReceipt receipt = findOrThrow(id);
-        receipt.aprobar(reviewedBy);
+    public PaymentReceipt aprobar(Long id, Person decidedBy) {
+        PaymentReceipt receipt = paymentReceiptRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("PaymentReceipt not found: " + id));
+        receipt.setStatus(PaymentReceiptStatus.APPROVED);
+        receipt.setReviewedBy(decidedBy);
+        receipt.setReviewedAt(LocalDateTime.now());
 
         Invoice invoice = receipt.getInvoice();
-        Payment payment = new Payment();
-        payment.setInvoice(invoice);
-        payment.setAmount(invoice.getAmount());
-        payment.setPaidAt(LocalDateTime.now());
-        payment.setMethod(PaymentMethod.TRANSFER);
-        payment.setRegisteredBy(reviewedBy);
-        payment.setNotes("Generado a partir del comprobante " + receipt.getId());
-        paymentRepository.save(payment);
-
         invoice.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(invoice);
 
-        // Si este comprobante es el de la primera cuota de una inscripción a curso
-        // todavía sin matricular, recién ahora se dispara la matriculación real — ver
-        // decisión de negocio "ni carrera ni curso otorgan acceso hasta que el pago se
-        // aprueba" (spec funcional). Reusa matricularComoAutoservicio() sin tocarlo.
+        // A course has no separate "application" decision — approving the receipt of its first
+        // installment is the only trigger for the real enrollment (business decision, same as
+        // before: neither a program nor a course grants access until the payment is approved).
         courseEnrollmentApplicationRepository.findByPaymentReceiptId(id)
-                .filter(intent -> intent.getCourseEnrollment() == null)
-                .ifPresent(intent -> matricularCurso(intent));
+                .filter(application -> application.getCourseEnrollment() == null)
+                .ifPresent(this::matricularCurso);
 
-        return receipt;
+        return paymentReceiptRepository.save(receipt);
     }
 
-    private void matricularCurso(CourseEnrollmentApplication intent) {
-        Map<Long, Long> overrides = deserializarOverrides(intent.getSectionOverrides());
+    private void matricularCurso(CourseEnrollmentApplication application) {
+        Map<Long, Long> overrides = deserializarOverrides(application.getSectionOverrides());
         CourseEnrollment enrollment = courseEnrollmentService.matricularComoAutoservicio(
-                intent.getStudent().getId(), new CreateCourseEnrollmentRequest(intent.getCourse().getId(), overrides));
-        intent.setCourseEnrollment(enrollment);
-        courseEnrollmentApplicationRepository.save(intent);
+                application.getStudent().getId(), new CreateCourseEnrollmentRequest(application.getCourse().getId(), overrides));
+        application.setCourseEnrollment(enrollment);
+        courseEnrollmentApplicationRepository.save(application);
 
-        // Épica 8 Fase 2: recién ahora existe el CourseEnrollment — la factura de la
-        // primera cuota (generada al solicitar, sin ningún vínculo posible en ese
-        // momento porque el CourseEnrollment no existía todavía) se completa retroactivamente
-        // con el vínculo y "cuota 1 de N". Sin esto, el motor de facturación recurrente no
-        // tendría forma de saber que la cuota 1 ya se cobró, y generaría una duplicada.
-        Invoice invoice = intent.getPaymentReceipt().getInvoice();
+        // Only now does the CourseEnrollment exist — the first-installment invoice (created
+        // ad-hoc when the application was submitted, with no enrollment link possible yet) gets
+        // linked retroactively, so the recurring billing engine (Fase 6.1) doesn't generate a
+        // duplicate for the month already paid this way.
+        Invoice invoice = application.getPaymentReceipt().getInvoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setInstallmentNumber(1);
-        invoice.setTotalInstallments(intent.getCourse().getDurationMonths());
         invoiceRepository.save(invoice);
+    }
+
+    public List<PaymentReceipt> listarPendientes() {
+        return paymentReceiptRepository.findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus.PENDING_REVIEW);
     }
 
     private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {
@@ -148,24 +117,5 @@ public class PaymentReceiptService {
         } catch (JsonProcessingException e) {
             throw new InvalidSectionOverridesException(sectionOverridesJson, e);
         }
-    }
-
-    @Transactional
-    public PaymentReceipt rechazar(Long id, Person reviewedBy, String reason) {
-        PaymentReceipt receipt = findOrThrow(id);
-        receipt.rechazar(reviewedBy, reason);
-        return receipt;
-    }
-
-    public List<PaymentReceipt> listarPendientes() {
-        return paymentReceiptRepository.findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus.PENDING_REVIEW);
-    }
-
-    public List<PaymentReceipt> listarPorFactura(Long invoiceId) {
-        return paymentReceiptRepository.findByInvoiceIdOrderByUploadedAtDesc(invoiceId);
-    }
-
-    private PaymentReceipt findOrThrow(Long id) {
-        return paymentReceiptRepository.findById(id).orElseThrow(() -> new PaymentReceiptNotFoundException(id));
     }
 }

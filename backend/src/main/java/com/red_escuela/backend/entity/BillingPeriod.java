@@ -7,34 +7,27 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Ventana del mes (día de inicio a día de fin) en la que se puede emitir la
- * boleta de la cuota corriente — hoy es informativa, no bloquea a Administración
- * (decisión de negocio: queda configurada para cuando exista autoservicio de
- * generación de boleta por parte del Alumno).
- */
+// Informational window during which the current installment's invoice can be issued (e.g. day 1
+// to 10) — does not block anything yet, reserved for future student self-service.
 @Getter
 @Setter
 @Entity
 @Table(name = "billing_period")
 public class BillingPeriod {
+
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Version
-    @Column(name = "version")
-    private Long version;
+    @Column(name = "start_day", nullable = false)
+    private Integer startDay;
 
-    @Column(name = "dia_inicio", nullable = false)
-    private Integer diaInicio;
+    @Column(name = "end_day", nullable = false)
+    private Integer endDay;
 
-    @Column(name = "dia_fin", nullable = false)
-    private Integer diaFin;
-
-    @Column(name = "vigente_desde", nullable = false)
-    private LocalDate vigenteDesde;
+    @Column(name = "effective_from", nullable = false)
+    private LocalDate effectiveFrom;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
@@ -42,4 +35,11 @@ public class BillingPeriod {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
 }

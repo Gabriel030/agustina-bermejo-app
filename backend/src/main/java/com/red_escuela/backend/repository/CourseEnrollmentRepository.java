@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollment, Long> {
@@ -18,4 +19,16 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     // Motor de facturación recurrente (Épica 8 Fase 2): solo ENROLLED recibe
     // cuotas nuevas.
     List<CourseEnrollment> findByStatus(EnrollmentStatus status);
+
+    // Cupo de Course.capacity: cuántos ocupan lugar hoy (ENROLLED cuenta contra el cupo,
+    // WAITLISTED no).
+    List<CourseEnrollment> findByCourseIdAndStatusIn(Long courseId, List<EnrollmentStatus> statuses);
+
+    // Promoción FIFO de la lista de espera del curso — mismo criterio de orden que las
+    // comisiones (findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc), acá con
+    // enrollmentDate porque CourseEnrollment no tiene un campo enrolledAt propio.
+    Optional<CourseEnrollment> findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(Long courseId, EnrollmentStatus status);
+
+    // CourseEnrollmentWaitlistExpiryJob: todos los que siguen esperando cupo de un curso puntual.
+    List<CourseEnrollment> findByCourseIdAndStatus(Long courseId, EnrollmentStatus status);
 }

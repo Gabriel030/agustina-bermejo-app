@@ -1,9 +1,8 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.dto.CreateInvoiceFromFeeScheduleRequest;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.entity.DocumentType;
-import com.red_escuela.backend.entity.FeeScheduleConcept;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.Person;
@@ -25,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 /**
@@ -49,7 +49,7 @@ public class ProgramEnrollmentApplicationService {
     private final FileStorageService fileStorageService;
     private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
-    private final InvoiceService invoiceService;
+    private final InvoiceFactory invoiceFactory;
     private final PaymentReceiptService paymentReceiptService;
     private final ProgramCohortService programCohortService;
 
@@ -60,7 +60,7 @@ public class ProgramEnrollmentApplicationService {
             FileStorageService fileStorageService,
             ProgramEnrollmentService programEnrollmentService,
             PersonRoleGranter personRoleGranter,
-            InvoiceService invoiceService,
+            InvoiceFactory invoiceFactory,
             PaymentReceiptService paymentReceiptService,
             ProgramCohortService programCohortService) {
         this.applicationRepository = applicationRepository;
@@ -69,7 +69,7 @@ public class ProgramEnrollmentApplicationService {
         this.fileStorageService = fileStorageService;
         this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
-        this.invoiceService = invoiceService;
+        this.invoiceFactory = invoiceFactory;
         this.paymentReceiptService = paymentReceiptService;
         this.programCohortService = programCohortService;
     }
@@ -90,10 +90,8 @@ public class ProgramEnrollmentApplicationService {
                     throw new AlreadyHasPendingApplicationException(student.getId(), programId);
                 });
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(student.getId(),
-                new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()),
-                cohort, null, null, null, null);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+        Invoice invoice = invoiceFactory.crearAdHocParaCarrera(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
+        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), comprobante);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);

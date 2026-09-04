@@ -5,13 +5,13 @@ import com.red_escuela.backend.entity.Program;
 import java.math.BigDecimal;
 
 public record ProgramResponse(
-        Long id, String name, Integer totalYears, BigDecimal price, String status,
-        Integer totalCreditsRequired, Integer installmentsPerAcademicYear) {
+        Long id, String name, Integer totalYears, BigDecimal price, BigDecimal enrollmentFeeAmount, String status,
+        Integer totalCreditsRequired) {
 
     public static ProgramResponse from(Program program) {
         return new ProgramResponse(
-                program.getId(), program.getName(), program.getTotalYears(), program.getPrice(),
+                program.getId(), program.getName(), program.getTotalYears(), program.getPrice(), program.getEnrollmentFeeAmount(),
                 program.getStatus() == null ? null : program.getStatus().name(),
-                program.getTotalCreditsRequired(), program.getInstallmentsPerAcademicYear());
+                program.getTotalCreditsRequired());
     }
 }

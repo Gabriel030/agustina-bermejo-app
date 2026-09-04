@@ -4,14 +4,20 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.ChangeSectionRequest;
 import com.red_escuela.backend.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.entity.CohortIntake;
 import com.red_escuela.backend.entity.CurricularTerm;
 import com.red_escuela.backend.entity.EnrollmentStatus;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.entity.Invoice;
+import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
+import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
@@ -20,6 +26,7 @@ import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.entity.TermEnrollmentOverride;
+import com.red_escuela.backend.exception.EnrollmentFeeNotPaidException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.SubjectNotInProgramPlanException;
@@ -31,7 +38,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -310,5 +320,121 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(com.red_escuela.backend.exception.EnrollmentWindowClosedException.class);
+    }
+
+    // ---------- decisión 2026-09-03: matrícula paga habilita inscribirse a materias ----------
+
+    private ProgramCohort persistCohort(Program program, Term term) {
+        Person director = new Person();
+        Address address = new Address();
+        entityManager.persist(address);
+        director.setUsername("director.matricula." + System.nanoTime());
+        director.setEmail(director.getUsername() + "@example.com");
+        director.setAddress(address);
+        director.setStatus(StatusType.ACTIVE);
+        entityManager.persist(director);
+
+        ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
+        template.setProgram(program);
+        template.setTerm(term);
+        template.setRecurringFeeInvoicesCount(10);
+        template.setCreatedBy(director);
+        entityManager.persist(template);
+
+        ProgramCohort cohort = new ProgramCohort();
+        cohort.setTemplate(template);
+        cohort.setIntake(CohortIntake.FIRST);
+        cohort.setAdmissionStart(LocalDate.now().minusDays(60));
+        cohort.setAdmissionEnd(LocalDate.now().minusDays(1));
+        cohort.setCursadaStart(LocalDate.now());
+        cohort.setCreatedBy(director);
+        entityManager.persist(cohort);
+        return cohort;
+    }
+
+    private ProgramEnrollment persistProgramEnrollmentWithCohort(Student student, Program program, ProgramCohort cohort) {
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setProgram(program);
+        enrollment.setProgramCohort(cohort);
+        enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        enrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(enrollment);
+        return enrollment;
+    }
+
+    private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoiceStatus status) {
+        Invoice invoice = new Invoice();
+        invoice.setProgramEnrollment(enrollment);
+        invoice.setFeeType(FeeType.ENROLLMENT_FEE);
+        invoice.setPeriod(YearMonth.now());
+        invoice.setDueDate(LocalDate.now());
+        invoice.setBaseAmount(BigDecimal.valueOf(50000));
+        invoice.setStatus(status);
+        entityManager.persist(invoice);
+    }
+
+    @Test
+    void inscribirseSinHaberPagadoLaMatriculaDeUnaMatriculacionConCohorteSeRechaza() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000009", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaMatriculaImpaga");
+        Program program = persistProgram("CarreraMatriculaImpaga");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PENDING);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(EnrollmentFeeNotPaidException.class);
+    }
+
+    @Test
+    void inscribirseConLaMatriculaPagaFunciona() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000010", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaMatriculaPaga");
+        Program program = persistProgram("CarreraMatriculaPaga");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID);
+        entityManager.flush();
+
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    // Regresión (encontrada corriendo la suite completa al agregar esta regla): ~10 fixtures de
+    // Épica 2 preexistentes matriculan sin cohorte a propósito (ver el comentario de
+    // ProgramEnrollmentService.matricular sobre cohortId nullable) — sin cohorte no hay concepto
+    // de matrícula que exigir, así que la regla nueva no puede bloquearlas.
+    @Test
+    void inscribirseSinCohorteNoExigeMatricula() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000011", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaSinCohorte");
+        Program program = persistProgram("CarreraSinCohorte");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.inscribir(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 }

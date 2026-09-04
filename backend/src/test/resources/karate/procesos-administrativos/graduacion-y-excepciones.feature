@@ -133,11 +133,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 201
     * def graduationRequestId = response.id
 
-    Given path '/students', alumno.studentId, 'invoices'
-    And header Authorization = 'Bearer ' + adminToken
-    And request { concept: 'Cuota impaga', amount: 5000, dueDate: '2026-12-31' }
-    When method post
-    Then status 201
+    * fixtures.crearInvoicePendiente(programEnrollmentId, '2026-12-31')
 
     Given path '/graduation-requests', graduationRequestId, 'verify-debt'
     And header Authorization = 'Bearer ' + adminToken

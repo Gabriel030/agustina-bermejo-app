@@ -5,13 +5,11 @@ import com.red_escuela.backend.entity.ProgramCohort;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public record ProgramCohortResponse(
-        Long id, Long programId, String label, Integer ordenEnAnio,
-        LocalDateTime admissionStart, LocalDateTime admissionEnd, LocalDate cursadaStart) {
+public record ProgramCohortResponse(Long id, String intake, LocalDate admissionStart, LocalDate admissionEnd, LocalDate cursadaStart, String createdByName, LocalDateTime createdAt) {
 
     public static ProgramCohortResponse from(ProgramCohort cohort) {
         return new ProgramCohortResponse(
-                cohort.getId(), cohort.getProgram().getId(), cohort.getLabel(), cohort.getOrdenEnAnio(),
-                cohort.getAdmissionStart(), cohort.getAdmissionEnd(), cohort.getCursadaStart());
+                cohort.getId(), cohort.getIntake().name(), cohort.getAdmissionStart(), cohort.getAdmissionEnd(), cohort.getCursadaStart(),
+                cohort.getCreatedBy().getName() + " " + cohort.getCreatedBy().getLastname(), cohort.getCreatedAt());
     }
 }

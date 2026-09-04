@@ -2,6 +2,8 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.CreateProgramRequest;
 import com.red_escuela.backend.dto.UpdateProgramRequest;
+import com.red_escuela.backend.entity.FeeType;
+import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
@@ -9,15 +11,20 @@ import com.red_escuela.backend.repository.ProgramRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 public class ProgramService {
 
     private final ProgramRepository programRepository;
+    private final PriceRevisionService priceRevisionService;
+    private final CurrentPersonService currentPersonService;
 
-    public ProgramService(ProgramRepository programRepository) {
+    public ProgramService(ProgramRepository programRepository, PriceRevisionService priceRevisionService, CurrentPersonService currentPersonService) {
         this.programRepository = programRepository;
+        this.priceRevisionService = priceRevisionService;
+        this.currentPersonService = currentPersonService;
     }
 
     @Transactional
@@ -26,29 +33,34 @@ public class ProgramService {
         program.setName(request.name());
         program.setTotalYears(request.totalYears());
         program.setPrice(request.price());
+        program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
         program.setTotalCreditsRequired(request.totalCreditsRequired());
-        program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         program.setStatus(StatusType.ACTIVE);
-        return programRepository.save(program);
+        program = programRepository.save(program);
+        registerInitialPriceRevisions(program);
+        return program;
     }
 
     @Transactional
     public Program editarCarrera(Long id, UpdateProgramRequest request) {
         Program program = findOrThrow(id);
+        Person actor = currentPersonService.resolveCurrentPerson();
         if (request.name() != null) {
             program.setName(request.name());
         }
         if (request.totalYears() != null) {
             program.setTotalYears(request.totalYears());
         }
-        if (request.price() != null) {
+        if (request.price() != null && !request.price().equals(program.getPrice())) {
             program.setPrice(request.price());
+            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
+        }
+        if (request.enrollmentFeeAmount() != null && !request.enrollmentFeeAmount().equals(program.getEnrollmentFeeAmount())) {
+            program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
+            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.enrollmentFeeAmount(), "Ajuste de matrícula", actor);
         }
         if (request.totalCreditsRequired() != null) {
             program.setTotalCreditsRequired(request.totalCreditsRequired());
-        }
-        if (request.installmentsPerAcademicYear() != null) {
-            program.setInstallmentsPerAcademicYear(request.installmentsPerAcademicYear());
         }
         return programRepository.save(program);
     }
@@ -73,6 +85,14 @@ public class ProgramService {
         Program program = findOrThrow(id);
         program.setStatus(StatusType.ACTIVE);
         programRepository.save(program);
+    }
+
+    private void registerInitialPriceRevisions(Program program) {
+        Person actor = currentPersonService.resolveCurrentPerson();
+        BigDecimal tuition = program.getPrice() == null ? BigDecimal.ZERO : program.getPrice();
+        priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, tuition, "Precio inicial", actor);
+        BigDecimal enrollmentFee = program.getEnrollmentFeeAmount() == null ? BigDecimal.ZERO : program.getEnrollmentFeeAmount();
+        priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, enrollmentFee, "Matrícula inicial", actor);
     }
 
     private Program findOrThrow(Long id) {

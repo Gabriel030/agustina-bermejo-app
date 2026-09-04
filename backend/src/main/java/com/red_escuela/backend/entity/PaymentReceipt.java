@@ -1,39 +1,30 @@
 package com.red_escuela.backend.entity;
 
-import com.red_escuela.backend.exception.InvalidPaymentReceiptStateException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * Comprobante de pago subido por el propio Alumno — paso previo sin confirmar,
- * nunca un {@link Payment} real (mismo criterio de dominio que {@code Prospect}
- * es un paso previo a {@code Student}). Cuando se aprueba, se crea el
- * {@link Payment} real correspondiente ({@link com.red_escuela.backend.service.InvoiceService}) —
- * esta entidad no lo hace por sí sola, la decisión de aprobar es de un service
- * que orquesta ambas cosas en una transacción.
- */
+// Minimal placeholder so the Épica 7 Fase 3 enrollment-with-payment wizard keeps compiling and
+// working against the new Invoice — Fase 6.2 (Pagos y allocations) replaces this with the real
+// design (rejection reason, unlimited retries, PaymentService.registrarPago on approval).
 @Getter
 @Setter
 @Entity
 @Table(name = "payment_receipt")
 public class PaymentReceipt {
+
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Version
-    @Column(name = "version")
-    private Long version;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 
-    @Column(name = "file_path", nullable = false)
+    @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 
     @Column(name = "uploaded_at", nullable = false)
@@ -43,7 +34,7 @@ public class PaymentReceipt {
     @Column(name = "status", nullable = false)
     private PaymentReceiptStatus status;
 
-    @Column(name = "rejection_reason")
+    @Column(name = "rejection_reason", length = 500)
     private String rejectionReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -53,24 +44,10 @@ public class PaymentReceipt {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
-    public void aprobar(Person reviewedBy) {
-        exigirPendiente();
-        this.status = PaymentReceiptStatus.APPROVED;
-        this.reviewedBy = reviewedBy;
-        this.reviewedAt = LocalDateTime.now();
-    }
-
-    public void rechazar(Person reviewedBy, String reason) {
-        exigirPendiente();
-        this.status = PaymentReceiptStatus.REJECTED;
-        this.reviewedBy = reviewedBy;
-        this.reviewedAt = LocalDateTime.now();
-        this.rejectionReason = reason;
-    }
-
-    private void exigirPendiente() {
-        if (status != PaymentReceiptStatus.PENDING_REVIEW) {
-            throw new InvalidPaymentReceiptStateException(id, status);
+    @PrePersist
+    void onCreate() {
+        if (this.uploadedAt == null) {
+            this.uploadedAt = LocalDateTime.now();
         }
     }
 }

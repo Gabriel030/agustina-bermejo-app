@@ -76,6 +76,7 @@ public class GlobalExceptionHandler {
             AdmissionWindowClosedException.class,
             EnrollmentWindowClosedException.class,
             ProgramEnrollmentRequiredException.class,
+            EnrollmentFeeNotPaidException.class,
             PrerequisiteNotMetException.class,
             AmbiguousSectionException.class,
             InvalidSectionChangeException.class,
@@ -86,16 +87,20 @@ public class GlobalExceptionHandler {
             NoEvaluationSchemeException.class,
             MaxExamAttemptsExceededException.class,
             ExamBoardSubjectMismatchException.class,
-            PaymentExceedsInvoiceBalanceException.class,
             NotEligibleForGraduationException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
-            InvalidPricingTargetException.class,
             InvalidSectionOverridesException.class,
-            InvalidProgramCohortException.class,
             InvalidEvaluationDateException.class,
             SubmissionWindowClosedException.class,
-            InvalidSectionEvaluationConfigTransitionException.class
+            InvalidSectionEvaluationConfigTransitionException.class,
+            InvalidPaymentPlanScopeException.class,
+            ProgramYearBillingTemplateExceedsTermSpanException.class,
+            // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
+            // combination by throwing IllegalArgumentException from its own constructors — mapped
+            // here rather than wrapped in a domain exception, since the Value Object itself is the
+            // single source of truth for that validation (Fase 6.1).
+            IllegalArgumentException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -129,9 +134,10 @@ public class GlobalExceptionHandler {
             InvoiceNotFoundException.class,
             GraduationRequestNotFoundException.class,
             DirectorApprovalRequestNotFoundException.class,
-            FeeScheduleNotFoundException.class,
-            PaymentReceiptNotFoundException.class,
             ProgramCohortNotFoundException.class,
+            ProgramYearBillingTemplateNotFoundException.class,
+            PaymentPlanOptionNotFoundException.class,
+            PriceRevisionNotFoundException.class,
             SectionEvaluationConfigNotFoundException.class,
             NotificationNotFoundException.class,
             ClassSessionNotFoundException.class,
@@ -159,7 +165,6 @@ public class GlobalExceptionHandler {
             ExamBoardClosedException.class,
             AlreadyRegisteredInExamBoardException.class,
             AlreadyRegisteredInAnotherExamBoardException.class,
-            InvoiceAlreadyCancelledException.class,
             PendingDebtException.class,
             GraduationRequestAlreadyActiveException.class,
             DirectorApprovalRequestAlreadyActiveException.class,
@@ -169,11 +174,16 @@ public class GlobalExceptionHandler {
             AlreadyHasPendingApplicationException.class,
             UsernameAlreadyExistsException.class,
             TermEnrollmentOverrideClosedException.class,
-            InvalidPaymentReceiptStateException.class,
-            PaymentReceiptAlreadyPendingException.class,
             EvaluationSchemeInUseException.class,
             ClassSessionAlreadyCanceledException.class,
-            InvalidAttendanceChangeRequestStateException.class
+            InvalidAttendanceChangeRequestStateException.class,
+            CoursePaymentPlanAlreadySetException.class,
+            NoActivePaymentPlanException.class,
+            UpfrontWindowClosedException.class,
+            CohortAdmissionWindowClosedException.class,
+            PaymentPlanOptionMismatchException.class,
+            ProgramEnrollmentMissingCohortException.class,
+            ProgramYearBillingTemplateMismatchException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
@@ -181,6 +191,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             NotOwnSectionException.class,
+            NotOwnEnrollmentException.class,
             RoleNotAssignableByActorException.class,
             NotSectionLeadInstructorException.class,
             NotOwnNotificationException.class

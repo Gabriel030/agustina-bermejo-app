@@ -16,22 +16,30 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id
 
-    # Épica 7 Fase 3: solicitar exige matrícula (FeeSchedule) ya definida.
-    Given path '/fee-schedules'
-    And header Authorization = 'Bearer ' + directorToken
-    And request { programId: '#(programId)', concept: 'MATRICULA', amount: 50000, vigenteDesde: '2020-01-01' }
+    * def descripcionPeriodoCarreraDocs = 'Karate - Periodo carrera docs ' + java.lang.System.nanoTime()
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2026, description: '#(descripcionPeriodoCarreraDocs)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
     When method post
     Then status 201
+    * def termId = response.id
 
-    # Épica 8 Fase 2: solicitar exige una cohorte concreta.
-    Given path '/program-cohorts'
+    # Fase 6.1: solicitar exige una cohorte concreta, colgada de una plantilla anual.
+    Given path '/programs', programId, 'year-billing-templates'
     And header Authorization = 'Bearer ' + directorToken
-    And request { programId: '#(programId)', label: 'Cohorte de prueba', ordenEnAnio: 1, cursadaStart: '2026-03-01' }
+    And request { termId: '#(termId)', recurringFeeInvoicesCount: 10 }
+    When method post
+    Then status 201
+    * def templateId = response.id
+
+    Given path '/year-billing-templates', templateId, 'cohorts'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { intake: 'FIRST', admissionStart: '2025-01-01', admissionEnd: '2026-12-31', cursadaStart: '2026-03-01' }
     When method post
     Then status 201
     * def cohortId = response.id
