@@ -11,6 +11,7 @@ import com.red_escuela.backend.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.PaymentAllocation;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.PriceRevision;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.InvoiceNotFoundException;
@@ -30,12 +31,14 @@ public class InvoiceQueryService {
     private final InvoiceRepository invoiceRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final PriceRevisionService priceRevisionService;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                ProgramEnrollmentRepository programEnrollmentRepository) {
+                                ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService) {
         this.invoiceRepository = invoiceRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
+        this.priceRevisionService = priceRevisionService;
     }
 
     public List<Invoice> porCurso(Long courseEnrollmentId) {
@@ -83,7 +86,26 @@ public class InvoiceQueryService {
                 .toList();
         return new PriceBreakdownResponse(
                 invoice.getId(), invoice.getFeeType().name(), invoice.getPeriod().toString(), invoice.getBaseAmount(),
+                resolvePriceRevisionDescription(invoice),
                 lines, invoice.getAmountDue(), payments, invoice.getRemainingBalance(), invoice.getStatus().name());
+    }
+
+    // Best-effort: la Invoice guarda un snapshot del monto (baseAmount), no una FK al
+    // PriceRevision que lo produjo — se re-resuelve con el mismo criterio usado al generar la
+    // cuota (curso/carrera + feeType + dueDate) solo para mostrar su descripción en el desglose
+    // (hallazgo de auditoría 2026-09-04: el campo faltaba por completo).
+    private String resolvePriceRevisionDescription(Invoice invoice) {
+        if (invoice.getCourseEnrollment() != null) {
+            return priceRevisionService.findRevisionForCourse(
+                            invoice.getCourseEnrollment().getCourse().getId(), invoice.getFeeType(), invoice.getDueDate())
+                    .map(PriceRevision::getDescription).orElse(null);
+        }
+        if (invoice.getProgramEnrollment() != null) {
+            return priceRevisionService.findRevisionForProgram(
+                            invoice.getProgramEnrollment().getProgram().getId(), invoice.getFeeType(), invoice.getDueDate())
+                    .map(PriceRevision::getDescription).orElse(null);
+        }
+        return null;
     }
 
     public PriceBreakdownResponse ownPriceBreakdown(Long studentId, Long invoiceId) {

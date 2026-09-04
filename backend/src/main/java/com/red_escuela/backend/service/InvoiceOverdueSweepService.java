@@ -55,7 +55,7 @@ public class InvoiceOverdueSweepService {
     }
 
     public void run(LocalDate today) {
-        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(today);
+        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
         if (policy.isEmpty()) {
             return;
         }

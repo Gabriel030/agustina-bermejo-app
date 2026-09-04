@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 // Value Object with temporal validity — hooked from ProgramService/CourseService.crear/editar
 // (Fase 6.1, "Impacto en código existente"): without this, a freshly created Course/Program
@@ -60,5 +61,17 @@ public class PriceRevisionService {
         return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(programId, feeType, at)
                 .map(PriceRevision::getMonthlyAmount)
                 .orElseThrow(() -> new PriceRevisionNotFoundException("No PriceRevision found for program " + programId + "/" + feeType));
+    }
+
+    // Usado por InvoiceQueryService.priceBreakdown ("transparencia de precio", Flujo 16) para
+    // mostrar la descripción del PriceRevision resuelto — best-effort no-throw, a diferencia de
+    // resolveCurrentFor*: acá no encontrar nada no es un error, solo significa que esa línea del
+    // desglose queda sin descripción (hallazgo de auditoría 2026-09-04, campo faltante).
+    public Optional<PriceRevision> findRevisionForCourse(Long courseId, FeeType feeType, LocalDate at) {
+        return priceRevisionRepository.findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(courseId, feeType, at);
+    }
+
+    public Optional<PriceRevision> findRevisionForProgram(Long programId, FeeType feeType, LocalDate at) {
+        return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(programId, feeType, at);
     }
 }

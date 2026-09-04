@@ -37,6 +37,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,6 +80,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private TermRepository termRepository;
+
+    @Autowired
+    private com.red_escuela.backend.repository.PaymentReceiptRepository paymentReceiptRepository;
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -193,6 +204,67 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), intruder.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotFoundException.class);
+    }
+
+    // Regresión (auditoría 2026-09-04): sin @Version en PaymentReceipt, aprobar() y reject()
+    // concurrentes sobre el mismo comprobante podían "ganar" ambos — uno dejaba un Payment
+    // CONFIRMED real y la Invoice en PAID, el otro pisaba el status a REJECTED sin detectar el
+    // conflicto. Con el lock optimista, exactamente uno de los dos tiene que ganar.
+    @Test
+    void aprobarYRechazarEnParaleloSobreElMismoComprobanteSoloUnoGana() throws Exception {
+        Person admin1 = persistPerson("admin.receipt8a." + System.nanoTime());
+        Person admin2 = persistPerson("admin.receipt8b." + System.nanoTime());
+        Student student = persistStudent("97000008");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+
+        CountDownLatch listos = new CountDownLatch(2);
+        CountDownLatch arranca = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        Callable<PaymentReceipt> intentoAprobar = () -> {
+            listos.countDown();
+            arranca.await();
+            return paymentReceiptService.aprobar(receipt.getId(), admin1);
+        };
+        Callable<PaymentReceipt> intentoRechazar = () -> {
+            listos.countDown();
+            arranca.await();
+            return paymentReceiptService.reject(receipt.getId(), "Comprobante ilegible", admin2);
+        };
+
+        Future<PaymentReceipt> resultadoAprobar = executor.submit(intentoAprobar);
+        Future<PaymentReceipt> resultadoRechazar = executor.submit(intentoRechazar);
+        listos.await(5, TimeUnit.SECONDS);
+        arranca.countDown();
+
+        int exitos = 0;
+        int conflictos = 0;
+        for (Future<PaymentReceipt> resultado : List.of(resultadoAprobar, resultadoRechazar)) {
+            try {
+                resultado.get(30, TimeUnit.SECONDS);
+                exitos++;
+            } catch (ExecutionException e) {
+                assertThat(e.getCause()).isInstanceOf(org.springframework.orm.ObjectOptimisticLockingFailureException.class);
+                conflictos++;
+            }
+        }
+        executor.shutdown();
+
+        assertThat(exitos).isEqualTo(1);
+        assertThat(conflictos).isEqualTo(1);
+
+        // El estado final tiene que ser consistente entre sí: si ganó aprobar(), la Invoice está
+        // PAID; si ganó reject(), la Invoice sigue PENDING y no existe ningún Payment real.
+        PaymentReceipt reloaded = paymentReceiptRepository.findById(receipt.getId()).orElseThrow();
+        Invoice reloadedInvoice = invoiceRepository.findById(invoice.getId()).orElseThrow();
+        if (reloaded.getStatus() == PaymentReceiptStatus.APPROVED) {
+            assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        } else {
+            assertThat(reloaded.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
+            assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        }
     }
 
     @Test

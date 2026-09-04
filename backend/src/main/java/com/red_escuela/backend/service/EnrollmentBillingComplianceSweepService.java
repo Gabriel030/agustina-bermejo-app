@@ -25,10 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Corre después de InvoiceOverdueSweepService (mismo cron diario, minuto siguiente): a
-// diferencia de ese sweep, la paginación acá SÍ puede ser OFFSET normal — filtra por status
-// académico y solo modifica billingStanding, un campo distinto del que usa el WHERE, así que no
-// hay mutación del filtro propio a mitad de corrida.
+// Corre después de InvoiceOverdueSweepService (mismo cron diario, minuto siguiente). Corrección
+// 2026-09-04 (auditoría): la justificación original de esta clase decía que OFFSET normal era
+// seguro acá porque "solo modifica billingStanding, un campo distinto del que usa el WHERE" —
+// eso es falso para el camino de baja: al llegar a WITHDRAWN_FOR_NONPAYMENT, el row processor
+// llama a darDeBaja, que SÍ cambia el status académico (justo el campo que filtra el WHERE de
+// esta paginación). Con OFFSET, eso puede saltear una fila de la página siguiente en la misma
+// corrida (mismo patrón de bug que ya motivó el keyset pagination de InvoiceOverdueSweepService).
+// Se usa keyset pagination (id > lastId) acá también.
 @Service
 public class EnrollmentBillingComplianceSweepService {
 
@@ -61,7 +65,7 @@ public class EnrollmentBillingComplianceSweepService {
     }
 
     public void run(LocalDate today) {
-        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(today);
+        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
         if (policy.isEmpty()) {
             return;
         }
@@ -71,9 +75,10 @@ public class EnrollmentBillingComplianceSweepService {
         int failed = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
 
-        int page = 0;
+        Long lastCourseEnrollmentId = 0L;
         while (true) {
-            List<CourseEnrollment> batch = courseEnrollmentRepository.findByStatusOrderByIdAsc(EnrollmentStatus.ENROLLED, PageRequest.of(page, PAGE_SIZE));
+            List<CourseEnrollment> batch = courseEnrollmentRepository.findByStatusAndIdGreaterThanOrderByIdAsc(
+                    EnrollmentStatus.ENROLLED, lastCourseEnrollmentId, PageRequest.of(0, PAGE_SIZE));
             if (batch.isEmpty()) {
                 break;
             }
@@ -87,13 +92,14 @@ public class EnrollmentBillingComplianceSweepService {
                     errors.add(errorOf("CourseEnrollment", enrollment.getId(), e));
                 }
             }
-            page++;
+            lastCourseEnrollmentId = batch.get(batch.size() - 1).getId();
         }
 
-        page = 0;
+        Long lastProgramEnrollmentId = 0L;
         List<ProgramEnrollmentStatus> activeStatuses = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
         while (true) {
-            List<ProgramEnrollment> batch = programEnrollmentRepository.findByStatusInOrderByIdAsc(activeStatuses, PageRequest.of(page, PAGE_SIZE));
+            List<ProgramEnrollment> batch = programEnrollmentRepository.findByStatusInAndIdGreaterThanOrderByIdAsc(
+                    activeStatuses, lastProgramEnrollmentId, PageRequest.of(0, PAGE_SIZE));
             if (batch.isEmpty()) {
                 break;
             }
@@ -107,7 +113,7 @@ public class EnrollmentBillingComplianceSweepService {
                     errors.add(errorOf("ProgramEnrollment", enrollment.getId(), e));
                 }
             }
-            page++;
+            lastProgramEnrollmentId = batch.get(batch.size() - 1).getId();
         }
 
         long durationMs = System.currentTimeMillis() - start;

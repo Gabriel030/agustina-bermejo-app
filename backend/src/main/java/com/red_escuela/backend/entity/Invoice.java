@@ -121,6 +121,23 @@ public class Invoice {
         return getAmountDue().subtract(applied);
     }
 
+    // Corrección 2026-09-04 (auditoría): el comentario de cabecera de esta clase ya prometía este
+    // método ("PaymentAllocation... solo se modifica a través de los métodos propios de Invoice
+    // — applyAdjustment, y registerPayment") pero nunca se había escrito — PaymentService seteaba
+    // status=PAID directo desde afuera, violando la invariante de Aggregate Root que esta misma
+    // clase declara.
+    public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
+        PaymentAllocation allocation = new PaymentAllocation();
+        allocation.setInvoice(this);
+        allocation.setPayment(payment);
+        allocation.setAmountApplied(amountApplied);
+        allocations.add(allocation);
+        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0) {
+            status = InvoiceStatus.PAID;
+        }
+        return allocation;
+    }
+
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
         // SCHOLARSHIP/DISCOUNT resolve against baseAmount (order-independent from each other).
         // SURCHARGE resolves against getRemainingBalance() computed BEFORE adding it — a partial

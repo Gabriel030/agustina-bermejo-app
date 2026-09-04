@@ -33,7 +33,10 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     // CourseEnrollmentWaitlistExpiryJob: todos los que siguen esperando cupo de un curso puntual.
     List<CourseEnrollment> findByCourseIdAndStatus(Long courseId, EnrollmentStatus status);
 
-    // EnrollmentBillingComplianceSweepService (Fase 6.3): paginado OFFSET normal, mismo criterio
-    // que ProgramEnrollmentRepository.findByStatusInOrderByIdAsc.
-    List<CourseEnrollment> findByStatusOrderByIdAsc(EnrollmentStatus status, Pageable pageable);
+    // EnrollmentBillingComplianceSweepService (Fase 6.3): keyset pagination (id > lastId), no
+    // OFFSET — corrección 2026-09-04 (auditoría): al llegar a WITHDRAWN_FOR_NONPAYMENT esta misma
+    // corrida cambia el status académico vía darDeBaja, que es exactamente el campo que filtra
+    // este WHERE — con OFFSET normal eso puede saltear una fila de la página siguiente (mismo
+    // patrón de bug que ya motivó el keyset pagination de InvoiceOverdueSweepService).
+    List<CourseEnrollment> findByStatusAndIdGreaterThanOrderByIdAsc(EnrollmentStatus status, Long lastId, Pageable pageable);
 }

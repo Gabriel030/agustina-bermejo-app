@@ -11,7 +11,6 @@ import com.red_escuela.backend.entity.PaymentStatus;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.PaymentRepository;
@@ -81,6 +80,13 @@ public class PaymentService {
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
             BigDecimal amountApplied = ordered.get(i).amountApplied();
+            // Defensa en profundidad, además de la validación @DecimalMin del DTO (que solo
+            // protege el camino HTTP): un amountApplied negativo o cero corrompería el saldo en
+            // silencio (nunca supera getRemainingBalance(), así que pasaba el chequeo de abajo sin
+            // disparar nunca PAID) — hallazgo de auditoría 2026-09-04.
+            if (amountApplied.signum() <= 0) {
+                throw new IllegalArgumentException("amountApplied debe ser mayor a cero (invoice " + invoice.getId() + ")");
+            }
             validateOwnershipIfStudent(invoice);
             if (invoice.getStatus() == InvoiceStatus.CANCELLED || invoice.getStatus() == InvoiceStatus.WAIVED) {
                 throw new InvoiceNotPayableException(invoice.getId(), invoice.getStatus().name());
@@ -104,18 +110,17 @@ public class PaymentService {
             Invoice invoice = lockedInvoices.get(i);
             BigDecimal amountApplied = ordered.get(i).amountApplied();
 
-            PaymentAllocation allocation = new PaymentAllocation();
-            allocation.setPayment(payment);
-            allocation.setInvoice(invoice);
-            allocation.setAmountApplied(amountApplied);
+            // Invoice.registerPayment (no invoice.setStatus directo): PaymentAllocation y la
+            // transición a PAID son responsabilidad del propio Aggregate Root, no de este service
+            // (hallazgo de auditoría 2026-09-04 — la cabecera de Invoice.java ya declaraba esta
+            // invariante, este era el único caller que la violaba). No hace falta invoiceRepository
+            // .save(invoice) acá: invoice ya es una entidad managed (viene de findByIdForUpdate en
+            // ESTA misma transacción), Hibernate flushea el cambio de status solo. La única
+            // persistencia explícita de la PaymentAllocation es vía la cascada de payment.save()
+            // al final — cascadearla también desde el lado de Invoice duplicaba el INSERT
+            // (uk_payment_allocation) porque ambos lados tienen cascade=ALL sobre el mismo objeto.
+            PaymentAllocation allocation = invoice.registerPayment(amountApplied, payment);
             payment.getAllocations().add(allocation);
-
-            if (invoice.getRemainingBalance().subtract(amountApplied).compareTo(BigDecimal.ZERO) == 0) {
-                invoice.setStatus(InvoiceStatus.PAID);
-                // InvoicePaidEvent se agrega en Fase 6.8 (ARCA) cuando exista un listener real —
-                // publicar un evento sin nadie escuchándolo todavía sería código especulativo.
-                invoiceRepository.save(invoice);
-            }
         }
 
         return paymentRepository.save(payment);
@@ -124,13 +129,18 @@ public class PaymentService {
     // Endpoint compartido (spec: "ADMINISTRATIVO|autoservicio alumno (solo sobre invoices
     // propias)") — Optional.empty() de findCurrentStudent() significa que el actor es staff
     // (Administrativo/Director, sin fila Student propia), que puede pagar cualquier Invoice.
+    //
+    // InvoiceNotFoundException (404), no NotOwnEnrollmentException (403) — corrección 2026-09-04
+    // (auditoría): mismo criterio "404-no-403" que ya sigue PaymentReceiptService.validateOwnership
+    // para este mismo tipo de chequeo (ownership sobre un recurso Invoice-scoped, a diferencia de
+    // NotOwnEnrollmentException, reservada para chequeos enrollment-scoped por id de la URL).
     private void validateOwnershipIfStudent(Invoice invoice) {
         currentStudentService.findCurrentStudent().ifPresent(student -> {
             Long ownerId = invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
                     : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
                     : null;
             if (!student.getId().equals(ownerId)) {
-                throw new NotOwnEnrollmentException(student.getId(), invoice.getId());
+                throw new InvoiceNotFoundException(invoice.getId());
             }
         });
     }

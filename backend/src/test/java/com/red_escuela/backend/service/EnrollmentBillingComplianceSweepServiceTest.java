@@ -231,6 +231,29 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
     }
 
+    // Regresión (auditoría 2026-09-04): antes, la condición de "cero deuda" para volver a
+    // UP_TO_DATE miraba Invoice PENDING u OVERDUE — un enrollment SUSPENDED que saldaba TODA su
+    // mora pero tenía una Invoice PENDING futura ya generada (plan UPFRONT, o matrícula+primera
+    // cuota nacidas juntas) nunca veía "cero" y quedaba SUSPENDED para siempre.
+    @Test
+    void saldarTodaLaMoraLevantaLaSuspensionAunqueHayaUnaCuotaFuturaPendienteTodaviaNoVencida() {
+        Person director = persistPerson("director.compliance9." + System.nanoTime());
+        persistPolicy(director, 10, 2, 30, 3);
+        ProgramEnrollment enrollment = persistProgramEnrollment("99000109");
+        Invoice overdue = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
+        sweepService.run(LocalDate.now());
+        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+
+        overdue.setStatus(InvoiceStatus.PAID);
+        invoiceRepository.save(overdue);
+        // Cuota futura ya generada (ej. bloque UPFRONT), todavía dentro de su propio período —
+        // no debería impedir que la suspensión se levante, porque no es deuda vencida.
+        persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusDays(20), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
+        sweepService.run(LocalDate.now());
+
+        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+    }
+
     @Test
     void alumnoQueCambiaDePlanDePagoAMitadDeCarreraSigueAlDiaConsistentemente() {
         Person director = persistPerson("director.compliance7." + System.nanoTime());

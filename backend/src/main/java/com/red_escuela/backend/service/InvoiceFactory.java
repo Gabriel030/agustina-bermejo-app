@@ -56,6 +56,22 @@ public class InvoiceFactory {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Invoice crearParaCarrera(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
+        return saveIdempotently(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+    }
+
+    // Variante REQUIRED (no REQUIRES_NEW), para el único caller que necesita la Invoice atada a
+    // SU MISMA transacción en vez de aislada: ProgramEnrollmentBillingScheduler.generarMatricula
+    // crea una única Invoice de matrícula como parte de una operación más grande (seleccionar
+    // plan de pago) — si algo después falla (ej. aplicar el descuento de segunda cohorte), toda
+    // la operación tiene que revertir junta, no dejar la Invoice de matrícula huérfana ya
+    // commiteada. Mismo criterio que los métodos crearAdHoc* de abajo: "una falla acá revierte
+    // todo el request, no hay loop que necesite saltear un duplicado y seguir".
+    @Transactional
+    public Invoice crearParaCarreraAtomica(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
+        return invoiceRepository.saveAndFlush(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+    }
+
+    private Invoice construirParaCarrera(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
         var price = priceRevisionService.resolveCurrentForProgram(programEnrollment.getProgram().getId(), feeType, dueDate);
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(programEnrollment);
@@ -65,7 +81,7 @@ public class InvoiceFactory {
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(price);
         invoice.setStatus(InvoiceStatus.PENDING);
-        return saveIdempotently(invoice);
+        return invoice;
     }
 
     // Ad-hoc, not yet linked to any enrollment — used only by the Épica 7 Fase 3 self-service

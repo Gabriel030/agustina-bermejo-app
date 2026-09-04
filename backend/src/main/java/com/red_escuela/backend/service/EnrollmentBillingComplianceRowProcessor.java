@@ -59,7 +59,7 @@ public class EnrollmentBillingComplianceRowProcessor {
     public void processCourseEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(id).orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
         recalculateStanding(enrollment,
-                () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE)),
+                () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByCourseEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
                 policy, today, () -> courseEnrollmentService.darDeBaja(id));
         courseEnrollmentRepository.save(enrollment);
@@ -69,27 +69,35 @@ public class EnrollmentBillingComplianceRowProcessor {
     public void processProgramEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(id).orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
         recalculateStanding(enrollment,
-                () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE)),
+                () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByProgramEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
                 policy, today, () -> programEnrollmentService.darDeBaja(id));
         programEnrollmentRepository.save(enrollment);
     }
 
     // Criterio doble (decisión 2026-09-03): SUSPENDED/WITHDRAWN_FOR_NONPAYMENT se disparan por
-    // CUALQUIERA de las dos condiciones — antigüedad en días de la Invoice impaga más vieja, o
+    // CUALQUIERA de las dos condiciones — antigüedad en días de la Invoice OVERDUE más vieja, o
     // cantidad de Invoice OVERDUE simultáneas — la que se cumpla primero.
-    private void recalculateStanding(BillableEnrollment billable, Supplier<Optional<Invoice>> oldestUnpaidInvoice,
+    //
+    // Corrección 2026-09-04 (auditoría, hallazgo real): la condición de "cero deuda" que habilita
+    // volver a UP_TO_DATE tiene que mirar SOLO Invoice OVERDUE, nunca PENDING — antes esta misma
+    // consulta traía PENDING u OVERDUE, así que un enrollment SUSPENDED que saldaba toda su mora
+    // pero tenía una Invoice PENDING futura ya generada (plan UPFRONT, o matrícula+primera cuota
+    // nacidas juntas) nunca veía "oldestUnpaid vacío" y quedaba SUSPENDED para siempre — la propia
+    // regla de negocio dice "hasta llegar a cero Invoice OVERDUE", no "cero PENDING u OVERDUE".
+    private void recalculateStanding(BillableEnrollment billable, Supplier<Optional<Invoice>> oldestOverdueInvoice,
                                       LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today, Runnable withdraw) {
         EnrollmentBillingStanding previous = billable.getBillingStanding();
         LocalDateTime previousUpdatedAt = billable.getBillingStandingUpdatedAt();
-        Optional<Invoice> oldestUnpaid = oldestUnpaidInvoice.get();
+        long overdueInvoiceCount = overdueCount.getAsLong();
 
         EnrollmentBillingStanding next;
-        if (oldestUnpaid.isEmpty()) {
+        if (overdueInvoiceCount == 0) {
             next = EnrollmentBillingStanding.UP_TO_DATE;
         } else {
-            long daysOverdue = ChronoUnit.DAYS.between(oldestUnpaid.get().getDueDate(), today);
-            long overdueInvoiceCount = overdueCount.getAsLong();
+            Invoice oldestOverdue = oldestOverdueInvoice.get()
+                    .orElseThrow(() -> new IllegalStateException("countByStatus(OVERDUE) > 0 pero no se encontró ninguna Invoice OVERDUE"));
+            long daysOverdue = ChronoUnit.DAYS.between(oldestOverdue.getDueDate(), today);
             if (daysOverdue > policy.getWithdrawalAfterDays() || overdueInvoiceCount >= policy.getWithdrawalAfterInvoiceCount()) {
                 meterRegistry.counter("billing_withdrawal_attempt_total").increment();
                 next = EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
@@ -97,8 +105,8 @@ public class EnrollmentBillingComplianceRowProcessor {
                 meterRegistry.counter("billing_withdrawal_success_total").increment();
                 // SUSPENDED es "pegajoso" mientras siga habiendo alguna Invoice OVERDUE: un pago
                 // parcial que hace bajar días/cantidad por debajo del umbral no debe destrabar la
-                // suspensión solo — hace falta llegar a cero Invoice OVERDUE (rama de arriba,
-                // oldestUnpaid vacío) para volver a UP_TO_DATE (test 134).
+                // suspensión solo — hace falta llegar a overdueInvoiceCount == 0 (rama de arriba)
+                // para volver a UP_TO_DATE (test 134).
             } else if (previous == EnrollmentBillingStanding.SUSPENDED
                     || daysOverdue > policy.getSuspensionAfterDays() || overdueInvoiceCount >= policy.getSuspensionAfterInvoiceCount()) {
                 if (previous != EnrollmentBillingStanding.SUSPENDED) {

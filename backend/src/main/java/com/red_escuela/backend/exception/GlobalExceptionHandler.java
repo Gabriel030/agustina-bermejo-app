@@ -142,7 +142,8 @@ public class GlobalExceptionHandler {
             NotificationNotFoundException.class,
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
-            PaymentReceiptNotFoundException.class
+            PaymentReceiptNotFoundException.class,
+            NoActiveCollectionsPolicyException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -232,5 +233,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleDataIntegrityViolation() {
+    }
+
+    // @Version (optimistic locking) sin capturar en el service: dos transacciones que leyeron la
+    // misma fila y la mutan de forma mutuamente excluyente (ej. aprobar/rechazar el mismo
+    // PaymentReceipt en paralelo) — la que commitea segunda pierde acá, 409 semánticamente
+    // correcto para "alguien más ya cambió esto debajo tuyo", mismo criterio que el resto de esta
+    // clase para conflictos de concurrencia.
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public void handleOptimisticLockingFailure() {
     }
 }

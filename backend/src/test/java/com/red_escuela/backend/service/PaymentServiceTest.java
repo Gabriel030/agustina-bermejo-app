@@ -19,7 +19,7 @@ import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.exception.NotOwnEnrollmentException;
+import com.red_escuela.backend.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
@@ -238,6 +238,35 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
     }
 
+    // Regresión (auditoría 2026-09-04): un amountApplied negativo nunca superaba
+    // getRemainingBalance() (esa comparación siempre es falsa para negativos), así que pasaba el
+    // chequeo sin disparar nunca PAID — corrompía el saldo en silencio.
+    @Test
+    void negativeAmountAppliedIsRejected() {
+        Person admin = persistPerson("admin.pago9." + System.nanoTime());
+        Student student = persistStudent("96000009");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+
+        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(-100))),
+                PaymentMethod.CASH, false, null, null, null, null), admin))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void zeroAmountAppliedIsRejected() {
+        Person admin = persistPerson("admin.pago10." + System.nanoTime());
+        Student student = persistStudent("96000010");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+
+        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.ZERO)),
+                PaymentMethod.CASH, false, null, null, null, null), admin))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test
     void aStudentCanPayTheirOwnInvoice() {
         Student student = persistStudent("96000006");
@@ -263,6 +292,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), intruder.getPerson()))
-                .isInstanceOf(NotOwnEnrollmentException.class);
+                .isInstanceOf(InvoiceNotFoundException.class);
     }
 }
