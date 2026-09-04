@@ -2,7 +2,9 @@ package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Invoice;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -24,5 +26,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);
 
-    // Completed with findByStatusAndDueDateBefore / pessimistic lock in Fase 6.2/6.3.
+    // Lock pesimista explícito (SELECT ... FOR UPDATE) — @Version protege el caso de dos pagos
+    // que cubren el saldo COMPLETO en paralelo, pero no dos pagos PARCIALES simultáneos que
+    // individualmente no superan el saldo pero sumados sí (PaymentService.registrarPago).
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Invoice i where i.id = :id")
+    Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
 }
