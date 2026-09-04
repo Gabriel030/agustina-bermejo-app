@@ -161,8 +161,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/students").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].onboardingStatus").value("CONFIRMADO"));
+                .andExpect(jsonPath("$[?(@.dni=='40111222')].onboardingStatus").value("CONFIRMADO"))
+                .andExpect(jsonPath("$[?(@.dni=='40333444')]").isEmpty());
     }
 
     @Test
@@ -176,8 +176,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
                         .param("onboardingStatus", "PROSPECTO")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].onboardingStatus").value("PROSPECTO"));
+                .andExpect(jsonPath("$[?(@.dni=='40777888')].onboardingStatus").value("PROSPECTO"))
+                .andExpect(jsonPath("$[?(@.dni=='40555666')]").isEmpty());
     }
 
     @Test

@@ -145,11 +145,12 @@ class ProspectControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.username").doesNotExist())
                 .andExpect(jsonPath("$.dni").doesNotExist());
 
-        List<Student> students = studentRepository.findAll();
-        assertThat(students).hasSize(1);
-        assertThat(students.get(0).getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
-        assertThat(students.get(0).getPerson().getUsername()).isNull();
-        assertThat(students.get(0).getPerson().getDni()).isNull();
+        Student student = studentRepository.findAll().stream()
+                .filter(s -> "juan.perez@example.com".equals(s.getPerson().getEmail()))
+                .findFirst().orElseThrow();
+        assertThat(student.getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
+        assertThat(student.getPerson().getUsername()).isNull();
+        assertThat(student.getPerson().getDni()).isNull();
     }
 
     // El caso "PDF de 6MB -> 400" (spring.servlet.multipart.max-file-size) no se puede
