@@ -1,11 +1,15 @@
 package com.red_escuela.backend.service;
 
+import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.PaymentPlanCadence;
 import com.red_escuela.backend.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.exception.NoActivePaymentPlanException;
 import com.red_escuela.backend.repository.PaymentPlanSelectionRepository;
 import org.springframework.stereotype.Service;
@@ -29,10 +33,11 @@ public class InvoiceGenerationService {
         this.recurringFeeWindowService = recurringFeeWindowService;
     }
 
-    // Fase 6.3 adds the SUSPENDED/WITHDRAWN_FOR_NONPAYMENT billingStanding check here — that
-    // status doesn't exist yet in this phase.
     @Transactional
     public void generarProximaCuotaParaCurso(CourseEnrollment courseEnrollment, YearMonth today) {
+        if (estaSuspendidoOBajaPorMora(courseEnrollment) || courseEnrollment.getStatus() != EnrollmentStatus.ENROLLED) {
+            return;
+        }
         PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForCourseEnrollment(courseEnrollment.getId(), today)
                 .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for course enrollment " + courseEnrollment.getId()));
         generarSegunCadencia(selection, courseEnrollment, null, today);
@@ -40,9 +45,24 @@ public class InvoiceGenerationService {
 
     @Transactional
     public void generarProximaCuotaParaCarrera(ProgramEnrollment programEnrollment, YearMonth today) {
+        boolean noEstaActivaAcademicamente = programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
+                && programEnrollment.getStatus() != ProgramEnrollmentStatus.PAUSED;
+        if (estaSuspendidoOBajaPorMora(programEnrollment) || noEstaActivaAcademicamente) {
+            return;
+        }
         PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForProgramEnrollment(programEnrollment.getId(), today)
                 .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for program enrollment " + programEnrollment.getId()));
         generarSegunCadencia(selection, null, programEnrollment, today);
+    }
+
+    // Un billable SUSPENDED o WITHDRAWN_FOR_NONPAYMENT no debe seguir acumulando deuda nueva. El
+    // chequeo de status académico (arriba, en cada método) cubre además una baja MANUAL
+    // (darDeBaja sin relación con mora): el scheduler real (todavía sin cablear) también filtra
+    // por status al elegir su universo, pero este método no depende solo de eso — un caller que
+    // invoque esto directo sobre un enrollment ya dado de baja no debe generar nada.
+    private boolean estaSuspendidoOBajaPorMora(BillableEnrollment billable) {
+        return billable.getBillingStanding() == EnrollmentBillingStanding.SUSPENDED
+                || billable.getBillingStanding() == EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
     }
 
     private void generarSegunCadencia(PaymentPlanSelection selection, CourseEnrollment courseEnrollment, ProgramEnrollment programEnrollment, YearMonth today) {

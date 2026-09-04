@@ -1,9 +1,16 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.dto.EnrollmentBillingStatusResponse;
+import com.red_escuela.backend.dto.InvoiceResponse;
 import com.red_escuela.backend.dto.StudentResponse;
 import com.red_escuela.backend.dto.WithdrawStudentRequest;
+import com.red_escuela.backend.entity.BillableEnrollment;
+import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.service.InvoiceQueryService;
 import com.red_escuela.backend.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -18,15 +25,23 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/students")
 public class StudentController {
 
     private final StudentService studentService;
+    private final InvoiceQueryService invoiceQueryService;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
 
-    public StudentController(StudentService studentService) {
+    public StudentController(StudentService studentService, InvoiceQueryService invoiceQueryService,
+                              CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository) {
         this.studentService = studentService;
+        this.invoiceQueryService = invoiceQueryService;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.programEnrollmentRepository = programEnrollmentRepository;
     }
 
     // Matriz de permisos (sección 3): Director tiene R sobre el legajo de un alumno, a
@@ -58,5 +73,24 @@ public class StudentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void resetearPassword(@PathVariable Long id) {
         studentService.resetearPassword(id);
+    }
+
+    // Versión mínima de esta fase (Fase 6.3): billingStanding + invoices por cada enrollment del
+    // alumno. El detalle completo de "vista 360°" (deuda total, historial de pagos, etc.) es de
+    // Fase 6.11 (Reporting).
+    @GetMapping("/{id}/billing-overview")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public List<EnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
+        return Stream.concat(
+                courseEnrollmentRepository.findByStudentId(id).stream()
+                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.porCurso(enrollment.getId()))),
+                programEnrollmentRepository.findByStudentId(id).stream()
+                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.porCarrera(enrollment.getId()))))
+                .toList();
+    }
+
+    private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
+        return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
+                invoices.stream().map(InvoiceResponse::from).toList());
     }
 }

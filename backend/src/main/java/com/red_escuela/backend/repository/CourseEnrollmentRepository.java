@@ -2,6 +2,7 @@ package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -31,4 +32,8 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     // CourseEnrollmentWaitlistExpiryJob: todos los que siguen esperando cupo de un curso puntual.
     List<CourseEnrollment> findByCourseIdAndStatus(Long courseId, EnrollmentStatus status);
+
+    // EnrollmentBillingComplianceSweepService (Fase 6.3): paginado OFFSET normal, mismo criterio
+    // que ProgramEnrollmentRepository.findByStatusInOrderByIdAsc.
+    List<CourseEnrollment> findByStatusOrderByIdAsc(EnrollmentStatus status, Pageable pageable);
 }
