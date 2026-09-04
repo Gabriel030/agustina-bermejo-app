@@ -13,7 +13,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "program_enrollment")
-public class ProgramEnrollment {
+public class ProgramEnrollment implements BillableEnrollment {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +58,14 @@ public class ProgramEnrollment {
 
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
+
+    // Mantenido por EnrollmentBillingComplianceSweepService (Fase 6.3) — ver BillableEnrollment.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_standing", nullable = false)
+    private EnrollmentBillingStanding billingStanding = EnrollmentBillingStanding.UP_TO_DATE;
+
+    @Column(name = "billing_standing_updated_at")
+    private LocalDateTime billingStandingUpdatedAt;
 
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<SubjectSectionEnrollment> sectionEnrollments;

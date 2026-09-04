@@ -35,7 +35,7 @@ public class CollectionsPolicyService {
     }
 
     public CollectionsPolicy findCurrent() {
-        return collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now())
+        return collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescIdDesc(LocalDate.now())
                 .orElseThrow(NoActiveCollectionsPolicyException::new);
     }
 }

@@ -3,6 +3,7 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.dto.PriceBreakdownResponse;
+import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.InvoiceAdjustment;
@@ -43,6 +44,18 @@ public class InvoiceQueryService {
 
     public List<Invoice> porCarrera(Long programEnrollmentId) {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId);
+    }
+
+    // billingStanding real (Fase 6.3) para las respuestas de EnrollmentBillingStatusResponse —
+    // el enrollment ya fue validado (ownership u otro criterio) por el caller antes de esto.
+    public BillableEnrollment courseBillable(Long courseEnrollmentId) {
+        return courseEnrollmentRepository.findById(courseEnrollmentId)
+                .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
+    }
+
+    public BillableEnrollment programBillable(Long programEnrollmentId) {
+        return programEnrollmentRepository.findById(programEnrollmentId)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
     }
 
     public List<Invoice> porCursoPropio(Long studentId, Long courseEnrollmentId) {
