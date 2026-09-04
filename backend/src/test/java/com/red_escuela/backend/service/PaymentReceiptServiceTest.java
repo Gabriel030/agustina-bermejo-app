@@ -175,7 +175,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt rejected = paymentReceiptService.rechazar(receipt.getId(), "Comprobante ilegible", admin);
+        PaymentReceipt rejected = paymentReceiptService.reject(receipt.getId(), "Comprobante ilegible", admin);
         assertThat(rejected.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
         assertThat(rejected.getRejectionReason()).isEqualTo("Comprobante ilegible");
 
