@@ -98,6 +98,12 @@ public class CourseEnrollmentService {
 
         // Resolver TODAS las comisiones antes de crear nada: si algún módulo falla (sin
         // comisión / ambiguo), no debe quedar ninguna fila creada (todo o nada, decisión 15).
+        // Esto se hace SIEMPRE, esté o no lleno el cupo del curso — Course.capacity es un tope
+        // aparte (aula/financiero) del cupo propio de cada comisión, que ya tiene su propio
+        // sistema de cupo y lista de espera independiente (calcularStatusPorCupo). Quedar
+        // WAITLISTED a nivel curso no le saca el lugar ya reservado en sus comisiones; si el
+        // cupo del curso nunca se libera antes del corte, CourseEnrollmentWaitlistExpiryJob
+        // cancela todo junto (la matriculación y esas reservas de comisión).
         Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
             resueltas.put(courseSubject, resolverSeccion(courseSubject, course, request));
@@ -106,7 +112,7 @@ public class CourseEnrollmentService {
         CourseEnrollment enrollment = new CourseEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
-        enrollment.setStatus(EnrollmentStatus.ENROLLED);
+        enrollment.setStatus(calculateStatusByCourseCapacity(course));
         enrollment.setEnrollmentDate(now);
         CourseEnrollment savedEnrollment = courseEnrollmentRepository.save(enrollment);
 
@@ -195,6 +201,21 @@ public class CourseEnrollmentService {
         return nueva;
     }
 
+    // Cupo del curso como conjunto (Course.capacity) — distinto del cupo de cada comisión
+    // (calcularStatusPorCupo, más abajo). Mismo patrón de lock: sin serializar acá, dos altas
+    // concurrentes al último lugar disponible pueden leer "ocupadas < capacity" ambas antes de
+    // que cualquiera haga commit, y las dos terminar ENROLLED por encima del cupo real. La
+    // decisión en sí (¿hay lugar?) es invariante de Course.hasCapacityFor — este método solo
+    // hace la orquestación (lock + conteo) que Course no puede hacer por sí solo.
+    private EnrollmentStatus calculateStatusByCourseCapacity(Course course) {
+        courseRepository.findByIdForUpdate(course.getId())
+                .orElseThrow(() -> new CourseNotFoundException(course.getId()));
+        long occupied = courseEnrollmentRepository
+                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED))
+                .size();
+        return course.hasCapacityFor(occupied) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
     private EnrollmentStatus calcularStatusPorCupo(CourseSubjectSection section) {
         // Lock de fila: serializa altas/bajas/promociones concurrentes sobre la MISMA
         // comisión — sin esto, dos altas simultáneas a capacity=1 pueden leer "ocupadas=0"
@@ -212,12 +233,23 @@ public class CourseEnrollmentService {
     @Transactional
     public void darDeBaja(Long id) {
         CourseEnrollment enrollment = findOrThrow(id);
-        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED) {
-            throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED, no se puede dar de baja");
+        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
+            throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }
+        boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
+        cancelModuleEnrollments(enrollment);
+        if (liberaCupoDelCurso) {
+            promoteNextFromCourseWaitlist(enrollment.getCourse());
+        }
+    }
 
+    // Usado por darDeBaja (baja voluntaria) y por CourseEnrollmentWaitlistExpiryJob (cancelación
+    // automática por vencimiento de lista de espera) — mismo motivo en los dos casos: el alumno
+    // deja de estar en el curso, así que sus reservas de comisión (decisión 15, todas juntas en
+    // la misma alta) tienen que liberarse igual, sea cual sea la causa de la baja.
+    void cancelModuleEnrollments(CourseEnrollment enrollment) {
         // A diferencia de ProgramEnrollment (donde las SubjectSectionEnrollment las elige el
         // alumno una por una y no se tocan al dar de baja la carrera, para preservar su
         // historial de cursadas independiente), las CourseSubjectSectionEnrollment de un Course
@@ -225,7 +257,7 @@ public class CourseEnrollmentService {
         // esa alta, no elecciones independientes del alumno. Sin cascada acá, el cupo de cada
         // módulo queda ocupado para siempre por alguien que ya no cursa nada.
         LocalDateTime now = LocalDateTime.now();
-        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(id)) {
+        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
             if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS
                     || estadoAnterior == EnrollmentStatus.WAITLISTED) {
@@ -237,6 +269,21 @@ public class CourseEnrollmentService {
                 }
             }
         }
+    }
+
+    // Cupo de Course.capacity: a diferencia de la lista de espera de una comisión (donde
+    // promover exige elegir de nuevo la sección, porque ahí sí puede haber ambigüedad), acá
+    // alcanza con cambiar el status — al alumno WAITLISTED ya se le reservaron sus módulos en
+    // matricular() (ver comentario ahí), así que no hay nada más que resolver.
+    private void promoteNextFromCourseWaitlist(Course course) {
+        courseRepository.findByIdForUpdate(course.getId())
+                .orElseThrow(() -> new CourseNotFoundException(course.getId()));
+        courseEnrollmentRepository
+                .findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(course.getId(), EnrollmentStatus.WAITLISTED)
+                .ifPresent(siguiente -> {
+                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
+                    courseEnrollmentRepository.save(siguiente);
+                });
     }
 
     private void promoverSiguienteEnListaDeEspera(Long courseSubjectSectionId) {

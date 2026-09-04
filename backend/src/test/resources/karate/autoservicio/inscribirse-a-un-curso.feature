@@ -31,12 +31,8 @@ Feature: Caso de uso — Inscribirse a un curso
     Then status 201
     * def courseId = response.id
 
-    # Épica 7 Fase 3: la primera cuota sale de FeeSchedule, no de Course.price.
-    Given path '/fee-schedules'
-    And header Authorization = 'Bearer ' + directorToken
-    And request { courseId: '#(courseId)', concept: 'CUOTA_MENSUAL', amount: 15000, vigenteDesde: '2020-01-01' }
-    When method post
-    Then status 201
+    # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(RECURRING_FEE) desde el
+    # price de arriba — no hace falta un paso aparte.
 
     # Alumno recién registrado
     * def emailAlumno = 'karate.inscribirmecurso.' + java.lang.System.nanoTime() + '@example.com'

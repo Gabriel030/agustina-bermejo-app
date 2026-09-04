@@ -3,6 +3,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 
 @Getter
 @Setter
@@ -43,4 +45,26 @@ public class Term {
     @Enumerated(EnumType.STRING)
     @Column(name = "enrollment_override")
     private TermEnrollmentOverride enrollmentOverride;
+
+    // Invariante propia del Term (decisión 2026-09-03): "¿este mes cae dentro de mi período
+    // lectivo?" — antes vivía duplicada en cada consumidor (facturación de carrera, facturación
+    // de curso). Sin startDate/endDate configurados no hay ventana real que hacer cumplir
+    // (fixtures viejas/incompletas): no bloquea, no es el caso esperado en producción.
+    public boolean contains(YearMonth period) {
+        if (startDate == null || endDate == null) {
+            return true;
+        }
+        YearMonth start = YearMonth.from(startDate);
+        YearMonth end = YearMonth.from(endDate);
+        return !period.isBefore(start) && !period.isAfter(end);
+    }
+
+    // Cantidad de meses calendario que dura este Term, inclusive en ambas puntas (marzo a junio
+    // = 4 meses). null = sin fechas configuradas, no hay span que calcular.
+    public Long spanInMonths() {
+        if (startDate == null || endDate == null) {
+            return null;
+        }
+        return ChronoUnit.MONTHS.between(YearMonth.from(startDate), YearMonth.from(endDate)) + 1;
+    }
 }

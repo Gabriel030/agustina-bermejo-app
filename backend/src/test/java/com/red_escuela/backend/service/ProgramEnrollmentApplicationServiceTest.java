@@ -2,25 +2,28 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.FeeScheduleConcept;
+import com.red_escuela.backend.entity.CohortIntake;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Payment;
+import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.PaymentReceiptStatus;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.exception.AdmissionWindowClosedException;
+import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyHasPendingApplicationException;
-import com.red_escuela.backend.exception.FeeScheduleNotFoundException;
+import com.red_escuela.backend.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.repository.InvoiceRepository;
-import com.red_escuela.backend.repository.PaymentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
@@ -34,7 +37,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +45,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Épica 7 Fase 3: solicitud de alta en carrera con pago de matrícula bloqueante
  * (Invoice+PaymentReceipt en la misma request que solicitar) y aprobación conjunta
- * de la solicitud y el comprobante en una sola transacción.
+ * de la solicitud y el comprobante en una sola transacción. PaymentReceiptService es
+ * un placeholder mínimo hasta Fase 6.2 (Pagos y allocations) — alcanza con verificar
+ * que la Invoice pasa a PAID, sin un Payment real todavía.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -55,9 +59,6 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
-
-    @Autowired
-    private PaymentRepository paymentRepository;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -108,26 +109,39 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         return program;
     }
 
-    private ProgramCohort persistCohort(Program program, LocalDateTime admissionStart, LocalDateTime admissionEnd) {
+    private ProgramCohort persistCohort(Program program, LocalDate admissionStart, LocalDate admissionEnd, Person createdBy) {
+        Term term = new Term();
+        term.setYear(2026);
+        term.setStatus(StatusType.ACTIVE);
+        entityManager.persist(term);
+
+        ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
+        template.setProgram(program);
+        template.setTerm(term);
+        template.setRecurringFeeInvoicesCount(10);
+        template.setCreatedBy(createdBy);
+        entityManager.persist(template);
+
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
-        cohort.setAdmissionStart(admissionStart);
-        cohort.setAdmissionEnd(admissionEnd);
+        cohort.setTemplate(template);
+        cohort.setIntake(CohortIntake.FIRST);
+        cohort.setAdmissionStart(admissionStart == null ? LocalDate.now().minusDays(30) : admissionStart);
+        cohort.setAdmissionEnd(admissionEnd == null ? LocalDate.now().plusDays(30) : admissionEnd);
         cohort.setCursadaStart(LocalDate.now());
+        cohort.setCreatedBy(createdBy);
         entityManager.persist(cohort);
         return cohort;
     }
 
-    private void persistFeeSchedule(Program program, BigDecimal amount, Person createdBy) {
-        com.red_escuela.backend.entity.FeeSchedule feeSchedule = new com.red_escuela.backend.entity.FeeSchedule();
-        feeSchedule.setProgram(program);
-        feeSchedule.setConcept(FeeScheduleConcept.MATRICULA);
-        feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusDays(1));
-        feeSchedule.setCreatedBy(createdBy);
-        feeSchedule.setCreatedAt(LocalDateTime.now());
-        entityManager.persist(feeSchedule);
+    private void persistPriceRevision(Program program, BigDecimal amount, Person createdBy) {
+        PriceRevision revision = new PriceRevision();
+        revision.setProgram(program);
+        revision.setFeeType(FeeType.ENROLLMENT_FEE);
+        revision.setDescription("Matrícula de prueba");
+        revision.setMonthlyAmount(amount);
+        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
+        revision.setCreatedBy(createdBy);
+        entityManager.persist(revision);
     }
 
     private MultipartFile comprobante() {
@@ -138,9 +152,9 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     void solicitarConPagoCreaInvoicePaymentReceiptYSolicitudPendiente() {
         Student student = persistStudent("81000001");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
-        ProgramCohort cohort = persistCohort(program, null, null);
         Person director = persistPersonBase("DIR" + System.nanoTime());
-        persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
+        ProgramCohort cohort = persistCohort(program, null, null, director);
+        persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
         ProgramEnrollmentApplication application =
@@ -149,16 +163,16 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
         assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
-        assertThat(application.getPaymentReceipt().getInvoice().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(application.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
     }
 
     @Test
     void solicitarConPagoDosVecesMientrasLaPrimeraSiguePendienteFalla() {
         Student student = persistStudent("81000002");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
-        ProgramCohort cohort = persistCohort(program, null, null);
         Person director = persistPersonBase("DIR" + System.nanoTime());
-        persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
+        ProgramCohort cohort = persistCohort(program, null, null, director);
+        persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
         applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante());
@@ -168,40 +182,45 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoSinFeeScheduleConfiguradoFalla() {
+    void solicitarConPagoSinPriceRevisionConfiguradaFalla() {
         Student student = persistStudent("81000003");
         Program program = persistPrograma("Sin Precio " + System.nanoTime());
-        ProgramCohort cohort = persistCohort(program, null, null);
+        Person director = persistPersonBase("DIR" + System.nanoTime());
+        ProgramCohort cohort = persistCohort(program, null, null, director);
         entityManager.flush();
 
         assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
-                .isInstanceOf(FeeScheduleNotFoundException.class);
+                .isInstanceOf(PriceRevisionNotFoundException.class);
     }
 
     @Test
     void solicitarConPagoFueraDeLaVentanaDeAdmisionFallaSinGenerarInvoiceNiComprobante() {
         Student student = persistStudent("81000005");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
-        // Ventana ya cerrada hace una semana — nadie debería poder pagar matrícula de una
-        // cohorte con inscripciones cerradas, ni aunque la carrera tenga FeeSchedule configurado.
-        ProgramCohort cohort = persistCohort(program, LocalDateTime.now().minusDays(30), LocalDateTime.now().minusDays(7));
         Person director = persistPersonBase("DIR" + System.nanoTime());
-        persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
+        // Ventana ya cerrada hace una semana — nadie debería poder pagar matrícula de una
+        // cohorte con inscripciones cerradas, ni aunque la carrera tenga PriceRevision configurada.
+        ProgramCohort cohort = persistCohort(program, LocalDate.now().minusDays(30), LocalDate.now().minusDays(7), director);
+        persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
-        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
-                .isInstanceOf(AdmissionWindowClosedException.class);
+        // Cuenta contra el total en vez de asumir la tabla vacía — otros tests de la suite
+        // (Fase 6.1, no @Transactional) commitean Invoice reales en la misma base compartida.
+        long invoicesAntes = invoiceRepository.count();
 
-        assertThat(invoiceRepository.findByStudentId(student.getId())).isEmpty();
+        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
+                .isInstanceOf(CohortAdmissionWindowClosedException.class);
+
+        assertThat(invoiceRepository.count()).isEqualTo(invoicesAntes);
     }
 
     @Test
-    void aprobarLaSolicitudApruebaTambienElComprobanteYCreaElPaymentReal() {
+    void aprobarLaSolicitudApruebaTambienElComprobanteYPasaLaInvoiceAPaid() {
         Student student = persistStudent("81000004");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
-        ProgramCohort cohort = persistCohort(program, null, null);
         Person director = persistPersonBase("DIR" + System.nanoTime());
-        persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
+        ProgramCohort cohort = persistCohort(program, null, null, director);
+        persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
         ProgramEnrollmentApplication application =
                 applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante());
@@ -224,9 +243,8 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
                 student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED)))
                 .isNotEmpty();
 
-        List<Payment> pagos = paymentRepository.findByInvoiceId(aprobada.getPaymentReceipt().getInvoice().getId());
-        assertThat(pagos).hasSize(1);
-        assertThat(pagos.get(0).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(aprobada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThat(aprobada.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
         assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

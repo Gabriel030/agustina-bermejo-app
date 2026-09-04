@@ -4,9 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// @EnableScheduling: primera vez que el proyecto usa @Scheduled (Épica 8 Fase 2,
-// RecurringBillingService) — sin esto el cron nunca dispara, Spring lo ignora en
-// silencio.
+// @EnableScheduling: sin esto ningún @Scheduled dispara, Spring lo ignora en silencio —
+// usado por InvoiceGenerationService y el resto de los jobs de Fase 6.
 @SpringBootApplication
 @EnableScheduling
 public class BackendApplication {

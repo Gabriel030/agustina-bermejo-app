@@ -1,5 +1,6 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.dto.AdvanceBillingYearRequest;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
@@ -62,5 +63,13 @@ public class ProgramEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<SubjectAttendanceSummaryResponse> verResumenAsistencia(@PathVariable Long id) {
         return programEnrollmentService.resumenAsistenciaPorMateria(id);
+    }
+
+    // Fase 6.1 (decisión 2026-09-03): progresar de año (o repetir uno) cambia a qué plantilla
+    // anual se le factura de ahí en adelante — no toca la cohorte de origen ni recobra matrícula.
+    @PostMapping("/program-enrollments/{id}/advance-billing-year")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public ProgramEnrollmentResponse avanzarAñoLectivo(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.avanzarAñoLectivo(id, request.templateId()));
     }
 }

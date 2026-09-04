@@ -7,52 +7,49 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Cohorte de admisión de una carrera — concepto puramente administrativo/de
- * facturación, no académico: no se integra con {@link Term}/{@link SubjectSection}
- * porque en el dominio real son independientes (qué materia cursa un alumno en
- * qué Term no depende de a qué cohorte de admisión se anotó, ver spec técnica
- * de Épica 8 Fase 2). Reemplaza el rol que antes cumplían
- * {@code Program.admissionStart/admissionEnd} — ahora una carrera tiene
- * exactamente 2 cohortes por año lectivo (política institucional), cada una
- * con su propia ventana de admisión.
- */
+// Every program opens exactly 2 cohorts per year (institutional policy) — each one
+// administratively independent, with its own admission window and its own real cursada start.
 @Getter
 @Setter
 @Entity
-@Table(name = "program_cohort")
+@Table(name = "program_cohort", uniqueConstraints = @UniqueConstraint(columnNames = {"template_id", "intake"}))
 public class ProgramCohort {
+
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Version
-    @Column(name = "version")
-    private Long version;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "program_id", nullable = false)
-    private Program program;
+    @JoinColumn(name = "template_id", nullable = false)
+    private ProgramYearBillingTemplate template;
 
-    @Column(name = "label")
-    private String label;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "intake", nullable = false)
+    private CohortIntake intake;
 
-    // 1 o 2 — de cuál de las 2 cohortes del año se trata. Se guarda explícito
-    // en vez de inferirse comparando meses: queda auditable y no depende de un
-    // cálculo implícito frágil si algún año la institución corre las fechas.
-    @Column(name = "orden_en_anio", nullable = false)
-    private Integer ordenEnAnio;
+    // From when this cohort's enrollment fee can be paid.
+    @Column(name = "admission_start", nullable = false)
+    private LocalDate admissionStart;
 
-    @Column(name = "admission_start")
-    private LocalDateTime admissionStart;
+    @Column(name = "admission_end", nullable = false)
+    private LocalDate admissionEnd;
 
-    @Column(name = "admission_end")
-    private LocalDateTime admissionEnd;
-
-    // 1er día de cursada real de esta cohorte — ancla del plan de cuotas
-    // (InstallmentScheduleCalculator la usa para saber qué cuota corresponde
-    // a cada mes, nunca al mes de la solicitud/inscripción).
+    // First real month of this cohort's cursada — never the month the enrollment was requested.
     @Column(name = "cursada_start", nullable = false)
     private LocalDate cursadaStart;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by_id", nullable = false)
+    private Person createdBy;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
 }

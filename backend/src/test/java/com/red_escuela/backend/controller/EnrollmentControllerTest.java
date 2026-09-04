@@ -141,16 +141,43 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         return program;
     }
 
-    // Épica 8 Fase 2: la ventana de admisión vive en ProgramCohort, no en Program.
-    private ProgramCohort persistProgramCohort(Program program, LocalDateTime admissionStart, LocalDateTime admissionEnd) {
+    // Fase 6.1: la ventana de admisión vive en ProgramCohort (vía ProgramYearBillingTemplate),
+    // no en Program.
+    private ProgramCohort persistProgramCohort(Program program, java.time.LocalDate admissionStart, java.time.LocalDate admissionEnd) {
+        Person systemActor = persistSystemActor();
+        Term term = persistTerm(null, null);
+
+        com.red_escuela.backend.entity.ProgramYearBillingTemplate template = new com.red_escuela.backend.entity.ProgramYearBillingTemplate();
+        template.setProgram(program);
+        template.setTerm(term);
+        template.setRecurringFeeInvoicesCount(10);
+        template.setCreatedBy(systemActor);
+        entityManager.persist(template);
+
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
+        cohort.setTemplate(template);
+        cohort.setIntake(com.red_escuela.backend.entity.CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(java.time.LocalDate.now());
+        cohort.setCreatedBy(systemActor);
         entityManager.persist(cohort);
         return cohort;
+    }
+
+    private Person persistSystemActor() {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName("Sistema");
+        person.setLastname("Test");
+        person.setDni("SYS" + System.nanoTime());
+        person.setUsername("system-test-" + System.nanoTime());
+        person.setEmail("system-test-" + System.nanoTime() + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        return person;
     }
 
     private Subject persistSubject(String name) {
@@ -298,13 +325,17 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
+    // Renombrado (2026-09-03, auditoría Fase 6.1): CohortAdmissionWindowClosedException mapea a
+    // 409, no 400 — ya estaba declarada y registrada en GlobalExceptionHandler pero el código
+    // lanzaba la genérica AdmissionWindowClosedException (400) en su lugar, un bug real
+    // encontrado al confrontar el código contra la spec de Fase 6.1 (test 138).
     @Test
-    void matricularFueraDeVentanaAdmisionDevuelve400() throws Exception {
+    void matricularFueraDeVentanaAdmisionDevuelve409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000003", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
-        LocalDateTime now = LocalDateTime.now();
+        java.time.LocalDate today = java.time.LocalDate.now();
         Program program = persistProgram("Tecnicatura3", 100);
-        ProgramCohort cohort = persistProgramCohort(program, now.minusDays(30), now.minusDays(10));
+        ProgramCohort cohort = persistProgramCohort(program, today.minusDays(30), today.minusDays(10));
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc3", "PRECEPTOR");
 
@@ -312,7 +343,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()))))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 
     @Test

@@ -2,7 +2,6 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.CertificateIssuance;
 import com.red_escuela.backend.entity.CertificateType;
-import com.red_escuela.backend.entity.PaymentStanding;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
@@ -42,17 +41,17 @@ public class CertificateService {
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final InvoiceService invoiceService;
+    private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
 
     public CertificateService(
             ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
-            InvoiceService invoiceService, CertificateIssuanceRepository certificateIssuanceRepository,
+            InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
             CurrentPersonService currentPersonService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.invoiceService = invoiceService;
+        this.invoiceQueryService = invoiceQueryService;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
     }
@@ -74,9 +73,8 @@ public class CertificateService {
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
-        PaymentStanding standing = invoiceService.calcularEstadoDePago(student.getId());
-        if (standing != PaymentStanding.AL_DIA) {
-            throw new CertificateNotEligibleException("el alumno no está al día con sus pagos (" + standing + ")");
+        if (invoiceQueryService.tieneDeudaVencida(student.getId())) {
+            throw new CertificateNotEligibleException("el alumno no está al día con sus pagos");
         }
 
         Person person = student.getPerson();

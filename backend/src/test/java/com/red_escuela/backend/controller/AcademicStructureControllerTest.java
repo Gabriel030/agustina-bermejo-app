@@ -126,7 +126,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void crearCarreraConCreditosPersisteTodosLosCampos() throws Exception {
         String token = tokenWithRole("admin-academico3", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest(
-                "Tecnicatura en Sistemas", 3, null, 240, null);
+                "Tecnicatura en Sistemas", 3, null, null, 240);
 
         mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -159,7 +159,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         Long groupId = objectMapper.readTree(groupBody).get("id").asLong();
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura con Electivas", 4, null, 200, null);
+                "Tecnicatura con Electivas", 4, null, null, 200);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -194,7 +194,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Optativas"));
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura Optativas", 4, null, 100, null);
+                "Tecnicatura Optativas", 4, null, null, 100);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -272,7 +272,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void desactivarYReactivarProgramaFuncionaYElListadoFiltraPorStatus() throws Exception {
         String token = tokenWithRole("admin-baja1", "ADMINISTRATIVO");
-        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, 100, null);
+        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, null, 100);
         String body = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -302,7 +302,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, 100, null))))
+                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, null, 100))))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).get("id").asLong();
 
@@ -615,7 +615,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, 50, null))))
+                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, null, 50))))
                 .andReturn().getResponse().getContentAsString();
         Long programId = objectMapper.readTree(programBody).get("id").asLong();
 

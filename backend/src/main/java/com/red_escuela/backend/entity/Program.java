@@ -22,20 +22,21 @@ public class Program {
     @Column(name = "status")
     private StatusType status;
 
+    // Monthly recurring fee (RECURRING_FEE) amount — mirrored into a PriceRevision on create/update
+    // (Fase 6.1, PriceRevisionService).
     @Column(name = "price")
     private BigDecimal price;
+
+    // Enrollment fee (ENROLLMENT_FEE, matrícula) — separate from the monthly tuition above,
+    // also mirrored into its own PriceRevision (Fase 6.1).
+    @Column(name = "enrollment_fee_amount")
+    private BigDecimal enrollmentFeeAmount;
 
     @Column(name = "total_years")
     private Integer totalYears;
 
     @Column(name = "total_credits_required", nullable = false)
     private Integer totalCreditsRequired = 0;
-
-    // Épica 8 Fase 2: junto a totalYears arma el plan de pagos completo
-    // (total de cuotas = totalYears × installmentsPerAcademicYear). La ventana de admisión
-    // pasó a vivir en ProgramCohort — una carrera tiene exactamente 2 por año.
-    @Column(name = "installments_per_academic_year")
-    private Integer installmentsPerAcademicYear;
 
     @OneToMany(mappedBy = "program", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubject> programSubjectsList;

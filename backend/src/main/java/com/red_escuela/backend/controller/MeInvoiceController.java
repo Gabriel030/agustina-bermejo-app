@@ -1,48 +1,44 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.DebtSummaryResponse;
+import com.red_escuela.backend.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.dto.InvoiceResponse;
-import com.red_escuela.backend.dto.PaymentStandingResponse;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.service.CurrentStudentService;
-import com.red_escuela.backend.service.InvoiceService;
+import com.red_escuela.backend.service.InvoiceQueryService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Autoservicio del alumno (RF-AL-09, decisión 14): el Student siempre se resuelve del JWT vía
- * CurrentStudentService, nunca de un id de la URL — mismo criterio que MeEnrollmentController.
- */
 @RestController
 @RequestMapping("/me")
 public class MeInvoiceController {
 
+    private final InvoiceQueryService invoiceQueryService;
     private final CurrentStudentService currentStudentService;
-    private final InvoiceService invoiceService;
 
-    public MeInvoiceController(CurrentStudentService currentStudentService, InvoiceService invoiceService) {
+    public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService) {
+        this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
-        this.invoiceService = invoiceService;
     }
 
-    @GetMapping("/invoices")
-    public List<InvoiceResponse> misFacturas() {
-        Student student = currentStudentService.resolveCurrentStudent();
-        return invoiceService.listarPorAlumno(student.getId());
+    @GetMapping("/course-enrollments/{id}/invoices")
+    public EnrollmentBillingStatusResponse misCuotasDeCurso(@PathVariable Long id) {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return toStatusResponse(invoiceQueryService.porCursoPropio(studentId, id));
     }
 
-    @GetMapping("/invoices/debt-summary")
-    public DebtSummaryResponse miResumenDeDeuda() {
-        Student student = currentStudentService.resolveCurrentStudent();
-        return invoiceService.calcularDeuda(student.getId());
+    @GetMapping("/program-enrollments/{id}/invoices")
+    public EnrollmentBillingStatusResponse misCuotasDeCarrera(@PathVariable Long id) {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return toStatusResponse(invoiceQueryService.porCarreraPropia(studentId, id));
     }
 
-    @GetMapping("/payment-standing")
-    public PaymentStandingResponse miEstadoDePago() {
-        Student student = currentStudentService.resolveCurrentStudent();
-        return new PaymentStandingResponse(student.getId(), invoiceService.calcularEstadoDePago(student.getId()).name());
+    private EnrollmentBillingStatusResponse toStatusResponse(List<Invoice> invoices) {
+        return new EnrollmentBillingStatusResponse("UP_TO_DATE", LocalDateTime.now(),
+                invoices.stream().map(InvoiceResponse::from).toList());
     }
 }

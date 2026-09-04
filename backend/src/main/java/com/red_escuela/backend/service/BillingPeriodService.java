@@ -7,36 +7,31 @@ import com.red_escuela.backend.repository.BillingPeriodRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
 
-/**
- * Ventana del mes en la que se puede emitir la boleta de la cuota corriente —
- * hoy es informativa (no bloquea a Administración, ver spec funcional), así que
- * este service es CRUD puro sin ninguna validación que consulte el resto del
- * dominio de facturación todavía.
- */
 @Service
 public class BillingPeriodService {
 
     private final BillingPeriodRepository billingPeriodRepository;
+    private final CurrentPersonService currentPersonService;
 
-    public BillingPeriodService(BillingPeriodRepository billingPeriodRepository) {
+    public BillingPeriodService(BillingPeriodRepository billingPeriodRepository, CurrentPersonService currentPersonService) {
         this.billingPeriodRepository = billingPeriodRepository;
+        this.currentPersonService = currentPersonService;
     }
 
     @Transactional
-    public BillingPeriod crear(CreateBillingPeriodRequest request, Person createdBy) {
-        BillingPeriod period = new BillingPeriod();
-        period.setDiaInicio(request.diaInicio());
-        period.setDiaFin(request.diaFin());
-        period.setVigenteDesde(request.vigenteDesde());
-        period.setCreatedBy(createdBy);
-        period.setCreatedAt(LocalDateTime.now());
-        return billingPeriodRepository.save(period);
+    public BillingPeriod crear(CreateBillingPeriodRequest request) {
+        Person actor = currentPersonService.resolveCurrentPerson();
+        BillingPeriod billingPeriod = new BillingPeriod();
+        billingPeriod.setStartDay(request.startDay());
+        billingPeriod.setEndDay(request.endDay());
+        billingPeriod.setEffectiveFrom(request.effectiveFrom());
+        billingPeriod.setCreatedBy(actor);
+        return billingPeriodRepository.save(billingPeriod);
     }
 
-    public List<BillingPeriod> listar() {
-        return billingPeriodRepository.findAllByOrderByVigenteDesdeDesc();
+    public BillingPeriod current() {
+        return billingPeriodRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()).orElse(null);
     }
 }

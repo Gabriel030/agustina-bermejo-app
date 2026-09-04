@@ -5,15 +5,17 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.RegisterRequest;
 import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.entity.CohortIntake;
 import com.red_escuela.backend.entity.Course;
-import com.red_escuela.backend.entity.FeeSchedule;
-import com.red_escuela.backend.entity.FeeScheduleConcept;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
+import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
@@ -100,12 +102,36 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return programRepository.save(program);
     }
 
-    // Épica 8 Fase 2: solicitar alta en carrera exige una cohorte concreta.
+    // Fase 6.1: solicitar alta en carrera exige una cohorte concreta.
     private ProgramCohort persistCohort(Program program) {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person director = new Person();
+        director.setUsername("director.cohort." + System.nanoTime());
+        director.setEmail(director.getUsername() + "@example.com");
+        director.setAddress(address);
+        director.setStatus(StatusType.ACTIVE);
+        entityManager.persist(director);
+
+        Term term = new Term();
+        term.setYear(2026);
+        term.setStatus(StatusType.ACTIVE);
+        entityManager.persist(term);
+
+        ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
+        template.setProgram(program);
+        template.setTerm(term);
+        template.setRecurringFeeInvoicesCount(10);
+        template.setCreatedBy(director);
+        entityManager.persist(template);
+
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
+        cohort.setTemplate(template);
+        cohort.setIntake(CohortIntake.FIRST);
+        cohort.setAdmissionStart(LocalDate.now().minusDays(30));
+        cohort.setAdmissionEnd(LocalDate.now().plusDays(30));
         cohort.setCursadaStart(LocalDate.now());
+        cohort.setCreatedBy(director);
         entityManager.persist(cohort);
         entityManager.flush();
         return cohort;
@@ -158,10 +184,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    // Épica 7 Fase 3: matrícula/cuota salen de FeeSchedule (Épica 8 Fase 1), no de
-    // Program.price/Course.price — sin esto, crearDesdeFeeSchedule() falla con
-    // FeeScheduleNotFoundException.
-    private void persistFeeSchedule(Program program, Course course, FeeScheduleConcept concept, BigDecimal amount) {
+    // Fase 6.1: matrícula/cuota salen de PriceRevision, no de Program.price/Course.price —
+    // sin esto, InvoiceFactory falla con PriceRevisionNotFoundException.
+    private void persistPriceRevision(Program program, Course course, FeeType feeType, BigDecimal amount) {
         Address address = new Address();
         entityManager.persist(address);
         Person director = new Person();
@@ -171,15 +196,15 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        FeeSchedule feeSchedule = new FeeSchedule();
-        feeSchedule.setProgram(program);
-        feeSchedule.setCourse(course);
-        feeSchedule.setConcept(concept);
-        feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusDays(1));
-        feeSchedule.setCreatedBy(director);
-        feeSchedule.setCreatedAt(LocalDateTime.now());
-        entityManager.persist(feeSchedule);
+        PriceRevision revision = new PriceRevision();
+        revision.setProgram(program);
+        revision.setCourse(course);
+        revision.setFeeType(feeType);
+        revision.setDescription("Precio de prueba");
+        revision.setMonthlyAmount(amount);
+        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
+        revision.setCreatedBy(director);
+        entityManager.persist(revision);
         entityManager.flush();
     }
 
@@ -268,7 +293,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
-        persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -324,7 +349,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
-        persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -366,7 +391,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
-        persistFeeSchedule(program, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000));
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -394,7 +419,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void inscribirmeAUnCursoQuedaEnRevisionYRecienOtorgaElRolAlAprobarElComprobante() throws Exception {
         Long institutionId = persistInstitution();
         Course course = persistCurso(20);
-        persistFeeSchedule(null, course, FeeScheduleConcept.CUOTA_MENSUAL, BigDecimal.valueOf(15000));
+        persistPriceRevision(null, course, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -439,11 +464,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         assertThat(objectMapper.readTree(misSolicitudesResponse).get(0).get("courseEnrollmentId").isNull()).isFalse();
     }
 
-    // No hay test acá de "curso sin cupo" — el chequeo de capacidad real vive en
-    // CourseSubjectSection, no en Course (verificado en CourseEnrollmentService),
-    // y armar ese fixture completo (CourseSubject + CourseSubjectSection) es
-    // deuda de testing preexistente de CourseEnrollmentService (ya sin cobertura
-    // hoy, ver `find src/test -iname "*Course*"`), no algo que introduce esta fase.
-    // Lo que sí es responsabilidad de esta fase — que el endpoint nuevo delegue
-    // la validación sin bypassearla — está cubierto por el happy path de arriba.
+    // No hay test acá de "curso sin cupo" — Course.capacity (cupo del curso como conjunto,
+    // distinto del cupo de cada CourseSubjectSection) y su lista de espera con corte
+    // configurable están cubiertos en CourseEnrollmentServiceTest (decisión 2026-09-03). Lo que
+    // sí es responsabilidad de esta fase — que el endpoint nuevo delegue la validación sin
+    // bypassearla — está cubierto por el happy path de arriba.
 }
