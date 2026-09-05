@@ -70,4 +70,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByCourseEnrollmentIdAndStatusIn(Long courseEnrollmentId, List<InvoiceStatus> statuses);
 
     List<Invoice> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<InvoiceStatus> statuses);
+
+    // Cuenta cuántas Invoice de este feeType, bajo ESTA selección de plan puntual, ya llevan un
+    // InvoiceAdjustment que referencia este benefit — el conteo se calcula, nunca se guarda como
+    // contador mutable (mismo criterio que getAmountDue()/getRemainingBalance()), así nunca se
+    // desincroniza de la realidad (Fase 6.5).
+    @Query("""
+            select count(i) from Invoice i join i.adjustments a
+            where i.paymentPlanSelection.id = :paymentPlanSelectionId
+              and i.feeType = :feeType
+              and a.promotionBenefit.id = :promotionBenefitId
+            """)
+    long countByPaymentPlanSelectionAndFeeTypeAndPromotionBenefit(
+            @Param("paymentPlanSelectionId") Long paymentPlanSelectionId, @Param("feeType") FeeType feeType, @Param("promotionBenefitId") Long promotionBenefitId);
 }

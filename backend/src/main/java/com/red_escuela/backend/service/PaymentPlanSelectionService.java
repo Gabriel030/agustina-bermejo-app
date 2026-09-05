@@ -34,12 +34,13 @@ public class PaymentPlanSelectionService {
     private final CurrentStudentService currentStudentService;
     private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
     private final RecurringFeeWindowService recurringFeeWindowService;
+    private final PromotionService promotionService;
 
     public PaymentPlanSelectionService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionService paymentPlanOptionService,
                                         CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
                                         CurrentPersonService currentPersonService, CurrentStudentService currentStudentService,
                                         ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler,
-                                        RecurringFeeWindowService recurringFeeWindowService) {
+                                        RecurringFeeWindowService recurringFeeWindowService, PromotionService promotionService) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.paymentPlanOptionService = paymentPlanOptionService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -48,6 +49,7 @@ public class PaymentPlanSelectionService {
         this.currentStudentService = currentStudentService;
         this.programEnrollmentBillingScheduler = programEnrollmentBillingScheduler;
         this.recurringFeeWindowService = recurringFeeWindowService;
+        this.promotionService = promotionService;
     }
 
     // Endpoint compartido (spec: "ADMINISTRATIVO|autoservicio alumno") — Optional.empty() de
@@ -85,7 +87,11 @@ public class PaymentPlanSelectionService {
             selection.setScopeMonths(request.scopeMonths());
         }
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
-        return paymentPlanSelectionRepository.save(selection);
+        PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
+        // El plan de un curso es único e inmutable (chequeo de arriba) — toda selección de curso
+        // es, por definición, la primera, así que siempre se evalúa contra promociones vigentes.
+        promotionService.redeemIfEligible(courseEnrollment, saved);
+        return saved;
     }
 
     @Transactional
@@ -126,7 +132,12 @@ public class PaymentPlanSelectionService {
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
         if (isFirstSelection) {
-            programEnrollmentBillingScheduler.generarMatricula(programEnrollment);
+            // Solo la primera selección de todas puede calificar para una promoción — una
+            // selección posterior (tras cambiar de plan) nunca dispara una redención nueva. Va
+            // ANTES de generarMatricula: esa Invoice de matrícula ya consulta si esta selección
+            // tiene una PromotionRedemption, así que tiene que existir antes de generarla.
+            promotionService.redeemIfEligible(programEnrollment, saved);
+            programEnrollmentBillingScheduler.generarMatricula(programEnrollment, saved);
         }
         return saved;
     }

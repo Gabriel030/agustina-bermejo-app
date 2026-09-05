@@ -10,6 +10,7 @@ import com.red_escuela.backend.entity.InvoiceAdjustment;
 import com.red_escuela.backend.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.PaymentAllocation;
+import com.red_escuela.backend.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.PriceRevision;
 import com.red_escuela.backend.entity.ProgramEnrollment;
@@ -21,6 +22,7 @@ import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -75,6 +77,7 @@ public class InvoiceQueryService {
     // cada PaymentAllocation) — el pipeline de líneas sigue el orden
     // SCHOLARSHIP/PROMOTION/DISCOUNT/SURCHARGE aunque esta fase solo ejercite DISCOUNT/SURCHARGE
     // (SCHOLARSHIP/PROMOTION se completan en Fases 6.4/6.5 sin cambiar este DTO).
+    @Transactional(readOnly = true)
     public PriceBreakdownResponse priceBreakdown(Long invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
         List<PriceBreakdownLineResponse> lines = invoice.getAdjustments().stream()
@@ -131,8 +134,19 @@ public class InvoiceQueryService {
     private PriceBreakdownLineResponse toLine(InvoiceAdjustment adjustment) {
         Person appliedBy = adjustment.getAppliedBy();
         String source = appliedBy != null ? appliedBy.getName() + " " + appliedBy.getLastname() : "Sistema (mora automática)";
+        String humanLabel = adjustment.getReason();
+        // El nombre de la promoción solo (adjustment.getReason()) no alcanza para diferenciar una
+        // cuota de un plan que después se cambió — la spec pide una referencia legible al plan que
+        // habilitó el beneficio, ya que PromotionRedemption está atada a ESA selección puntual.
+        if (adjustment.getType() == InvoiceAdjustmentType.PROMOTION) {
+            humanLabel = humanLabel + " — " + describeEnablingSelection(adjustment.getInvoice().getPaymentPlanSelection());
+        }
         return new PriceBreakdownLineResponse(
-                adjustment.getType().name(), adjustment.signedAmount(), adjustment.getReason(), source, adjustment.getAppliedAt());
+                adjustment.getType().name(), adjustment.signedAmount(), humanLabel, source, adjustment.getAppliedAt());
+    }
+
+    private String describeEnablingSelection(PaymentPlanSelection selection) {
+        return "plan \"" + selection.getPaymentPlanOption().getDescription() + "\" elegido " + selection.getEffectiveFrom();
     }
 
     private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
