@@ -96,7 +96,6 @@ public class GlobalExceptionHandler {
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
             ProgramYearBillingTemplateExceedsTermSpanException.class,
-            PaymentExceedsInvoiceBalanceException.class,
             // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
             // combination by throwing IllegalArgumentException from its own constructors — mapped
             // here rather than wrapped in a domain exception, since the Value Object itself is the
@@ -143,7 +142,9 @@ public class GlobalExceptionHandler {
             NotificationNotFoundException.class,
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
-            PaymentReceiptNotFoundException.class
+            PaymentReceiptNotFoundException.class,
+            NoActiveCollectionsPolicyException.class,
+            ScholarshipNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -188,7 +189,9 @@ public class GlobalExceptionHandler {
             ProgramYearBillingTemplateMismatchException.class,
             InvoiceNotPayableException.class,
             PaymentReceiptAlreadyPendingException.class,
-            InvalidPaymentReceiptStateException.class
+            InvalidPaymentReceiptStateException.class,
+            PaymentExceedsInvoiceBalanceException.class,
+            StudentInDebtException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
@@ -232,5 +235,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleDataIntegrityViolation() {
+    }
+
+    // @Version (optimistic locking) sin capturar en el service: dos transacciones que leyeron la
+    // misma fila y la mutan de forma mutuamente excluyente (ej. aprobar/rechazar el mismo
+    // PaymentReceipt en paralelo) — la que commitea segunda pierde acá, 409 semánticamente
+    // correcto para "alguien más ya cambió esto debajo tuyo", mismo criterio que el resto de esta
+    // clase para conflictos de concurrencia.
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public void handleOptimisticLockingFailure() {
     }
 }

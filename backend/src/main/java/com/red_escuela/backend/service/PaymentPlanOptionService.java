@@ -6,6 +6,7 @@ import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.PaymentPlanOption;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.exception.CourseNotFoundException;
+import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.PaymentPlanOptionNotFoundException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.repository.CourseRepository;
@@ -52,6 +53,7 @@ public class PaymentPlanOptionService {
     }
 
     private PaymentPlanOption build(CreatePaymentPlanOptionRequest request) {
+        validateUpfrontWindow(request);
         Person actor = currentPersonService.resolveCurrentPerson();
         PaymentPlanOption option = new PaymentPlanOption();
         option.setDescription(request.description());
@@ -62,5 +64,24 @@ public class PaymentPlanOptionService {
         option.setUpfrontWindowEnd(request.upfrontWindowEnd());
         option.setCreatedBy(actor);
         return option;
+    }
+
+    // Sin esto, una PaymentPlanOption con upfrontWindowEnabled=true pero start/end nulos o mal
+    // ordenados recién explotaba con NullPointerException cuando un alumno intentaba seleccionar
+    // el plan (PaymentPlanSelectionService.validateUpfrontWindow) — 500 en vez de rechazar la
+    // creación con 400 (hallazgo de auditoría 2026-09-04, mismo criterio que ya existe para la
+    // ventana de admisión de ProgramCohort).
+    private void validateUpfrontWindow(CreatePaymentPlanOptionRequest request) {
+        if (!request.upfrontWindowEnabled()) {
+            return;
+        }
+        if (request.upfrontWindowStart() == null || request.upfrontWindowEnd() == null) {
+            throw new InvalidWindowConfigurationException(
+                    "upfrontWindowEnabled=true exige upfrontWindowStart y upfrontWindowEnd no nulos");
+        }
+        if (request.upfrontWindowStart().isAfter(request.upfrontWindowEnd())) {
+            throw new InvalidWindowConfigurationException(
+                    "upfrontWindowStart no puede ser posterior a upfrontWindowEnd");
+        }
     }
 }

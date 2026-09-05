@@ -40,11 +40,13 @@ public class ProgramEnrollmentBillingScheduler {
             throw new ProgramEnrollmentMissingCohortException(enrollment.getId());
         }
         YearMonth period = YearMonth.from(cohort.getCursadaStart());
-        Invoice invoice = invoiceFactory.crearParaCarrera(enrollment, null, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
-        if (invoice != null && cohort.getIntake() == CohortIntake.SECOND) {
-            // invoiceFactory.crearParaCarrera runs in its own (REQUIRES_NEW) transaction, so the
-            // Invoice it returns is already detached from this method's own persistence context —
-            // mutating it here doesn't get flushed on its own, needs an explicit save.
+        // crearParaCarreraAtomica (no crearParaCarrera): la Invoice de matrícula tiene que quedar
+        // atada a ESTA MISMA transacción — si aplicar el descuento de segunda cohorte de abajo
+        // falla, toda la operación revierte junta, sin dejar una Invoice de matrícula huérfana
+        // (sin PaymentPlanSelection y, para cohorte SECOND, sin el 50% de descuento) ya commiteada
+        // por una transacción REQUIRES_NEW que ya cerró (bug real encontrado en auditoría 2026-09-04).
+        Invoice invoice = invoiceFactory.crearParaCarreraAtomica(enrollment, null, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
+        if (cohort.getIntake() == CohortIntake.SECOND) {
             invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.5")),
                     "Matrícula proporcional — segunda cohorte del año", null);
             invoiceRepository.save(invoice);

@@ -61,6 +61,7 @@ public class ProgramEnrollmentService {
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final AttendanceService attendanceService;
+    private final StudentDebtResolutionService studentDebtResolutionService;
 
     public ProgramEnrollmentService(
             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -71,7 +72,7 @@ public class ProgramEnrollmentService {
             ProgramElectiveGroupRepository programElectiveGroupRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceService attendanceService) {
+            AttendanceService attendanceService, StudentDebtResolutionService studentDebtResolutionService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -81,6 +82,7 @@ public class ProgramEnrollmentService {
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.attendanceService = attendanceService;
+        this.studentDebtResolutionService = studentDebtResolutionService;
     }
 
     @Transactional
@@ -88,6 +90,7 @@ public class ProgramEnrollmentService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         validarStudentHabilitado(student);
+        studentDebtResolutionService.verifyNoDebt(studentId);
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));

@@ -18,6 +18,15 @@ public class PaymentPlanSelection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Corrección 2026-09-04 (auditoría): sin esto, cerrar la selección "abierta" anterior
+    // (PaymentPlanSelectionService, al setear effectiveTo) dependía únicamente de que dos
+    // requests concurrentes escribieran el mismo valor determinístico por casualidad — mismo
+    // patrón fragil de "protegido de rebote por un unique index en otra fila" que ya causó un bug
+    // real (uk_payment_allocation) en otra entidad de este mismo dominio.
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_enrollment_id")
     private CourseEnrollment courseEnrollment;

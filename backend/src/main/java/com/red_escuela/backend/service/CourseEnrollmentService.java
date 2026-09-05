@@ -53,6 +53,7 @@ public class CourseEnrollmentService {
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final PersonRoleGranter personRoleGranter;
+    private final StudentDebtResolutionService studentDebtResolutionService;
 
     public CourseEnrollmentService(
             CourseEnrollmentRepository courseEnrollmentRepository,
@@ -61,7 +62,7 @@ public class CourseEnrollmentService {
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            PersonRoleGranter personRoleGranter) {
+            PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -69,6 +70,7 @@ public class CourseEnrollmentService {
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.personRoleGranter = personRoleGranter;
+        this.studentDebtResolutionService = studentDebtResolutionService;
     }
 
     // Épica 7: variante para MeEnrollmentController (autoservicio). No se agrega el
@@ -91,6 +93,7 @@ public class CourseEnrollmentService {
     public CourseEnrollment matricular(Long studentId, CreateCourseEnrollmentRequest request) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
+        studentDebtResolutionService.verifyNoDebt(studentId);
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         validarPuedeMatricular(student, course);

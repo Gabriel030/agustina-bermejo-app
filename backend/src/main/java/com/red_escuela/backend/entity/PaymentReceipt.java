@@ -17,6 +17,14 @@ public class PaymentReceipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Sin esto, aprobar() y reject() concurrentes sobre el mismo comprobante (dos
+    // Administrativos, o un doble clic) podían dejar el receipt en REJECTED mientras ya existía
+    // un Payment CONFIRMED real y la Invoice en PAID detrás — ninguno de los dos caminos
+    // detectaba al otro (hallazgo de auditoría 2026-09-04).
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;

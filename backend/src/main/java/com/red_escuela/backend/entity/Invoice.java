@@ -121,6 +121,33 @@ public class Invoice {
         return getAmountDue().subtract(applied);
     }
 
+    // Corrección 2026-09-04 (auditoría): el comentario de cabecera de esta clase ya prometía este
+    // método ("PaymentAllocation... solo se modifica a través de los métodos propios de Invoice
+    // — applyAdjustment, y registerPayment") pero nunca se había escrito — PaymentService seteaba
+    // status=PAID directo desde afuera, violando la invariante de Aggregate Root que esta misma
+    // clase declara.
+    public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
+        PaymentAllocation allocation = new PaymentAllocation();
+        allocation.setInvoice(this);
+        allocation.setPayment(payment);
+        allocation.setAmountApplied(amountApplied);
+        allocations.add(allocation);
+        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0) {
+            status = InvoiceStatus.PAID;
+        }
+        return allocation;
+    }
+
+    // Corrección 2026-09-04 (auditoría, segunda pasada): InvoiceOverdueRowProcessor seteaba
+    // status=OVERDUE directo desde afuera, el único otro lugar (junto al ya corregido PAID) donde
+    // se violaba la invariante de Aggregate Root que esta clase declara — la transición a OVERDUE
+    // y el recargo automático que la acompaña son un único paso de dominio, no dos mutaciones
+    // independientes desde el service.
+    public void markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+        status = InvoiceStatus.OVERDUE;
+        applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
+    }
+
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
         // SCHOLARSHIP/DISCOUNT resolve against baseAmount (order-independent from each other).
         // SURCHARGE resolves against getRemainingBalance() computed BEFORE adding it — a partial
@@ -135,8 +162,10 @@ public class Invoice {
         adjustment.setAppliedBy(appliedBy);
         adjustment.setAppliedAt(LocalDateTime.now());
         adjustments.add(adjustment);
-        // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED only.
-        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0 && status == InvoiceStatus.PENDING) {
+        // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED, from
+        // either PENDING or OVERDUE.
+        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0
+                && (status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE)) {
             status = InvoiceStatus.WAIVED;
         }
     }
