@@ -233,8 +233,8 @@ class ProspectControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.dni").value("30111222"))
                 .andExpect(jsonPath("$.username").value("30111222"));
 
-        Student confirmado = studentRepository.findById(student.getId()).orElseThrow();
-        assertThat(confirmado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
+        Student confirmedStudent = studentRepository.findById(student.getId()).orElseThrow();
+        assertThat(confirmedStudent.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
 
         List<PasswordResetToken> resetTokens = passwordResetTokenRepository.findAll();
         assertThat(resetTokens).hasSize(1);
@@ -245,7 +245,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         entityManager.merge(existing);
         entityManager.flush();
 
-        String exchangeToken = authService.verifyResetCode(confirmado.getPerson().getEmail(), rawPasswordResetCode);
+        String exchangeToken = authService.verifyResetCode(confirmedStudent.getPerson().getEmail(), rawPasswordResetCode);
         authService.resetPassword(exchangeToken, "nuevaPassword123");
         AuthTokens tokens = authService.login("30111222", "nuevaPassword123", "127.0.0.1");
         assertThat(tokens.accessToken()).isNotBlank();

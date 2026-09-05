@@ -62,7 +62,7 @@ public class KarateFixtures {
 
     // rol: "PRECEPTOR", "ADMINISTRATIVO", etc. — mismo criterio que
     // RegistrationFlowTest.tokenDePreceptor(), generalizado a cualquier rol de staff.
-    public static String tokenParaRol(String rol) {
+    public static String tokenParaRol(String roleName) {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         RoleRepository roleRepository = context().getBean(RoleRepository.class);
@@ -71,13 +71,13 @@ public class KarateFixtures {
         Address address = addressRepository.save(new Address());
 
         Person person = new Person();
-        String username = "karate." + rol.toLowerCase() + "." + System.nanoTime();
+        String username = "karate." + roleName.toLowerCase() + "." + System.nanoTime();
         person.setUsername(username);
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
-        Role role = roleRepository.findByName(rol).orElseThrow(
-                () -> new IllegalStateException("Rol sembrado por Flyway no encontrado: " + rol));
+        Role role = roleRepository.findByName(roleName).orElseThrow(
+                () -> new IllegalStateException("Rol sembrado por Flyway no encontrado: " + roleName));
         person.getRoles().add(role);
         person = personRepository.save(person);
 

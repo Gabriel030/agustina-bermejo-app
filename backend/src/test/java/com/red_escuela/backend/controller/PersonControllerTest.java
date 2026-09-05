@@ -73,9 +73,9 @@ class PersonControllerTest extends AbstractIntegrationTest {
 
     @Test
     void putMeUpdatesOnlyTheOwnPersonAndNeverTheDni() throws Exception {
-        Person propio = persistPersonWithRole("propio1", "60111222", "ALUMNO");
-        Person otro = persistPersonWithRole("otro1", "60333444", "ALUMNO");
-        String token = jwtService.generateAccessToken(propio);
+        Person own = persistPersonWithRole("propio1", "60111222", "ALUMNO");
+        Person other = persistPersonWithRole("otro1", "60333444", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
                 "nuevo.email@example.com", "1155556666", null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
@@ -90,20 +90,20 @@ class PersonControllerTest extends AbstractIntegrationTest {
 
         entityManager.flush();
         entityManager.clear();
-        Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
-        assertThat(propioActualizado.getEmail()).isEqualTo("nuevo.email@example.com");
-        assertThat(propioActualizado.getPhoneNumber()).isEqualTo("1155556666");
-        assertThat(propioActualizado.getDni()).isEqualTo("60111222");
+        Person updatedOwn = personRepository.findById(own.getId()).orElseThrow();
+        assertThat(updatedOwn.getEmail()).isEqualTo("nuevo.email@example.com");
+        assertThat(updatedOwn.getPhoneNumber()).isEqualTo("1155556666");
+        assertThat(updatedOwn.getDni()).isEqualTo("60111222");
 
-        Person otroSinCambios = personRepository.findById(otro.getId()).orElseThrow();
-        assertThat(otroSinCambios.getEmail()).isEqualTo("otro1@example.com");
-        assertThat(otroSinCambios.getPhoneNumber()).isNull();
+        Person otherUnchanged = personRepository.findById(other.getId()).orElseThrow();
+        assertThat(otherUnchanged.getEmail()).isEqualTo("otro1@example.com");
+        assertThat(otherUnchanged.getPhoneNumber()).isNull();
     }
 
     @Test
     void putMeUpdatesTheDniOwn() throws Exception {
-        Person propio = persistPersonWithRole("propio3", "60777888", "ALUMNO");
-        String token = jwtService.generateAccessToken(propio);
+        Person own = persistPersonWithRole("propio3", "60777888", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
                 null, null, "60999000", null, null, null, null, null, null, null);
@@ -117,15 +117,15 @@ class PersonControllerTest extends AbstractIntegrationTest {
 
         entityManager.flush();
         entityManager.clear();
-        Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
-        assertThat(propioActualizado.getDni()).isEqualTo("60999000");
+        Person updatedOwn = personRepository.findById(own.getId()).orElseThrow();
+        assertThat(updatedOwn.getDni()).isEqualTo("60999000");
     }
 
     @Test
     void putMeWithDniAlreadyExistingReturns400() throws Exception {
         persistPersonWithRole("propio4", "60111333", "ALUMNO");
-        Person propio = persistPersonWithRole("propio5", "60222444", "ALUMNO");
-        String token = jwtService.generateAccessToken(propio);
+        Person own = persistPersonWithRole("propio5", "60222444", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
                 null, null, "60111333", null, null, null, null, null, null, null);
@@ -139,13 +139,13 @@ class PersonControllerTest extends AbstractIntegrationTest {
 
     @Test
     void getMeReturnsProfileOwnWithRoles() throws Exception {
-        Person propio = persistPersonWithRole("propio2", "60555666", "PRECEPTOR");
-        String token = jwtService.generateAccessToken(propio);
+        Person own = persistPersonWithRole("propio2", "60555666", "PRECEPTOR");
+        String token = jwtService.generateAccessToken(own);
 
         mockMvc.perform(get("/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(propio.getId()))
+                .andExpect(jsonPath("$.id").value(own.getId()))
                 .andExpect(jsonPath("$.nombre").value("Nombre"))
                 .andExpect(jsonPath("$.roles[0]").value("PRECEPTOR"));
     }

@@ -220,12 +220,12 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
             executor.shutdown();
             assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
 
-            List<SubjectSectionEnrollment> filas = subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(
+            List<SubjectSectionEnrollment> rows = subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(
                     section.getId(), List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.WAITLISTED));
-            long enrolled = filas.stream().filter(f -> f.getStatus() == EnrollmentStatus.ENROLLED).count();
-            long waitlisted = filas.stream().filter(f -> f.getStatus() == EnrollmentStatus.WAITLISTED).count();
+            long enrolled = rows.stream().filter(f -> f.getStatus() == EnrollmentStatus.ENROLLED).count();
+            long waitlisted = rows.stream().filter(f -> f.getStatus() == EnrollmentStatus.WAITLISTED).count();
 
-            assertThat(filas).hasSize(2);
+            assertThat(rows).hasSize(2);
             assertThat(enrolled).isEqualTo(1L);
             assertThat(waitlisted).isEqualTo(1L);
         } finally {

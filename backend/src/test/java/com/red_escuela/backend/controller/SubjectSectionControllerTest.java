@@ -106,31 +106,31 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         subject.setName("Inglés Compartido");
         entityManager.persist(subject);
 
-        Program carreraA = new Program();
-        carreraA.setName("Tecnicatura Compartida A");
-        carreraA.setTotalYears(3);
-        entityManager.persist(carreraA);
+        Program programA = new Program();
+        programA.setName("Tecnicatura Compartida A");
+        programA.setTotalYears(3);
+        entityManager.persist(programA);
 
-        Program carreraB = new Program();
-        carreraB.setName("Tecnicatura Compartida B");
-        carreraB.setTotalYears(3);
-        entityManager.persist(carreraB);
+        Program programB = new Program();
+        programB.setName("Tecnicatura Compartida B");
+        programB.setTotalYears(3);
+        entityManager.persist(programB);
 
-        ProgramSubject entradaA = new ProgramSubject();
-        entradaA.setProgram(carreraA);
-        entradaA.setSubject(subject);
-        entradaA.setCurricularYear(1);
-        entradaA.setCurricularTerm(CurricularTerm.FIRST);
-        entradaA.setCredits(5);
-        entityManager.persist(entradaA);
+        ProgramSubject entryA = new ProgramSubject();
+        entryA.setProgram(programA);
+        entryA.setSubject(subject);
+        entryA.setCurricularYear(1);
+        entryA.setCurricularTerm(CurricularTerm.FIRST);
+        entryA.setCredits(5);
+        entityManager.persist(entryA);
 
-        ProgramSubject entradaB = new ProgramSubject();
-        entradaB.setProgram(carreraB);
-        entradaB.setSubject(subject);
-        entradaB.setCurricularYear(2);
-        entradaB.setCurricularTerm(CurricularTerm.SECOND);
-        entradaB.setCredits(3);
-        entityManager.persist(entradaB);
+        ProgramSubject entryB = new ProgramSubject();
+        entryB.setProgram(programB);
+        entryB.setSubject(subject);
+        entryB.setCurricularYear(2);
+        entryB.setCurricularTerm(CurricularTerm.SECOND);
+        entryB.setCredits(3);
+        entityManager.persist(entryB);
 
         Term term = new Term();
         term.setYear(2026);
