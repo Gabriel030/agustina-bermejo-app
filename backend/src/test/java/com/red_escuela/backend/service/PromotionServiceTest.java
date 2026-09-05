@@ -518,6 +518,20 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void dosBenefitsConElMismoFeeTypeEnLaMismaPromocionSeRechazan() {
+        Person director = persistPerson("director.promo.duplicado." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        autenticarComo(director);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+                        "Promo con benefits duplicados", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
+                        List.of(
+                                new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3),
+                                new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), 1)))))
+                .isInstanceOf(com.red_escuela.backend.exception.DuplicatePromotionBenefitFeeTypeException.class);
+    }
+
+    @Test
     void unaVentanaDeElegibilidadInvertidaSeRechaza() {
         Person director = persistPerson("director.promo.ventana." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));

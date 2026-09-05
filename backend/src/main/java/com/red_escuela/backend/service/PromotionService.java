@@ -5,6 +5,7 @@ import com.red_escuela.backend.dto.CreatePromotionRequest;
 import com.red_escuela.backend.dto.LostPromotionBenefitResponse;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.entity.FeeType;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.Program;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.entity.PromotionBenefit;
 import com.red_escuela.backend.entity.PromotionRedemption;
 import com.red_escuela.backend.entity.PromotionStatus;
 import com.red_escuela.backend.exception.CourseNotFoundException;
+import com.red_escuela.backend.exception.DuplicatePromotionBenefitFeeTypeException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.exception.PromotionAlreadyClosedException;
@@ -155,7 +157,11 @@ public class PromotionService {
         promotion.setEligibilityValidFrom(request.eligibilityValidFrom());
         promotion.setEligibilityValidTo(request.eligibilityValidTo());
         promotion.setCreatedBy(currentPersonService.resolveCurrentPerson());
+        java.util.Set<FeeType> feeTypesYaUsados = new java.util.HashSet<>();
         for (CreatePromotionBenefitRequest benefitRequest : request.benefits()) {
+            if (!feeTypesYaUsados.add(benefitRequest.feeType())) {
+                throw new DuplicatePromotionBenefitFeeTypeException(benefitRequest.feeType().name());
+            }
             PromotionBenefit benefit = new PromotionBenefit();
             benefit.setPromotion(promotion);
             benefit.setFeeType(benefitRequest.feeType());

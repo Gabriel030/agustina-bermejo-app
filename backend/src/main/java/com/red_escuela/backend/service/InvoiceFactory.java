@@ -132,7 +132,7 @@ public class InvoiceFactory {
     // después de haber pasado por otro, esa selección nueva es una fila distinta sin redemption,
     // así que este chequeo nunca "revive" un beneficio ya cortado por PaymentPlanSelectionService.
     private void applyActivePromotionIfPresent(Invoice invoice, PaymentPlanSelection selection) {
-        promotionRedemptionRepository.findByPaymentPlanSelectionId(selection.getId()).ifPresent(redemption -> {
+        promotionRedemptionRepository.findByPaymentPlanSelectionIdForUpdate(selection.getId()).ifPresent(redemption -> {
             Promotion promotion = redemption.getPromotion();
             for (PromotionBenefit benefit : promotion.getBenefits()) {
                 if (benefit.getFeeType() != invoice.getFeeType()) {
