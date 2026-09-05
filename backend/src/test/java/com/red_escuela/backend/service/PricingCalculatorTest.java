@@ -22,15 +22,15 @@ class PricingCalculatorTest {
 
     private Discount descuento(DiscountType tipo, BigDecimal valor) {
         Discount discount = new Discount();
-        discount.setTipo(tipo);
-        discount.setValor(valor);
+        discount.setType(tipo);
+        discount.setAmount(valor);
         return discount;
     }
 
     private Promotion promocion(DiscountType tipo, BigDecimal valor) {
         Promotion promotion = new Promotion();
-        promotion.setTipo(tipo);
-        promotion.setValor(valor);
+        promotion.setType(tipo);
+        promotion.setAmount(valor);
         return promotion;
     }
 
@@ -82,7 +82,7 @@ class PricingCalculatorTest {
 
     private ProgramCohort cohorte(int ordenEnAnio) {
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setOrdenEnAnio(ordenEnAnio);
+        cohort.setOrderInYear(ordenEnAnio);
         return cohort;
     }
 

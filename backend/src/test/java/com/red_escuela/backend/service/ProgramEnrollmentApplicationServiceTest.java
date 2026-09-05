@@ -111,10 +111,10 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     private ProgramCohort persistCohort(Program program, LocalDateTime admissionStart, LocalDateTime admissionEnd) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
+        cohort.setOrderInYear(1);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
-        cohort.setCursadaStart(LocalDate.now());
+        cohort.setCourseStart(LocalDate.now());
         entityManager.persist(cohort);
         return cohort;
     }
@@ -124,7 +124,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         feeSchedule.setProgram(program);
         feeSchedule.setConcept(FeeScheduleConcept.MATRICULA);
         feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusDays(1));
+        feeSchedule.setValidFrom(LocalDate.now().minusDays(1));
         feeSchedule.setCreatedBy(createdBy);
         feeSchedule.setCreatedAt(LocalDateTime.now());
         entityManager.persist(feeSchedule);

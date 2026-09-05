@@ -104,8 +104,8 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     private ProgramCohort persistCohort(Program program) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
-        cohort.setCursadaStart(LocalDate.now());
+        cohort.setOrderInYear(1);
+        cohort.setCourseStart(LocalDate.now());
         entityManager.persist(cohort);
         entityManager.flush();
         return cohort;
@@ -176,7 +176,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         feeSchedule.setCourse(course);
         feeSchedule.setConcept(concept);
         feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusDays(1));
+        feeSchedule.setValidFrom(LocalDate.now().minusDays(1));
         feeSchedule.setCreatedBy(director);
         feeSchedule.setCreatedAt(LocalDateTime.now());
         entityManager.persist(feeSchedule);

@@ -96,8 +96,8 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     private ProgramCohort persistCohort(Program program, LocalDate cursadaStart) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
-        cohort.setCursadaStart(cursadaStart);
+        cohort.setOrderInYear(1);
+        cohort.setCourseStart(cursadaStart);
         entityManager.persist(cohort);
         return cohort;
     }
@@ -119,7 +119,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
         feeSchedule.setCourse(course);
         feeSchedule.setConcept(FeeScheduleConcept.CUOTA_MENSUAL);
         feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusYears(1));
+        feeSchedule.setValidFrom(LocalDate.now().minusYears(1));
         feeSchedule.setCreatedBy(createdBy);
         feeSchedule.setCreatedAt(LocalDateTime.now());
         entityManager.persist(feeSchedule);

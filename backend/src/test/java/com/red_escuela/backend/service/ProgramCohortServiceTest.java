@@ -51,7 +51,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
                 new CreateProgramCohortRequest(program.getId(), "Marzo 2026", 1, null, null, LocalDate.of(2026, 3, 1)));
 
         assertThat(cohort.getId()).isNotNull();
-        assertThat(cohort.getOrdenEnAnio()).isEqualTo(1);
+        assertThat(cohort.getOrderInYear()).isEqualTo(1);
     }
 
     @Test

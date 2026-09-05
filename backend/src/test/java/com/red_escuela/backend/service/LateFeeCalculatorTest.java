@@ -13,10 +13,10 @@ class LateFeeCalculatorTest {
 
     private LateFeePolicy policy(int diasDeGracia, double porcentajePorPeriodo, int diasPorPeriodo, int diasParaRiesgo) {
         LateFeePolicy policy = new LateFeePolicy();
-        policy.setDiasDeGracia(diasDeGracia);
-        policy.setPorcentajeRecargoPorPeriodo(BigDecimal.valueOf(porcentajePorPeriodo));
-        policy.setDiasPorPeriodo(diasPorPeriodo);
-        policy.setDiasParaRiesgoDeCorte(diasParaRiesgo);
+        policy.setGracePeriodDays(diasDeGracia);
+        policy.setSurchargePercentagePerPeriod(BigDecimal.valueOf(porcentajePorPeriodo));
+        policy.setPeriodDays(diasPorPeriodo);
+        policy.setDaysUntilCutoffRisk(diasParaRiesgo);
         return policy;
     }
 

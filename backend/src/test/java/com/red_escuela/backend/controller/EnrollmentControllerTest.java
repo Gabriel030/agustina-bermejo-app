@@ -145,10 +145,10 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     private ProgramCohort persistProgramCohort(Program program, LocalDateTime admissionStart, LocalDateTime admissionEnd) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setProgram(program);
-        cohort.setOrdenEnAnio(1);
+        cohort.setOrderInYear(1);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
-        cohort.setCursadaStart(java.time.LocalDate.now());
+        cohort.setCourseStart(java.time.LocalDate.now());
         entityManager.persist(cohort);
         return cohort;
     }

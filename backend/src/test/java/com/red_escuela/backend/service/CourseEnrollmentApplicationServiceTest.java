@@ -119,7 +119,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         feeSchedule.setCourse(course);
         feeSchedule.setConcept(FeeScheduleConcept.CUOTA_MENSUAL);
         feeSchedule.setAmount(amount);
-        feeSchedule.setVigenteDesde(LocalDate.now().minusDays(1));
+        feeSchedule.setValidFrom(LocalDate.now().minusDays(1));
         feeSchedule.setCreatedBy(createdBy);
         feeSchedule.setCreatedAt(LocalDateTime.now());
         entityManager.persist(feeSchedule);
