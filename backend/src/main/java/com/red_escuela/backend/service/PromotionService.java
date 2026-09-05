@@ -14,6 +14,7 @@ import com.red_escuela.backend.entity.PromotionBenefit;
 import com.red_escuela.backend.entity.PromotionRedemption;
 import com.red_escuela.backend.entity.PromotionStatus;
 import com.red_escuela.backend.exception.CourseNotFoundException;
+import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
 import com.red_escuela.backend.exception.PromotionAlreadyClosedException;
 import com.red_escuela.backend.exception.PromotionNotFoundException;
@@ -146,6 +147,9 @@ public class PromotionService {
     }
 
     private Promotion build(CreatePromotionRequest request) {
+        if (request.eligibilityValidFrom().isAfter(request.eligibilityValidTo())) {
+            throw new InvalidWindowConfigurationException("eligibilityValidFrom no puede ser posterior a eligibilityValidTo");
+        }
         Promotion promotion = new Promotion();
         promotion.setDescription(request.description());
         promotion.setEligibilityValidFrom(request.eligibilityValidFrom());

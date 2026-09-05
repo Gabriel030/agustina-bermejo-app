@@ -82,6 +82,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private InvoiceGenerationService invoiceGenerationService;
 
     @Autowired
+    private InvoiceQueryService invoiceQueryService;
+
+    @Autowired
     private InvoiceRepository invoiceRepository;
 
     @Autowired
@@ -474,6 +477,29 @@ class PromotionServiceTest extends AbstractIntegrationTest {
                 && p.remaining() == 2 && p.used() == 1 && p.feeType().equals("RECURRING_FEE"));
     }
 
+    // 117. elDesgloseDePrecioMuestraElNombreDeLaPromociónYElPlanQueLaHabilitó
+    @Test
+    void elDesgloseDePrecioMuestraElNombreDeLaPromocionYElPlanQueLaHabilito() {
+        Person director = persistPerson("director.promo117." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        autenticarComo(director);
+        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+                "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
+                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+
+        CourseEnrollment enrollment = persistCourseEnrollment("89000117", course, LocalDateTime.now());
+        PaymentPlanSelection selection = seleccionarPlanMensualCurso(enrollment, director);
+        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+
+        Long invoiceId = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId();
+        var breakdown = invoiceQueryService.priceBreakdown(invoiceId);
+        var lineaPromocion = breakdown.adjustments().stream()
+                .filter(l -> l.type().equals("PROMOTION"))
+                .findFirst().orElseThrow();
+        assertThat(lineaPromocion.humanLabel()).contains("Semana del estudiante");
+        assertThat(lineaPromocion.humanLabel()).contains(selection.getPaymentPlanOption().getDescription());
+    }
+
     // 123. unaSelecciónDePlanTodavíaAbiertaNuncaApareceComoBeneficioPerdido
     @Test
     void unaSeleccionDePlanTodaviaAbiertaNuncaApareceComoBeneficioPerdido() {
@@ -489,5 +515,17 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
         List<com.red_escuela.backend.dto.LostPromotionBenefitResponse> perdidos = promotionService.findLostBenefits();
         assertThat(perdidos).noneMatch(p -> p.studentName().equals("Persona 89000123"));
+    }
+
+    @Test
+    void unaVentanaDeElegibilidadInvertidaSeRechaza() {
+        Person director = persistPerson("director.promo.ventana." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        autenticarComo(director);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+                        "Promo con fechas invertidas", LocalDate.now().plusDays(5), LocalDate.now().minusDays(2),
+                        List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3)))))
+                .isInstanceOf(com.red_escuela.backend.exception.InvalidWindowConfigurationException.class);
     }
 }
