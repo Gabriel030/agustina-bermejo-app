@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * RF-DI-03: flujo de solicitud/aprobación/rechazo de excepciones del Director. Decisión 12:
  * esta fase NO implementa el efecto real de destrabar la validación correspondiente — se
- * verifica explícitamente que aprobar una excepción no tiene ningún efecto cruzado sobre
+ * verifica explícitamente que approve una excepción no tiene ningún efecto cruzado sobre
  * ExamBoardRegistrationService (deuda técnica documentada, no cableada).
  */
 @SpringBootTest
@@ -132,9 +132,9 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), null, "Justificación de prueba"));
 
         autenticarComoPersona("DIRECTOR_A0000001");
-        directorApprovalRequestService.aprobar(request.getId(), "OK");
+        directorApprovalRequestService.approve(request.getId(), "OK");
 
-        assertThatThrownBy(() -> directorApprovalRequestService.rechazar(request.getId(), "tarde"))
+        assertThatThrownBy(() -> directorApprovalRequestService.reject(request.getId(), "tarde"))
                 .isInstanceOf(InvalidDirectorApprovalRequestStateException.class);
     }
 
@@ -185,11 +185,11 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), subject.getId(), "Llegó tarde por paro de transporte"));
 
         autenticarComoPersona("DIRECTOR_A0000002");
-        DirectorApprovalRequest aprobada = directorApprovalRequestService.aprobar(request.getId(), "Aprobado");
+        DirectorApprovalRequest aprobada = directorApprovalRequestService.approve(request.getId(), "Aprobado");
         assertThat(aprobada.getStatus()).isEqualTo(DirectorApprovalRequestStatus.APPROVED);
 
         // Decisión 12: sin efecto cruzado — la mesa sigue rechazando fuera de ventana igual.
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), sse.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), sse.getId()))
                 .isInstanceOf(ExamBoardRegistrationWindowClosedException.class);
     }
 }

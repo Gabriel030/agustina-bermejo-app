@@ -118,7 +118,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         entityManager.flush();
 
-        assertThatThrownBy(() -> feeScheduleService.crear(
+        assertThatThrownBy(() -> feeScheduleService.create(
                 new CreateFeeScheduleRequest(null, null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(1000), LocalDate.now()),
                 director))
                 .isInstanceOf(InvalidPricingTargetException.class);
@@ -130,7 +130,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse("Curso QA " + System.nanoTime());
         entityManager.flush();
 
-        assertThatThrownBy(() -> feeScheduleService.crear(
+        assertThatThrownBy(() -> feeScheduleService.create(
                 new CreateFeeScheduleRequest(null, course.getId(), FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(1000), LocalDate.now()),
                 director))
                 .isInstanceOf(InvalidPricingTargetException.class);
@@ -142,9 +142,9 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("Carrera QA " + System.nanoTime());
         entityManager.flush();
 
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000), LocalDate.of(2026, 1, 1)), director);
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(60000), LocalDate.of(2026, 4, 1)), director);
 
         FeeSchedule vigenteEnMarzo = feeScheduleService.vigenteParaPrograma(
@@ -162,7 +162,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("Carrera QA " + System.nanoTime());
         entityManager.flush();
 
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000), LocalDate.now().minusDays(1)), director);
 
         assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), null, LocalDate.now()))
@@ -180,7 +180,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("79910001");
         entityManager.flush();
 
-        assertThatThrownBy(() -> invoiceService.crearDesdeFeeSchedule(
+        assertThatThrownBy(() -> invoiceService.createFromFeeSchedule(
                 student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(program.getId(), null, FeeScheduleConcept.MATRICULA, LocalDate.now().plusDays(10))))
                 .isInstanceOf(FeeScheduleNotFoundException.class);
@@ -191,11 +191,11 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera con precio " + System.nanoTime());
         Student student = persistStudent("79910002");
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000), LocalDate.now().minusDays(1)), director);
         entityManager.flush();
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(
+        Invoice invoice = invoiceService.createFromFeeSchedule(
                 student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(program.getId(), null, FeeScheduleConcept.MATRICULA, LocalDate.now().plusDays(10)));
 
@@ -208,15 +208,15 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera con descuentos " + System.nanoTime());
         Student student = persistStudent("79910003");
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, BigDecimal.valueOf(10000), LocalDate.now().minusDays(1)), director);
-        discountService.crear(student.getId(), new CreateDiscountRequest(
+        discountService.create(student.getId(), new CreateDiscountRequest(
                 DiscountType.PORCENTAJE, BigDecimal.valueOf(20), LocalDate.now().minusDays(1), null, "Beca por mérito académico"), director);
-        promotionService.crear(new CreatePromotionRequest(
+        promotionService.create(new CreatePromotionRequest(
                 program.getId(), null, DiscountType.PORCENTAJE, BigDecimal.valueOf(10), LocalDate.now().minusDays(1), null), director);
         entityManager.flush();
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(
+        Invoice invoice = invoiceService.createFromFeeSchedule(
                 student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(program.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, LocalDate.now().plusDays(10)));
 
@@ -230,13 +230,13 @@ class PricingServiceTest extends AbstractIntegrationTest {
         Program programA = persistProgram("Carrera A " + System.nanoTime());
         Program programB = persistProgram("Carrera B " + System.nanoTime());
         Student student = persistStudent("79910004");
-        feeScheduleService.crear(new CreateFeeScheduleRequest(
+        feeScheduleService.create(new CreateFeeScheduleRequest(
                 programA.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, BigDecimal.valueOf(10000), LocalDate.now().minusDays(1)), director);
-        promotionService.crear(new CreatePromotionRequest(
+        promotionService.create(new CreatePromotionRequest(
                 programB.getId(), null, DiscountType.PORCENTAJE, BigDecimal.valueOf(50), LocalDate.now().minusDays(1), null), director);
         entityManager.flush();
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(
+        Invoice invoice = invoiceService.createFromFeeSchedule(
                 student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(programA.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, LocalDate.now().plusDays(10)));
 

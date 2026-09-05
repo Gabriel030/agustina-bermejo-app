@@ -159,7 +159,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     // Épica 7 Fase 3: matrícula/cuota salen de FeeSchedule (Épica 8 Fase 1), no de
-    // Program.price/Course.price — sin esto, crearDesdeFeeSchedule() falla con
+    // Program.price/Course.price — sin esto, createFromFeeSchedule() falla con
     // FeeScheduleNotFoundException.
     private void persistFeeSchedule(Program program, Course course, FeeScheduleConcept concept, BigDecimal amount) {
         Address address = new Address();
@@ -313,7 +313,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .isNotEmpty();
         assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
         // Aprobar la solicitud aprueba también el comprobante en la misma transacción
-        // (ver ProgramEnrollmentApplicationService.aprobar) — el Payment real ya existe.
+        // (ver ProgramEnrollmentApplicationService.approve) — el Payment real ya existe.
         assertThat(persisted.getPaymentReceipt()).isNotNull();
         assertThat(persisted.getPaymentReceipt().getStatus())
                 .isEqualTo(com.red_escuela.backend.entity.PaymentReceiptStatus.APPROVED);
@@ -389,7 +389,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     // Épica 7 Fase 3: ya no otorga el rol en el momento — el pago de la primera
     // cuota es un paso bloqueante, la matriculación real (y el rol) recién ocurren
-    // cuando Administración aprueba el comprobante (PaymentReceiptService.aprobar).
+    // cuando Administración aprueba el comprobante (PaymentReceiptService.approve).
     @Test
     void inscribirmeAUnCursoQuedaEnRevisionYRecienOtorgaElRolAlAprobarElComprobante() throws Exception {
         Long institutionId = persistInstitution();

@@ -211,7 +211,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         preceptor.getRoles().add(rolPreceptor);
         entityManager.flush();
 
-        applicationService.aprobar(application.getId(), preceptor);
+        applicationService.approve(application.getId(), preceptor);
 
         entityManager.flush();
         entityManager.clear();

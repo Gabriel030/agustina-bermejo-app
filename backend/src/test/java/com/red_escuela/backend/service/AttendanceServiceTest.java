@@ -204,7 +204,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
 
-        List<Attendance> asistencias = attendanceService.listarPorProgramEnrollment(enrollment.getId());
+        List<Attendance> asistencias = attendanceService.listByProgramEnrollment(enrollment.getId());
         assertThat(asistencias).hasSize(1);
         assertThat(asistencias.get(0).getStatus()).isEqualTo(AttendanceStatus.PRESENT);
     }
@@ -224,14 +224,14 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         // Mismo enrollmentId dos veces en el MISMO request: la última entry tiene que ganar,
-        // sin crear dos filas de asistencia para la misma clase.
+        // sin create dos filas de asistencia para la misma clase.
         CargarAsistenciaRequest request = new CargarAsistenciaRequest(LocalDate.now(), List.of(
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT),
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null);
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(), request);
 
-        List<Attendance> asistencias = attendanceService.listarPorProgramEnrollment(enrollment.getId());
+        List<Attendance> asistencias = attendanceService.listByProgramEnrollment(enrollment.getId());
         assertThat(asistencias).hasSize(1);
         assertThat(asistencias.get(0).getStatus()).isEqualTo(AttendanceStatus.LATE);
     }
@@ -252,7 +252,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000008");
         SecurityContextHolder.getContext().setAuthentication(
@@ -278,7 +278,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000011");
         SecurityContextHolder.getContext().setAuthentication(
@@ -302,7 +302,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        AttendanceRiskResponse riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+        AttendanceRiskResponse riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isFalse();
         assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.0);
@@ -335,7 +335,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
 
-        AttendanceRiskResponse riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+        AttendanceRiskResponse riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isTrue();
         assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.5);
@@ -357,9 +357,9 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
-        Attendance pendiente = attendanceService.subirComprobante(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
+        Attendance pendiente = attendanceService.uploadJustificationProof(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
         assertThat(pendiente.getStatus()).isEqualTo(AttendanceStatus.JUSTIFICATION_PENDING);
         assertThat(pendiente.getJustifiedAt()).isNull();
     }
@@ -380,14 +380,14 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
-        attendanceService.subirComprobante(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
+        attendanceService.uploadJustificationProof(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
 
         Person preceptor = persistPersonBase("80000019");
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance aprobada = attendanceService.aprobarJustificacion(attendance.getId());
+        Attendance aprobada = attendanceService.approveJustification(attendance.getId());
         assertThat(aprobada.getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
         assertThat(aprobada.getJustifiedAt()).isNotNull();
     }
@@ -408,10 +408,10 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
-        attendanceService.subirComprobante(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
+        attendanceService.uploadJustificationProof(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
 
-        Attendance rechazada = attendanceService.rechazarJustificacion(attendance.getId());
+        Attendance rechazada = attendanceService.rejectJustification(attendance.getId());
         assertThat(rechazada.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
     }
 
@@ -431,13 +431,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        Attendance attendance = attendanceService.listarPorProgramEnrollment(enrollment.getId()).get(0);
+        Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000024");
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        assertThatThrownBy(() -> attendanceService.aprobarJustificacion(attendance.getId()))
+        assertThatThrownBy(() -> attendanceService.approveJustification(attendance.getId()))
                 .isInstanceOf(CannotJustifyException.class);
     }
 
@@ -464,11 +464,11 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
                 new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
         attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
-        Attendance ausente = attendanceService.listarPorProgramEnrollment(enrollment.getId()).stream()
+        Attendance ausente = attendanceService.listByProgramEnrollment(enrollment.getId()).stream()
                 .filter(a -> a.getStatus() == AttendanceStatus.ABSENT).findFirst().orElseThrow();
-        attendanceService.subirComprobante(ausente.getId(), "motivo médico", "students/1/comprobante.pdf");
+        attendanceService.uploadJustificationProof(ausente.getId(), "motivo médico", "students/1/comprobante.pdf");
 
-        AttendanceRiskResponse riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+        AttendanceRiskResponse riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
         assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.25);
     }
 }

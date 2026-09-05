@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Épica 7 Fase 3: inscripción a curso con pago de la primera cuota. A diferencia de
  * carrera, no hay una "solicitud" que alguien apruebe/rechace — el CourseEnrollment
- * real recién se crea cuando el PaymentReceiptService.aprobar aprueba el comprobante
+ * real recién se crea cuando el PaymentReceiptService.approve aprueba el comprobante
  * (ver PaymentReceiptService, javadoc).
  */
 @SpringBootTest
@@ -161,7 +161,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         administrativo.getRoles().add(rolAdministrativo);
         entityManager.flush();
 
-        paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), administrativo);
+        paymentReceiptService.approve(application.getPaymentReceipt().getId(), administrativo);
 
         entityManager.flush();
         entityManager.clear();

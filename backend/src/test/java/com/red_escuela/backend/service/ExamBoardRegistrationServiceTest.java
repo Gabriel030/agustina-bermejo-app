@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * RF-AL-05/06: inscripción a mesa de examen con regularidad scopeada por carrera (decisión 8),
  * reactivación post-baja sin chocar con el índice único parcial (mismo criterio que
- * SubjectSectionEnrollmentService.inscribir), y tope de reintentos configurable (decisión de
+ * SubjectSectionEnrollmentService.enroll), y tope de reintentos configurable (decisión de
  * producto: Subject.maxFinalExamAttempts).
  */
 @SpringBootTest
@@ -168,7 +168,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.IN_PROGRESS);
         entityManager.flush();
 
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId()))
                 .isInstanceOf(StudentNotRegularException.class);
     }
 
@@ -185,7 +185,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId()))
                 .isInstanceOf(ExamBoardSubjectMismatchException.class);
     }
 
@@ -201,10 +201,10 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        ExamBoardRegistration primera = examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId());
-        examBoardRegistrationService.darDeBaja(primera.getId());
+        ExamBoardRegistration primera = examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId());
+        examBoardRegistrationService.withdraw(primera.getId());
 
-        ExamBoardRegistration segunda = examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId());
+        ExamBoardRegistration segunda = examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId());
         assertThat(segunda.getId()).isEqualTo(primera.getId());
         assertThat(segunda.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
 
@@ -224,9 +224,9 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId());
+        examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId());
 
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), enrollment.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId()))
                 .isInstanceOf(AlreadyRegisteredInExamBoardException.class);
     }
 
@@ -244,9 +244,9 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         // Primer intento: consume el único cupo permitido (maxFinalExamAttempts = 1).
-        examBoardRegistrationService.inscribirProgramEnrollment(mesa1.getId(), enrollment.getId());
+        examBoardRegistrationService.registerProgramEnrollment(mesa1.getId(), enrollment.getId());
 
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(mesa2.getId(), enrollment.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(mesa2.getId(), enrollment.getId()))
                 .isInstanceOf(MaxExamAttemptsExceededException.class);
     }
 
@@ -263,15 +263,15 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        ExamBoardRegistration primera = examBoardRegistrationService.inscribirProgramEnrollment(mesa1.getId(), enrollment.getId());
-        examBoardRegistrationService.darDeBaja(primera.getId());
+        ExamBoardRegistration primera = examBoardRegistrationService.registerProgramEnrollment(mesa1.getId(), enrollment.getId());
+        examBoardRegistrationService.withdraw(primera.getId());
 
         // El intento en mesa1 fue WITHDRAWN (no cuenta) — inscribirse a mesa2 tiene que poder.
-        ExamBoardRegistration segunda = examBoardRegistrationService.inscribirProgramEnrollment(mesa2.getId(), enrollment.getId());
+        ExamBoardRegistration segunda = examBoardRegistrationService.registerProgramEnrollment(mesa2.getId(), enrollment.getId());
         assertThat(segunda.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }
 
-    // Pedido explícito del usuario: "para esa materia no se puede inscribir a otro llamado, a
+    // Pedido explícito del usuario: "para esa materia no se puede enroll a otro llamado, a
     // menos que se dé de baja de esa mesa y se dé de alta en otro llamado".
     @Test
     void inscribirseAOtroLlamadoDeLaMismaMateriaTeniendoUnoActivoFalla() {
@@ -286,9 +286,9 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        examBoardRegistrationService.inscribirProgramEnrollment(llamado1.getId(), enrollment.getId());
+        examBoardRegistrationService.registerProgramEnrollment(llamado1.getId(), enrollment.getId());
 
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(llamado2.getId(), enrollment.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(llamado2.getId(), enrollment.getId()))
                 .isInstanceOf(AlreadyRegisteredInAnotherExamBoardException.class);
     }
 
@@ -306,10 +306,10 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        ExamBoardRegistration primera = examBoardRegistrationService.inscribirProgramEnrollment(llamado1.getId(), enrollment.getId());
-        examBoardRegistrationService.darDeBaja(primera.getId());
+        ExamBoardRegistration primera = examBoardRegistrationService.registerProgramEnrollment(llamado1.getId(), enrollment.getId());
+        examBoardRegistrationService.withdraw(primera.getId());
 
-        ExamBoardRegistration segunda = examBoardRegistrationService.inscribirProgramEnrollment(llamado2.getId(), enrollment.getId());
+        ExamBoardRegistration segunda = examBoardRegistrationService.registerProgramEnrollment(llamado2.getId(), enrollment.getId());
         assertThat(segunda.getExamBoard().getId()).isEqualTo(llamado2.getId());
         assertThat(segunda.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }

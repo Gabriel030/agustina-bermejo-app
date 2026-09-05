@@ -12,14 +12,14 @@ class InstallmentScheduleCalculatorTest {
     @Test
     void antesDeLaCursadaNoCorrespondeNingunaCuota() {
         LocalDate cursadaStart = LocalDate.of(2026, 3, 1);
-        assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 10, LocalDate.of(2026, 2, 15)))
+        assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 10, LocalDate.of(2026, 2, 15)))
                 .isNull();
     }
 
     @Test
     void elMesDeInicioEsLaCuota1() {
         LocalDate cursadaStart = LocalDate.of(2026, 3, 1);
-        assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 10, LocalDate.of(2026, 3, 15)))
+        assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 10, LocalDate.of(2026, 3, 15)))
                 .isEqualTo(1);
     }
 
@@ -29,7 +29,7 @@ class InstallmentScheduleCalculatorTest {
         int[] esperado = IntStream.rangeClosed(1, 10).toArray();
         for (int mes = 0; mes < 10; mes++) {
             LocalDate fecha = cursadaStart.plusMonths(mes);
-            assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 10, fecha))
+            assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 10, fecha))
                     .as("mes " + mes)
                     .isEqualTo(esperado[mes]);
         }
@@ -38,16 +38,16 @@ class InstallmentScheduleCalculatorTest {
     @Test
     void unaVezAgotadoElPlanNoDevuelveMasCuotas() {
         LocalDate cursadaStart = LocalDate.of(2026, 3, 1);
-        assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 10, LocalDate.of(2027, 1, 1)))
+        assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 10, LocalDate.of(2027, 1, 1)))
                 .isNull();
     }
 
     @Test
     void unCursoDeTresCuotasDaNullEnLaCuartaMensualidad() {
         LocalDate cursadaStart = LocalDate.of(2026, 5, 1);
-        assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 3, LocalDate.of(2026, 7, 20)))
+        assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 3, LocalDate.of(2026, 7, 20)))
                 .isEqualTo(3);
-        assertThat(InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, 3, LocalDate.of(2026, 8, 1)))
+        assertThat(InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, 3, LocalDate.of(2026, 8, 1)))
                 .isNull();
     }
 }

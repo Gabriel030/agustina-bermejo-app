@@ -93,9 +93,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     void subirUnComprobanteLoDejaPendienteDeRevision() {
         Student student = persistStudent("79920001");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
 
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante());
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante());
 
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
         assertThat(receipt.getFilePath()).isNotBlank();
@@ -105,10 +105,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     void noSePuedeSubirUnSegundoComprobanteMientrasElPrimeroSigueEnRevision() {
         Student student = persistStudent("79920002");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
-        paymentReceiptService.subir(invoice.getId(), comprobante());
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
+        paymentReceiptService.upload(invoice.getId(), comprobante());
 
-        assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), comprobante()))
+        assertThatThrownBy(() -> paymentReceiptService.upload(invoice.getId(), comprobante()))
                 .isInstanceOf(PaymentReceiptAlreadyPendingException.class);
     }
 
@@ -117,10 +117,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("79920003");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante());
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante());
 
-        paymentReceiptService.aprobar(receipt.getId(), administrativo);
+        paymentReceiptService.approve(receipt.getId(), administrativo);
 
         PaymentReceipt aprobado = entityManager.find(PaymentReceipt.class, receipt.getId());
         assertThat(aprobado.getStatus()).isEqualTo(PaymentReceiptStatus.APPROVED);
@@ -140,10 +140,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("79920004");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
-        PaymentReceipt primerIntento = paymentReceiptService.subir(invoice.getId(), comprobante());
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
+        PaymentReceipt primerIntento = paymentReceiptService.upload(invoice.getId(), comprobante());
 
-        paymentReceiptService.rechazar(primerIntento.getId(), administrativo, "Comprobante ilegible");
+        paymentReceiptService.reject(primerIntento.getId(), administrativo, "Comprobante ilegible");
 
         PaymentReceipt rechazado = entityManager.find(PaymentReceipt.class, primerIntento.getId());
         assertThat(rechazado.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
@@ -151,7 +151,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(paymentRepository.findByInvoiceId(invoice.getId())).isEmpty();
 
         // Reintento sin límite: el primero ya no está PENDING_REVIEW, así que uno nuevo es válido.
-        PaymentReceipt segundoIntento = paymentReceiptService.subir(invoice.getId(), comprobante());
+        PaymentReceipt segundoIntento = paymentReceiptService.upload(invoice.getId(), comprobante());
         assertThat(segundoIntento.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
     }
 
@@ -160,11 +160,11 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("79920005");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante());
-        paymentReceiptService.aprobar(receipt.getId(), administrativo);
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante());
+        paymentReceiptService.approve(receipt.getId(), administrativo);
 
-        assertThatThrownBy(() -> paymentReceiptService.aprobar(receipt.getId(), administrativo))
+        assertThatThrownBy(() -> paymentReceiptService.approve(receipt.getId(), administrativo))
                 .isInstanceOf(InvalidPaymentReceiptStateException.class);
     }
 }

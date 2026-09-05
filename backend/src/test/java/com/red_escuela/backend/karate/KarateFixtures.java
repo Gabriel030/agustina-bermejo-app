@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * Puente Java para setup que no tiene sentido hacer vía HTTP desde un .feature de Karate
- * (crear un token de staff sin pasar por un flujo de alta completo, sembrar una
+ * (create un token de staff sin pasar por un flujo de alta completo, sembrar una
  * institución) — mismo criterio que RegistrationFlowTest.persistInstitution()/
  * tokenDePreceptor(), reusado acá porque Karate llama a métodos Java estáticos
  * directamente (Java.type(...) desde el .feature o karate-config.js).

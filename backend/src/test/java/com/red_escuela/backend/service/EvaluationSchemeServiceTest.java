@@ -78,7 +78,7 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaConEsquemaEnUso");
         Term term = persistTerm();
         entityManager.flush();
-        subjectSectionService.crearComision(subject.getId(),
+        subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, scheme.getId()));
 
         assertThatThrownBy(() -> evaluationSchemeService.update(scheme.getId(), validRequest("Intento de cambio")))

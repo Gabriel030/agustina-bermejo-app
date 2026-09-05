@@ -172,7 +172,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         persistCursadaActiva(student, enrollment);
         entityManager.flush();
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
+        invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
         autenticarComoPersona("ADMIN90000002");
 
         assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
@@ -189,7 +189,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         // AL_DIA exige tener al menos una factura sin vencer (SIN_INFORMACION, sin ninguna
         // factura cargada, no alcanza — decisión 17: no se le puede exigir una condición de
         // pago a quien nunca fue facturado, y "regular" acá pide explícitamente AL_DIA).
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota al día", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
+        invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota al día", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
         autenticarComoPersona("ADMIN90000003");
 
         byte[] pdf = certificateService.emitirConstanciaRegular(enrollment.getId());

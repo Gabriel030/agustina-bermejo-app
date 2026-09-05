@@ -176,7 +176,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
 
     @Test
     void listarComisionesConCualquierRolAutenticadoDevuelve200() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo para listar");
+        CourseSubject courseSubject = persistCourseSubject("Módulo para list");
         entityManager.flush();
 
         String token = tokenWithRole("alumno-course-section2", "ALUMNO");
@@ -221,7 +221,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
 
     @Test
     void listarDocentesDeUnaComisionDevuelve200() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo para listar docentes");
+        CourseSubject courseSubject = persistCourseSubject("Módulo para list docentes");
         Term term = persistSectionTerm();
 
         CourseSubjectSection section = new CourseSubjectSection();
@@ -236,7 +236,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("docente-course-listado");
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-course-listar-docentes", "PRECEPTOR");
+        String token = tokenWithRole("preceptor-course-list-docentes", "PRECEPTOR");
         mockMvc.perform(post("/course-sections/{id}/instructors", section.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)

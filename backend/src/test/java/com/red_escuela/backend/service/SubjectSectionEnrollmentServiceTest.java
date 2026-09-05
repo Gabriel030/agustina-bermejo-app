@@ -156,7 +156,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
     }
@@ -174,7 +174,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(SubjectNotInProgramPlanException.class);
     }
@@ -192,15 +192,15 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionA.getId()));
         assertThat(primera.getAttemptNumber()).isEqualTo(1);
 
-        subjectSectionEnrollmentService.darDeBaja(primera.getId());
+        subjectSectionEnrollmentService.withdraw(primera.getId());
 
         // Reinscripción MANUAL (no change-section) a otra comisión de la MISMA materia,
         // mismo Term: por decisión 8, esto no es un intento nuevo.
-        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionB.getId()));
         assertThat(segunda.getAttemptNumber()).isEqualTo(1);
     }
@@ -219,11 +219,11 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionTerm1.getId()));
-        subjectSectionEnrollmentService.darDeBaja(primera.getId());
+        subjectSectionEnrollmentService.withdraw(primera.getId());
 
-        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionTerm2.getId()));
         assertThat(segunda.getAttemptNumber()).isEqualTo(2);
     }
@@ -241,7 +241,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment original = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment original = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionA.getId()));
 
         student.getPerson().setStatus(StatusType.DELETED);
@@ -268,7 +268,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(TermEnrollmentOverrideClosedException.class);
     }
@@ -287,7 +287,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment enrollmentResult = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment enrollmentResult = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
         assertThat(enrollmentResult.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
@@ -307,7 +307,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(com.red_escuela.backend.exception.EnrollmentWindowClosedException.class);
     }

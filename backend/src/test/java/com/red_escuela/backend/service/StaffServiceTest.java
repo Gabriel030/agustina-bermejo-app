@@ -115,11 +115,11 @@ class StaffServiceTest extends AbstractIntegrationTest {
 
         autenticarComoActor("B0000006", "DIRECTOR");
         UpdateStaffRequest edicion = new UpdateStaffRequest("nuevo@example.com", null, null, null, null, null, null, null, null);
-        assertThatThrownBy(() -> staffService.editarPersonal(docente.getId(), edicion))
+        assertThatThrownBy(() -> staffService.updateStaff(docente.getId(), edicion))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
 
         autenticarComoActor("B0000007", "ADMINISTRATIVO");
-        Person editado = staffService.editarPersonal(docente.getId(), edicion);
+        Person editado = staffService.updateStaff(docente.getId(), edicion);
         assertThat(editado.getEmail()).isEqualTo("nuevo@example.com");
     }
 }

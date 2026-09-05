@@ -39,7 +39,7 @@ class LateFeeCalculatorTest {
         LateFeePolicy p = policy(5, 2, 5, 10);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
         // 6 días de atraso, 5 de gracia → 1 día de mora, no llega a un período de 5.
-        BigDecimal recargo = LateFeeCalculator.calcularRecargo(p, dueDate, dueDate.plusDays(6), BigDecimal.valueOf(1000));
+        BigDecimal recargo = LateFeeCalculator.calculateSurcharge(p, dueDate, dueDate.plusDays(6), BigDecimal.valueOf(1000));
         assertThat(recargo).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
@@ -48,7 +48,7 @@ class LateFeeCalculatorTest {
         LateFeePolicy p = policy(5, 2, 5, 20);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
         // 10 días de atraso, 5 de gracia → 5 días de mora → exactamente 1 período de 5.
-        BigDecimal recargo = LateFeeCalculator.calcularRecargo(p, dueDate, dueDate.plusDays(10), BigDecimal.valueOf(1000));
+        BigDecimal recargo = LateFeeCalculator.calculateSurcharge(p, dueDate, dueDate.plusDays(10), BigDecimal.valueOf(1000));
         assertThat(recargo).isEqualByComparingTo(BigDecimal.valueOf(20));
     }
 
@@ -57,7 +57,7 @@ class LateFeeCalculatorTest {
         LateFeePolicy p = policy(5, 2, 5, 20);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
         // 15 días de atraso, 5 de gracia → 10 días de mora → 2 períodos de 5 → 4% total.
-        BigDecimal recargo = LateFeeCalculator.calcularRecargo(p, dueDate, dueDate.plusDays(15), BigDecimal.valueOf(1000));
+        BigDecimal recargo = LateFeeCalculator.calculateSurcharge(p, dueDate, dueDate.plusDays(15), BigDecimal.valueOf(1000));
         assertThat(recargo).isEqualByComparingTo(BigDecimal.valueOf(40));
     }
 

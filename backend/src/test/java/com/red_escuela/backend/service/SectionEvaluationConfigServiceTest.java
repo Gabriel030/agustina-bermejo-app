@@ -139,7 +139,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
 
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         entityManager.flush();
 
@@ -160,7 +160,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAjena");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor outsider = persistInstructor("90000001");
         entityManager.flush();
@@ -175,7 +175,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAdjunto");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor assistant = persistInstructor("90000002");
         assignInstructor(section, assistant, InstructorRole.ASSISTANT);
@@ -193,7 +193,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaFueraDeRango");
         Term term = persistTerm(start, end);
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000003");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -210,7 +210,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAnual");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(9));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000013");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -237,7 +237,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaFeriado");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000004");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -253,7 +253,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaVentanaVencida");
         Term term = persistTerm(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000005");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -268,7 +268,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaNotificaDirector");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000006");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -290,7 +290,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAprobada");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000008");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -319,7 +319,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaRechazada");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Instructor leadInstructor = persistInstructor("90000010");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
@@ -346,7 +346,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaEstadoInvalido");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.crearComision(subject.getId(),
+        SubjectSection section = subjectSectionService.createSection(subject.getId(),
                 new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
         Person actor = persistPersonWithRole("90000012", "DIRECTOR");
         entityManager.flush();

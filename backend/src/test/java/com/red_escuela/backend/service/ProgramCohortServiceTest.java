@@ -47,7 +47,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
         Program program = persistPrograma();
         entityManager.flush();
 
-        ProgramCohort cohort = programCohortService.crear(
+        ProgramCohort cohort = programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Marzo 2026", 1, null, null, LocalDate.of(2026, 3, 1)));
 
         assertThat(cohort.getId()).isNotNull();
@@ -59,7 +59,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
         Program program = persistPrograma();
         entityManager.flush();
 
-        assertThatThrownBy(() -> programCohortService.crear(
+        assertThatThrownBy(() -> programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Inválida", 3, null, null, LocalDate.of(2026, 3, 1))))
                 .isInstanceOf(InvalidProgramCohortException.class);
     }
@@ -69,10 +69,10 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
         Program program = persistPrograma();
         entityManager.flush();
 
-        programCohortService.crear(
+        programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Marzo 2026", 1, null, null, LocalDate.of(2026, 3, 1)));
 
-        assertThatThrownBy(() -> programCohortService.crear(
+        assertThatThrownBy(() -> programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Marzo otra vez", 1, null, null, LocalDate.of(2026, 3, 15))))
                 .isInstanceOf(InvalidProgramCohortException.class);
     }
@@ -85,7 +85,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
         LocalDateTime start = LocalDateTime.now();
         LocalDateTime end = start.minusDays(1);
 
-        assertThatThrownBy(() -> programCohortService.crear(
+        assertThatThrownBy(() -> programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Marzo 2026", 1, start, end, LocalDate.of(2026, 3, 1))))
                 .isInstanceOf(InvalidProgramCohortException.class);
     }
@@ -95,11 +95,11 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
         Program program = persistPrograma();
         entityManager.flush();
 
-        programCohortService.crear(
+        programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Marzo 2026", 1, null, null, LocalDate.of(2026, 3, 1)));
-        programCohortService.crear(
+        programCohortService.create(
                 new CreateProgramCohortRequest(program.getId(), "Agosto 2026", 2, null, null, LocalDate.of(2026, 8, 1)));
 
-        assertThat(programCohortService.listarPorPrograma(program.getId())).hasSize(2);
+        assertThat(programCohortService.listByProgram(program.getId())).hasSize(2);
     }
 }

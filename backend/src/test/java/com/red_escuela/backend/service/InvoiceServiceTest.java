@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * RF-AL-09/RF-AD-08/RF-AL-10: facturación interna, recálculo automático de Invoice.status al
- * registrar un pago (decisión 4), cálculo on-demand de deuda (decisión 3) y de PaymentStanding
+ * register un pago (decisión 4), cálculo on-demand de deuda (decisión 3) y de PaymentStanding
  * (decisión 17, sin ningún caller de bloqueo — se verifica explícitamente que no rompe la
  * inscripción existente).
  */
@@ -99,15 +99,15 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void registrarDosPagosParcialesHastaCompletarElMontoPasaDePendingAPartiallyPaidAPaid() {
         Student student = persistStudent("79900001");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
         assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
 
         autenticarComoAdministrativo();
-        paymentService.registrarPago(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
+        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
         Invoice trasPrimerPago = entityManager.find(Invoice.class, invoice.getId());
         assertThat(trasPrimerPago.getStatus()).isEqualTo(InvoiceStatus.PARTIALLY_PAID);
 
-        paymentService.registrarPago(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(600), PaymentMethod.TRANSFER, null));
+        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(600), PaymentMethod.TRANSFER, null));
         Invoice trasSegundoPago = entityManager.find(Invoice.class, invoice.getId());
         assertThat(trasSegundoPago.getStatus()).isEqualTo(InvoiceStatus.PAID);
     }
@@ -116,10 +116,10 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void registrarUnPagoQueSuperaElSaldoPendienteFallaSinCrearElPago() {
         Student student = persistStudent("79900002");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(500), LocalDate.now().plusDays(30)));
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(500), LocalDate.now().plusDays(30)));
 
         autenticarComoAdministrativo();
-        assertThatThrownBy(() -> paymentService.registrarPago(
+        assertThatThrownBy(() -> paymentService.registerPayment(
                 invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(600), PaymentMethod.CASH, null)))
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
 
@@ -131,11 +131,11 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void cancelarUnaFacturaYaPagadaFalla() {
         Student student = persistStudent("79900010");
         entityManager.flush();
-        Invoice pagada = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Pagada", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
+        Invoice pagada = invoiceService.create(student.getId(), new CreateInvoiceRequest("Pagada", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
         autenticarComoAdministrativo();
-        paymentService.registrarPago(pagada.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
+        paymentService.registerPayment(pagada.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
 
-        assertThatThrownBy(() -> invoiceService.cancelar(pagada.getId()))
+        assertThatThrownBy(() -> invoiceService.cancel(pagada.getId()))
                 .isInstanceOf(InvoiceAlreadyCancelledException.class);
     }
 
@@ -143,10 +143,10 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void cancelarUnaFacturaYaCanceladaFalla() {
         Student student = persistStudent("79900003");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
-        invoiceService.cancelar(invoice.getId());
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
+        invoiceService.cancel(invoice.getId());
 
-        assertThatThrownBy(() -> invoiceService.cancelar(invoice.getId()))
+        assertThatThrownBy(() -> invoiceService.cancel(invoice.getId()))
                 .isInstanceOf(InvoiceAlreadyCancelledException.class);
     }
 
@@ -154,9 +154,9 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void cancelarUnaFacturaPendienteLaPasaACancelled() {
         Student student = persistStudent("79900004");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Pendiente", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Pendiente", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
 
-        invoiceService.cancelar(invoice.getId());
+        invoiceService.cancel(invoice.getId());
         Invoice cancelada = entityManager.find(Invoice.class, invoice.getId());
         assertThat(cancelada.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
     }
@@ -165,7 +165,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void calcularDeudaDeUnAlumnoSinFacturasDaSinDeuda() {
         Student student = persistStudent("79900005");
         entityManager.flush();
-        DebtSummaryResponse resumen = invoiceService.calcularDeuda(student.getId());
+        DebtSummaryResponse resumen = invoiceService.calculateDebt(student.getId());
         assertThat(resumen.tieneDeuda()).isFalse();
         assertThat(resumen.montoAdeudado()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -174,11 +174,11 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void calcularDeudaConUnaFacturaPendienteYUnPagoParcialDaElSaldoRestante() {
         Student student = persistStudent("79900006");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
         autenticarComoAdministrativo();
-        paymentService.registrarPago(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
+        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
 
-        DebtSummaryResponse resumen = invoiceService.calcularDeuda(student.getId());
+        DebtSummaryResponse resumen = invoiceService.calculateDebt(student.getId());
         assertThat(resumen.tieneDeuda()).isTrue();
         assertThat(resumen.montoAdeudado()).isEqualByComparingTo(BigDecimal.valueOf(600));
     }
@@ -187,26 +187,26 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     void calcularEstadoDePagoSinFacturasDaSinInformacion() {
         Student student = persistStudent("79900007");
         entityManager.flush();
-        assertThat(invoiceService.calcularEstadoDePago(student.getId())).isEqualTo(PaymentStanding.SIN_INFORMACION);
+        assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.SIN_INFORMACION);
     }
 
     @Test
     void calcularEstadoDePagoConFacturaNoVencidaDaAlDia() {
         Student student = persistStudent("79900008");
         entityManager.flush();
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota futura", BigDecimal.valueOf(100), LocalDate.now().plusDays(10)));
-        assertThat(invoiceService.calcularEstadoDePago(student.getId())).isEqualTo(PaymentStanding.AL_DIA);
+        invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota futura", BigDecimal.valueOf(100), LocalDate.now().plusDays(10)));
+        assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.AL_DIA);
     }
 
     @Test
     void calcularEstadoDePagoConFacturaVencidaSinPagarDaMorosoYPagandolaVuelveAAlDiaInmediatamente() {
         Student student = persistStudent("79900009");
         entityManager.flush();
-        Invoice invoice = invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
-        assertThat(invoiceService.calcularEstadoDePago(student.getId())).isEqualTo(PaymentStanding.MOROSO);
+        Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
+        assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.MOROSO);
 
         autenticarComoAdministrativo();
-        paymentService.registrarPago(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
-        assertThat(invoiceService.calcularEstadoDePago(student.getId())).isEqualTo(PaymentStanding.AL_DIA);
+        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
+        assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.AL_DIA);
     }
 }

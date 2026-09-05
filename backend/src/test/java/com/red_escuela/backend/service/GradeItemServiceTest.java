@@ -305,7 +305,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 9.0, 10.0, "corregida", null));
 
-        var items = gradeItemService.listarPorProgramEnrollment(enrollment.getId());
+        var items = gradeItemService.listByProgramEnrollment(enrollment.getId());
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getScore()).isEqualTo(9.0);
     }

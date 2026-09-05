@@ -304,7 +304,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     void listarSeccionesConCualquierRolAutenticadoDevuelve200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
-        subject.setName("Subject para listar");
+        subject.setName("Subject para list");
         entityManager.persist(subject);
         entityManager.flush();
 
@@ -362,12 +362,12 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     void listarDocentesDeUnaComisionDevuelve200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
-        subject.setName("Subject para listar docentes");
+        subject.setName("Subject para list docentes");
         entityManager.persist(subject);
 
         Term term = new Term();
         term.setYear(2026);
-        term.setDescription("2026 term listar docentes");
+        term.setDescription("2026 term list docentes");
         term.setType("1C");
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
@@ -385,7 +385,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("docente-listado");
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-listar-docentes", "PRECEPTOR");
+        String token = tokenWithRole("preceptor-list-docentes", "PRECEPTOR");
         mockMvc.perform(post("/program-sections/{id}/instructors", section.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)

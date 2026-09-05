@@ -428,7 +428,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     // ---------------------------------------------------------------------
-    // ProgramSubject: desactivar/reactivar/filtro + roles a nivel HTTP
+    // ProgramSubject: deactivate/reactivate/filtro + roles a nivel HTTP
     // (antes solo estaban probados a nivel servicio, sin pasar por @PreAuthorize)
     // ---------------------------------------------------------------------
 
@@ -488,7 +488,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     // ---------------------------------------------------------------------
-    // CourseSubject: CRUD, desactivar/reactivar/filtro y roles
+    // CourseSubject: CRUD, deactivate/reactivate/filtro y roles
     // (CourseSubjectController no tenía ningún test todavía)
     // ---------------------------------------------------------------------
 

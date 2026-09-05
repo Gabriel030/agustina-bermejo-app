@@ -64,7 +64,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Sin año/cuatrimestre curricular: agregarMateria() bypasea la validación @NotNull
     // del DTO (esa solo corre en la capa web, vía @Valid) — usado para aislar los tests
     // de detección de ciclos de la validación de orden cronológico entre correlativas
-    // (ver ProgramSubjectService.validarOrdenCronologico): con año/cuatrimestre reales,
+    // (ver ProgramSubjectService.validateChronologicalOrder): con año/cuatrimestre reales,
     // un ciclo A->B->A es imposible de construir (exigiría que B preceda a A Y que A
     // preceda a B a la vez), así que estos tests necesitan materias sin esa restricción
     // para poder ejercitar el DFS de ciclos en sí mismo.
