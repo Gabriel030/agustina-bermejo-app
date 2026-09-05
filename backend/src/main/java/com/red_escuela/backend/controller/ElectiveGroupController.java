@@ -32,19 +32,19 @@ public class ElectiveGroupController {
     @PostMapping("/elective-groups")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ElectiveGroupResponse crearGrupo(@Valid @RequestBody CreateElectiveGroupRequest request) {
-        return ElectiveGroupResponse.from(electiveGroupService.crearGrupo(request));
+    public ElectiveGroupResponse createElectiveGroup(@Valid @RequestBody CreateElectiveGroupRequest request) {
+        return ElectiveGroupResponse.from(electiveGroupService.createElectiveGroup(request));
     }
 
     @PutMapping("/elective-groups/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ElectiveGroupResponse editarGrupo(@PathVariable Long id, @RequestBody UpdateElectiveGroupRequest request) {
-        return ElectiveGroupResponse.from(electiveGroupService.editarGrupo(id, request));
+    public ElectiveGroupResponse updateElectiveGroup(@PathVariable Long id, @RequestBody UpdateElectiveGroupRequest request) {
+        return ElectiveGroupResponse.from(electiveGroupService.updateElectiveGroup(id, request));
     }
 
     @GetMapping("/elective-groups")
-    public List<ElectiveGroupResponse> listar() {
-        return electiveGroupService.listar().stream().map(ElectiveGroupResponse::from).toList();
+    public List<ElectiveGroupResponse> list() {
+        return electiveGroupService.list().stream().map(ElectiveGroupResponse::from).toList();
     }
 
     @GetMapping("/elective-groups/{id}")
@@ -53,8 +53,8 @@ public class ElectiveGroupController {
     }
 
     @GetMapping("/programs/{id}/elective-groups")
-    public List<ProgramElectiveGroupResponse> listarPorCarrera(@PathVariable Long id) {
-        return electiveGroupService.listarPorCarrera(id).stream().map(ProgramElectiveGroupResponse::from).toList();
+    public List<ProgramElectiveGroupResponse> listByProgram(@PathVariable Long id) {
+        return electiveGroupService.listByProgram(id).stream().map(ProgramElectiveGroupResponse::from).toList();
     }
 
     @PostMapping("/programs/{id}/elective-groups")

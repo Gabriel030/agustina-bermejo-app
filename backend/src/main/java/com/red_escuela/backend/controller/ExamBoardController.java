@@ -32,14 +32,14 @@ public class ExamBoardController {
     @PostMapping("/exam-boards")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ExamBoardResponse crear(@Valid @RequestBody CreateExamBoardRequest request) {
-        return ExamBoardResponse.from(examBoardService.crear(request));
+    public ExamBoardResponse create(@Valid @RequestBody CreateExamBoardRequest request) {
+        return ExamBoardResponse.from(examBoardService.create(request));
     }
 
     @GetMapping("/exam-boards")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardResponse> listar(@RequestParam(required = false) ExamBoardStatus status) {
-        return examBoardService.listar(status).stream().map(ExamBoardResponse::from).toList();
+    public List<ExamBoardResponse> list(@RequestParam(required = false) ExamBoardStatus status) {
+        return examBoardService.list(status).stream().map(ExamBoardResponse::from).toList();
     }
 
     @GetMapping("/exam-boards/{id}")
@@ -64,7 +64,7 @@ public class ExamBoardController {
 
     @GetMapping("/exam-boards/{id}/registrations")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardRegistrationSummaryResponse> listarAnotados(@PathVariable Long id) {
-        return examBoardService.listarAnotadosConDetalle(id);
+    public List<ExamBoardRegistrationSummaryResponse> listRegistrations(@PathVariable Long id) {
+        return examBoardService.listRegistrationsWithDetail(id);
     }
 }

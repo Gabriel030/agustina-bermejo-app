@@ -78,38 +78,38 @@ public class AttendanceController {
 
     @PostMapping("/attendance/{id}/approve-justification")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceResponse aprobarJustificacion(@PathVariable Long id) {
-        return AttendanceResponse.from(attendanceService.aprobarJustificacion(id));
+    public AttendanceResponse approveJustification(@PathVariable Long id) {
+        return AttendanceResponse.from(attendanceService.approveJustification(id));
     }
 
     @PostMapping("/attendance/{id}/reject-justification")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceResponse rechazarJustificacion(@PathVariable Long id) {
-        return AttendanceResponse.from(attendanceService.rechazarJustificacion(id));
+    public AttendanceResponse rejectJustification(@PathVariable Long id) {
+        return AttendanceResponse.from(attendanceService.rejectJustification(id));
     }
 
     @GetMapping("/section-enrollments/{id}/attendance")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<AttendanceResponse> listarAsistenciaProgramEnrollment(@PathVariable Long id) {
-        return attendanceService.listarPorProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
+    public List<AttendanceResponse> listAttendanceByProgramEnrollment(@PathVariable Long id) {
+        return attendanceService.listByProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
     }
 
     @GetMapping("/course-section-enrollments/{id}/attendance")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<AttendanceResponse> listarAsistenciaCourseEnrollment(@PathVariable Long id) {
-        return attendanceService.listarPorCourseEnrollment(id).stream().map(AttendanceResponse::from).toList();
+    public List<AttendanceResponse> listAttendanceByCourseEnrollment(@PathVariable Long id) {
+        return attendanceService.listByCourseEnrollment(id).stream().map(AttendanceResponse::from).toList();
     }
 
     @GetMapping("/section-enrollments/{id}/attendance/risk")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public AttendanceRiskResponse riesgoProgramEnrollment(@PathVariable Long id) {
-        return attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(id);
+        return attendanceService.calculateDropoutRiskByProgramEnrollment(id);
     }
 
     @GetMapping("/course-section-enrollments/{id}/attendance/risk")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public AttendanceRiskResponse riesgoCourseEnrollment(@PathVariable Long id) {
-        return attendanceService.calcularRiesgoDeLibrePorCourseEnrollment(id);
+        return attendanceService.calculateDropoutRiskByCourseEnrollment(id);
     }
 
     @GetMapping("/program-sections/{id}/roster")
@@ -142,16 +142,16 @@ public class AttendanceController {
 
     @PostMapping("/program-sections/{id}/class-sessions/{date}/cancel")
     @PreAuthorize("hasRole('DOCENTE')")
-    public void cancelarClaseProgramSection(@PathVariable Long id, @PathVariable LocalDate date) {
+    public void cancelClassForProgramSection(@PathVariable Long id, @PathVariable LocalDate date) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        attendanceService.cancelarClaseProgramSection(id, instructor.getId(), date);
+        attendanceService.cancelClassForProgramSection(id, instructor.getId(), date);
     }
 
     @PostMapping("/course-sections/{id}/class-sessions/{date}/cancel")
     @PreAuthorize("hasRole('DOCENTE')")
-    public void cancelarClaseCourseSection(@PathVariable Long id, @PathVariable LocalDate date) {
+    public void cancelClassForCourseSection(@PathVariable Long id, @PathVariable LocalDate date) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        attendanceService.cancelarClaseCourseSection(id, instructor.getId(), date);
+        attendanceService.cancelClassForCourseSection(id, instructor.getId(), date);
     }
 
     @GetMapping("/program-sections/{id}/attendance/history")

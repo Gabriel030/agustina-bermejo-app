@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 // No se agrega un campo de "estado de pago" separado: la aprobación de la
 // solicitud y la del PaymentReceipt asociado son atómicas (misma transacción,
-// ver ProgramEnrollmentApplicationService.aprobar) — mientras la solicitud está
+// ver ProgramEnrollmentApplicationService.approve) — mientras la solicitud está
 // PENDING, el comprobante siempre está PENDING_REVIEW; al aprobarse ambos pasan
 // juntos. El único campo de UI que hace falta ya existe: `status`.
 public record ProgramEnrollmentApplicationResponse(

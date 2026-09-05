@@ -43,8 +43,8 @@ public class DirectorApprovalRequestController {
 
     @GetMapping
     @PreAuthorize("hasRole('DIRECTOR')")
-    public List<DirectorApprovalRequestResponse> listar(@RequestParam(required = false) DirectorApprovalRequestStatus status) {
-        return directorApprovalRequestService.listar(status).stream()
+    public List<DirectorApprovalRequestResponse> list(@RequestParam(required = false) DirectorApprovalRequestStatus status) {
+        return directorApprovalRequestService.list(status).stream()
                 .map(DirectorApprovalRequestResponse::from).toList();
     }
 
@@ -56,15 +56,15 @@ public class DirectorApprovalRequestController {
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse aprobar(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse approve(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request != null ? request.notas() : null;
-        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.aprobar(id, notas));
+        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.approve(id, notas));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse rechazar(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse reject(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request != null ? request.notas() : null;
-        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.rechazar(id, notas));
+        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.reject(id, notas));
     }
 }

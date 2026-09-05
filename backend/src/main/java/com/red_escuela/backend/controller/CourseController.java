@@ -33,33 +33,33 @@ public class CourseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseResponse crearCurso(@Valid @RequestBody CreateCourseRequest request) {
-        return CourseResponse.from(courseService.crearCurso(request));
+    public CourseResponse createCourse(@Valid @RequestBody CreateCourseRequest request) {
+        return CourseResponse.from(courseService.createCourse(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseResponse editarCurso(@PathVariable Long id, @RequestBody UpdateCourseRequest request) {
-        return CourseResponse.from(courseService.editarCurso(id, request));
+    public CourseResponse updateCourse(@PathVariable Long id, @RequestBody UpdateCourseRequest request) {
+        return CourseResponse.from(courseService.updateCourse(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        courseService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        courseService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        courseService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        courseService.reactivate(id);
     }
 
     @GetMapping
-    public List<CourseResponse> listar(@RequestParam(required = false) StatusType status) {
-        return courseService.listar(status).stream().map(CourseResponse::from).toList();
+    public List<CourseResponse> list(@RequestParam(required = false) StatusType status) {
+        return courseService.list(status).stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")

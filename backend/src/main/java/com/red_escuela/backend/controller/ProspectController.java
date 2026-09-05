@@ -34,8 +34,8 @@ public class ProspectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StudentResponse crearProspecto(@Valid @RequestBody CreateProspectRequest request) {
-        return StudentResponse.from(prospectService.crearProspecto(request));
+    public StudentResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
+        return StudentResponse.from(prospectService.createProspect(request));
     }
 
     @PostMapping("/{id}/documents")
@@ -50,8 +50,8 @@ public class ProspectController {
 
     @GetMapping("/{id}/documents")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<StudentDocumentResponse> listarDocumentos(@PathVariable Long id) {
-        return prospectService.listarDocumentos(id).stream().map(StudentDocumentResponse::from).toList();
+    public List<StudentDocumentResponse> listDocuments(@PathVariable Long id) {
+        return prospectService.listDocuments(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
     @PostMapping("/{id}/confirm")

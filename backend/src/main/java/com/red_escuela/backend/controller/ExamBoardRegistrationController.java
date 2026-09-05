@@ -25,7 +25,7 @@ public class ExamBoardRegistrationController {
     @PostMapping("/exam-boards/{id}/registrations")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ExamBoardRegistrationResponse inscribir(@PathVariable Long id, @Valid @RequestBody CreateExamBoardRegistrationRequest request) {
+    public ExamBoardRegistrationResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         boolean hasProgram = request.programSectionEnrollmentId() != null;
         boolean hasCourse = request.courseSectionEnrollmentId() != null;
         if (hasProgram == hasCourse) {
@@ -33,15 +33,15 @@ public class ExamBoardRegistrationController {
                     "La inscripción tiene que referenciar exactamente una cursada: programSectionEnrollmentId O courseSectionEnrollmentId");
         }
         var registration = hasProgram
-                ? examBoardRegistrationService.inscribirProgramEnrollment(id, request.programSectionEnrollmentId())
-                : examBoardRegistrationService.inscribirCourseEnrollment(id, request.courseSectionEnrollmentId());
+                ? examBoardRegistrationService.registerProgramEnrollment(id, request.programSectionEnrollmentId())
+                : examBoardRegistrationService.registerCourseEnrollment(id, request.courseSectionEnrollmentId());
         return ExamBoardRegistrationResponse.from(registration);
     }
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        examBoardRegistrationService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        examBoardRegistrationService.withdraw(id);
     }
 }

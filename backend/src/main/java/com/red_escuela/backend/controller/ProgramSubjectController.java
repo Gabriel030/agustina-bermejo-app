@@ -40,13 +40,13 @@ public class ProgramSubjectController {
 
     @PutMapping("/program-subjects/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramSubjectResponse editarMateria(@PathVariable Long id, @RequestBody UpdateProgramSubjectRequest request) {
-        return ProgramSubjectResponse.from(programSubjectService.editarMateria(id, request));
+    public ProgramSubjectResponse updateSubject(@PathVariable Long id, @RequestBody UpdateProgramSubjectRequest request) {
+        return ProgramSubjectResponse.from(programSubjectService.updateSubject(id, request));
     }
 
     @GetMapping("/programs/{id}/subjects")
-    public List<ProgramSubjectResponse> listarPorCarrera(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
-        return programSubjectService.listarPorCarrera(id, status).stream().map(ProgramSubjectResponse::from).toList();
+    public List<ProgramSubjectResponse> listByProgram(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return programSubjectService.listByProgram(id, status).stream().map(ProgramSubjectResponse::from).toList();
     }
 
     @GetMapping("/program-subjects/{id}")
@@ -57,15 +57,15 @@ public class ProgramSubjectController {
     @PostMapping("/program-subjects/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        programSubjectService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        programSubjectService.deactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        programSubjectService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        programSubjectService.reactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/prerequisites")
@@ -76,8 +76,8 @@ public class ProgramSubjectController {
     }
 
     @GetMapping("/program-subjects/{id}/prerequisites")
-    public List<PrerequisiteResponse> listarCorrelatividades(@PathVariable Long id) {
-        return programSubjectService.listarCorrelatividades(id).stream().map(PrerequisiteResponse::from).toList();
+    public List<PrerequisiteResponse> listPrerequisites(@PathVariable Long id) {
+        return programSubjectService.listPrerequisites(id).stream().map(PrerequisiteResponse::from).toList();
     }
 
     @DeleteMapping("/program-subjects/prerequisites/{id}")

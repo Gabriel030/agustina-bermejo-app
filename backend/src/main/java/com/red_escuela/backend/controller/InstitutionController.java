@@ -25,7 +25,7 @@ public class InstitutionController {
     }
 
     @GetMapping
-    public List<InstitutionResponse> listar() {
+    public List<InstitutionResponse> list() {
         return institutionRepository.findAll().stream().map(InstitutionResponse::from).toList();
     }
 }

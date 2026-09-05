@@ -36,36 +36,36 @@ public class AttendanceChangeRequestController {
     @PostMapping("/attendance/{id}/change-requests")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public AttendanceChangeRequestResponse crear(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
+    public AttendanceChangeRequestResponse create(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        AttendanceChangeRequest created = attendanceChangeRequestService.crear(id, instructor, request);
+        AttendanceChangeRequest created = attendanceChangeRequestService.create(id, instructor, request);
         return toResponse(created);
     }
 
     @GetMapping("/attendance/change-requests")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<AttendanceChangeRequestResponse> listarPendientes(
+    public List<AttendanceChangeRequestResponse> listPending(
             @RequestParam(defaultValue = "PENDING") AttendanceChangeRequestStatus status) {
-        return attendanceChangeRequestService.listarPorEstado(status).stream().map(this::toResponse).toList();
+        return attendanceChangeRequestService.listByStatus(status).stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/me/attendance-change-requests")
     @PreAuthorize("hasRole('DOCENTE')")
     public List<AttendanceChangeRequestResponse> misSolicitudes() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return attendanceChangeRequestService.listarPropias(instructor.getId()).stream().map(this::toResponse).toList();
+        return attendanceChangeRequestService.listOwn(instructor.getId()).stream().map(this::toResponse).toList();
     }
 
     @PostMapping("/attendance/change-requests/{id}/approve")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceChangeRequestResponse aprobar(@PathVariable Long id) {
-        return toResponse(attendanceChangeRequestService.aprobar(id));
+    public AttendanceChangeRequestResponse approve(@PathVariable Long id) {
+        return toResponse(attendanceChangeRequestService.approve(id));
     }
 
     @PostMapping("/attendance/change-requests/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceChangeRequestResponse rechazar(@PathVariable Long id) {
-        return toResponse(attendanceChangeRequestService.rechazar(id));
+    public AttendanceChangeRequestResponse reject(@PathVariable Long id) {
+        return toResponse(attendanceChangeRequestService.reject(id));
     }
 
     private AttendanceChangeRequestResponse toResponse(AttendanceChangeRequest request) {

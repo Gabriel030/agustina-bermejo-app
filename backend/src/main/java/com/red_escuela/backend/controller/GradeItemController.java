@@ -50,13 +50,13 @@ public class GradeItemController {
 
     @GetMapping("/section-enrollments/{id}/grade-items")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GradeItemResponse> listarNotasProgramEnrollment(@PathVariable Long id) {
-        return gradeItemService.listarPorProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
+    public List<GradeItemResponse> listGradesByProgramEnrollment(@PathVariable Long id) {
+        return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @GetMapping("/course-section-enrollments/{id}/grade-items")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GradeItemResponse> listarNotasCourseEnrollment(@PathVariable Long id) {
-        return gradeItemService.listarPorCourseEnrollment(id).stream().map(GradeItemResponse::from).toList();
+    public List<GradeItemResponse> listGradesByCourseEnrollment(@PathVariable Long id) {
+        return gradeItemService.listByCourseEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 }

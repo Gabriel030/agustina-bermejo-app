@@ -35,47 +35,47 @@ public class InvoiceController {
     @PostMapping("/students/{id}/invoices")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public InvoiceResponse crear(@PathVariable Long id, @Valid @RequestBody CreateInvoiceRequest request) {
-        var invoice = invoiceService.crear(id, request);
+    public InvoiceResponse create(@PathVariable Long id, @Valid @RequestBody CreateInvoiceRequest request) {
+        var invoice = invoiceService.create(id, request);
         return InvoiceResponse.from(invoice, invoice.getAmount());
     }
 
     // Resuelve el precio vigente (matrícula o cuota) más descuentos/promociones
-    // aplicables, en vez del monto libre de `crear` — pensado para el flujo de
+    // aplicables, en vez del monto libre de `create` — pensado para el flujo de
     // Épica 7 Fase 3 (matrícula/primera cuota al inscribirse) y Épica 8 Fase 2
     // (cuotas regulares), no reemplaza el alta manual existente.
     @PostMapping("/students/{id}/invoices/from-fee-schedule")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public InvoiceResponse crearDesdeFeeSchedule(@PathVariable Long id, @Valid @RequestBody CreateInvoiceFromFeeScheduleRequest request) {
-        var invoice = invoiceService.crearDesdeFeeSchedule(id, request);
+    public InvoiceResponse createFromFeeSchedule(@PathVariable Long id, @Valid @RequestBody CreateInvoiceFromFeeScheduleRequest request) {
+        var invoice = invoiceService.createFromFeeSchedule(id, request);
         return InvoiceResponse.from(invoice, invoice.getAmount());
     }
 
     @GetMapping("/students/{id}/invoices")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<InvoiceResponse> listar(@PathVariable Long id) {
-        return invoiceService.listarPorAlumno(id);
+    public List<InvoiceResponse> list(@PathVariable Long id) {
+        return invoiceService.listByStudent(id);
     }
 
     @PostMapping("/invoices/{id}/payments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PaymentResponse registrarPago(@PathVariable Long id, @Valid @RequestBody RegistrarPagoRequest request) {
-        return PaymentResponse.from(paymentService.registrarPago(id, request));
+    public PaymentResponse registerPayment(@PathVariable Long id, @Valid @RequestBody RegistrarPagoRequest request) {
+        return PaymentResponse.from(paymentService.registerPayment(id, request));
     }
 
     @PostMapping("/invoices/{id}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void cancelar(@PathVariable Long id) {
-        invoiceService.cancelar(id);
+    public void cancel(@PathVariable Long id) {
+        invoiceService.cancel(id);
     }
 
     // Decisión 17, consulta — coherente con decisión 14: el Preceptor no tiene acceso a facturación.
     @GetMapping("/students/{id}/payment-standing")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public PaymentStandingResponse verEstadoDePago(@PathVariable Long id) {
-        return new PaymentStandingResponse(id, invoiceService.calcularEstadoDePago(id).name());
+        return new PaymentStandingResponse(id, invoiceService.calculatePaymentStatus(id).name());
     }
 }

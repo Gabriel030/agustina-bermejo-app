@@ -31,18 +31,18 @@ public class MeInvoiceController {
     @GetMapping("/invoices")
     public List<InvoiceResponse> misFacturas() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return invoiceService.listarPorAlumno(student.getId());
+        return invoiceService.listByStudent(student.getId());
     }
 
     @GetMapping("/invoices/debt-summary")
     public DebtSummaryResponse miResumenDeDeuda() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return invoiceService.calcularDeuda(student.getId());
+        return invoiceService.calculateDebt(student.getId());
     }
 
     @GetMapping("/payment-standing")
     public PaymentStandingResponse miEstadoDePago() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return new PaymentStandingResponse(student.getId(), invoiceService.calcularEstadoDePago(student.getId()).name());
+        return new PaymentStandingResponse(student.getId(), invoiceService.calculatePaymentStatus(student.getId()).name());
     }
 }

@@ -34,10 +34,10 @@ public class StudentController {
     // de Preceptor/Administrativo.
     @GetMapping
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<StudentResponse> listar(
+    public List<StudentResponse> list(
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus) {
-        return studentService.listar(status, onboardingStatus).stream().map(StudentResponse::from).toList();
+        return studentService.list(status, onboardingStatus).stream().map(StudentResponse::from).toList();
     }
 
     @GetMapping("/{id}")

@@ -29,21 +29,21 @@ public class ProgramEnrollmentController {
     @PostMapping("/students/{id}/program-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentResponse matricular(@PathVariable Long id, @Valid @RequestBody CreateProgramEnrollmentRequest request) {
-        return ProgramEnrollmentResponse.from(programEnrollmentService.matricular(id, request));
+    public ProgramEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateProgramEnrollmentRequest request) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.enroll(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        programEnrollmentService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        programEnrollmentService.withdraw(id);
     }
 
     @GetMapping("/students/{id}/program-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<ProgramEnrollmentResponse> listarPorAlumno(@PathVariable Long id) {
-        return programEnrollmentService.listarPorAlumno(id).stream().map(ProgramEnrollmentResponse::from).toList();
+    public List<ProgramEnrollmentResponse> listByStudent(@PathVariable Long id) {
+        return programEnrollmentService.listByStudent(id).stream().map(ProgramEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/program-enrollments/{id}")
@@ -55,7 +55,7 @@ public class ProgramEnrollmentController {
     @GetMapping("/program-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public ProgramProgressResponse verProgreso(@PathVariable Long id) {
-        return programEnrollmentService.calcularProgreso(id);
+        return programEnrollmentService.calculateProgress(id);
     }
 
     @GetMapping("/program-enrollments/{id}/attendance-summary")

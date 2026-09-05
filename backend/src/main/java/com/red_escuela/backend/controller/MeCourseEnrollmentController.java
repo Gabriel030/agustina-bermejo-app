@@ -31,6 +31,6 @@ public class MeCourseEnrollmentController {
     @GetMapping("/course-enrollments")
     public List<CourseEnrollmentResponse> misCursos() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return courseEnrollmentService.listarPorAlumno(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
+        return courseEnrollmentService.listByStudent(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
     }
 }

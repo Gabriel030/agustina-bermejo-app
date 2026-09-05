@@ -44,8 +44,8 @@ public class StaffController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public StaffResponse editarPersonal(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
-        Person person = staffService.editarPersonal(id, request);
+    public StaffResponse updateStaff(@PathVariable Long id, @Valid @RequestBody UpdateStaffRequest request) {
+        Person person = staffService.updateStaff(id, request);
         return StaffResponse.from(person, resolveStaffRole(person));
     }
 

@@ -28,21 +28,21 @@ public class CourseEnrollmentController {
     @PostMapping("/students/{id}/course-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public CourseEnrollmentResponse matricular(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
-        return CourseEnrollmentResponse.from(courseEnrollmentService.matricular(id, request));
+    public CourseEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
+        return CourseEnrollmentResponse.from(courseEnrollmentService.enroll(id, request));
     }
 
     @PostMapping("/course-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        courseEnrollmentService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        courseEnrollmentService.withdraw(id);
     }
 
     @GetMapping("/students/{id}/course-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<CourseEnrollmentResponse> listarPorAlumno(@PathVariable Long id) {
-        return courseEnrollmentService.listarPorAlumno(id).stream().map(CourseEnrollmentResponse::from).toList();
+    public List<CourseEnrollmentResponse> listByStudent(@PathVariable Long id) {
+        return courseEnrollmentService.listByStudent(id).stream().map(CourseEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/course-enrollments/{id}")
@@ -54,6 +54,6 @@ public class CourseEnrollmentController {
     @GetMapping("/course-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public CourseProgressResponse verProgreso(@PathVariable Long id) {
-        return courseEnrollmentService.calcularProgreso(id);
+        return courseEnrollmentService.calculateProgress(id);
     }
 }

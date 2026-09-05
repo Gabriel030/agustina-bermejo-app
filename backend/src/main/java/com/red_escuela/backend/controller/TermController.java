@@ -33,33 +33,33 @@ public class TermController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public TermResponse crearPeriodo(@Valid @RequestBody CreateTermRequest request) {
-        return TermResponse.from(termService.crearPeriodo(request));
+    public TermResponse createTerm(@Valid @RequestBody CreateTermRequest request) {
+        return TermResponse.from(termService.createTerm(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public TermResponse editarPeriodo(@PathVariable Long id, @RequestBody UpdateTermRequest request) {
-        return TermResponse.from(termService.editarPeriodo(id, request));
+    public TermResponse updateTerm(@PathVariable Long id, @RequestBody UpdateTermRequest request) {
+        return TermResponse.from(termService.updateTerm(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        termService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        termService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        termService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        termService.reactivate(id);
     }
 
     @GetMapping
-    public List<TermResponse> listar(@RequestParam(required = false) StatusType status) {
-        return termService.listar(status).stream().map(TermResponse::from).toList();
+    public List<TermResponse> list(@RequestParam(required = false) StatusType status) {
+        return termService.list(status).stream().map(TermResponse::from).toList();
     }
 
     @GetMapping("/{id}")

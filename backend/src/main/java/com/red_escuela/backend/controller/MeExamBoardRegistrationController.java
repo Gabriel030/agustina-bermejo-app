@@ -57,7 +57,7 @@ public class MeExamBoardRegistrationController {
 
     @GetMapping("/exam-boards")
     public List<ExamBoardResponse> mesasDisponibles(@RequestParam Long subjectId) {
-        return examBoardService.listarDisponiblesPorSubject(subjectId).stream()
+        return examBoardService.listAvailableBySubject(subjectId).stream()
                 .map(ExamBoardResponse::from)
                 .toList();
     }
@@ -65,7 +65,7 @@ public class MeExamBoardRegistrationController {
     @GetMapping("/exam-board-registrations")
     public List<MyExamBoardRegistrationResponse> misInscripciones() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return examBoardRegistrationService.listarMisInscripciones(student.getId()).stream()
+        return examBoardRegistrationService.listMyEnrollments(student.getId()).stream()
                 .map(r -> MyExamBoardRegistrationResponse.from(
                         r, gradeItemService.obtenerNotaDeMesa(r.getExamBoard().getId(), r.getProgramSubjectSectionEnrollment().getId())))
                 .toList();
@@ -73,14 +73,14 @@ public class MeExamBoardRegistrationController {
 
     @PostMapping("/exam-board-registrations")
     @ResponseStatus(HttpStatus.CREATED)
-    public ExamBoardRegistrationResponse inscribirme(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
+    public ExamBoardRegistrationResponse registerMyself(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(request.programSectionEnrollmentId());
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(request.programSectionEnrollmentId());
         }
         return ExamBoardRegistrationResponse.from(
-                examBoardRegistrationService.inscribirProgramEnrollment(request.examBoardId(), request.programSectionEnrollmentId()));
+                examBoardRegistrationService.registerProgramEnrollment(request.examBoardId(), request.programSectionEnrollmentId()));
     }
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")
@@ -92,6 +92,6 @@ public class MeExamBoardRegistrationController {
         if (enrollment == null || !enrollment.getStudent().getId().equals(student.getId())) {
             throw new ExamBoardRegistrationNotFoundException(id);
         }
-        examBoardRegistrationService.darDeBaja(id);
+        examBoardRegistrationService.withdraw(id);
     }
 }

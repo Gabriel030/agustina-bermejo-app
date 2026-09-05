@@ -41,32 +41,32 @@ public class PaymentReceiptController {
 
     @PostMapping("/invoices/{id}/payment-receipts")
     @ResponseStatus(HttpStatus.CREATED)
-    public PaymentReceiptResponse subir(@PathVariable Long id, @RequestPart MultipartFile file) {
-        return PaymentReceiptResponse.from(paymentReceiptService.subir(id, file));
+    public PaymentReceiptResponse upload(@PathVariable Long id, @RequestPart MultipartFile file) {
+        return PaymentReceiptResponse.from(paymentReceiptService.upload(id, file));
     }
 
     @GetMapping("/invoices/{id}/payment-receipts")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<PaymentReceiptResponse> listarPorFactura(@PathVariable Long id) {
-        return paymentReceiptService.listarPorFactura(id).stream().map(PaymentReceiptResponse::from).toList();
+    public List<PaymentReceiptResponse> listByInvoice(@PathVariable Long id) {
+        return paymentReceiptService.listByInvoice(id).stream().map(PaymentReceiptResponse::from).toList();
     }
 
     @GetMapping("/payment-receipts")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<PaymentReceiptResponse> listarPendientes() {
-        return paymentReceiptService.listarPendientes().stream().map(PaymentReceiptResponse::from).toList();
+    public List<PaymentReceiptResponse> listPending() {
+        return paymentReceiptService.listPending().stream().map(PaymentReceiptResponse::from).toList();
     }
 
     @PostMapping("/payment-receipts/{id}/approve")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PaymentReceiptResponse aprobar(@PathVariable Long id) {
-        return PaymentReceiptResponse.from(paymentReceiptService.aprobar(id, actor()));
+    public PaymentReceiptResponse approve(@PathVariable Long id) {
+        return PaymentReceiptResponse.from(paymentReceiptService.approve(id, actor()));
     }
 
     @PostMapping("/payment-receipts/{id}/reject")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PaymentReceiptResponse rechazar(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
-        return PaymentReceiptResponse.from(paymentReceiptService.rechazar(id, actor(), request.reason()));
+    public PaymentReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
+        return PaymentReceiptResponse.from(paymentReceiptService.reject(id, actor(), request.reason()));
     }
 
     private Person actor() {

@@ -35,33 +35,33 @@ public class CourseSectionController {
     @PostMapping("/course-subjects/{id}/sections")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public CourseSubjectSectionResponse crearComision(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
-        return CourseSubjectSectionResponse.from(sectionService.crearComision(id, request));
+    public CourseSubjectSectionResponse createSection(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
+        return CourseSubjectSectionResponse.from(sectionService.createSection(id, request));
     }
 
     @PutMapping("/course-sections/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public CourseSubjectSectionResponse editarComision(@PathVariable Long id, @RequestBody UpdateSectionRequest request) {
-        return CourseSubjectSectionResponse.from(sectionService.editarComision(id, request));
+    public CourseSubjectSectionResponse updateSection(@PathVariable Long id, @RequestBody UpdateSectionRequest request) {
+        return CourseSubjectSectionResponse.from(sectionService.updateSection(id, request));
     }
 
     @PostMapping("/course-sections/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        sectionService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        sectionService.deactivate(id);
     }
 
     @PostMapping("/course-sections/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        sectionService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        sectionService.reactivate(id);
     }
 
     @GetMapping("/course-subjects/{id}/sections")
-    public List<CourseSubjectSectionResponse> listarPorModulo(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
-        return sectionService.listarPorModulo(id, status).stream().map(CourseSubjectSectionResponse::from).toList();
+    public List<CourseSubjectSectionResponse> listByCourseSubject(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return sectionService.listByCourseSubject(id, status).stream().map(CourseSubjectSectionResponse::from).toList();
     }
 
     @GetMapping("/course-sections/{id}")
@@ -78,8 +78,8 @@ public class CourseSectionController {
     }
 
     @GetMapping("/course-sections/{id}/instructors")
-    public List<SectionInstructorResponse> listarDocentes(@PathVariable Long id) {
-        return sectionService.listarDocentes(id).stream().map(this::toResponse).toList();
+    public List<SectionInstructorResponse> listInstructors(@PathVariable Long id) {
+        return sectionService.listInstructors(id).stream().map(this::toResponse).toList();
     }
 
     @DeleteMapping("/course-sections/{id}/instructors/{assignmentId}")

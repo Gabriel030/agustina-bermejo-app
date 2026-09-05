@@ -19,7 +19,7 @@ public class InstructorController {
 
     @GetMapping("/instructors")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<InstructorSummaryResponse> listar() {
+    public List<InstructorSummaryResponse> list() {
         return instructorRepository.findAll().stream().map(InstructorSummaryResponse::from).toList();
     }
 }

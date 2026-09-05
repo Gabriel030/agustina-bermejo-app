@@ -58,23 +58,23 @@ public class MeAcademicRecordController {
     @GetMapping("/section-enrollments/{id}/attendance")
     public List<AttendanceResponse> miAsistencia(@PathVariable Long id) {
         exigirPropietario(id);
-        return attendanceService.listarPorProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
+        return attendanceService.listByProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
     }
 
     // % de ausentismo real y si eso ya supera el máximo permitido de la comisión
     // (SubjectSection.maxAbsencePercentage, política institucional real — nunca un
     // 70% fijo hardcodeado) — reusa el mismo cálculo que ya usa Preceptoría
-    // (AttendanceService.calcularRiesgoDeLibrePorProgramEnrollment), autoservicio.
+    // (AttendanceService.calculateDropoutRiskByProgramEnrollment), autoservicio.
     @GetMapping("/section-enrollments/{id}/attendance/risk")
     public AttendanceRiskResponse miRiesgoDeAsistencia(@PathVariable Long id) {
         exigirPropietario(id);
-        return attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(id);
+        return attendanceService.calculateDropoutRiskByProgramEnrollment(id);
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
     public List<GradeItemResponse> misNotas(@PathVariable Long id) {
         exigirPropietario(id);
-        return gradeItemService.listarPorProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
+        return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -90,7 +90,7 @@ public class MeAcademicRecordController {
         }
         String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", comprobante);
         String motivo = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
-        return AttendanceResponse.from(attendanceService.subirComprobante(id, motivo, relativePath));
+        return AttendanceResponse.from(attendanceService.uploadJustificationProof(id, motivo, relativePath));
     }
 
     // 404 (no 403) si la cursada no es del alumno autenticado — mismo criterio que

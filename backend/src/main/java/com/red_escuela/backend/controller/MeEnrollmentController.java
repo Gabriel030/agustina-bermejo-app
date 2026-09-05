@@ -70,12 +70,12 @@ public class MeEnrollmentController {
 
     // Épica 7 Fase 3: ya NO matricula en el momento — el pago de la primera cuota es
     // un paso bloqueante (ver spec técnica), la matriculación real recién ocurre
-    // cuando el comprobante se aprueba (PaymentReceiptService.aprobar). Multipart:
+    // cuando el comprobante se aprueba (PaymentReceiptService.approve). Multipart:
     // sectionOverrides viaja como JSON string (`{"12":5,"13":9}`) porque no hay una
     // forma razonable de mandar un Map en multipart sin agregar infra nueva.
     @PostMapping(value = "/course-enrollments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public CourseEnrollmentApplicationResponse inscribirmeAUnCurso(
+    public CourseEnrollmentApplicationResponse applyToCourse(
             @RequestParam Long courseId,
             @RequestParam(required = false) String sectionOverrides,
             @RequestPart MultipartFile comprobante) {
@@ -88,7 +88,7 @@ public class MeEnrollmentController {
     @GetMapping("/course-enrollment-applications")
     public List<CourseEnrollmentApplicationResponse> misSolicitudesDeCurso() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return courseEnrollmentApplicationService.listarPropias(student.getId()).stream()
+        return courseEnrollmentApplicationService.listOwn(student.getId()).stream()
                 .map(CourseEnrollmentApplicationResponse::from).toList();
     }
 
@@ -107,7 +107,7 @@ public class MeEnrollmentController {
     @GetMapping("/program-enrollments")
     public List<ProgramEnrollmentResponse> misMatriculaciones() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return programEnrollmentService.listarPorAlumno(student.getId()).stream()
+        return programEnrollmentService.listByStudent(student.getId()).stream()
                 .map(ProgramEnrollmentResponse::from).toList();
     }
 
@@ -116,17 +116,17 @@ public class MeEnrollmentController {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollment enrollment = programEnrollmentService.verDetalle(id);
         exigirPropietario(enrollment, student);
-        return programEnrollmentService.calcularProgreso(id);
+        return programEnrollmentService.calculateProgress(id);
     }
 
     @PostMapping("/section-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
-    public SectionEnrollmentResponse inscribirme(@Valid @RequestBody CreateOwnSectionEnrollmentRequest request) {
+    public SectionEnrollmentResponse enrollMyself(@Valid @RequestBody CreateOwnSectionEnrollmentRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollment programEnrollment = programEnrollmentService.verDetalle(request.programEnrollmentId());
         exigirPropietario(programEnrollment, student);
 
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.enroll(
                 request.programEnrollmentId(), new CreateSectionEnrollmentRequest(request.sectionId()));
         return SectionEnrollmentResponse.from(enrollment);
     }
@@ -136,7 +136,7 @@ public class MeEnrollmentController {
     public void darmeDeBaja(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
         exigirPropietario(subjectSectionEnrollmentService.verDetalle(id), student);
-        subjectSectionEnrollmentService.darDeBaja(id);
+        subjectSectionEnrollmentService.withdraw(id);
     }
 
     @PostMapping("/section-enrollments/{id}/change-section")
@@ -149,7 +149,7 @@ public class MeEnrollmentController {
     @GetMapping("/section-enrollments")
     public List<SectionEnrollmentResponse> misInscripciones() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return subjectSectionEnrollmentService.listarPorAlumno(student.getId()).stream()
+        return subjectSectionEnrollmentService.listByStudent(student.getId()).stream()
                 .map(enrollment -> SectionEnrollmentResponse.from(
                         enrollment,
                         subjectSectionEnrollmentService.resolverAnioCurricular(enrollment),

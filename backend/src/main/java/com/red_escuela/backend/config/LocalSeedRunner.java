@@ -21,7 +21,7 @@ import java.util.List;
  * para poder entrar al frontend sin pasar a mano por el flujo de
  * forgot-password/reset-password cada vez que se reinicia la base.
  *
- * A propósito NO usa PersonFactory.crearPersonBase tal cual (que deja
+ * A propósito NO usa PersonFactory.createBasePerson tal cual (que deja
  * username/password en null, forzando el flujo real de primer ingreso) — acá
  * se setea usuario/contraseña directo porque el propósito es tener una cuenta
  * lista para loguearse ya, no reproducir el flujo de alta real. Nunca se
@@ -78,7 +78,7 @@ public class LocalSeedRunner implements ApplicationRunner {
             if (personRepository.findByUsername(cuenta.username()).isPresent()) {
                 continue;
             }
-            Person person = personFactory.crearPersonBase(
+            Person person = personFactory.createBasePerson(
                     cuenta.nombre(), cuenta.apellido(), cuenta.username() + "@demo.local");
             person.setUsername(cuenta.username());
             person.setPassword(passwordEncoder.encode(PASSWORD_DEMO));

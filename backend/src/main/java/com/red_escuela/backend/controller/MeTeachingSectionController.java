@@ -25,6 +25,6 @@ public class MeTeachingSectionController {
     @PreAuthorize("hasRole('DOCENTE')")
     public List<TeachingSectionResponse> misComisiones() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return teachingSectionService.listarPorInstructor(instructor.getId());
+        return teachingSectionService.listByInstructor(instructor.getId());
     }
 }

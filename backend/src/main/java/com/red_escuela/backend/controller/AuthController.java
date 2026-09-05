@@ -45,7 +45,7 @@ public class AuthController {
         if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
             throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
         }
-        AuthTokens tokens = registrationService.registrar(request);
+        AuthTokens tokens = registrationService.register(request);
         return AuthResponse.from(tokens);
     }
 
@@ -74,7 +74,7 @@ public class AuthController {
         if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
             throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
         }
-        AuthTokens tokens = registrationService.registrarConGoogle(request.idToken(), request.institutionId());
+        AuthTokens tokens = registrationService.registerWithGoogle(request.idToken(), request.institutionId());
         return AuthResponse.from(tokens);
     }
 

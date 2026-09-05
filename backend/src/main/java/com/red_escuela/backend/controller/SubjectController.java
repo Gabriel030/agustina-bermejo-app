@@ -33,33 +33,33 @@ public class SubjectController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public SubjectResponse crearMateria(@Valid @RequestBody CreateSubjectRequest request) {
-        return SubjectResponse.from(subjectService.crearMateria(request));
+    public SubjectResponse createSubject(@Valid @RequestBody CreateSubjectRequest request) {
+        return SubjectResponse.from(subjectService.createSubject(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public SubjectResponse editarMateria(@PathVariable Long id, @RequestBody UpdateSubjectRequest request) {
-        return SubjectResponse.from(subjectService.editarMateria(id, request));
+    public SubjectResponse updateSubject(@PathVariable Long id, @RequestBody UpdateSubjectRequest request) {
+        return SubjectResponse.from(subjectService.updateSubject(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        subjectService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        subjectService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        subjectService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        subjectService.reactivate(id);
     }
 
     @GetMapping
-    public List<SubjectResponse> listar(@RequestParam(required = false) StatusType status) {
-        return subjectService.listar(status).stream().map(SubjectResponse::from).toList();
+    public List<SubjectResponse> list(@RequestParam(required = false) StatusType status) {
+        return subjectService.list(status).stream().map(SubjectResponse::from).toList();
     }
 
     @GetMapping("/{id}")

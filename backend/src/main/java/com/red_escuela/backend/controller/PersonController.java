@@ -26,7 +26,7 @@ public class PersonController {
     }
 
     @PutMapping
-    public PersonResponse actualizarDatosPropios(@Valid @RequestBody UpdateOwnProfileRequest request) {
-        return PersonResponse.from(personProfileService.actualizarDatosPropios(request));
+    public PersonResponse updateOwnData(@Valid @RequestBody UpdateOwnProfileRequest request) {
+        return PersonResponse.from(personProfileService.updateOwnData(request));
     }
 }

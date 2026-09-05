@@ -28,15 +28,15 @@ public class SubjectSectionEnrollmentController {
     @PostMapping("/program-enrollments/{id}/section-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SectionEnrollmentResponse inscribir(@PathVariable Long id, @Valid @RequestBody CreateSectionEnrollmentRequest request) {
-        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.inscribir(id, request));
+    public SectionEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateSectionEnrollmentRequest request) {
+        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.enroll(id, request));
     }
 
     @PostMapping("/section-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        subjectSectionEnrollmentService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        subjectSectionEnrollmentService.withdraw(id);
     }
 
     @PostMapping("/section-enrollments/{id}/change-section")
@@ -47,7 +47,7 @@ public class SubjectSectionEnrollmentController {
 
     @GetMapping("/program-enrollments/{id}/section-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<SectionEnrollmentResponse> listarPorMatriculacion(@PathVariable Long id) {
-        return subjectSectionEnrollmentService.listarPorMatriculacion(id).stream().map(SectionEnrollmentResponse::from).toList();
+    public List<SectionEnrollmentResponse> listByEnrollment(@PathVariable Long id) {
+        return subjectSectionEnrollmentService.listByEnrollment(id).stream().map(SectionEnrollmentResponse::from).toList();
     }
 }

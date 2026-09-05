@@ -27,33 +27,33 @@ public class GraduationRequestController {
 
     @PostMapping("/graduation-requests/{id}/verify-debt")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public GraduationRequestResponse verificarDeuda(@PathVariable Long id) {
-        return GraduationRequestResponse.from(graduationRequestService.verificarDeuda(id));
+    public GraduationRequestResponse verifyDebt(@PathVariable Long id) {
+        return GraduationRequestResponse.from(graduationRequestService.verifyDebt(id));
     }
 
     @PostMapping("/graduation-requests/{id}/approve")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public GraduationRequestResponse aprobar(@PathVariable Long id) {
-        return GraduationRequestResponse.from(graduationRequestService.aprobar(id));
+    public GraduationRequestResponse approve(@PathVariable Long id) {
+        return GraduationRequestResponse.from(graduationRequestService.approve(id));
     }
 
     @PostMapping("/graduation-requests/{id}/reject")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public GraduationRequestResponse rechazar(@PathVariable Long id, @Valid @RequestBody RejectGraduationRequestRequest request) {
-        return GraduationRequestResponse.from(graduationRequestService.rechazar(id, request.motivo()));
+    public GraduationRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectGraduationRequestRequest request) {
+        return GraduationRequestResponse.from(graduationRequestService.reject(id, request.motivo()));
     }
 
     @GetMapping("/program-enrollments/{id}/graduation-requests")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GraduationRequestResponse> listar(@PathVariable Long id) {
-        return graduationRequestService.listarPorProgramEnrollment(id).stream()
+    public List<GraduationRequestResponse> list(@PathVariable Long id) {
+        return graduationRequestService.listByProgramEnrollment(id).stream()
                 .map(GraduationRequestResponse::from).toList();
     }
 
     @GetMapping("/graduation-requests")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GraduationRequestResponse> listarPorStatus(@RequestParam GraduationRequestStatus status) {
-        return graduationRequestService.listar(status).stream().map(GraduationRequestResponse::from).toList();
+    public List<GraduationRequestResponse> listByStatus(@RequestParam GraduationRequestStatus status) {
+        return graduationRequestService.list(status).stream().map(GraduationRequestResponse::from).toList();
     }
 
     @GetMapping("/graduation-requests/{id}")

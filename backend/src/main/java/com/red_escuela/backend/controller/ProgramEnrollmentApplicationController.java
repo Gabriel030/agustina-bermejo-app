@@ -63,7 +63,7 @@ public class ProgramEnrollmentApplicationController {
     @GetMapping("/me/program-enrollment-applications")
     public List<ProgramEnrollmentApplicationResponse> misSolicitudes() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return applicationService.listarPropias(student.getId()).stream()
+        return applicationService.listOwn(student.getId()).stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
     }
 
@@ -78,24 +78,24 @@ public class ProgramEnrollmentApplicationController {
 
     @GetMapping("/program-enrollment-applications")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<ProgramEnrollmentApplicationResponse> listarPendientes() {
-        return applicationService.listarPendientes().stream()
+    public List<ProgramEnrollmentApplicationResponse> listPending() {
+        return applicationService.listPending().stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
     }
 
     @PostMapping("/program-enrollment-applications/{id}/approve")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentApplicationResponse aprobar(@PathVariable Long id) {
+    public ProgramEnrollmentApplicationResponse approve(@PathVariable Long id) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
-        return ProgramEnrollmentApplicationResponse.from(applicationService.aprobar(id, decidedBy));
+        return ProgramEnrollmentApplicationResponse.from(applicationService.approve(id, decidedBy));
     }
 
     @PostMapping("/program-enrollment-applications/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentApplicationResponse rechazar(
+    public ProgramEnrollmentApplicationResponse reject(
             @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
-        return ProgramEnrollmentApplicationResponse.from(applicationService.rechazar(id, decidedBy, request.reason()));
+        return ProgramEnrollmentApplicationResponse.from(applicationService.reject(id, decidedBy, request.reason()));
     }
 
     // Mismo patrón que MeEnrollmentController.exigirPropietario: 404 (no 403) para
