@@ -93,6 +93,12 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     @Autowired
     private PriceRevisionRepository priceRevisionRepository;
 
+    @Autowired
+    private CourseEnrollmentService courseEnrollmentService;
+
+    @Autowired
+    private com.red_escuela.backend.repository.ScholarshipRepository scholarshipRepository;
+
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -123,6 +129,10 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     private Course persistCourse(Person director, BigDecimal precio) {
+        return persistCourse(director, precio, null);
+    }
+
+    private Course persistCourse(Person director, BigDecimal precio, Integer durationMonths) {
         Term term = new Term();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
@@ -134,6 +144,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         course.setName("Curso de prueba " + System.nanoTime());
         course.setTerm(term);
         course.setIsActive(StatusType.ACTIVE);
+        course.setDurationMonths(durationMonths);
         course = courseRepository.save(course);
 
         PriceRevision priceRevision = new PriceRevision();
@@ -175,7 +186,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(null, BigDecimal.ONE), "Beca completa", LocalDate.now(), null));
+                new MonetaryAdjustmentValueRequest(null, BigDecimal.ONE), "Beca completa", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
 
@@ -193,7 +204,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.30)), "Beca 30%", LocalDate.now(), null));
+                new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.30)), "Beca 30%", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
 
@@ -212,7 +223,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(5000), null), "Beca fija $5.000", LocalDate.now(), null));
+                new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(5000), null), "Beca fija $5.000", 3));
 
         // Sube el precio del curso (nuevo PriceRevision).
         PriceRevision aumento = new PriceRevision();
@@ -290,5 +301,55 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
         assertThat(reloaded.getAdjustments()).isEmpty();
+    }
+
+    @Test
+    void otorgarBecaConMasCuotasQueLaDuracionDelCursoSeRechaza() {
+        Person director = persistPerson("director.scholarship6." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000), 3);
+        CourseEnrollment enrollment = persistCourseEnrollment("88000006", course);
+        seleccionarPlanMensual(enrollment, director);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> scholarshipService.grantForCourse(enrollment.getId(),
+                        new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 5)))
+                .isInstanceOf(com.red_escuela.backend.exception.ScholarshipExceedsCohortSpanException.class);
+    }
+
+    @Test
+    void unSegundoOtorgamientoMientrasHayUnaBecaActivaSeRechazaPorElConstraintDeBase() {
+        Person director = persistPerson("director.scholarship8." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        CourseEnrollment enrollment = persistCourseEnrollment("88000008", course);
+        seleccionarPlanMensual(enrollment, director);
+
+        scholarshipService.grantForCourse(enrollment.getId(),
+                new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> scholarshipService.grantForCourse(enrollment.getId(),
+                        new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 2)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void darDeBajaCancelaLosInstallmentsPendientesDeLaBeca() {
+        Person director = persistPerson("director.scholarship7." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        CourseEnrollment enrollment = persistCourseEnrollment("88000007", course);
+        seleccionarPlanMensual(enrollment, director);
+
+        var scholarship = scholarshipService.grantForCourse(enrollment.getId(),
+                new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
+
+        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        courseEnrollmentService.darDeBaja(enrollment.getId());
+
+        var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(com.red_escuela.backend.entity.ScholarshipStatus.INACTIVE);
+        assertThat(reloaded.getInstallments())
+                .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.entity.InstallmentStatus.CANCELLED)
+                .hasSize(2);
+        assertThat(reloaded.getInstallments())
+                .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.entity.InstallmentStatus.APPLIED)
+                .hasSize(1);
     }
 }

@@ -1,15 +1,15 @@
 package com.red_escuela.backend.dto;
 
+import com.red_escuela.backend.entity.InstallmentStatus;
 import com.red_escuela.backend.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.entity.Scholarship;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record ScholarshipResponse(
-        Long id, String valueType, BigDecimal valueAmount, String reason, LocalDate validFrom, LocalDate validUntil,
-        String grantedByName, LocalDateTime grantedAt) {
+        Long id, String valueType, BigDecimal valueAmount, String reason, String status, int totalInstallments,
+        int remainingInstallments, String grantedByName, LocalDateTime grantedAt) {
 
     public static ScholarshipResponse from(Scholarship scholarship) {
         MonetaryAdjustmentValue value = scholarship.getValue();
@@ -17,9 +17,13 @@ public record ScholarshipResponse(
         BigDecimal valueAmount = value instanceof MonetaryAdjustmentValue.FixedAmount fixed
                 ? fixed.amount()
                 : ((MonetaryAdjustmentValue.PercentageAmount) value).percentage();
+        int remaining = (int) scholarship.getInstallments().stream()
+                .filter(installment -> installment.getStatus() == InstallmentStatus.PENDING)
+                .count();
         return new ScholarshipResponse(
-                scholarship.getId(), valueType, valueAmount, scholarship.getReason(), scholarship.getValidFrom(),
-                scholarship.getValidUntil(), scholarship.getGrantedBy().getName() + " " + scholarship.getGrantedBy().getLastname(),
+                scholarship.getId(), valueType, valueAmount, scholarship.getReason(), scholarship.getStatus().name(),
+                scholarship.getInstallments().size(), remaining,
+                scholarship.getGrantedBy().getName() + " " + scholarship.getGrantedBy().getLastname(),
                 scholarship.getGrantedAt());
     }
 }

@@ -62,6 +62,7 @@ public class ProgramEnrollmentService {
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final AttendanceService attendanceService;
     private final StudentDebtResolutionService studentDebtResolutionService;
+    private final ScholarshipService scholarshipService;
 
     public ProgramEnrollmentService(
             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -72,7 +73,8 @@ public class ProgramEnrollmentService {
             ProgramElectiveGroupRepository programElectiveGroupRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceService attendanceService, StudentDebtResolutionService studentDebtResolutionService) {
+            AttendanceService attendanceService, StudentDebtResolutionService studentDebtResolutionService,
+            ScholarshipService scholarshipService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -83,6 +85,7 @@ public class ProgramEnrollmentService {
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.attendanceService = attendanceService;
         this.studentDebtResolutionService = studentDebtResolutionService;
+        this.scholarshipService = scholarshipService;
     }
 
     @Transactional
@@ -144,6 +147,7 @@ public class ProgramEnrollmentService {
         // una baja de carrera no borra el historial de cursadas del alumno.
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
         programEnrollmentRepository.save(enrollment);
+        scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
     }
 
     public ProgramEnrollment verDetalle(Long id) {

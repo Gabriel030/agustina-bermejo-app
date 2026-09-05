@@ -96,6 +96,7 @@ public class GlobalExceptionHandler {
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
             ProgramYearBillingTemplateExceedsTermSpanException.class,
+            ScholarshipExceedsCohortSpanException.class,
             // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
             // combination by throwing IllegalArgumentException from its own constructors — mapped
             // here rather than wrapped in a domain exception, since the Value Object itself is the

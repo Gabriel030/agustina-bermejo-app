@@ -239,8 +239,8 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         scholarship.setProgramEnrollment(cicloViejo);
         scholarship.setValue(new com.red_escuela.backend.entity.MonetaryAdjustmentValue.FixedAmount(BigDecimal.valueOf(2000)));
         scholarship.setReason("Beca del ciclo viejo");
-        scholarship.setValidFrom(LocalDate.now().minusMonths(6));
         scholarship.setGrantedBy(director);
+        scholarship.addInstallments(3);
         scholarshipRepository.save(scholarship);
 
         studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);

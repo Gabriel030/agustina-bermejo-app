@@ -54,6 +54,7 @@ public class CourseEnrollmentService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
+    private final ScholarshipService scholarshipService;
 
     public CourseEnrollmentService(
             CourseEnrollmentRepository courseEnrollmentRepository,
@@ -62,7 +63,8 @@ public class CourseEnrollmentService {
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService) {
+            PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
+            ScholarshipService scholarshipService) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -71,6 +73,7 @@ public class CourseEnrollmentService {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
+        this.scholarshipService = scholarshipService;
     }
 
     // Épica 7: variante para MeEnrollmentController (autoservicio). No se agrega el
@@ -242,6 +245,7 @@ public class CourseEnrollmentService {
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
+        scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());
