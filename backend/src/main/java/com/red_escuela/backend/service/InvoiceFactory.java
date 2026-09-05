@@ -57,7 +57,9 @@ public class InvoiceFactory {
         Invoice invoice = saveIdempotently(construirParaCurso(courseEnrollment, selection, feeType, period, dueDate));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByCourseEnrollmentIdForUpdate(courseEnrollment.getId()));
-            applyActivePromotionIfPresent(invoice, selection);
+            if (selection != null) {
+                applyActivePromotionIfPresent(invoice, selection);
+            }
         }
         return invoice;
     }
@@ -80,7 +82,9 @@ public class InvoiceFactory {
         Invoice invoice = saveIdempotently(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
-            applyActivePromotionIfPresent(invoice, selection);
+            if (selection != null) {
+                applyActivePromotionIfPresent(invoice, selection);
+            }
         }
         return invoice;
     }

@@ -75,6 +75,7 @@ public class PromotionService {
         promotionRepository.save(promotion);
     }
 
+    @Transactional(readOnly = true)
     public List<Promotion> findActive() {
         return promotionRepository.findByStatus(PromotionStatus.ACTIVE);
     }
@@ -105,6 +106,7 @@ public class PromotionService {
     // ya se cerró (effectiveTo != null) y todavía tenía cuotas de descuento sin usar cuando se
     // cortó. No se persiste como estado propio: se recalcula siempre contra la realidad de
     // InvoiceAdjustment, mismo criterio que getAmountDue().
+    @Transactional(readOnly = true)
     public List<LostPromotionBenefitResponse> findLostBenefits() {
         return promotionRedemptionRepository.findAll().stream()
                 .filter(redemption -> redemption.getPaymentPlanSelection().getEffectiveTo() != null)
