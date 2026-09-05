@@ -114,46 +114,46 @@ public class InvoiceService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
 
-        boolean tienePrograma = request.programId() != null;
-        boolean tieneCurso = request.courseId() != null;
-        if (tienePrograma == tieneCurso) {
+        boolean hasProgram = request.programId() != null;
+        boolean hasCourse = request.courseId() != null;
+        if (hasProgram == hasCourse) {
             throw new InvalidPricingTargetException(
                     "Hay que indicar exactamente una carrera o un curso, no los dos ni ninguno");
         }
 
-        LocalDate hoy = LocalDate.now();
-        String conceptoTexto;
+        LocalDate today = LocalDate.now();
+        String conceptText;
         FeeSchedule feeSchedule;
-        List<Promotion> promocionesVigentes;
-        if (tienePrograma) {
+        List<Promotion> activePromotions;
+        if (hasProgram) {
             Program program = programRepository.findById(request.programId())
                     .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
-            feeSchedule = feeScheduleService.validForProgram(program.getId(), request.concept(), hoy);
-            promocionesVigentes = promotionService.vigentesParaPrograma(program.getId(), hoy);
-            conceptoTexto = (request.concept() == FeeScheduleConcept.MATRICULA
+            feeSchedule = feeScheduleService.validForProgram(program.getId(), request.concept(), today);
+            activePromotions = promotionService.vigentesParaPrograma(program.getId(), today);
+            conceptText = (request.concept() == FeeScheduleConcept.MATRICULA
                     ? "Matrícula — " : "Cuota — ") + program.getName();
         } else {
             Course course = courseRepository.findById(request.courseId())
                     .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
-            feeSchedule = feeScheduleService.validForCourse(course.getId(), request.concept(), hoy);
-            promocionesVigentes = promotionService.vigentesParaCurso(course.getId(), hoy);
-            conceptoTexto = "Cuota — " + course.getName();
+            feeSchedule = feeScheduleService.validForCourse(course.getId(), request.concept(), today);
+            activePromotions = promotionService.vigentesParaCurso(course.getId(), today);
+            conceptText = "Cuota — " + course.getName();
         }
 
         // Matrícula de la segunda cohorte del año (quien entra a mitad de año) va
         // al 50% ANTES de aplicar descuentos/promociones (spec técnica Épica 8
         // Fase 2, decisión 6) — el resto de conceptos no tiene cohorte asociada.
-        BigDecimal montoBase = (request.concept() == FeeScheduleConcept.MATRICULA && cohort != null)
+        BigDecimal baseAmount = (request.concept() == FeeScheduleConcept.MATRICULA && cohort != null)
                 ? PricingCalculator.calculateEnrollmentFeeAmount(feeSchedule.getAmount(), cohort)
                 : feeSchedule.getAmount();
 
-        List<Discount> descuentosVigentes = discountService.vigentesParaAlumno(studentId, hoy);
-        BigDecimal montoFinal = PricingCalculator.calculateFinalAmount(montoBase, descuentosVigentes, promocionesVigentes);
+        List<Discount> activeDiscounts = discountService.vigentesParaAlumno(studentId, today);
+        BigDecimal finalAmount = PricingCalculator.calculateFinalAmount(baseAmount, activeDiscounts, activePromotions);
 
         Invoice invoice = new Invoice();
         invoice.setStudent(student);
-        invoice.setConcept(conceptoTexto);
-        invoice.setAmount(montoFinal);
+        invoice.setConcept(conceptText);
+        invoice.setAmount(finalAmount);
         invoice.setDueDate(request.dueDate());
         invoice.setIssuedAt(LocalDateTime.now());
         invoice.setStatus(InvoiceStatus.PENDING);
@@ -200,18 +200,18 @@ public class InvoiceService {
     // Decisión 3: siempre calculado on-demand, nunca un campo persistido — una factura recién
     // pagada se refleja inmediatamente, sin job ni sincronización posterior.
     public DebtSummaryResponse calculateDebt(Long studentId) {
-        List<Invoice> pendientes = invoiceRepository.findByStudentIdAndStatusIn(
+        List<Invoice> pendingInvoices = invoiceRepository.findByStudentIdAndStatusIn(
                 studentId, List.of(InvoiceStatus.PENDING, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE));
 
-        BigDecimal montoAdeudado = pendientes.stream()
+        BigDecimal owedAmount = pendingInvoices.stream()
                 .map(this::calculatePendingBalance)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        List<InvoiceResponse> facturasPendientes = pendientes.stream()
+        List<InvoiceResponse> pendingInvoiceResponses = pendingInvoices.stream()
                 .map(invoice -> InvoiceResponse.from(invoice, calculatePendingBalance(invoice)))
                 .toList();
 
-        return new DebtSummaryResponse(montoAdeudado.compareTo(BigDecimal.ZERO) > 0, montoAdeudado, facturasPendientes);
+        return new DebtSummaryResponse(owedAmount.compareTo(BigDecimal.ZERO) > 0, owedAmount, pendingInvoiceResponses);
     }
 
     /**
@@ -221,23 +221,23 @@ public class InvoiceService {
      * como vencida acá mismo, on-demand, sin necesitar que la base ya la tenga en OVERDUE.
      */
     public PaymentStanding calculatePaymentStatus(Long studentId) {
-        List<Invoice> todasLasFacturas = invoiceRepository.findByStudentId(studentId);
-        if (todasLasFacturas.isEmpty()) {
+        List<Invoice> allInvoices = invoiceRepository.findByStudentId(studentId);
+        if (allInvoices.isEmpty()) {
             return PaymentStanding.SIN_INFORMACION;
         }
-        LocalDate hoy = LocalDate.now();
-        boolean hayVencidaImpaga = todasLasFacturas.stream().anyMatch(invoice ->
+        LocalDate today = LocalDate.now();
+        boolean hasUnpaidOverdue = allInvoices.stream().anyMatch(invoice ->
                 invoice.getStatus() == InvoiceStatus.OVERDUE
                         || ((invoice.getStatus() == InvoiceStatus.PENDING || invoice.getStatus() == InvoiceStatus.PARTIALLY_PAID)
-                                && invoice.getDueDate().isBefore(hoy)));
-        return hayVencidaImpaga ? PaymentStanding.MOROSO : PaymentStanding.AL_DIA;
+                                && invoice.getDueDate().isBefore(today)));
+        return hasUnpaidOverdue ? PaymentStanding.MOROSO : PaymentStanding.AL_DIA;
     }
 
     BigDecimal calculatePendingBalance(Invoice invoice) {
-        BigDecimal pagado = paymentRepository.findByInvoiceId(invoice.getId()).stream()
+        BigDecimal paidAmount = paymentRepository.findByInvoiceId(invoice.getId()).stream()
                 .map(payment -> payment.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return invoice.getAmount().subtract(pagado);
+        return invoice.getAmount().subtract(paidAmount);
     }
 
     Invoice findOrThrow(Long id) {

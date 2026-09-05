@@ -10,11 +10,11 @@ import java.util.Optional;
 
 public interface FeeScheduleRepository extends JpaRepository<FeeSchedule, Long> {
 
-    List<FeeSchedule> findAllByOrderByVigenteDesdeDesc();
+    List<FeeSchedule> findAllByOrderByValidFromDesc();
 
-    Optional<FeeSchedule> findFirstByProgramIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(
-            Long programId, FeeScheduleConcept concept, LocalDate fecha);
+    Optional<FeeSchedule> findFirstByProgramIdAndConceptAndValidFromLessThanEqualOrderByValidFromDesc(
+            Long programId, FeeScheduleConcept concept, LocalDate date);
 
-    Optional<FeeSchedule> findFirstByCourseIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(
-            Long courseId, FeeScheduleConcept concept, LocalDate fecha);
+    Optional<FeeSchedule> findFirstByCourseIdAndConceptAndValidFromLessThanEqualOrderByValidFromDesc(
+            Long courseId, FeeScheduleConcept concept, LocalDate date);
 }

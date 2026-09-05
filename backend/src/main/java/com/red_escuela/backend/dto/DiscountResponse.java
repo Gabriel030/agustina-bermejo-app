@@ -11,7 +11,7 @@ public record DiscountResponse(
 
     public static DiscountResponse from(Discount discount) {
         return new DiscountResponse(
-                discount.getId(), discount.getStudent().getId(), discount.getTipo().name(), discount.getValor(),
-                discount.getVigenteDesde(), discount.getVigenteHasta(), discount.getMotivo());
+                discount.getId(), discount.getStudent().getId(), discount.getType().name(), discount.getAmount(),
+                discount.getValidFrom(), discount.getValidUntil(), discount.getReason());
     }
 }

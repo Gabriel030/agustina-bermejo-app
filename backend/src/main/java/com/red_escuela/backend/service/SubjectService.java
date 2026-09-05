@@ -39,8 +39,8 @@ public class SubjectService {
     // migración arrancó en 1001) — quien da de alta la materia no lo elige, ver
     // comentario en Subject.java.
     private String generateNextCode() {
-        int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
-        return String.format("%04d", ultimo + 1);
+        int last = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
+        return String.format("%04d", last + 1);
     }
 
     @Transactional

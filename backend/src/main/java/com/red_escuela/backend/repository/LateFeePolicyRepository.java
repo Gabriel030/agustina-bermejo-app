@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface LateFeePolicyRepository extends JpaRepository<LateFeePolicy, Long> {
 
-    List<LateFeePolicy> findAllByOrderByVigenteDesdeDesc();
+    List<LateFeePolicy> findAllByOrderByValidFromDesc();
 
-    Optional<LateFeePolicy> findFirstByVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(LocalDate fecha);
+    Optional<LateFeePolicy> findFirstByValidFromLessThanEqualOrderByValidFromDesc(LocalDate date);
 }

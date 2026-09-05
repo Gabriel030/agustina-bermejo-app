@@ -27,13 +27,13 @@ public class PersonFactory {
     }
 
     @Transactional
-    public Person createBasePerson(String nombre, String apellido, String email) {
+    public Person createBasePerson(String firstName, String lastName, String email) {
         Address address = new Address();
         addressRepository.save(address);
 
         Person person = new Person();
-        person.setName(nombre);
-        person.setLastname(apellido);
+        person.setName(firstName);
+        person.setLastname(lastName);
         person.setEmail(email);
         person.setAddress(address);
         person.setAuthProvider(AuthProvider.LOCAL);
@@ -55,10 +55,10 @@ public class PersonFactory {
      */
     @Transactional
     public Person createPersonWithCredentials(
-            String nombre, String apellido, String email, String username, String passwordHasheada) {
-        Person person = createBasePerson(nombre, apellido, email);
+            String firstName, String lastName, String email, String username, String hashedPassword) {
+        Person person = createBasePerson(firstName, lastName, email);
         person.setUsername(username);
-        person.setPassword(passwordHasheada);
+        person.setPassword(hashedPassword);
         return personRepository.save(person);
     }
 
@@ -68,8 +68,8 @@ public class PersonFactory {
      * email (mismo criterio que el registro independiente, no hay campo de usuario separado).
      */
     @Transactional
-    public Person createPersonWithGoogle(String nombre, String apellido, String email, String googleSubjectId) {
-        Person person = createBasePerson(nombre, apellido, email);
+    public Person createPersonWithGoogle(String firstName, String lastName, String email, String googleSubjectId) {
+        Person person = createBasePerson(firstName, lastName, email);
         person.setUsername(email);
         person.setAuthProvider(AuthProvider.GOOGLE);
         person.setGoogleSubjectId(googleSubjectId);

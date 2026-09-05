@@ -44,20 +44,20 @@ public class FeeScheduleService {
 
     @Transactional
     public FeeSchedule create(CreateFeeScheduleRequest request, Person createdBy) {
-        boolean tieneProgram = request.programId() != null;
-        boolean tieneCourse = request.courseId() != null;
-        if (tieneProgram == tieneCourse) {
+        boolean hasProgram = request.programId() != null;
+        boolean hasCourse = request.courseId() != null;
+        if (hasProgram == hasCourse) {
             throw new InvalidPricingTargetException(
                     "Un FeeSchedule tiene que referenciar exactamente una carrera o un curso, no los dos ni ninguno");
         }
         // Un curso nunca tiene matrícula — es la regla de negocio central de esta
         // entidad (ver decisión "para un curso, la primera cuota es la matrícula").
-        if (tieneCourse && request.concept() == FeeScheduleConcept.MATRICULA) {
+        if (hasCourse && request.concept() == FeeScheduleConcept.MATRICULA) {
             throw new InvalidPricingTargetException("Un curso no tiene matrícula, solo cuota mensual");
         }
 
         FeeSchedule feeSchedule = new FeeSchedule();
-        if (tieneProgram) {
+        if (hasProgram) {
             Program program = programRepository.findById(request.programId())
                     .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
             feeSchedule.setProgram(program);
@@ -68,25 +68,25 @@ public class FeeScheduleService {
         }
         feeSchedule.setConcept(request.concept());
         feeSchedule.setAmount(request.amount());
-        feeSchedule.setVigenteDesde(request.vigenteDesde());
+        feeSchedule.setValidFrom(request.vigenteDesde());
         feeSchedule.setCreatedBy(createdBy);
         feeSchedule.setCreatedAt(LocalDateTime.now());
         return feeScheduleRepository.save(feeSchedule);
     }
 
     public List<FeeSchedule> list() {
-        return feeScheduleRepository.findAllByOrderByVigenteDesdeDesc();
+        return feeScheduleRepository.findAllByOrderByValidFromDesc();
     }
 
-    public FeeSchedule validForProgram(Long programId, FeeScheduleConcept concept, LocalDate fecha) {
+    public FeeSchedule validForProgram(Long programId, FeeScheduleConcept concept, LocalDate date) {
         return feeScheduleRepository
-                .findFirstByProgramIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(programId, concept, fecha)
+                .findFirstByProgramIdAndConceptAndValidFromLessThanEqualOrderByValidFromDesc(programId, concept, date)
                 .orElseThrow(() -> new FeeScheduleNotFoundException("program " + programId + ", concepto " + concept));
     }
 
-    public FeeSchedule validForCourse(Long courseId, FeeScheduleConcept concept, LocalDate fecha) {
+    public FeeSchedule validForCourse(Long courseId, FeeScheduleConcept concept, LocalDate date) {
         return feeScheduleRepository
-                .findFirstByCourseIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(courseId, concept, fecha)
+                .findFirstByCourseIdAndConceptAndValidFromLessThanEqualOrderByValidFromDesc(courseId, concept, date)
                 .orElseThrow(() -> new FeeScheduleNotFoundException("course " + courseId + ", concepto " + concept));
     }
 
@@ -101,13 +101,13 @@ public class FeeScheduleService {
      * (ej. la pantalla de Detalle, antes de arrancar el wizard), devuelve el
      * monto base sin prorratear.
      */
-    public BigDecimal currentEnrollmentFeeAmount(Long programId, Integer ordenEnAnioCohorte, LocalDate fecha) {
-        FeeSchedule feeSchedule = validForProgram(programId, FeeScheduleConcept.MATRICULA, fecha);
-        if (ordenEnAnioCohorte == null) {
+    public BigDecimal currentEnrollmentFeeAmount(Long programId, Integer orderInCohortYear, LocalDate date) {
+        FeeSchedule feeSchedule = validForProgram(programId, FeeScheduleConcept.MATRICULA, date);
+        if (orderInCohortYear == null) {
             return feeSchedule.getAmount();
         }
-        ProgramCohort cohorteTransitoria = new ProgramCohort();
-        cohorteTransitoria.setOrdenEnAnio(ordenEnAnioCohorte);
-        return PricingCalculator.calculateEnrollmentFeeAmount(feeSchedule.getAmount(), cohorteTransitoria);
+        ProgramCohort transientCohort = new ProgramCohort();
+        transientCohort.setOrderInYear(orderInCohortYear);
+        return PricingCalculator.calculateEnrollmentFeeAmount(feeSchedule.getAmount(), transientCohort);
     }
 }

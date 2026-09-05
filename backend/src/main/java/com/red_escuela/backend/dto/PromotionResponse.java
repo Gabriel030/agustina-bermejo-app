@@ -14,7 +14,7 @@ public record PromotionResponse(
                 promotion.getId(),
                 promotion.getProgram() == null ? null : promotion.getProgram().getId(),
                 promotion.getCourse() == null ? null : promotion.getCourse().getId(),
-                promotion.getTipo().name(), promotion.getValor(),
-                promotion.getVigenteDesde(), promotion.getVigenteHasta());
+                promotion.getType().name(), promotion.getAmount(),
+                promotion.getValidFrom(), promotion.getValidUntil());
     }
 }

@@ -70,8 +70,8 @@ public class CertificateService {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
         Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programEnrollmentService.hasActiveEnrollment(programEnrollmentId);
-        if (!cursandoAlgo) {
+        boolean hasActiveCourse = programEnrollmentService.hasActiveEnrollment(programEnrollmentId);
+        if (!hasActiveCourse) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
         PaymentStanding standing = invoiceService.calculatePaymentStatus(student.getId());
@@ -80,10 +80,10 @@ public class CertificateService {
         }
 
         Person person = student.getPerson();
-        String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
+        String text = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
                 + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
-        byte[] pdf = generatePdf("Constancia de alumno regular", texto);
+        byte[] pdf = generatePdf("Constancia de alumno regular", text);
         registerIssuance(enrollment, CertificateType.REGULAR_STUDENT);
         return pdf;
     }
@@ -92,20 +92,20 @@ public class CertificateService {
     public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
+        List<ProgramSubject> approvedSubjects = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 
-        StringBuilder texto = new StringBuilder(
+        StringBuilder text = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
                         + " (DNI " + person.getDni() + "), alumno/a de la carrera "
                         + enrollment.getProgram().getName() + ", tiene aprobadas las siguientes materias:");
-        if (aprobadas.isEmpty()) {
-            texto.append(" ninguna materia aprobada todavía.");
+        if (approvedSubjects.isEmpty()) {
+            text.append(" ninguna materia aprobada todavía.");
         } else {
-            for (ProgramSubject entrada : aprobadas) {
-                texto.append("\n- ").append(entrada.getSubject().getName());
+            for (ProgramSubject entry : approvedSubjects) {
+                text.append("\n- ").append(entry.getSubject().getName());
             }
         }
-        byte[] pdf = generatePdf("Constancia de materias aprobadas", texto.toString());
+        byte[] pdf = generatePdf("Constancia de materias aprobadas", text.toString());
         registerIssuance(enrollment, CertificateType.APPROVED_SUBJECTS);
         return pdf;
     }

@@ -238,21 +238,21 @@ public class ProgramSubjectService {
      * cerraría un ciclo — se rechaza antes de tocar la base (Spec Estructura académica,
      * sección "Servicios propuestos").
      */
-    private boolean wouldCreateCycle(Long programSubjectObjetivoId, Long prerequisitePropuestoId) {
-        Set<Long> visitados = new HashSet<>();
-        Deque<Long> pila = new ArrayDeque<>();
-        pila.push(prerequisitePropuestoId);
+    private boolean wouldCreateCycle(Long targetProgramSubjectId, Long proposedPrerequisiteId) {
+        Set<Long> visited = new HashSet<>();
+        Deque<Long> stack = new ArrayDeque<>();
+        stack.push(proposedPrerequisiteId);
 
-        while (!pila.isEmpty()) {
-            Long actual = pila.pop();
-            if (actual.equals(programSubjectObjetivoId)) {
+        while (!stack.isEmpty()) {
+            Long current = stack.pop();
+            if (current.equals(targetProgramSubjectId)) {
                 return true;
             }
-            if (!visitados.add(actual)) {
+            if (!visited.add(current)) {
                 continue;
             }
-            for (ProgramSubjectPrerequisite req : prerequisiteRepository.findByProgramSubjectId(actual)) {
-                pila.push(req.getPrerequisiteProgramSubject().getId());
+            for (ProgramSubjectPrerequisite req : prerequisiteRepository.findByProgramSubjectId(current)) {
+                stack.push(req.getPrerequisiteProgramSubject().getId());
             }
         }
         return false;

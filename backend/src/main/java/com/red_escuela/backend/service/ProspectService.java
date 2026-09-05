@@ -33,7 +33,7 @@ import java.util.List;
 @Service
 public class ProspectService {
 
-    private static final String ROLE_ALUMNO = "ALUMNO";
+    private static final String ROLE_STUDENT = "ALUMNO";
 
     private final StudentRepository studentRepository;
     private final StudentDocumentRepository studentDocumentRepository;
@@ -123,9 +123,9 @@ public class ProspectService {
         address.setPostalCode(request.postalCode());
         address.setCountry(request.country());
 
-        Role alumno = roleRepository.findByName(ROLE_ALUMNO)
-                .orElseThrow(() -> new RoleNotFoundException(ROLE_ALUMNO));
-        person.getRoles().add(alumno);
+        Role studentRole = roleRepository.findByName(ROLE_STUDENT)
+                .orElseThrow(() -> new RoleNotFoundException(ROLE_STUDENT));
+        person.getRoles().add(studentRole);
 
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
 

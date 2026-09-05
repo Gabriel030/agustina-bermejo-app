@@ -38,12 +38,12 @@ public class DiscountService {
 
         Discount discount = new Discount();
         discount.setStudent(student);
-        discount.setTipo(request.tipo());
+        discount.setType(request.tipo());
         // BECA_TOTAL no necesita valor — el cálculo la trata como 100% sin leer este campo.
-        discount.setValor(request.tipo() == DiscountType.BECA_TOTAL ? java.math.BigDecimal.ZERO : request.valor());
-        discount.setVigenteDesde(request.vigenteDesde());
-        discount.setVigenteHasta(request.vigenteHasta());
-        discount.setMotivo(request.motivo());
+        discount.setAmount(request.tipo() == DiscountType.BECA_TOTAL ? java.math.BigDecimal.ZERO : request.valor());
+        discount.setValidFrom(request.vigenteDesde());
+        discount.setValidUntil(request.vigenteHasta());
+        discount.setReason(request.motivo());
         discount.setCreatedBy(createdBy);
         discount.setCreatedAt(LocalDateTime.now());
         return discountRepository.save(discount);
@@ -53,9 +53,9 @@ public class DiscountService {
         return discountRepository.findByStudentId(studentId);
     }
 
-    List<Discount> vigentesParaAlumno(Long studentId, LocalDate fecha) {
+    List<Discount> vigentesParaAlumno(Long studentId, LocalDate date) {
         return discountRepository.findByStudentId(studentId).stream()
-                .filter(discount -> discount.validOn(fecha))
+                .filter(discount -> discount.validOn(date))
                 .toList();
     }
 }

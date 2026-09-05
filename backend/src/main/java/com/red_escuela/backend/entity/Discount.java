@@ -36,19 +36,19 @@ public class Discount {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false)
-    private DiscountType tipo;
+    private DiscountType type;
 
     @Column(name = "valor", nullable = false)
-    private BigDecimal valor;
+    private BigDecimal amount;
 
     @Column(name = "vigente_desde", nullable = false)
-    private LocalDate vigenteDesde;
+    private LocalDate validFrom;
 
     @Column(name = "vigente_hasta")
-    private LocalDate vigenteHasta;
+    private LocalDate validUntil;
 
     @Column(name = "motivo", nullable = false)
-    private String motivo;
+    private String reason;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
@@ -57,7 +57,7 @@ public class Discount {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public boolean validOn(LocalDate fecha) {
-        return !fecha.isBefore(vigenteDesde) && (vigenteHasta == null || !fecha.isAfter(vigenteHasta));
+    public boolean validOn(LocalDate date) {
+        return !date.isBefore(validFrom) && (validUntil == null || !date.isAfter(validUntil));
     }
 }

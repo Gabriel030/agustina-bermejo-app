@@ -11,7 +11,7 @@ public record ProgramCohortResponse(
 
     public static ProgramCohortResponse from(ProgramCohort cohort) {
         return new ProgramCohortResponse(
-                cohort.getId(), cohort.getProgram().getId(), cohort.getLabel(), cohort.getOrdenEnAnio(),
-                cohort.getAdmissionStart(), cohort.getAdmissionEnd(), cohort.getCursadaStart());
+                cohort.getId(), cohort.getProgram().getId(), cohort.getLabel(), cohort.getOrderInYear(),
+                cohort.getAdmissionStart(), cohort.getAdmissionEnd(), cohort.getCourseStart());
     }
 }

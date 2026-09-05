@@ -64,11 +64,11 @@ public class AttendanceChangeRequestService {
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new AttendanceNotFoundException(attendanceId));
         Long sectionId = resolveSectionId(attendance);
-        boolean esProgramSection = attendance.getProgramSubjectSectionEnrollment() != null;
-        boolean esPropia = esProgramSection
+        boolean isProgramSection = attendance.getProgramSubjectSectionEnrollment() != null;
+        boolean isOwnSection = isProgramSection
                 ? subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, requestedBy.getId())
                 : courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, requestedBy.getId());
-        if (!esPropia) {
+        if (!isOwnSection) {
             throw new NotOwnSectionException(requestedBy.getId(), sectionId);
         }
 

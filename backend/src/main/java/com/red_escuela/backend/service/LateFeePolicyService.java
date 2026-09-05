@@ -31,21 +31,21 @@ public class LateFeePolicyService {
     @Transactional
     public LateFeePolicy create(CreateLateFeePolicyRequest request, Person createdBy) {
         LateFeePolicy policy = new LateFeePolicy();
-        policy.setDiasDeGracia(request.diasDeGracia());
-        policy.setPorcentajeRecargoPorPeriodo(request.porcentajeRecargoPorPeriodo());
-        policy.setDiasPorPeriodo(request.diasPorPeriodo());
-        policy.setDiasParaRiesgoDeCorte(request.diasParaRiesgoDeCorte());
-        policy.setVigenteDesde(request.vigenteDesde());
+        policy.setGracePeriodDays(request.diasDeGracia());
+        policy.setSurchargePercentagePerPeriod(request.porcentajeRecargoPorPeriodo());
+        policy.setPeriodDays(request.diasPorPeriodo());
+        policy.setDaysUntilCutoffRisk(request.diasParaRiesgoDeCorte());
+        policy.setValidFrom(request.vigenteDesde());
         policy.setCreatedBy(createdBy);
         policy.setCreatedAt(LocalDateTime.now());
         return lateFeePolicyRepository.save(policy);
     }
 
     public List<LateFeePolicy> list() {
-        return lateFeePolicyRepository.findAllByOrderByVigenteDesdeDesc();
+        return lateFeePolicyRepository.findAllByOrderByValidFromDesc();
     }
 
-    public Optional<LateFeePolicy> validOn(LocalDate fecha) {
-        return lateFeePolicyRepository.findFirstByVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(fecha);
+    public Optional<LateFeePolicy> validOn(LocalDate date) {
+        return lateFeePolicyRepository.findFirstByValidFromLessThanEqualOrderByValidFromDesc(date);
     }
 }

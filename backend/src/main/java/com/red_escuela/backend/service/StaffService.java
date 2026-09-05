@@ -34,7 +34,7 @@ public class StaffService {
 
     private static final Set<String> ALLOWED_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO");
 
-    private static final Map<String, Set<String>> ROLES_QUE_PUEDE_CREAR = Map.of(
+    private static final Map<String, Set<String>> ROLES_ASSIGNABLE_BY_ROLE = Map.of(
             "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
             "DIRECTOR", Set.of("ADMINISTRATIVO"));
 
@@ -150,10 +150,10 @@ public class StaffService {
             throw new RoleNotAssignableByActorException("desconocido");
         }
         Person actor = currentPersonService.resolveCurrentPerson();
-        boolean autorizado = actor.getRoles().stream()
+        boolean authorized = actor.getRoles().stream()
                 .map(Role::getName)
-                .anyMatch(actorRole -> ROLES_QUE_PUEDE_CREAR.getOrDefault(actorRole, Set.of()).contains(targetRole));
-        if (!autorizado) {
+                .anyMatch(actorRole -> ROLES_ASSIGNABLE_BY_ROLE.getOrDefault(actorRole, Set.of()).contains(targetRole));
+        if (!authorized) {
             throw new RoleNotAssignableByActorException(targetRole);
         }
     }

@@ -60,10 +60,10 @@ public class PromotionService {
                     .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
             promotion.setCourse(course);
         }
-        promotion.setTipo(request.tipo());
-        promotion.setValor(request.valor());
-        promotion.setVigenteDesde(request.vigenteDesde());
-        promotion.setVigenteHasta(request.vigenteHasta());
+        promotion.setType(request.tipo());
+        promotion.setAmount(request.valor());
+        promotion.setValidFrom(request.vigenteDesde());
+        promotion.setValidUntil(request.vigenteHasta());
         promotion.setCreatedBy(createdBy);
         promotion.setCreatedAt(LocalDateTime.now());
         return promotionRepository.save(promotion);
@@ -73,15 +73,15 @@ public class PromotionService {
         return promotionRepository.findAll();
     }
 
-    List<Promotion> vigentesParaPrograma(Long programId, LocalDate fecha) {
+    List<Promotion> vigentesParaPrograma(Long programId, LocalDate date) {
         return promotionRepository.findByProgramId(programId).stream()
-                .filter(promotion -> promotion.validOn(fecha))
+                .filter(promotion -> promotion.validOn(date))
                 .toList();
     }
 
-    List<Promotion> vigentesParaCurso(Long courseId, LocalDate fecha) {
+    List<Promotion> vigentesParaCurso(Long courseId, LocalDate date) {
         return promotionRepository.findByCourseId(courseId).stream()
-                .filter(promotion -> promotion.validOn(fecha))
+                .filter(promotion -> promotion.validOn(date))
                 .toList();
     }
 }

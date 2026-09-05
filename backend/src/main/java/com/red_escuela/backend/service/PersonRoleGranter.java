@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class PersonRoleGranter {
 
-    private static final String ROLE_ALUMNO = "ALUMNO";
+    private static final String ROLE_STUDENT = "ALUMNO";
 
     private final RoleRepository roleRepository;
 
@@ -25,11 +25,11 @@ public class PersonRoleGranter {
     }
 
     public void grantStudentRoleIfMissing(Person person) {
-        boolean yaLoTiene = person.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_ALUMNO));
-        if (yaLoTiene) {
+        boolean alreadyHasIt = person.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_STUDENT));
+        if (alreadyHasIt) {
             return;
         }
-        Role alumno = roleRepository.findByName(ROLE_ALUMNO).orElseThrow(() -> new RoleNotFoundException(ROLE_ALUMNO));
-        person.getRoles().add(alumno);
+        Role studentRole = roleRepository.findByName(ROLE_STUDENT).orElseThrow(() -> new RoleNotFoundException(ROLE_STUDENT));
+        person.getRoles().add(studentRole);
     }
 }

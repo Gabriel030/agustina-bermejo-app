@@ -74,21 +74,21 @@ public class LocalSeedRunner implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        for (DemoAccount cuenta : DEMO_ACCOUNTS) {
-            if (personRepository.findByUsername(cuenta.username()).isPresent()) {
+        for (DemoAccount account : DEMO_ACCOUNTS) {
+            if (personRepository.findByUsername(account.username()).isPresent()) {
                 continue;
             }
             Person person = personFactory.createBasePerson(
-                    cuenta.firstName(), cuenta.lastName(), cuenta.username() + "@demo.local");
-            person.setUsername(cuenta.username());
+                    account.firstName(), account.lastName(), account.username() + "@demo.local");
+            person.setUsername(account.username());
             person.setPassword(passwordEncoder.encode(PASSWORD_DEMO));
-            person.setDni("DEMO-" + cuenta.username());
-            Role role = roleRepository.findByName(cuenta.role())
-                    .orElseThrow(() -> new IllegalStateException("Falta el rol " + cuenta.role() + " (migración de roles no corrió)"));
+            person.setDni("DEMO-" + account.username());
+            Role role = roleRepository.findByName(account.role())
+                    .orElseThrow(() -> new IllegalStateException("Falta el rol " + account.role() + " (migración de roles no corrió)"));
             person.getRoles().add(role);
             personRepository.save(person);
             log.info("Seed local: cuenta demo creada — username={}, password={}, rol={}",
-                    cuenta.username(), PASSWORD_DEMO, cuenta.role());
+                    account.username(), PASSWORD_DEMO, account.role());
         }
     }
 }

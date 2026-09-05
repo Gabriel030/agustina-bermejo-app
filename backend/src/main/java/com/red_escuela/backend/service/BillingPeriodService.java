@@ -28,15 +28,15 @@ public class BillingPeriodService {
     @Transactional
     public BillingPeriod create(CreateBillingPeriodRequest request, Person createdBy) {
         BillingPeriod period = new BillingPeriod();
-        period.setDiaInicio(request.diaInicio());
-        period.setDiaFin(request.diaFin());
-        period.setVigenteDesde(request.vigenteDesde());
+        period.setStartDay(request.diaInicio());
+        period.setEndDay(request.diaFin());
+        period.setValidFrom(request.vigenteDesde());
         period.setCreatedBy(createdBy);
         period.setCreatedAt(LocalDateTime.now());
         return billingPeriodRepository.save(period);
     }
 
     public List<BillingPeriod> list() {
-        return billingPeriodRepository.findAllByOrderByVigenteDesdeDesc();
+        return billingPeriodRepository.findAllByOrderByValidFromDesc();
     }
 }

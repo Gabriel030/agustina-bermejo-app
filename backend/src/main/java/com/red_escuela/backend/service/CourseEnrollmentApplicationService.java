@@ -61,7 +61,7 @@ public class CourseEnrollmentApplicationService {
     }
 
     @Transactional
-    public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile comprobante) {
+    public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile receiptFile) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         Course course = courseRepository.findById(request.courseId())
@@ -70,7 +70,7 @@ public class CourseEnrollmentApplicationService {
 
         Invoice invoice = invoiceService.createFromFeeSchedule(studentId,
                 new CreateInvoiceFromFeeScheduleRequest(null, request.courseId(), FeeScheduleConcept.CUOTA_MENSUAL, LocalDate.now()));
-        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante);
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), receiptFile);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);

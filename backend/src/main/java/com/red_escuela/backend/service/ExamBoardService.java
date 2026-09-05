@@ -141,23 +141,23 @@ public class ExamBoardService {
     }
 
     private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration) {
-        String carrera;
+        String programName;
         Integer attemptNumber;
         Person person;
         if (registration.getProgramSubjectSectionEnrollment() != null) {
             var enrollment = registration.getProgramSubjectSectionEnrollment();
-            carrera = enrollment.getProgramEnrollment().getProgram().getName();
+            programName = enrollment.getProgramEnrollment().getProgram().getName();
             attemptNumber = enrollment.getAttemptNumber();
             person = enrollment.getStudent().getPerson();
         } else {
             var enrollment = registration.getCourseSubjectSectionEnrollment();
-            carrera = "Curso suelto";
+            programName = "Curso suelto";
             attemptNumber = enrollment.getAttemptNumber();
             person = enrollment.getStudent().getPerson();
         }
         return new ExamBoardRegistrationSummaryResponse(
                 registration.getId(), person.getName() + " " + person.getLastname(), person.getDni(),
-                carrera, attemptNumber, registration.getStatus().name());
+                programName, attemptNumber, registration.getStatus().name());
     }
 
     private ExamBoard findOrThrow(Long id) {

@@ -59,9 +59,9 @@ public class GraduationRequestService {
             throw new NotEligibleForGraduationException(programEnrollmentId);
         }
 
-        List<GraduationRequest> activos = graduationRequestRepository
+        List<GraduationRequest> activeRequests = graduationRequestRepository
                 .findByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED);
-        if (!activos.isEmpty()) {
+        if (!activeRequests.isEmpty()) {
             throw new GraduationRequestAlreadyActiveException(programEnrollmentId);
         }
 
@@ -103,8 +103,8 @@ public class GraduationRequestService {
         }
 
         Long studentId = request.getProgramEnrollment().getStudent().getId();
-        DebtSummaryResponse deuda = invoiceService.calculateDebt(studentId);
-        if (deuda.tieneDeuda()) {
+        DebtSummaryResponse debtSummary = invoiceService.calculateDebt(studentId);
+        if (debtSummary.tieneDeuda()) {
             throw new PendingDebtException(studentId);
         }
 
@@ -137,7 +137,7 @@ public class GraduationRequestService {
     }
 
     @Transactional
-    public GraduationRequest reject(Long graduationRequestId, String motivo) {
+    public GraduationRequest reject(Long graduationRequestId, String reason) {
         GraduationRequest request = findOrThrow(graduationRequestId);
         if (request.getStatus() == GraduationRequestStatus.APPROVED || request.getStatus() == GraduationRequestStatus.REJECTED) {
             throw new InvalidGraduationRequestStateException(graduationRequestId);
@@ -146,7 +146,7 @@ public class GraduationRequestService {
         request.setStatus(GraduationRequestStatus.REJECTED);
         request.setDecidedBy(currentPersonService.resolveCurrentPerson());
         request.setDecidedAt(LocalDateTime.now());
-        request.setRejectionReason(motivo);
+        request.setRejectionReason(reason);
         GraduationRequest saved = graduationRequestRepository.save(request);
 
         eventPublisher.publishEvent(new GraduationRequestRejectedEvent(saved, saved.getProgramEnrollment().getStudent().getPerson()));

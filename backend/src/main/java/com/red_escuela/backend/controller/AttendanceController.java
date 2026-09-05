@@ -204,8 +204,8 @@ public class AttendanceController {
     }
 
     private Long resolveInstructorIdIfTeacher() {
-        boolean esDocente = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+        boolean isTeacher = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCENTE"));
-        return esDocente ? currentInstructorService.resolveCurrentInstructor().getId() : null;
+        return isTeacher ? currentInstructorService.resolveCurrentInstructor().getId() : null;
     }
 }

@@ -83,38 +83,38 @@ public class SubjectSectionEnrollmentService {
         validateEnrollmentWindow(section.getTerm());
 
         Long subjectId = section.getSubject().getId();
-        List<SubjectSectionEnrollment> activasMismaMateria = subjectSectionEnrollmentRepository
+        List<SubjectSectionEnrollment> activeSameSubject = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, subjectId,
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.WAITLISTED));
-        if (!activasMismaMateria.isEmpty()) {
+        if (!activeSameSubject.isEmpty()) {
             throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
         }
 
         validatePrerequisites(programEnrollment, section);
 
-        Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
+        Optional<SubjectSectionEnrollment> existing = subjectSectionEnrollmentRepository
                 .findByStudentIdAndSubjectSectionId(student.getId(), section.getId());
-        if (existente.isPresent()) {
-            if (existente.get().getStatus() != EnrollmentStatus.WITHDRAWN) {
+        if (existing.isPresent()) {
+            if (existing.get().getStatus() != EnrollmentStatus.WITHDRAWN) {
                 throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
             }
             // Decisión 7: baja + reinscripción a la MISMA comisión reactiva la fila existente
             // (el unique constraint (student_id, program_section_id) no admite una fila nueva).
-            SubjectSectionEnrollment reactivada = existente.get();
-            reactivada.setStatus(calculateStatusByCapacity(section));
-            reactivada.setDroppedAt(null);
-            return subjectSectionEnrollmentRepository.save(reactivada);
+            SubjectSectionEnrollment reactivated = existing.get();
+            reactivated.setStatus(calculateStatusByCapacity(section));
+            reactivated.setDroppedAt(null);
+            return subjectSectionEnrollmentRepository.save(reactivated);
         }
 
-        SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
-        nueva.setStudent(student);
-        nueva.setProgramEnrollment(programEnrollment);
-        nueva.setSubjectSection(section);
-        nueva.setStatus(calculateStatusByCapacity(section));
-        nueva.setEnrolledAt(LocalDateTime.now());
-        nueva.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section));
-        return subjectSectionEnrollmentRepository.save(nueva);
+        SubjectSectionEnrollment newEnrollment = new SubjectSectionEnrollment();
+        newEnrollment.setStudent(student);
+        newEnrollment.setProgramEnrollment(programEnrollment);
+        newEnrollment.setSubjectSection(section);
+        newEnrollment.setStatus(calculateStatusByCapacity(section));
+        newEnrollment.setEnrolledAt(LocalDateTime.now());
+        newEnrollment.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section));
+        return subjectSectionEnrollmentRepository.save(newEnrollment);
     }
 
     /**
@@ -124,18 +124,18 @@ public class SubjectSectionEnrollmentService {
      * alcanzable dando de baja e inscribiendo manualmente sin pasar por cambiarComision—
      * no es un intento nuevo: se reusa su attemptNumber, mismo criterio que cambiarComision.
      */
-    private int calculateAttemptNumber(Long programEnrollmentId, Long subjectId, SubjectSection nuevaSeccion) {
-        List<SubjectSectionEnrollment> previas = subjectSectionEnrollmentRepository
+    private int calculateAttemptNumber(Long programEnrollmentId, Long subjectId, SubjectSection newSection) {
+        List<SubjectSectionEnrollment> previousAttempts = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, subjectId, List.of(EnrollmentStatus.FAILED, EnrollmentStatus.WITHDRAWN));
-        if (previas.isEmpty()) {
+        if (previousAttempts.isEmpty()) {
             return 1;
         }
-        SubjectSectionEnrollment ultima = previas.stream()
+        SubjectSectionEnrollment lastAttempt = previousAttempts.stream()
                 .max(Comparator.comparing(SubjectSectionEnrollment::getEnrolledAt))
                 .orElseThrow();
-        boolean mismoTerm = ultima.getSubjectSection().getTerm().getId().equals(nuevaSeccion.getTerm().getId());
-        return mismoTerm ? ultima.getAttemptNumber() : ultima.getAttemptNumber() + 1;
+        boolean sameTerm = lastAttempt.getSubjectSection().getTerm().getId().equals(newSection.getTerm().getId());
+        return sameTerm ? lastAttempt.getAttemptNumber() : lastAttempt.getAttemptNumber() + 1;
     }
 
     @Transactional
@@ -153,66 +153,66 @@ public class SubjectSectionEnrollmentService {
 
     @Transactional
     public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request) {
-        SubjectSectionEnrollment origen = findOrThrow(id);
-        if (origen.getStatus() != EnrollmentStatus.ENROLLED && origen.getStatus() != EnrollmentStatus.IN_PROGRESS) {
+        SubjectSectionEnrollment currentEnrollment = findOrThrow(id);
+        if (currentEnrollment.getStatus() != EnrollmentStatus.ENROLLED && currentEnrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede cambiar de comisión");
         }
         // A diferencia de withdraw (que tiene que poder cerrar una cursada aunque el alumno
         // ya no esté activo), cambiarComision mueve al alumno a una plaza nueva — no tiene
         // sentido dejar que alguien inactivo siga ocupando cupo de otras comisiones.
-        validateStudentEligible(origen.getStudent());
+        validateStudentEligible(currentEnrollment.getStudent());
 
-        SubjectSection destino = subjectSectionRepository.findById(request.newSectionId())
+        SubjectSection targetSection = subjectSectionRepository.findById(request.newSectionId())
                 .orElseThrow(() -> new SectionNotFoundException(request.newSectionId()));
-        if (!destino.getSubject().getId().equals(origen.getSubjectSection().getSubject().getId())) {
+        if (!targetSection.getSubject().getId().equals(currentEnrollment.getSubjectSection().getSubject().getId())) {
             throw new InvalidSectionChangeException(
                     "La comisión destino tiene que ser de la misma materia que la comisión origen");
         }
         // "Cambiar" a la comisión en la que ya está es un no-op: sin este corte, la baja+alta
         // de abajo dispara la promoción FIFO sobre la MISMA sección antes de reactivate la fila
         // origen, y el alumno pierde su propia plaza a manos de quien estaba en la lista de espera.
-        if (destino.getId().equals(origen.getSubjectSection().getId())) {
-            return origen;
+        if (targetSection.getId().equals(currentEnrollment.getSubjectSection().getId())) {
+            return currentEnrollment;
         }
         // Decisión 3: cambiarComision es "misma materia, MISMO período" por definición — saltar
         // a otro Term es un intento nuevo (decisión 8), que corresponde a withdraw + enroll,
         // no a esta operación (que nunca recalcula attemptNumber).
-        if (!destino.getTerm().getId().equals(origen.getSubjectSection().getTerm().getId())) {
+        if (!targetSection.getTerm().getId().equals(currentEnrollment.getSubjectSection().getTerm().getId())) {
             throw new InvalidSectionChangeException(
                     "cambiarComision es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
-        validateEnrollmentWindow(destino.getTerm());
+        validateEnrollmentWindow(targetSection.getTerm());
 
-        Student student = origen.getStudent();
-        ProgramEnrollment programEnrollment = origen.getProgramEnrollment();
-        Integer attemptNumber = origen.getAttemptNumber();
+        Student student = currentEnrollment.getStudent();
+        ProgramEnrollment programEnrollment = currentEnrollment.getProgramEnrollment();
+        Integer attemptNumber = currentEnrollment.getAttemptNumber();
         LocalDateTime now = LocalDateTime.now();
 
         // Baja de la fila origen: dispara promoción de lista de espera igual que cualquier
         // baja, pero SIN pasar por withdraw() para no recalcular attemptNumber (decisión 3).
-        origen.setStatus(EnrollmentStatus.WITHDRAWN);
-        origen.setDroppedAt(now);
-        subjectSectionEnrollmentRepository.save(origen);
-        promoteNextInWaitlist(origen.getSubjectSection().getId());
+        currentEnrollment.setStatus(EnrollmentStatus.WITHDRAWN);
+        currentEnrollment.setDroppedAt(now);
+        subjectSectionEnrollmentRepository.save(currentEnrollment);
+        promoteNextInWaitlist(currentEnrollment.getSubjectSection().getId());
 
-        Optional<SubjectSectionEnrollment> existenteDestino = subjectSectionEnrollmentRepository
-                .findByStudentIdAndSubjectSectionId(student.getId(), destino.getId());
-        if (existenteDestino.isPresent() && existenteDestino.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
-            SubjectSectionEnrollment reactivada = existenteDestino.get();
-            reactivada.setStatus(calculateStatusByCapacity(destino));
-            reactivada.setDroppedAt(null);
-            return subjectSectionEnrollmentRepository.save(reactivada);
+        Optional<SubjectSectionEnrollment> existingTargetEnrollment = subjectSectionEnrollmentRepository
+                .findByStudentIdAndSubjectSectionId(student.getId(), targetSection.getId());
+        if (existingTargetEnrollment.isPresent() && existingTargetEnrollment.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
+            SubjectSectionEnrollment reactivated = existingTargetEnrollment.get();
+            reactivated.setStatus(calculateStatusByCapacity(targetSection));
+            reactivated.setDroppedAt(null);
+            return subjectSectionEnrollmentRepository.save(reactivated);
         }
 
-        SubjectSectionEnrollment nueva = new SubjectSectionEnrollment();
-        nueva.setStudent(student);
-        nueva.setProgramEnrollment(programEnrollment);
-        nueva.setSubjectSection(destino);
-        nueva.setStatus(calculateStatusByCapacity(destino));
-        nueva.setEnrolledAt(now);
-        nueva.setAttemptNumber(attemptNumber);
-        return subjectSectionEnrollmentRepository.save(nueva);
+        SubjectSectionEnrollment newEnrollment = new SubjectSectionEnrollment();
+        newEnrollment.setStudent(student);
+        newEnrollment.setProgramEnrollment(programEnrollment);
+        newEnrollment.setSubjectSection(targetSection);
+        newEnrollment.setStatus(calculateStatusByCapacity(targetSection));
+        newEnrollment.setEnrolledAt(now);
+        newEnrollment.setAttemptNumber(attemptNumber);
+        return subjectSectionEnrollmentRepository.save(newEnrollment);
     }
 
     public List<SubjectSectionEnrollment> listByEnrollment(Long programEnrollmentId) {
@@ -259,9 +259,9 @@ public class SubjectSectionEnrollmentService {
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         subjectSectionEnrollmentRepository
                 .findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(sectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    subjectSectionEnrollmentRepository.save(siguiente);
+                .ifPresent(next -> {
+                    next.setStatus(EnrollmentStatus.ENROLLED);
+                    subjectSectionEnrollmentRepository.save(next);
                 });
     }
 
@@ -271,11 +271,11 @@ public class SubjectSectionEnrollmentService {
         // que cualquiera haga commit, y las dos terminar ENROLLED por encima del cupo real.
         subjectSectionRepository.findByIdForUpdate(section.getId())
                 .orElseThrow(() -> new SectionNotFoundException(section.getId()));
-        int ocupadas = subjectSectionEnrollmentRepository
+        int occupied = subjectSectionEnrollmentRepository
                 .findBySubjectSectionIdAndStatusIn(section.getId(),
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
                 .size();
-        return section.getCapacity() == null || ocupadas < section.getCapacity()
+        return section.getCapacity() == null || occupied < section.getCapacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
     }
 

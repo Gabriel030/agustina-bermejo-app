@@ -19,29 +19,29 @@ final class LateFeeCalculator {
     private LateFeeCalculator() {
     }
 
-    static boolean isInArrears(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
-        long diasDeAtraso = ChronoUnit.DAYS.between(dueDate, fecha);
-        return diasDeAtraso > policy.getDiasDeGracia();
+    static boolean isInArrears(LateFeePolicy policy, LocalDate dueDate, LocalDate date) {
+        long daysLate = ChronoUnit.DAYS.between(dueDate, date);
+        return daysLate > policy.getGracePeriodDays();
     }
 
-    static boolean isAtCutoffRisk(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
-        long diasDeAtraso = ChronoUnit.DAYS.between(dueDate, fecha);
-        return diasDeAtraso >= policy.getDiasParaRiesgoDeCorte();
+    static boolean isAtCutoffRisk(LateFeePolicy policy, LocalDate dueDate, LocalDate date) {
+        long daysLate = ChronoUnit.DAYS.between(dueDate, date);
+        return daysLate >= policy.getDaysUntilCutoffRisk();
     }
 
     // Recargo = saldo * porcentaje * cantidad de períodos completos de diasPorPeriodo
     // transcurridos desde que se cumplieron los días de gracia — crece escalonado,
     // no de forma continua día a día.
-    static BigDecimal calculateSurcharge(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha, BigDecimal saldo) {
-        if (!isInArrears(policy, dueDate, fecha)) {
+    static BigDecimal calculateSurcharge(LateFeePolicy policy, LocalDate dueDate, LocalDate date, BigDecimal balance) {
+        if (!isInArrears(policy, dueDate, date)) {
             return BigDecimal.ZERO;
         }
-        long diasEnMora = ChronoUnit.DAYS.between(dueDate, fecha) - policy.getDiasDeGracia();
-        long periodosCompletos = diasEnMora / policy.getDiasPorPeriodo();
-        if (periodosCompletos <= 0) {
+        long daysInArrears = ChronoUnit.DAYS.between(dueDate, date) - policy.getGracePeriodDays();
+        long fullPeriods = daysInArrears / policy.getPeriodDays();
+        if (fullPeriods <= 0) {
             return BigDecimal.ZERO;
         }
-        BigDecimal porcentajeTotal = policy.getPorcentajeRecargoPorPeriodo().multiply(BigDecimal.valueOf(periodosCompletos));
-        return saldo.multiply(porcentajeTotal).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal totalPercentage = policy.getSurchargePercentagePerPeriod().multiply(BigDecimal.valueOf(fullPeriods));
+        return balance.multiply(totalPercentage).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 }

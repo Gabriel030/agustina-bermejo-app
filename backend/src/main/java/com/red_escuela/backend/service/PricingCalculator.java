@@ -28,36 +28,36 @@ final class PricingCalculator {
     private PricingCalculator() {
     }
 
-    static BigDecimal calculateFinalAmount(BigDecimal precioBase, List<Discount> descuentos, List<Promotion> promociones) {
-        boolean tieneBecaTotal = descuentos.stream().anyMatch(d -> d.getTipo() == DiscountType.BECA_TOTAL);
-        if (tieneBecaTotal) {
+    static BigDecimal calculateFinalAmount(BigDecimal basePrice, List<Discount> discounts, List<Promotion> promotions) {
+        boolean hasFullScholarship = discounts.stream().anyMatch(d -> d.getType() == DiscountType.BECA_TOTAL);
+        if (hasFullScholarship) {
             return BigDecimal.ZERO;
         }
 
-        BigDecimal totalPorcentaje = descuentos.stream()
-                .filter(d -> d.getTipo() == DiscountType.PORCENTAJE)
-                .map(Discount::getValor)
+        BigDecimal totalPercentage = discounts.stream()
+                .filter(d -> d.getType() == DiscountType.PORCENTAJE)
+                .map(Discount::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .add(promociones.stream()
-                        .filter(p -> p.getTipo() == DiscountType.PORCENTAJE)
-                        .map(Promotion::getValor)
+                .add(promotions.stream()
+                        .filter(p -> p.getType() == DiscountType.PORCENTAJE)
+                        .map(Promotion::getAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
 
-        BigDecimal totalMontoFijo = descuentos.stream()
-                .filter(d -> d.getTipo() == DiscountType.MONTO_FIJO)
-                .map(Discount::getValor)
+        BigDecimal totalFixedAmount = discounts.stream()
+                .filter(d -> d.getType() == DiscountType.MONTO_FIJO)
+                .map(Discount::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .add(promociones.stream()
-                        .filter(p -> p.getTipo() == DiscountType.MONTO_FIJO)
-                        .map(Promotion::getValor)
+                .add(promotions.stream()
+                        .filter(p -> p.getType() == DiscountType.MONTO_FIJO)
+                        .map(Promotion::getAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add));
 
-        BigDecimal descuentoPorPorcentaje = precioBase
-                .multiply(totalPorcentaje)
+        BigDecimal percentageDiscount = basePrice
+                .multiply(totalPercentage)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-        BigDecimal montoFinal = precioBase.subtract(descuentoPorPorcentaje).subtract(totalMontoFijo);
-        return montoFinal.max(BigDecimal.ZERO);
+        BigDecimal finalAmount = basePrice.subtract(percentageDiscount).subtract(totalFixedAmount);
+        return finalAmount.max(BigDecimal.ZERO);
     }
 
     /**
@@ -68,10 +68,10 @@ final class PricingCalculator {
      * cohorte). Se aplica ANTES de descuentos/promociones (mismo orden que hoy:
      * esos se calculan sobre el monto ya prorrateado).
      */
-    static BigDecimal calculateEnrollmentFeeAmount(BigDecimal montoBase, ProgramCohort cohort) {
-        if (cohort.getOrdenEnAnio() == 2) {
-            return montoBase.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+    static BigDecimal calculateEnrollmentFeeAmount(BigDecimal baseAmount, ProgramCohort cohort) {
+        if (cohort.getOrderInYear() == 2) {
+            return baseAmount.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
         }
-        return montoBase;
+        return baseAmount;
     }
 }

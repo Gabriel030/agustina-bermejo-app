@@ -92,15 +92,15 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        EnrollmentResult resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
-        if (resultado != null) {
-            enrollment.setStatus(resultado.status());
-            if (resultado.finalScore() != null) {
-                enrollment.setFinalScore(resultado.finalScore());
-                enrollment.setFinalGradeType(resultado.finalGradeType());
+        EnrollmentResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        if (result != null) {
+            enrollment.setStatus(result.status());
+            if (result.finalScore() != null) {
+                enrollment.setFinalScore(result.finalScore());
+                enrollment.setFinalGradeType(result.finalGradeType());
             }
             subjectSectionEnrollmentRepository.save(enrollment);
-            if (resultado.status() == EnrollmentStatus.APPROVED) {
+            if (result.status() == EnrollmentStatus.APPROVED) {
                 graduationRequestService.createGraduationRequestIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
@@ -131,12 +131,12 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        EnrollmentResult resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
-        if (resultado != null) {
-            enrollment.setStatus(resultado.status());
-            if (resultado.finalScore() != null) {
-                enrollment.setFinalScore(resultado.finalScore());
-                enrollment.setFinalGradeType(resultado.finalGradeType());
+        EnrollmentResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        if (result != null) {
+            enrollment.setStatus(result.status());
+            if (result.finalScore() != null) {
+                enrollment.setFinalScore(result.finalScore());
+                enrollment.setFinalGradeType(result.finalGradeType());
             }
             courseSubjectSectionEnrollmentRepository.save(enrollment);
         }
@@ -172,9 +172,9 @@ public class GradeItemService {
     // integre su tribunal. Si no viene: valida "comisión propia" del Docente, igual que
     // AttendanceService.
     private ExamBoard validateGradeOrigin(
-            Long examBoardId, Long instructorId, java.util.function.BooleanSupplier esComisionPropia, Long sectionId) {
+            Long examBoardId, Long instructorId, java.util.function.BooleanSupplier isOwnSection, Long sectionId) {
         if (examBoardId == null) {
-            if (!esComisionPropia.getAsBoolean()) {
+            if (!isOwnSection.getAsBoolean()) {
                 throw new NotOwnSectionException(instructorId, sectionId);
             }
             return null;
@@ -223,41 +223,41 @@ public class GradeItemService {
      * ({@link #calculateWithFinalExam} / {@link #calculateWithoutFinalExam} según tenga final o no).
      */
     private EnrollmentResult calculateResult(
-            EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
-        if (estadoActual != EnrollmentStatus.ENROLLED
-                && estadoActual != EnrollmentStatus.IN_PROGRESS
-                && estadoActual != EnrollmentStatus.REGULAR) {
+            EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus currentStatus, Integer maxFinalExamAttempts) {
+        if (currentStatus != EnrollmentStatus.ENROLLED
+                && currentStatus != EnrollmentStatus.IN_PROGRESS
+                && currentStatus != EnrollmentStatus.REGULAR) {
             return null;
         }
 
-        List<GradeItem> examenes = items.stream().filter(i -> i.getType() == GradeItemType.EXAM).toList();
+        List<GradeItem> exams = items.stream().filter(i -> i.getType() == GradeItemType.EXAM).toList();
         List<GradeItem> tps = items.stream().filter(i -> i.getType() == GradeItemType.TP).toList();
-        List<GradeItem> finales = items.stream().filter(i -> i.getType() == GradeItemType.FINAL).toList();
-        GradeItem ultimoFinal = finales.stream()
+        List<GradeItem> finals = items.stream().filter(i -> i.getType() == GradeItemType.FINAL).toList();
+        GradeItem lastFinal = finals.stream()
                 .max(Comparator.comparing(i -> i.getSequenceNumber() == null ? 0 : i.getSequenceNumber()))
                 .orElse(null);
 
         int examCountExpected = scheme.getExamCountExpected() == null ? 0 : scheme.getExamCountExpected();
         int tpCountExpected = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
-        int cantidadEsperada = examCountExpected + tpCountExpected;
-        // Un esquema "solo final" (cantidadEsperada == 0) no tiene parciales que evaluar: sin
+        int expectedCount = examCountExpected + tpCountExpected;
+        // Un esquema "solo final" (expectedCount == 0) no tiene parciales que evaluar: sin
         // este guard, el tamaño de una lista vacía cumpliría trivialmente ">= 0" más abajo.
-        boolean todosLosParcialesCargados = cantidadEsperada > 0
-                && (examenes.size() + tps.size()) >= cantidadEsperada;
+        boolean allPartialsLoaded = expectedCount > 0
+                && (exams.size() + tps.size()) >= expectedCount;
 
-        if (todosLosParcialesCargados && tpCountExpected > 0 && scheme.getMinRegularGrade() != null
+        if (allPartialsLoaded && tpCountExpected > 0 && scheme.getMinRegularGrade() != null
                 && !allApprovedIndividually(tps, scheme.getMinRegularGrade())) {
             return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
         }
 
-        EnrollmentResult promocion = evaluarPromocion(scheme, examenes, todosLosParcialesCargados, examCountExpected);
-        if (promocion != null) {
-            return promocion;
+        EnrollmentResult promotionResult = evaluarPromocion(scheme, exams, allPartialsLoaded, examCountExpected);
+        if (promotionResult != null) {
+            return promotionResult;
         }
 
         return Boolean.TRUE.equals(scheme.getHasFinal())
-                ? calculateWithFinalExam(scheme, examenes, todosLosParcialesCargados, ultimoFinal, finales.size(), estadoActual, maxFinalExamAttempts)
-                : calculateWithoutFinalExam(scheme, examenes, tps, todosLosParcialesCargados);
+                ? calculateWithFinalExam(scheme, exams, allPartialsLoaded, lastFinal, finals.size(), currentStatus, maxFinalExamAttempts)
+                : calculateWithoutFinalExam(scheme, exams, tps, allPartialsLoaded);
     }
 
     // Atajo de promoción sin final — opcional (EvaluationScheme.promotionMinGrade nullable) e
@@ -270,15 +270,15 @@ public class GradeItemService {
     // REGULAR/el camino con final). Si no promociona, devuelve null para que el llamador siga
     // el camino normal (Regular → final, o el esquema sin final de siempre).
     private EnrollmentResult evaluarPromocion(
-            EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados, int examCountExpected) {
-        if (!todosLosParcialesCargados || examCountExpected == 0 || scheme.getPromotionMinGrade() == null) {
+            EvaluationScheme scheme, List<GradeItem> exams, boolean allPartialsLoaded, int examCountExpected) {
+        if (!allPartialsLoaded || examCountExpected == 0 || scheme.getPromotionMinGrade() == null) {
             return null;
         }
-        if (!allApprovedIndividually(examenes, scheme.getPromotionMinGrade())) {
+        if (!allApprovedIndividually(exams, scheme.getPromotionMinGrade())) {
             return null;
         }
-        double promedio = examenes.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
-        return new EnrollmentResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+        double average = exams.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
+        return new EnrollmentResult(EnrollmentStatus.APPROVED, average, FinalGradeType.PROMOTION);
     }
 
     // Materia con final obligatorio (o que no llegó a promocionar): cursada completa
@@ -291,31 +291,31 @@ public class GradeItemService {
     // que el alumno se anote a la próxima mesa (pedido explícito: "si no se aprueba el
     // primero, se tiene un segundo intento") — recién al agotar los llamados pasa a FAILED.
     private EnrollmentResult calculateWithFinalExam(
-            EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados,
-            GradeItem ultimoFinal, int intentosFinalUsados, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
-        boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
+            EvaluationScheme scheme, List<GradeItem> exams, boolean allPartialsLoaded,
+            GradeItem lastFinal, int finalAttemptsUsed, EnrollmentStatus currentStatus, Integer maxFinalExamAttempts) {
+        boolean regularAchieved = currentStatus == EnrollmentStatus.REGULAR;
 
-        if (todosLosParcialesCargados && scheme.getMinRegularGrade() != null) {
-            double promedio = applyAggregation(scheme.getAggregationMethod(), examenes);
-            if (promedio < scheme.getMinRegularGrade()) {
+        if (allPartialsLoaded && scheme.getMinRegularGrade() != null) {
+            double average = applyAggregation(scheme.getAggregationMethod(), exams);
+            if (average < scheme.getMinRegularGrade()) {
                 return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
             }
-            regularAlcanzado = true;
+            regularAchieved = true;
         }
 
-        if (ultimoFinal == null || scheme.getMinApprovalGrade() == null) {
-            return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
+        if (lastFinal == null || scheme.getMinApprovalGrade() == null) {
+            return regularAchieved && currentStatus != EnrollmentStatus.REGULAR
                     ? new EnrollmentResult(EnrollmentStatus.REGULAR, null, null)
                     : null;
         }
 
-        if (ultimoFinal.getScore() != null && ultimoFinal.getScore() >= scheme.getMinApprovalGrade()) {
-            return new EnrollmentResult(EnrollmentStatus.APPROVED, ultimoFinal.getScore(), FinalGradeType.FINAL_EXAM);
+        if (lastFinal.getScore() != null && lastFinal.getScore() >= scheme.getMinApprovalGrade()) {
+            return new EnrollmentResult(EnrollmentStatus.APPROVED, lastFinal.getScore(), FinalGradeType.FINAL_EXAM);
         }
 
-        boolean quedanIntentos = maxFinalExamAttempts == null || intentosFinalUsados < maxFinalExamAttempts;
-        if (quedanIntentos) {
-            return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
+        boolean attemptsRemaining = maxFinalExamAttempts == null || finalAttemptsUsed < maxFinalExamAttempts;
+        if (attemptsRemaining) {
+            return regularAchieved && currentStatus != EnrollmentStatus.REGULAR
                     ? new EnrollmentResult(EnrollmentStatus.REGULAR, null, null)
                     : null;
         }
@@ -328,60 +328,60 @@ public class GradeItemService {
     // minRegularGrade (desaprueba si no llega) y minApprovalGrade (aprueba si lo alcanza) —
     // mismo criterio que ya existía antes de esta feature, sin cambios de comportamiento.
     private EnrollmentResult calculateWithoutFinalExam(
-            EvaluationScheme scheme, List<GradeItem> examenes, List<GradeItem> tps, boolean todosLosParcialesCargados) {
-        if (!todosLosParcialesCargados) {
+            EvaluationScheme scheme, List<GradeItem> exams, List<GradeItem> tps, boolean allPartialsLoaded) {
+        if (!allPartialsLoaded) {
             return null;
         }
-        List<GradeItem> todos = new ArrayList<>(examenes);
-        todos.addAll(tps);
+        List<GradeItem> allItems = new ArrayList<>(exams);
+        allItems.addAll(tps);
 
         if (scheme.getMinRegularGrade() != null) {
-            double promedioRegular = applyAggregation(scheme.getAggregationMethod(), todos);
-            if (promedioRegular < scheme.getMinRegularGrade()) {
+            double regularAverage = applyAggregation(scheme.getAggregationMethod(), allItems);
+            if (regularAverage < scheme.getMinRegularGrade()) {
                 return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
             }
         }
         if (scheme.getMinApprovalGrade() == null) {
             return null;
         }
-        double promedio = applyAggregation(scheme.getAggregationMethod(), todos);
-        if (promedio >= scheme.getMinApprovalGrade()) {
-            return new EnrollmentResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+        double average = applyAggregation(scheme.getAggregationMethod(), allItems);
+        if (average >= scheme.getMinApprovalGrade()) {
+            return new EnrollmentResult(EnrollmentStatus.APPROVED, average, FinalGradeType.PROMOTION);
         }
         return null;
     }
 
-    private boolean allApprovedIndividually(List<GradeItem> items, double umbral) {
-        return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore() >= umbral);
+    private boolean allApprovedIndividually(List<GradeItem> items, double threshold) {
+        return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore() >= threshold);
     }
 
     // Las 4 estrategias se implementan con su significado literal: promedio simple, promedio
     // ponderado por GradeItem.weight, máximo puntaje entre intentos, último intento cargado
     // (por fecha) — sin ambigüedad real del doc funcional que justifique preguntar.
-    private double applyAggregation(GradeAggregationMethod method, List<GradeItem> parciales) {
-        List<Double> scores = parciales.stream().map(GradeItem::getScore).filter(Objects::nonNull).toList();
+    private double applyAggregation(GradeAggregationMethod method, List<GradeItem> gradeItems) {
+        List<Double> scores = gradeItems.stream().map(GradeItem::getScore).filter(Objects::nonNull).toList();
         if (scores.isEmpty() || method == null) {
             return 0.0;
         }
         return switch (method) {
             case SIMPLE_AVERAGE -> scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
             case WEIGHTED_AVERAGE -> {
-                double sumaPonderada = 0.0;
-                double sumaPesos = 0.0;
-                for (GradeItem item : parciales) {
+                double weightedSum = 0.0;
+                double totalWeight = 0.0;
+                for (GradeItem item : gradeItems) {
                     if (item.getScore() == null) {
                         continue;
                     }
-                    double peso = item.getWeight() == null ? 0.0 : item.getWeight();
-                    sumaPonderada += item.getScore() * peso;
-                    sumaPesos += peso;
+                    double weight = item.getWeight() == null ? 0.0 : item.getWeight();
+                    weightedSum += item.getScore() * weight;
+                    totalWeight += weight;
                 }
-                yield sumaPesos == 0.0
+                yield totalWeight == 0.0
                         ? scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0)
-                        : sumaPonderada / sumaPesos;
+                        : weightedSum / totalWeight;
             }
             case MAX_SCORE -> scores.stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
-            case LAST_ATTEMPT -> parciales.stream()
+            case LAST_ATTEMPT -> gradeItems.stream()
                     .filter(i -> i.getScore() != null)
                     .max(Comparator.comparing(GradeItem::getDate, Comparator.nullsFirst(Comparator.naturalOrder())))
                     .map(GradeItem::getScore)

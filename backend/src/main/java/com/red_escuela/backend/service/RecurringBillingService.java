@@ -56,18 +56,18 @@ public class RecurringBillingService {
     // POST /billing/run — sin lógica duplicada entre cron y disparo manual.
     @Scheduled(cron = "0 0 3 * * *")
     public void generateDailyInstallments() {
-        LocalDate hoy = LocalDate.now();
-        generateProgramInstallments(hoy);
-        generateCourseInstallments(hoy);
+        LocalDate today = LocalDate.now();
+        generateProgramInstallments(today);
+        generateCourseInstallments(today);
     }
 
-    void generateProgramInstallments(LocalDate hoy) {
-        List<ProgramEnrollment> activas = programEnrollmentRepository.findByStatus(ProgramEnrollmentStatus.ENROLLED);
-        int generadas = 0;
-        for (ProgramEnrollment enrollment : activas) {
+    void generateProgramInstallments(LocalDate today) {
+        List<ProgramEnrollment> active = programEnrollmentRepository.findByStatus(ProgramEnrollmentStatus.ENROLLED);
+        int generatedCount = 0;
+        for (ProgramEnrollment enrollment : active) {
             try {
-                if (procesarCarrera(enrollment, hoy)) {
-                    generadas++;
+                if (procesarCarrera(enrollment, today)) {
+                    generatedCount++;
                 }
             } catch (Exception e) {
                 // Un alumno con datos mal cargados no puede frenar la facturación de
@@ -75,26 +75,26 @@ public class RecurringBillingService {
                 log.error("Motor de facturación: error generando cuota para ProgramEnrollment {}", enrollment.getId(), e);
             }
         }
-        log.info("Motor de facturación (carreras): {} matriculaciones revisadas, {} cuotas generadas", activas.size(), generadas);
+        log.info("Motor de facturación (carreras): {} matriculaciones revisadas, {} cuotas generadas", active.size(), generatedCount);
     }
 
-    void generateCourseInstallments(LocalDate hoy) {
-        List<CourseEnrollment> activas = courseEnrollmentRepository.findByStatus(EnrollmentStatus.ENROLLED);
-        int generadas = 0;
-        for (CourseEnrollment enrollment : activas) {
+    void generateCourseInstallments(LocalDate today) {
+        List<CourseEnrollment> active = courseEnrollmentRepository.findByStatus(EnrollmentStatus.ENROLLED);
+        int generatedCount = 0;
+        for (CourseEnrollment enrollment : active) {
             try {
-                if (procesarCurso(enrollment, hoy)) {
-                    generadas++;
+                if (procesarCurso(enrollment, today)) {
+                    generatedCount++;
                 }
             } catch (Exception e) {
                 log.error("Motor de facturación: error generando cuota para CourseEnrollment {}", enrollment.getId(), e);
             }
         }
-        log.info("Motor de facturación (cursos): {} matriculaciones revisadas, {} cuotas generadas", activas.size(), generadas);
+        log.info("Motor de facturación (cursos): {} matriculaciones revisadas, {} cuotas generadas", active.size(), generatedCount);
     }
 
     @Transactional
-    boolean procesarCarrera(ProgramEnrollment enrollment, LocalDate hoy) {
+    boolean procesarCarrera(ProgramEnrollment enrollment, LocalDate today) {
         ProgramCohort cohort = enrollment.getProgramCohort();
         Program program = enrollment.getProgram();
         // Alta directa por staff sin cohorte, o carrera sin plan de pagos configurado
@@ -104,44 +104,44 @@ public class RecurringBillingService {
             return false;
         }
 
-        int totalCuotas = program.getTotalYears() * program.getInstallmentsPerAcademicYear();
-        Integer numeroCuota = InstallmentScheduleCalculator.calculateInstallmentNumber(cohort.getCursadaStart(), totalCuotas, hoy);
-        if (numeroCuota == null) {
+        int totalInstallments = program.getTotalYears() * program.getInstallmentsPerAcademicYear();
+        Integer installmentNumber = InstallmentScheduleCalculator.calculateInstallmentNumber(cohort.getCourseStart(), totalInstallments, today);
+        if (installmentNumber == null) {
             return false;
         }
-        if (invoiceRepository.existsByProgramEnrollmentIdAndInstallmentNumber(enrollment.getId(), numeroCuota)) {
+        if (invoiceRepository.existsByProgramEnrollmentIdAndInstallmentNumber(enrollment.getId(), installmentNumber)) {
             return false;
         }
 
-        LocalDate dueDate = cohort.getCursadaStart().plusMonths(numeroCuota - 1L).withDayOfMonth(1);
+        LocalDate dueDate = cohort.getCourseStart().plusMonths(installmentNumber - 1L).withDayOfMonth(1);
         invoiceService.createFromFeeSchedule(
                 enrollment.getStudent().getId(),
                 new CreateInvoiceFromFeeScheduleRequest(program.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, dueDate),
-                null, enrollment, null, numeroCuota, totalCuotas);
+                null, enrollment, null, installmentNumber, totalInstallments);
         return true;
     }
 
     @Transactional
-    boolean procesarCurso(CourseEnrollment enrollment, LocalDate hoy) {
+    boolean procesarCurso(CourseEnrollment enrollment, LocalDate today) {
         Course course = enrollment.getCourse();
         if (course.getDurationMonths() == null || course.getTerm() == null || course.getTerm().getStartDate() == null) {
             return false;
         }
 
-        LocalDate cursadaStart = course.getTerm().getStartDate().toLocalDate();
-        Integer numeroCuota = InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, course.getDurationMonths(), hoy);
-        if (numeroCuota == null) {
+        LocalDate courseStart = course.getTerm().getStartDate().toLocalDate();
+        Integer installmentNumber = InstallmentScheduleCalculator.calculateInstallmentNumber(courseStart, course.getDurationMonths(), today);
+        if (installmentNumber == null) {
             return false;
         }
-        if (invoiceRepository.existsByCourseEnrollmentIdAndInstallmentNumber(enrollment.getId(), numeroCuota)) {
+        if (invoiceRepository.existsByCourseEnrollmentIdAndInstallmentNumber(enrollment.getId(), installmentNumber)) {
             return false;
         }
 
-        LocalDate dueDate = cursadaStart.plusMonths(numeroCuota - 1L).withDayOfMonth(1);
+        LocalDate dueDate = courseStart.plusMonths(installmentNumber - 1L).withDayOfMonth(1);
         invoiceService.createFromFeeSchedule(
                 enrollment.getStudent().getId(),
                 new CreateInvoiceFromFeeScheduleRequest(null, course.getId(), FeeScheduleConcept.CUOTA_MENSUAL, dueDate),
-                null, null, enrollment, numeroCuota, course.getDurationMonths());
+                null, null, enrollment, installmentNumber, course.getDurationMonths());
         return true;
     }
 }

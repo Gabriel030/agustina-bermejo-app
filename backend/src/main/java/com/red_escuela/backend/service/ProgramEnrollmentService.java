@@ -96,9 +96,9 @@ public class ProgramEnrollmentService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
+        List<ProgramEnrollment> active = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 studentId, program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED));
-        if (!activas.isEmpty()) {
+        if (!active.isEmpty()) {
             throw new AlreadyEnrolledInProgramException(studentId, program.getId());
         }
 
@@ -137,48 +137,48 @@ public class ProgramEnrollmentService {
         ProgramEnrollment enrollment = findOrThrow(id);
         Program program = enrollment.getProgram();
 
-        List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(program.getId());
-        List<ProgramSubject> aprobadas = listApprovedSubjects(id);
+        List<ProgramSubject> planEntries = programSubjectRepository.findByProgramId(program.getId());
+        List<ProgramSubject> approvedSubjects = listApprovedSubjects(id);
 
-        List<String> obligatoriasPendientes = entradas.stream()
-                .filter(entrada -> entrada.getElectiveGroup() == null && !aprobadas.contains(entrada))
-                .map(entrada -> entrada.getSubject().getName())
+        List<String> pendingRequiredSubjects = planEntries.stream()
+                .filter(entry -> entry.getElectiveGroup() == null && !approvedSubjects.contains(entry))
+                .map(entry -> entry.getSubject().getName())
                 .toList();
 
-        int creditosAcumulados = aprobadas.stream().mapToInt(ProgramSubject::getCredits).sum();
-        int creditosRequeridos = program.getTotalCreditsRequired();
+        int accumulatedCredits = approvedSubjects.stream().mapToInt(ProgramSubject::getCredits).sum();
+        int requiredCredits = program.getTotalCreditsRequired();
 
-        List<ProgramElectiveGroup> grupos = programElectiveGroupRepository.findByProgramId(program.getId());
-        List<ElectiveGroupProgressResponse> gruposElectivos = grupos.stream()
-                .map(grupo -> {
-                    long cantidadAprobada = aprobadas.stream()
-                            .filter(entrada -> entrada.getElectiveGroup() != null
-                                    && entrada.getElectiveGroup().getId().equals(grupo.getElectiveGroup().getId()))
+        List<ProgramElectiveGroup> electiveGroups = programElectiveGroupRepository.findByProgramId(program.getId());
+        List<ElectiveGroupProgressResponse> electiveGroupsProgress = electiveGroups.stream()
+                .map(group -> {
+                    long approvedCount = approvedSubjects.stream()
+                            .filter(entry -> entry.getElectiveGroup() != null
+                                    && entry.getElectiveGroup().getId().equals(group.getElectiveGroup().getId()))
                             .count();
-                    boolean cumplido = cantidadAprobada >= grupo.getMinRequired();
+                    boolean fulfilled = approvedCount >= group.getMinRequired();
                     return new ElectiveGroupProgressResponse(
-                            grupo.getElectiveGroup().getId(), grupo.getElectiveGroup().getName(),
-                            (int) cantidadAprobada, grupo.getMinRequired(), grupo.getMaxAllowed(), cumplido);
+                            group.getElectiveGroup().getId(), group.getElectiveGroup().getName(),
+                            (int) approvedCount, group.getMinRequired(), group.getMaxAllowed(), fulfilled);
                 })
                 .toList();
 
-        boolean elegibleParaCompletar = obligatoriasPendientes.isEmpty()
-                && creditosAcumulados >= creditosRequeridos
-                && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
+        boolean elegibleParaCompletar = pendingRequiredSubjects.isEmpty()
+                && accumulatedCredits >= requiredCredits
+                && electiveGroupsProgress.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
-        var notasFinales = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
+        var finalScores = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
                 .map(SubjectSectionEnrollment::getFinalScore)
                 .filter(java.util.Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
                 .average();
-        Double promedioGeneral = notasFinales.isPresent() ? notasFinales.getAsDouble() : null;
+        Double overallAverage = finalScores.isPresent() ? finalScores.getAsDouble() : null;
 
         // esRegular reusa tieneCursadaActiva (Épica 2 Fase 1, Alumno · Mis carreras) — mismo
         // criterio que ya usaba CertificateService para la constancia de alumno regular, ahora
         // también expuesto acá para mostrarlo como condición en la pantalla.
         return new ProgramProgressResponse(
-                enrollment.getId(), creditosAcumulados, creditosRequeridos,
-                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, hasActiveEnrollment(id), promedioGeneral);
+                enrollment.getId(), accumulatedCredits, requiredCredits,
+                pendingRequiredSubjects, electiveGroupsProgress, elegibleParaCompletar, hasActiveEnrollment(id), overallAverage);
     }
 
     // Épica 3 Fase 4: resumen de asistencia por materia para la vista de detalle de egreso del
@@ -187,10 +187,10 @@ public class ProgramEnrollmentService {
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
-                    var riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
-                    Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
+                    var dropoutRisk = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
+                    Double attendancePercentage = dropoutRisk.calculable() ? 100 - dropoutRisk.porcentajeAusentismo() : null;
                     return new SubjectAttendanceSummaryResponse(
-                            enrollment.getSubjectSection().getSubject().getName(), asistencia);
+                            enrollment.getSubjectSection().getSubject().getName(), attendancePercentage);
                 })
                 .toList();
     }
@@ -212,16 +212,16 @@ public class ProgramEnrollmentService {
      */
     public List<ProgramSubject> listApprovedSubjects(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(enrollment.getProgram().getId());
-        return entradas.stream()
-                .filter(entrada -> isApproved(programEnrollmentId, entrada))
+        List<ProgramSubject> planEntries = programSubjectRepository.findByProgramId(enrollment.getProgram().getId());
+        return planEntries.stream()
+                .filter(entry -> isApproved(programEnrollmentId, entry))
                 .toList();
     }
 
-    private boolean isApproved(Long programEnrollmentId, ProgramSubject entrada) {
+    private boolean isApproved(Long programEnrollmentId, ProgramSubject entry) {
         return !subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
-                        programEnrollmentId, entrada.getSubject().getId(), List.of(EnrollmentStatus.APPROVED))
+                        programEnrollmentId, entry.getSubject().getId(), List.of(EnrollmentStatus.APPROVED))
                 .isEmpty();
     }
 

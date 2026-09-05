@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface ProgramCohortRepository extends JpaRepository<ProgramCohort, Long> {
 
-    List<ProgramCohort> findByProgramIdOrderByOrdenEnAnio(Long programId);
+    List<ProgramCohort> findByProgramIdOrderByOrderInYear(Long programId);
 
-    Optional<ProgramCohort> findByProgramIdAndOrdenEnAnio(Long programId, Integer ordenEnAnio);
+    Optional<ProgramCohort> findByProgramIdAndOrderInYear(Long programId, Integer orderInYear);
 }

@@ -78,7 +78,7 @@ public class ProgramEnrollmentApplicationService {
     // diferencia de una cuota regular, que vence a futuro) — ver spec técnica,
     // "el Invoice + PaymentReceipt se crean en la MISMA request que request()".
     @Transactional
-    public ProgramEnrollmentApplication requestWithPayment(Student student, Long programId, Long cohortId, MultipartFile comprobante) {
+    public ProgramEnrollmentApplication requestWithPayment(Student student, Long programId, Long cohortId, MultipartFile receiptFile) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
@@ -93,7 +93,7 @@ public class ProgramEnrollmentApplicationService {
         Invoice invoice = invoiceService.createFromFeeSchedule(student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()),
                 cohort, null, null, null, null);
-        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante);
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), receiptFile);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);

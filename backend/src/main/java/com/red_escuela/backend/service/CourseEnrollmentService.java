@@ -98,9 +98,9 @@ public class CourseEnrollmentService {
 
         // Resolver TODAS las comisiones antes de create nada: si algún módulo falla (sin
         // comisión / ambiguo), no debe quedar ninguna fila creada (todo o nada, decisión 15).
-        Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
+        Map<CourseSubject, CourseSubjectSection> resolvedSections = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
-            resueltas.put(courseSubject, resolveSection(courseSubject, course, request));
+            resolvedSections.put(courseSubject, resolveSection(courseSubject, course, request));
         }
 
         CourseEnrollment enrollment = new CourseEnrollment();
@@ -110,9 +110,9 @@ public class CourseEnrollmentService {
         enrollment.setEnrollmentDate(now);
         CourseEnrollment savedEnrollment = courseEnrollmentRepository.save(enrollment);
 
-        for (CourseSubjectSection elegida : resueltas.values()) {
+        for (CourseSubjectSection chosenSection : resolvedSections.values()) {
             courseSubjectSectionEnrollmentRepository.save(
-                    createOrReactivateSubEnrollment(student, savedEnrollment, elegida, now));
+                    createOrReactivateSubEnrollment(student, savedEnrollment, chosenSection, now));
         }
 
         return savedEnrollment;
@@ -139,60 +139,60 @@ public class CourseEnrollmentService {
         }
 
         // CourseEnrollment.status usa EnrollmentStatus (sin PAUSED): la única activa posible es ENROLLED.
-        List<CourseEnrollment> activas = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(
+        List<CourseEnrollment> active = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(
                 student.getId(), course.getId(), List.of(EnrollmentStatus.ENROLLED));
-        if (!activas.isEmpty()) {
+        if (!active.isEmpty()) {
             throw new AlreadyEnrolledInCourseException(student.getId(), course.getId());
         }
     }
 
     private CourseSubjectSection resolveSection(CourseSubject courseSubject, Course course, CreateCourseEnrollmentRequest request) {
-        List<CourseSubjectSection> secciones = courseSubjectSectionRepository
+        List<CourseSubjectSection> sections = courseSubjectSectionRepository
                 .findByCourseSubjectIdAndStatus(courseSubject.getId(), StatusType.ACTIVE)
                 .stream()
                 .filter(section -> section.getTerm().getId().equals(course.getTerm().getId()))
                 .toList();
 
-        if (secciones.isEmpty()) {
+        if (sections.isEmpty()) {
             throw new IncompleteSectionSetupException(courseSubject.getId());
         }
-        if (secciones.size() == 1) {
-            return secciones.get(0);
+        if (sections.size() == 1) {
+            return sections.get(0);
         }
 
-        Long elegidaId = request.sectionOverrides() == null ? null : request.sectionOverrides().get(courseSubject.getId());
-        if (elegidaId == null) {
+        Long chosenSectionId = request.sectionOverrides() == null ? null : request.sectionOverrides().get(courseSubject.getId());
+        if (chosenSectionId == null) {
             throw new AmbiguousSectionException(courseSubject.getId());
         }
-        return secciones.stream()
-                .filter(section -> section.getId().equals(elegidaId))
+        return sections.stream()
+                .filter(section -> section.getId().equals(chosenSectionId))
                 .findFirst()
                 .orElseThrow(() -> new AmbiguousSectionException(courseSubject.getId()));
     }
 
     private CourseSubjectSectionEnrollment createOrReactivateSubEnrollment(
-            Student student, CourseEnrollment enrollment, CourseSubjectSection elegida, LocalDateTime now) {
-        Optional<CourseSubjectSectionEnrollment> existente = courseSubjectSectionEnrollmentRepository
-                .findByStudentIdAndCourseSubjectSectionId(student.getId(), elegida.getId());
-        if (existente.isPresent() && existente.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
+            Student student, CourseEnrollment enrollment, CourseSubjectSection chosenSection, LocalDateTime now) {
+        Optional<CourseSubjectSectionEnrollment> existing = courseSubjectSectionEnrollmentRepository
+                .findByStudentIdAndCourseSubjectSectionId(student.getId(), chosenSection.getId());
+        if (existing.isPresent() && existing.get().getStatus() == EnrollmentStatus.WITHDRAWN) {
             // El unique constraint (student_id, course_section_id) no admite un INSERT nuevo
             // para la misma comisión — reactivate la fila existente en vez de create otra
             // (mismo criterio que SubjectSectionEnrollmentService, decisión 7 por analogía).
-            CourseSubjectSectionEnrollment reactivada = existente.get();
-            reactivada.setCourseEnrollment(enrollment);
-            reactivada.setStatus(calculateStatusByCapacity(elegida));
-            reactivada.setDroppedAt(null);
-            return reactivada;
+            CourseSubjectSectionEnrollment reactivated = existing.get();
+            reactivated.setCourseEnrollment(enrollment);
+            reactivated.setStatus(calculateStatusByCapacity(chosenSection));
+            reactivated.setDroppedAt(null);
+            return reactivated;
         }
 
-        CourseSubjectSectionEnrollment nueva = new CourseSubjectSectionEnrollment();
-        nueva.setStudent(student);
-        nueva.setCourseEnrollment(enrollment);
-        nueva.setCourseSubjectSection(elegida);
-        nueva.setStatus(calculateStatusByCapacity(elegida));
-        nueva.setEnrolledAt(now);
-        nueva.setAttemptNumber(1);
-        return nueva;
+        CourseSubjectSectionEnrollment newEnrollment = new CourseSubjectSectionEnrollment();
+        newEnrollment.setStudent(student);
+        newEnrollment.setCourseEnrollment(enrollment);
+        newEnrollment.setCourseSubjectSection(chosenSection);
+        newEnrollment.setStatus(calculateStatusByCapacity(chosenSection));
+        newEnrollment.setEnrolledAt(now);
+        newEnrollment.setAttemptNumber(1);
+        return newEnrollment;
     }
 
     private EnrollmentStatus calculateStatusByCapacity(CourseSubjectSection section) {
@@ -201,11 +201,11 @@ public class CourseEnrollmentService {
         // ambas antes de que cualquiera haga commit, y las dos terminar ENROLLED.
         courseSubjectSectionRepository.findByIdForUpdate(section.getId())
                 .orElseThrow(() -> new SectionNotFoundException(section.getId()));
-        int ocupadas = courseSubjectSectionEnrollmentRepository
+        int occupied = courseSubjectSectionEnrollmentRepository
                 .findByCourseSubjectSectionIdAndStatusIn(section.getId(),
                         List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
                 .size();
-        return section.getCapacity() == null || ocupadas < section.getCapacity()
+        return section.getCapacity() == null || occupied < section.getCapacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
     }
 
@@ -226,13 +226,13 @@ public class CourseEnrollmentService {
         // módulo queda ocupado para siempre por alguien que ya no cursa nada.
         LocalDateTime now = LocalDateTime.now();
         for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(id)) {
-            EnrollmentStatus estadoAnterior = sub.getStatus();
-            if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS
-                    || estadoAnterior == EnrollmentStatus.WAITLISTED) {
+            EnrollmentStatus previousStatus = sub.getStatus();
+            if (previousStatus == EnrollmentStatus.ENROLLED || previousStatus == EnrollmentStatus.IN_PROGRESS
+                    || previousStatus == EnrollmentStatus.WAITLISTED) {
                 sub.setStatus(EnrollmentStatus.WITHDRAWN);
                 sub.setDroppedAt(now);
                 courseSubjectSectionEnrollmentRepository.save(sub);
-                if (estadoAnterior != EnrollmentStatus.WAITLISTED) {
+                if (previousStatus != EnrollmentStatus.WAITLISTED) {
                     promoteNextInWaitlist(sub.getCourseSubjectSection().getId());
                 }
             }
@@ -244,9 +244,9 @@ public class CourseEnrollmentService {
                 .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    courseSubjectSectionEnrollmentRepository.save(siguiente);
+                .ifPresent(next -> {
+                    next.setStatus(EnrollmentStatus.ENROLLED);
+                    courseSubjectSectionEnrollmentRepository.save(next);
                 });
     }
 
@@ -260,20 +260,20 @@ public class CourseEnrollmentService {
 
     public CourseProgressResponse calculateProgress(Long id) {
         CourseEnrollment enrollment = findOrThrow(id);
-        List<CourseSubject> modulos = courseSubjectRepository
+        List<CourseSubject> modules = courseSubjectRepository
                 .findByCourseIdAndStatusOrderBySortOrder(enrollment.getCourse().getId(), StatusType.ACTIVE);
 
-        List<CourseSubjectSectionEnrollment> inscripciones = courseSubjectSectionEnrollmentRepository
+        List<CourseSubjectSectionEnrollment> enrollments = courseSubjectSectionEnrollmentRepository
                 .findByCourseEnrollmentId(enrollment.getId());
 
-        List<String> modulosPendientes = modulos.stream()
-                .filter(modulo -> inscripciones.stream().noneMatch(inscripcion ->
-                        inscripcion.getCourseSubjectSection().getCourseSubject().getId().equals(modulo.getId())
-                                && inscripcion.getStatus() == EnrollmentStatus.APPROVED))
+        List<String> pendingModules = modules.stream()
+                .filter(module -> enrollments.stream().noneMatch(moduleEnrollment ->
+                        moduleEnrollment.getCourseSubjectSection().getCourseSubject().getId().equals(module.getId())
+                                && moduleEnrollment.getStatus() == EnrollmentStatus.APPROVED))
                 .map(CourseSubject::getName)
                 .toList();
 
-        return new CourseProgressResponse(enrollment.getId(), modulosPendientes, modulosPendientes.isEmpty());
+        return new CourseProgressResponse(enrollment.getId(), pendingModules, pendingModules.isEmpty());
     }
 
     private void validateStudentEligible(Student student) {

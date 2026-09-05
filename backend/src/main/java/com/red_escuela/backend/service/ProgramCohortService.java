@@ -38,7 +38,7 @@ public class ProgramCohortService {
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
 
-        programCohortRepository.findByProgramIdAndOrdenEnAnio(program.getId(), request.ordenEnAnio())
+        programCohortRepository.findByProgramIdAndOrderInYear(program.getId(), request.ordenEnAnio())
                 .ifPresent(existing -> {
                     throw new InvalidProgramCohortException(
                             "La carrera " + program.getId() + " ya tiene una cohorte con ordenEnAnio " + request.ordenEnAnio());
@@ -53,15 +53,15 @@ public class ProgramCohortService {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setProgram(program);
         cohort.setLabel(request.label());
-        cohort.setOrdenEnAnio(request.ordenEnAnio());
+        cohort.setOrderInYear(request.ordenEnAnio());
         cohort.setAdmissionStart(request.admissionStart());
         cohort.setAdmissionEnd(request.admissionEnd());
-        cohort.setCursadaStart(request.cursadaStart());
+        cohort.setCourseStart(request.cursadaStart());
         return programCohortRepository.save(cohort);
     }
 
     public List<ProgramCohort> listByProgram(Long programId) {
-        return programCohortRepository.findByProgramIdOrderByOrdenEnAnio(programId);
+        return programCohortRepository.findByProgramIdOrderByOrderInYear(programId);
     }
 
     ProgramCohort findOrThrow(Long id) {

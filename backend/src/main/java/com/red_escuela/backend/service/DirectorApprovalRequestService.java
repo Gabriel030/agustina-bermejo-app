@@ -62,13 +62,13 @@ public class DirectorApprovalRequestService {
         // Un mismo alumno puede tener a la vez excepciones activas de tipos distintos (o del
         // mismo tipo sobre materias distintas) — solo se bloquea el duplicado exacto: mismo
         // tipo + misma materia (o ninguna) + mismo trámite todavía REQUESTED.
-        boolean yaActiva = directorApprovalRequestRepository
+        boolean alreadyActive = directorApprovalRequestRepository
                 .findByProgramEnrollmentIdAndTypeAndStatus(
                         request.programEnrollmentId(), request.type(), DirectorApprovalRequestStatus.REQUESTED)
                 .stream()
                 .anyMatch(existing -> Objects.equals(
                         existing.getSubject() != null ? existing.getSubject().getId() : null, request.subjectId()));
-        if (yaActiva) {
+        if (alreadyActive) {
             throw new DirectorApprovalRequestAlreadyActiveException(request.programEnrollmentId());
         }
 
@@ -84,27 +84,27 @@ public class DirectorApprovalRequestService {
     }
 
     @Transactional
-    public DirectorApprovalRequest approve(Long id, String notas) {
-        return decide(id, DirectorApprovalRequestStatus.APPROVED, notas);
+    public DirectorApprovalRequest approve(Long id, String notes) {
+        return decide(id, DirectorApprovalRequestStatus.APPROVED, notes);
     }
 
     @Transactional
-    public DirectorApprovalRequest reject(Long id, String notas) {
-        return decide(id, DirectorApprovalRequestStatus.REJECTED, notas);
+    public DirectorApprovalRequest reject(Long id, String notes) {
+        return decide(id, DirectorApprovalRequestStatus.REJECTED, notes);
     }
 
-    private DirectorApprovalRequest decide(Long id, DirectorApprovalRequestStatus nuevoStatus, String notas) {
+    private DirectorApprovalRequest decide(Long id, DirectorApprovalRequestStatus newStatus, String notes) {
         DirectorApprovalRequest entity = findOrThrow(id);
         if (entity.getStatus() != DirectorApprovalRequestStatus.REQUESTED) {
             throw new InvalidDirectorApprovalRequestStateException(id);
         }
-        entity.setStatus(nuevoStatus);
+        entity.setStatus(newStatus);
         entity.setDecidedBy(currentPersonService.resolveCurrentPerson());
         entity.setDecidedAt(LocalDateTime.now());
-        entity.setDecisionNotes(notas);
+        entity.setDecisionNotes(notes);
         DirectorApprovalRequest saved = directorApprovalRequestRepository.save(entity);
 
-        if (nuevoStatus == DirectorApprovalRequestStatus.APPROVED) {
+        if (newStatus == DirectorApprovalRequestStatus.APPROVED) {
             eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved, saved.getRequestedBy()));
         } else {
             eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved, saved.getRequestedBy()));

@@ -299,9 +299,9 @@ public class AuthService {
                     "La contraseña tiene que tener al menos " + passwordMinLength + " caracteres");
         }
         if (passwordRequireLetterAndDigit) {
-            boolean tieneLetra = rawPassword.chars().anyMatch(Character::isLetter);
-            boolean tieneDigito = rawPassword.chars().anyMatch(Character::isDigit);
-            if (!tieneLetra || !tieneDigito) {
+            boolean hasLetter = rawPassword.chars().anyMatch(Character::isLetter);
+            boolean hasDigit = rawPassword.chars().anyMatch(Character::isDigit);
+            if (!hasLetter || !hasDigit) {
                 throw new InvalidPasswordPolicyException(
                         "La contraseña tiene que tener al menos una letra y un número");
             }

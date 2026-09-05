@@ -11,7 +11,7 @@ public record LateFeePolicyResponse(
 
     public static LateFeePolicyResponse from(LateFeePolicy policy) {
         return new LateFeePolicyResponse(
-                policy.getId(), policy.getDiasDeGracia(), policy.getPorcentajeRecargoPorPeriodo(),
-                policy.getDiasPorPeriodo(), policy.getDiasParaRiesgoDeCorte(), policy.getVigenteDesde());
+                policy.getId(), policy.getGracePeriodDays(), policy.getSurchargePercentagePerPeriod(),
+                policy.getPeriodDays(), policy.getDaysUntilCutoffRisk(), policy.getValidFrom());
     }
 }

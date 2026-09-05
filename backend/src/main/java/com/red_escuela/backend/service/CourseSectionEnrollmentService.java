@@ -54,9 +54,9 @@ public class CourseSectionEnrollmentService {
                 .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
         courseSubjectSectionEnrollmentRepository
                 .findFirstByCourseSubjectSectionIdAndStatusOrderByEnrolledAtAsc(courseSubjectSectionId, EnrollmentStatus.WAITLISTED)
-                .ifPresent(siguiente -> {
-                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
-                    courseSubjectSectionEnrollmentRepository.save(siguiente);
+                .ifPresent(next -> {
+                    next.setStatus(EnrollmentStatus.ENROLLED);
+                    courseSubjectSectionEnrollmentRepository.save(next);
                 });
     }
 

@@ -42,7 +42,7 @@ public class ProgramCohort {
     // en vez de inferirse comparando meses: queda auditable y no depende de un
     // cálculo implícito frágil si algún año la institución corre las fechas.
     @Column(name = "orden_en_anio", nullable = false)
-    private Integer ordenEnAnio;
+    private Integer orderInYear;
 
     @Column(name = "admission_start")
     private LocalDateTime admissionStart;
@@ -54,5 +54,5 @@ public class ProgramCohort {
     // (InstallmentScheduleCalculator la usa para saber qué cuota corresponde
     // a cada mes, nunca al mes de la solicitud/inscripción).
     @Column(name = "cursada_start", nullable = false)
-    private LocalDate cursadaStart;
+    private LocalDate courseStart;
 }

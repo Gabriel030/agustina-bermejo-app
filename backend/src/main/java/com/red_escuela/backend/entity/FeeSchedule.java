@@ -46,7 +46,7 @@ public class FeeSchedule {
     private BigDecimal amount;
 
     @Column(name = "vigente_desde", nullable = false)
-    private LocalDate vigenteDesde;
+    private LocalDate validFrom;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)

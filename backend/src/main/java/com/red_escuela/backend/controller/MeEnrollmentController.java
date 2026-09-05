@@ -78,10 +78,10 @@ public class MeEnrollmentController {
     public CourseEnrollmentApplicationResponse applyToCourse(
             @RequestParam Long courseId,
             @RequestParam(required = false) String sectionOverrides,
-            @RequestPart MultipartFile comprobante) {
+            @RequestPart MultipartFile receiptFile) {
         Student student = currentStudentService.resolveCurrentStudent();
         CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializeOverrides(sectionOverrides));
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request, comprobante);
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request, receiptFile);
         return CourseEnrollmentApplicationResponse.from(application);
     }
 

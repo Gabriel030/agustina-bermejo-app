@@ -28,13 +28,13 @@ public class BillingPeriod {
     private Long version;
 
     @Column(name = "dia_inicio", nullable = false)
-    private Integer diaInicio;
+    private Integer startDay;
 
     @Column(name = "dia_fin", nullable = false)
-    private Integer diaFin;
+    private Integer endDay;
 
     @Column(name = "vigente_desde", nullable = false)
-    private LocalDate vigenteDesde;
+    private LocalDate validFrom;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)

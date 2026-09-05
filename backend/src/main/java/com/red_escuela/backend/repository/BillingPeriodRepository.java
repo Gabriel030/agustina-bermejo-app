@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface BillingPeriodRepository extends JpaRepository<BillingPeriod, Long> {
 
-    List<BillingPeriod> findAllByOrderByVigenteDesdeDesc();
+    List<BillingPeriod> findAllByOrderByValidFromDesc();
 }

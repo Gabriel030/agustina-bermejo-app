@@ -112,10 +112,10 @@ public class AttendanceService {
         // Duplicado dentro del MISMO payload (no en la base): se procesa en memoria para que la
         // última entry de un enrollmentId repetido gane sobre una sola fila, en vez de depender
         // del timing de flush/lectura entre entries.
-        Map<Long, Attendance> procesadas = new HashMap<>();
-        List<Attendance> resultado = new ArrayList<>();
+        Map<Long, Attendance> processed = new HashMap<>();
+        List<Attendance> result = new ArrayList<>();
         for (var entry : request.entries()) {
-            Attendance attendance = procesadas.get(entry.enrollmentId());
+            Attendance attendance = processed.get(entry.enrollmentId());
             if (attendance == null) {
                 SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(entry.enrollmentId())
                         .orElseThrow(() -> new SectionEnrollmentNotFoundException(entry.enrollmentId()));
@@ -128,11 +128,11 @@ public class AttendanceService {
             }
             attendance.setStatus(entry.status());
             attendance = attendanceRepository.save(attendance);
-            procesadas.put(entry.enrollmentId(), attendance);
+            processed.put(entry.enrollmentId(), attendance);
         }
-        resultado.addAll(procesadas.values());
+        result.addAll(processed.values());
         upsertClassSessionProgram(section, request.classDate(), instructor, request.topic(), request.observations());
-        return resultado;
+        return result;
     }
 
     @Transactional
@@ -309,25 +309,25 @@ public class AttendanceService {
         exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
                 subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
 
-        Set<LocalDate> fechasCanceladas = classSessionRepository.findBySubjectSectionId(sectionId).stream()
+        Set<LocalDate> canceledDates = classSessionRepository.findBySubjectSectionId(sectionId).stream()
                 .filter(cs -> cs.getStatus() == ClassSessionStatus.CANCELED)
                 .map(ClassSession::getClassDate)
                 .collect(Collectors.toSet());
-        List<Attendance> asistencias = attendanceRepository.findByProgramSubjectSectionEnrollment_SubjectSection_Id(sectionId)
-                .stream().filter(a -> !fechasCanceladas.contains(a.getClassDate())).toList();
-        Map<Long, List<Attendance>> porInscripcion = asistencias.stream()
+        List<Attendance> attendances = attendanceRepository.findByProgramSubjectSectionEnrollment_SubjectSection_Id(sectionId)
+                .stream().filter(a -> !canceledDates.contains(a.getClassDate())).toList();
+        Map<Long, List<Attendance>> byEnrollment = attendances.stream()
                 .collect(Collectors.groupingBy(a -> a.getProgramSubjectSectionEnrollment().getId()));
 
-        List<SubjectSectionEnrollment> inscriptos =
+        List<SubjectSectionEnrollment> enrolledStudents =
                 subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        List<AttendanceHistoryResponse.StudentHistoryRow> filas = inscriptos.stream()
+        List<AttendanceHistoryResponse.StudentHistoryRow> rows = enrolledStudents.stream()
                 .map(enrollment -> construirFilaHistorial(
                         enrollment.getStudent().getId(), enrollment.getStudent().getPerson(),
-                        porInscripcion.getOrDefault(enrollment.getId(), List.of())))
+                        byEnrollment.getOrDefault(enrollment.getId(), List.of())))
                 .sorted(Comparator.comparing(AttendanceHistoryResponse.StudentHistoryRow::studentName))
                 .toList();
-        List<LocalDate> fechas = asistencias.stream().map(Attendance::getClassDate).distinct().sorted().toList();
-        return new AttendanceHistoryResponse(fechas, filas);
+        List<LocalDate> dates = attendances.stream().map(Attendance::getClassDate).distinct().sorted().toList();
+        return new AttendanceHistoryResponse(dates, rows);
     }
 
     public AttendanceHistoryResponse getHistoryCourseSection(Long sectionId, Long instructorIdIfDocente) {
@@ -337,25 +337,25 @@ public class AttendanceService {
         exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
                 courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
 
-        Set<LocalDate> fechasCanceladas = classSessionRepository.findByCourseSubjectSectionId(sectionId).stream()
+        Set<LocalDate> canceledDates = classSessionRepository.findByCourseSubjectSectionId(sectionId).stream()
                 .filter(cs -> cs.getStatus() == ClassSessionStatus.CANCELED)
                 .map(ClassSession::getClassDate)
                 .collect(Collectors.toSet());
-        List<Attendance> asistencias = attendanceRepository.findByCourseSubjectSectionEnrollment_CourseSubjectSection_Id(sectionId)
-                .stream().filter(a -> !fechasCanceladas.contains(a.getClassDate())).toList();
-        Map<Long, List<Attendance>> porInscripcion = asistencias.stream()
+        List<Attendance> attendances = attendanceRepository.findByCourseSubjectSectionEnrollment_CourseSubjectSection_Id(sectionId)
+                .stream().filter(a -> !canceledDates.contains(a.getClassDate())).toList();
+        Map<Long, List<Attendance>> byEnrollment = attendances.stream()
                 .collect(Collectors.groupingBy(a -> a.getCourseSubjectSectionEnrollment().getId()));
 
-        List<CourseSubjectSectionEnrollment> inscriptos =
+        List<CourseSubjectSectionEnrollment> enrolledStudents =
                 courseSubjectSectionEnrollmentRepository.findByCourseSubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        List<AttendanceHistoryResponse.StudentHistoryRow> filas = inscriptos.stream()
+        List<AttendanceHistoryResponse.StudentHistoryRow> rows = enrolledStudents.stream()
                 .map(enrollment -> construirFilaHistorial(
                         enrollment.getStudent().getId(), enrollment.getStudent().getPerson(),
-                        porInscripcion.getOrDefault(enrollment.getId(), List.of())))
+                        byEnrollment.getOrDefault(enrollment.getId(), List.of())))
                 .sorted(Comparator.comparing(AttendanceHistoryResponse.StudentHistoryRow::studentName))
                 .toList();
-        List<LocalDate> fechas = asistencias.stream().map(Attendance::getClassDate).distinct().sorted().toList();
-        return new AttendanceHistoryResponse(fechas, filas);
+        List<LocalDate> dates = attendances.stream().map(Attendance::getClassDate).distinct().sorted().toList();
+        return new AttendanceHistoryResponse(dates, rows);
     }
 
     public ClassSession getClassSessionProgramSection(Long sectionId, Long instructorId, LocalDate classDate) {
@@ -407,15 +407,15 @@ public class AttendanceService {
     }
 
     private List<RosterEntryResponse> buildRosterProgram(Long sectionId) {
-        List<SubjectSectionEnrollment> inscriptos =
+        List<SubjectSectionEnrollment> enrolledStudents =
                 subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        return inscriptos.stream().map(this::buildRosterEntryProgram).toList();
+        return enrolledStudents.stream().map(this::buildRosterEntryProgram).toList();
     }
 
     private List<RosterEntryResponse> buildRosterCourse(Long sectionId) {
-        List<CourseSubjectSectionEnrollment> inscriptos = courseSubjectSectionEnrollmentRepository
+        List<CourseSubjectSectionEnrollment> enrolledStudents = courseSubjectSectionEnrollmentRepository
                 .findByCourseSubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        return inscriptos.stream().map(this::buildRosterEntryCourse).toList();
+        return enrolledStudents.stream().map(this::buildRosterEntryCourse).toList();
     }
 
     private RosterEntryResponse buildRosterEntryProgram(SubjectSectionEnrollment enrollment) {

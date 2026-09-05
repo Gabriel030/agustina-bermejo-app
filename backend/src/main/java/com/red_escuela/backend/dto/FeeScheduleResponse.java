@@ -16,7 +16,7 @@ public record FeeScheduleResponse(
                 feeSchedule.getCourse() == null ? null : feeSchedule.getCourse().getId(),
                 feeSchedule.getConcept().name(),
                 feeSchedule.getAmount(),
-                feeSchedule.getVigenteDesde(),
+                feeSchedule.getValidFrom(),
                 feeSchedule.getCreatedBy().getId());
     }
 }

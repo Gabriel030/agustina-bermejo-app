@@ -79,18 +79,18 @@ public class MeAcademicRecordController {
 
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public AttendanceResponse justificarMiInasistencia(
-            @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile comprobante) {
+            @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile proofFile) {
         Student student = currentStudentService.resolveCurrentStudent();
         Attendance attendance = attendanceService.viewDetail(id);
         requireAttendanceOwner(attendance, student);
-        String tipo = comprobante.getContentType();
-        boolean tipoPermitido = MediaType.APPLICATION_PDF_VALUE.equals(tipo) || MediaType.IMAGE_JPEG_VALUE.equals(tipo);
-        if (!tipoPermitido) {
-            throw new UnsupportedFileTypeException(tipo);
+        String contentType = proofFile.getContentType();
+        boolean allowedType = MediaType.APPLICATION_PDF_VALUE.equals(contentType) || MediaType.IMAGE_JPEG_VALUE.equals(contentType);
+        if (!allowedType) {
+            throw new UnsupportedFileTypeException(contentType);
         }
-        String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", comprobante);
-        String motivo = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
-        return AttendanceResponse.from(attendanceService.uploadJustificationProof(id, motivo, relativePath));
+        String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", proofFile);
+        String justificationReason = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
+        return AttendanceResponse.from(attendanceService.uploadJustificationProof(id, justificationReason, relativePath));
     }
 
     // 404 (no 403) si la cursada no es del alumno autenticado — mismo criterio que

@@ -32,13 +32,13 @@ final class InstallmentScheduleCalculator {
      * {@code null} si {@code fecha} es anterior al inicio de cursada o el plan
      * ya se agotó (no hay cuota "de más" una vez completado {@code totalCuotas}).
      */
-    static Integer calculateInstallmentNumber(LocalDate cursadaStart, int totalCuotas, LocalDate fecha) {
-        if (fecha.isBefore(cursadaStart)) {
+    static Integer calculateInstallmentNumber(LocalDate courseStart, int totalInstallments, LocalDate date) {
+        if (date.isBefore(courseStart)) {
             return null;
         }
-        long mesesTranscurridos = ChronoUnit.MONTHS.between(
-                cursadaStart.withDayOfMonth(1), fecha.withDayOfMonth(1));
-        int numeroCuota = (int) mesesTranscurridos + 1;
-        return numeroCuota > totalCuotas ? null : numeroCuota;
+        long monthsElapsed = ChronoUnit.MONTHS.between(
+                courseStart.withDayOfMonth(1), date.withDayOfMonth(1));
+        int installmentNumber = (int) monthsElapsed + 1;
+        return installmentNumber > totalInstallments ? null : installmentNumber;
     }
 }

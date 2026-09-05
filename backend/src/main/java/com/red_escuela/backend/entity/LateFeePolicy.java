@@ -31,19 +31,19 @@ public class LateFeePolicy {
     private Long version;
 
     @Column(name = "dias_de_gracia", nullable = false)
-    private Integer diasDeGracia;
+    private Integer gracePeriodDays;
 
     @Column(name = "porcentaje_recargo_por_periodo", nullable = false)
-    private BigDecimal porcentajeRecargoPorPeriodo;
+    private BigDecimal surchargePercentagePerPeriod;
 
     @Column(name = "dias_por_periodo", nullable = false)
-    private Integer diasPorPeriodo;
+    private Integer periodDays;
 
     @Column(name = "dias_para_riesgo_de_corte", nullable = false)
-    private Integer diasParaRiesgoDeCorte;
+    private Integer daysUntilCutoffRisk;
 
     @Column(name = "vigente_desde", nullable = false)
-    private LocalDate vigenteDesde;
+    private LocalDate validFrom;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
