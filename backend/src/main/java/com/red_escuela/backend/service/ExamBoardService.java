@@ -62,7 +62,7 @@ public class ExamBoardService {
     }
 
     @Transactional
-    public ExamBoard crear(CreateExamBoardRequest request) {
+    public ExamBoard create(CreateExamBoardRequest request) {
         boolean hasSubject = request.subjectId() != null;
         boolean hasCourseSubject = request.courseSubjectId() != null;
         if (hasSubject == hasCourseSubject) {
@@ -94,7 +94,7 @@ public class ExamBoardService {
     // Mesas SCHEDULED de una materia — para que el alumno vea a qué llamado anotarse. Solo
     // tiene sentido para materias donde ya está REGULAR (ese chequeo vive en
     // ExamBoardRegistrationService, acá solo se lista lo que hay ofrecido).
-    public List<ExamBoard> listarDisponiblesPorSubject(Long subjectId) {
+    public List<ExamBoard> listAvailableBySubject(Long subjectId) {
         return examBoardRepository.findBySubjectIdAndStatus(subjectId, ExamBoardStatus.SCHEDULED);
     }
 
@@ -122,20 +122,20 @@ public class ExamBoardService {
         return examBoardRepository.save(examBoard);
     }
 
-    public List<ExamBoardRegistration> listarAnotados(Long examBoardId) {
+    public List<ExamBoardRegistration> listRegistrations(Long examBoardId) {
         findOrThrow(examBoardId);
         return examBoardRegistrationRepository.findByExamBoardId(examBoardId);
     }
 
-    public List<ExamBoardRegistrationSummaryResponse> listarAnotadosConDetalle(Long examBoardId) {
-        return listarAnotados(examBoardId).stream().map(this::aResumen).toList();
+    public List<ExamBoardRegistrationSummaryResponse> listRegistrationsWithDetail(Long examBoardId) {
+        return listRegistrations(examBoardId).stream().map(this::aResumen).toList();
     }
 
     public ExamBoard verDetalle(Long id) {
         return findOrThrow(id);
     }
 
-    public List<ExamBoard> listar(ExamBoardStatus status) {
+    public List<ExamBoard> list(ExamBoardStatus status) {
         return status == null ? examBoardRepository.findAllByOrderByExamDateDesc()
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);
     }

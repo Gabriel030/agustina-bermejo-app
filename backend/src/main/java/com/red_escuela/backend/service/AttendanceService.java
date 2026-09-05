@@ -186,7 +186,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public Attendance subirComprobante(Long attendanceId, String reason, String attachmentUrl) {
+    public Attendance uploadJustificationProof(Long attendanceId, String reason, String attachmentUrl) {
         Attendance attendance = findOrThrow(attendanceId);
         if (attendance.getStatus() != AttendanceStatus.ABSENT) {
             throw new CannotJustifyException(
@@ -199,7 +199,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public Attendance aprobarJustificacion(Long attendanceId) {
+    public Attendance approveJustification(Long attendanceId) {
         Attendance attendance = findOrThrow(attendanceId);
         if (attendance.getStatus() != AttendanceStatus.JUSTIFICATION_PENDING) {
             throw new CannotJustifyException(
@@ -216,7 +216,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public Attendance rechazarJustificacion(Long attendanceId) {
+    public Attendance rejectJustification(Long attendanceId) {
         Attendance attendance = findOrThrow(attendanceId);
         if (attendance.getStatus() != AttendanceStatus.JUSTIFICATION_PENDING) {
             throw new CannotJustifyException(
@@ -230,15 +230,15 @@ public class AttendanceService {
         return findOrThrow(id);
     }
 
-    public List<Attendance> listarPorProgramEnrollment(Long enrollmentId) {
+    public List<Attendance> listByProgramEnrollment(Long enrollmentId) {
         return attendanceRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
     }
 
-    public List<Attendance> listarPorCourseEnrollment(Long enrollmentId) {
+    public List<Attendance> listByCourseEnrollment(Long enrollmentId) {
         return attendanceRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
     }
 
-    public AttendanceRiskResponse calcularRiesgoDeLibrePorProgramEnrollment(Long enrollmentId) {
+    public AttendanceRiskResponse calculateDropoutRiskByProgramEnrollment(Long enrollmentId) {
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getSubjectSection().getMaxAbsencePercentage();
@@ -248,10 +248,10 @@ public class AttendanceService {
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calcularRiesgo(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, ausentes, maxAbsencePercentage);
     }
 
-    public AttendanceRiskResponse calcularRiesgoDeLibrePorCourseEnrollment(Long enrollmentId) {
+    public AttendanceRiskResponse calculateDropoutRiskByCourseEnrollment(Long enrollmentId) {
         CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getCourseSubjectSection().getMaxAbsencePercentage();
@@ -261,7 +261,7 @@ public class AttendanceService {
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calcularRiesgo(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, ausentes, maxAbsencePercentage);
     }
 
     public List<RosterEntryResponse> obtenerRosterProgramSection(Long sectionId, Long instructorId) {
@@ -373,7 +373,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public void cancelarClaseProgramSection(Long sectionId, Long instructorId, LocalDate classDate) {
+    public void cancelClassForProgramSection(Long sectionId, Long instructorId, LocalDate classDate) {
         SubjectSection section = subjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
@@ -390,7 +390,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public void cancelarClaseCourseSection(Long sectionId, Long instructorId, LocalDate classDate) {
+    public void cancelClassForCourseSection(Long sectionId, Long instructorId, LocalDate classDate) {
         CourseSubjectSection section = courseSubjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
@@ -426,7 +426,7 @@ public class AttendanceService {
         long absenceCount = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), ABSENCE_STATUSES_FOR_COUNT);
         Double attendancePercentage = total == 0 ? null : (double) presentes / total;
-        boolean atRisk = calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId()).libre();
+        boolean atRisk = calculateDropoutRiskByProgramEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
                 enrollment.getId(), enrollment.getStudent().getId(), nombreCompleto(person), person.getDni(),
                 absenceCount, attendancePercentage, atRisk);
@@ -440,7 +440,7 @@ public class AttendanceService {
         long absenceCount = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), ABSENCE_STATUSES_FOR_COUNT);
         Double attendancePercentage = total == 0 ? null : (double) presentes / total;
-        boolean atRisk = calcularRiesgoDeLibrePorCourseEnrollment(enrollment.getId()).libre();
+        boolean atRisk = calculateDropoutRiskByCourseEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
                 enrollment.getId(), enrollment.getStudent().getId(), nombreCompleto(person), person.getDni(),
                 absenceCount, attendancePercentage, atRisk);
@@ -522,7 +522,7 @@ public class AttendanceService {
         return person.getName() + " " + person.getLastname();
     }
 
-    private AttendanceRiskResponse calcularRiesgo(long total, long ausentes, double maxAbsencePercentage) {
+    private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
         if (total == 0) {
             return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
         }

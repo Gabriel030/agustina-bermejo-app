@@ -43,7 +43,7 @@ public class FeeScheduleService {
     }
 
     @Transactional
-    public FeeSchedule crear(CreateFeeScheduleRequest request, Person createdBy) {
+    public FeeSchedule create(CreateFeeScheduleRequest request, Person createdBy) {
         boolean tieneProgram = request.programId() != null;
         boolean tieneCourse = request.courseId() != null;
         if (tieneProgram == tieneCourse) {
@@ -74,7 +74,7 @@ public class FeeScheduleService {
         return feeScheduleRepository.save(feeSchedule);
     }
 
-    public List<FeeSchedule> listar() {
+    public List<FeeSchedule> list() {
         return feeScheduleRepository.findAllByOrderByVigenteDesdeDesc();
     }
 
@@ -92,11 +92,11 @@ public class FeeScheduleService {
 
     /**
      * Épica 7 Fase 3: matrícula vigente ya ajustada por cohorte (ver
-     * {@link PricingCalculator#calcularMontoMatricula}, Épica 8 Fase 2 — 50%
+     * {@link PricingCalculator#calculateEnrollmentFeeAmount}, Épica 8 Fase 2 — 50%
      * para la segunda cohorte del año). Cualquier alumno tiene que poder ver
      * este monto ANTES de transferir, no solo Director/Administrativo — por
      * eso es un método público separado, sin las restricciones del resto de
-     * esta clase (que sí es Director-only para crear/editar).
+     * esta clase (que sí es Director-only para create/editar).
      * {@code ordenEnAnioCohorte} nullable: sin cohorte elegida todavía
      * (ej. la pantalla de Detalle, antes de arrancar el wizard), devuelve el
      * monto base sin prorratear.
@@ -108,6 +108,6 @@ public class FeeScheduleService {
         }
         ProgramCohort cohorteTransitoria = new ProgramCohort();
         cohorteTransitoria.setOrdenEnAnio(ordenEnAnioCohorte);
-        return PricingCalculator.calcularMontoMatricula(feeSchedule.getAmount(), cohorteTransitoria);
+        return PricingCalculator.calculateEnrollmentFeeAmount(feeSchedule.getAmount(), cohorteTransitoria);
     }
 }

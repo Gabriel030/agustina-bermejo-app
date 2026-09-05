@@ -26,7 +26,7 @@ public class CourseService {
     }
 
     @Transactional
-    public Course crearCurso(CreateCourseRequest request) {
+    public Course createCourse(CreateCourseRequest request) {
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
@@ -44,7 +44,7 @@ public class CourseService {
     }
 
     @Transactional
-    public Course editarCurso(Long id, UpdateCourseRequest request) {
+    public Course updateCourse(Long id, UpdateCourseRequest request) {
         Course course = findOrThrow(id);
         if (request.name() != null) {
             course.setName(request.name());
@@ -70,7 +70,7 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public List<Course> listar(StatusType status) {
+    public List<Course> list(StatusType status) {
         return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
     }
 
@@ -79,14 +79,14 @@ public class CourseService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         Course course = findOrThrow(id);
         course.setIsActive(StatusType.INACTIVE);
         courseRepository.save(course);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         Course course = findOrThrow(id);
         course.setIsActive(StatusType.ACTIVE);
         courseRepository.save(course);

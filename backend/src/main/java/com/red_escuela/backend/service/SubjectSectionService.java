@@ -59,7 +59,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public SubjectSection crearComision(Long subjectId, CreateSectionRequest request) {
+    public SubjectSection createSection(Long subjectId, CreateSectionRequest request) {
         Subject subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
         Term term = termRepository.findById(request.termId())
@@ -82,7 +82,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public SubjectSection editarComision(Long id, UpdateSectionRequest request) {
+    public SubjectSection updateSection(Long id, UpdateSectionRequest request) {
         SubjectSection section = findOrThrow(id);
         if (request.name() != null) {
             section.setName(request.name());
@@ -99,7 +99,7 @@ public class SubjectSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<SubjectSection> listarPorMateria(Long subjectId, StatusType status) {
+    public List<SubjectSection> listBySubject(Long subjectId, StatusType status) {
         return status == null
                 ? sectionRepository.findBySubjectId(subjectId)
                 : sectionRepository.findBySubjectIdAndStatus(subjectId, status);
@@ -110,14 +110,14 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         SubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         SubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
@@ -145,7 +145,7 @@ public class SubjectSectionService {
         }
     }
 
-    public List<SubjectSectionInstructor> listarDocentes(Long sectionId) {
+    public List<SubjectSectionInstructor> listInstructors(Long sectionId) {
         return sectionInstructorRepository.findBySectionId(sectionId);
     }
 

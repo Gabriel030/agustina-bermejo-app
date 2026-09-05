@@ -32,7 +32,7 @@ final class LateFeeCalculator {
     // Recargo = saldo * porcentaje * cantidad de períodos completos de diasPorPeriodo
     // transcurridos desde que se cumplieron los días de gracia — crece escalonado,
     // no de forma continua día a día.
-    static BigDecimal calcularRecargo(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha, BigDecimal saldo) {
+    static BigDecimal calculateSurcharge(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha, BigDecimal saldo) {
         if (!estaEnMora(policy, dueDate, fecha)) {
             return BigDecimal.ZERO;
         }

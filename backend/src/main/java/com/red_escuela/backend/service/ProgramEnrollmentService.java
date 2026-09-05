@@ -76,10 +76,10 @@ public class ProgramEnrollmentService {
     }
 
     @Transactional
-    public ProgramEnrollment matricular(Long studentId, CreateProgramEnrollmentRequest request) {
+    public ProgramEnrollment enroll(Long studentId, CreateProgramEnrollmentRequest request) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
-        validarStudentHabilitado(student);
+        validateStudentEligible(student);
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
@@ -92,7 +92,7 @@ public class ProgramEnrollmentService {
         if (request.cohortId() != null) {
             cohort = programCohortRepository.findById(request.cohortId())
                     .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
-            validarVentanaDeAdmision(cohort);
+            validateAdmissionWindow(cohort);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -112,7 +112,7 @@ public class ProgramEnrollmentService {
     }
 
     @Transactional
-    public void darDeBaja(Long id) {
+    public void withdraw(Long id) {
         ProgramEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
                 && enrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
@@ -129,16 +129,16 @@ public class ProgramEnrollmentService {
         return findOrThrow(id);
     }
 
-    public List<ProgramEnrollment> listarPorAlumno(Long studentId) {
+    public List<ProgramEnrollment> listByStudent(Long studentId) {
         return programEnrollmentRepository.findByStudentId(studentId);
     }
 
-    public ProgramProgressResponse calcularProgreso(Long id) {
+    public ProgramProgressResponse calculateProgress(Long id) {
         ProgramEnrollment enrollment = findOrThrow(id);
         Program program = enrollment.getProgram();
 
         List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(program.getId());
-        List<ProgramSubject> aprobadas = listarMateriasAprobadas(id);
+        List<ProgramSubject> aprobadas = listApprovedSubjects(id);
 
         List<String> obligatoriasPendientes = entradas.stream()
                 .filter(entrada -> entrada.getElectiveGroup() == null && !aprobadas.contains(entrada))
@@ -187,7 +187,7 @@ public class ProgramEnrollmentService {
     public List<SubjectAttendanceSummaryResponse> resumenAsistenciaPorMateria(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
-                    var riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+                    var riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
                     Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
@@ -208,9 +208,9 @@ public class ProgramEnrollmentService {
 
     /**
      * Reusado por CertificateService (constancia de materias aprobadas, Spec Procesos
-     * administrativos): mismo criterio de "aprobada" que calcularProgreso, sin duplicarlo.
+     * administrativos): mismo criterio de "aprobada" que calculateProgress, sin duplicarlo.
      */
-    public List<ProgramSubject> listarMateriasAprobadas(Long programEnrollmentId) {
+    public List<ProgramSubject> listApprovedSubjects(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(enrollment.getProgram().getId());
         return entradas.stream()
@@ -227,11 +227,11 @@ public class ProgramEnrollmentService {
 
     // Package-private (no private): ProgramEnrollmentApplicationService.solicitarConPago la
     // reusa para no cobrarle matrícula a nadie fuera de la ventana de admisión — antes solo se
-    // validaba acá, en matricular(), que recién corre cuando el Preceptor aprueba la solicitud
+    // validaba acá, en enroll(), que recién corre cuando el Preceptor aprueba la solicitud
     // (tarde: el comprobante ya se había pedido y subido). Mismo criterio que
-    // CourseEnrollmentService.validarPuedeMatricular. Desde Épica 8 Fase 2 la ventana vive en
+    // CourseEnrollmentService.validateCanEnroll. Desde Épica 8 Fase 2 la ventana vive en
     // ProgramCohort, no en Program (una carrera tiene 2 cohortes por año, cada una con la suya).
-    void validarVentanaDeAdmision(ProgramCohort cohort) {
+    void validateAdmissionWindow(ProgramCohort cohort) {
         if (cohort.getAdmissionStart() != null && cohort.getAdmissionEnd() != null
                 && cohort.getAdmissionStart().isAfter(cohort.getAdmissionEnd())) {
             throw new InvalidWindowConfigurationException(
@@ -246,7 +246,7 @@ public class ProgramEnrollmentService {
         }
     }
 
-    private void validarStudentHabilitado(Student student) {
+    private void validateStudentEligible(Student student) {
         if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
             throw new StudentNotConfirmedException(student.getId());
         }

@@ -21,7 +21,7 @@ public class TeachingSectionService {
         this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
     }
 
-    public List<TeachingSectionResponse> listarPorInstructor(Long instructorId) {
+    public List<TeachingSectionResponse> listByInstructor(Long instructorId) {
         List<TeachingSectionResponse> sections = new ArrayList<>();
         subjectSectionInstructorRepository.findByInstructorId(instructorId)
                 .forEach(link -> sections.add(TeachingSectionResponse.fromSubjectSection(link.getSection())));

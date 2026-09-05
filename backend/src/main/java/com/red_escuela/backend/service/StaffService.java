@@ -25,7 +25,7 @@ import java.util.Set;
  * hay flujo de prospecto — RF-AD-05 no lo describe así: dni/username se setean de una.
  *
  * Reparto de RF-AD-05/RF-DI-04: el Administrativo da de alta Docente/Preceptor, el Director
- * da de alta Administrativo — cada actor solo puede crear/editar los roles que la spec le
+ * da de alta Administrativo — cada actor solo puede create/editar los roles que la spec le
  * asigna, verificado acá (no en el @PreAuthorize del controller, que solo exige "alguno de
  * los dos roles" — la regla de negocio de "cuál rol exactamente" vive en el service).
  */
@@ -68,7 +68,7 @@ public class StaffService {
         }
         exigirPuedeAsignar(requestedRole);
 
-        Person person = personFactory.crearPersonBase(request.nombre(), request.apellido(), request.email());
+        Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
         person.setDni(request.dni());
         person.setUsername(request.dni());
 
@@ -103,7 +103,7 @@ public class StaffService {
     }
 
     @Transactional
-    public Person editarPersonal(Long personId, UpdateStaffRequest request) {
+    public Person updateStaff(Long personId, UpdateStaffRequest request) {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException(personId));
         exigirPuedeAsignar(resolveStaffRole(person));

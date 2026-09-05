@@ -71,7 +71,7 @@ public class InvoiceService {
     }
 
     @Transactional
-    public Invoice crear(Long studentId, CreateInvoiceRequest request) {
+    public Invoice create(Long studentId, CreateInvoiceRequest request) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
 
@@ -89,14 +89,14 @@ public class InvoiceService {
      * Genera la factura resolviendo el precio vigente del {@link FeeSchedule}
      * (matrícula o cuota, según {@code concept} — ver decisión de negocio) más
      * los descuentos/promociones vigentes para ese alumno y esa carrera/curso, en
-     * vez de un monto libre tipeado a mano ({@link #crear} sigue existiendo para
+     * vez de un monto libre tipeado a mano ({@link #create} sigue existiendo para
      * facturación ad-hoc, no se elimina). El monto queda congelado en la factura
      * al momento de emitirla — un cambio de precio o de descuento después no la
-     * afecta retroactivamente (mismo criterio que {@link #crear}).
+     * afecta retroactivamente (mismo criterio que {@link #create}).
      */
     @Transactional
-    public Invoice crearDesdeFeeSchedule(Long studentId, CreateInvoiceFromFeeScheduleRequest request) {
-        return crearDesdeFeeSchedule(studentId, request, null, null, null, null, null);
+    public Invoice createFromFeeSchedule(Long studentId, CreateInvoiceFromFeeScheduleRequest request) {
+        return createFromFeeSchedule(studentId, request, null, null, null, null, null);
     }
 
     /**
@@ -107,7 +107,7 @@ public class InvoiceService {
      * (cuota mensual, vinculada a la matriculación con su número de cuota).
      */
     @Transactional
-    Invoice crearDesdeFeeSchedule(
+    Invoice createFromFeeSchedule(
             Long studentId, CreateInvoiceFromFeeScheduleRequest request, ProgramCohort cohort,
             ProgramEnrollment programEnrollment, CourseEnrollment courseEnrollment,
             Integer installmentNumber, Integer totalInstallments) {
@@ -144,11 +144,11 @@ public class InvoiceService {
         // al 50% ANTES de aplicar descuentos/promociones (spec técnica Épica 8
         // Fase 2, decisión 6) — el resto de conceptos no tiene cohorte asociada.
         BigDecimal montoBase = (request.concept() == FeeScheduleConcept.MATRICULA && cohort != null)
-                ? PricingCalculator.calcularMontoMatricula(feeSchedule.getAmount(), cohort)
+                ? PricingCalculator.calculateEnrollmentFeeAmount(feeSchedule.getAmount(), cohort)
                 : feeSchedule.getAmount();
 
         List<Discount> descuentosVigentes = discountService.vigentesParaAlumno(studentId, hoy);
-        BigDecimal montoFinal = PricingCalculator.calcularMontoFinal(montoBase, descuentosVigentes, promocionesVigentes);
+        BigDecimal montoFinal = PricingCalculator.calculateFinalAmount(montoBase, descuentosVigentes, promocionesVigentes);
 
         Invoice invoice = new Invoice();
         invoice.setStudent(student);
@@ -168,9 +168,9 @@ public class InvoiceService {
     // negocio: nunca corte automático, siempre calculado on-demand, nunca
     // persistido). Cero si no hay política configurada o la factura no está en
     // mora, mismo criterio que el resto del cálculo de deuda de esta clase.
-    public BigDecimal calcularRecargoPorMora(Invoice invoice) {
+    public BigDecimal calculateLateSurcharge(Invoice invoice) {
         return lateFeePolicyService.vigenteEl(LocalDate.now())
-                .map(policy -> LateFeeCalculator.calcularRecargo(policy, invoice.getDueDate(), LocalDate.now(), calcularSaldoPendiente(invoice)))
+                .map(policy -> LateFeeCalculator.calculateSurcharge(policy, invoice.getDueDate(), LocalDate.now(), calculatePendingBalance(invoice)))
                 .orElse(BigDecimal.ZERO);
     }
 
@@ -180,16 +180,16 @@ public class InvoiceService {
                 .orElse(false);
     }
 
-    public List<InvoiceResponse> listarPorAlumno(Long studentId) {
+    public List<InvoiceResponse> listByStudent(Long studentId) {
         return invoiceRepository.findByStudentId(studentId).stream()
-                .map(invoice -> InvoiceResponse.from(invoice, calcularSaldoPendiente(invoice)))
+                .map(invoice -> InvoiceResponse.from(invoice, calculatePendingBalance(invoice)))
                 .toList();
     }
 
     @Transactional
-    public void cancelar(Long invoiceId) {
+    public void cancel(Long invoiceId) {
         Invoice invoice = findOrThrow(invoiceId);
-        // No se puede cancelar una factura ya saldada (PAID) ni una ya CANCELLED.
+        // No se puede cancel una factura ya saldada (PAID) ni una ya CANCELLED.
         if (invoice.getStatus() == InvoiceStatus.PAID || invoice.getStatus() == InvoiceStatus.CANCELLED) {
             throw new InvoiceAlreadyCancelledException(invoiceId);
         }
@@ -199,16 +199,16 @@ public class InvoiceService {
 
     // Decisión 3: siempre calculado on-demand, nunca un campo persistido — una factura recién
     // pagada se refleja inmediatamente, sin job ni sincronización posterior.
-    public DebtSummaryResponse calcularDeuda(Long studentId) {
+    public DebtSummaryResponse calculateDebt(Long studentId) {
         List<Invoice> pendientes = invoiceRepository.findByStudentIdAndStatusIn(
                 studentId, List.of(InvoiceStatus.PENDING, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE));
 
         BigDecimal montoAdeudado = pendientes.stream()
-                .map(this::calcularSaldoPendiente)
+                .map(this::calculatePendingBalance)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<InvoiceResponse> facturasPendientes = pendientes.stream()
-                .map(invoice -> InvoiceResponse.from(invoice, calcularSaldoPendiente(invoice)))
+                .map(invoice -> InvoiceResponse.from(invoice, calculatePendingBalance(invoice)))
                 .toList();
 
         return new DebtSummaryResponse(montoAdeudado.compareTo(BigDecimal.ZERO) > 0, montoAdeudado, facturasPendientes);
@@ -220,7 +220,7 @@ public class InvoiceService {
      * job (ver Deuda técnica): una factura PENDING/PARTIALLY_PAID con dueDate ya pasada cuenta
      * como vencida acá mismo, on-demand, sin necesitar que la base ya la tenga en OVERDUE.
      */
-    public PaymentStanding calcularEstadoDePago(Long studentId) {
+    public PaymentStanding calculatePaymentStatus(Long studentId) {
         List<Invoice> todasLasFacturas = invoiceRepository.findByStudentId(studentId);
         if (todasLasFacturas.isEmpty()) {
             return PaymentStanding.SIN_INFORMACION;
@@ -233,7 +233,7 @@ public class InvoiceService {
         return hayVencidaImpaga ? PaymentStanding.MOROSO : PaymentStanding.AL_DIA;
     }
 
-    BigDecimal calcularSaldoPendiente(Invoice invoice) {
+    BigDecimal calculatePendingBalance(Invoice invoice) {
         BigDecimal pagado = paymentRepository.findByInvoiceId(invoice.getId()).stream()
                 .map(payment -> payment.getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

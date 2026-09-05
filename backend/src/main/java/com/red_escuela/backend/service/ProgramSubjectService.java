@@ -101,7 +101,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public ProgramSubject editarMateria(Long id, UpdateProgramSubjectRequest request) {
+    public ProgramSubject updateSubject(Long id, UpdateProgramSubjectRequest request) {
         ProgramSubject programSubject = findOrThrow(id);
 
         if (request.curricularYear() != null) {
@@ -131,7 +131,7 @@ public class ProgramSubjectService {
         return programSubjectRepository.save(programSubject);
     }
 
-    public List<ProgramSubject> listarPorCarrera(Long programId, StatusType status) {
+    public List<ProgramSubject> listByProgram(Long programId, StatusType status) {
         return status == null
                 ? programSubjectRepository.findByProgramId(programId)
                 : programSubjectRepository.findByProgramIdAndStatus(programId, status);
@@ -142,14 +142,14 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
         programSubject.setStatus(StatusType.INACTIVE);
         programSubjectRepository.save(programSubject);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
         programSubject.setStatus(StatusType.ACTIVE);
         programSubjectRepository.save(programSubject);
@@ -167,7 +167,7 @@ public class ProgramSubjectService {
             throw new InvalidPrerequisiteException(
                     "Las correlatividades solo pueden darse entre materias de la misma carrera");
         }
-        validarOrdenCronologico(objetivo, prerequisitePropuesto);
+        validateChronologicalOrder(objetivo, prerequisitePropuesto);
         if (prerequisiteRepository.existsByProgramSubjectIdAndPrerequisiteProgramSubjectIdAndRequirementType(
                 objetivo.getId(), prerequisitePropuesto.getId(), request.requirementType())) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
@@ -209,7 +209,7 @@ public class ProgramSubjectService {
      * qué validar — se deja pasar (esa incompletitud no es responsabilidad de esta
      * validación).
      */
-    private void validarOrdenCronologico(ProgramSubject objetivo, ProgramSubject prerequisito) {
+    private void validateChronologicalOrder(ProgramSubject objetivo, ProgramSubject prerequisito) {
         if (objetivo.getCurricularYear() == null || objetivo.getCurricularTerm() == null
                 || prerequisito.getCurricularYear() == null || prerequisito.getCurricularTerm() == null) {
             return;
@@ -258,7 +258,7 @@ public class ProgramSubjectService {
         return false;
     }
 
-    public List<ProgramSubjectPrerequisite> listarCorrelatividades(Long programSubjectId) {
+    public List<ProgramSubjectPrerequisite> listPrerequisites(Long programSubjectId) {
         return prerequisiteRepository.findByProgramSubjectId(programSubjectId);
     }
 

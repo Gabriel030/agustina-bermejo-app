@@ -30,10 +30,10 @@ import java.util.Map;
  * Invoice+PaymentReceipt+CourseEnrollmentApplication, no la matriculación en sí) y
  * de {@link PaymentReceiptService} (evita un ciclo — PaymentReceiptService ya
  * depende de CourseEnrollmentService para disparar la matriculación real al
- * aprobar, así que este service es el único punto que depende de los tres).
- * Reusa {@link CourseEnrollmentService#validarPuedeMatricular} para no pedirle un
- * comprobante a alguien que de todas formas no podría matricularse (ventana
- * cerrada, ya inscripto, etc.) — misma validación que matricular() directo.
+ * approve, así que este service es el único punto que depende de los tres).
+ * Reusa {@link CourseEnrollmentService#validateCanEnroll} para no pedirle un
+ * comprobante a alguien que de todas formas no podría enroll (ventana
+ * cerrada, ya inscripto, etc.) — misma validación que enroll() directo.
  */
 @Service
 public class CourseEnrollmentApplicationService {
@@ -66,11 +66,11 @@ public class CourseEnrollmentApplicationService {
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
-        courseEnrollmentService.validarPuedeMatricular(student, course);
+        courseEnrollmentService.validateCanEnroll(student, course);
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(studentId,
+        Invoice invoice = invoiceService.createFromFeeSchedule(studentId,
                 new CreateInvoiceFromFeeScheduleRequest(null, request.courseId(), FeeScheduleConcept.CUOTA_MENSUAL, LocalDate.now()));
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);
@@ -80,7 +80,7 @@ public class CourseEnrollmentApplicationService {
         return courseEnrollmentApplicationRepository.save(application);
     }
 
-    public List<CourseEnrollmentApplication> listarPropias(Long studentId) {
+    public List<CourseEnrollmentApplication> listOwn(Long studentId) {
         return courseEnrollmentApplicationRepository.findByStudentIdOrderByIdDesc(studentId);
     }
 

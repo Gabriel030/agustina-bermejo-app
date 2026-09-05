@@ -30,12 +30,12 @@ import java.util.Map;
 
 /**
  * Comprobante de pago subido por el propio Alumno — paso previo sin confirmar
- * (ver {@link PaymentReceipt}). Al aprobar, construye el {@link Payment} real
+ * (ver {@link PaymentReceipt}). Al approve, construye el {@link Payment} real
  * (Factory Method, ver spec técnica) reusando el mismo cálculo de saldo que ya
  * usa {@link InvoiceService}/{@link PaymentService} para un pago cargado por
  * staff — un comprobante aprobado se convierte en un pago confirmado exactamente
  * igual que si Administración lo hubiera tipeado a mano. Desde la Fase 3 de
- * Épica 7, aprobar el comprobante de la primera cuota de un curso es también el
+ * Épica 7, approve el comprobante de la primera cuota de un curso es también el
  * único disparador de la matriculación real ({@link CourseEnrollmentApplication}) —
  * curso no tiene una "solicitud" separada que alguien decida, el comprobante mismo
  * cumple ese rol (ver spec funcional, decisión de negocio).
@@ -68,7 +68,7 @@ public class PaymentReceiptService {
     }
 
     @Transactional
-    public PaymentReceipt subir(Long invoiceId, MultipartFile file) {
+    public PaymentReceipt upload(Long invoiceId, MultipartFile file) {
         Invoice invoice = invoiceService.findOrThrow(invoiceId);
 
         paymentReceiptRepository.findByInvoiceIdAndStatus(invoiceId, PaymentReceiptStatus.PENDING_REVIEW)
@@ -86,14 +86,14 @@ public class PaymentReceiptService {
         return paymentReceiptRepository.save(receipt);
     }
 
-    // Al aprobar, crea el Payment real por el monto total de la factura — un
+    // Al approve, crea el Payment real por el monto total de la factura — un
     // comprobante siempre se sube por el monto completo de la cuota/matrícula
     // (no hay pago parcial vía comprobante en esta fase, a diferencia del
     // registro manual de PaymentService que sí lo permite).
     @Transactional
-    public PaymentReceipt aprobar(Long id, Person reviewedBy) {
+    public PaymentReceipt approve(Long id, Person reviewedBy) {
         PaymentReceipt receipt = findOrThrow(id);
-        receipt.aprobar(reviewedBy);
+        receipt.approve(reviewedBy);
 
         Invoice invoice = receipt.getInvoice();
         Payment payment = new Payment();
@@ -109,19 +109,19 @@ public class PaymentReceiptService {
         invoiceRepository.save(invoice);
 
         // Si este comprobante es el de la primera cuota de una inscripción a curso
-        // todavía sin matricular, recién ahora se dispara la matriculación real — ver
+        // todavía sin enroll, recién ahora se dispara la matriculación real — ver
         // decisión de negocio "ni carrera ni curso otorgan acceso hasta que el pago se
-        // aprueba" (spec funcional). Reusa matricularComoAutoservicio() sin tocarlo.
+        // aprueba" (spec funcional). Reusa enrollAsSelfService() sin tocarlo.
         courseEnrollmentApplicationRepository.findByPaymentReceiptId(id)
                 .filter(intent -> intent.getCourseEnrollment() == null)
-                .ifPresent(intent -> matricularCurso(intent));
+                .ifPresent(intent -> enrollInCourse(intent));
 
         return receipt;
     }
 
-    private void matricularCurso(CourseEnrollmentApplication intent) {
+    private void enrollInCourse(CourseEnrollmentApplication intent) {
         Map<Long, Long> overrides = deserializarOverrides(intent.getSectionOverrides());
-        CourseEnrollment enrollment = courseEnrollmentService.matricularComoAutoservicio(
+        CourseEnrollment enrollment = courseEnrollmentService.enrollAsSelfService(
                 intent.getStudent().getId(), new CreateCourseEnrollmentRequest(intent.getCourse().getId(), overrides));
         intent.setCourseEnrollment(enrollment);
         courseEnrollmentApplicationRepository.save(intent);
@@ -151,17 +151,17 @@ public class PaymentReceiptService {
     }
 
     @Transactional
-    public PaymentReceipt rechazar(Long id, Person reviewedBy, String reason) {
+    public PaymentReceipt reject(Long id, Person reviewedBy, String reason) {
         PaymentReceipt receipt = findOrThrow(id);
-        receipt.rechazar(reviewedBy, reason);
+        receipt.reject(reviewedBy, reason);
         return receipt;
     }
 
-    public List<PaymentReceipt> listarPendientes() {
+    public List<PaymentReceipt> listPending() {
         return paymentReceiptRepository.findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus.PENDING_REVIEW);
     }
 
-    public List<PaymentReceipt> listarPorFactura(Long invoiceId) {
+    public List<PaymentReceipt> listByInvoice(Long invoiceId) {
         return paymentReceiptRepository.findByInvoiceIdOrderByUploadedAtDesc(invoiceId);
     }
 

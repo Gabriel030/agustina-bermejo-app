@@ -105,7 +105,7 @@ public class RecurringBillingService {
         }
 
         int totalCuotas = program.getTotalYears() * program.getInstallmentsPerAcademicYear();
-        Integer numeroCuota = InstallmentScheduleCalculator.calcularNumeroDeCuota(cohort.getCursadaStart(), totalCuotas, hoy);
+        Integer numeroCuota = InstallmentScheduleCalculator.calculateInstallmentNumber(cohort.getCursadaStart(), totalCuotas, hoy);
         if (numeroCuota == null) {
             return false;
         }
@@ -114,7 +114,7 @@ public class RecurringBillingService {
         }
 
         LocalDate dueDate = cohort.getCursadaStart().plusMonths(numeroCuota - 1L).withDayOfMonth(1);
-        invoiceService.crearDesdeFeeSchedule(
+        invoiceService.createFromFeeSchedule(
                 enrollment.getStudent().getId(),
                 new CreateInvoiceFromFeeScheduleRequest(program.getId(), null, FeeScheduleConcept.CUOTA_MENSUAL, dueDate),
                 null, enrollment, null, numeroCuota, totalCuotas);
@@ -129,7 +129,7 @@ public class RecurringBillingService {
         }
 
         LocalDate cursadaStart = course.getTerm().getStartDate().toLocalDate();
-        Integer numeroCuota = InstallmentScheduleCalculator.calcularNumeroDeCuota(cursadaStart, course.getDurationMonths(), hoy);
+        Integer numeroCuota = InstallmentScheduleCalculator.calculateInstallmentNumber(cursadaStart, course.getDurationMonths(), hoy);
         if (numeroCuota == null) {
             return false;
         }
@@ -138,7 +138,7 @@ public class RecurringBillingService {
         }
 
         LocalDate dueDate = cursadaStart.plusMonths(numeroCuota - 1L).withDayOfMonth(1);
-        invoiceService.crearDesdeFeeSchedule(
+        invoiceService.createFromFeeSchedule(
                 enrollment.getStudent().getId(),
                 new CreateInvoiceFromFeeScheduleRequest(null, course.getId(), FeeScheduleConcept.CUOTA_MENSUAL, dueDate),
                 null, null, enrollment, numeroCuota, course.getDurationMonths());

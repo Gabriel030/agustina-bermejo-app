@@ -29,7 +29,7 @@ public class LateFeePolicyService {
     }
 
     @Transactional
-    public LateFeePolicy crear(CreateLateFeePolicyRequest request, Person createdBy) {
+    public LateFeePolicy create(CreateLateFeePolicyRequest request, Person createdBy) {
         LateFeePolicy policy = new LateFeePolicy();
         policy.setDiasDeGracia(request.diasDeGracia());
         policy.setPorcentajeRecargoPorPeriodo(request.porcentajeRecargoPorPeriodo());
@@ -41,7 +41,7 @@ public class LateFeePolicyService {
         return lateFeePolicyRepository.save(policy);
     }
 
-    public List<LateFeePolicy> listar() {
+    public List<LateFeePolicy> list() {
         return lateFeePolicyRepository.findAllByOrderByVigenteDesdeDesc();
     }
 

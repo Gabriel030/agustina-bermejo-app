@@ -60,7 +60,7 @@ public class AttendanceChangeRequestService {
     }
 
     @Transactional
-    public AttendanceChangeRequest crear(Long attendanceId, Instructor requestedBy, CreateAttendanceChangeRequestRequest body) {
+    public AttendanceChangeRequest create(Long attendanceId, Instructor requestedBy, CreateAttendanceChangeRequestRequest body) {
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new AttendanceNotFoundException(attendanceId));
         Long sectionId = resolveSectionId(attendance);
@@ -82,16 +82,16 @@ public class AttendanceChangeRequestService {
         return attendanceChangeRequestRepository.save(request);
     }
 
-    public List<AttendanceChangeRequest> listarPorEstado(AttendanceChangeRequestStatus status) {
+    public List<AttendanceChangeRequest> listByStatus(AttendanceChangeRequestStatus status) {
         return attendanceChangeRequestRepository.findByStatus(status);
     }
 
-    public List<AttendanceChangeRequest> listarPropias(Long instructorId) {
+    public List<AttendanceChangeRequest> listOwn(Long instructorId) {
         return attendanceChangeRequestRepository.findByRequestedByIdOrderByCreatedAtDesc(instructorId);
     }
 
     @Transactional
-    public AttendanceChangeRequest aprobar(Long id) {
+    public AttendanceChangeRequest approve(Long id) {
         AttendanceChangeRequest request = findOrThrow(id);
         exigirPendiente(request);
 
@@ -109,7 +109,7 @@ public class AttendanceChangeRequestService {
     }
 
     @Transactional
-    public AttendanceChangeRequest rechazar(Long id) {
+    public AttendanceChangeRequest reject(Long id) {
         AttendanceChangeRequest request = findOrThrow(id);
         exigirPendiente(request);
 

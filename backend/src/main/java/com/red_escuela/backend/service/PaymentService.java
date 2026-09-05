@@ -39,13 +39,13 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment registrarPago(Long invoiceId, RegistrarPagoRequest request) {
+    public Payment registerPayment(Long invoiceId, RegistrarPagoRequest request) {
         Invoice invoice = invoiceService.findOrThrow(invoiceId);
         if (invoice.getStatus() == InvoiceStatus.CANCELLED) {
             throw new InvoiceAlreadyCancelledException(invoiceId);
         }
 
-        BigDecimal saldoActual = invoiceService.calcularSaldoPendiente(invoice);
+        BigDecimal saldoActual = invoiceService.calculatePendingBalance(invoice);
         if (request.amount().compareTo(saldoActual) > 0) {
             throw new PaymentExceedsInvoiceBalanceException(invoiceId);
         }

@@ -28,7 +28,7 @@ final class PricingCalculator {
     private PricingCalculator() {
     }
 
-    static BigDecimal calcularMontoFinal(BigDecimal precioBase, List<Discount> descuentos, List<Promotion> promociones) {
+    static BigDecimal calculateFinalAmount(BigDecimal precioBase, List<Discount> descuentos, List<Promotion> promociones) {
         boolean tieneBecaTotal = descuentos.stream().anyMatch(d -> d.getTipo() == DiscountType.BECA_TOTAL);
         if (tieneBecaTotal) {
             return BigDecimal.ZERO;
@@ -68,7 +68,7 @@ final class PricingCalculator {
      * cohorte). Se aplica ANTES de descuentos/promociones (mismo orden que hoy:
      * esos se calculan sobre el monto ya prorrateado).
      */
-    static BigDecimal calcularMontoMatricula(BigDecimal montoBase, ProgramCohort cohort) {
+    static BigDecimal calculateEnrollmentFeeAmount(BigDecimal montoBase, ProgramCohort cohort) {
         if (cohort.getOrdenEnAnio() == 2) {
             return montoBase.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
         }

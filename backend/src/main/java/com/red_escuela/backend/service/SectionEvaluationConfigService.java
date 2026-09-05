@@ -129,7 +129,7 @@ public class SectionEvaluationConfigService {
     public SectionEvaluationConfig approve(Long sectionId, Person actor) {
         SectionEvaluationConfig config = findOrThrow(sectionId);
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
-            throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "aprobar");
+            throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "approve");
         }
         config.setStatus(SectionEvaluationConfigStatus.APPROVED);
         config.setReviewedBy(actor);
@@ -150,7 +150,7 @@ public class SectionEvaluationConfigService {
     public SectionEvaluationConfig reject(Long sectionId, Person actor, RejectSectionEvaluationConfigRequest request) {
         SectionEvaluationConfig config = findOrThrow(sectionId);
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
-            throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "rechazar");
+            throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "reject");
         }
         config.setStatus(SectionEvaluationConfigStatus.REJECTED);
         config.setRejectionReason(request.reason());
@@ -185,7 +185,7 @@ public class SectionEvaluationConfigService {
         if (examDate == null) {
             return;
         }
-        examBoardService.crear(new CreateExamBoardRequest(
+        examBoardService.create(new CreateExamBoardRequest(
                 section.getSubject().getId(), null, term.getId(),
                 examDate.atStartOfDay(), null, null, null));
     }

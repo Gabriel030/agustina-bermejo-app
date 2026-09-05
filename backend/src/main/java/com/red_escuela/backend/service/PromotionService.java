@@ -40,7 +40,7 @@ public class PromotionService {
     }
 
     @Transactional
-    public Promotion crear(CreatePromotionRequest request, Person createdBy) {
+    public Promotion create(CreatePromotionRequest request, Person createdBy) {
         if (request.programId() == null && request.courseId() == null) {
             throw new InvalidPricingTargetException(
                     "Una Promotion tiene que segmentar por al menos una carrera o un curso");
@@ -69,7 +69,7 @@ public class PromotionService {
         return promotionRepository.save(promotion);
     }
 
-    public List<Promotion> listar() {
+    public List<Promotion> list() {
         return promotionRepository.findAll();
     }
 

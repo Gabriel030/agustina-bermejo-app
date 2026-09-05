@@ -22,7 +22,7 @@ public class TermService {
     }
 
     @Transactional
-    public Term crearPeriodo(CreateTermRequest request) {
+    public Term createTerm(CreateTermRequest request) {
         Term term = new Term();
         term.setYear(request.year());
         term.setDescription(request.description());
@@ -36,7 +36,7 @@ public class TermService {
     }
 
     @Transactional
-    public Term editarPeriodo(Long id, UpdateTermRequest request) {
+    public Term updateTerm(Long id, UpdateTermRequest request) {
         Term term = findOrThrow(id);
         if (request.description() != null) {
             term.setDescription(request.description());
@@ -56,7 +56,7 @@ public class TermService {
         return termRepository.save(term);
     }
 
-    public List<Term> listar(StatusType status) {
+    public List<Term> list(StatusType status) {
         return status == null ? termRepository.findAll() : termRepository.findByStatus(status);
     }
 
@@ -65,14 +65,14 @@ public class TermService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         Term term = findOrThrow(id);
         term.setStatus(StatusType.INACTIVE);
         termRepository.save(term);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         Term term = findOrThrow(id);
         term.setStatus(StatusType.ACTIVE);
         termRepository.save(term);

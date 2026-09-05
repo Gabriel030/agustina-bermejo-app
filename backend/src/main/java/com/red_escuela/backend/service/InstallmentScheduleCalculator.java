@@ -32,7 +32,7 @@ final class InstallmentScheduleCalculator {
      * {@code null} si {@code fecha} es anterior al inicio de cursada o el plan
      * ya se agotó (no hay cuota "de más" una vez completado {@code totalCuotas}).
      */
-    static Integer calcularNumeroDeCuota(LocalDate cursadaStart, int totalCuotas, LocalDate fecha) {
+    static Integer calculateInstallmentNumber(LocalDate cursadaStart, int totalCuotas, LocalDate fecha) {
         if (fecha.isBefore(cursadaStart)) {
             return null;
         }

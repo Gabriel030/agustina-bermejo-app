@@ -56,7 +56,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public CourseSubjectSection crearComision(Long courseSubjectId, CreateSectionRequest request) {
+    public CourseSubjectSection createSection(Long courseSubjectId, CreateSectionRequest request) {
         CourseSubject courseSubject = courseSubjectRepository.findById(courseSubjectId)
                 .orElseThrow(() -> new CourseSubjectNotFoundException(courseSubjectId));
         Term term = termRepository.findById(request.termId())
@@ -77,7 +77,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public CourseSubjectSection editarComision(Long id, UpdateSectionRequest request) {
+    public CourseSubjectSection updateSection(Long id, UpdateSectionRequest request) {
         CourseSubjectSection section = findOrThrow(id);
         if (request.name() != null) {
             section.setName(request.name());
@@ -94,7 +94,7 @@ public class CourseSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<CourseSubjectSection> listarPorModulo(Long courseSubjectId, StatusType status) {
+    public List<CourseSubjectSection> listByCourseSubject(Long courseSubjectId, StatusType status) {
         return status == null
                 ? sectionRepository.findByCourseSubjectId(courseSubjectId)
                 : sectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, status);
@@ -105,14 +105,14 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
@@ -140,7 +140,7 @@ public class CourseSectionService {
         }
     }
 
-    public List<CourseSubjectSectionInstructor> listarDocentes(Long sectionId) {
+    public List<CourseSubjectSectionInstructor> listInstructors(Long sectionId) {
         return sectionInstructorRepository.findBySectionId(sectionId);
     }
 

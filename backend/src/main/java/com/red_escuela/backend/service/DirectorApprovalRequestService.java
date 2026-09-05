@@ -84,12 +84,12 @@ public class DirectorApprovalRequestService {
     }
 
     @Transactional
-    public DirectorApprovalRequest aprobar(Long id, String notas) {
+    public DirectorApprovalRequest approve(Long id, String notas) {
         return decidir(id, DirectorApprovalRequestStatus.APPROVED, notas);
     }
 
     @Transactional
-    public DirectorApprovalRequest rechazar(Long id, String notas) {
+    public DirectorApprovalRequest reject(Long id, String notas) {
         return decidir(id, DirectorApprovalRequestStatus.REJECTED, notas);
     }
 
@@ -112,11 +112,11 @@ public class DirectorApprovalRequestService {
         return saved;
     }
 
-    public List<DirectorApprovalRequest> listar(DirectorApprovalRequestStatus status) {
+    public List<DirectorApprovalRequest> list(DirectorApprovalRequestStatus status) {
         return directorApprovalRequestRepository.findByStatus(status != null ? status : DirectorApprovalRequestStatus.REQUESTED);
     }
 
-    public List<DirectorApprovalRequest> listarPorProgramEnrollment(Long programEnrollmentId) {
+    public List<DirectorApprovalRequest> listByProgramEnrollment(Long programEnrollmentId) {
         return directorApprovalRequestRepository.findByProgramEnrollmentId(programEnrollmentId);
     }
 

@@ -54,9 +54,9 @@ public class ExamBoardRegistrationService {
     }
 
     @Transactional
-    public ExamBoardRegistration inscribirProgramEnrollment(Long examBoardId, Long enrollmentId) {
+    public ExamBoardRegistration registerProgramEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
-        validarMesaAbierta(examBoard);
+        validateExamBoardOpen(examBoard);
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
@@ -96,7 +96,7 @@ public class ExamBoardRegistrationService {
                 throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
             }
             // Reactiva la fila existente en vez de insertar una nueva (mismo criterio que
-            // SubjectSectionEnrollmentService.inscribir): el índice único parcial de la
+            // SubjectSectionEnrollmentService.enroll): el índice único parcial de la
             // migración V19 no discrimina por status.
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
             registration.setRegisteredAt(LocalDateTime.now());
@@ -116,9 +116,9 @@ public class ExamBoardRegistrationService {
     }
 
     @Transactional
-    public ExamBoardRegistration inscribirCourseEnrollment(Long examBoardId, Long enrollmentId) {
+    public ExamBoardRegistration registerCourseEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
-        validarMesaAbierta(examBoard);
+        validateExamBoardOpen(examBoard);
 
         CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
@@ -172,7 +172,7 @@ public class ExamBoardRegistrationService {
     }
 
     @Transactional
-    public void darDeBaja(Long registrationId) {
+    public void withdraw(Long registrationId) {
         ExamBoardRegistration registration = examBoardRegistrationRepository.findById(registrationId)
                 .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(registrationId));
         if (registration.getStatus() != ExamBoardRegistrationStatus.REGISTERED) {
@@ -191,7 +191,7 @@ public class ExamBoardRegistrationService {
     // Todas las inscripciones a mesas de UN alumno (cualquier carrera, pasadas y presentes) —
     // para GET /me/exam-board-registrations. Alcance limitado al lado "program" (mismo
     // criterio que el resto de /me/exam-board-registrations, ver MeExamBoardRegistrationController).
-    public List<ExamBoardRegistration> listarMisInscripciones(Long studentId) {
+    public List<ExamBoardRegistration> listMyEnrollments(Long studentId) {
         return examBoardRegistrationRepository.findByProgramSubjectSectionEnrollment_ProgramEnrollment_Student_Id(studentId);
     }
 
@@ -200,7 +200,7 @@ public class ExamBoardRegistrationService {
                 .orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
     }
 
-    private void validarMesaAbierta(ExamBoard examBoard) {
+    private void validateExamBoardOpen(ExamBoard examBoard) {
         if (examBoard.getStatus() != ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(examBoard.getId());
         }

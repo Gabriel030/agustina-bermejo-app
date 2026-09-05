@@ -30,7 +30,7 @@ public class ProgramCohortService {
     }
 
     @Transactional
-    public ProgramCohort crear(CreateProgramCohortRequest request) {
+    public ProgramCohort create(CreateProgramCohortRequest request) {
         if (request.ordenEnAnio() != 1 && request.ordenEnAnio() != 2) {
             throw new InvalidProgramCohortException(
                     "ordenEnAnio tiene que ser 1 o 2 — una carrera tiene exactamente 2 cohortes por año");
@@ -60,7 +60,7 @@ public class ProgramCohortService {
         return programCohortRepository.save(cohort);
     }
 
-    public List<ProgramCohort> listarPorPrograma(Long programId) {
+    public List<ProgramCohort> listByProgram(Long programId) {
         return programCohortRepository.findByProgramIdOrderByOrdenEnAnio(programId);
     }
 

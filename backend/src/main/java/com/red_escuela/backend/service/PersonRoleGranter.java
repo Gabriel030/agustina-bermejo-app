@@ -24,7 +24,7 @@ public class PersonRoleGranter {
         this.roleRepository = roleRepository;
     }
 
-    public void otorgarAlumnoSiNoLoTiene(Person person) {
+    public void grantStudentRoleIfMissing(Person person) {
         boolean yaLoTiene = person.getRoles().stream().anyMatch(r -> r.getName().equals(ROLE_ALUMNO));
         if (yaLoTiene) {
             return;

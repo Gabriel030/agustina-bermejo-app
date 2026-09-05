@@ -76,7 +76,7 @@ public class GradeItemService {
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
         }
-        ExamBoard examBoard = validarOrigenNota(
+        ExamBoard examBoard = validateGradeOrigin(
                 request.examBoardId(), instructorId,
                 () -> subjectSectionInstructorRepository
                         .existsBySectionIdAndInstructorId(enrollment.getSubjectSection().getId(), instructorId),
@@ -92,7 +92,7 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        ResultadoCursada resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -115,7 +115,7 @@ public class GradeItemService {
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
         }
-        ExamBoard examBoard = validarOrigenNota(
+        ExamBoard examBoard = validateGradeOrigin(
                 request.examBoardId(), instructorId,
                 () -> courseSubjectSectionInstructorRepository
                         .existsBySectionIdAndInstructorId(enrollment.getCourseSubjectSection().getId(), instructorId),
@@ -131,7 +131,7 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        ResultadoCursada resultado = calcularResultado(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        ResultadoCursada resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -143,11 +143,11 @@ public class GradeItemService {
         return gradeItem;
     }
 
-    public List<GradeItem> listarPorProgramEnrollment(Long enrollmentId) {
+    public List<GradeItem> listByProgramEnrollment(Long enrollmentId) {
         return gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
     }
 
-    public List<GradeItem> listarPorCourseEnrollment(Long enrollmentId) {
+    public List<GradeItem> listByCourseEnrollment(Long enrollmentId) {
         return gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
     }
 
@@ -157,7 +157,7 @@ public class GradeItemService {
 
     // Nota que el alumno sacó en UNA mesa puntual, si ya rindió — null si todavía no cargaron
     // el FINAL de esa mesa. Usado por "mis inscripciones a mesas" (ver
-    // ExamBoardRegistrationService.listarMisInscripciones): ExamBoardRegistrationStatus.GRADED
+    // ExamBoardRegistrationService.listMyEnrollments): ExamBoardRegistrationStatus.GRADED
     // nunca se setea en el código actual, así que esto es la única fuente real.
     public Double obtenerNotaDeMesa(Long examBoardId, Long enrollmentId) {
         return gradeItemRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId)
@@ -171,7 +171,7 @@ public class GradeItemService {
     // Si viene examBoardId: valida que la mesa exista, no esté cerrada, y que el instructor
     // integre su tribunal. Si no viene: valida "comisión propia" del Docente, igual que
     // AttendanceService.
-    private ExamBoard validarOrigenNota(
+    private ExamBoard validateGradeOrigin(
             Long examBoardId, Long instructorId, java.util.function.BooleanSupplier esComisionPropia, Long sectionId) {
         if (examBoardId == null) {
             if (!esComisionPropia.getAsBoolean()) {
@@ -220,9 +220,9 @@ public class GradeItemService {
      * explícito del usuario ("si no se aprueban [los TPs] no permiten al alumno rendir el
      * final"). Ese gate se valida acá, antes de evaluar el atajo de promoción
      * ({@link #evaluarPromocion}) y, si no promocionó, el camino normal
-     * ({@link #calcularConFinal} / {@link #calcularSinFinal} según tenga final o no).
+     * ({@link #calculateWithFinalExam} / {@link #calculateWithoutFinalExam} según tenga final o no).
      */
-    private ResultadoCursada calcularResultado(
+    private ResultadoCursada calculateResult(
             EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
         if (estadoActual != EnrollmentStatus.ENROLLED
                 && estadoActual != EnrollmentStatus.IN_PROGRESS
@@ -256,8 +256,8 @@ public class GradeItemService {
         }
 
         return Boolean.TRUE.equals(scheme.getHasFinal())
-                ? calcularConFinal(scheme, examenes, todosLosParcialesCargados, ultimoFinal, finales.size(), estadoActual, maxFinalExamAttempts)
-                : calcularSinFinal(scheme, examenes, tps, todosLosParcialesCargados);
+                ? calculateWithFinalExam(scheme, examenes, todosLosParcialesCargados, ultimoFinal, finales.size(), estadoActual, maxFinalExamAttempts)
+                : calculateWithoutFinalExam(scheme, examenes, tps, todosLosParcialesCargados);
     }
 
     // Atajo de promoción sin final — opcional (EvaluationScheme.promotionMinGrade nullable) e
@@ -290,7 +290,7 @@ public class GradeItemService {
     // (maxFinalExamAttempts, o sin tope si es null), la cursada se queda en REGULAR esperando
     // que el alumno se anote a la próxima mesa (pedido explícito: "si no se aprueba el
     // primero, se tiene un segundo intento") — recién al agotar los llamados pasa a FAILED.
-    private ResultadoCursada calcularConFinal(
+    private ResultadoCursada calculateWithFinalExam(
             EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados,
             GradeItem ultimoFinal, int intentosFinalUsados, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
         boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
@@ -327,7 +327,7 @@ public class GradeItemService {
     // cursada, así que el promedio de parciales+TPs combinado se compara directo contra
     // minRegularGrade (desaprueba si no llega) y minApprovalGrade (aprueba si lo alcanza) —
     // mismo criterio que ya existía antes de esta feature, sin cambios de comportamiento.
-    private ResultadoCursada calcularSinFinal(
+    private ResultadoCursada calculateWithoutFinalExam(
             EvaluationScheme scheme, List<GradeItem> examenes, List<GradeItem> tps, boolean todosLosParcialesCargados) {
         if (!todosLosParcialesCargados) {
             return null;

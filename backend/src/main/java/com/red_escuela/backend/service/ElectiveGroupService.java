@@ -41,7 +41,7 @@ public class ElectiveGroupService {
     }
 
     @Transactional
-    public ElectiveGroup crearGrupo(CreateElectiveGroupRequest request) {
+    public ElectiveGroup createElectiveGroup(CreateElectiveGroupRequest request) {
         ElectiveGroup group = new ElectiveGroup();
         group.setName(request.name());
         group.setDescription(request.description());
@@ -53,7 +53,7 @@ public class ElectiveGroupService {
     }
 
     @Transactional
-    public ElectiveGroup editarGrupo(Long id, UpdateElectiveGroupRequest request) {
+    public ElectiveGroup updateElectiveGroup(Long id, UpdateElectiveGroupRequest request) {
         ElectiveGroup group = electiveGroupRepository.findById(id)
                 .orElseThrow(() -> new ElectiveGroupNotFoundException(id));
         if (request.name() != null) {
@@ -65,7 +65,7 @@ public class ElectiveGroupService {
         return electiveGroupRepository.save(group);
     }
 
-    public List<ElectiveGroup> listar() {
+    public List<ElectiveGroup> list() {
         return electiveGroupRepository.findAll();
     }
 
@@ -74,7 +74,7 @@ public class ElectiveGroupService {
                 .orElseThrow(() -> new ElectiveGroupNotFoundException(id));
     }
 
-    public List<ProgramElectiveGroup> listarPorCarrera(Long programId) {
+    public List<ProgramElectiveGroup> listByProgram(Long programId) {
         return programElectiveGroupRepository.findByProgramId(programId);
     }
 

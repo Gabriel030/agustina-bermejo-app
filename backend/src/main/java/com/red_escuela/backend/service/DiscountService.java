@@ -32,7 +32,7 @@ public class DiscountService {
     }
 
     @Transactional
-    public Discount crear(Long studentId, CreateDiscountRequest request, Person createdBy) {
+    public Discount create(Long studentId, CreateDiscountRequest request, Person createdBy) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
 
@@ -49,7 +49,7 @@ public class DiscountService {
         return discountRepository.save(discount);
     }
 
-    public List<Discount> listarPorAlumno(Long studentId) {
+    public List<Discount> listByStudent(Long studentId) {
         return discountRepository.findByStudentId(studentId);
     }
 

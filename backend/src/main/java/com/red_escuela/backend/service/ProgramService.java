@@ -21,7 +21,7 @@ public class ProgramService {
     }
 
     @Transactional
-    public Program crearCarrera(CreateProgramRequest request) {
+    public Program createProgram(CreateProgramRequest request) {
         Program program = new Program();
         program.setName(request.name());
         program.setTotalYears(request.totalYears());
@@ -33,7 +33,7 @@ public class ProgramService {
     }
 
     @Transactional
-    public Program editarCarrera(Long id, UpdateProgramRequest request) {
+    public Program updateProgram(Long id, UpdateProgramRequest request) {
         Program program = findOrThrow(id);
         if (request.name() != null) {
             program.setName(request.name());
@@ -53,7 +53,7 @@ public class ProgramService {
         return programRepository.save(program);
     }
 
-    public List<Program> listar(StatusType status) {
+    public List<Program> list(StatusType status) {
         return status == null ? programRepository.findAll() : programRepository.findByStatus(status);
     }
 
@@ -62,14 +62,14 @@ public class ProgramService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         Program program = findOrThrow(id);
         program.setStatus(StatusType.INACTIVE);
         programRepository.save(program);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         Program program = findOrThrow(id);
         program.setStatus(StatusType.ACTIVE);
         programRepository.save(program);

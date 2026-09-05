@@ -74,7 +74,7 @@ public class CertificateService {
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
-        PaymentStanding standing = invoiceService.calcularEstadoDePago(student.getId());
+        PaymentStanding standing = invoiceService.calculatePaymentStatus(student.getId());
         if (standing != PaymentStanding.AL_DIA) {
             throw new CertificateNotEligibleException("el alumno no está al día con sus pagos (" + standing + ")");
         }
@@ -84,7 +84,7 @@ public class CertificateService {
                 + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
         byte[] pdf = generarPdf("Constancia de alumno regular", texto);
-        registrarEmision(enrollment, CertificateType.REGULAR_STUDENT);
+        registerIssuance(enrollment, CertificateType.REGULAR_STUDENT);
         return pdf;
     }
 
@@ -92,7 +92,7 @@ public class CertificateService {
     public byte[] emitirConstanciaMateriasAprobadas(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubject> aprobadas = programEnrollmentService.listarMateriasAprobadas(programEnrollmentId);
+        List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
@@ -106,11 +106,11 @@ public class CertificateService {
             }
         }
         byte[] pdf = generarPdf("Constancia de materias aprobadas", texto.toString());
-        registrarEmision(enrollment, CertificateType.APPROVED_SUBJECTS);
+        registerIssuance(enrollment, CertificateType.APPROVED_SUBJECTS);
         return pdf;
     }
 
-    private void registrarEmision(ProgramEnrollment enrollment, CertificateType type) {
+    private void registerIssuance(ProgramEnrollment enrollment, CertificateType type) {
         CertificateIssuance issuance = new CertificateIssuance();
         issuance.setType(type);
         issuance.setProgramEnrollment(enrollment);

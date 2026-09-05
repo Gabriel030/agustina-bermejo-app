@@ -61,11 +61,11 @@ public class ProspectService {
     }
 
     @Transactional
-    public Student crearProspecto(CreateProspectRequest request) {
+    public Student createProspect(CreateProspectRequest request) {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
-        Person person = personFactory.crearPersonBase(request.nombre(), request.apellido(), request.email());
+        Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
         person.setPhoneNumber(request.telefono());
 
         Student student = new Student();
@@ -98,7 +98,7 @@ public class ProspectService {
         return studentDocumentRepository.save(document);
     }
 
-    public List<StudentDocument> listarDocumentos(Long studentId) {
+    public List<StudentDocument> listDocuments(Long studentId) {
         findStudentOrThrow(studentId);
         return studentDocumentRepository.findByStudentId(studentId);
     }

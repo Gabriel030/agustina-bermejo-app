@@ -29,14 +29,14 @@ import java.util.List;
 
 /**
  * Solicitud de alta en una carrera para el registro independiente (Épica 7).
- * Al aprobar, delega la creación del ProgramEnrollment real a
- * {@link ProgramEnrollmentService#matricular} — misma lógica de duplicados que ya
+ * Al approve, delega la creación del ProgramEnrollment real a
+ * {@link ProgramEnrollmentService#enroll} — misma lógica de duplicados que ya
  * usa el alta directa por staff, no se duplica acá. La ventana de admisión sí se
  * valida en los dos puntos de entrada por separado ({@link #solicitarConPago} y
- * {@code matricular}), reusando {@link ProgramEnrollmentService#validarVentanaDeAdmision}
+ * {@code enroll}), reusando {@link ProgramEnrollmentService#validateAdmissionWindow}
  * — hace falta en los dos: sin la validación acá, se le pediría comprobante (y se
  * le cobraría) a alguien fuera de la ventana de admisión, mucho antes de que
- * {@code aprobar()} llegue a rechazarlo.
+ * {@code approve()} llegue a rechazarlo.
  * Desde la Fase 3, el pago de la matrícula es un paso bloqueante de la propia
  * solicitud (ver {@link #solicitarConPago}) — sin comprobante no hay solicitud.
  */
@@ -82,7 +82,7 @@ public class ProgramEnrollmentApplicationService {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
-        programEnrollmentService.validarVentanaDeAdmision(cohort);
+        programEnrollmentService.validateAdmissionWindow(cohort);
 
         applicationRepository
                 .findByStudentIdAndProgramIdAndStatus(student.getId(), programId, ProgramEnrollmentApplicationStatus.PENDING)
@@ -90,10 +90,10 @@ public class ProgramEnrollmentApplicationService {
                     throw new AlreadyHasPendingApplicationException(student.getId(), programId);
                 });
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(student.getId(),
+        Invoice invoice = invoiceService.createFromFeeSchedule(student.getId(),
                 new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()),
                 cohort, null, null, null, null);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+        PaymentReceipt receipt = paymentReceiptService.upload(invoice.getId(), comprobante);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);
@@ -105,11 +105,11 @@ public class ProgramEnrollmentApplicationService {
         return applicationRepository.save(application);
     }
 
-    public List<ProgramEnrollmentApplication> listarPropias(Long studentId) {
+    public List<ProgramEnrollmentApplication> listOwn(Long studentId) {
         return applicationRepository.findByStudentIdOrderByRequestedAtDesc(studentId);
     }
 
-    public List<ProgramEnrollmentApplication> listarPendientes() {
+    public List<ProgramEnrollmentApplication> listPending() {
         return applicationRepository.findByStatusOrderByRequestedAtAsc(ProgramEnrollmentApplicationStatus.PENDING);
     }
 
@@ -142,37 +142,37 @@ public class ProgramEnrollmentApplicationService {
     }
 
     @Transactional
-    public ProgramEnrollmentApplication aprobar(Long id, Person decidedBy) {
+    public ProgramEnrollmentApplication approve(Long id, Person decidedBy) {
         ProgramEnrollmentApplication application = findOrThrow(id);
-        application.aprobar(decidedBy);
+        application.approve(decidedBy);
 
         Student student = application.getStudent();
         Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
-        var enrollment = programEnrollmentService.matricular(student.getId(),
+        var enrollment = programEnrollmentService.enroll(student.getId(),
                 new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+        personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
 
         // Recién ahora existe el ProgramEnrollment — la factura de matrícula (generada
         // al solicitar, sin vínculo posible en ese momento) se completa retroactivamente,
-        // mismo criterio que PaymentReceiptService.matricularCurso para el caso de curso.
+        // mismo criterio que PaymentReceiptService.enrollInCourse para el caso de curso.
         if (application.getPaymentReceipt() != null) {
             application.getPaymentReceipt().getInvoice().setProgramEnrollment(enrollment);
         }
 
         // Documentación + comprobante se deciden juntos, una sola decisión (ver spec
-        // funcional) — aprobar la solicitud aprueba también el comprobante en la MISMA
-        // transacción, lo que crea el Payment real (PaymentReceiptService.aprobar).
+        // funcional) — approve la solicitud aprueba también el comprobante en la MISMA
+        // transacción, lo que crea el Payment real (PaymentReceiptService.approve).
         if (application.getPaymentReceipt() != null) {
-            paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), decidedBy);
+            paymentReceiptService.approve(application.getPaymentReceipt().getId(), decidedBy);
         }
 
         return application;
     }
 
     @Transactional
-    public ProgramEnrollmentApplication rechazar(Long id, Person decidedBy, String reason) {
+    public ProgramEnrollmentApplication reject(Long id, Person decidedBy, String reason) {
         ProgramEnrollmentApplication application = findOrThrow(id);
-        application.rechazar(decidedBy, reason);
+        application.reject(decidedBy, reason);
         return application;
     }
 

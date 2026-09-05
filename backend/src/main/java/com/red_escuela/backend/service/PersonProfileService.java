@@ -30,7 +30,7 @@ public class PersonProfileService {
     }
 
     @Transactional
-    public Person actualizarDatosPropios(UpdateOwnProfileRequest request) {
+    public Person updateOwnData(UpdateOwnProfileRequest request) {
         Person person = resolveAuthenticatedPerson();
 
         if (request.email() != null) {

@@ -28,7 +28,7 @@ public class StudentService {
      * onboardingStatus por defecto es CONFIRMADO (decisión de la spec): sin filtro
      * explícito, el listado de legajos no mezcla prospectos de preinscripción.
      */
-    public List<Student> listar(StatusType statusFilter, StudentOnboardingStatus onboardingStatus) {
+    public List<Student> list(StatusType statusFilter, StudentOnboardingStatus onboardingStatus) {
         StudentOnboardingStatus effectiveOnboarding = onboardingStatus == null
                 ? StudentOnboardingStatus.CONFIRMADO
                 : onboardingStatus;

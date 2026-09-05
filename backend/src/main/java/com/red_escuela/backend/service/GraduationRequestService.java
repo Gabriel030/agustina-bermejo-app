@@ -26,8 +26,8 @@ import java.util.List;
 
 /**
  * RF-AL-15/RF-DI-05: flujo de egreso con estados explícitos (decisión 8) — Alumno solicita,
- * Administrativo verifica deuda, Director aprueba. Reusa ProgramEnrollmentService.calcularProgreso
- * tal cual (elegibleParaCompletar) sin tocarlo, y InvoiceService.calcularDeuda para el paso de
+ * Administrativo verifica deuda, Director aprueba. Reusa ProgramEnrollmentService.calculateProgress
+ * tal cual (elegibleParaCompletar) sin tocarlo, y InvoiceService.calculateDebt para el paso de
  * verificación.
  */
 @Service
@@ -55,7 +55,7 @@ public class GraduationRequestService {
     @Transactional
     public GraduationRequest solicitar(Long programEnrollmentId) {
         ProgramEnrollment programEnrollment = findProgramEnrollmentOrThrow(programEnrollmentId);
-        if (!programEnrollmentService.calcularProgreso(programEnrollmentId).elegibleParaCompletar()) {
+        if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
             throw new NotEligibleForGraduationException(programEnrollmentId);
         }
 
@@ -83,7 +83,7 @@ public class GraduationRequestService {
     // activo por matriculación" que ya aplica `solicitar`.
     @Transactional
     public void createGraduationRequestIfEligible(Long programEnrollmentId) {
-        if (!programEnrollmentService.calcularProgreso(programEnrollmentId).elegibleParaCompletar()) {
+        if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
             return;
         }
         try {
@@ -96,14 +96,14 @@ public class GraduationRequestService {
     // Decisión 10: si hay deuda, el trámite NO se rechaza — sigue en REQUESTED hasta que se
     // vuelva a intentar. REJECTED se reserva para una decisión humana explícita.
     @Transactional
-    public GraduationRequest verificarDeuda(Long graduationRequestId) {
+    public GraduationRequest verifyDebt(Long graduationRequestId) {
         GraduationRequest request = findOrThrow(graduationRequestId);
         if (request.getStatus() != GraduationRequestStatus.REQUESTED) {
             throw new InvalidGraduationRequestStateException(graduationRequestId);
         }
 
         Long studentId = request.getProgramEnrollment().getStudent().getId();
-        DebtSummaryResponse deuda = invoiceService.calcularDeuda(studentId);
+        DebtSummaryResponse deuda = invoiceService.calculateDebt(studentId);
         if (deuda.tieneDeuda()) {
             throw new PendingDebtException(studentId);
         }
@@ -115,7 +115,7 @@ public class GraduationRequestService {
     }
 
     @Transactional
-    public GraduationRequest aprobar(Long graduationRequestId) {
+    public GraduationRequest approve(Long graduationRequestId) {
         GraduationRequest request = findOrThrow(graduationRequestId);
         if (request.getStatus() != GraduationRequestStatus.ADMIN_VERIFIED) {
             throw new InvalidGraduationRequestStateException(graduationRequestId);
@@ -137,7 +137,7 @@ public class GraduationRequestService {
     }
 
     @Transactional
-    public GraduationRequest rechazar(Long graduationRequestId, String motivo) {
+    public GraduationRequest reject(Long graduationRequestId, String motivo) {
         GraduationRequest request = findOrThrow(graduationRequestId);
         if (request.getStatus() == GraduationRequestStatus.APPROVED || request.getStatus() == GraduationRequestStatus.REJECTED) {
             throw new InvalidGraduationRequestStateException(graduationRequestId);
@@ -153,11 +153,11 @@ public class GraduationRequestService {
         return saved;
     }
 
-    public List<GraduationRequest> listarPorProgramEnrollment(Long programEnrollmentId) {
+    public List<GraduationRequest> listByProgramEnrollment(Long programEnrollmentId) {
         return graduationRequestRepository.findByProgramEnrollmentId(programEnrollmentId);
     }
 
-    public List<GraduationRequest> listar(GraduationRequestStatus status) {
+    public List<GraduationRequest> list(GraduationRequestStatus status) {
         return graduationRequestRepository.findByStatus(status);
     }
 

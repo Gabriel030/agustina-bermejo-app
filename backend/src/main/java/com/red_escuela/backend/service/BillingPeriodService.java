@@ -26,7 +26,7 @@ public class BillingPeriodService {
     }
 
     @Transactional
-    public BillingPeriod crear(CreateBillingPeriodRequest request, Person createdBy) {
+    public BillingPeriod create(CreateBillingPeriodRequest request, Person createdBy) {
         BillingPeriod period = new BillingPeriod();
         period.setDiaInicio(request.diaInicio());
         period.setDiaFin(request.diaFin());
@@ -36,7 +36,7 @@ public class BillingPeriodService {
         return billingPeriodRepository.save(period);
     }
 
-    public List<BillingPeriod> listar() {
+    public List<BillingPeriod> list() {
         return billingPeriodRepository.findAllByOrderByVigenteDesdeDesc();
     }
 }

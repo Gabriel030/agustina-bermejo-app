@@ -42,7 +42,7 @@ public class CourseSubjectService {
     }
 
     @Transactional
-    public CourseSubject editarModulo(Long id, UpdateCourseSubjectRequest request) {
+    public CourseSubject updateCourseSubject(Long id, UpdateCourseSubjectRequest request) {
         CourseSubject courseSubject = findOrThrow(id);
         if (request.name() != null) {
             courseSubject.setName(request.name());
@@ -62,7 +62,7 @@ public class CourseSubjectService {
         return courseSubjectRepository.save(courseSubject);
     }
 
-    public List<CourseSubject> listarPorCurso(Long courseId, StatusType status) {
+    public List<CourseSubject> listByCourse(Long courseId, StatusType status) {
         return status == null
                 ? courseSubjectRepository.findByCourseIdOrderBySortOrder(courseId)
                 : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(courseId, status);
@@ -73,14 +73,14 @@ public class CourseSubjectService {
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         CourseSubject courseSubject = findOrThrow(id);
         courseSubject.setStatus(StatusType.INACTIVE);
         courseSubjectRepository.save(courseSubject);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         CourseSubject courseSubject = findOrThrow(id);
         courseSubject.setStatus(StatusType.ACTIVE);
         courseSubjectRepository.save(courseSubject);

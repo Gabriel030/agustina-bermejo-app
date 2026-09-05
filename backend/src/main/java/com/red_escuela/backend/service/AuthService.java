@@ -238,7 +238,7 @@ public class AuthService {
     public void resetPassword(String exchangeToken, String newPassword) {
         // Se valida la política ANTES de tocar el token: una contraseña inválida no
         // debería consumir el intercambio (RF-AUTH-05).
-        validarPoliticaDePassword(newPassword);
+        validatePasswordPolicy(newPassword);
 
         String hash = TokenHashUtil.sha256Hex(exchangeToken);
         PasswordResetToken resetToken = passwordResetTokenRepository
@@ -293,7 +293,7 @@ public class AuthService {
 
     // RF-AUTH-05: política mínima configurable (auth.password.*), no hardcodeada.
     // Package-private: RegistrationService la reusa para el registro independiente.
-    void validarPoliticaDePassword(String rawPassword) {
+    void validatePasswordPolicy(String rawPassword) {
         if (rawPassword.length() < passwordMinLength) {
             throw new InvalidPasswordPolicyException(
                     "La contraseña tiene que tener al menos " + passwordMinLength + " caracteres");
