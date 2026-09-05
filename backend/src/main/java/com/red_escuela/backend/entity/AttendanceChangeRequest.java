@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * Presente). A diferencia de la justificación (Attendance.justify, que solo agrega contexto a
  * un Ausente), esto permite cambiar a CUALQUIER estado, pero nunca impacta directo: siempre
  * queda PENDING hasta que Preceptor/Administrativo la resuelve (mismos roles que ya aprueban
- * justificaciones, ver AttendanceController.aprobarJustificacion).
+ * justificaciones, ver AttendanceController.approveJustification).
  */
 @Getter
 @Setter

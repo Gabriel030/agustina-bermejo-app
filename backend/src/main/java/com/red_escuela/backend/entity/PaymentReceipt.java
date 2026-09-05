@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * nunca un {@link Payment} real (mismo criterio de dominio que {@code Prospect}
  * es un paso previo a {@code Student}). Cuando se aprueba, se crea el
  * {@link Payment} real correspondiente ({@link com.red_escuela.backend.service.InvoiceService}) —
- * esta entidad no lo hace por sí sola, la decisión de aprobar es de un service
+ * esta entidad no lo hace por sí sola, la decisión de approve es de un service
  * que orquesta ambas cosas en una transacción.
  */
 @Getter
@@ -53,14 +53,14 @@ public class PaymentReceipt {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
-    public void aprobar(Person reviewedBy) {
+    public void approve(Person reviewedBy) {
         exigirPendiente();
         this.status = PaymentReceiptStatus.APPROVED;
         this.reviewedBy = reviewedBy;
         this.reviewedAt = LocalDateTime.now();
     }
 
-    public void rechazar(Person reviewedBy, String reason) {
+    public void reject(Person reviewedBy, String reason) {
         exigirPendiente();
         this.status = PaymentReceiptStatus.REJECTED;
         this.reviewedBy = reviewedBy;

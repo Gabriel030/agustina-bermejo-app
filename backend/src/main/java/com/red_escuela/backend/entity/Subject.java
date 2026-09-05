@@ -18,7 +18,7 @@ public class Subject {
 
     // Identificador de 4 dígitos que la institución usa para nombrar la materia en
     // el plan de estudio y en las correlativas (ej. "Álgebra (1001)") — asignado
-    // automáticamente al crear la materia (ver SubjectService.crearMateria), no lo
+    // automáticamente al create la materia (ver SubjectService.createSubject), no lo
     // elige quien la da de alta.
     @Column(name = "code", nullable = false, unique = true, length = 4)
     private String code;

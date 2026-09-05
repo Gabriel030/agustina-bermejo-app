@@ -28,7 +28,7 @@ public class Invoice {
     private Student student;
 
     // Épica 8 Fase 2: exactamente uno de los dos (o ninguno, para facturación
-    // ad-hoc vía InvoiceService.crear) — vínculo real a la matriculación que
+    // ad-hoc vía InvoiceService.create) — vínculo real a la matriculación que
     // generó esta factura, junto con installmentNumber/totalInstallments. Sin
     // esto no había forma de saber programáticamente "esta es la cuota 4 de 10
     // de tal matriculación", solo un concept de texto libre.

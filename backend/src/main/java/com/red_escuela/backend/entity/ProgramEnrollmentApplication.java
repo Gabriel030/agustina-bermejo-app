@@ -57,20 +57,20 @@ public class ProgramEnrollmentApplication {
     private String rejectionReason;
 
     // Nullable: filas viejas (de antes de esta fase) pueden no tener comprobante.
-    // El código nuevo siempre lo setea al crear la solicitud (ver
+    // El código nuevo siempre lo setea al create la solicitud (ver
     // ProgramEnrollmentApplicationService.solicitarConPago).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_receipt_id")
     private PaymentReceipt paymentReceipt;
 
-    public void aprobar(Person decidedBy) {
+    public void approve(Person decidedBy) {
         exigirPendiente();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
         this.decidedAt = LocalDateTime.now();
     }
 
-    public void rechazar(Person decidedBy, String reason) {
+    public void reject(Person decidedBy, String reason) {
         exigirPendiente();
         this.status = ProgramEnrollmentApplicationStatus.REJECTED;
         this.decidedBy = decidedBy;
