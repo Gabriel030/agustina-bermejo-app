@@ -1,6 +1,6 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.dto.RegistrarPagoRequest;
+import com.red_escuela.backend.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.Payment;
@@ -39,7 +39,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment registerPayment(Long invoiceId, RegistrarPagoRequest request) {
+    public Payment registerPayment(Long invoiceId, RegisterPaymentRequest request) {
         Invoice invoice = invoiceService.findOrThrow(invoiceId);
         if (invoice.getStatus() == InvoiceStatus.CANCELLED) {
             throw new InvoiceAlreadyCancelledException(invoiceId);

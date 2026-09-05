@@ -41,7 +41,7 @@ public class AttendanceExportService {
 
     public ExportedFile exportProgramSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
-        Tabla tabla = buildTable(scope, classDate,
+        Table tabla = buildTable(scope, classDate,
                 () -> attendanceService.getHistoryProgramSection(sectionId, instructorIdIfDocente),
                 () -> attendanceService.absenceReportProgramSection(sectionId, instructorIdIfDocente, null));
         return generate(tabla, scope, format);
@@ -49,16 +49,16 @@ public class AttendanceExportService {
 
     public ExportedFile exportCourseSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
-        Tabla tabla = buildTable(scope, classDate,
+        Table tabla = buildTable(scope, classDate,
                 () -> attendanceService.getHistoryCourseSection(sectionId, instructorIdIfDocente),
                 () -> attendanceService.absenceReportCourseSection(sectionId, instructorIdIfDocente, null));
         return generate(tabla, scope, format);
     }
 
-    private record Tabla(String titulo, List<String> encabezados, List<List<String>> filas) {
+    private record Table(String titulo, List<String> encabezados, List<List<String>> filas) {
     }
 
-    private Tabla buildTable(
+    private Table buildTable(
             String scope, LocalDate classDate,
             java.util.function.Supplier<AttendanceHistoryResponse> historial,
             java.util.function.Supplier<List<RosterEntryResponse>> reporteDeAusencias) {
@@ -70,15 +70,15 @@ public class AttendanceExportService {
         };
     }
 
-    private Tabla classTable(AttendanceHistoryResponse historial, LocalDate classDate) {
+    private Table classTable(AttendanceHistoryResponse historial, LocalDate classDate) {
         List<String> encabezados = List.of("Alumno", "Estado");
         List<List<String>> filas = historial.rows().stream()
                 .map(fila -> List.of(fila.studentName(), statusOf(fila, classDate)))
                 .toList();
-        return new Tabla("Asistencia · " + classDate, encabezados, filas);
+        return new Table("Asistencia · " + classDate, encabezados, filas);
     }
 
-    private Tabla historyTable(AttendanceHistoryResponse historial) {
+    private Table historyTable(AttendanceHistoryResponse historial) {
         List<String> encabezados = new ArrayList<>();
         encabezados.add("Alumno");
         historial.classDates().forEach(fecha -> encabezados.add(fecha.toString()));
@@ -91,7 +91,7 @@ public class AttendanceExportService {
             valores.add(fila.attendancePercentage() == null ? "-" : Math.round(fila.attendancePercentage() * 100) + "%");
             return valores;
         }).toList();
-        return new Tabla("Historial de asistencia", encabezados, filas);
+        return new Table("Historial de asistencia", encabezados, filas);
     }
 
     private String statusOf(AttendanceHistoryResponse.StudentHistoryRow fila, LocalDate fecha) {
@@ -99,7 +99,7 @@ public class AttendanceExportService {
         return celda == null ? "-" : celda.status();
     }
 
-    private Tabla reportTable(List<RosterEntryResponse> reporte) {
+    private Table reportTable(List<RosterEntryResponse> reporte) {
         List<String> encabezados = List.of("Alumno", "DNI", "Ausencias", "% Asistencia");
         List<List<String>> filas = reporte.stream()
                 .map(entrada -> List.of(
@@ -107,10 +107,10 @@ public class AttendanceExportService {
                         String.valueOf(entrada.absenceCount()),
                         entrada.attendancePercentage() == null ? "-" : Math.round(entrada.attendancePercentage() * 100) + "%"))
                 .toList();
-        return new Tabla("Reporte de ausencias", encabezados, filas);
+        return new Table("Reporte de ausencias", encabezados, filas);
     }
 
-    private ExportedFile generate(Tabla tabla, String scope, String format) {
+    private ExportedFile generate(Table tabla, String scope, String format) {
         if ("xlsx".equalsIgnoreCase(format)) {
             return new ExportedFile(generateXlsx(tabla), scope + ".xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -118,7 +118,7 @@ public class AttendanceExportService {
         return new ExportedFile(generatePdf(tabla), scope + ".pdf", "application/pdf");
     }
 
-    private byte[] generatePdf(Tabla tabla) {
+    private byte[] generatePdf(Table tabla) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -161,7 +161,7 @@ public class AttendanceExportService {
         }
     }
 
-    private byte[] generateXlsx(Tabla tabla) {
+    private byte[] generateXlsx(Table tabla) {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet(tabla.titulo());
             Row encabezado = sheet.createRow(0);

@@ -3,7 +3,7 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.dto.DebtSummaryResponse;
-import com.red_escuela.backend.dto.RegistrarPagoRequest;
+import com.red_escuela.backend.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Invoice;
@@ -103,11 +103,11 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
         assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
 
         autenticarComoAdministrativo();
-        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
+        paymentService.registerPayment(invoice.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
         Invoice trasPrimerPago = entityManager.find(Invoice.class, invoice.getId());
         assertThat(trasPrimerPago.getStatus()).isEqualTo(InvoiceStatus.PARTIALLY_PAID);
 
-        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(600), PaymentMethod.TRANSFER, null));
+        paymentService.registerPayment(invoice.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(600), PaymentMethod.TRANSFER, null));
         Invoice trasSegundoPago = entityManager.find(Invoice.class, invoice.getId());
         assertThat(trasSegundoPago.getStatus()).isEqualTo(InvoiceStatus.PAID);
     }
@@ -120,7 +120,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
 
         autenticarComoAdministrativo();
         assertThatThrownBy(() -> paymentService.registerPayment(
-                invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(600), PaymentMethod.CASH, null)))
+                invoice.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(600), PaymentMethod.CASH, null)))
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
 
         Invoice sinCambios = entityManager.find(Invoice.class, invoice.getId());
@@ -133,7 +133,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         Invoice pagada = invoiceService.create(student.getId(), new CreateInvoiceRequest("Pagada", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
         autenticarComoAdministrativo();
-        paymentService.registerPayment(pagada.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
+        paymentService.registerPayment(pagada.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
 
         assertThatThrownBy(() -> invoiceService.cancel(pagada.getId()))
                 .isInstanceOf(InvoiceAlreadyCancelledException.class);
@@ -176,7 +176,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
         autenticarComoAdministrativo();
-        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
+        paymentService.registerPayment(invoice.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(400), PaymentMethod.CASH, null));
 
         DebtSummaryResponse resumen = invoiceService.calculateDebt(student.getId());
         assertThat(resumen.tieneDeuda()).isTrue();
@@ -206,7 +206,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
         assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.MOROSO);
 
         autenticarComoAdministrativo();
-        paymentService.registerPayment(invoice.getId(), new RegistrarPagoRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
+        paymentService.registerPayment(invoice.getId(), new RegisterPaymentRequest(BigDecimal.valueOf(100), PaymentMethod.CASH, null));
         assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.AL_DIA);
     }
 }

@@ -46,14 +46,14 @@ public class LocalSeedRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(LocalSeedRunner.class);
     private static final String PASSWORD_DEMO = "Test1234";
 
-    private record CuentaDemo(String username, String nombre, String apellido, String rol) {}
+    private record DemoAccount(String username, String firstName, String lastName, String role) {}
 
-    private static final List<CuentaDemo> CUENTAS = List.of(
-            new CuentaDemo("alumno.demo", "Alumno", "Demo", "ALUMNO"),
-            new CuentaDemo("docente.demo", "Docente", "Demo", "DOCENTE"),
-            new CuentaDemo("preceptor.demo", "Preceptor", "Demo", "PRECEPTOR"),
-            new CuentaDemo("administrativo.demo", "Administrativo", "Demo", "ADMINISTRATIVO"),
-            new CuentaDemo("director.demo", "Director", "Demo", "DIRECTOR"));
+    private static final List<DemoAccount> DEMO_ACCOUNTS = List.of(
+            new DemoAccount("alumno.demo", "Alumno", "Demo", "ALUMNO"),
+            new DemoAccount("docente.demo", "Docente", "Demo", "DOCENTE"),
+            new DemoAccount("preceptor.demo", "Preceptor", "Demo", "PRECEPTOR"),
+            new DemoAccount("administrativo.demo", "Administrativo", "Demo", "ADMINISTRATIVO"),
+            new DemoAccount("director.demo", "Director", "Demo", "DIRECTOR"));
 
     private final PersonRepository personRepository;
     private final RoleRepository roleRepository;
@@ -74,21 +74,21 @@ public class LocalSeedRunner implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        for (CuentaDemo cuenta : CUENTAS) {
+        for (DemoAccount cuenta : DEMO_ACCOUNTS) {
             if (personRepository.findByUsername(cuenta.username()).isPresent()) {
                 continue;
             }
             Person person = personFactory.createBasePerson(
-                    cuenta.nombre(), cuenta.apellido(), cuenta.username() + "@demo.local");
+                    cuenta.firstName(), cuenta.lastName(), cuenta.username() + "@demo.local");
             person.setUsername(cuenta.username());
             person.setPassword(passwordEncoder.encode(PASSWORD_DEMO));
             person.setDni("DEMO-" + cuenta.username());
-            Role role = roleRepository.findByName(cuenta.rol())
-                    .orElseThrow(() -> new IllegalStateException("Falta el rol " + cuenta.rol() + " (migración de roles no corrió)"));
+            Role role = roleRepository.findByName(cuenta.role())
+                    .orElseThrow(() -> new IllegalStateException("Falta el rol " + cuenta.role() + " (migración de roles no corrió)"));
             person.getRoles().add(role);
             personRepository.save(person);
             log.info("Seed local: cuenta demo creada — username={}, password={}, rol={}",
-                    cuenta.username(), PASSWORD_DEMO, cuenta.rol());
+                    cuenta.username(), PASSWORD_DEMO, cuenta.role());
         }
     }
 }

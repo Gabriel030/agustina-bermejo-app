@@ -2,7 +2,7 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.dto.CargarAsistenciaRequest;
+import com.red_escuela.backend.dto.LoadAttendanceRequest;
 import com.red_escuela.backend.dto.RosterEntryResponse;
 import com.red_escuela.backend.entity.Attendance;
 import com.red_escuela.backend.entity.AttendanceStatus;
@@ -101,7 +101,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<Attendance> loadAttendanceProgramSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
+    public List<Attendance> loadAttendanceProgramSection(Long sectionId, Long instructorId, LoadAttendanceRequest request) {
         SubjectSection section = subjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
@@ -136,7 +136,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<Attendance> loadAttendanceCourseSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
+    public List<Attendance> loadAttendanceCourseSection(Long sectionId, Long instructorId, LoadAttendanceRequest request) {
         CourseSubjectSection section = courseSubjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {

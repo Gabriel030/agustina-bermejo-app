@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public record RegistrarPagoRequest(@NotNull BigDecimal amount, @NotNull PaymentMethod method, String notes) {
+public record RegisterPaymentRequest(@NotNull BigDecimal amount, @NotNull PaymentMethod method, String notes) {
 }

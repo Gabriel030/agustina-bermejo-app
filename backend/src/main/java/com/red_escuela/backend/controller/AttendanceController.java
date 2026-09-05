@@ -3,9 +3,9 @@ package com.red_escuela.backend.controller;
 import com.red_escuela.backend.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.dto.AttendanceResponse;
 import com.red_escuela.backend.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.dto.CargarAsistenciaRequest;
+import com.red_escuela.backend.dto.LoadAttendanceRequest;
 import com.red_escuela.backend.dto.ClassSessionResponse;
-import com.red_escuela.backend.dto.JustificarAsistenciaRequest;
+import com.red_escuela.backend.dto.JustifyAttendanceRequest;
 import com.red_escuela.backend.dto.RosterEntryResponse;
 import com.red_escuela.backend.entity.Instructor;
 import com.red_escuela.backend.service.AttendanceExportService;
@@ -54,7 +54,7 @@ public class AttendanceController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
     public List<AttendanceResponse> loadAttendanceProgramSection(
-            @PathVariable Long id, @Valid @RequestBody CargarAsistenciaRequest request) {
+            @PathVariable Long id, @Valid @RequestBody LoadAttendanceRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return attendanceService.loadAttendanceProgramSection(id, instructor.getId(), request).stream()
                 .map(AttendanceResponse::from).toList();
@@ -64,7 +64,7 @@ public class AttendanceController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
     public List<AttendanceResponse> loadAttendanceCourseSection(
-            @PathVariable Long id, @Valid @RequestBody CargarAsistenciaRequest request) {
+            @PathVariable Long id, @Valid @RequestBody LoadAttendanceRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return attendanceService.loadAttendanceCourseSection(id, instructor.getId(), request).stream()
                 .map(AttendanceResponse::from).toList();
@@ -72,7 +72,7 @@ public class AttendanceController {
 
     @PostMapping("/attendance/{id}/justify")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceResponse justify(@PathVariable Long id, @Valid @RequestBody JustificarAsistenciaRequest request) {
+    public AttendanceResponse justify(@PathVariable Long id, @Valid @RequestBody JustifyAttendanceRequest request) {
         return AttendanceResponse.from(attendanceService.justify(id, request.reason(), request.attachmentUrl()));
     }
 

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.AssignTribunalRequest;
+import com.red_escuela.backend.dto.AssignExaminersRequest;
 import com.red_escuela.backend.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.dto.ExamBoardResponse;
@@ -51,7 +51,7 @@ public class ExamBoardController {
     @PostMapping("/exam-boards/{id}/tribunal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void assignExaminers(@PathVariable Long id, @Valid @RequestBody AssignTribunalRequest request) {
+    public void assignExaminers(@PathVariable Long id, @Valid @RequestBody AssignExaminersRequest request) {
         examBoardService.assignExaminers(id, request.instructorId());
     }
 

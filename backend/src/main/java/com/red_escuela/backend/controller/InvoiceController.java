@@ -5,7 +5,7 @@ import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.dto.InvoiceResponse;
 import com.red_escuela.backend.dto.PaymentResponse;
 import com.red_escuela.backend.dto.PaymentStandingResponse;
-import com.red_escuela.backend.dto.RegistrarPagoRequest;
+import com.red_escuela.backend.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.service.InvoiceService;
 import com.red_escuela.backend.service.PaymentService;
 import jakarta.validation.Valid;
@@ -61,7 +61,7 @@ public class InvoiceController {
     @PostMapping("/invoices/{id}/payments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PaymentResponse registerPayment(@PathVariable Long id, @Valid @RequestBody RegistrarPagoRequest request) {
+    public PaymentResponse registerPayment(@PathVariable Long id, @Valid @RequestBody RegisterPaymentRequest request) {
         return PaymentResponse.from(paymentService.registerPayment(id, request));
     }
 

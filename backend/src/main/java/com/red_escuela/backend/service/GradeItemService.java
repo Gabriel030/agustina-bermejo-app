@@ -92,7 +92,7 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        ResultadoCursada resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        EnrollmentResult resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -131,7 +131,7 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        ResultadoCursada resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        EnrollmentResult resultado = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
         if (resultado != null) {
             enrollment.setStatus(resultado.status());
             if (resultado.finalScore() != null) {
@@ -201,7 +201,7 @@ public class GradeItemService {
         gradeItem.setExamBoard(examBoard);
     }
 
-    private record ResultadoCursada(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
+    private record EnrollmentResult(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
     }
 
     /**
@@ -222,7 +222,7 @@ public class GradeItemService {
      * ({@link #evaluarPromocion}) y, si no promocionó, el camino normal
      * ({@link #calculateWithFinalExam} / {@link #calculateWithoutFinalExam} según tenga final o no).
      */
-    private ResultadoCursada calculateResult(
+    private EnrollmentResult calculateResult(
             EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
         if (estadoActual != EnrollmentStatus.ENROLLED
                 && estadoActual != EnrollmentStatus.IN_PROGRESS
@@ -247,10 +247,10 @@ public class GradeItemService {
 
         if (todosLosParcialesCargados && tpCountExpected > 0 && scheme.getMinRegularGrade() != null
                 && !allApprovedIndividually(tps, scheme.getMinRegularGrade())) {
-            return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+            return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
         }
 
-        ResultadoCursada promocion = evaluarPromocion(scheme, examenes, todosLosParcialesCargados, examCountExpected);
+        EnrollmentResult promocion = evaluarPromocion(scheme, examenes, todosLosParcialesCargados, examCountExpected);
         if (promocion != null) {
             return promocion;
         }
@@ -269,7 +269,7 @@ public class GradeItemService {
     // de los exámenes, no el GradeAggregationMethod configurado (ese sigue existiendo para
     // REGULAR/el camino con final). Si no promociona, devuelve null para que el llamador siga
     // el camino normal (Regular → final, o el esquema sin final de siempre).
-    private ResultadoCursada evaluarPromocion(
+    private EnrollmentResult evaluarPromocion(
             EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados, int examCountExpected) {
         if (!todosLosParcialesCargados || examCountExpected == 0 || scheme.getPromotionMinGrade() == null) {
             return null;
@@ -278,7 +278,7 @@ public class GradeItemService {
             return null;
         }
         double promedio = examenes.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
-        return new ResultadoCursada(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+        return new EnrollmentResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
     }
 
     // Materia con final obligatorio (o que no llegó a promocionar): cursada completa
@@ -290,7 +290,7 @@ public class GradeItemService {
     // (maxFinalExamAttempts, o sin tope si es null), la cursada se queda en REGULAR esperando
     // que el alumno se anote a la próxima mesa (pedido explícito: "si no se aprueba el
     // primero, se tiene un segundo intento") — recién al agotar los llamados pasa a FAILED.
-    private ResultadoCursada calculateWithFinalExam(
+    private EnrollmentResult calculateWithFinalExam(
             EvaluationScheme scheme, List<GradeItem> examenes, boolean todosLosParcialesCargados,
             GradeItem ultimoFinal, int intentosFinalUsados, EnrollmentStatus estadoActual, Integer maxFinalExamAttempts) {
         boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
@@ -298,28 +298,28 @@ public class GradeItemService {
         if (todosLosParcialesCargados && scheme.getMinRegularGrade() != null) {
             double promedio = applyAggregation(scheme.getAggregationMethod(), examenes);
             if (promedio < scheme.getMinRegularGrade()) {
-                return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+                return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
             }
             regularAlcanzado = true;
         }
 
         if (ultimoFinal == null || scheme.getMinApprovalGrade() == null) {
             return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
-                    ? new ResultadoCursada(EnrollmentStatus.REGULAR, null, null)
+                    ? new EnrollmentResult(EnrollmentStatus.REGULAR, null, null)
                     : null;
         }
 
         if (ultimoFinal.getScore() != null && ultimoFinal.getScore() >= scheme.getMinApprovalGrade()) {
-            return new ResultadoCursada(EnrollmentStatus.APPROVED, ultimoFinal.getScore(), FinalGradeType.FINAL_EXAM);
+            return new EnrollmentResult(EnrollmentStatus.APPROVED, ultimoFinal.getScore(), FinalGradeType.FINAL_EXAM);
         }
 
         boolean quedanIntentos = maxFinalExamAttempts == null || intentosFinalUsados < maxFinalExamAttempts;
         if (quedanIntentos) {
             return regularAlcanzado && estadoActual != EnrollmentStatus.REGULAR
-                    ? new ResultadoCursada(EnrollmentStatus.REGULAR, null, null)
+                    ? new EnrollmentResult(EnrollmentStatus.REGULAR, null, null)
                     : null;
         }
-        return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+        return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
     }
 
     // Materia SIN instancia de final (EvaluationScheme.hasFinal = false, caso legacy/distinto
@@ -327,7 +327,7 @@ public class GradeItemService {
     // cursada, así que el promedio de parciales+TPs combinado se compara directo contra
     // minRegularGrade (desaprueba si no llega) y minApprovalGrade (aprueba si lo alcanza) —
     // mismo criterio que ya existía antes de esta feature, sin cambios de comportamiento.
-    private ResultadoCursada calculateWithoutFinalExam(
+    private EnrollmentResult calculateWithoutFinalExam(
             EvaluationScheme scheme, List<GradeItem> examenes, List<GradeItem> tps, boolean todosLosParcialesCargados) {
         if (!todosLosParcialesCargados) {
             return null;
@@ -338,7 +338,7 @@ public class GradeItemService {
         if (scheme.getMinRegularGrade() != null) {
             double promedioRegular = applyAggregation(scheme.getAggregationMethod(), todos);
             if (promedioRegular < scheme.getMinRegularGrade()) {
-                return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
+                return new EnrollmentResult(EnrollmentStatus.FAILED, null, null);
             }
         }
         if (scheme.getMinApprovalGrade() == null) {
@@ -346,7 +346,7 @@ public class GradeItemService {
         }
         double promedio = applyAggregation(scheme.getAggregationMethod(), todos);
         if (promedio >= scheme.getMinApprovalGrade()) {
-            return new ResultadoCursada(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
+            return new EnrollmentResult(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
         }
         return null;
     }
