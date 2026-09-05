@@ -129,7 +129,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void dosAltasConcurrentesAUnaComisionConCupo1NuncaDejanADosAlumnosEnrolled() throws Exception {
+    void twoOnboardingsConcurrentToASectionWithCapacity1NeverLeaveToTwoStudentsEnrolled() throws Exception {
         Student estudiante1 = persistStudent("70000001");
         Student estudiante2 = persistStudent("70000002");
 
@@ -231,7 +231,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
         } finally {
             // Sin @Transactional a nivel de clase (necesario para que el lock pesimista se
             // pruebe con transacciones reales por request), nada se revierte solo: hay que
-            // limpiar a mano para no contaminar el conteo de otros tests que listan "todos
+            // clear a mano para no contaminar el conteo de otros tests que listan "todos
             // los Student" sin filtro sobre el mismo contenedor Postgres compartido.
             subjectSectionEnrollmentRepository.deleteAll(
                     subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(

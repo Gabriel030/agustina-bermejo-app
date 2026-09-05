@@ -42,7 +42,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -73,7 +73,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void administrativoDaDeAltaUnDocenteFunciona() {
+    void administratorOnboardsATeacherWorks() {
         autenticarComoActor("B0000001", "ADMINISTRATIVO");
 
         Person creado = staffService.altaPersonal(requestParaRol("B0000011", "DOCENTE"));
@@ -83,7 +83,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void administrativoIntentaDarDeAltaUnAdministrativoFalla() {
+    void administratorAttemptsToOnboardAnAdministratorFails() {
         autenticarComoActor("B0000002", "ADMINISTRATIVO");
 
         assertThatThrownBy(() -> staffService.altaPersonal(requestParaRol("B0000012", "ADMINISTRATIVO")))
@@ -91,7 +91,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void directorDaDeAltaUnAdministrativoFunciona() {
+    void directorOnboardsAnAdministratorWorks() {
         autenticarComoActor("B0000003", "DIRECTOR");
 
         Person creado = staffService.altaPersonal(requestParaRol("B0000013", "ADMINISTRATIVO"));
@@ -101,7 +101,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void directorIntentaDarDeAltaUnDocenteFalla() {
+    void directorAttemptsToOnboardATeacherFails() {
         autenticarComoActor("B0000004", "DIRECTOR");
 
         assertThatThrownBy(() -> staffService.altaPersonal(requestParaRol("B0000014", "DOCENTE")))
@@ -109,7 +109,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void directorNoPuedeEditarUnDocenteYAdministrativoSiPuede() {
+    void directorCannotEditATeacherButTheAdministratorCan() {
         autenticarComoActor("B0000005", "ADMINISTRATIVO");
         Person docente = staffService.altaPersonal(requestParaRol("B0000015", "DOCENTE"));
 

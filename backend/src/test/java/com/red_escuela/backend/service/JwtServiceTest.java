@@ -31,7 +31,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void generaYParseaUnTokenValidoConElMismoSubYRoles() {
+    void generatesAndParsesATokenValidWithTheSameSubAndRoles() {
         JwtService jwtService = new JwtService(SECRET, 15);
         Person person = personWithRoles("DOCENTE", "PRECEPTOR");
 
@@ -43,7 +43,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void tokenExpiradoFallaLaValidacion() {
+    void tokenExpiredFailsTheValidation() {
         JwtService expiredService = new JwtService(SECRET, -1);
         String token = expiredService.generateAccessToken(personWithRoles("ALUMNO"));
 
@@ -52,7 +52,7 @@ class JwtServiceTest {
     }
 
     @Test
-    void tokenFirmadoConOtroSecretFallaLaValidacion() {
+    void tokenSignedWithAnotherSecretFailsTheValidation() {
         JwtService serviceA = new JwtService(SECRET, 15);
         JwtService serviceB = new JwtService("otro-secret-completamente-distinto", 15);
 

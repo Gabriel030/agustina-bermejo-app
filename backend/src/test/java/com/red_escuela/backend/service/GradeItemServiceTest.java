@@ -191,7 +191,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarNotaSinEsquemaAsignadoLanzaExcepcion() {
+    void loadGradeWithoutSchemeAssignedThrowsException() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000001", institution);
         Instructor instructor = persistInstructor("71000002");
@@ -212,7 +212,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void docenteQueNoIntegraLaComisionNoPuedeCargarNota() {
+    void teacherThatNotBelongsToTheSectionNotCanLoadGrade() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000003", institution);
         Instructor instructorAjeno = persistInstructor("71000004");
@@ -234,7 +234,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void promedioDeParcialesPorDebajoDelMinimoRegularDejaLaCursadaEnFailed() {
+    void averageOfMidtermsByBelowOfTheMinimumRegularLeavesTheEnrollmentInFailed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000005", institution);
         Instructor instructor = persistInstructor("71000006");
@@ -259,7 +259,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void promedioDeParcialesPorEncimaDelMinimoRegularDejaLaCursadaEnRegular() {
+    void averageOfMidtermsByAboveOfTheMinimumRegularLeavesTheEnrollmentInRegular() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000007", institution);
         Instructor instructor = persistInstructor("71000008");
@@ -286,7 +286,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarLaMismaEvaluacionDosVecesCorrigeLaNotaEnVezDeDuplicarla() {
+    void loadTheSameEvaluationTwoTimesCorrectsTheGradeInTimeOfDuplicatingIt() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000009", institution);
         Instructor instructor = persistInstructor("71000010");
@@ -311,7 +311,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void notaFinalPorEncimaDelMinimoDeAprobacionApruebaLaCursadaYFijaFinalScore() {
+    void gradeFinalByAboveOfTheMinimumOfApprovalApprovesTheEnrollmentAndSetsFinalScore() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000011", institution);
         Instructor instructor = persistInstructor("71000012");
@@ -338,7 +338,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     // --- Promoción sin final (EvaluationScheme.promotionMinGrade) ---
 
     @Test
-    void ambosParcialesPorEncimaDeLaNotaDePromocionPromocionaSinFinal() {
+    void bothMidtermsByAboveOfTheGradeOfPromotionPromotesWithoutFinal() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000013", institution);
         Instructor instructor = persistInstructor("71000014");
@@ -369,7 +369,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     // Pedido explícito del usuario: "si un alumno no promociona una materia cuatrimestral,
     // saca 6 y 5, el alumno aprobó la cursada pero no la materia aún, requiere final".
     @Test
-    void parcialesQueNoLleganALaNotaDePromocionPeroSiAlPisoRegularQuedanEnRegular() {
+    void midtermsThatNotReachToTheGradeOfPromotionButIfToFloorRegularRemainInRegular() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000015", institution);
         Instructor instructor = persistInstructor("71000016");
@@ -396,7 +396,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     // --- TPs como gate individual (no se promedian, tienen que aprobarse cada uno) ---
 
     @Test
-    void unTpDesaprobadoDejaLaCursadaEnFailedAunqueElPromedioGeneralAlcance() {
+    void anAssignmentFailedLeavesTheEnrollmentInFailedEvenThoughTheAverageOverallReaches() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000017", institution);
         Instructor instructor = persistInstructor("71000018");
@@ -426,7 +426,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     // --- Final con más de un llamado (Subject.maxFinalExamAttempts) ---
 
     @Test
-    void desaprobarElPrimerLlamadoDelFinalDejaLaCursadaEnRegularSiQuedanIntentos() {
+    void failTheFirstCallOfTheFinalLeavesTheEnrollmentInRegularIfRemainAttempts() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000019", institution);
         Instructor instructor = persistInstructor("71000020");
@@ -450,7 +450,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarElSegundoLlamadoDelFinalApruebaLaMateriaConEsaNota() {
+    void approveTheSecondCallOfTheFinalApprovesTheSubjectWithThatGrade() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000021", institution);
         Instructor instructor = persistInstructor("71000022");
@@ -478,7 +478,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desaprobarLosDosLlamadosDelFinalDejaLaMateriaEnFailed() {
+    void failTheTwoCallsOfTheFinalLeavesTheSubjectInFailed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000023", institution);
         Instructor instructor = persistInstructor("71000024");

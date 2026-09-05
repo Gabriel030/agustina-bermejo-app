@@ -132,7 +132,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearProspectoSinAuthDevuelve201ConStudentEnProspectoSinUsernameNiDni() throws Exception {
+    void createProspectWithoutAuthReturns201WithStudentInProspectWithoutUsernameNorDni() throws Exception {
         Long institutionId = persistInstitution();
         CreateProspectRequest request = new CreateProspectRequest(
                 "Juan", "Pérez", "juan.perez@example.com", "1122334455", institutionId);
@@ -159,7 +159,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     // Se prueba end-to-end con servidor real en ProspectDocumentUploadLimitTest.
 
     @Test
-    void agregarDocumentoConTipoNoSoportadoDevuelve400() throws Exception {
+    void addDocumentWithTypeNotSupportedReturns400() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor2", "PRECEPTOR");
@@ -175,7 +175,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoValidoDevuelve201YQuedaElArchivoEnDisco() throws Exception {
+    void addDocumentValidReturns201AndRemainsTheFileInDisk() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor3", "PRECEPTOR");
@@ -196,7 +196,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void subirSegundoDocumentoDelMismoTipoReemplazaAlAnterior() throws Exception {
+    void uploadSecondDocumentOfTheSameTypeReplacesToPrevious() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor4", "PRECEPTOR");
@@ -216,7 +216,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmarAltaTransicionaAConfirmadoAsignaRolYGeneraTokenDeReset() throws Exception {
+    void confirmOnboardingTransitionsToConfirmedAssignsRoleAndGeneratesTokenOfReset() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor5", "PRECEPTOR");
@@ -252,7 +252,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmarAltaDosVecesDevuelve409() throws Exception {
+    void confirmOnboardingTwoTimesReturns409() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor6", "PRECEPTOR");
@@ -274,7 +274,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoSobreStudentYaConfirmadoDevuelve201() throws Exception {
+    void addDocumentOnStudentAlreadyConfirmedReturns201() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);

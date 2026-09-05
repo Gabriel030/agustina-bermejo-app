@@ -135,7 +135,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoCreaInvoicePaymentReceiptYSolicitudPendiente() {
+    void requestWithPaymentCreatesInvoicePaymentReceiptAndRequestPending() {
         Student student = persistStudent("81000001");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null);
@@ -153,7 +153,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoDosVecesMientrasLaPrimeraSiguePendienteFalla() {
+    void requestWithPaymentTwoTimesWhileTheFirstRemainsPendingFails() {
         Student student = persistStudent("81000002");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null);
@@ -168,7 +168,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoSinFeeScheduleConfiguradoFalla() {
+    void requestWithPaymentWithoutFeeScheduleConfiguredFails() {
         Student student = persistStudent("81000003");
         Program program = persistPrograma("Sin Precio " + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null);
@@ -179,7 +179,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoFueraDeLaVentanaDeAdmisionFallaSinGenerarInvoiceNiComprobante() {
+    void requestWithPaymentOutsideOfTheWindowOfAdmissionFailsWithoutGenerateInvoiceNorReceipt() {
         Student student = persistStudent("81000005");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         // Ventana ya cerrada hace una semana — nadie debería poder pagar matrícula de una
@@ -196,7 +196,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarLaSolicitudApruebaTambienElComprobanteYCreaElPaymentReal() {
+    void approveTheRequestApprovesAlsoTheReceiptAndCreatesThePaymentReal() {
         Student student = persistStudent("81000004");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null);

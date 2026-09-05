@@ -59,7 +59,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -121,7 +121,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void decidirUnaSolicitudYaDecididaFalla() {
+    void decideARequestAlreadyDecidedFails() {
         Student student = persistStudent("A0000001");
         Program program = persistProgram("CarreraExcepcion1");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -139,7 +139,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaExcepcionLateExamNoDestrabaUnaInscripcionAMesaFueraDeVentana() {
+    void approveAExceptionLateExamNotUnblocksAEnrollmentToExamBoardOutsideOfWindow() {
         Student student = persistStudent("A0000002");
         Program program = persistProgram("CarreraExcepcion2");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);

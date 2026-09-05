@@ -35,20 +35,20 @@ class PricingCalculatorTest {
     }
 
     @Test
-    void sinDescuentosNiPromocionesDevuelveElPrecioBase() {
+    void withoutDiscountsNorPromotionsReturnsThePriceBase() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(BigDecimal.valueOf(10000), List.of(), List.of());
         assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(10000));
     }
 
     @Test
-    void descuentoIndividualPorcentajeSeAplicaSobreElPrecioBase() {
+    void discountIndividualPercentageAppliesOnThePriceBase() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(
                 BigDecimal.valueOf(10000), List.of(descuento(DiscountType.PORCENTAJE, BigDecimal.valueOf(20))), List.of());
         assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(8000));
     }
 
     @Test
-    void descuentoIndividualYPromocionSegmentadaSeSuman() {
+    void discountIndividualAndPromotionSegmentedAddUp() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(
                 BigDecimal.valueOf(10000),
                 List.of(descuento(DiscountType.PORCENTAJE, BigDecimal.valueOf(20))),
@@ -58,14 +58,14 @@ class PricingCalculatorTest {
     }
 
     @Test
-    void montoFijoSeRestaDirectoDelPrecioBase() {
+    void amountFixedSubtractsDirectlyOfThePriceBase() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(
                 BigDecimal.valueOf(10000), List.of(descuento(DiscountType.MONTO_FIJO, BigDecimal.valueOf(3000))), List.of());
         assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(7000));
     }
 
     @Test
-    void becaTotalDaCeroSinImportarOtrosDescuentos() {
+    void scholarshipTotalGivesZeroWithoutMatteringOtherDiscounts() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(
                 BigDecimal.valueOf(10000),
                 List.of(descuento(DiscountType.BECA_TOTAL, BigDecimal.ZERO)),
@@ -74,7 +74,7 @@ class PricingCalculatorTest {
     }
 
     @Test
-    void descuentosQueSuperanElPrecioBaseNuncaDanNegativo() {
+    void discountsThatExceedThePriceBaseNeverGiveNegative() {
         BigDecimal resultado = PricingCalculator.calculateFinalAmount(
                 BigDecimal.valueOf(1000), List.of(descuento(DiscountType.MONTO_FIJO, BigDecimal.valueOf(5000))), List.of());
         assertThat(resultado).isEqualByComparingTo(BigDecimal.ZERO);
@@ -87,13 +87,13 @@ class PricingCalculatorTest {
     }
 
     @Test
-    void matriculaDeLaPrimeraCohorteDelAnioEsElMontoCompleto() {
+    void enrollmentFeeOfTheFirstCohortOfTheYearIsTheAmountComplete() {
         BigDecimal resultado = PricingCalculator.calculateEnrollmentFeeAmount(BigDecimal.valueOf(50000), cohorte(1));
         assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(50000));
     }
 
     @Test
-    void matriculaDeLaSegundaCohorteDelAnioEsLaMitad() {
+    void enrollmentFeeOfTheSecondCohortOfTheYearIsTheHalf() {
         BigDecimal resultado = PricingCalculator.calculateEnrollmentFeeAmount(BigDecimal.valueOf(50000), cohorte(2));
         assertThat(resultado).isEqualByComparingTo(BigDecimal.valueOf(25000));
     }

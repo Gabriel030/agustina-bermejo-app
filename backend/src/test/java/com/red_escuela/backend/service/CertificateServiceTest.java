@@ -60,7 +60,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -154,7 +154,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularSinCursadaActivaFalla() {
+    void certificateRegularWithoutEnrollmentActiveFails() {
         Student student = persistStudent("90000001");
         Program program = persistProgram("CarreraSinCursadaActiva");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
@@ -166,7 +166,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularConCursadaActivaPeroMorosoFalla() {
+    void certificateRegularWithEnrollmentActiveButInArrearsFails() {
         Student student = persistStudent("90000002");
         Program program = persistProgram("CarreraMoroso");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
@@ -180,7 +180,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularConLosTresRequisitosEmiteUnPdfValidoYRegistraElHistorial() {
+    void certificateRegularWithTheThreeRequirementsIssuesAPdfValidAndRegistersTheHistory() {
         Student student = persistStudent("90000003");
         Program program = persistProgram("CarreraRegularCompleta");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
@@ -202,7 +202,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularDeUnaProgramEnrollmentNoEnrolledFalla() {
+    void certificateRegularOfAProgramEnrollmentNotEnrolledFails() {
         Student student = persistStudent("90000004");
         Program program = persistProgram("CarreraDadaDeBaja");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.WITHDRAWN);
@@ -214,7 +214,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaDeMateriasAprobadasConCeroMateriasAprobadasEmiteUnPdfValidoSinExcepcion() {
+    void certificateOfSubjectsApprovedWithZeroSubjectsApprovedIssuesAPdfValidWithoutException() {
         Student student = persistStudent("90000005");
         Program program = persistProgram("CarreraSinAprobadas");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);

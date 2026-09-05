@@ -69,7 +69,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     private Institution institution;
 
     @AfterEach
-    void limpiar() {
+    void clear() {
         if (student != null) {
             Long personId = student.getPerson().getId();
             Long addressId = student.getPerson().getAddress().getId();
@@ -87,7 +87,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoConPdfExcedidoDevuelve400() {
+    void addDocumentWithPdfExceededReturns400() {
         institution = new Institution();
         institution.setName("Instituto de prueba");
         institution = institutionRepository.save(institution);

@@ -90,7 +90,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void subirUnComprobanteLoDejaPendienteDeRevision() {
+    void uploadAReceiptItLeavesPendingOfReview() {
         Student student = persistStudent("79920001");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
@@ -102,7 +102,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void noSePuedeSubirUnSegundoComprobanteMientrasElPrimeroSigueEnRevision() {
+    void cannotUploadASecondReceiptWhileTheFirstRemainsInReview() {
         Student student = persistStudent("79920002");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Matrícula", BigDecimal.valueOf(50000), LocalDate.now().plusDays(10)));
@@ -113,7 +113,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnComprobanteCreaElPaymentRealYMarcaLaFacturaComoPagada() {
+    void approveAReceiptCreatesThePaymentRealAndMarksTheInvoiceAsPaid() {
         Student student = persistStudent("79920003");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();
@@ -136,7 +136,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarUnComprobanteNoCreaUnPaymentYPermiteReintentarSinLimite() {
+    void rejectAReceiptNotCreatesAPaymentAndAllowsRetryWithoutLimit() {
         Student student = persistStudent("79920004");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();
@@ -156,7 +156,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnComprobanteYaDecididoFalla() {
+    void approveAReceiptAlreadyDecidedFails() {
         Student student = persistStudent("79920005");
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         entityManager.flush();

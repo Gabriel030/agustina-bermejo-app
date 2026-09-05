@@ -60,7 +60,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -170,7 +170,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void docenteQueNoIntegraLaComisionNoPuedeCargarAsistencia() {
+    void teacherThatNotBelongsToTheSectionNotCanLoadAttendance() {
         Institution institution = persistInstitution();
         Instructor instructorAjeno = persistInstructor("80000001");
         Subject subject = persistSubject("MateriaAsistenciaAjena");
@@ -185,7 +185,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarAsistenciaDosVecesElMismoDiaActualizaLaFilaExistenteNoLaDuplica() {
+    void loadAttendanceTwoTimesTheSameDayUpdatesTheRowExistingNotTheDuplicates() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000002", institution);
         Instructor instructor = persistInstructor("80000003");
@@ -210,7 +210,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void duplicadoDentroDelMismoPayloadBulkNoCreaDosFilas() {
+    void duplicatedWithinOfTheSamePayloadBulkNotCreatesTwoRows() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000004", institution);
         Instructor instructor = persistInstructor("80000005");
@@ -237,7 +237,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void justificarUnaFilaQueNoEstaAbsentFalla() {
+    void justifyARowThatNotIsAbsentFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000006", institution);
         Instructor instructor = persistInstructor("80000007");
@@ -263,7 +263,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void justificarUnaAusenciaLaPasaAJustified() {
+    void justifyAAbsenceTheGoesToJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000009", institution);
         Instructor instructor = persistInstructor("80000010");
@@ -291,7 +291,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alumnoConCeroClasesTomadasNoDaFalsoPositivoDeLibre() {
+    void studentWithZeroClassesTakenNotGivesFalsePositiveOfOutOfStanding() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000012", institution);
         Subject subject = persistSubject("MateriaSinClases");
@@ -309,7 +309,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alumnoQueSuperaElPorcentajeMaximoDeAusentismoQuedaLibre() {
+    void studentThatExceedsThePercentageMaximumOfAbsenteeismRemainsOutOfStanding() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000013", institution);
         Instructor instructor = persistInstructor("80000014");
@@ -342,7 +342,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void subirComprobanteDejaLaAsistenciaEnJustificationPendingNoEnJustified() {
+    void uploadReceiptLeavesTheAttendanceInJustificationPendingNotInJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000015", institution);
         Instructor instructor = persistInstructor("80000016");
@@ -365,7 +365,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaJustificacionPendienteLaPasaAJustified() {
+    void approveAJustificationPendingTheGoesToJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000017", institution);
         Instructor instructor = persistInstructor("80000018");
@@ -393,7 +393,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarUnaJustificacionPendienteLaVuelveAAbsent() {
+    void rejectAJustificationPendingTheGoesBackToAbsent() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000020", institution);
         Instructor instructor = persistInstructor("80000021");
@@ -416,7 +416,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaAsistenciaSinJustificacionPendienteFalla() {
+    void approveAAttendanceWithoutJustificationPendingFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000022", institution);
         Instructor instructor = persistInstructor("80000023");
@@ -442,7 +442,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unaJustificacionPendienteSigueContandoComoAusenteParaElRiesgo() {
+    void aJustificationPendingRemainsCountingAsAbsentForTheRisk() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000025", institution);
         Instructor instructor = persistInstructor("80000026");

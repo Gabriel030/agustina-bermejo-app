@@ -130,7 +130,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoNoCreaElCourseEnrollmentTodavia() {
+    void requestWithPaymentNotCreatesTheCourseEnrollmentYet() {
         Student student = persistStudent("82000001");
         Course course = persistCurso(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
@@ -146,7 +146,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarElComprobanteDeLaPrimeraCuotaDisparaLaMatriculacionReal() {
+    void approveTheReceiptOfTheFirstInstallmentTriggersTheEnrollmentReal() {
         Student student = persistStudent("82000002");
         Course course = persistCurso(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
@@ -179,7 +179,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoSinFeeScheduleConfiguradoFalla() {
+    void requestWithPaymentWithoutFeeScheduleConfiguredFails() {
         Student student = persistStudent("82000003");
         Course course = persistCurso(20);
         entityManager.flush();

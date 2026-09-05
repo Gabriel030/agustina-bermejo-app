@@ -75,7 +75,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void mismoSubjectEnDosCarrerasCreaDosEntradasIndependientes() {
+    void sameSubjectInTwoProgramsCreatesTwoEntriesIndependent() {
         Subject ingles = persistSubject("Inglés I");
         Program carreraA = persistProgram("Tecnicatura A");
         Program carreraB = persistProgram("Tecnicatura B");
@@ -90,7 +90,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarElMismoSubjectDosVecesALaMismaCarreraFalla() {
+    void addTheSameSubjectTwoTimesToTheSameProgramFails() {
         Subject subject = persistSubject("Física I");
         Program program = persistProgram("Tecnicatura C");
         entityManager.flush();
@@ -102,7 +102,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void tagearConGrupoElectivoSinRangoAsignadoFalla() {
+    void tagWithGroupElectiveWithoutRangeAssignedFails() {
         Subject subject = persistSubject("Portugués I");
         Program program = persistProgram("Tecnicatura D");
         ElectiveGroup group = new ElectiveGroup();
@@ -124,7 +124,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void correlatividadEntreCarrerasDistintasFalla() {
+    void prerequisiteBetweenProgramsDifferentFails() {
         Program carreraA = persistProgram("Tecnicatura E");
         Program carreraB = persistProgram("Tecnicatura F");
         Subject subjectA = persistSubject("Álgebra");
@@ -142,7 +142,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void correlatividadQueCreaUnCicloDeDosPasosFalla() {
+    void prerequisiteThatCreatesACycleOfTwoStepsFails() {
         Program program = persistProgram("Tecnicatura G");
         Subject subjectA = persistSubject("Materia A");
         Subject subjectB = persistSubject("Materia B");
@@ -162,7 +162,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void correlatividadQueCreaUnCicloDeTresPasosFalla() {
+    void prerequisiteThatCreatesACycleOfThreeStepsFails() {
         Program program = persistProgram("Tecnicatura H");
         Subject subjectA = persistSubject("Materia X");
         Subject subjectB = persistSubject("Materia Y");
@@ -186,7 +186,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarMateriaDejaElStatusEnActive() {
+    void addSubjectLeavesTheStatusInActive() {
         Subject subject = persistSubject("Materia con status");
         Program program = persistProgram("Tecnicatura I");
         entityManager.flush();
@@ -197,7 +197,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarCorrelatividadInexistenteFalla() {
+    void removePrerequisiteNonexistentFails() {
         assertThatThrownBy(() -> programSubjectService.quitarCorrelatividad(999999L))
                 .isInstanceOf(PrerequisiteNotFoundException.class);
     }
@@ -211,7 +211,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Pedido explícito del usuario: dos materias anuales del mismo año se cursan al
     // mismo tiempo, ninguna puede depender de la otra.
     @Test
-    void correlatividadEntreDosAnualesDelMismoAnioFalla() {
+    void prerequisiteBetweenTwoAnnualsOfTheSameYearFails() {
         Program program = persistProgram("Tecnicatura correlativas 1");
         Subject subjectA = persistSubject("Anual A");
         Subject subjectB = persistSubject("Anual B");
@@ -227,7 +227,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
 
     // Dos cuatrimestrales del mismo año y el mismo cuatrimestre también se solapan.
     @Test
-    void correlatividadEntreDosMateriasDelMismoAnioYCuatrimestreFalla() {
+    void prerequisiteBetweenTwoSubjectsOfTheSameYearAndTermFails() {
         Program program = persistProgram("Tecnicatura correlativas 2");
         Subject subjectA = persistSubject("1C A");
         Subject subjectB = persistSubject("1C B");
@@ -244,7 +244,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Depender del cuatrimestre anterior del MISMO año sí es válido (2do cuatrimestre
     // puede requerir el 1ro: ya terminó de cursarse cuando arranca el que lo requiere).
     @Test
-    void correlatividadConElCuatrimestreAnteriorDelMismoAnioFunciona() {
+    void prerequisiteWithTheTermPreviousOfTheSameYearWorks() {
         Program program = persistProgram("Tecnicatura correlativas 3");
         Subject subjectA = persistSubject("2C A");
         Subject subjectB = persistSubject("1C previa");
@@ -262,7 +262,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Depender del año anterior en el MISMO cuatrimestre también es válido (1er
     // cuatrimestre de 2do año puede requerir el 1er cuatrimestre de 1er año).
     @Test
-    void correlatividadConElAnioAnteriorMismoCuatrimestreFunciona() {
+    void prerequisiteWithTheYearPreviousSameTermWorks() {
         Program program = persistProgram("Tecnicatura correlativas 4");
         Subject subjectA = persistSubject("Año 2 1C");
         Subject subjectB = persistSubject("Año 1 1C");
@@ -280,7 +280,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Una anual de 1er año todavía no terminó de cursarse cuando arranca el 2do
     // cuatrimestre de ESE MISMO año (se solapan) — tampoco es válida.
     @Test
-    void correlatividadEntreAnualYSegundoCuatrimestreDelMismoAnioFalla() {
+    void prerequisiteBetweenAnnualAndSecondTermOfTheSameYearFails() {
         Program program = persistProgram("Tecnicatura correlativas 5");
         Subject subjectA = persistSubject("2C del año");
         Subject subjectB = persistSubject("Anual del año");
@@ -297,7 +297,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     // Depender de una materia que se cursa DESPUÉS (2do cuatrimestre como correlativa
     // del 1ro, mismo año) tampoco es válido.
     @Test
-    void correlatividadConUnaMateriaPosteriorFalla() {
+    void prerequisiteWithASubjectSubsequentFails() {
         Program program = persistProgram("Tecnicatura correlativas 6");
         Subject subjectA = persistSubject("1C que no puede depender del 2C");
         Subject subjectB = persistSubject("2C posterior");

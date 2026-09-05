@@ -28,7 +28,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * N", asunción que era cierta porque hasta ahora TODA la suite hacía rollback. Compartir
  * el Postgres singleton con Karate rompía esa asunción (confirmado: 4 tests empezaron a
  * fallar apenas Karate corrió en la misma base). Fix: Postgres propio para Karate, nunca
- * compartido — nadie más necesita limpiar nada, ni Karate necesita @Transactional.
+ * compartido — nadie más necesita clear nada, ni Karate necesita @Transactional.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")

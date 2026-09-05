@@ -143,7 +143,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirConVentanaDeInscripcionInvertidaLanzaExcepcionDeConfiguracionNoDeVentanaCerrada() {
+    void enrollWithWindowOfEnrollmentInvertedThrowsExceptionOfConfigurationNotOfWindowClosed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000001", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaVentanaInvertida");
@@ -162,7 +162,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirAUnaSeccionCuyaMateriaNoEstaEnElPlanDeLaCarreraLanzaExcepcionEspecifica() {
+    void enrollToASectionWhoseSubjectNotIsInThePlanOfTheProgramThrowsExceptionSpecific() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000002", StatusType.ACTIVE, institution);
         Subject subjectFueraDePlan = persistSubject("MateriaFueraDePlan");
@@ -180,7 +180,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void reinscribirseSinPasarPorCambiarComisionAOtraSeccionDelMismoTermNoIncrementaAttemptNumber() {
+    void reEnrollWithoutPassingByChangeSectionToAnotherSectionOfTheSameTermNotIncrementsAttemptNumber() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000003", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaReinscripcionManual");
@@ -206,7 +206,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void reinscribirseAOtroTermTrasBajaSiIncrementaAttemptNumber() {
+    void reEnrollToAnotherTermAfterWithdrawalIfIncrementsAttemptNumber() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000004", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOtroTerm");
@@ -229,7 +229,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cambiarComisionConAlumnoInactivoFalla() {
+    void changeSectionWithStudentInactiveFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000005", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaAlumnoInactivo");
@@ -255,7 +255,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     // Decisión 5 de la Spec Procesos administrativos: override manual con prioridad sobre la
     // validación por fecha ya existente, sin tocarla ni duplicarla.
     @Test
-    void cerrarManualmenteLaVentanaRechazaLaInscripcionAunqueLaFechaSigaVigente() {
+    void closeManuallyTheWindowRejectsTheEnrollmentEvenThoughTheDateStaysCurrent() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000006", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOverrideCerrado");
@@ -274,7 +274,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void abrirManualmenteLaVentanaPermiteInscribirseAunqueLaFechaYaHayaVencido() {
+    void openManuallyTheWindowAllowsEnrollEvenThoughTheDateAlreadyHasExpired() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000007", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOverrideAbierto");
@@ -293,7 +293,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void sinOverrideSigueRigiendoSePorFechaComoAntes() {
+    void withoutOverrideRemainsGoverningIsByDateAsBefore() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000008", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaSinOverride");

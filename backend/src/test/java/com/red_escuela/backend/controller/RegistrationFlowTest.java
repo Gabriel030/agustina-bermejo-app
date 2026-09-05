@@ -194,7 +194,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseDevuelveTokensYaUtilizablesInmediatamente() throws Exception {
+    void signUpReturnsTokensAlreadyUsableImmediately() throws Exception {
         Long institutionId = persistInstitution();
 
         String response = mockMvc.perform(post("/auth/register")
@@ -215,7 +215,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseConUsernameYaExistenteDevuelve409() throws Exception {
+    void signUpWithUsernameAlreadyExistingReturns409() throws Exception {
         Long institutionId = persistInstitution();
         RegisterRequest request = registroValido("dup", institutionId);
 
@@ -237,7 +237,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     // bug separado y sistémico (/error no era permitAll), el 500 real quedaba
     // enmascarado como un 403 vacío y engañoso.
     @Test
-    void registrarseConEmailYaExistenteYUsernameDistintoDevuelve409() throws Exception {
+    void signUpWithEmailAlreadyExistingAndUsernameDifferentReturns409() throws Exception {
         Long institutionId = persistInstitution();
         RegisterRequest primero = registroValido("email-dup-a", institutionId);
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
@@ -253,7 +253,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseConPasswordDebilDevuelve400() throws Exception {
+    void signUpWithPasswordWeakReturns400() throws Exception {
         Long institutionId = persistInstitution();
         RegisterRequest debil = new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.debil@example.com", "sofia.debil", "abc", institutionId);
@@ -264,7 +264,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void flujoCompletoSolicitudDeCarreraAprobada() throws Exception {
+    void flowCompleteRequestOfProgramApproved() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
@@ -320,7 +320,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarSolicitudNoCreaMatriculaNiOtorgaRol() throws Exception {
+    void rejectRequestNotCreatesEnrollmentFeeNorGrantsRole() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
@@ -362,7 +362,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unAlumnoNoPuedeAprobarSuPropiaSolicitud() throws Exception {
+    void aStudentNotCanApproveItsOwnRequest() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistPrograma();
         ProgramCohort cohort = persistCohort(program);
@@ -391,7 +391,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     // cuota es un paso bloqueante, la matriculación real (y el rol) recién ocurren
     // cuando Administración aprueba el comprobante (PaymentReceiptService.approve).
     @Test
-    void inscribirmeAUnCursoQuedaEnRevisionYRecienOtorgaElRolAlAprobarElComprobante() throws Exception {
+    void enrollMyselfToACourseRemainsInReviewAndOnlyThenGrantsTheRoleToApproveTheReceipt() throws Exception {
         Long institutionId = persistInstitution();
         Course course = persistCurso(20);
         persistFeeSchedule(null, course, FeeScheduleConcept.CUOTA_MENSUAL, BigDecimal.valueOf(15000));

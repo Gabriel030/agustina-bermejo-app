@@ -114,7 +114,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void feeScheduleRequiereExactamenteUnoDeProgramaOCurso() {
+    void feeScheduleRequiresExactlyOneOfProgramOrCourse() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         entityManager.flush();
 
@@ -125,7 +125,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unCursoNoPuedeTenerMatricula() {
+    void aCourseNotCanHaveEnrollmentFee() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Course course = persistCourse("Curso QA " + System.nanoTime());
         entityManager.flush();
@@ -137,7 +137,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unPrecioNuevoNoAfectaFacturasYaEmitidasElVigenteEsElMasRecienteHastaLaFecha() {
+    void aPriceNewNotAffectsInvoicesAlreadyIssuedTheCurrentIsTheMoreRecentUntilTheDate() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera QA " + System.nanoTime());
         entityManager.flush();
@@ -157,7 +157,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void montoMatriculaVigenteAplicaElProrrateoDeLaSegundaCohorte() {
+    void amountEnrollmentFeeCurrentAppliesTheProrationOfTheSecondCohort() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera QA " + System.nanoTime());
         entityManager.flush();
@@ -174,7 +174,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void sinFeeScheduleVigenteFallaAlIntentarGenerarLaFactura() {
+    void withoutFeeScheduleCurrentFailsToAttemptingGenerateTheInvoice() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera sin precio " + System.nanoTime());
         Student student = persistStudent("79910001");
@@ -187,7 +187,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void generarFacturaDeMatriculaResuelveElMontoDelFeeScheduleVigente() {
+    void generateInvoiceOfEnrollmentFeeResolvesTheAmountOfTheFeeScheduleCurrent() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera con precio " + System.nanoTime());
         Student student = persistStudent("79910002");
@@ -204,7 +204,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void descuentoIndividualYPromocionSegmentadaSeSumanAlGenerarLaFactura() {
+    void discountIndividualAndPromotionSegmentedAddUpToGenerateTheInvoice() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program program = persistProgram("Carrera con descuentos " + System.nanoTime());
         Student student = persistStudent("79910003");
@@ -225,7 +225,7 @@ class PricingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unaPromocionDeOtraCarreraNoAplica() {
+    void aPromotionOfAnotherProgramNotApplies() {
         Person director = persistPersonBase("DIR" + System.nanoTime());
         Program programA = persistProgram("Carrera A " + System.nanoTime());
         Program programB = persistProgram("Carrera B " + System.nanoTime());

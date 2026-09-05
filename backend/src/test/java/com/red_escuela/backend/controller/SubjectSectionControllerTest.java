@@ -100,7 +100,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionSobreSubjectCompartidoPorDosCarrerasQuedaComoUnaSolaFila() throws Exception {
+    void createSectionOnSubjectSharedByTwoProgramsRemainsAsASingleRow() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Inglés Compartido");
@@ -158,7 +158,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void asignarElMismoDocenteConElMismoRolDosVecesDevuelve409() throws Exception {
+    void assignTheSameTeacherWithTheSameRoleTwoTimesReturns409() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para docentes");
@@ -202,7 +202,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionSinRolPreceptorNiAdministrativoDevuelve403() throws Exception {
+    void createSectionWithoutRolePreceptorNorAdministrativeReturns403() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject sin permiso");
@@ -220,7 +220,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionConEvaluationSchemeInexistenteDevuelve404() throws Exception {
+    void createSectionWithEvaluationSchemeNonexistentReturns404() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject con esquema inválido");
@@ -246,7 +246,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarDocenteDeUnaComisionQueNoLeCorrespondeDevuelve404() throws Exception {
+    void removeTeacherOfASectionThatNotToItCorrespondsReturns404() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para cruce de comisiones");
@@ -301,7 +301,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSeccionesConCualquierRolAutenticadoDevuelve200() throws Exception {
+    void listSectionsWithAnyRoleAuthenticatedReturns200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para list");
@@ -316,7 +316,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarComisionFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivateAndReactivateSectionWorksAndTheListingFiltersByStatus() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para baja de comisión");
@@ -359,7 +359,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarDocentesDeUnaComisionDevuelve200() throws Exception {
+    void listTeachersOfASectionReturns200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para list docentes");
@@ -401,7 +401,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void editarComisionActualizaCampos() throws Exception {
+    void editSectionUpdatesFields() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para editar comisión");

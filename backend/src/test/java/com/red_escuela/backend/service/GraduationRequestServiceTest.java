@@ -56,7 +56,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -143,7 +143,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarSinSerElegibleFalla() {
+    void requestWithoutBeingEligibleFails() {
         Student student = persistStudent("80000001");
         Program program = persistProgramConMateriaPendiente("CarreraConPendientes");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -154,7 +154,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarDosVecesSinQueLaPrimeraSeRechaceFalla() {
+    void requestTwoTimesWithoutThatTheFirstIsRejectedFails() {
         Student student = persistStudent("80000002");
         Program program = persistProgramSinRequisitos("CarreraSinRequisitos1");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -167,7 +167,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verificarDeudaConFacturasPendientesFallaYElTramiteSigueEnRequested() {
+    void verifyDebtWithInvoicesPendingFailsAndTheRequestRemainsInRequested() {
         Student student = persistStudent("80000003");
         Program program = persistProgramSinRequisitos("CarreraSinRequisitos2");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -184,7 +184,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarElEgresoCompletaLaCarreraEnLaMismaTransaccion() {
+    void approveTheGraduationCompleteTheProgramInTheSameTransaction() {
         Student student = persistStudent("80000004");
         Program program = persistProgramSinRequisitos("CarreraSinRequisitos3");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -204,7 +204,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarUnTramiteRequestedPermiteSolicitarDeNuevo() {
+    void rejectARequestRequestedAllowsRequestOfNew() {
         Student student = persistStudent("80000005");
         Program program = persistProgramSinRequisitos("CarreraSinRequisitos4");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);

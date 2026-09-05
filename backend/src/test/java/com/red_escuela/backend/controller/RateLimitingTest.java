@@ -42,7 +42,7 @@ class RateLimitingTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void superarLaCapacidadDeLoginDevuelve429() throws Exception {
+    void exceedingTheCapacityOfLoginReturns429() throws Exception {
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -57,7 +57,7 @@ class RateLimitingTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void superarLaCapacidadDeForgotPasswordDevuelve429() throws Exception {
+    void exceedingTheCapacityOfForgotPasswordReturns429() throws Exception {
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/auth/forgot-password")
                             .contentType(MediaType.APPLICATION_JSON)

@@ -123,7 +123,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSinRolPreceptorOAdministrativoDevuelve403() throws Exception {
+    void listWithoutRolePreceptorOrAdministrativeReturns403() throws Exception {
         String token = tokenWithRole("alumno1", "ALUMNO");
 
         mockMvc.perform(get("/students").header("Authorization", "Bearer " + token))
@@ -133,7 +133,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     // Revisión de matriz de permisos: el Director tiene R sobre el legajo (matriz sección 3),
     // a diferencia de Preceptor/Administrativo que además pueden dar de baja/resetear password.
     @Test
-    void directorPuedeListarYVerLegajoPeroNoPuedeDarDeBaja() throws Exception {
+    void directorCanListAndViewFileButCannotWithdraw() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "42111222", "42111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -153,7 +153,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSinFiltroTraeSoloConfirmados() throws Exception {
+    void listWithoutFilterBringsOnlyConfirmed() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("40111222", "40111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudent("40333444", "prospecto-sin-username", "irrelevante", StudentOnboardingStatus.PROSPECTO, institution);
@@ -166,7 +166,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarConOnboardingStatusExplicitoTraeProspectos() throws Exception {
+    void listWithOnboardingStatusExplicitBringsProspects() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("40555666", "40555666", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudent("40777888", "prospecto2", "irrelevante", StudentOnboardingStatus.PROSPECTO, institution);
@@ -181,7 +181,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void withdrawMarcaStatusDeletedGuardaMotivoYBloqueaLoginPosterior() throws Exception {
+    void withdrawMarksStatusDeletedSavesReasonAndBlocksLoginSubsequent() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "40999000", "40999000", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -207,7 +207,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordGeneraTokenSinExponerLaPassword() throws Exception {
+    void resetPasswordGeneratesTokenWithoutExposingThePassword() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "41000111", "41000111", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);

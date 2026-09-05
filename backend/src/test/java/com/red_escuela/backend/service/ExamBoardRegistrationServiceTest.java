@@ -157,7 +157,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirseSinEstarRegularFalla() {
+    void enrollWithoutBeingRegularFails() {
         Student student = persistStudent("90000001");
         Subject subject = persistSubject("MateriaNoRegular", null);
         Term term = persistTerm();
@@ -173,7 +173,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirseAUnaMesaDeOtraMateriaFalla() {
+    void enrollToAExamBoardOfAnotherSubjectFails() {
         Student student = persistStudent("90000002");
         Subject subject = persistSubject("MateriaCursada", null);
         Subject otraSubject = persistSubject("MateriaDeLaMesa", null);
@@ -190,7 +190,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirseYDarseDeBajaYReinscribirseReactivaLaFilaSinDuplicar() {
+    void enrollAndWithdrawAndReEnrollReactivatesTheRowWithoutDuplicate() {
         Student student = persistStudent("90000003");
         Subject subject = persistSubject("MateriaReinscripcionMesa", null);
         Term term = persistTerm();
@@ -213,7 +213,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirseDosVecesSinDarseDeBajaFalla() {
+    void enrollTwoTimesWithoutWithdrawFails() {
         Student student = persistStudent("90000004");
         Subject subject = persistSubject("MateriaDobleInscripcion", null);
         Term term = persistTerm();
@@ -231,7 +231,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alcanzarElTopeDeReintentosConfiguradoBloqueaUnaNuevaInscripcion() {
+    void reachingTheCapOfRetriesConfiguredBlocksANewEnrollment() {
         Student student = persistStudent("90000005");
         Subject subject = persistSubject("MateriaConTope", 1);
         Term term = persistTerm();
@@ -251,7 +251,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unIntentoDadoDeBajaNoConsumeElTopeDeReintentos() {
+    void anAttemptGivenOfWithdrawalNotConsumesTheCapOfRetries() {
         Student student = persistStudent("90000006");
         Subject subject = persistSubject("MateriaTopeConBaja", 1);
         Term term = persistTerm();
@@ -274,7 +274,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
     // Pedido explícito del usuario: "para esa materia no se puede enroll a otro llamado, a
     // menos que se dé de baja de esa mesa y se dé de alta en otro llamado".
     @Test
-    void inscribirseAOtroLlamadoDeLaMismaMateriaTeniendoUnoActivoFalla() {
+    void enrollToAnotherCallOfTheSameSubjectHavingOneActiveFails() {
         Student student = persistStudent("90000007");
         Subject subject = persistSubject("MateriaDosLlamadosDisponibles", null);
         Term term = persistTerm();
@@ -294,7 +294,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
     // Darse de baja del llamado 1 sí tiene que habilitar anotarse al llamado 2.
     @Test
-    void darseDeBajaDeUnLlamadoHabilitaInscribirseAOtroDeLaMismaMateria() {
+    void withdrawFromACallEnablesEnrollingToAnotherOfTheSameSubject() {
         Student student = persistStudent("90000008");
         Subject subject = persistSubject("MateriaCambioDeLlamado", null);
         Term term = persistTerm();

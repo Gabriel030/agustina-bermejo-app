@@ -30,7 +30,7 @@ class JwtAuthenticationFilterTest {
     private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtService);
 
     @AfterEach
-    void limpiarContexto() {
+    void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -48,7 +48,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void conTokenValidoArmaLaAuthenticationConLosRolesDelClaim() throws Exception {
+    void withTokenValidBuildsTheAuthenticationWithTheRolesOfTheClaim() throws Exception {
         Person person = personWithRoles("DOCENTE", "PRECEPTOR");
         String token = jwtService.generateAccessToken(person);
 
@@ -69,7 +69,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void sinTokenNoArmaAuthenticationYLaRequestSigue() throws Exception {
+    void withoutTokenNotBuildsAuthenticationAndTheRequestRemains() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
@@ -81,7 +81,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void conTokenInvalidoNoArmaAuthenticationYLaRequestSigue() throws Exception {
+    void withTokenInvalidNotBuildsAuthenticationAndTheRequestRemains() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer token-invalido");
         MockHttpServletResponse response = new MockHttpServletResponse();

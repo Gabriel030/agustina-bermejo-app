@@ -60,7 +60,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConPasswordCorrectaDevuelveTokensValidosYRegistraAttemptExitoso() {
+    void loginWithPasswordCorrectReturnsTokensValidAndRegistersAttemptSuccessful() {
         persistPerson("docente1", "correcta123", AuthProvider.LOCAL);
 
         AuthTokens tokens = authService.login("docente1", "correcta123", "127.0.0.1");
@@ -76,7 +76,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConPasswordIncorrectaLanzaLaMismaExcepcionQueUsuarioInexistente() {
+    void loginWithPasswordIncorrectThrowsTheSameExceptionThatUserNonexistent() {
         persistPerson("docente2", "correcta123", AuthProvider.LOCAL);
 
         assertThatThrownBy(() -> authService.login("docente2", "incorrecta", "127.0.0.1"))
@@ -94,7 +94,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     // ejemplo vía "olvidé mi contraseña") entra local igual, ver [[Spec técnica -
     // Recuperar contraseña]].
     @Test
-    void loginSobrePersonaGoogleSinPasswordRechaza() {
+    void loginOnPersonGoogleWithoutPasswordRejects() {
         persistPerson("googleuser", null, AuthProvider.GOOGLE);
 
         assertThatThrownBy(() -> authService.login("googleuser", "cualquiera", "127.0.0.1"))
@@ -102,7 +102,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginSobrePersonaGoogleConPasswordSeteadaFunciona() {
+    void loginOnPersonGoogleWithPasswordSetWorks() {
         persistPerson("googleuser2", "correcta123", AuthProvider.GOOGLE);
 
         AuthTokens tokens = authService.login("googleuser2", "correcta123", "127.0.0.1");
@@ -111,7 +111,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginRepetidoConPasswordIncorrectaBloqueaLaCuentaYUnaPasswordCorrectaTambienRechazaMientrasDureElBloqueo() {
+    void loginRepeatedWithPasswordIncorrectBlocksTheAccountAndAPasswordCorrectAlsoRejectsWhileLastsTheLockout() {
         persistPerson("bloqueable", "correcta123", AuthProvider.LOCAL);
 
         for (int i = 0; i < lockoutMaxAttempts; i++) {
@@ -124,7 +124,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshConTokenValidoRotaYElTokenViejoDejaDeServir() {
+    void refreshWithTokenValidRotatesAndTheTokenOldLeavesOfWork() {
         persistPerson("refrescable", "correcta123", AuthProvider.LOCAL);
         AuthTokens original = authService.login("refrescable", "correcta123", "127.0.0.1");
 
@@ -136,7 +136,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void logoutInvalidaElRefreshToken() {
+    void logoutInvalidTheRefreshToken() {
         persistPerson("desloguable", "correcta123", AuthProvider.LOCAL);
         AuthTokens tokens = authService.login("desloguable", "correcta123", "127.0.0.1");
 

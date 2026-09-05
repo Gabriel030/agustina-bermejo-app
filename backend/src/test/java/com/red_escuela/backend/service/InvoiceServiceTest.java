@@ -53,7 +53,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearContextOfSecurity() {
         SecurityContextHolder.clearContext();
     }
 
@@ -96,7 +96,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarDosPagosParcialesHastaCompletarElMontoPasaDePendingAPartiallyPaidAPaid() {
+    void registerTwoPartialPaymentsUntilCompleteTheAmountGoesFromPendingToPartiallyPaidToPaid() {
         Student student = persistStudent("79900001");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
@@ -113,7 +113,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarUnPagoQueSuperaElSaldoPendienteFallaSinCrearElPago() {
+    void registerAPaymentThatExceedsTheBalancePendingFailsWithoutCreateThePayment() {
         Student student = persistStudent("79900002");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota 1", BigDecimal.valueOf(500), LocalDate.now().plusDays(30)));
@@ -128,7 +128,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cancelarUnaFacturaYaPagadaFalla() {
+    void cancelAInvoiceAlreadyPaidFails() {
         Student student = persistStudent("79900010");
         entityManager.flush();
         Invoice pagada = invoiceService.create(student.getId(), new CreateInvoiceRequest("Pagada", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
@@ -140,7 +140,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cancelarUnaFacturaYaCanceladaFalla() {
+    void cancelAInvoiceAlreadyCancelledFails() {
         Student student = persistStudent("79900003");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
@@ -151,7 +151,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cancelarUnaFacturaPendienteLaPasaACancelled() {
+    void cancelAInvoicePendingTheGoesToCancelled() {
         Student student = persistStudent("79900004");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Pendiente", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
@@ -162,7 +162,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void calcularDeudaDeUnAlumnoSinFacturasDaSinDeuda() {
+    void calculateDebtOfAStudentWithoutInvoicesGivesWithoutDebt() {
         Student student = persistStudent("79900005");
         entityManager.flush();
         DebtSummaryResponse resumen = invoiceService.calculateDebt(student.getId());
@@ -171,7 +171,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void calcularDeudaConUnaFacturaPendienteYUnPagoParcialDaElSaldoRestante() {
+    void calculateDebtWithAInvoicePendingAndAPaymentPartialGivesTheBalanceRemaining() {
         Student student = persistStudent("79900006");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota", BigDecimal.valueOf(1000), LocalDate.now().plusDays(30)));
@@ -184,14 +184,14 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void calcularEstadoDePagoSinFacturasDaSinInformacion() {
+    void calculateStatusOfPaymentWithoutInvoicesGivesWithoutInformation() {
         Student student = persistStudent("79900007");
         entityManager.flush();
         assertThat(invoiceService.calculatePaymentStatus(student.getId())).isEqualTo(PaymentStanding.SIN_INFORMACION);
     }
 
     @Test
-    void calcularEstadoDePagoConFacturaNoVencidaDaAlDia() {
+    void calculateStatusOfPaymentWithInvoiceNotOverdueGivesCurrent() {
         Student student = persistStudent("79900008");
         entityManager.flush();
         invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota futura", BigDecimal.valueOf(100), LocalDate.now().plusDays(10)));
@@ -199,7 +199,7 @@ class InvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void calcularEstadoDePagoConFacturaVencidaSinPagarDaMorosoYPagandolaVuelveAAlDiaInmediatamente() {
+    void calculateStatusOfPaymentWithInvoiceOverdueWithoutPayGivesInArrearsAndPayingItGoesBackToCurrentImmediately() {
         Student student = persistStudent("79900009");
         entityManager.flush();
         Invoice invoice = invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));

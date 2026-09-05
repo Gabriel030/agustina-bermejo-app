@@ -32,7 +32,7 @@ class InstitutionControllerTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @Test
-    void listarSinSesionDevuelveLasInstitucionesExistentes() throws Exception {
+    void listWithoutSessionReturnsTheInstitutionsExisting() throws Exception {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba");
         entityManager.persist(institution);

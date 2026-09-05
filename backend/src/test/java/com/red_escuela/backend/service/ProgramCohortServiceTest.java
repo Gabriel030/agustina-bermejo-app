@@ -43,7 +43,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCohorteConOrdenValidoFunciona() {
+    void createCohortWithOrderValidWorks() {
         Program program = persistPrograma();
         entityManager.flush();
 
@@ -55,7 +55,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCohorteConOrdenFueraDeUnoODosFalla() {
+    void createCohortWithOrderOutsideOfOneOrTwoFails() {
         Program program = persistPrograma();
         entityManager.flush();
 
@@ -65,7 +65,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearDosCohortesConElMismoOrdenParaLaMismaCarreraFalla() {
+    void createTwoCohortsWithTheSameOrderForTheSameProgramFails() {
         Program program = persistPrograma();
         entityManager.flush();
 
@@ -78,7 +78,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCohorteConVentanaMalConfiguradaFalla() {
+    void createCohortWithWindowBadlyConfiguredFails() {
         Program program = persistPrograma();
         entityManager.flush();
 
@@ -91,7 +91,7 @@ class ProgramCohortServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unaCarreraPuedeTenerLasDosCohortesDelAnio() {
+    void aProgramCanHaveTheTwoCohortsOfTheYear() {
         Program program = persistPrograma();
         entityManager.flush();
 

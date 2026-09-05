@@ -152,7 +152,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesarCarreraGeneraLaCuotaCorrectaDentroDelPlan() {
+    void processProgramGeneratesTheInstallmentCorrectWithinOfThePlan() {
         Student student = persistStudent("83000001");
         Program program = persistPrograma(3, 10);
         // Cursada arrancó hace 3 meses -> hoy corresponde la cuota 4.
@@ -173,7 +173,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesarCarreraNoGeneraNadaAntesDeIniciarCursada() {
+    void processProgramNotGeneratesNothingBeforeOfStartingEnrollment() {
         Student student = persistStudent("83000002");
         Program program = persistPrograma(3, 10);
         ProgramCohort cohort = persistCohort(program, LocalDate.now().plusMonths(2));
@@ -189,7 +189,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesarCarreraEsIdempotenteNoDuplicaSiSeCorreDosVeces() {
+    void processProgramIsIdempotentNotDuplicateIfIsRunTwice() {
         Student student = persistStudent("83000003");
         Program program = persistPrograma(3, 10);
         ProgramCohort cohort = persistCohort(program, LocalDate.now().withDayOfMonth(1));
@@ -207,7 +207,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesarCarreraNoGeneraMasAllaDelTotalDeCuotasDelPlan() {
+    void processProgramNotGeneratesMoreBeyondOfTheTotalOfInstallmentsOfThePlan() {
         Student student = persistStudent("83000004");
         Program program = persistPrograma(1, 2);
         // Plan de 1 año × 2 cuotas = 2 cuotas totales; cursada arrancó hace 6 meses, ya se agotó.
@@ -224,7 +224,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void generarCuotasDeCarrerasIgnoraMatriculacionesDadasDeBaja() {
+    void generateInstallmentsOfProgramsIgnoresEnrollmentsGivenOfWithdrawal() {
         Student student = persistStudent("83000005");
         Program program = persistPrograma(3, 10);
         ProgramCohort cohort = persistCohort(program, LocalDate.now().withDayOfMonth(1));
@@ -239,7 +239,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesarCursoGeneraLaCuotaCorrectaSegunElInicioRealDeCursada() {
+    void processCourseGeneratesTheInstallmentCorrectAccordingToTheStartRealOfEnrollment() {
         Student student = persistStudent("83000006");
         Course course = persistCurso(LocalDateTime.now().minusMonths(1).withDayOfMonth(1), 3);
         CourseEnrollment enrollment = persistCourseEnrollment(student, course, EnrollmentStatus.ENROLLED);
