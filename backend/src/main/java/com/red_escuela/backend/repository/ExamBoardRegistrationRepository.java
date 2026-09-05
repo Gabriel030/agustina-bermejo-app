@@ -18,7 +18,7 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
     List<ExamBoardRegistration> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);
 
     // Resolver una fila WITHDRAWN previa a la misma mesa para reactivarla en vez de insertar
-    // una nueva (mismo criterio que SubjectSectionEnrollmentService.inscribir con el unique
+    // una nueva (mismo criterio que SubjectSectionEnrollmentService.enroll con el unique
     // constraint existente) — evita chocar contra el índice único parcial de la migración V19.
     Optional<ExamBoardRegistration> findByExamBoardIdAndProgramSubjectSectionEnrollmentId(
             Long examBoardId, Long enrollmentId);
@@ -41,7 +41,7 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
 
     // Un alumno solo puede estar anotado a UN llamado por vez para la misma materia — antes de
     // inscribirlo a una mesa nueva hay que chequear que no tenga otra REGISTERED para el mismo
-    // subject (pedido explícito del usuario: "para esa materia no se puede inscribir a otro
+    // subject (pedido explícito del usuario: "para esa materia no se puede enroll a otro
     // llamado, a menos que se dé de baja de esa mesa y se dé de alta en otro llamado").
     List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(
             Long programEnrollmentId, Long subjectId, ExamBoardRegistrationStatus status);
