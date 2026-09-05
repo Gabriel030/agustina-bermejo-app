@@ -45,8 +45,8 @@ public class PaymentService {
             throw new InvoiceAlreadyCancelledException(invoiceId);
         }
 
-        BigDecimal saldoActual = invoiceService.calculatePendingBalance(invoice);
-        if (request.amount().compareTo(saldoActual) > 0) {
+        BigDecimal currentBalance = invoiceService.calculatePendingBalance(invoice);
+        if (request.amount().compareTo(currentBalance) > 0) {
             throw new PaymentExceedsInvoiceBalanceException(invoiceId);
         }
 
@@ -60,8 +60,8 @@ public class PaymentService {
         payment.setNotes(request.notes());
         payment = paymentRepository.save(payment);
 
-        BigDecimal nuevoSaldo = saldoActual.subtract(request.amount());
-        invoice.setStatus(nuevoSaldo.compareTo(BigDecimal.ZERO) == 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIALLY_PAID);
+        BigDecimal newBalance = currentBalance.subtract(request.amount());
+        invoice.setStatus(newBalance.compareTo(BigDecimal.ZERO) == 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIALLY_PAID);
         invoiceRepository.save(invoice);
 
         return payment;

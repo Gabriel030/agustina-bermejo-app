@@ -291,16 +291,16 @@ public class SubjectSectionEnrollmentService {
                         section.getSubject().getId(), programEnrollment.getProgram().getId()));
 
         for (ProgramSubjectPrerequisite prereq : prerequisiteRepository.findByProgramSubjectId(programSubject.getId())) {
-            List<EnrollmentStatus> estadosQueSirven = prereq.getRequirementType() == RequirementType.APPROVED
+            List<EnrollmentStatus> validStatuses = prereq.getRequirementType() == RequirementType.APPROVED
                     ? List.of(EnrollmentStatus.APPROVED)
                     : List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
 
-            boolean cumplida = !subjectSectionEnrollmentRepository
+            boolean satisfied = !subjectSectionEnrollmentRepository
                     .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                             programEnrollment.getId(), prereq.getPrerequisiteProgramSubject().getSubject().getId(),
-                            estadosQueSirven)
+                            validStatuses)
                     .isEmpty();
-            if (!cumplida) {
+            if (!satisfied) {
                 throw new PrerequisiteNotMetException(
                         "No se cumple la correlatividad: " + prereq.getPrerequisiteProgramSubject().getSubject().getName());
             }

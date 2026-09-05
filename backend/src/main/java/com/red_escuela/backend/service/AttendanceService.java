@@ -144,9 +144,9 @@ public class AttendanceService {
         }
         Instructor instructor = resolveInstructor(instructorId);
 
-        Map<Long, Attendance> procesadas = new HashMap<>();
+        Map<Long, Attendance> processed = new HashMap<>();
         for (var entry : request.entries()) {
-            Attendance attendance = procesadas.get(entry.enrollmentId());
+            Attendance attendance = processed.get(entry.enrollmentId());
             if (attendance == null) {
                 CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository
                         .findById(entry.enrollmentId())
@@ -160,10 +160,10 @@ public class AttendanceService {
             }
             attendance.setStatus(entry.status());
             attendance = attendanceRepository.save(attendance);
-            procesadas.put(entry.enrollmentId(), attendance);
+            processed.put(entry.enrollmentId(), attendance);
         }
         upsertClassSessionCourse(section, request.classDate(), instructor, request.topic(), request.observations());
-        return new ArrayList<>(procesadas.values());
+        return new ArrayList<>(processed.values());
     }
 
     @Transactional
@@ -246,9 +246,9 @@ public class AttendanceService {
             return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
-        long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
+        long absentCount = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, absentCount, maxAbsencePercentage);
     }
 
     public AttendanceRiskResponse calculateDropoutRiskByCourseEnrollment(Long enrollmentId) {
@@ -259,9 +259,9 @@ public class AttendanceService {
             return new AttendanceRiskResponse(false, false, null, null);
         }
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
-        long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
+        long absentCount = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, absentCount, maxAbsencePercentage);
     }
 
     public List<RosterEntryResponse> getRosterProgramSection(Long sectionId, Long instructorId) {
@@ -284,30 +284,30 @@ public class AttendanceService {
         return buildRosterCourse(sectionId);
     }
 
-    public List<RosterEntryResponse> absenceReportProgramSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
+    public List<RosterEntryResponse> absenceReportProgramSection(Long sectionId, Long instructorIdIfTeacher, Integer minAbsences) {
         if (!subjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
-        exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
-                subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
+        exigirPropiaSeccionSiEsDocente(instructorIdIfTeacher, sectionId, () ->
+                subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfTeacher));
         return sortByAbsences(buildRosterProgram(sectionId), minAbsences);
     }
 
-    public List<RosterEntryResponse> absenceReportCourseSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
+    public List<RosterEntryResponse> absenceReportCourseSection(Long sectionId, Long instructorIdIfTeacher, Integer minAbsences) {
         if (!courseSubjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
-        exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
-                courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
+        exigirPropiaSeccionSiEsDocente(instructorIdIfTeacher, sectionId, () ->
+                courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfTeacher));
         return sortByAbsences(buildRosterCourse(sectionId), minAbsences);
     }
 
-    public AttendanceHistoryResponse getHistoryProgramSection(Long sectionId, Long instructorIdIfDocente) {
+    public AttendanceHistoryResponse getHistoryProgramSection(Long sectionId, Long instructorIdIfTeacher) {
         if (!subjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
-        exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
-                subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
+        exigirPropiaSeccionSiEsDocente(instructorIdIfTeacher, sectionId, () ->
+                subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfTeacher));
 
         Set<LocalDate> canceledDates = classSessionRepository.findBySubjectSectionId(sectionId).stream()
                 .filter(cs -> cs.getStatus() == ClassSessionStatus.CANCELED)
@@ -330,12 +330,12 @@ public class AttendanceService {
         return new AttendanceHistoryResponse(dates, rows);
     }
 
-    public AttendanceHistoryResponse getHistoryCourseSection(Long sectionId, Long instructorIdIfDocente) {
+    public AttendanceHistoryResponse getHistoryCourseSection(Long sectionId, Long instructorIdIfTeacher) {
         if (!courseSubjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
-        exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
-                courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
+        exigirPropiaSeccionSiEsDocente(instructorIdIfTeacher, sectionId, () ->
+                courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfTeacher));
 
         Set<LocalDate> canceledDates = classSessionRepository.findByCourseSubjectSectionId(sectionId).stream()
                 .filter(cs -> cs.getStatus() == ClassSessionStatus.CANCELED)
@@ -421,11 +421,11 @@ public class AttendanceService {
     private RosterEntryResponse buildRosterEntryProgram(SubjectSectionEnrollment enrollment) {
         Person person = enrollment.getStudent().getPerson();
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollment.getId());
-        long presentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
+        long presentCount = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), PRESENT_LIKE_STATUSES_LIST);
         long absenceCount = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), ABSENCE_STATUSES_FOR_COUNT);
-        Double attendancePercentage = total == 0 ? null : (double) presentes / total;
+        Double attendancePercentage = total == 0 ? null : (double) presentCount / total;
         boolean atRisk = calculateDropoutRiskByProgramEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
                 enrollment.getId(), enrollment.getStudent().getId(), fullName(person), person.getDni(),
@@ -435,11 +435,11 @@ public class AttendanceService {
     private RosterEntryResponse buildRosterEntryCourse(CourseSubjectSectionEnrollment enrollment) {
         Person person = enrollment.getStudent().getPerson();
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollment.getId());
-        long presentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
+        long presentCount = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), PRESENT_LIKE_STATUSES_LIST);
         long absenceCount = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollment.getId(), ABSENCE_STATUSES_FOR_COUNT);
-        Double attendancePercentage = total == 0 ? null : (double) presentes / total;
+        Double attendancePercentage = total == 0 ? null : (double) presentCount / total;
         boolean atRisk = calculateDropoutRiskByCourseEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
                 enrollment.getId(), enrollment.getStudent().getId(), fullName(person), person.getDni(),
@@ -447,15 +447,15 @@ public class AttendanceService {
     }
 
     private AttendanceHistoryResponse.StudentHistoryRow construirFilaHistorial(
-            Long studentId, Person person, List<Attendance> asistenciasDelAlumno) {
-        Map<LocalDate, AttendanceHistoryResponse.HistoryCell> celdasPorFecha = asistenciasDelAlumno.stream()
+            Long studentId, Person person, List<Attendance> studentAttendances) {
+        Map<LocalDate, AttendanceHistoryResponse.HistoryCell> cellsByDate = studentAttendances.stream()
                 .collect(Collectors.toMap(
                         Attendance::getClassDate,
                         a -> new AttendanceHistoryResponse.HistoryCell(a.getId(), a.getStatus().name()),
                         (a, b) -> b));
-        long presentes = asistenciasDelAlumno.stream().filter(a -> PRESENT_LIKE_STATUSES.contains(a.getStatus())).count();
-        Double porcentaje = asistenciasDelAlumno.isEmpty() ? null : (double) presentes / asistenciasDelAlumno.size();
-        return new AttendanceHistoryResponse.StudentHistoryRow(studentId, fullName(person), celdasPorFecha, porcentaje);
+        long presentCount = studentAttendances.stream().filter(a -> PRESENT_LIKE_STATUSES.contains(a.getStatus())).count();
+        Double percentage = studentAttendances.isEmpty() ? null : (double) presentCount / studentAttendances.size();
+        return new AttendanceHistoryResponse.StudentHistoryRow(studentId, fullName(person), cellsByDate, percentage);
     }
 
     private List<RosterEntryResponse> sortByAbsences(List<RosterEntryResponse> roster, Integer minAbsences) {
@@ -466,9 +466,9 @@ public class AttendanceService {
     }
 
     private void exigirPropiaSeccionSiEsDocente(
-            Long instructorIdIfDocente, Long sectionId, java.util.function.BooleanSupplier esPropia) {
-        if (instructorIdIfDocente != null && !esPropia.getAsBoolean()) {
-            throw new NotOwnSectionException(instructorIdIfDocente, sectionId);
+            Long instructorIdIfTeacher, Long sectionId, java.util.function.BooleanSupplier isOwnSection) {
+        if (instructorIdIfTeacher != null && !isOwnSection.getAsBoolean()) {
+            throw new NotOwnSectionException(instructorIdIfTeacher, sectionId);
         }
     }
 
@@ -522,12 +522,12 @@ public class AttendanceService {
         return person.getName() + " " + person.getLastname();
     }
 
-    private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
+    private AttendanceRiskResponse calculateRisk(long total, long absentCount, double maxAbsencePercentage) {
         if (total == 0) {
             return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
         }
-        double porcentaje = (double) ausentes / total;
-        return new AttendanceRiskResponse(true, porcentaje > maxAbsencePercentage, porcentaje, maxAbsencePercentage);
+        double percentage = (double) absentCount / total;
+        return new AttendanceRiskResponse(true, percentage > maxAbsencePercentage, percentage, maxAbsencePercentage);
     }
 
     private Instructor resolveInstructor(Long instructorId) {

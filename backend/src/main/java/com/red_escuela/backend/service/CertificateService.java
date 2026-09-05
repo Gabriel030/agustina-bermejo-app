@@ -38,7 +38,7 @@ import java.util.List;
 @Service
 public class CertificateService {
 
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
@@ -119,7 +119,7 @@ public class CertificateService {
         certificateIssuanceRepository.save(issuance);
     }
 
-    private byte[] generatePdf(String titulo, String cuerpo) {
+    private byte[] generatePdf(String title, String body) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -127,30 +127,30 @@ public class CertificateService {
             PDFont fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 
             try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-                float margen = 60;
-                float y = page.getMediaBox().getHeight() - margen;
+                float margin = 60;
+                float y = page.getMediaBox().getHeight() - margin;
 
                 content.beginText();
                 content.setFont(fontBold, 16);
-                content.newLineAtOffset(margen, y);
-                content.showText(titulo);
+                content.newLineAtOffset(margin, y);
+                content.showText(title);
                 content.endText();
                 y -= 40;
 
                 content.beginText();
                 content.setFont(fontRegular, 11);
-                content.newLineAtOffset(margen, y);
-                for (String linea : cuerpo.split("\n")) {
-                    content.showText(linea);
+                content.newLineAtOffset(margin, y);
+                for (String line : body.split("\n")) {
+                    content.showText(line);
                     content.newLineAtOffset(0, -16);
                 }
                 content.endText();
-                y -= 16 * cuerpo.split("\n").length + 40;
+                y -= 16 * body.split("\n").length + 40;
 
                 content.beginText();
                 content.setFont(fontRegular, 10);
-                content.newLineAtOffset(margen, Math.max(y, margen));
-                content.showText("Fecha de emisión: " + LocalDateTime.now().format(FECHA));
+                content.newLineAtOffset(margin, Math.max(y, margin));
+                content.showText("Fecha de emisión: " + LocalDateTime.now().format(DATE_FORMATTER));
                 content.endText();
             }
 
