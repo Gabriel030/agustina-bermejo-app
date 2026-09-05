@@ -50,18 +50,18 @@ public class ProgramEnrollmentApplicationController {
     }
 
     // Multipart desde la Fase 3: el pago de la matrícula es un paso bloqueante de
-    // la misma request (ver spec técnica) — ya no hay un solicitar() sin comprobante.
+    // la misma request (ver spec técnica) — ya no hay un request() sin comprobante.
     @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public ProgramEnrollmentApplicationResponse solicitar(
+    public ProgramEnrollmentApplicationResponse request(
             @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollmentApplication application = applicationService.solicitarConPago(student, programId, cohortId, comprobante);
+        ProgramEnrollmentApplication application = applicationService.requestWithPayment(student, programId, cohortId, comprobante);
         return ProgramEnrollmentApplicationResponse.from(application);
     }
 
     @GetMapping("/me/program-enrollment-applications")
-    public List<ProgramEnrollmentApplicationResponse> misSolicitudes() {
+    public List<ProgramEnrollmentApplicationResponse> myProgramEnrollmentApplications() {
         Student student = currentStudentService.resolveCurrentStudent();
         return applicationService.listOwn(student.getId()).stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
@@ -69,11 +69,11 @@ public class ProgramEnrollmentApplicationController {
 
     @PostMapping("/me/program-enrollment-applications/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    public void agregarDocumento(@PathVariable Long id, @RequestParam DocumentType type, @RequestPart MultipartFile file) {
+    public void addDocument(@PathVariable Long id, @RequestParam DocumentType type, @RequestPart MultipartFile file) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollmentApplication application = applicationService.verDetalle(id);
-        exigirPropietario(application, student);
-        applicationService.agregarDocumento(id, type, file);
+        ProgramEnrollmentApplication application = applicationService.viewDetail(id);
+        requireOwner(application, student);
+        applicationService.addDocument(id, type, file);
     }
 
     @GetMapping("/program-enrollment-applications")
@@ -100,7 +100,7 @@ public class ProgramEnrollmentApplicationController {
 
     // Mismo patrón que MeEnrollmentController.exigirPropietario: 404 (no 403) para
     // no revelar que una solicitud ajena existe.
-    private void exigirPropietario(ProgramEnrollmentApplication application, Student student) {
+    private void requireOwner(ProgramEnrollmentApplication application, Student student) {
         if (!application.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentApplicationNotFoundException(application.getId());
         }

@@ -147,11 +147,11 @@ class PricingServiceTest extends AbstractIntegrationTest {
         feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(60000), LocalDate.of(2026, 4, 1)), director);
 
-        FeeSchedule vigenteEnMarzo = feeScheduleService.vigenteParaPrograma(
+        FeeSchedule vigenteEnMarzo = feeScheduleService.validForProgram(
                 program.getId(), FeeScheduleConcept.MATRICULA, LocalDate.of(2026, 3, 1));
         assertThat(vigenteEnMarzo.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
 
-        FeeSchedule vigenteEnMayo = feeScheduleService.vigenteParaPrograma(
+        FeeSchedule vigenteEnMayo = feeScheduleService.validForProgram(
                 program.getId(), FeeScheduleConcept.MATRICULA, LocalDate.of(2026, 5, 1));
         assertThat(vigenteEnMayo.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(60000));
     }
@@ -165,11 +165,11 @@ class PricingServiceTest extends AbstractIntegrationTest {
         feeScheduleService.create(new CreateFeeScheduleRequest(
                 program.getId(), null, FeeScheduleConcept.MATRICULA, BigDecimal.valueOf(50000), LocalDate.now().minusDays(1)), director);
 
-        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), null, LocalDate.now()))
+        assertThat(feeScheduleService.currentEnrollmentFeeAmount(program.getId(), null, LocalDate.now()))
                 .isEqualByComparingTo(BigDecimal.valueOf(50000));
-        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), 1, LocalDate.now()))
+        assertThat(feeScheduleService.currentEnrollmentFeeAmount(program.getId(), 1, LocalDate.now()))
                 .isEqualByComparingTo(BigDecimal.valueOf(50000));
-        assertThat(feeScheduleService.montoMatriculaVigente(program.getId(), 2, LocalDate.now()))
+        assertThat(feeScheduleService.currentEnrollmentFeeAmount(program.getId(), 2, LocalDate.now()))
                 .isEqualByComparingTo(BigDecimal.valueOf(25000));
     }
 

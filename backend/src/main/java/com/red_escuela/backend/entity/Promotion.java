@@ -58,15 +58,15 @@ public class Promotion {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public boolean vigenteEl(LocalDate fecha) {
+    public boolean validOn(LocalDate fecha) {
         return !fecha.isBefore(vigenteDesde) && (vigenteHasta == null || !fecha.isAfter(vigenteHasta));
     }
 
-    public boolean aplicaAPrograma(Long programId) {
+    public boolean appliesToProgram(Long programId) {
         return program != null && program.getId().equals(programId);
     }
 
-    public boolean aplicaACurso(Long courseId) {
+    public boolean appliesToCourse(Long courseId) {
         return course != null && course.getId().equals(courseId);
     }
 }

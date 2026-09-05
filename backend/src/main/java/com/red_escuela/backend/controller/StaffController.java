@@ -37,8 +37,8 @@ public class StaffController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public StaffResponse altaPersonal(@Valid @RequestBody CreateStaffRequest request) {
-        Person person = staffService.altaPersonal(request);
+    public StaffResponse onboardStaff(@Valid @RequestBody CreateStaffRequest request) {
+        Person person = staffService.onboardStaff(request);
         return StaffResponse.from(person, request.role());
     }
 

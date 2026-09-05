@@ -34,8 +34,8 @@ public class ProgramSubjectController {
     @PostMapping("/programs/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramSubjectResponse agregarMateria(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
-        return ProgramSubjectResponse.from(programSubjectService.agregarMateria(id, request));
+    public ProgramSubjectResponse addSubject(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
+        return ProgramSubjectResponse.from(programSubjectService.addSubject(id, request));
     }
 
     @PutMapping("/program-subjects/{id}")
@@ -50,8 +50,8 @@ public class ProgramSubjectController {
     }
 
     @GetMapping("/program-subjects/{id}")
-    public ProgramSubjectResponse verDetalle(@PathVariable Long id) {
-        return ProgramSubjectResponse.from(programSubjectService.verDetalle(id));
+    public ProgramSubjectResponse viewDetail(@PathVariable Long id) {
+        return ProgramSubjectResponse.from(programSubjectService.viewDetail(id));
     }
 
     @PostMapping("/program-subjects/{id}/deactivate")
@@ -71,8 +71,8 @@ public class ProgramSubjectController {
     @PostMapping("/program-subjects/{id}/prerequisites")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PrerequisiteResponse agregarCorrelatividad(@PathVariable Long id, @Valid @RequestBody AddPrerequisiteRequest request) {
-        return PrerequisiteResponse.from(programSubjectService.agregarCorrelatividad(id, request));
+    public PrerequisiteResponse addPrerequisite(@PathVariable Long id, @Valid @RequestBody AddPrerequisiteRequest request) {
+        return PrerequisiteResponse.from(programSubjectService.addPrerequisite(id, request));
     }
 
     @GetMapping("/program-subjects/{id}/prerequisites")
@@ -83,7 +83,7 @@ public class ProgramSubjectController {
     @DeleteMapping("/program-subjects/prerequisites/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void quitarCorrelatividad(@PathVariable Long id) {
-        programSubjectService.quitarCorrelatividad(id);
+    public void removePrerequisite(@PathVariable Long id) {
+        programSubjectService.removePrerequisite(id);
     }
 }

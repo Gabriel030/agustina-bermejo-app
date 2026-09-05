@@ -44,22 +44,22 @@ public class ExamBoardController {
 
     @GetMapping("/exam-boards/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public ExamBoardResponse verDetalle(@PathVariable Long id) {
-        return ExamBoardResponse.from(examBoardService.verDetalle(id));
+    public ExamBoardResponse viewDetail(@PathVariable Long id) {
+        return ExamBoardResponse.from(examBoardService.viewDetail(id));
     }
 
     @PostMapping("/exam-boards/{id}/tribunal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void asignarTribunal(@PathVariable Long id, @Valid @RequestBody AssignTribunalRequest request) {
-        examBoardService.asignarTribunal(id, request.instructorId());
+    public void assignExaminers(@PathVariable Long id, @Valid @RequestBody AssignTribunalRequest request) {
+        examBoardService.assignExaminers(id, request.instructorId());
     }
 
     @PostMapping("/exam-boards/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void cerrarActa(@PathVariable Long id) {
-        examBoardService.cerrarActa(id);
+    public void closeRecord(@PathVariable Long id) {
+        examBoardService.closeRecord(id);
     }
 
     @GetMapping("/exam-boards/{id}/registrations")

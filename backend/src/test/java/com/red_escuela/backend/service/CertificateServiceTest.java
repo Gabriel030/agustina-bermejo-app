@@ -161,7 +161,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         autenticarComoPersona("ADMIN90000001");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularStandingCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
@@ -175,7 +175,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
         autenticarComoPersona("ADMIN90000002");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularStandingCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
@@ -192,7 +192,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota al día", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
         autenticarComoPersona("ADMIN90000003");
 
-        byte[] pdf = certificateService.emitirConstanciaRegular(enrollment.getId());
+        byte[] pdf = certificateService.issueRegularStandingCertificate(enrollment.getId());
         assertThat(pdf).isNotEmpty();
         // Encabezado estándar de un archivo PDF válido.
         assertThat(new String(pdf, 0, 5)).isEqualTo("%PDF-");
@@ -209,7 +209,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         autenticarComoPersona("ADMIN90000004");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularStandingCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
@@ -221,7 +221,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         autenticarComoPersona("ADMIN90000005");
 
-        byte[] pdf = certificateService.emitirConstanciaMateriasAprobadas(enrollment.getId());
+        byte[] pdf = certificateService.issueApprovedSubjectsCertificate(enrollment.getId());
         assertThat(pdf).isNotEmpty();
     }
 }

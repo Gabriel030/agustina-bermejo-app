@@ -247,7 +247,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         student.getPerson().setStatus(StatusType.DELETED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.cambiarComision(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.changeSection(
                 original.getId(), new ChangeSectionRequest(seccionB.getId())))
                 .isInstanceOf(StudentNotActiveException.class);
     }

@@ -45,7 +45,7 @@ public class LateFeePolicyService {
         return lateFeePolicyRepository.findAllByOrderByVigenteDesdeDesc();
     }
 
-    public Optional<LateFeePolicy> vigenteEl(LocalDate fecha) {
+    public Optional<LateFeePolicy> validOn(LocalDate fecha) {
         return lateFeePolicyRepository.findFirstByVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(fecha);
     }
 }

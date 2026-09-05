@@ -76,9 +76,9 @@ public class ProgramEnrollmentApplicationService {
 
     // Matrícula vence hoy: se paga en el momento, junto con la solicitud (a
     // diferencia de una cuota regular, que vence a futuro) — ver spec técnica,
-    // "el Invoice + PaymentReceipt se crean en la MISMA request que solicitar()".
+    // "el Invoice + PaymentReceipt se crean en la MISMA request que request()".
     @Transactional
-    public ProgramEnrollmentApplication solicitarConPago(Student student, Long programId, Long cohortId, MultipartFile comprobante) {
+    public ProgramEnrollmentApplication requestWithPayment(Student student, Long programId, Long cohortId, MultipartFile comprobante) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
@@ -113,7 +113,7 @@ public class ProgramEnrollmentApplicationService {
         return applicationRepository.findByStatusOrderByRequestedAtAsc(ProgramEnrollmentApplicationStatus.PENDING);
     }
 
-    public ProgramEnrollmentApplication verDetalle(Long id) {
+    public ProgramEnrollmentApplication viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -122,7 +122,7 @@ public class ProgramEnrollmentApplicationService {
     // compartido porque hoy son los dos únicos casos de uso y la lógica es de 10
     // líneas; se evalúa unificar si aparece un tercer caso.
     @Transactional
-    public StudentDocument agregarDocumento(Long applicationId, DocumentType type, MultipartFile file) {
+    public StudentDocument addDocument(Long applicationId, DocumentType type, MultipartFile file) {
         ProgramEnrollmentApplication application = findOrThrow(applicationId);
         Long studentId = application.getStudent().getId();
 

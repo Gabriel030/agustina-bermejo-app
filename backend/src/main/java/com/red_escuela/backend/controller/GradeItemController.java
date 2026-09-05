@@ -35,17 +35,17 @@ public class GradeItemController {
     @PostMapping("/section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public GradeItemResponse cargarNotaProgramEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
+    public GradeItemResponse loadGradeProgramEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return GradeItemResponse.from(gradeItemService.cargarNotaProgramEnrollment(id, instructor.getId(), request));
+        return GradeItemResponse.from(gradeItemService.loadGradeProgramEnrollment(id, instructor.getId(), request));
     }
 
     @PostMapping("/course-section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public GradeItemResponse cargarNotaCourseEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
+    public GradeItemResponse loadGradeCourseEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return GradeItemResponse.from(gradeItemService.cargarNotaCourseEnrollment(id, instructor.getId(), request));
+        return GradeItemResponse.from(gradeItemService.loadGradeCourseEnrollment(id, instructor.getId(), request));
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")

@@ -93,7 +93,7 @@ public class AttendanceChangeRequestService {
     @Transactional
     public AttendanceChangeRequest approve(Long id) {
         AttendanceChangeRequest request = findOrThrow(id);
-        exigirPendiente(request);
+        requirePending(request);
 
         Attendance attendance = request.getAttendance();
         attendance.setStatus(request.getRequestedStatus());
@@ -111,7 +111,7 @@ public class AttendanceChangeRequestService {
     @Transactional
     public AttendanceChangeRequest reject(Long id) {
         AttendanceChangeRequest request = findOrThrow(id);
-        exigirPendiente(request);
+        requirePending(request);
 
         request.setStatus(AttendanceChangeRequestStatus.REJECTED);
         request.setApprovedBy(resolveApprover());
@@ -131,7 +131,7 @@ public class AttendanceChangeRequestService {
         return enrollment.getCourseSubjectSection().getId();
     }
 
-    private void exigirPendiente(AttendanceChangeRequest request) {
+    private void requirePending(AttendanceChangeRequest request) {
         if (request.getStatus() != AttendanceChangeRequestStatus.PENDING) {
             throw new InvalidAttendanceChangeRequestStateException(request.getId());
         }

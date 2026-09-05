@@ -77,7 +77,7 @@ public class ProspectService {
     }
 
     @Transactional
-    public StudentDocument agregarDocumento(Long studentId, DocumentType type, MultipartFile file) {
+    public StudentDocument addDocument(Long studentId, DocumentType type, MultipartFile file) {
         Student student = findStudentOrThrow(studentId);
 
         // Un tipo de documento tiene un único registro vigente: el nuevo reemplaza al
@@ -104,7 +104,7 @@ public class ProspectService {
     }
 
     @Transactional
-    public Student confirmarAlta(Long studentId, ConfirmProspectRequest request) {
+    public Student confirmOnboarding(Long studentId, ConfirmProspectRequest request) {
         Student student = findStudentOrThrow(studentId);
         if (student.getOnboardingStatus() != StudentOnboardingStatus.PROSPECTO) {
             throw new ProspectAlreadyConfirmedException(studentId);

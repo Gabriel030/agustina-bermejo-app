@@ -75,7 +75,7 @@ public class InvoiceController {
     // Decisión 17, consulta — coherente con decisión 14: el Preceptor no tiene acceso a facturación.
     @GetMapping("/students/{id}/payment-standing")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public PaymentStandingResponse verEstadoDePago(@PathVariable Long id) {
+    public PaymentStandingResponse viewPaymentStatus(@PathVariable Long id) {
         return new PaymentStandingResponse(id, invoiceService.calculatePaymentStatus(id).name());
     }
 }

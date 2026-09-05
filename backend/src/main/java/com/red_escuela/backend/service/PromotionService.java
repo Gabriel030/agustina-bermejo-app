@@ -75,13 +75,13 @@ public class PromotionService {
 
     List<Promotion> vigentesParaPrograma(Long programId, LocalDate fecha) {
         return promotionRepository.findByProgramId(programId).stream()
-                .filter(promotion -> promotion.vigenteEl(fecha))
+                .filter(promotion -> promotion.validOn(fecha))
                 .toList();
     }
 
     List<Promotion> vigentesParaCurso(Long courseId, LocalDate fecha) {
         return promotionRepository.findByCourseId(courseId).stream()
-                .filter(promotion -> promotion.vigenteEl(fecha))
+                .filter(promotion -> promotion.validOn(fecha))
                 .toList();
     }
 }

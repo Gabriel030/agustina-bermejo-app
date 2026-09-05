@@ -149,7 +149,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        assertThatThrownBy(() -> graduationRequestService.solicitar(enrollment.getId()))
+        assertThatThrownBy(() -> graduationRequestService.request(enrollment.getId()))
                 .isInstanceOf(NotEligibleForGraduationException.class);
     }
 
@@ -160,9 +160,9 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        graduationRequestService.solicitar(enrollment.getId());
+        graduationRequestService.request(enrollment.getId());
 
-        assertThatThrownBy(() -> graduationRequestService.solicitar(enrollment.getId()))
+        assertThatThrownBy(() -> graduationRequestService.request(enrollment.getId()))
                 .isInstanceOf(GraduationRequestAlreadyActiveException.class);
     }
 
@@ -173,7 +173,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest request = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest request = graduationRequestService.request(enrollment.getId());
         invoiceService.create(student.getId(), new CreateInvoiceRequest("Cuota impaga", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
 
         assertThatThrownBy(() -> graduationRequestService.verifyDebt(request.getId()))
@@ -190,7 +190,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest request = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest request = graduationRequestService.request(enrollment.getId());
         autenticarComoPersona("ADMIN80000004");
         graduationRequestService.verifyDebt(request.getId());
         autenticarComoPersona("DIRECTOR80000004");
@@ -210,14 +210,14 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest primero = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest primero = graduationRequestService.request(enrollment.getId());
         autenticarComoPersona("ADMIN80000005");
         graduationRequestService.reject(primero.getId(), "Datos incompletos");
 
         GraduationRequest recargado = entityManager.find(GraduationRequest.class, primero.getId());
         assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.REJECTED);
 
-        GraduationRequest segundo = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest segundo = graduationRequestService.request(enrollment.getId());
         assertThat(segundo.getId()).isNotEqualTo(primero.getId());
         assertThat(segundo.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
     }

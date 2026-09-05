@@ -76,7 +76,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void administratorOnboardsATeacherWorks() {
         autenticarComoActor("B0000001", "ADMINISTRATIVO");
 
-        Person creado = staffService.altaPersonal(requestParaRol("B0000011", "DOCENTE"));
+        Person creado = staffService.onboardStaff(requestParaRol("B0000011", "DOCENTE"));
 
         assertThat(creado.getId()).isNotNull();
         assertThat(creado.getRoles()).extracting(Role::getName).containsExactly("DOCENTE");
@@ -86,7 +86,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void administratorAttemptsToOnboardAnAdministratorFails() {
         autenticarComoActor("B0000002", "ADMINISTRATIVO");
 
-        assertThatThrownBy(() -> staffService.altaPersonal(requestParaRol("B0000012", "ADMINISTRATIVO")))
+        assertThatThrownBy(() -> staffService.onboardStaff(requestParaRol("B0000012", "ADMINISTRATIVO")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
@@ -94,7 +94,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void directorOnboardsAnAdministratorWorks() {
         autenticarComoActor("B0000003", "DIRECTOR");
 
-        Person creado = staffService.altaPersonal(requestParaRol("B0000013", "ADMINISTRATIVO"));
+        Person creado = staffService.onboardStaff(requestParaRol("B0000013", "ADMINISTRATIVO"));
 
         assertThat(creado.getId()).isNotNull();
         assertThat(creado.getRoles()).extracting(Role::getName).containsExactly("ADMINISTRATIVO");
@@ -104,14 +104,14 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void directorAttemptsToOnboardATeacherFails() {
         autenticarComoActor("B0000004", "DIRECTOR");
 
-        assertThatThrownBy(() -> staffService.altaPersonal(requestParaRol("B0000014", "DOCENTE")))
+        assertThatThrownBy(() -> staffService.onboardStaff(requestParaRol("B0000014", "DOCENTE")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
     @Test
     void directorCannotEditATeacherButTheAdministratorCan() {
         autenticarComoActor("B0000005", "ADMINISTRATIVO");
-        Person docente = staffService.altaPersonal(requestParaRol("B0000015", "DOCENTE"));
+        Person docente = staffService.onboardStaff(requestParaRol("B0000015", "DOCENTE"));
 
         autenticarComoActor("B0000006", "DIRECTOR");
         UpdateStaffRequest edicion = new UpdateStaffRequest("nuevo@example.com", null, null, null, null, null, null, null, null);

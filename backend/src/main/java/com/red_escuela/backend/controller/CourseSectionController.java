@@ -65,15 +65,15 @@ public class CourseSectionController {
     }
 
     @GetMapping("/course-sections/{id}")
-    public CourseSubjectSectionResponse verDetalle(@PathVariable Long id) {
-        return CourseSubjectSectionResponse.from(sectionService.verDetalle(id));
+    public CourseSubjectSectionResponse viewDetail(@PathVariable Long id) {
+        return CourseSubjectSectionResponse.from(sectionService.viewDetail(id));
     }
 
     @PostMapping("/course-sections/{id}/instructors")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SectionInstructorResponse asignarDocente(@PathVariable Long id, @Valid @RequestBody AssignInstructorRequest request) {
-        CourseSubjectSectionInstructor assignment = sectionService.asignarDocente(id, request);
+    public SectionInstructorResponse assignInstructor(@PathVariable Long id, @Valid @RequestBody AssignInstructorRequest request) {
+        CourseSubjectSectionInstructor assignment = sectionService.assignInstructor(id, request);
         return toResponse(assignment);
     }
 
@@ -85,8 +85,8 @@ public class CourseSectionController {
     @DeleteMapping("/course-sections/{id}/instructors/{assignmentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void quitarDocente(@PathVariable Long id, @PathVariable Long assignmentId) {
-        sectionService.quitarDocente(id, assignmentId);
+    public void removeInstructor(@PathVariable Long id, @PathVariable Long assignmentId) {
+        sectionService.removeInstructor(id, assignmentId);
     }
 
     private SectionInstructorResponse toResponse(CourseSubjectSectionInstructor assignment) {

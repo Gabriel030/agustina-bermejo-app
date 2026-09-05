@@ -55,7 +55,7 @@ public class DiscountService {
 
     List<Discount> vigentesParaAlumno(Long studentId, LocalDate fecha) {
         return discountRepository.findByStudentId(studentId).stream()
-                .filter(discount -> discount.vigenteEl(fecha))
+                .filter(discount -> discount.validOn(fecha))
                 .toList();
     }
 }

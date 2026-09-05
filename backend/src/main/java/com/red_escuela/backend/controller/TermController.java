@@ -63,8 +63,8 @@ public class TermController {
     }
 
     @GetMapping("/{id}")
-    public TermResponse verDetalle(@PathVariable Long id) {
-        return TermResponse.from(termService.verDetalle(id));
+    public TermResponse viewDetail(@PathVariable Long id) {
+        return TermResponse.from(termService.viewDetail(id));
     }
 
     // Decisión 5 (Spec Procesos administrativos): override manual de ventana de inscripción.
@@ -72,21 +72,21 @@ public class TermController {
     @PostMapping("/{id}/enrollment/open")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void abrirInscripcion(@PathVariable Long id) {
-        termService.abrirInscripcion(id);
+    public void openEnrollment(@PathVariable Long id) {
+        termService.openEnrollment(id);
     }
 
     @PostMapping("/{id}/enrollment/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void cerrarInscripcion(@PathVariable Long id) {
-        termService.cerrarInscripcion(id);
+    public void closeEnrollment(@PathVariable Long id) {
+        termService.closeEnrollment(id);
     }
 
     @PostMapping("/{id}/enrollment/clear-override")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void quitarOverride(@PathVariable Long id) {
-        termService.quitarOverride(id);
+    public void removeOverride(@PathVariable Long id) {
+        termService.removeOverride(id);
     }
 }

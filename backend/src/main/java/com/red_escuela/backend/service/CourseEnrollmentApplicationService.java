@@ -61,7 +61,7 @@ public class CourseEnrollmentApplicationService {
     }
 
     @Transactional
-    public CourseEnrollmentApplication solicitarConPago(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile comprobante) {
+    public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile comprobante) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         Course course = courseRepository.findById(request.courseId())
@@ -75,7 +75,7 @@ public class CourseEnrollmentApplicationService {
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);
         application.setCourse(course);
-        application.setSectionOverrides(serializarOverrides(request.sectionOverrides()));
+        application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
         application.setPaymentReceipt(receipt);
         return courseEnrollmentApplicationRepository.save(application);
     }
@@ -84,7 +84,7 @@ public class CourseEnrollmentApplicationService {
         return courseEnrollmentApplicationRepository.findByStudentIdOrderByIdDesc(studentId);
     }
 
-    private String serializarOverrides(Map<Long, Long> sectionOverrides) {
+    private String serializeOverrides(Map<Long, Long> sectionOverrides) {
         if (sectionOverrides == null || sectionOverrides.isEmpty()) {
             return null;
         }

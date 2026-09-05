@@ -233,7 +233,7 @@ class RecurringBillingServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(program, null, BigDecimal.valueOf(15000), director);
         entityManager.flush();
 
-        recurringBillingService.generarCuotasDeCarreras(LocalDate.now());
+        recurringBillingService.generateProgramInstallments(LocalDate.now());
 
         assertThat(invoiceRepository.findByStudentId(student.getId())).isEmpty();
     }

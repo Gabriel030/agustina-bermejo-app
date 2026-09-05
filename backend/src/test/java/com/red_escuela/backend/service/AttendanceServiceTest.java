@@ -130,7 +130,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         return section;
     }
 
-    private void asignarDocente(SubjectSection section, Instructor instructor) {
+    private void assignInstructor(SubjectSection section, Instructor instructor) {
         SubjectSectionInstructor asignacion = new SubjectSectionInstructor();
         asignacion.setSection(section);
         asignacion.setInstructor(instructor);
@@ -180,7 +180,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
 
         CargarAsistenciaRequest request = new CargarAsistenciaRequest(LocalDate.now(), List.of(), null, null);
 
-        assertThatThrownBy(() -> attendanceService.cargarAsistenciaProgramSection(section.getId(), instructorAjeno.getId(), request))
+        assertThatThrownBy(() -> attendanceService.loadAttendanceProgramSection(section.getId(), instructorAjeno.getId(), request))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
@@ -192,16 +192,16 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAsistenciaDuplicada");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAsistenciaDuplicada");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
         LocalDate classDate = LocalDate.now();
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
 
         List<Attendance> asistencias = attendanceService.listByProgramEnrollment(enrollment.getId());
@@ -217,7 +217,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaBulkDuplicado");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraBulkDuplicado");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -229,7 +229,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT),
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null);
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(), request);
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(), request);
 
         List<Attendance> asistencias = attendanceService.listByProgramEnrollment(enrollment.getId());
         assertThat(asistencias).hasSize(1);
@@ -244,13 +244,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaJustificacionInvalida");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraJustificacionInvalida");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
@@ -258,7 +258,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        assertThatThrownBy(() -> attendanceService.justificar(attendance.getId(), "motivo", null))
+        assertThatThrownBy(() -> attendanceService.justify(attendance.getId(), "motivo", null))
                 .isInstanceOf(CannotJustifyException.class);
     }
 
@@ -270,13 +270,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaJustificacionValida");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraJustificacionValida");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
@@ -284,7 +284,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(preceptor.getId().toString(), null));
 
-        Attendance justificada = attendanceService.justificar(attendance.getId(), "motivo médico", null);
+        Attendance justificada = attendanceService.justify(attendance.getId(), "motivo médico", null);
         assertThat(justificada.getStatus()).isEqualTo(AttendanceStatus.JUSTIFIED);
         assertThat(justificada.getJustificationReason()).isEqualTo("motivo médico");
         assertThat(justificada.getJustifiedAt()).isNotNull();
@@ -316,7 +316,7 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaLibrePorInasistencias");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, 0.25);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraLibrePorInasistencias");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -326,13 +326,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         // ausentes (decisión de producto), así que se agregan también para verificar que no
         // distorsionan el porcentaje.
         LocalDate d = LocalDate.now();
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(2), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
 
         AttendanceRiskResponse riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
@@ -349,13 +349,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaComprobantePendiente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraComprobantePendiente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
@@ -372,13 +372,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAprobarJustificacion");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAprobarJustificacion");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
         attendanceService.uploadJustificationProof(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
@@ -400,13 +400,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaRechazarJustificacion");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraRechazarJustificacion");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
         attendanceService.uploadJustificationProof(attendance.getId(), "motivo médico", "students/1/comprobante.pdf");
@@ -423,13 +423,13 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAprobarSinPendiente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAprobarSinPendiente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
         Attendance attendance = attendanceService.listByProgramEnrollment(enrollment.getId()).get(0);
 
@@ -449,20 +449,20 @@ class AttendanceServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaPendienteCuentaComoAusente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, 0.25);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPendienteCuentaComoAusente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
         LocalDate d = LocalDate.now();
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(2), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
-        attendanceService.cargarAsistenciaProgramSection(section.getId(), instructor.getId(),
+        attendanceService.loadAttendanceProgramSection(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null));
         Attendance ausente = attendanceService.listByProgramEnrollment(enrollment.getId()).stream()
                 .filter(a -> a.getStatus() == AttendanceStatus.ABSENT).findFirst().orElseThrow();

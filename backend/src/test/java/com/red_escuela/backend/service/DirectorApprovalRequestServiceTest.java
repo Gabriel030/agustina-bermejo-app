@@ -128,7 +128,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
         autenticarComoPersona("PRECEPTOR_A0000001");
 
-        DirectorApprovalRequest request = directorApprovalRequestService.solicitar(
+        DirectorApprovalRequest request = directorApprovalRequestService.request(
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), null, "Justificación de prueba"));
 
         autenticarComoPersona("DIRECTOR_A0000001");
@@ -181,7 +181,7 @@ class DirectorApprovalRequestServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         autenticarComoPersona("PRECEPTOR_A0000002");
-        DirectorApprovalRequest request = directorApprovalRequestService.solicitar(
+        DirectorApprovalRequest request = directorApprovalRequestService.request(
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), subject.getId(), "Llegó tarde por paro de transporte"));
 
         autenticarComoPersona("DIRECTOR_A0000002");

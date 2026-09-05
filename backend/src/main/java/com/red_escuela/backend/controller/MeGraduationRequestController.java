@@ -33,12 +33,12 @@ public class MeGraduationRequestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GraduationRequestResponse solicitar(@PathVariable Long id) {
+    public GraduationRequestResponse request(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.verDetalle(id);
+        ProgramEnrollment enrollment = programEnrollmentService.viewDetail(id);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(id);
         }
-        return GraduationRequestResponse.from(graduationRequestService.solicitar(id));
+        return GraduationRequestResponse.from(graduationRequestService.request(id));
     }
 }

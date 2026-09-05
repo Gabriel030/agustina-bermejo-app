@@ -26,7 +26,7 @@ public class CourseSubjectService {
     }
 
     @Transactional
-    public CourseSubject agregarModulo(Long courseId, CreateCourseSubjectRequest request) {
+    public CourseSubject addModule(Long courseId, CreateCourseSubjectRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException(courseId));
 
@@ -68,7 +68,7 @@ public class CourseSubjectService {
                 : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(courseId, status);
     }
 
-    public CourseSubject verDetalle(Long id) {
+    public CourseSubject viewDetail(Long id) {
         return findOrThrow(id);
     }
 

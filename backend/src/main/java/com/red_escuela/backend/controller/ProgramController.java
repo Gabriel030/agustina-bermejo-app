@@ -64,7 +64,7 @@ public class ProgramController {
     }
 
     @GetMapping("/{id}")
-    public ProgramResponse verDetalle(@PathVariable Long id) {
-        return ProgramResponse.from(programService.verDetalle(id));
+    public ProgramResponse viewDetail(@PathVariable Long id) {
+        return ProgramResponse.from(programService.viewDetail(id));
     }
 }

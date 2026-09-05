@@ -61,12 +61,12 @@ public class StaffService {
     }
 
     @Transactional
-    public Person altaPersonal(CreateStaffRequest request) {
+    public Person onboardStaff(CreateStaffRequest request) {
         String requestedRole = request.role();
         if (!ALLOWED_ROLES.contains(requestedRole)) {
             throw new InvalidStaffRoleException(requestedRole);
         }
-        exigirPuedeAsignar(requestedRole);
+        requireCanAssign(requestedRole);
 
         Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
         person.setDni(request.dni());
@@ -106,7 +106,7 @@ public class StaffService {
     public Person updateStaff(Long personId, UpdateStaffRequest request) {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException(personId));
-        exigirPuedeAsignar(resolveStaffRole(person));
+        requireCanAssign(resolveStaffRole(person));
 
         if (request.email() != null) {
             person.setEmail(request.email());
@@ -143,7 +143,7 @@ public class StaffService {
 
     // El @PreAuthorize del controller solo exige "Administrativo o Director" — cuál de los
     // dos puede tocar cuál rol puntual es la regla de negocio real (RF-AD-05/RF-DI-04).
-    private void exigirPuedeAsignar(String targetRole) {
+    private void requireCanAssign(String targetRole) {
         // Set.of(...).contains(null) tira NPE (no false) — un target sin rol de staff
         // reconocido nunca está autorizado, se corta acá antes de tocar los sets.
         if (targetRole == null) {

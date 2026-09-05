@@ -120,7 +120,7 @@ public class PaymentReceiptService {
     }
 
     private void enrollInCourse(CourseEnrollmentApplication intent) {
-        Map<Long, Long> overrides = deserializarOverrides(intent.getSectionOverrides());
+        Map<Long, Long> overrides = deserializeOverrides(intent.getSectionOverrides());
         CourseEnrollment enrollment = courseEnrollmentService.enrollAsSelfService(
                 intent.getStudent().getId(), new CreateCourseEnrollmentRequest(intent.getCourse().getId(), overrides));
         intent.setCourseEnrollment(enrollment);
@@ -138,7 +138,7 @@ public class PaymentReceiptService {
         invoiceRepository.save(invoice);
     }
 
-    private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {
+    private Map<Long, Long> deserializeOverrides(String sectionOverridesJson) {
         if (sectionOverridesJson == null || sectionOverridesJson.isBlank()) {
             return null;
         }

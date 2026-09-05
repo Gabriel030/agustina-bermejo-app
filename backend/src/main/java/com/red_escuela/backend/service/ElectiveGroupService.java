@@ -69,7 +69,7 @@ public class ElectiveGroupService {
         return electiveGroupRepository.findAll();
     }
 
-    public ElectiveGroup verDetalle(Long id) {
+    public ElectiveGroup viewDetail(Long id) {
         return electiveGroupRepository.findById(id)
                 .orElseThrow(() -> new ElectiveGroupNotFoundException(id));
     }
@@ -79,7 +79,7 @@ public class ElectiveGroupService {
     }
 
     @Transactional
-    public ProgramElectiveGroup asignarACarrera(Long programId, AssignElectiveGroupRequest request) {
+    public ProgramElectiveGroup assignToProgram(Long programId, AssignElectiveGroupRequest request) {
         if (request.minRequired() > request.maxAllowed()) {
             throw new InvalidElectiveRangeException(request.minRequired(), request.maxAllowed());
         }
@@ -100,7 +100,7 @@ public class ElectiveGroupService {
     }
 
     @Transactional
-    public void quitarDeCarrera(Long programId, Long electiveGroupId) {
+    public void removeFromProgram(Long programId, Long electiveGroupId) {
         ProgramElectiveGroup assignment = programElectiveGroupRepository
                 .findByProgramIdAndElectiveGroupId(programId, electiveGroupId)
                 .orElseThrow(() -> new ElectiveGroupNotFoundException(electiveGroupId));

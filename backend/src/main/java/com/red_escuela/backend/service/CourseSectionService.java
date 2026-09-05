@@ -100,7 +100,7 @@ public class CourseSectionService {
                 : sectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, status);
     }
 
-    public CourseSubjectSection verDetalle(Long id) {
+    public CourseSubjectSection viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -119,7 +119,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public CourseSubjectSectionInstructor asignarDocente(Long sectionId, AssignInstructorRequest request) {
+    public CourseSubjectSectionInstructor assignInstructor(Long sectionId, AssignInstructorRequest request) {
         CourseSubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
@@ -145,7 +145,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
+    public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
         CourseSubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
                 .filter(a -> a.getSection().getId().equals(sectionId))
                 .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));

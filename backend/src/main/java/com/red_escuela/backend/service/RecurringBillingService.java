@@ -55,13 +55,13 @@ public class RecurringBillingService {
     // cuota atrasada (ver spec técnica, decisión 7). Mismo método que dispara
     // POST /billing/run — sin lógica duplicada entre cron y disparo manual.
     @Scheduled(cron = "0 0 3 * * *")
-    public void generarCuotasDelDia() {
+    public void generateDailyInstallments() {
         LocalDate hoy = LocalDate.now();
-        generarCuotasDeCarreras(hoy);
-        generarCuotasDeCursos(hoy);
+        generateProgramInstallments(hoy);
+        generateCourseInstallments(hoy);
     }
 
-    void generarCuotasDeCarreras(LocalDate hoy) {
+    void generateProgramInstallments(LocalDate hoy) {
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStatus(ProgramEnrollmentStatus.ENROLLED);
         int generadas = 0;
         for (ProgramEnrollment enrollment : activas) {
@@ -78,7 +78,7 @@ public class RecurringBillingService {
         log.info("Motor de facturación (carreras): {} matriculaciones revisadas, {} cuotas generadas", activas.size(), generadas);
     }
 
-    void generarCuotasDeCursos(LocalDate hoy) {
+    void generateCourseInstallments(LocalDate hoy) {
         List<CourseEnrollment> activas = courseEnrollmentRepository.findByStatus(EnrollmentStatus.ENROLLED);
         int generadas = 0;
         for (CourseEnrollment enrollment : activas) {

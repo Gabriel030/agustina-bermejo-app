@@ -60,7 +60,7 @@ public class TermService {
         return status == null ? termRepository.findAll() : termRepository.findByStatus(status);
     }
 
-    public Term verDetalle(Long id) {
+    public Term viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -81,21 +81,21 @@ public class TermService {
     // Decisión 5 (Spec Procesos administrativos): override manual con prioridad sobre la
     // validación por fecha ya existente, mientras esté activo.
     @Transactional
-    public void abrirInscripcion(Long id) {
+    public void openEnrollment(Long id) {
         Term term = findOrThrow(id);
         term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
         termRepository.save(term);
     }
 
     @Transactional
-    public void cerrarInscripcion(Long id) {
+    public void closeEnrollment(Long id) {
         Term term = findOrThrow(id);
         term.setEnrollmentOverride(TermEnrollmentOverride.CLOSED);
         termRepository.save(term);
     }
 
     @Transactional
-    public void quitarOverride(Long id) {
+    public void removeOverride(Long id) {
         Term term = findOrThrow(id);
         term.setEnrollmentOverride(null);
         termRepository.save(term);

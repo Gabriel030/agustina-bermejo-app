@@ -48,8 +48,8 @@ public class ElectiveGroupController {
     }
 
     @GetMapping("/elective-groups/{id}")
-    public ElectiveGroupResponse verDetalle(@PathVariable Long id) {
-        return ElectiveGroupResponse.from(electiveGroupService.verDetalle(id));
+    public ElectiveGroupResponse viewDetail(@PathVariable Long id) {
+        return ElectiveGroupResponse.from(electiveGroupService.viewDetail(id));
     }
 
     @GetMapping("/programs/{id}/elective-groups")
@@ -59,14 +59,14 @@ public class ElectiveGroupController {
 
     @PostMapping("/programs/{id}/elective-groups")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramElectiveGroupResponse asignarACarrera(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
-        return ProgramElectiveGroupResponse.from(electiveGroupService.asignarACarrera(id, request));
+    public ProgramElectiveGroupResponse assignToProgram(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
+        return ProgramElectiveGroupResponse.from(electiveGroupService.assignToProgram(id, request));
     }
 
     @DeleteMapping("/programs/{id}/elective-groups/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void quitarDeCarrera(@PathVariable Long id, @PathVariable Long groupId) {
-        electiveGroupService.quitarDeCarrera(id, groupId);
+    public void removeFromProgram(@PathVariable Long id, @PathVariable Long groupId) {
+        electiveGroupService.removeFromProgram(id, groupId);
     }
 }

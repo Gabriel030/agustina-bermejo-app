@@ -57,7 +57,7 @@ public class ProgramService {
         return status == null ? programRepository.findAll() : programRepository.findByStatus(status);
     }
 
-    public Program verDetalle(Long id) {
+    public Program viewDetail(Long id) {
         return findOrThrow(id);
     }
 

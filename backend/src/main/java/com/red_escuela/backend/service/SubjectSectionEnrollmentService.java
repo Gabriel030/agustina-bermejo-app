@@ -152,7 +152,7 @@ public class SubjectSectionEnrollmentService {
     }
 
     @Transactional
-    public SubjectSectionEnrollment cambiarComision(Long id, ChangeSectionRequest request) {
+    public SubjectSectionEnrollment changeSection(Long id, ChangeSectionRequest request) {
         SubjectSectionEnrollment origen = findOrThrow(id);
         if (origen.getStatus() != EnrollmentStatus.ENROLLED && origen.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
@@ -229,24 +229,24 @@ public class SubjectSectionEnrollmentService {
     // (ProgramSubject.curricularYear, ver comentario de SubjectSection: una materia se
     // comparte entre carreras). Puede no existir (materia que ya no está en el plan
     // vigente, o vino de otra vía) — null en ese caso, el frontend lo trata como opcional.
-    public Integer resolverAnioCurricular(SubjectSectionEnrollment enrollment) {
-        return resolverProgramSubject(enrollment).map(ProgramSubject::getCurricularYear).orElse(null);
+    public Integer resolveCurricularYear(SubjectSectionEnrollment enrollment) {
+        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularYear).orElse(null);
     }
 
     // Cuatrimestre curricular de la materia dentro del plan de ESTA carrera puntual — mismo
     // criterio/lookup que resolverAnioCurricular (ProgramSubject depende del Program, una
     // materia compartida entre carreras puede tener año/cuatrimestre distinto en cada una).
-    public CurricularTerm resolverCuatrimestreCurricular(SubjectSectionEnrollment enrollment) {
-        return resolverProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
+    public CurricularTerm resolveCurricularTerm(SubjectSectionEnrollment enrollment) {
+        return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
     }
 
-    private java.util.Optional<ProgramSubject> resolverProgramSubject(SubjectSectionEnrollment enrollment) {
+    private java.util.Optional<ProgramSubject> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
         return programSubjectRepository.findByProgramIdAndSubjectId(
                 enrollment.getProgramEnrollment().getProgram().getId(),
                 enrollment.getSubjectSection().getSubject().getId());
     }
 
-    public SubjectSectionEnrollment verDetalle(Long id) {
+    public SubjectSectionEnrollment viewDetail(Long id) {
         return findOrThrow(id);
     }
 

@@ -144,7 +144,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         ProgramEnrollmentApplication application =
-                applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante());
+                applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante());
 
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
@@ -161,9 +161,9 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
-        applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante());
+        applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante());
 
-        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
+        assertThatThrownBy(() -> applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante()))
                 .isInstanceOf(AlreadyHasPendingApplicationException.class);
     }
 
@@ -174,7 +174,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         ProgramCohort cohort = persistCohort(program, null, null);
         entityManager.flush();
 
-        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
+        assertThatThrownBy(() -> applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante()))
                 .isInstanceOf(FeeScheduleNotFoundException.class);
     }
 
@@ -189,7 +189,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
-        assertThatThrownBy(() -> applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante()))
+        assertThatThrownBy(() -> applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante()))
                 .isInstanceOf(AdmissionWindowClosedException.class);
 
         assertThat(invoiceRepository.findByStudentId(student.getId())).isEmpty();
@@ -204,7 +204,7 @@ class ProgramEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
         ProgramEnrollmentApplication application =
-                applicationService.solicitarConPago(student, program.getId(), cohort.getId(), comprobante());
+                applicationService.requestWithPayment(student, program.getId(), cohort.getId(), comprobante());
 
         Person preceptor = persistPersonBase("PREC" + System.nanoTime());
         Role rolPreceptor = roleRepository.findByName("PRECEPTOR").orElseThrow();

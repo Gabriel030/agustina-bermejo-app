@@ -183,7 +183,7 @@ public class ExamBoardRegistrationService {
         examBoardRegistrationRepository.save(registration);
     }
 
-    public ExamBoardRegistration verDetalle(Long id) {
+    public ExamBoardRegistration viewDetail(Long id) {
         return examBoardRegistrationRepository.findById(id)
                 .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(id));
     }

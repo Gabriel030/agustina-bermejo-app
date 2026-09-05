@@ -78,13 +78,13 @@ public class FeeScheduleService {
         return feeScheduleRepository.findAllByOrderByVigenteDesdeDesc();
     }
 
-    public FeeSchedule vigenteParaPrograma(Long programId, FeeScheduleConcept concept, LocalDate fecha) {
+    public FeeSchedule validForProgram(Long programId, FeeScheduleConcept concept, LocalDate fecha) {
         return feeScheduleRepository
                 .findFirstByProgramIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(programId, concept, fecha)
                 .orElseThrow(() -> new FeeScheduleNotFoundException("program " + programId + ", concepto " + concept));
     }
 
-    public FeeSchedule vigenteParaCurso(Long courseId, FeeScheduleConcept concept, LocalDate fecha) {
+    public FeeSchedule validForCourse(Long courseId, FeeScheduleConcept concept, LocalDate fecha) {
         return feeScheduleRepository
                 .findFirstByCourseIdAndConceptAndVigenteDesdeLessThanEqualOrderByVigenteDesdeDesc(courseId, concept, fecha)
                 .orElseThrow(() -> new FeeScheduleNotFoundException("course " + courseId + ", concepto " + concept));
@@ -101,8 +101,8 @@ public class FeeScheduleService {
      * (ej. la pantalla de Detalle, antes de arrancar el wizard), devuelve el
      * monto base sin prorratear.
      */
-    public BigDecimal montoMatriculaVigente(Long programId, Integer ordenEnAnioCohorte, LocalDate fecha) {
-        FeeSchedule feeSchedule = vigenteParaPrograma(programId, FeeScheduleConcept.MATRICULA, fecha);
+    public BigDecimal currentEnrollmentFeeAmount(Long programId, Integer ordenEnAnioCohorte, LocalDate fecha) {
+        FeeSchedule feeSchedule = validForProgram(programId, FeeScheduleConcept.MATRICULA, fecha);
         if (ordenEnAnioCohorte == null) {
             return feeSchedule.getAmount();
         }

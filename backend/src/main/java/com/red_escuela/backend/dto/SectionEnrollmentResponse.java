@@ -31,8 +31,8 @@ public record SectionEnrollmentResponse(
         // instructorTitular/instructorAdjunto: primer LEAD y primer ASSISTANT asignados a la
         // comisión (una comisión puede tener varios de cada rol — Épica 2 Fase 1 solo necesita
         // mostrar "el" profesor y "el" adjunto en la grilla del alumno, no la lista completa).
-        String titular = nombrePorRol(enrollment, InstructorRole.LEAD);
-        String adjunto = nombrePorRol(enrollment, InstructorRole.ASSISTANT);
+        String titular = nameByRole(enrollment, InstructorRole.LEAD);
+        String adjunto = nameByRole(enrollment, InstructorRole.ASSISTANT);
         return new SectionEnrollmentResponse(
                 enrollment.getId(),
                 enrollment.getProgramEnrollment().getId(),
@@ -54,7 +54,7 @@ public record SectionEnrollmentResponse(
                 adjunto);
     }
 
-    private static String nombrePorRol(SubjectSectionEnrollment enrollment, InstructorRole role) {
+    private static String nameByRole(SubjectSectionEnrollment enrollment, InstructorRole role) {
         List<SubjectSectionInstructor> instructors = enrollment.getSubjectSection().getInstructors();
         if (instructors == null) {
             return null;

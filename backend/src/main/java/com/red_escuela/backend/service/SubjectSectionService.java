@@ -105,7 +105,7 @@ public class SubjectSectionService {
                 : sectionRepository.findBySubjectIdAndStatus(subjectId, status);
     }
 
-    public SubjectSection verDetalle(Long id) {
+    public SubjectSection viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -124,7 +124,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public SubjectSectionInstructor asignarDocente(Long sectionId, AssignInstructorRequest request) {
+    public SubjectSectionInstructor assignInstructor(Long sectionId, AssignInstructorRequest request) {
         SubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
@@ -150,7 +150,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
+    public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
         // Antes no validaba nada: ni que la asignación existiera (deleteById no tira
         // excepción si falta), ni que perteneciera a ESTA comisión — se podía borrar la
         // asignación de otra sección con solo conocer su id, ignorando el sectionId de la URL.

@@ -53,7 +53,7 @@ public class GraduationRequestService {
     }
 
     @Transactional
-    public GraduationRequest solicitar(Long programEnrollmentId) {
+    public GraduationRequest request(Long programEnrollmentId) {
         ProgramEnrollment programEnrollment = findProgramEnrollmentOrThrow(programEnrollmentId);
         if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
             throw new NotEligibleForGraduationException(programEnrollmentId);
@@ -87,7 +87,7 @@ public class GraduationRequestService {
             return;
         }
         try {
-            solicitar(programEnrollmentId);
+            request(programEnrollmentId);
         } catch (GraduationRequestAlreadyActiveException e) {
             // Ya hay un trámite en curso para esta matriculación — nada que hacer.
         }
@@ -161,7 +161,7 @@ public class GraduationRequestService {
         return graduationRequestRepository.findByStatus(status);
     }
 
-    public GraduationRequest verDetalle(Long id) {
+    public GraduationRequest viewDetail(Long id) {
         return findOrThrow(id);
     }
 

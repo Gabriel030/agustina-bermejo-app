@@ -47,16 +47,16 @@ public class LoginRateLimiter {
     }
 
     public boolean tryConsumeLogin(String ip) {
-        return resolveBucket(loginBuckets, ip, () -> nuevoBucket(loginCapacity, loginRefillPerMinute)).tryConsume(1);
+        return resolveBucket(loginBuckets, ip, () -> newBucket(loginCapacity, loginRefillPerMinute)).tryConsume(1);
     }
 
     public boolean tryConsumeForgotPassword(String ip) {
-        return resolveBucket(forgotPasswordBuckets, ip, () -> nuevoBucket(forgotPasswordCapacity, forgotPasswordRefillPerMinute))
+        return resolveBucket(forgotPasswordBuckets, ip, () -> newBucket(forgotPasswordCapacity, forgotPasswordRefillPerMinute))
                 .tryConsume(1);
     }
 
     public boolean tryConsumeRegister(String ip) {
-        return resolveBucket(registerBuckets, ip, () -> nuevoBucket(registerCapacity, registerRefillPerMinute))
+        return resolveBucket(registerBuckets, ip, () -> newBucket(registerCapacity, registerRefillPerMinute))
                 .tryConsume(1);
     }
 
@@ -64,7 +64,7 @@ public class LoginRateLimiter {
         return buckets.computeIfAbsent(ip, key -> factory.get());
     }
 
-    private Bucket nuevoBucket(int capacity, int refillPerMinute) {
+    private Bucket newBucket(int capacity, int refillPerMinute) {
         Bandwidth limit = Bandwidth.classic(capacity, Refill.intervally(refillPerMinute, Duration.ofMinutes(1)));
         return Bucket.builder().addLimit(limit).build();
     }

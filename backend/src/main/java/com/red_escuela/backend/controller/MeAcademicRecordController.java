@@ -56,8 +56,8 @@ public class MeAcademicRecordController {
     }
 
     @GetMapping("/section-enrollments/{id}/attendance")
-    public List<AttendanceResponse> miAsistencia(@PathVariable Long id) {
-        exigirPropietario(id);
+    public List<AttendanceResponse> myAttendance(@PathVariable Long id) {
+        requireOwner(id);
         return attendanceService.listByProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
     }
 
@@ -66,14 +66,14 @@ public class MeAcademicRecordController {
     // 70% fijo hardcodeado) — reusa el mismo cálculo que ya usa Preceptoría
     // (AttendanceService.calculateDropoutRiskByProgramEnrollment), autoservicio.
     @GetMapping("/section-enrollments/{id}/attendance/risk")
-    public AttendanceRiskResponse miRiesgoDeAsistencia(@PathVariable Long id) {
-        exigirPropietario(id);
+    public AttendanceRiskResponse myAttendanceRisk(@PathVariable Long id) {
+        requireOwner(id);
         return attendanceService.calculateDropoutRiskByProgramEnrollment(id);
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
-    public List<GradeItemResponse> misNotas(@PathVariable Long id) {
-        exigirPropietario(id);
+    public List<GradeItemResponse> myGrades(@PathVariable Long id) {
+        requireOwner(id);
         return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
@@ -81,8 +81,8 @@ public class MeAcademicRecordController {
     public AttendanceResponse justificarMiInasistencia(
             @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        Attendance attendance = attendanceService.verDetalle(id);
-        exigirPropietarioDeAsistencia(attendance, student);
+        Attendance attendance = attendanceService.viewDetail(id);
+        requireAttendanceOwner(attendance, student);
         String tipo = comprobante.getContentType();
         boolean tipoPermitido = MediaType.APPLICATION_PDF_VALUE.equals(tipo) || MediaType.IMAGE_JPEG_VALUE.equals(tipo);
         if (!tipoPermitido) {
@@ -95,15 +95,15 @@ public class MeAcademicRecordController {
 
     // 404 (no 403) si la cursada no es del alumno autenticado — mismo criterio que
     // MeEnrollmentController.exigirPropietario.
-    private void exigirPropietario(Long enrollmentId) {
+    private void requireOwner(Long enrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(enrollmentId);
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.viewDetail(enrollmentId);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(enrollmentId);
         }
     }
 
-    private void exigirPropietarioDeAsistencia(Attendance attendance, Student student) {
+    private void requireAttendanceOwner(Attendance attendance, Student student) {
         SubjectSectionEnrollment enrollment = attendance.getProgramSubjectSectionEnrollment();
         if (enrollment == null || !enrollment.getStudent().getId().equals(student.getId())) {
             throw new AttendanceNotFoundException(attendance.getId());

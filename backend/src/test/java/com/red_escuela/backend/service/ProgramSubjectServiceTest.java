@@ -55,13 +55,13 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         return subject;
     }
 
-    private ProgramSubject agregarMateria(Program program, Subject subject, int year) {
+    private ProgramSubject addSubject(Program program, Subject subject, int year) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 subject.getId(), year, CurricularTerm.FIRST, 10, null, null, null);
-        return programSubjectService.agregarMateria(program.getId(), request);
+        return programSubjectService.addSubject(program.getId(), request);
     }
 
-    // Sin año/cuatrimestre curricular: agregarMateria() bypasea la validación @NotNull
+    // Sin año/cuatrimestre curricular: addSubject() bypasea la validación @NotNull
     // del DTO (esa solo corre en la capa web, vía @Valid) — usado para aislar los tests
     // de detección de ciclos de la validación de orden cronológico entre correlativas
     // (ver ProgramSubjectService.validateChronologicalOrder): con año/cuatrimestre reales,
@@ -71,7 +71,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
     private ProgramSubject agregarMateriaSinAnio(Program program, Subject subject) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 subject.getId(), null, null, 10, null, null, null);
-        return programSubjectService.agregarMateria(program.getId(), request);
+        return programSubjectService.addSubject(program.getId(), request);
     }
 
     @Test
@@ -81,8 +81,8 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Program carreraB = persistProgram("Tecnicatura B");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(carreraA, ingles, 1);
-        ProgramSubject entradaB = agregarMateria(carreraB, ingles, 2);
+        ProgramSubject entradaA = addSubject(carreraA, ingles, 1);
+        ProgramSubject entradaB = addSubject(carreraB, ingles, 2);
 
         assertThat(entradaA.getId()).isNotEqualTo(entradaB.getId());
         assertThat(entradaA.getSubject().getId()).isEqualTo(entradaB.getSubject().getId());
@@ -95,9 +95,9 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("Tecnicatura C");
         entityManager.flush();
 
-        agregarMateria(program, subject, 1);
+        addSubject(program, subject, 1);
 
-        assertThatThrownBy(() -> agregarMateria(program, subject, 1))
+        assertThatThrownBy(() -> addSubject(program, subject, 1))
                 .isInstanceOf(ProgramSubjectAlreadyExistsException.class);
     }
 
@@ -113,13 +113,13 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 subject.getId(), 1, CurricularTerm.FIRST, 5, null, null, group.getId());
 
-        assertThatThrownBy(() -> programSubjectService.agregarMateria(program.getId(), request))
+        assertThatThrownBy(() -> programSubjectService.addSubject(program.getId(), request))
                 .isInstanceOf(ElectiveGroupNotAssignedException.class);
 
-        electiveGroupService.asignarACarrera(program.getId(),
+        electiveGroupService.assignToProgram(program.getId(),
                 new com.red_escuela.backend.dto.AssignElectiveGroupRequest(group.getId(), 1, 2));
 
-        ProgramSubject created = programSubjectService.agregarMateria(program.getId(), request);
+        ProgramSubject created = programSubjectService.addSubject(program.getId(), request);
         assertThat(created.getElectiveGroup().getId()).isEqualTo(group.getId());
     }
 
@@ -131,13 +131,13 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("Geometría");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(carreraA, subjectA, 1);
-        ProgramSubject entradaB = agregarMateria(carreraB, subjectB, 1);
+        ProgramSubject entradaA = addSubject(carreraA, subjectA, 1);
+        ProgramSubject entradaB = addSubject(carreraB, subjectB, 1);
 
         AddPrerequisiteRequest request = new AddPrerequisiteRequest(
                 entradaB.getId(), RequirementType.APPROVED, null, null);
 
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaA.getId(), request))
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(), request))
                 .isInstanceOf(InvalidPrerequisiteException.class);
     }
 
@@ -152,11 +152,11 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         ProgramSubject entradaB = agregarMateriaSinAnio(program, subjectB);
 
         // A requiere B
-        programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null));
 
         // B requiere A -> cerraría el ciclo A->B->A
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaB.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaB.getId(),
                 new AddPrerequisiteRequest(entradaA.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(CircularPrerequisiteException.class);
     }
@@ -174,13 +174,13 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         ProgramSubject entradaC = agregarMateriaSinAnio(program, subjectC);
 
         // A requiere B, B requiere C
-        programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null));
-        programSubjectService.agregarCorrelatividad(entradaB.getId(),
+        programSubjectService.addPrerequisite(entradaB.getId(),
                 new AddPrerequisiteRequest(entradaC.getId(), RequirementType.APPROVED, null, null));
 
         // C requiere A -> cerraría el ciclo A->B->C->A (3 pasos, no se corta en el primer nivel)
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaC.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaC.getId(),
                 new AddPrerequisiteRequest(entradaA.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(CircularPrerequisiteException.class);
     }
@@ -191,21 +191,21 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("Tecnicatura I");
         entityManager.flush();
 
-        ProgramSubject created = agregarMateria(program, subject, 1);
+        ProgramSubject created = addSubject(program, subject, 1);
 
         assertThat(created.getStatus()).isEqualTo(StatusType.ACTIVE);
     }
 
     @Test
     void removePrerequisiteNonexistentFails() {
-        assertThatThrownBy(() -> programSubjectService.quitarCorrelatividad(999999L))
+        assertThatThrownBy(() -> programSubjectService.removePrerequisite(999999L))
                 .isInstanceOf(PrerequisiteNotFoundException.class);
     }
 
-    private ProgramSubject agregarMateria(Program program, Subject subject, int year, CurricularTerm term) {
+    private ProgramSubject addSubject(Program program, Subject subject, int year, CurricularTerm term) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 subject.getId(), year, term, 10, null, null, null);
-        return programSubjectService.agregarMateria(program.getId(), request);
+        return programSubjectService.addSubject(program.getId(), request);
     }
 
     // Pedido explícito del usuario: dos materias anuales del mismo año se cursan al
@@ -217,10 +217,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("Anual B");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 1, CurricularTerm.ANNUAL);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.ANNUAL);
+        ProgramSubject entradaA = addSubject(program, subjectA, 1, CurricularTerm.ANNUAL);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.ANNUAL);
 
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(InvalidPrerequisiteException.class);
     }
@@ -233,10 +233,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("1C B");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 1, CurricularTerm.FIRST);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.FIRST);
+        ProgramSubject entradaA = addSubject(program, subjectA, 1, CurricularTerm.FIRST);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.FIRST);
 
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(InvalidPrerequisiteException.class);
     }
@@ -250,10 +250,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("1C previa");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 1, CurricularTerm.SECOND);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.FIRST);
+        ProgramSubject entradaA = addSubject(program, subjectA, 1, CurricularTerm.SECOND);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.FIRST);
 
-        var creada = programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        var creada = programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null));
 
         assertThat(creada.getPrerequisiteProgramSubject().getId()).isEqualTo(entradaB.getId());
@@ -268,10 +268,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("Año 1 1C");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 2, CurricularTerm.FIRST);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.FIRST);
+        ProgramSubject entradaA = addSubject(program, subjectA, 2, CurricularTerm.FIRST);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.FIRST);
 
-        var creada = programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        var creada = programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null));
 
         assertThat(creada.getPrerequisiteProgramSubject().getId()).isEqualTo(entradaB.getId());
@@ -286,10 +286,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("Anual del año");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 1, CurricularTerm.SECOND);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.ANNUAL);
+        ProgramSubject entradaA = addSubject(program, subjectA, 1, CurricularTerm.SECOND);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.ANNUAL);
 
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(InvalidPrerequisiteException.class);
     }
@@ -303,10 +303,10 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         Subject subjectB = persistSubject("2C posterior");
         entityManager.flush();
 
-        ProgramSubject entradaA = agregarMateria(program, subjectA, 1, CurricularTerm.FIRST);
-        ProgramSubject entradaB = agregarMateria(program, subjectB, 1, CurricularTerm.SECOND);
+        ProgramSubject entradaA = addSubject(program, subjectA, 1, CurricularTerm.FIRST);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1, CurricularTerm.SECOND);
 
-        assertThatThrownBy(() -> programSubjectService.agregarCorrelatividad(entradaA.getId(),
+        assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(InvalidPrerequisiteException.class);
     }

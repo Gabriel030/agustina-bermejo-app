@@ -42,15 +42,15 @@ public class StudentController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public StudentResponse verLegajo(@PathVariable Long id) {
-        return StudentResponse.from(studentService.verLegajo(id));
+    public StudentResponse viewFile(@PathVariable Long id) {
+        return StudentResponse.from(studentService.viewFile(id));
     }
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
-        studentService.bajaAlumno(id, request);
+        studentService.withdrawStudent(id, request);
     }
 
     @PostMapping("/{id}/reset-password")

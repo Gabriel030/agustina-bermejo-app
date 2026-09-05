@@ -50,7 +50,7 @@ public class DirectorApprovalRequestService {
     }
 
     @Transactional
-    public DirectorApprovalRequest solicitar(CreateDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequest request(CreateDirectorApprovalRequestRequest request) {
         ProgramEnrollment programEnrollment = programEnrollmentRepository.findById(request.programEnrollmentId())
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(request.programEnrollmentId()));
         Subject subject = null;
@@ -85,15 +85,15 @@ public class DirectorApprovalRequestService {
 
     @Transactional
     public DirectorApprovalRequest approve(Long id, String notas) {
-        return decidir(id, DirectorApprovalRequestStatus.APPROVED, notas);
+        return decide(id, DirectorApprovalRequestStatus.APPROVED, notas);
     }
 
     @Transactional
     public DirectorApprovalRequest reject(Long id, String notas) {
-        return decidir(id, DirectorApprovalRequestStatus.REJECTED, notas);
+        return decide(id, DirectorApprovalRequestStatus.REJECTED, notas);
     }
 
-    private DirectorApprovalRequest decidir(Long id, DirectorApprovalRequestStatus nuevoStatus, String notas) {
+    private DirectorApprovalRequest decide(Long id, DirectorApprovalRequestStatus nuevoStatus, String notas) {
         DirectorApprovalRequest entity = findOrThrow(id);
         if (entity.getStatus() != DirectorApprovalRequestStatus.REQUESTED) {
             throw new InvalidDirectorApprovalRequestStateException(id);
@@ -120,7 +120,7 @@ public class DirectorApprovalRequestService {
         return directorApprovalRequestRepository.findByProgramEnrollmentId(programEnrollmentId);
     }
 
-    public DirectorApprovalRequest verDetalle(Long id) {
+    public DirectorApprovalRequest viewDetail(Long id) {
         return findOrThrow(id);
     }
 

@@ -19,12 +19,12 @@ final class LateFeeCalculator {
     private LateFeeCalculator() {
     }
 
-    static boolean estaEnMora(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
+    static boolean isInArrears(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
         long diasDeAtraso = ChronoUnit.DAYS.between(dueDate, fecha);
         return diasDeAtraso > policy.getDiasDeGracia();
     }
 
-    static boolean estaEnRiesgoDeCorte(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
+    static boolean isAtCutoffRisk(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha) {
         long diasDeAtraso = ChronoUnit.DAYS.between(dueDate, fecha);
         return diasDeAtraso >= policy.getDiasParaRiesgoDeCorte();
     }
@@ -33,7 +33,7 @@ final class LateFeeCalculator {
     // transcurridos desde que se cumplieron los días de gracia — crece escalonado,
     // no de forma continua día a día.
     static BigDecimal calculateSurcharge(LateFeePolicy policy, LocalDate dueDate, LocalDate fecha, BigDecimal saldo) {
-        if (!estaEnMora(policy, dueDate, fecha)) {
+        if (!isInArrears(policy, dueDate, fecha)) {
             return BigDecimal.ZERO;
         }
         long diasEnMora = ChronoUnit.DAYS.between(dueDate, fecha) - policy.getDiasDeGracia();

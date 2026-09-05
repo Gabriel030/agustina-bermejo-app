@@ -41,8 +41,8 @@ public class SubjectSectionEnrollmentController {
 
     @PostMapping("/section-enrollments/{id}/change-section")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SectionEnrollmentResponse cambiarComision(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
-        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.cambiarComision(id, request));
+    public SectionEnrollmentResponse changeSection(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
+        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.changeSection(id, request));
     }
 
     @GetMapping("/program-enrollments/{id}/section-enrollments")

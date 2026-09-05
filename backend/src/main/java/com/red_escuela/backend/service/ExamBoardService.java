@@ -99,7 +99,7 @@ public class ExamBoardService {
     }
 
     @Transactional
-    public void asignarTribunal(Long examBoardId, Long instructorId) {
+    public void assignExaminers(Long examBoardId, Long instructorId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new InstructorNotFoundException(instructorId));
@@ -113,7 +113,7 @@ public class ExamBoardService {
     }
 
     @Transactional
-    public ExamBoard cerrarActa(Long examBoardId) {
+    public ExamBoard closeRecord(Long examBoardId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
         // Idempotente: cerrar un acta ya cerrada no es un error de negocio, mismo criterio que
         // las operaciones de desactivación de Estructura académica (no-op si ya está en el
@@ -128,10 +128,10 @@ public class ExamBoardService {
     }
 
     public List<ExamBoardRegistrationSummaryResponse> listRegistrationsWithDetail(Long examBoardId) {
-        return listRegistrations(examBoardId).stream().map(this::aResumen).toList();
+        return listRegistrations(examBoardId).stream().map(this::toSummary).toList();
     }
 
-    public ExamBoard verDetalle(Long id) {
+    public ExamBoard viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -140,7 +140,7 @@ public class ExamBoardService {
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);
     }
 
-    private ExamBoardRegistrationSummaryResponse aResumen(ExamBoardRegistration registration) {
+    private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration) {
         String carrera;
         Integer attemptNumber;
         Person person;

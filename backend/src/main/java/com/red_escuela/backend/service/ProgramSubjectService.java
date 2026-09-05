@@ -62,7 +62,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public ProgramSubject agregarMateria(Long programId, CreateProgramSubjectRequest request) {
+    public ProgramSubject addSubject(Long programId, CreateProgramSubjectRequest request) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         Subject subject = subjectRepository.findById(request.subjectId())
@@ -137,7 +137,7 @@ public class ProgramSubjectService {
                 : programSubjectRepository.findByProgramIdAndStatus(programId, status);
     }
 
-    public ProgramSubject verDetalle(Long id) {
+    public ProgramSubject viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -156,7 +156,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public ProgramSubjectPrerequisite agregarCorrelatividad(Long programSubjectId, AddPrerequisiteRequest request) {
+    public ProgramSubjectPrerequisite addPrerequisite(Long programSubjectId, AddPrerequisiteRequest request) {
         ProgramSubject objetivo = findOrThrow(programSubjectId);
         ProgramSubject prerequisitePropuesto = findOrThrow(request.prerequisiteProgramSubjectId());
 
@@ -172,7 +172,7 @@ public class ProgramSubjectService {
                 objetivo.getId(), prerequisitePropuesto.getId(), request.requirementType())) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
         }
-        if (seCreariaUnCiclo(objetivo.getId(), prerequisitePropuesto.getId())) {
+        if (wouldCreateCycle(objetivo.getId(), prerequisitePropuesto.getId())) {
             throw new CircularPrerequisiteException(objetivo.getId(), prerequisitePropuesto.getId());
         }
 
@@ -214,7 +214,7 @@ public class ProgramSubjectService {
                 || prerequisito.getCurricularYear() == null || prerequisito.getCurricularTerm() == null) {
             return;
         }
-        if (finCronologico(prerequisito) >= inicioCronologico(objetivo)) {
+        if (finCronologico(prerequisito) >= chronologicalStart(objetivo)) {
             throw new InvalidPrerequisiteException(
                     "\"" + prerequisito.getSubject().getName() + "\" no puede ser correlativa de \""
                             + objetivo.getSubject().getName()
@@ -223,7 +223,7 @@ public class ProgramSubjectService {
         }
     }
 
-    private int inicioCronologico(ProgramSubject ps) {
+    private int chronologicalStart(ProgramSubject ps) {
         return (ps.getCurricularYear() - 1) * 2 + (ps.getCurricularTerm() == CurricularTerm.SECOND ? 2 : 1);
     }
 
@@ -238,7 +238,7 @@ public class ProgramSubjectService {
      * cerraría un ciclo — se rechaza antes de tocar la base (Spec Estructura académica,
      * sección "Servicios propuestos").
      */
-    private boolean seCreariaUnCiclo(Long programSubjectObjetivoId, Long prerequisitePropuestoId) {
+    private boolean wouldCreateCycle(Long programSubjectObjetivoId, Long prerequisitePropuestoId) {
         Set<Long> visitados = new HashSet<>();
         Deque<Long> pila = new ArrayDeque<>();
         pila.push(prerequisitePropuestoId);
@@ -263,7 +263,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public void quitarCorrelatividad(Long prerequisiteId) {
+    public void removePrerequisite(Long prerequisiteId) {
         // deleteById no tira excepción si el id no existe (findById().ifPresent(...) por
         // dentro) — sin este chequeo, borrar un id inexistente devolvería 204 igual.
         ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)

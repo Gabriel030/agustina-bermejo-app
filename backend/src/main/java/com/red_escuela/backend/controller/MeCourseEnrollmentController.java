@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Autoservicio del alumno sobre sus propios CourseEnrollment (Épica 2 Fase 1, Alumno · Inicio
- * y Mis cursos) — mismo patrón que MeEnrollmentController.misMatriculaciones() para
+ * y Mis cursos) — mismo patrón que MeEnrollmentController.myProgramEnrollments() para
  * ProgramEnrollment, que ya existía; a este le faltaba el equivalente de autoservicio (antes
  * solo /students/{id}/course-enrollments, de uso staff).
  */
@@ -29,7 +29,7 @@ public class MeCourseEnrollmentController {
     }
 
     @GetMapping("/course-enrollments")
-    public List<CourseEnrollmentResponse> misCursos() {
+    public List<CourseEnrollmentResponse> myCourses() {
         Student student = currentStudentService.resolveCurrentStudent();
         return courseEnrollmentService.listByStudent(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
     }

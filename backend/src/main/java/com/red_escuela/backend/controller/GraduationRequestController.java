@@ -58,7 +58,7 @@ public class GraduationRequestController {
 
     @GetMapping("/graduation-requests/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public GraduationRequestResponse verDetalle(@PathVariable Long id) {
-        return GraduationRequestResponse.from(graduationRequestService.verDetalle(id));
+    public GraduationRequestResponse viewDetail(@PathVariable Long id) {
+        return GraduationRequestResponse.from(graduationRequestService.viewDetail(id));
     }
 }

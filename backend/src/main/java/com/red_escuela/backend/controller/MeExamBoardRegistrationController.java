@@ -56,18 +56,18 @@ public class MeExamBoardRegistrationController {
     }
 
     @GetMapping("/exam-boards")
-    public List<ExamBoardResponse> mesasDisponibles(@RequestParam Long subjectId) {
+    public List<ExamBoardResponse> availableExamBoards(@RequestParam Long subjectId) {
         return examBoardService.listAvailableBySubject(subjectId).stream()
                 .map(ExamBoardResponse::from)
                 .toList();
     }
 
     @GetMapping("/exam-board-registrations")
-    public List<MyExamBoardRegistrationResponse> misInscripciones() {
+    public List<MyExamBoardRegistrationResponse> myExamBoardRegistrations() {
         Student student = currentStudentService.resolveCurrentStudent();
         return examBoardRegistrationService.listMyEnrollments(student.getId()).stream()
                 .map(r -> MyExamBoardRegistrationResponse.from(
-                        r, gradeItemService.obtenerNotaDeMesa(r.getExamBoard().getId(), r.getProgramSubjectSectionEnrollment().getId())))
+                        r, gradeItemService.getExamBoardGrade(r.getExamBoard().getId(), r.getProgramSubjectSectionEnrollment().getId())))
                 .toList();
     }
 
@@ -75,7 +75,7 @@ public class MeExamBoardRegistrationController {
     @ResponseStatus(HttpStatus.CREATED)
     public ExamBoardRegistrationResponse registerMyself(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(request.programSectionEnrollmentId());
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.viewDetail(request.programSectionEnrollmentId());
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(request.programSectionEnrollmentId());
         }
@@ -85,9 +85,9 @@ public class MeExamBoardRegistrationController {
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void darmeDeBaja(@PathVariable Long id) {
+    public void withdrawMyself(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ExamBoardRegistration registration = examBoardRegistrationService.verDetalle(id);
+        ExamBoardRegistration registration = examBoardRegistrationService.viewDetail(id);
         SubjectSectionEnrollment enrollment = registration.getProgramSubjectSectionEnrollment();
         if (enrollment == null || !enrollment.getStudent().getId().equals(student.getId())) {
             throw new ExamBoardRegistrationNotFoundException(id);

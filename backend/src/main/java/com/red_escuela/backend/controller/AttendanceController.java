@@ -53,27 +53,27 @@ public class AttendanceController {
     @PostMapping("/program-sections/{id}/attendance")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public List<AttendanceResponse> cargarAsistenciaProgramSection(
+    public List<AttendanceResponse> loadAttendanceProgramSection(
             @PathVariable Long id, @Valid @RequestBody CargarAsistenciaRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return attendanceService.cargarAsistenciaProgramSection(id, instructor.getId(), request).stream()
+        return attendanceService.loadAttendanceProgramSection(id, instructor.getId(), request).stream()
                 .map(AttendanceResponse::from).toList();
     }
 
     @PostMapping("/course-sections/{id}/attendance")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public List<AttendanceResponse> cargarAsistenciaCourseSection(
+    public List<AttendanceResponse> loadAttendanceCourseSection(
             @PathVariable Long id, @Valid @RequestBody CargarAsistenciaRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return attendanceService.cargarAsistenciaCourseSection(id, instructor.getId(), request).stream()
+        return attendanceService.loadAttendanceCourseSection(id, instructor.getId(), request).stream()
                 .map(AttendanceResponse::from).toList();
     }
 
     @PostMapping("/attendance/{id}/justify")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceResponse justificar(@PathVariable Long id, @Valid @RequestBody JustificarAsistenciaRequest request) {
-        return AttendanceResponse.from(attendanceService.justificar(id, request.reason(), request.attachmentUrl()));
+    public AttendanceResponse justify(@PathVariable Long id, @Valid @RequestBody JustificarAsistenciaRequest request) {
+        return AttendanceResponse.from(attendanceService.justify(id, request.reason(), request.attachmentUrl()));
     }
 
     @PostMapping("/attendance/{id}/approve-justification")
@@ -102,13 +102,13 @@ public class AttendanceController {
 
     @GetMapping("/section-enrollments/{id}/attendance/risk")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public AttendanceRiskResponse riesgoProgramEnrollment(@PathVariable Long id) {
+    public AttendanceRiskResponse attendanceRiskProgramEnrollment(@PathVariable Long id) {
         return attendanceService.calculateDropoutRiskByProgramEnrollment(id);
     }
 
     @GetMapping("/course-section-enrollments/{id}/attendance/risk")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public AttendanceRiskResponse riesgoCourseEnrollment(@PathVariable Long id) {
+    public AttendanceRiskResponse attendanceRiskCourseEnrollment(@PathVariable Long id) {
         return attendanceService.calculateDropoutRiskByCourseEnrollment(id);
     }
 
@@ -116,28 +116,28 @@ public class AttendanceController {
     @PreAuthorize("hasRole('DOCENTE')")
     public List<RosterEntryResponse> rosterProgramSection(@PathVariable Long id) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return attendanceService.obtenerRosterProgramSection(id, instructor.getId());
+        return attendanceService.getRosterProgramSection(id, instructor.getId());
     }
 
     @GetMapping("/course-sections/{id}/roster")
     @PreAuthorize("hasRole('DOCENTE')")
     public List<RosterEntryResponse> rosterCourseSection(@PathVariable Long id) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return attendanceService.obtenerRosterCourseSection(id, instructor.getId());
+        return attendanceService.getRosterCourseSection(id, instructor.getId());
     }
 
     @GetMapping("/program-sections/{id}/class-sessions/{date}")
     @PreAuthorize("hasRole('DOCENTE')")
-    public ClassSessionResponse claseProgramSection(@PathVariable Long id, @PathVariable LocalDate date) {
+    public ClassSessionResponse classSessionProgramSection(@PathVariable Long id, @PathVariable LocalDate date) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return ClassSessionResponse.from(attendanceService.obtenerClaseProgramSection(id, instructor.getId(), date));
+        return ClassSessionResponse.from(attendanceService.getClassSessionProgramSection(id, instructor.getId(), date));
     }
 
     @GetMapping("/course-sections/{id}/class-sessions/{date}")
     @PreAuthorize("hasRole('DOCENTE')")
-    public ClassSessionResponse claseCourseSection(@PathVariable Long id, @PathVariable LocalDate date) {
+    public ClassSessionResponse classSessionCourseSection(@PathVariable Long id, @PathVariable LocalDate date) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return ClassSessionResponse.from(attendanceService.obtenerClaseCourseSection(id, instructor.getId(), date));
+        return ClassSessionResponse.from(attendanceService.getClassSessionCourseSection(id, instructor.getId(), date));
     }
 
     @PostMapping("/program-sections/{id}/class-sessions/{date}/cancel")
@@ -156,44 +156,44 @@ public class AttendanceController {
 
     @GetMapping("/program-sections/{id}/attendance/history")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public AttendanceHistoryResponse historialProgramSection(@PathVariable Long id) {
-        return attendanceService.obtenerHistorialProgramSection(id, resolveInstructorIdSiEsDocente());
+    public AttendanceHistoryResponse historyProgramSection(@PathVariable Long id) {
+        return attendanceService.getHistoryProgramSection(id, resolveInstructorIdIfTeacher());
     }
 
     @GetMapping("/course-sections/{id}/attendance/history")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public AttendanceHistoryResponse historialCourseSection(@PathVariable Long id) {
-        return attendanceService.obtenerHistorialCourseSection(id, resolveInstructorIdSiEsDocente());
+    public AttendanceHistoryResponse historyCourseSection(@PathVariable Long id) {
+        return attendanceService.getHistoryCourseSection(id, resolveInstructorIdIfTeacher());
     }
 
     @GetMapping("/program-sections/{id}/attendance/absence-report")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<RosterEntryResponse> reporteDeAusenciasProgramSection(
+    public List<RosterEntryResponse> absenceReportProgramSection(
             @PathVariable Long id, @RequestParam(required = false) Integer minAbsences) {
-        return attendanceService.reporteDeAusenciasProgramSection(id, resolveInstructorIdSiEsDocente(), minAbsences);
+        return attendanceService.absenceReportProgramSection(id, resolveInstructorIdIfTeacher(), minAbsences);
     }
 
     @GetMapping("/course-sections/{id}/attendance/absence-report")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<RosterEntryResponse> reporteDeAusenciasCourseSection(
+    public List<RosterEntryResponse> absenceReportCourseSection(
             @PathVariable Long id, @RequestParam(required = false) Integer minAbsences) {
-        return attendanceService.reporteDeAusenciasCourseSection(id, resolveInstructorIdSiEsDocente(), minAbsences);
+        return attendanceService.absenceReportCourseSection(id, resolveInstructorIdIfTeacher(), minAbsences);
     }
 
     @GetMapping("/program-sections/{id}/attendance/export")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ResponseEntity<byte[]> exportarProgramSection(
+    public ResponseEntity<byte[]> exportProgramSection(
             @PathVariable Long id, @RequestParam String format, @RequestParam String scope,
             @RequestParam(required = false) LocalDate classDate) {
-        return exportar(attendanceExportService.exportarProgramSection(id, resolveInstructorIdSiEsDocente(), scope, format, classDate));
+        return exportar(attendanceExportService.exportProgramSection(id, resolveInstructorIdIfTeacher(), scope, format, classDate));
     }
 
     @GetMapping("/course-sections/{id}/attendance/export")
     @PreAuthorize("hasRole('DOCENTE') or hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ResponseEntity<byte[]> exportarCourseSection(
+    public ResponseEntity<byte[]> exportCourseSection(
             @PathVariable Long id, @RequestParam String format, @RequestParam String scope,
             @RequestParam(required = false) LocalDate classDate) {
-        return exportar(attendanceExportService.exportarCourseSection(id, resolveInstructorIdSiEsDocente(), scope, format, classDate));
+        return exportar(attendanceExportService.exportCourseSection(id, resolveInstructorIdIfTeacher(), scope, format, classDate));
     }
 
     private ResponseEntity<byte[]> exportar(AttendanceExportService.ExportedFile file) {
@@ -203,7 +203,7 @@ public class AttendanceController {
                 .body(file.content());
     }
 
-    private Long resolveInstructorIdSiEsDocente() {
+    private Long resolveInstructorIdIfTeacher() {
         boolean esDocente = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_DOCENTE"));
         return esDocente ? currentInstructorService.resolveCurrentInstructor().getId() : null;

@@ -125,7 +125,7 @@ public class ProgramEnrollmentService {
         programEnrollmentRepository.save(enrollment);
     }
 
-    public ProgramEnrollment verDetalle(Long id) {
+    public ProgramEnrollment viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -178,13 +178,13 @@ public class ProgramEnrollmentService {
         // también expuesto acá para mostrarlo como condición en la pantalla.
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,
-                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, tieneCursadaActiva(id), promedioGeneral);
+                obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, hasActiveEnrollment(id), promedioGeneral);
     }
 
     // Épica 3 Fase 4: resumen de asistencia por materia para la vista de detalle de egreso del
     // Director — reusa el cálculo de riesgo de libre ya existente por cursada, agregándolo acá
     // en vez de duplicar la lógica de asistencia.
-    public List<SubjectAttendanceSummaryResponse> resumenAsistenciaPorMateria(Long programEnrollmentId) {
+    public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
                     var riesgo = attendanceService.calculateDropoutRiskByProgramEnrollment(enrollment.getId());
@@ -200,7 +200,7 @@ public class ProgramEnrollmentService {
      * spec original): además de ProgramEnrollmentStatus.ENROLLED, exige tener una cursada
      * puntual activa ahora mismo, no solo la matriculación a la carrera vigente.
      */
-    public boolean tieneCursadaActiva(Long programEnrollmentId) {
+    public boolean hasActiveEnrollment(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
                 programEnrollmentId,
                 List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
@@ -214,11 +214,11 @@ public class ProgramEnrollmentService {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         List<ProgramSubject> entradas = programSubjectRepository.findByProgramId(enrollment.getProgram().getId());
         return entradas.stream()
-                .filter(entrada -> estaAprobada(programEnrollmentId, entrada))
+                .filter(entrada -> isApproved(programEnrollmentId, entrada))
                 .toList();
     }
 
-    private boolean estaAprobada(Long programEnrollmentId, ProgramSubject entrada) {
+    private boolean isApproved(Long programEnrollmentId, ProgramSubject entrada) {
         return !subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
                         programEnrollmentId, entrada.getSubject().getId(), List.of(EnrollmentStatus.APPROVED))

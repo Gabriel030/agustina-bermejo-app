@@ -48,19 +48,19 @@ public class ProgramEnrollmentController {
 
     @GetMapping("/program-enrollments/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ProgramEnrollmentResponse verDetalle(@PathVariable Long id) {
-        return ProgramEnrollmentResponse.from(programEnrollmentService.verDetalle(id));
+    public ProgramEnrollmentResponse viewDetail(@PathVariable Long id) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.viewDetail(id));
     }
 
     @GetMapping("/program-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ProgramProgressResponse verProgreso(@PathVariable Long id) {
+    public ProgramProgressResponse viewProgress(@PathVariable Long id) {
         return programEnrollmentService.calculateProgress(id);
     }
 
     @GetMapping("/program-enrollments/{id}/attendance-summary")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<SubjectAttendanceSummaryResponse> verResumenAsistencia(@PathVariable Long id) {
-        return programEnrollmentService.resumenAsistenciaPorMateria(id);
+    public List<SubjectAttendanceSummaryResponse> viewAttendanceSummary(@PathVariable Long id) {
+        return programEnrollmentService.attendanceSummaryBySubject(id);
     }
 }

@@ -54,21 +54,21 @@ public class PaymentReceipt {
     private LocalDateTime reviewedAt;
 
     public void approve(Person reviewedBy) {
-        exigirPendiente();
+        requirePending();
         this.status = PaymentReceiptStatus.APPROVED;
         this.reviewedBy = reviewedBy;
         this.reviewedAt = LocalDateTime.now();
     }
 
     public void reject(Person reviewedBy, String reason) {
-        exigirPendiente();
+        requirePending();
         this.status = PaymentReceiptStatus.REJECTED;
         this.reviewedBy = reviewedBy;
         this.reviewedAt = LocalDateTime.now();
         this.rejectionReason = reason;
     }
 
-    private void exigirPendiente() {
+    private void requirePending() {
         if (status != PaymentReceiptStatus.PENDING_REVIEW) {
             throw new InvalidPaymentReceiptStateException(id, status);
         }

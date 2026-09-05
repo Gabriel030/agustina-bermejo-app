@@ -31,8 +31,8 @@ public class CourseSubjectController {
     @PostMapping("/courses/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseSubjectResponse agregarModulo(@PathVariable Long id, @Valid @RequestBody CreateCourseSubjectRequest request) {
-        return CourseSubjectResponse.from(courseSubjectService.agregarModulo(id, request));
+    public CourseSubjectResponse addModule(@PathVariable Long id, @Valid @RequestBody CreateCourseSubjectRequest request) {
+        return CourseSubjectResponse.from(courseSubjectService.addModule(id, request));
     }
 
     @PutMapping("/course-subjects/{id}")
@@ -47,8 +47,8 @@ public class CourseSubjectController {
     }
 
     @GetMapping("/course-subjects/{id}")
-    public CourseSubjectResponse verDetalle(@PathVariable Long id) {
-        return CourseSubjectResponse.from(courseSubjectService.verDetalle(id));
+    public CourseSubjectResponse viewDetail(@PathVariable Long id) {
+        return CourseSubjectResponse.from(courseSubjectService.viewDetail(id));
     }
 
     @PostMapping("/course-subjects/{id}/deactivate")

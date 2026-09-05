@@ -51,7 +51,7 @@ public class AttendanceChangeRequestController {
 
     @GetMapping("/me/attendance-change-requests")
     @PreAuthorize("hasRole('DOCENTE')")
-    public List<AttendanceChangeRequestResponse> misSolicitudes() {
+    public List<AttendanceChangeRequestResponse> myAttendanceChangeRequests() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return attendanceChangeRequestService.listOwn(instructor.getId()).stream().map(this::toResponse).toList();
     }
@@ -86,11 +86,11 @@ public class AttendanceChangeRequestController {
         }
         Person requestedByPerson = request.getRequestedBy().getPerson();
         return AttendanceChangeRequestResponse.from(
-                request, nombreCompleto(requestedByPerson), subjectName, sectionName,
-                attendance.getClassDate(), nombreCompleto(studentPerson));
+                request, fullName(requestedByPerson), subjectName, sectionName,
+                attendance.getClassDate(), fullName(studentPerson));
     }
 
-    private String nombreCompleto(Person person) {
+    private String fullName(Person person) {
         return person.getName() + " " + person.getLastname();
     }
 }

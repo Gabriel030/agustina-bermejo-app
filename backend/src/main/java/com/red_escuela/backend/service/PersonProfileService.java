@@ -25,7 +25,7 @@ public class PersonProfileService {
         this.personRepository = personRepository;
     }
 
-    public Person verPerfilPropio() {
+    public Person viewOwnProfile() {
         return resolveAuthenticatedPerson();
     }
 

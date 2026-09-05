@@ -101,7 +101,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<Attendance> cargarAsistenciaProgramSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
+    public List<Attendance> loadAttendanceProgramSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
         SubjectSection section = subjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
@@ -136,7 +136,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public List<Attendance> cargarAsistenciaCourseSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
+    public List<Attendance> loadAttendanceCourseSection(Long sectionId, Long instructorId, CargarAsistenciaRequest request) {
         CourseSubjectSection section = courseSubjectSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new SectionNotFoundException(sectionId));
         if (!courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
@@ -167,7 +167,7 @@ public class AttendanceService {
     }
 
     @Transactional
-    public Attendance justificar(Long attendanceId, String reason, String attachmentUrl) {
+    public Attendance justify(Long attendanceId, String reason, String attachmentUrl) {
         Attendance attendance = findOrThrow(attendanceId);
         if (attendance.getStatus() != AttendanceStatus.ABSENT) {
             throw new CannotJustifyException(
@@ -226,7 +226,7 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
-    public Attendance verDetalle(Long id) {
+    public Attendance viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -264,45 +264,45 @@ public class AttendanceService {
         return calculateRisk(total, ausentes, maxAbsencePercentage);
     }
 
-    public List<RosterEntryResponse> obtenerRosterProgramSection(Long sectionId, Long instructorId) {
+    public List<RosterEntryResponse> getRosterProgramSection(Long sectionId, Long instructorId) {
         if (!subjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
         if (!subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
             throw new NotOwnSectionException(instructorId, sectionId);
         }
-        return construirRosterProgram(sectionId);
+        return buildRosterProgram(sectionId);
     }
 
-    public List<RosterEntryResponse> obtenerRosterCourseSection(Long sectionId, Long instructorId) {
+    public List<RosterEntryResponse> getRosterCourseSection(Long sectionId, Long instructorId) {
         if (!courseSubjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
         if (!courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
             throw new NotOwnSectionException(instructorId, sectionId);
         }
-        return construirRosterCourse(sectionId);
+        return buildRosterCourse(sectionId);
     }
 
-    public List<RosterEntryResponse> reporteDeAusenciasProgramSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
+    public List<RosterEntryResponse> absenceReportProgramSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
         if (!subjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
         exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
                 subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
-        return ordenarPorAusencias(construirRosterProgram(sectionId), minAbsences);
+        return sortByAbsences(buildRosterProgram(sectionId), minAbsences);
     }
 
-    public List<RosterEntryResponse> reporteDeAusenciasCourseSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
+    public List<RosterEntryResponse> absenceReportCourseSection(Long sectionId, Long instructorIdIfDocente, Integer minAbsences) {
         if (!courseSubjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
         exigirPropiaSeccionSiEsDocente(instructorIdIfDocente, sectionId, () ->
                 courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorIdIfDocente));
-        return ordenarPorAusencias(construirRosterCourse(sectionId), minAbsences);
+        return sortByAbsences(buildRosterCourse(sectionId), minAbsences);
     }
 
-    public AttendanceHistoryResponse obtenerHistorialProgramSection(Long sectionId, Long instructorIdIfDocente) {
+    public AttendanceHistoryResponse getHistoryProgramSection(Long sectionId, Long instructorIdIfDocente) {
         if (!subjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
@@ -330,7 +330,7 @@ public class AttendanceService {
         return new AttendanceHistoryResponse(fechas, filas);
     }
 
-    public AttendanceHistoryResponse obtenerHistorialCourseSection(Long sectionId, Long instructorIdIfDocente) {
+    public AttendanceHistoryResponse getHistoryCourseSection(Long sectionId, Long instructorIdIfDocente) {
         if (!courseSubjectSectionRepository.existsById(sectionId)) {
             throw new SectionNotFoundException(sectionId);
         }
@@ -358,14 +358,14 @@ public class AttendanceService {
         return new AttendanceHistoryResponse(fechas, filas);
     }
 
-    public ClassSession obtenerClaseProgramSection(Long sectionId, Long instructorId, LocalDate classDate) {
+    public ClassSession getClassSessionProgramSection(Long sectionId, Long instructorId, LocalDate classDate) {
         if (!subjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
             throw new NotOwnSectionException(instructorId, sectionId);
         }
         return classSessionRepository.findBySubjectSectionIdAndClassDate(sectionId, classDate).orElse(null);
     }
 
-    public ClassSession obtenerClaseCourseSection(Long sectionId, Long instructorId, LocalDate classDate) {
+    public ClassSession getClassSessionCourseSection(Long sectionId, Long instructorId, LocalDate classDate) {
         if (!courseSubjectSectionInstructorRepository.existsBySectionIdAndInstructorId(sectionId, instructorId)) {
             throw new NotOwnSectionException(instructorId, sectionId);
         }
@@ -381,7 +381,7 @@ public class AttendanceService {
         }
         Instructor instructor = resolveInstructor(instructorId);
         ClassSession session = classSessionRepository.findBySubjectSectionIdAndClassDate(sectionId, classDate)
-                .orElseGet(() -> nuevaClaseProgram(section, classDate, instructor));
+                .orElseGet(() -> newClassSessionProgram(section, classDate, instructor));
         if (session.getStatus() == ClassSessionStatus.CANCELED) {
             throw new ClassSessionAlreadyCanceledException(session.getId());
         }
@@ -398,7 +398,7 @@ public class AttendanceService {
         }
         Instructor instructor = resolveInstructor(instructorId);
         ClassSession session = classSessionRepository.findByCourseSubjectSectionIdAndClassDate(sectionId, classDate)
-                .orElseGet(() -> nuevaClaseCourse(section, classDate, instructor));
+                .orElseGet(() -> newClassSessionCourse(section, classDate, instructor));
         if (session.getStatus() == ClassSessionStatus.CANCELED) {
             throw new ClassSessionAlreadyCanceledException(session.getId());
         }
@@ -406,19 +406,19 @@ public class AttendanceService {
         classSessionRepository.save(session);
     }
 
-    private List<RosterEntryResponse> construirRosterProgram(Long sectionId) {
+    private List<RosterEntryResponse> buildRosterProgram(Long sectionId) {
         List<SubjectSectionEnrollment> inscriptos =
                 subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        return inscriptos.stream().map(this::construirEntradaRosterProgram).toList();
+        return inscriptos.stream().map(this::buildRosterEntryProgram).toList();
     }
 
-    private List<RosterEntryResponse> construirRosterCourse(Long sectionId) {
+    private List<RosterEntryResponse> buildRosterCourse(Long sectionId) {
         List<CourseSubjectSectionEnrollment> inscriptos = courseSubjectSectionEnrollmentRepository
                 .findByCourseSubjectSectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
-        return inscriptos.stream().map(this::construirEntradaRosterCourse).toList();
+        return inscriptos.stream().map(this::buildRosterEntryCourse).toList();
     }
 
-    private RosterEntryResponse construirEntradaRosterProgram(SubjectSectionEnrollment enrollment) {
+    private RosterEntryResponse buildRosterEntryProgram(SubjectSectionEnrollment enrollment) {
         Person person = enrollment.getStudent().getPerson();
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollment.getId());
         long presentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
@@ -428,11 +428,11 @@ public class AttendanceService {
         Double attendancePercentage = total == 0 ? null : (double) presentes / total;
         boolean atRisk = calculateDropoutRiskByProgramEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
-                enrollment.getId(), enrollment.getStudent().getId(), nombreCompleto(person), person.getDni(),
+                enrollment.getId(), enrollment.getStudent().getId(), fullName(person), person.getDni(),
                 absenceCount, attendancePercentage, atRisk);
     }
 
-    private RosterEntryResponse construirEntradaRosterCourse(CourseSubjectSectionEnrollment enrollment) {
+    private RosterEntryResponse buildRosterEntryCourse(CourseSubjectSectionEnrollment enrollment) {
         Person person = enrollment.getStudent().getPerson();
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollment.getId());
         long presentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
@@ -442,7 +442,7 @@ public class AttendanceService {
         Double attendancePercentage = total == 0 ? null : (double) presentes / total;
         boolean atRisk = calculateDropoutRiskByCourseEnrollment(enrollment.getId()).libre();
         return new RosterEntryResponse(
-                enrollment.getId(), enrollment.getStudent().getId(), nombreCompleto(person), person.getDni(),
+                enrollment.getId(), enrollment.getStudent().getId(), fullName(person), person.getDni(),
                 absenceCount, attendancePercentage, atRisk);
     }
 
@@ -455,10 +455,10 @@ public class AttendanceService {
                         (a, b) -> b));
         long presentes = asistenciasDelAlumno.stream().filter(a -> PRESENT_LIKE_STATUSES.contains(a.getStatus())).count();
         Double porcentaje = asistenciasDelAlumno.isEmpty() ? null : (double) presentes / asistenciasDelAlumno.size();
-        return new AttendanceHistoryResponse.StudentHistoryRow(studentId, nombreCompleto(person), celdasPorFecha, porcentaje);
+        return new AttendanceHistoryResponse.StudentHistoryRow(studentId, fullName(person), celdasPorFecha, porcentaje);
     }
 
-    private List<RosterEntryResponse> ordenarPorAusencias(List<RosterEntryResponse> roster, Integer minAbsences) {
+    private List<RosterEntryResponse> sortByAbsences(List<RosterEntryResponse> roster, Integer minAbsences) {
         return roster.stream()
                 .filter(r -> minAbsences == null || r.absenceCount() >= minAbsences)
                 .sorted(Comparator.comparingLong(RosterEntryResponse::absenceCount).reversed())
@@ -475,20 +475,20 @@ public class AttendanceService {
     private void upsertClassSessionProgram(
             SubjectSection section, LocalDate classDate, Instructor instructor, String topic, String observations) {
         ClassSession session = classSessionRepository.findBySubjectSectionIdAndClassDate(section.getId(), classDate)
-                .orElseGet(() -> nuevaClaseProgram(section, classDate, instructor));
-        aplicarDatosDeClase(session, topic, observations);
+                .orElseGet(() -> newClassSessionProgram(section, classDate, instructor));
+        applyClassData(session, topic, observations);
         classSessionRepository.save(session);
     }
 
     private void upsertClassSessionCourse(
             CourseSubjectSection section, LocalDate classDate, Instructor instructor, String topic, String observations) {
         ClassSession session = classSessionRepository.findByCourseSubjectSectionIdAndClassDate(section.getId(), classDate)
-                .orElseGet(() -> nuevaClaseCourse(section, classDate, instructor));
-        aplicarDatosDeClase(session, topic, observations);
+                .orElseGet(() -> newClassSessionCourse(section, classDate, instructor));
+        applyClassData(session, topic, observations);
         classSessionRepository.save(session);
     }
 
-    private void aplicarDatosDeClase(ClassSession session, String topic, String observations) {
+    private void applyClassData(ClassSession session, String topic, String observations) {
         if (session.getStatus() != ClassSessionStatus.CANCELED) {
             session.setStatus(ClassSessionStatus.HELD);
         }
@@ -500,7 +500,7 @@ public class AttendanceService {
         }
     }
 
-    private ClassSession nuevaClaseProgram(SubjectSection section, LocalDate classDate, Instructor instructor) {
+    private ClassSession newClassSessionProgram(SubjectSection section, LocalDate classDate, Instructor instructor) {
         ClassSession session = new ClassSession();
         session.setSubjectSection(section);
         session.setClassDate(classDate);
@@ -509,7 +509,7 @@ public class AttendanceService {
         return session;
     }
 
-    private ClassSession nuevaClaseCourse(CourseSubjectSection section, LocalDate classDate, Instructor instructor) {
+    private ClassSession newClassSessionCourse(CourseSubjectSection section, LocalDate classDate, Instructor instructor) {
         ClassSession session = new ClassSession();
         session.setCourseSubjectSection(section);
         session.setClassDate(classDate);
@@ -518,7 +518,7 @@ public class AttendanceService {
         return session;
     }
 
-    private String nombreCompleto(Person person) {
+    private String fullName(Person person) {
         return person.getName() + " " + person.getLastname();
     }
 

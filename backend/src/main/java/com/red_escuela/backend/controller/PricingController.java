@@ -155,27 +155,27 @@ public class PricingController {
     // cuánto pagar ANTES de transferir y upload el comprobante — separado del CRUD
     // de FeeSchedule (Director-only). Épica 7 Fase 3.
     @GetMapping("/programs/{id}/pricing")
-    public ProgramPricingResponse pricingDePrograma(@PathVariable Long id) {
+    public ProgramPricingResponse pricingForProgram(@PathVariable Long id) {
         LocalDate hoy = LocalDate.now();
-        BigDecimal matriculaCohorte1 = montoOSiNoHayFeeSchedule(() -> feeScheduleService.montoMatriculaVigente(id, 1, hoy));
-        BigDecimal matriculaCohorte2 = montoOSiNoHayFeeSchedule(() -> feeScheduleService.montoMatriculaVigente(id, 2, hoy));
-        BigDecimal cuotaMensual = montoOSiNoHayFeeSchedule(
-                () -> feeScheduleService.vigenteParaPrograma(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
+        BigDecimal matriculaCohorte1 = amountOrNullIfNoFeeSchedule(() -> feeScheduleService.currentEnrollmentFeeAmount(id, 1, hoy));
+        BigDecimal matriculaCohorte2 = amountOrNullIfNoFeeSchedule(() -> feeScheduleService.currentEnrollmentFeeAmount(id, 2, hoy));
+        BigDecimal cuotaMensual = amountOrNullIfNoFeeSchedule(
+                () -> feeScheduleService.validForProgram(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
         return new ProgramPricingResponse(id, matriculaCohorte1, matriculaCohorte2, cuotaMensual);
     }
 
     @GetMapping("/courses/{id}/pricing")
-    public CoursePricingResponse pricingDeCurso(@PathVariable Long id) {
+    public CoursePricingResponse pricingForCourse(@PathVariable Long id) {
         LocalDate hoy = LocalDate.now();
-        BigDecimal cuotaMensual = montoOSiNoHayFeeSchedule(
-                () -> feeScheduleService.vigenteParaCurso(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
+        BigDecimal cuotaMensual = amountOrNullIfNoFeeSchedule(
+                () -> feeScheduleService.validForCourse(id, FeeScheduleConcept.CUOTA_MENSUAL, hoy).getAmount());
         return new CoursePricingResponse(id, cuotaMensual);
     }
 
     // El Director puede no haber configurado un precio todavía — la pantalla de
     // detalle tiene que poder mostrar "sin definir" en vez de un 404 que rompa
     // toda la carga de la pantalla por un solo concepto faltante.
-    private BigDecimal montoOSiNoHayFeeSchedule(Supplier<BigDecimal> resolver) {
+    private BigDecimal amountOrNullIfNoFeeSchedule(Supplier<BigDecimal> resolver) {
         try {
             return resolver.get();
         } catch (FeeScheduleNotFoundException e) {

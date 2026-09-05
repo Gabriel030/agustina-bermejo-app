@@ -27,7 +27,7 @@ public class SubjectService {
         Subject subject = new Subject();
         subject.setName(request.name());
         subject.setDescription(request.description());
-        subject.setCode(generarProximoCodigo());
+        subject.setCode(generateNextCode());
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
@@ -38,7 +38,7 @@ public class SubjectService {
     // Código de 4 dígitos, secuencial a partir del último asignado (backfill de la
     // migración arrancó en 1001) — quien da de alta la materia no lo elige, ver
     // comentario en Subject.java.
-    private String generarProximoCodigo() {
+    private String generateNextCode() {
         int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
         return String.format("%04d", ultimo + 1);
     }
@@ -59,7 +59,7 @@ public class SubjectService {
         return status == null ? subjectRepository.findAll() : subjectRepository.findByStatus(status);
     }
 
-    public Subject verDetalle(Long id) {
+    public Subject viewDetail(Long id) {
         return findOrThrow(id);
     }
 

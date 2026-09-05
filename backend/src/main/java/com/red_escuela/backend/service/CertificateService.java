@@ -64,13 +64,13 @@ public class CertificateService {
      * condición de una constancia, no como bloqueo de inscripción).
      */
     @Transactional
-    public byte[] emitirConstanciaRegular(Long programEnrollmentId) {
+    public byte[] issueRegularStandingCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
         Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programEnrollmentService.tieneCursadaActiva(programEnrollmentId);
+        boolean cursandoAlgo = programEnrollmentService.hasActiveEnrollment(programEnrollmentId);
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
@@ -83,13 +83,13 @@ public class CertificateService {
         String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
                 + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
-        byte[] pdf = generarPdf("Constancia de alumno regular", texto);
+        byte[] pdf = generatePdf("Constancia de alumno regular", texto);
         registerIssuance(enrollment, CertificateType.REGULAR_STUDENT);
         return pdf;
     }
 
     @Transactional
-    public byte[] emitirConstanciaMateriasAprobadas(Long programEnrollmentId) {
+    public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Person person = enrollment.getStudent().getPerson();
         List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
@@ -105,7 +105,7 @@ public class CertificateService {
                 texto.append("\n- ").append(entrada.getSubject().getName());
             }
         }
-        byte[] pdf = generarPdf("Constancia de materias aprobadas", texto.toString());
+        byte[] pdf = generatePdf("Constancia de materias aprobadas", texto.toString());
         registerIssuance(enrollment, CertificateType.APPROVED_SUBJECTS);
         return pdf;
     }
@@ -119,7 +119,7 @@ public class CertificateService {
         certificateIssuanceRepository.save(issuance);
     }
 
-    private byte[] generarPdf(String titulo, String cuerpo) {
+    private byte[] generatePdf(String titulo, String cuerpo) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);

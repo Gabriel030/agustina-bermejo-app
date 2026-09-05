@@ -137,7 +137,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
 
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante());
 
         assertThat(application.getCourseEnrollment()).isNull();
@@ -153,7 +153,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         persistFeeSchedule(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
 
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante());
 
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
@@ -184,7 +184,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         Course course = persistCurso(20);
         entityManager.flush();
 
-        assertThatThrownBy(() -> courseEnrollmentApplicationService.solicitarConPago(
+        assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante()))
                 .isInstanceOf(com.red_escuela.backend.exception.FeeScheduleNotFoundException.class);
     }

@@ -37,8 +37,8 @@ public class DirectorApprovalRequestController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public DirectorApprovalRequestResponse solicitar(@Valid @RequestBody CreateDirectorApprovalRequestRequest request) {
-        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.solicitar(request));
+    public DirectorApprovalRequestResponse request(@Valid @RequestBody CreateDirectorApprovalRequestRequest request) {
+        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.request(request));
     }
 
     @GetMapping
@@ -50,8 +50,8 @@ public class DirectorApprovalRequestController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse verDetalle(@PathVariable Long id) {
-        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.verDetalle(id));
+    public DirectorApprovalRequestResponse viewDetail(@PathVariable Long id) {
+        return DirectorApprovalRequestResponse.from(directorApprovalRequestService.viewDetail(id));
     }
 
     @PostMapping("/{id}/approve")

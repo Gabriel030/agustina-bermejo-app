@@ -28,7 +28,7 @@ public class BillingController {
     @PostMapping("/billing/run")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public void correrManualmente() {
-        recurringBillingService.generarCuotasDelDia();
+    public void runManually() {
+        recurringBillingService.generateDailyInstallments();
     }
 }

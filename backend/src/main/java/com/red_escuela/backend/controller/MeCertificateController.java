@@ -36,22 +36,22 @@ public class MeCertificateController {
     }
 
     @GetMapping("/regular")
-    public ResponseEntity<byte[]> constanciaRegular(@PathVariable Long id) {
-        exigirPropietario(id);
-        return pdfResponse(certificateService.emitirConstanciaRegular(id), "constancia-regular.pdf");
+    public ResponseEntity<byte[]> regularStandingCertificate(@PathVariable Long id) {
+        requireOwner(id);
+        return pdfResponse(certificateService.issueRegularStandingCertificate(id), "constancia-regular.pdf");
     }
 
     @GetMapping("/approved-subjects")
-    public ResponseEntity<byte[]> constanciaMateriasAprobadas(@PathVariable Long id) {
-        exigirPropietario(id);
-        return pdfResponse(certificateService.emitirConstanciaMateriasAprobadas(id), "constancia-materias-aprobadas.pdf");
+    public ResponseEntity<byte[]> approvedSubjectsCertificate(@PathVariable Long id) {
+        requireOwner(id);
+        return pdfResponse(certificateService.issueApprovedSubjectsCertificate(id), "constancia-materias-aprobadas.pdf");
     }
 
     // 404 (no 403) si la ProgramEnrollment no es del alumno autenticado — mismo criterio que
     // MeEnrollmentController.exigirPropietario.
-    private void exigirPropietario(Long programEnrollmentId) {
+    private void requireOwner(Long programEnrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.verDetalle(programEnrollmentId);
+        ProgramEnrollment enrollment = programEnrollmentService.viewDetail(programEnrollmentId);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(programEnrollmentId);
         }

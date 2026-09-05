@@ -100,7 +100,7 @@ public class CourseEnrollmentService {
         // comisión / ambiguo), no debe quedar ninguna fila creada (todo o nada, decisión 15).
         Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
-            resueltas.put(courseSubject, resolverSeccion(courseSubject, course, request));
+            resueltas.put(courseSubject, resolveSection(courseSubject, course, request));
         }
 
         CourseEnrollment enrollment = new CourseEnrollment();
@@ -146,7 +146,7 @@ public class CourseEnrollmentService {
         }
     }
 
-    private CourseSubjectSection resolverSeccion(CourseSubject courseSubject, Course course, CreateCourseEnrollmentRequest request) {
+    private CourseSubjectSection resolveSection(CourseSubject courseSubject, Course course, CreateCourseEnrollmentRequest request) {
         List<CourseSubjectSection> secciones = courseSubjectSectionRepository
                 .findByCourseSubjectIdAndStatus(courseSubject.getId(), StatusType.ACTIVE)
                 .stream()
@@ -250,7 +250,7 @@ public class CourseEnrollmentService {
                 });
     }
 
-    public CourseEnrollment verDetalle(Long id) {
+    public CourseEnrollment viewDetail(Long id) {
         return findOrThrow(id);
     }
 

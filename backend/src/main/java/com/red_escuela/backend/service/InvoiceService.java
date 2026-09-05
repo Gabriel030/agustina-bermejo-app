@@ -128,14 +128,14 @@ public class InvoiceService {
         if (tienePrograma) {
             Program program = programRepository.findById(request.programId())
                     .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
-            feeSchedule = feeScheduleService.vigenteParaPrograma(program.getId(), request.concept(), hoy);
+            feeSchedule = feeScheduleService.validForProgram(program.getId(), request.concept(), hoy);
             promocionesVigentes = promotionService.vigentesParaPrograma(program.getId(), hoy);
             conceptoTexto = (request.concept() == FeeScheduleConcept.MATRICULA
                     ? "Matrícula — " : "Cuota — ") + program.getName();
         } else {
             Course course = courseRepository.findById(request.courseId())
                     .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
-            feeSchedule = feeScheduleService.vigenteParaCurso(course.getId(), request.concept(), hoy);
+            feeSchedule = feeScheduleService.validForCourse(course.getId(), request.concept(), hoy);
             promocionesVigentes = promotionService.vigentesParaCurso(course.getId(), hoy);
             conceptoTexto = "Cuota — " + course.getName();
         }
@@ -169,14 +169,14 @@ public class InvoiceService {
     // persistido). Cero si no hay política configurada o la factura no está en
     // mora, mismo criterio que el resto del cálculo de deuda de esta clase.
     public BigDecimal calculateLateSurcharge(Invoice invoice) {
-        return lateFeePolicyService.vigenteEl(LocalDate.now())
+        return lateFeePolicyService.validOn(LocalDate.now())
                 .map(policy -> LateFeeCalculator.calculateSurcharge(policy, invoice.getDueDate(), LocalDate.now(), calculatePendingBalance(invoice)))
                 .orElse(BigDecimal.ZERO);
     }
 
-    public boolean estaEnRiesgoDeCorte(Invoice invoice) {
-        return lateFeePolicyService.vigenteEl(LocalDate.now())
-                .map(policy -> LateFeeCalculator.estaEnRiesgoDeCorte(policy, invoice.getDueDate(), LocalDate.now()))
+    public boolean isAtCutoffRisk(Invoice invoice) {
+        return lateFeePolicyService.validOn(LocalDate.now())
+                .map(policy -> LateFeeCalculator.isAtCutoffRisk(policy, invoice.getDueDate(), LocalDate.now()))
                 .orElse(false);
     }
 

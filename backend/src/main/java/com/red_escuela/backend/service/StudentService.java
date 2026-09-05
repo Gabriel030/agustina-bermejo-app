@@ -40,12 +40,12 @@ public class StudentService {
         return studentRepository.findAll(spec);
     }
 
-    public Student verLegajo(Long id) {
+    public Student viewFile(Long id) {
         return findStudentOrThrow(id);
     }
 
     @Transactional
-    public void bajaAlumno(Long id, WithdrawStudentRequest request) {
+    public void withdrawStudent(Long id, WithdrawStudentRequest request) {
         Student student = findStudentOrThrow(id);
         student.getPerson().setStatus(StatusType.DELETED);
         student.setWithdrawalReason(request.reason());

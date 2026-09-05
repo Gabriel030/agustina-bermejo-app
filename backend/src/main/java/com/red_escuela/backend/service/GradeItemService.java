@@ -69,7 +69,7 @@ public class GradeItemService {
     }
 
     @Transactional
-    public GradeItem cargarNotaProgramEnrollment(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
+    public GradeItem loadGradeProgramEnrollment(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
@@ -87,7 +87,7 @@ public class GradeItemService {
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
-        aplicarDatos(gradeItem, request, examBoard);
+        applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
@@ -108,7 +108,7 @@ public class GradeItemService {
     }
 
     @Transactional
-    public GradeItem cargarNotaCourseEnrollment(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
+    public GradeItem loadGradeCourseEnrollment(Long enrollmentId, Long instructorId, CreateGradeItemRequest request) {
         CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
@@ -126,7 +126,7 @@ public class GradeItemService {
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
-        aplicarDatos(gradeItem, request, examBoard);
+        applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
@@ -151,7 +151,7 @@ public class GradeItemService {
         return gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
     }
 
-    public GradeItem verDetalle(Long id) {
+    public GradeItem viewDetail(Long id) {
         return findOrThrow(id);
     }
 
@@ -159,7 +159,7 @@ public class GradeItemService {
     // el FINAL de esa mesa. Usado por "mis inscripciones a mesas" (ver
     // ExamBoardRegistrationService.listMyEnrollments): ExamBoardRegistrationStatus.GRADED
     // nunca se setea en el código actual, así que esto es la única fuente real.
-    public Double obtenerNotaDeMesa(Long examBoardId, Long enrollmentId) {
+    public Double getExamBoardGrade(Long examBoardId, Long enrollmentId) {
         return gradeItemRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId)
                 .stream()
                 .map(GradeItem::getScore)
@@ -190,7 +190,7 @@ public class GradeItemService {
         return examBoard;
     }
 
-    private void aplicarDatos(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {
+    private void applyData(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {
         gradeItem.setType(request.type());
         gradeItem.setSequenceNumber(request.sequenceNumber());
         gradeItem.setWeight(request.weight());
@@ -246,7 +246,7 @@ public class GradeItemService {
                 && (examenes.size() + tps.size()) >= cantidadEsperada;
 
         if (todosLosParcialesCargados && tpCountExpected > 0 && scheme.getMinRegularGrade() != null
-                && !todosAprobadosIndividualmente(tps, scheme.getMinRegularGrade())) {
+                && !allApprovedIndividually(tps, scheme.getMinRegularGrade())) {
             return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
         }
 
@@ -274,7 +274,7 @@ public class GradeItemService {
         if (!todosLosParcialesCargados || examCountExpected == 0 || scheme.getPromotionMinGrade() == null) {
             return null;
         }
-        if (!todosAprobadosIndividualmente(examenes, scheme.getPromotionMinGrade())) {
+        if (!allApprovedIndividually(examenes, scheme.getPromotionMinGrade())) {
             return null;
         }
         double promedio = examenes.stream().mapToDouble(GradeItem::getScore).average().orElse(0.0);
@@ -296,7 +296,7 @@ public class GradeItemService {
         boolean regularAlcanzado = estadoActual == EnrollmentStatus.REGULAR;
 
         if (todosLosParcialesCargados && scheme.getMinRegularGrade() != null) {
-            double promedio = aplicarAgregacion(scheme.getAggregationMethod(), examenes);
+            double promedio = applyAggregation(scheme.getAggregationMethod(), examenes);
             if (promedio < scheme.getMinRegularGrade()) {
                 return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
             }
@@ -336,7 +336,7 @@ public class GradeItemService {
         todos.addAll(tps);
 
         if (scheme.getMinRegularGrade() != null) {
-            double promedioRegular = aplicarAgregacion(scheme.getAggregationMethod(), todos);
+            double promedioRegular = applyAggregation(scheme.getAggregationMethod(), todos);
             if (promedioRegular < scheme.getMinRegularGrade()) {
                 return new ResultadoCursada(EnrollmentStatus.FAILED, null, null);
             }
@@ -344,21 +344,21 @@ public class GradeItemService {
         if (scheme.getMinApprovalGrade() == null) {
             return null;
         }
-        double promedio = aplicarAgregacion(scheme.getAggregationMethod(), todos);
+        double promedio = applyAggregation(scheme.getAggregationMethod(), todos);
         if (promedio >= scheme.getMinApprovalGrade()) {
             return new ResultadoCursada(EnrollmentStatus.APPROVED, promedio, FinalGradeType.PROMOTION);
         }
         return null;
     }
 
-    private boolean todosAprobadosIndividualmente(List<GradeItem> items, double umbral) {
+    private boolean allApprovedIndividually(List<GradeItem> items, double umbral) {
         return !items.isEmpty() && items.stream().allMatch(i -> i.getScore() != null && i.getScore() >= umbral);
     }
 
     // Las 4 estrategias se implementan con su significado literal: promedio simple, promedio
     // ponderado por GradeItem.weight, máximo puntaje entre intentos, último intento cargado
     // (por fecha) — sin ambigüedad real del doc funcional que justifique preguntar.
-    private double aplicarAgregacion(GradeAggregationMethod method, List<GradeItem> parciales) {
+    private double applyAggregation(GradeAggregationMethod method, List<GradeItem> parciales) {
         List<Double> scores = parciales.stream().map(GradeItem::getScore).filter(Objects::nonNull).toList();
         if (scores.isEmpty() || method == null) {
             return 0.0;

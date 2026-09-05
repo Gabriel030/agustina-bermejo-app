@@ -21,8 +21,8 @@ public class PersonController {
     }
 
     @GetMapping
-    public PersonResponse verPerfilPropio() {
-        return PersonResponse.from(personProfileService.verPerfilPropio());
+    public PersonResponse viewOwnProfile() {
+        return PersonResponse.from(personProfileService.viewOwnProfile());
     }
 
     @PutMapping

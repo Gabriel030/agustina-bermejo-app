@@ -80,19 +80,19 @@ public class MeEnrollmentController {
             @RequestParam(required = false) String sectionOverrides,
             @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializarOverrides(sectionOverrides));
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(student.getId(), request, comprobante);
+        CreateCourseEnrollmentRequest request = new CreateCourseEnrollmentRequest(courseId, deserializeOverrides(sectionOverrides));
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(student.getId(), request, comprobante);
         return CourseEnrollmentApplicationResponse.from(application);
     }
 
     @GetMapping("/course-enrollment-applications")
-    public List<CourseEnrollmentApplicationResponse> misSolicitudesDeCurso() {
+    public List<CourseEnrollmentApplicationResponse> myCourseApplications() {
         Student student = currentStudentService.resolveCurrentStudent();
         return courseEnrollmentApplicationService.listOwn(student.getId()).stream()
                 .map(CourseEnrollmentApplicationResponse::from).toList();
     }
 
-    private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {
+    private Map<Long, Long> deserializeOverrides(String sectionOverridesJson) {
         if (sectionOverridesJson == null || sectionOverridesJson.isBlank()) {
             return null;
         }
@@ -105,17 +105,17 @@ public class MeEnrollmentController {
     }
 
     @GetMapping("/program-enrollments")
-    public List<ProgramEnrollmentResponse> misMatriculaciones() {
+    public List<ProgramEnrollmentResponse> myProgramEnrollments() {
         Student student = currentStudentService.resolveCurrentStudent();
         return programEnrollmentService.listByStudent(student.getId()).stream()
                 .map(ProgramEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/program-enrollments/{id}/progress")
-    public ProgramProgressResponse miProgreso(@PathVariable Long id) {
+    public ProgramProgressResponse myProgress(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.verDetalle(id);
-        exigirPropietario(enrollment, student);
+        ProgramEnrollment enrollment = programEnrollmentService.viewDetail(id);
+        requireOwner(enrollment, student);
         return programEnrollmentService.calculateProgress(id);
     }
 
@@ -123,8 +123,8 @@ public class MeEnrollmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public SectionEnrollmentResponse enrollMyself(@Valid @RequestBody CreateOwnSectionEnrollmentRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment programEnrollment = programEnrollmentService.verDetalle(request.programEnrollmentId());
-        exigirPropietario(programEnrollment, student);
+        ProgramEnrollment programEnrollment = programEnrollmentService.viewDetail(request.programEnrollmentId());
+        requireOwner(programEnrollment, student);
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.enroll(
                 request.programEnrollmentId(), new CreateSectionEnrollmentRequest(request.sectionId()));
@@ -133,39 +133,39 @@ public class MeEnrollmentController {
 
     @PostMapping("/section-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void darmeDeBaja(@PathVariable Long id) {
+    public void withdrawMyself(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        exigirPropietario(subjectSectionEnrollmentService.verDetalle(id), student);
+        requireOwner(subjectSectionEnrollmentService.viewDetail(id), student);
         subjectSectionEnrollmentService.withdraw(id);
     }
 
     @PostMapping("/section-enrollments/{id}/change-section")
-    public SectionEnrollmentResponse cambiarMiComision(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
+    public SectionEnrollmentResponse changeMySection(@PathVariable Long id, @Valid @RequestBody ChangeSectionRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        exigirPropietario(subjectSectionEnrollmentService.verDetalle(id), student);
-        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.cambiarComision(id, request));
+        requireOwner(subjectSectionEnrollmentService.viewDetail(id), student);
+        return SectionEnrollmentResponse.from(subjectSectionEnrollmentService.changeSection(id, request));
     }
 
     @GetMapping("/section-enrollments")
-    public List<SectionEnrollmentResponse> misInscripciones() {
+    public List<SectionEnrollmentResponse> mySectionEnrollments() {
         Student student = currentStudentService.resolveCurrentStudent();
         return subjectSectionEnrollmentService.listByStudent(student.getId()).stream()
                 .map(enrollment -> SectionEnrollmentResponse.from(
                         enrollment,
-                        subjectSectionEnrollmentService.resolverAnioCurricular(enrollment),
-                        subjectSectionEnrollmentService.resolverCuatrimestreCurricular(enrollment)))
+                        subjectSectionEnrollmentService.resolveCurricularYear(enrollment),
+                        subjectSectionEnrollmentService.resolveCurricularTerm(enrollment)))
                 .toList();
     }
 
     // 404 (no 403) si el recurso no es del alumno autenticado: mismo criterio de no
     // confirmar por otra vía que el id existe, ya usado en PUT /me de Gestión de personas.
-    private void exigirPropietario(ProgramEnrollment enrollment, Student student) {
+    private void requireOwner(ProgramEnrollment enrollment, Student student) {
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(enrollment.getId());
         }
     }
 
-    private void exigirPropietario(SubjectSectionEnrollment enrollment, Student student) {
+    private void requireOwner(SubjectSectionEnrollment enrollment, Student student) {
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(enrollment.getId());
         }

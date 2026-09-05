@@ -63,7 +63,7 @@ public class SubjectController {
     }
 
     @GetMapping("/{id}")
-    public SubjectResponse verDetalle(@PathVariable Long id) {
-        return SubjectResponse.from(subjectService.verDetalle(id));
+    public SubjectResponse viewDetail(@PathVariable Long id) {
+        return SubjectResponse.from(subjectService.viewDetail(id));
     }
 }

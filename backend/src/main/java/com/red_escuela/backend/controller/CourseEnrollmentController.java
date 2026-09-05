@@ -47,13 +47,13 @@ public class CourseEnrollmentController {
 
     @GetMapping("/course-enrollments/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public CourseEnrollmentResponse verDetalle(@PathVariable Long id) {
-        return CourseEnrollmentResponse.from(courseEnrollmentService.verDetalle(id));
+    public CourseEnrollmentResponse viewDetail(@PathVariable Long id) {
+        return CourseEnrollmentResponse.from(courseEnrollmentService.viewDetail(id));
     }
 
     @GetMapping("/course-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public CourseProgressResponse verProgreso(@PathVariable Long id) {
+    public CourseProgressResponse viewProgress(@PathVariable Long id) {
         return courseEnrollmentService.calculateProgress(id);
     }
 }

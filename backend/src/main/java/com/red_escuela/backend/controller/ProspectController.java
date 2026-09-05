@@ -41,11 +41,11 @@ public class ProspectController {
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentDocumentResponse agregarDocumento(
+    public StudentDocumentResponse addDocument(
             @PathVariable Long id,
             @RequestParam DocumentType type,
             @RequestPart MultipartFile file) {
-        return StudentDocumentResponse.from(prospectService.agregarDocumento(id, type, file));
+        return StudentDocumentResponse.from(prospectService.addDocument(id, type, file));
     }
 
     @GetMapping("/{id}/documents")
@@ -56,7 +56,7 @@ public class ProspectController {
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentResponse confirmarAlta(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
-        return StudentResponse.from(prospectService.confirmarAlta(id, request));
+    public StudentResponse confirmOnboarding(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
+        return StudentResponse.from(prospectService.confirmOnboarding(id, request));
     }
 }

@@ -63,7 +63,7 @@ public class CourseController {
     }
 
     @GetMapping("/{id}")
-    public CourseResponse verDetalle(@PathVariable Long id) {
-        return CourseResponse.from(courseService.verDetalle(id));
+    public CourseResponse viewDetail(@PathVariable Long id) {
+        return CourseResponse.from(courseService.viewDetail(id));
     }
 }

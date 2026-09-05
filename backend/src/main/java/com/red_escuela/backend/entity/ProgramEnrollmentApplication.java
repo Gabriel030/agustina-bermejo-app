@@ -64,21 +64,21 @@ public class ProgramEnrollmentApplication {
     private PaymentReceipt paymentReceipt;
 
     public void approve(Person decidedBy) {
-        exigirPendiente();
+        requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
         this.decidedAt = LocalDateTime.now();
     }
 
     public void reject(Person decidedBy, String reason) {
-        exigirPendiente();
+        requirePending();
         this.status = ProgramEnrollmentApplicationStatus.REJECTED;
         this.decidedBy = decidedBy;
         this.decidedAt = LocalDateTime.now();
         this.rejectionReason = reason;
     }
 
-    private void exigirPendiente() {
+    private void requirePending() {
         if (status != ProgramEnrollmentApplicationStatus.PENDING) {
             throw new InvalidProgramEnrollmentApplicationStateException(id, status);
         }

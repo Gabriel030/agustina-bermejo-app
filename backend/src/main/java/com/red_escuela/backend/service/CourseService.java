@@ -74,7 +74,7 @@ public class CourseService {
         return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
     }
 
-    public Course verDetalle(Long id) {
+    public Course viewDetail(Long id) {
         return findOrThrow(id);
     }
 

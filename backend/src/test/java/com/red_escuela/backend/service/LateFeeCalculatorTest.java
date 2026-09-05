@@ -24,14 +24,14 @@ class LateFeeCalculatorTest {
     void withinOfTheDaysOfGraceNotIsInArrears() {
         LateFeePolicy p = policy(5, 2, 5, 10);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
-        assertThat(LateFeeCalculator.estaEnMora(p, dueDate, dueDate.plusDays(5))).isFalse();
+        assertThat(LateFeeCalculator.isInArrears(p, dueDate, dueDate.plusDays(5))).isFalse();
     }
 
     @Test
     void pastTheDaysOfGraceIsInArrears() {
         LateFeePolicy p = policy(5, 2, 5, 10);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
-        assertThat(LateFeeCalculator.estaEnMora(p, dueDate, dueDate.plusDays(6))).isTrue();
+        assertThat(LateFeeCalculator.isInArrears(p, dueDate, dueDate.plusDays(6))).isTrue();
     }
 
     @Test
@@ -65,7 +65,7 @@ class LateFeeCalculatorTest {
     void riskOfCutoffActivatesToReachingToTheThresholdConfigured() {
         LateFeePolicy p = policy(5, 2, 5, 10);
         LocalDate dueDate = LocalDate.of(2026, 1, 1);
-        assertThat(LateFeeCalculator.estaEnRiesgoDeCorte(p, dueDate, dueDate.plusDays(9))).isFalse();
-        assertThat(LateFeeCalculator.estaEnRiesgoDeCorte(p, dueDate, dueDate.plusDays(10))).isTrue();
+        assertThat(LateFeeCalculator.isAtCutoffRisk(p, dueDate, dueDate.plusDays(9))).isFalse();
+        assertThat(LateFeeCalculator.isAtCutoffRisk(p, dueDate, dueDate.plusDays(10))).isTrue();
     }
 }
