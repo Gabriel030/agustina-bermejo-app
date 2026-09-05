@@ -162,8 +162,10 @@ public class Invoice {
         adjustment.setAppliedBy(appliedBy);
         adjustment.setAppliedAt(LocalDateTime.now());
         adjustments.add(adjustment);
-        // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED only.
-        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0 && status == InvoiceStatus.PENDING) {
+        // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED, from
+        // either PENDING or OVERDUE.
+        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0
+                && (status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE)) {
             status = InvoiceStatus.WAIVED;
         }
     }

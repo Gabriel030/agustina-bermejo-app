@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,4 +53,21 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     long countByCourseEnrollmentIdAndStatus(Long courseEnrollmentId, InvoiceStatus status);
 
     long countByProgramEnrollmentIdAndStatus(Long programEnrollmentId, InvoiceStatus status);
+
+    @Query("""
+            select case when count(i) > 0 then true else false end from Invoice i
+            left join i.courseEnrollment ce
+            left join i.programEnrollment pe
+            where i.status = :status
+              and (ce.student.id = :studentId or pe.student.id = :studentId)
+            """)
+    boolean existsByStudentIdAndStatus(@Param("studentId") Long studentId, @Param("status") InvoiceStatus status);
+
+    List<Invoice> findByCourseEnrollmentIdAndPeriodBetween(Long courseEnrollmentId, YearMonth from, YearMonth to);
+
+    List<Invoice> findByProgramEnrollmentIdAndPeriodBetween(Long programEnrollmentId, YearMonth from, YearMonth to);
+
+    List<Invoice> findByCourseEnrollmentIdAndStatusIn(Long courseEnrollmentId, List<InvoiceStatus> statuses);
+
+    List<Invoice> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<InvoiceStatus> statuses);
 }

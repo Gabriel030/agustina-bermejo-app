@@ -143,7 +143,8 @@ public class GlobalExceptionHandler {
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
             PaymentReceiptNotFoundException.class,
-            NoActiveCollectionsPolicyException.class
+            NoActiveCollectionsPolicyException.class,
+            ScholarshipNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -189,7 +190,8 @@ public class GlobalExceptionHandler {
             InvoiceNotPayableException.class,
             PaymentReceiptAlreadyPendingException.class,
             InvalidPaymentReceiptStateException.class,
-            PaymentExceedsInvoiceBalanceException.class
+            PaymentExceedsInvoiceBalanceException.class,
+            StudentInDebtException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
