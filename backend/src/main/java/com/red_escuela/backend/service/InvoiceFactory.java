@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.List;
 
 // Builds a new Invoice. Idempotent by design: the DB-level unique constraint on
 // (billable, feeType, period) is the real guard against duplicates under concurrency — this
@@ -49,7 +48,11 @@ public class InvoiceFactory {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Invoice crearParaCurso(CourseEnrollment courseEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        return saveIdempotently(construirParaCurso(courseEnrollment, selection, feeType, period, dueDate));
+        Invoice invoice = saveIdempotently(construirParaCurso(courseEnrollment, selection, feeType, period, dueDate));
+        if (invoice != null) {
+            applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByCourseEnrollmentIdForUpdate(courseEnrollment.getId()));
+        }
+        return invoice;
     }
 
     private Invoice construirParaCurso(CourseEnrollment courseEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
@@ -62,13 +65,16 @@ public class InvoiceFactory {
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(price);
         invoice.setStatus(InvoiceStatus.PENDING);
-        applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findByCourseEnrollmentId(courseEnrollment.getId()), period);
         return invoice;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Invoice crearParaCarrera(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        return saveIdempotently(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+        Invoice invoice = saveIdempotently(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+        if (invoice != null) {
+            applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
+        }
+        return invoice;
     }
 
     // Variante REQUIRED (no REQUIRES_NEW), para el único caller que necesita la Invoice atada a
@@ -80,7 +86,9 @@ public class InvoiceFactory {
     // todo el request, no hay loop que necesite saltear un duplicado y seguir".
     @Transactional
     public Invoice crearParaCarreraAtomica(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        return invoiceRepository.saveAndFlush(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+        Invoice invoice = invoiceRepository.saveAndFlush(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
+        applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
+        return invoice;
     }
 
     private Invoice construirParaCarrera(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
@@ -93,16 +101,16 @@ public class InvoiceFactory {
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(price);
         invoice.setStatus(InvoiceStatus.PENDING);
-        applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findByProgramEnrollmentId(programEnrollment.getId()), period);
         return invoice;
     }
 
-    private void applyActiveScholarshipIfPresent(Invoice invoice, List<Scholarship> scholarships, YearMonth period) {
-        scholarships.stream()
-                .filter(scholarship -> scholarship.isActiveFor(period))
-                .findFirst()
-                .ifPresent(scholarship -> invoice.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP, scholarship.getValue(),
-                        scholarship.getReason(), null));
+    private void applyActiveScholarshipIfPresent(Invoice invoice, java.util.Optional<Scholarship> activeScholarship) {
+        activeScholarship.ifPresent(scholarship -> {
+            scholarship.consumeOne(invoice);
+            invoice.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP, scholarship.getValue(), scholarship.getReason(), null);
+            scholarshipRepository.save(scholarship);
+            invoiceRepository.save(invoice);
+        });
     }
 
     // Ad-hoc, not yet linked to any enrollment — used only by the Épica 7 Fase 3 self-service
