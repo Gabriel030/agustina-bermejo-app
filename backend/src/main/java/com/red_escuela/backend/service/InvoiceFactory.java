@@ -8,8 +8,12 @@ import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.entity.Promotion;
+import com.red_escuela.backend.entity.PromotionBenefit;
+import com.red_escuela.backend.entity.PromotionRedemption;
 import com.red_escuela.backend.entity.Scholarship;
 import com.red_escuela.backend.repository.InvoiceRepository;
+import com.red_escuela.backend.repository.PromotionRedemptionRepository;
 import com.red_escuela.backend.repository.ScholarshipRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -38,12 +42,14 @@ public class InvoiceFactory {
     private final PriceRevisionService priceRevisionService;
     private final InvoiceRepository invoiceRepository;
     private final ScholarshipRepository scholarshipRepository;
+    private final PromotionRedemptionRepository promotionRedemptionRepository;
 
     public InvoiceFactory(PriceRevisionService priceRevisionService, InvoiceRepository invoiceRepository,
-                           ScholarshipRepository scholarshipRepository) {
+                           ScholarshipRepository scholarshipRepository, PromotionRedemptionRepository promotionRedemptionRepository) {
         this.priceRevisionService = priceRevisionService;
         this.invoiceRepository = invoiceRepository;
         this.scholarshipRepository = scholarshipRepository;
+        this.promotionRedemptionRepository = promotionRedemptionRepository;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -51,6 +57,7 @@ public class InvoiceFactory {
         Invoice invoice = saveIdempotently(construirParaCurso(courseEnrollment, selection, feeType, period, dueDate));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByCourseEnrollmentIdForUpdate(courseEnrollment.getId()));
+            applyActivePromotionIfPresent(invoice, selection);
         }
         return invoice;
     }
@@ -73,6 +80,7 @@ public class InvoiceFactory {
         Invoice invoice = saveIdempotently(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
+            applyActivePromotionIfPresent(invoice, selection);
         }
         return invoice;
     }
@@ -88,6 +96,9 @@ public class InvoiceFactory {
     public Invoice crearParaCarreraAtomica(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
         Invoice invoice = invoiceRepository.saveAndFlush(construirParaCarrera(programEnrollment, selection, feeType, period, dueDate));
         applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
+        if (selection != null) {
+            applyActivePromotionIfPresent(invoice, selection);
+        }
         return invoice;
     }
 
@@ -109,6 +120,26 @@ public class InvoiceFactory {
             scholarship.consumeOne(invoice);
             invoice.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP, scholarship.getValue(), scholarship.getReason(), null);
             scholarshipRepository.save(scholarship);
+            invoiceRepository.save(invoice);
+        });
+    }
+
+    // Atado a ESTA selección de plan puntual (no al billable) — si el alumno vuelve a este plan
+    // después de haber pasado por otro, esa selección nueva es una fila distinta sin redemption,
+    // así que este chequeo nunca "revive" un beneficio ya cortado por PaymentPlanSelectionService.
+    private void applyActivePromotionIfPresent(Invoice invoice, PaymentPlanSelection selection) {
+        promotionRedemptionRepository.findByPaymentPlanSelectionId(selection.getId()).ifPresent(redemption -> {
+            Promotion promotion = redemption.getPromotion();
+            for (PromotionBenefit benefit : promotion.getBenefits()) {
+                if (benefit.getFeeType() != invoice.getFeeType()) {
+                    continue;
+                }
+                long alreadyApplied = invoiceRepository.countByPaymentPlanSelectionAndFeeTypeAndPromotionBenefit(
+                        selection.getId(), invoice.getFeeType(), benefit.getId());
+                if (benefit.getInvoiceScopeCount() == null || alreadyApplied < benefit.getInvoiceScopeCount()) {
+                    invoice.applyAdjustment(InvoiceAdjustmentType.PROMOTION, benefit.getValue(), "Promoción: " + promotion.getDescription(), null, benefit);
+                }
+            }
             invoiceRepository.save(invoice);
         });
     }

@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.Invoice;
 import com.red_escuela.backend.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.entity.CohortIntake;
+import com.red_escuela.backend.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.exception.ProgramEnrollmentMissingCohortException;
@@ -35,6 +36,16 @@ public class ProgramEnrollmentBillingScheduler {
 
     @Transactional
     public void generarMatricula(ProgramEnrollment enrollment) {
+        generarMatricula(enrollment, null);
+    }
+
+    // Variante con selection (Fase 6.5): PaymentPlanSelectionService la usa para que la Invoice de
+    // matrícula quede atada a la PaymentPlanSelection que acaba de calificar para una Promotion —
+    // sin esto, la matrícula nunca podría llevar el descuento de "50% en la matrícula" del ejemplo
+    // de la spec, porque InvoiceFactory resuelve el beneficio de promoción a partir de esa
+    // referencia.
+    @Transactional
+    public void generarMatricula(ProgramEnrollment enrollment, PaymentPlanSelection selection) {
         ProgramCohort cohort = enrollment.getProgramCohort();
         if (cohort == null) {
             throw new ProgramEnrollmentMissingCohortException(enrollment.getId());
@@ -45,7 +56,7 @@ public class ProgramEnrollmentBillingScheduler {
         // falla, toda la operación revierte junta, sin dejar una Invoice de matrícula huérfana
         // (sin PaymentPlanSelection y, para cohorte SECOND, sin el 50% de descuento) ya commiteada
         // por una transacción REQUIRES_NEW que ya cerró (bug real encontrado en auditoría 2026-09-04).
-        Invoice invoice = invoiceFactory.crearParaCarreraAtomica(enrollment, null, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
+        Invoice invoice = invoiceFactory.crearParaCarreraAtomica(enrollment, selection, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
         if (cohort.getIntake() == CohortIntake.SECOND) {
             invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.5")),
                     "Matrícula proporcional — segunda cohorte del año", null);

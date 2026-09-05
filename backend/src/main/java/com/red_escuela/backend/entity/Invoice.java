@@ -149,6 +149,10 @@ public class Invoice {
     }
 
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
+        applyAdjustment(type, value, reason, appliedBy, null);
+    }
+
+    public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy, PromotionBenefit promotionBenefit) {
         // SCHOLARSHIP/DISCOUNT resolve against baseAmount (order-independent from each other).
         // SURCHARGE resolves against getRemainingBalance() computed BEFORE adding it — a partial
         // payment made before falling into arrears is also subtracted from the surcharge base.
@@ -161,6 +165,7 @@ public class Invoice {
         adjustment.setReason(reason);
         adjustment.setAppliedBy(appliedBy);
         adjustment.setAppliedAt(LocalDateTime.now());
+        adjustment.setPromotionBenefit(promotionBenefit);
         adjustments.add(adjustment);
         // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED, from
         // either PENDING or OVERDUE.

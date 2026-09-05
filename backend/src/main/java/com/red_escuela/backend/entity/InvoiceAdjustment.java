@@ -54,6 +54,13 @@ public class InvoiceAdjustment {
     @Column(name = "applied_at", nullable = false)
     private LocalDateTime appliedAt;
 
+    // null salvo type=PROMOTION — referencia al beneficio puntual que originó este ajuste, usado
+    // para contar cuántas veces ya se aplicó cada benefit dentro de una misma PaymentPlanSelection
+    // (Fase 6.5).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_benefit_id")
+    private PromotionBenefit promotionBenefit;
+
     public BigDecimal signedAmount() {
         BigDecimal magnitude = value.resolve(resolvedBase);
         return type == InvoiceAdjustmentType.SURCHARGE ? magnitude : magnitude.negate();
