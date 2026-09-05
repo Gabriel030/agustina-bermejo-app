@@ -11,6 +11,7 @@ import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +37,7 @@ public class SectionEvaluationConfigReminderJob {
     }
 
     @Scheduled(cron = "0 0 8 * * *")
+    @Transactional(readOnly = true)
     public void sendReminders() {
         LocalDate today = LocalDate.now();
         List<SectionEvaluationConfig> pending = configRepository.findByStatusIn(List.of(

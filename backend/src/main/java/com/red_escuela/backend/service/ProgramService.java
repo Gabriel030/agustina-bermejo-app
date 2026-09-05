@@ -51,11 +51,11 @@ public class ProgramService {
         if (request.totalYears() != null) {
             program.setTotalYears(request.totalYears());
         }
-        if (request.price() != null && !request.price().equals(program.getPrice())) {
+        if (request.price() != null && request.price().compareTo(program.getPrice()) != 0) {
             program.setPrice(request.price());
             priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
         }
-        if (request.enrollmentFeeAmount() != null && !request.enrollmentFeeAmount().equals(program.getEnrollmentFeeAmount())) {
+        if (request.enrollmentFeeAmount() != null && request.enrollmentFeeAmount().compareTo(program.getEnrollmentFeeAmount()) != 0) {
             program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
             priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.enrollmentFeeAmount(), "Ajuste de matrícula", actor);
         }

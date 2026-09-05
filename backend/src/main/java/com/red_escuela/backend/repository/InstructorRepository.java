@@ -25,7 +25,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, Long> {
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE person SET status = false WHERE id = (SELECT person_id FROM instructor WHERE id = :instructorId)", nativeQuery = true)
+    @Query(value = "UPDATE person SET status = 'INACTIVE' WHERE id = (SELECT person_id FROM instructor WHERE id = :instructorId)", nativeQuery = true)
     int logicalDeleteById(@Param("instructorId") Long instructorId);
 
     @Modifying

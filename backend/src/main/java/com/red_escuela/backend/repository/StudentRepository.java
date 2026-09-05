@@ -27,10 +27,10 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
     // Resolver el Student a partir del personId del JWT (endpoints /me/...)
     Optional<Student> findByPerson_Id(Long personId);
 
-    // Logical delete: set person.status = false for the student's person
+    // Logical delete: set person.status = INACTIVE for the student's person
     @Modifying
     @Transactional
-    @Query(value = "UPDATE person SET status = false WHERE id = (SELECT person_id FROM student WHERE id = :studentId)", nativeQuery = true)
+    @Query(value = "UPDATE person SET status = 'INACTIVE' WHERE id = (SELECT person_id FROM student WHERE id = :studentId)", nativeQuery = true)
     int logicalDeleteById(@Param("studentId") Long studentId);
 
     // Hard delete: delete student row (relations should be handled via FK ON DELETE CASCADE or JPA cascade)
