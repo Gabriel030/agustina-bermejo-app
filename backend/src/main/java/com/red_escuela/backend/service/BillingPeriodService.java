@@ -32,6 +32,6 @@ public class BillingPeriodService {
     }
 
     public BillingPeriod current() {
-        return billingPeriodRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate.now()).orElse(null);
+        return billingPeriodRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(LocalDate.now()).orElse(null);
     }
 }

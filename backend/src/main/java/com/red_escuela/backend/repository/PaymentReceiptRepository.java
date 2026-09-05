@@ -19,8 +19,10 @@ public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, 
     // tiene un student directo, hay que llegar vía courseEnrollment o programEnrollment.
     @Query("""
             select r from PaymentReceipt r
-            where r.invoice.courseEnrollment.student.id = :studentId
-               or r.invoice.programEnrollment.student.id = :studentId
+            left join r.invoice.courseEnrollment ce
+            left join r.invoice.programEnrollment pe
+            where ce.student.id = :studentId
+               or pe.student.id = :studentId
             order by r.uploadedAt desc
             """)
     List<PaymentReceipt> findByStudentId(@Param("studentId") Long studentId);

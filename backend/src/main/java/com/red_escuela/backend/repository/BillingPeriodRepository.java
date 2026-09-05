@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface BillingPeriodRepository extends JpaRepository<BillingPeriod, Long> {
 
-    Optional<BillingPeriod> findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDesc(LocalDate date);
+    Optional<BillingPeriod> findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(LocalDate date);
 }

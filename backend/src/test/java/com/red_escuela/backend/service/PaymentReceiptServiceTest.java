@@ -12,6 +12,9 @@ import com.red_escuela.backend.entity.InvoiceStatus;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
@@ -25,6 +28,8 @@ import com.red_escuela.backend.repository.CourseRepository;
 import com.red_escuela.backend.repository.InstitutionRepository;
 import com.red_escuela.backend.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.PersonRepository;
+import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.repository.ProgramRepository;
 import com.red_escuela.backend.repository.StudentRepository;
 import com.red_escuela.backend.repository.TermRepository;
 import org.junit.jupiter.api.Test;
@@ -84,6 +89,12 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     @Autowired
     private com.red_escuela.backend.repository.PaymentReceiptRepository paymentReceiptRepository;
 
+    @Autowired
+    private ProgramRepository programRepository;
+
+    @Autowired
+    private ProgramEnrollmentRepository programEnrollmentRepository;
+
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -129,6 +140,32 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
+        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setPeriod(YearMonth.now());
+        invoice.setDueDate(LocalDate.now());
+        invoice.setBaseAmount(amount);
+        invoice.setStatus(status);
+        return invoiceRepository.save(invoice);
+    }
+
+    private ProgramEnrollment persistProgramEnrollment(Student student) {
+        Program program = new Program();
+        program.setName("Carrera de prueba " + System.nanoTime());
+        program.setTotalYears(3);
+        program.setTotalCreditsRequired(0);
+        program = programRepository.save(program);
+
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setStudent(student);
+        enrollment.setProgram(program);
+        enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        enrollment.setEnrollmentDate(LocalDateTime.now());
+        return programEnrollmentRepository.save(enrollment);
+    }
+
+    private Invoice persistInvoice(ProgramEnrollment enrollment, BigDecimal amount, InvoiceStatus status) {
+        Invoice invoice = new Invoice();
+        invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
@@ -275,5 +312,17 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotPayableException.class);
+    }
+
+    @Test
+    void findOwnIncludesReceiptsFromProgramEnrollmentInvoicesNotOnlyCourseEnrollment() {
+        Student student = persistStudent("97000009");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student);
+        Invoice invoice = persistInvoice(programEnrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+
+        List<PaymentReceipt> ownReceipts = paymentReceiptService.findOwn(student.getId());
+
+        assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
     }
 }

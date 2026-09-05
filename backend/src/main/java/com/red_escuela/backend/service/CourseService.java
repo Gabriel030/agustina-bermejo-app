@@ -68,7 +68,7 @@ public class CourseService {
         if (request.capacity() != null) {
             course.setCapacity(request.capacity());
         }
-        if (request.price() != null && !request.price().equals(course.getPrice())) {
+        if (request.price() != null && request.price().compareTo(course.getPrice()) != 0) {
             course.setPrice(request.price());
             Person actor = currentPersonService.resolveCurrentPerson();
             priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);

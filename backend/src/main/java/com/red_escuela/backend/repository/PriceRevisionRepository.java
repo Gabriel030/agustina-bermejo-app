@@ -9,9 +9,9 @@ import java.util.Optional;
 
 public interface PriceRevisionRepository extends JpaRepository<PriceRevision, Long> {
 
-    Optional<PriceRevision> findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+    Optional<PriceRevision> findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(
             Long courseId, FeeType feeType, LocalDate effectiveFrom);
 
-    Optional<PriceRevision> findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(
+    Optional<PriceRevision> findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(
             Long programId, FeeType feeType, LocalDate effectiveFrom);
 }

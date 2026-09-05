@@ -52,13 +52,13 @@ public class PriceRevisionService {
     }
 
     public BigDecimal resolveCurrentForCourse(Long courseId, FeeType feeType, LocalDate at) {
-        return priceRevisionRepository.findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(courseId, feeType, at)
+        return priceRevisionRepository.findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(courseId, feeType, at)
                 .map(PriceRevision::getMonthlyAmount)
                 .orElseThrow(() -> new PriceRevisionNotFoundException("No PriceRevision found for course " + courseId + "/" + feeType));
     }
 
     public BigDecimal resolveCurrentForProgram(Long programId, FeeType feeType, LocalDate at) {
-        return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(programId, feeType, at)
+        return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(programId, feeType, at)
                 .map(PriceRevision::getMonthlyAmount)
                 .orElseThrow(() -> new PriceRevisionNotFoundException("No PriceRevision found for program " + programId + "/" + feeType));
     }
@@ -68,10 +68,10 @@ public class PriceRevisionService {
     // resolveCurrentFor*: acá no encontrar nada no es un error, solo significa que esa línea del
     // desglose queda sin descripción (hallazgo de auditoría 2026-09-04, campo faltante).
     public Optional<PriceRevision> findRevisionForCourse(Long courseId, FeeType feeType, LocalDate at) {
-        return priceRevisionRepository.findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(courseId, feeType, at);
+        return priceRevisionRepository.findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(courseId, feeType, at);
     }
 
     public Optional<PriceRevision> findRevisionForProgram(Long programId, FeeType feeType, LocalDate at) {
-        return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDesc(programId, feeType, at);
+        return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(programId, feeType, at);
     }
 }
