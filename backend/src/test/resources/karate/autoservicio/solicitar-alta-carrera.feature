@@ -58,7 +58,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
     And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
     And match response.status == 'PENDING'
@@ -69,7 +69,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
     And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
 

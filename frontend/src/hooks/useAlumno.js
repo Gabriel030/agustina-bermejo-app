@@ -146,7 +146,7 @@ export function useJustificarInasistencia() {
   return useMutation({
     mutationFn: ({ attendanceId, comprobante, reason }) => {
       const formData = new FormData();
-      formData.append('comprobante', comprobante);
+      formData.append('proofFile', comprobante);
       if (reason) formData.append('reason', reason);
       return apiFetch(`/me/attendance/${attendanceId}/justify`, { method: 'POST', body: formData });
     },

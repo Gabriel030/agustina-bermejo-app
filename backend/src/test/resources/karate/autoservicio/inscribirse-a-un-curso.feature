@@ -51,7 +51,7 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = courseId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
     And match response.paymentStatus == 'PENDING_REVIEW'
@@ -110,7 +110,7 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = courseId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
 
@@ -118,6 +118,6 @@ Feature: Caso de uso — Inscribirse a un curso
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field courseId = 999999
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 404

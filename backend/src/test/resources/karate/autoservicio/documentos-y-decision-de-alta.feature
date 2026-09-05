@@ -48,7 +48,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     And header Authorization = 'Bearer ' + alumnoToken
     And multipart field programId = programId
     And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And multipart file receiptFile = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 201
     * def applicationId = response.id

@@ -184,7 +184,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     private MockMultipartFile comprobante() {
-        return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
+        return new MockMultipartFile("receiptFile", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
     }
 
     private RegisterRequest registroValido(String sufijo, Long institutionId) {

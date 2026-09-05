@@ -59,7 +59,7 @@ export function useSolicitarCarrera() {
       const formData = new FormData();
       formData.append('programId', programId);
       formData.append('cohortId', cohortId);
-      formData.append('comprobante', comprobante);
+      formData.append('receiptFile', comprobante);
       return apiFetch('/me/program-enrollment-applications', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-carrera'] }),
@@ -72,7 +72,7 @@ export function useInscribirmeCurso() {
     mutationFn: ({ courseId, comprobante }) => {
       const formData = new FormData();
       formData.append('courseId', courseId);
-      formData.append('comprobante', comprobante);
+      formData.append('receiptFile', comprobante);
       return apiFetch('/me/course-enrollments', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-curso'] }),
