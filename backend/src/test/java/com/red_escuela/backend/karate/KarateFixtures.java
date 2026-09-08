@@ -17,7 +17,7 @@ import com.red_escuela.backend.repository.InstructorRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.identity.service.JwtService;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;

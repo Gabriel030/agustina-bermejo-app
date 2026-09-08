@@ -16,8 +16,9 @@ import com.red_escuela.backend.identity.entity.WithdrawalReason;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
-import com.red_escuela.backend.identity.service.AuthService;
-import com.red_escuela.backend.identity.service.JwtService;
+import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
+import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private AuthService authService;
+    private LoginUseCase loginUseCase;
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
@@ -213,7 +214,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         assertThat(reloaded.getWithdrawalReason()).isEqualTo(WithdrawalReason.ABANDONO);
         assertThat(reloaded.getWithdrawalDetail()).isEqualTo("dejó de asistir");
 
-        assertThatThrownBy(() -> authService.login("40999000", "correcta123", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("40999000", "correcta123", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 

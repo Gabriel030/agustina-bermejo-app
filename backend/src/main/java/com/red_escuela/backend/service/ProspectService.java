@@ -1,5 +1,5 @@
 package com.red_escuela.backend.service;
-import com.red_escuela.backend.identity.service.AuthService;
+import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
@@ -43,7 +43,7 @@ public class ProspectService {
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
-    private final AuthService authService;
+    private final RequestPasswordResetUseCase requestPasswordResetUseCase;
 
     public ProspectService(
             StudentRepository studentRepository,
@@ -52,14 +52,14 @@ public class ProspectService {
             RoleRepository roleRepository,
             PersonFactory personFactory,
             FileStorageService fileStorageService,
-            AuthService authService) {
+            RequestPasswordResetUseCase requestPasswordResetUseCase) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
-        this.authService = authService;
+        this.requestPasswordResetUseCase = requestPasswordResetUseCase;
     }
 
     @Transactional
@@ -137,7 +137,7 @@ public class ProspectService {
             throw new DniAlreadyExistsException(request.dni());
         }
 
-        authService.requestPasswordReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.getEmail());
 
         return student;
     }

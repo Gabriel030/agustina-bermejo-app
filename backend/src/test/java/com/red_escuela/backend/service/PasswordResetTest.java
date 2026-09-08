@@ -1,7 +1,13 @@
 package com.red_escuela.backend.service;
-import com.red_escuela.backend.identity.service.AuthTokens;
+import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 
-import com.red_escuela.backend.identity.service.AuthService;
+import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
+import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
+import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand;
+import com.red_escuela.backend.identity.usecase.auth.ResetPasswordUseCase;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
@@ -43,7 +49,16 @@ import static org.mockito.Mockito.verify;
 class PasswordResetTest extends AbstractIntegrationTest {
 
     @Autowired
-    private AuthService authService;
+    private LoginUseCase loginUseCase;
+
+    @Autowired
+    private RequestPasswordResetUseCase requestPasswordResetUseCase;
+
+    @Autowired
+    private VerifyResetCodeUseCase verifyResetCodeUseCase;
+
+    @Autowired
+    private ResetPasswordUseCase resetPasswordUseCase;
 
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
@@ -90,7 +105,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     void requestPasswordResetConEmailExistenteGeneraUnCodigoValidoYLoManda() {
         Person person = persistPerson("resetuser1", "resetuser1@example.com", "correcta123", AuthProvider.LOCAL);
 
-        authService.requestPasswordReset("resetuser1@example.com");
+        requestPasswordResetUseCase.requestReset("resetuser1@example.com");
 
         List<PasswordResetToken> tokens = passwordResetTokenRepository.findAll();
         assertThat(tokens).hasSize(1);
@@ -103,7 +118,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
 
     @Test
     void requestPasswordResetConEmailInexistenteNoCreaNadaYNoFalla() {
-        authService.requestPasswordReset("no-existe@example.com");
+        requestPasswordResetUseCase.requestReset("no-existe@example.com");
 
         assertThat(passwordResetTokenRepository.findAll()).isEmpty();
     }
@@ -113,12 +128,12 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("resetuser2", "resetuser2@example.com", "vieja123", AuthProvider.LOCAL);
         persistResetToken(person, "123456", LocalDateTime.now().plusMinutes(15), false);
 
-        String exchangeToken = authService.verifyResetCode("resetuser2@example.com", "123456");
-        authService.resetPassword(exchangeToken, "Nueva123");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser2@example.com", "123456"));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
 
-        AuthTokens tokens = authService.login("resetuser2", "Nueva123", "127.0.0.1");
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser2", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
-        assertThatThrownBy(() -> authService.login("resetuser2", "vieja123", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("resetuser2", "vieja123", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
@@ -127,10 +142,10 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("googleuser1", "googleuser1@example.com", null, AuthProvider.GOOGLE);
         persistResetToken(person, "654321", LocalDateTime.now().plusMinutes(15), false);
 
-        String exchangeToken = authService.verifyResetCode("googleuser1@example.com", "654321");
-        authService.resetPassword(exchangeToken, "Nueva123");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("googleuser1@example.com", "654321"));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
 
-        AuthTokens tokens = authService.login("googleuser1", "Nueva123", "127.0.0.1");
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("googleuser1", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
     }
 
@@ -139,7 +154,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("resetuser3", "resetuser3@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "111111", LocalDateTime.now().plusMinutes(15), true);
 
-        assertThatThrownBy(() -> authService.verifyResetCode("resetuser3@example.com", "111111"))
+        assertThatThrownBy(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser3@example.com", "111111")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
@@ -148,7 +163,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("resetuser4", "resetuser4@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "222222", LocalDateTime.now().minusMinutes(1), false);
 
-        assertThatThrownBy(() -> authService.verifyResetCode("resetuser4@example.com", "222222"))
+        assertThatThrownBy(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser4@example.com", "222222")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
@@ -157,7 +172,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("resetuser8", "resetuser8@example.com", "correcta123", AuthProvider.LOCAL);
         PasswordResetToken token = persistResetToken(person, "333333", LocalDateTime.now().plusMinutes(15), false);
 
-        assertThatThrownBy(() -> authService.verifyResetCode("resetuser8@example.com", "000000"))
+        assertThatThrownBy(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser8@example.com", "000000")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
 
         PasswordResetToken reloaded = passwordResetTokenRepository.findById(token.getId()).orElseThrow();
@@ -172,17 +187,17 @@ class PasswordResetTest extends AbstractIntegrationTest {
         persistResetToken(person, "444444", LocalDateTime.now().plusMinutes(15), false);
 
         for (int i = 0; i < 5; i++) {
-            assertThatThrownBy(() -> authService.verifyResetCode("resetuser9@example.com", "000000"))
+            assertThatThrownBy(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser9@example.com", "000000")))
                     .isInstanceOf(InvalidPasswordResetTokenException.class);
         }
 
-        assertThatThrownBy(() -> authService.verifyResetCode("resetuser9@example.com", "444444"))
+        assertThatThrownBy(() -> verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser9@example.com", "444444")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
     @Test
     void resetPasswordConTokenDeIntercambioInvalidoFalla() {
-        assertThatThrownBy(() -> authService.resetPassword("token-que-no-existe", "Nueva123"))
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand("token-que-no-existe", "Nueva123")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
@@ -191,10 +206,10 @@ class PasswordResetTest extends AbstractIntegrationTest {
         Person person = persistPerson("resetuser10", "resetuser10@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "888888", LocalDateTime.now().plusMinutes(15), false);
 
-        String exchangeToken = authService.verifyResetCode("resetuser10@example.com", "888888");
-        authService.resetPassword(exchangeToken, "Nueva123");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser10@example.com", "888888"));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
 
-        assertThatThrownBy(() -> authService.resetPassword(exchangeToken, "otraNueva123"))
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "otraNueva123")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
@@ -204,9 +219,9 @@ class PasswordResetTest extends AbstractIntegrationTest {
     void resetPasswordConContraseñaMuyCortaFalla() {
         Person person = persistPerson("resetuser5", "resetuser5@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "555555", LocalDateTime.now().plusMinutes(15), false);
-        String exchangeToken = authService.verifyResetCode("resetuser5@example.com", "555555");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser5@example.com", "555555"));
 
-        assertThatThrownBy(() -> authService.resetPassword(exchangeToken, "abc12"))
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "abc12")))
                 .isInstanceOf(InvalidPasswordPolicyException.class);
     }
 
@@ -214,9 +229,9 @@ class PasswordResetTest extends AbstractIntegrationTest {
     void resetPasswordConContraseñaSinDigitoFalla() {
         Person person = persistPerson("resetuser6", "resetuser6@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "666666", LocalDateTime.now().plusMinutes(15), false);
-        String exchangeToken = authService.verifyResetCode("resetuser6@example.com", "666666");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser6@example.com", "666666"));
 
-        assertThatThrownBy(() -> authService.resetPassword(exchangeToken, "soloLetras"))
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "soloLetras")))
                 .isInstanceOf(InvalidPasswordPolicyException.class);
     }
 
@@ -224,15 +239,15 @@ class PasswordResetTest extends AbstractIntegrationTest {
     void resetPasswordConContraseñaInvalidaNoConsumeElTokenDeIntercambio() {
         Person person = persistPerson("resetuser7", "resetuser7@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "777777", LocalDateTime.now().plusMinutes(15), false);
-        String exchangeToken = authService.verifyResetCode("resetuser7@example.com", "777777");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser7@example.com", "777777"));
 
-        assertThatThrownBy(() -> authService.resetPassword(exchangeToken, "corta"))
+        assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "corta")))
                 .isInstanceOf(InvalidPasswordPolicyException.class);
 
         // El mismo token de intercambio, con una contraseña que sí cumple la política,
         // tiene que seguir sirviendo.
-        authService.resetPassword(exchangeToken, "Nueva123");
-        AuthTokens tokens = authService.login("resetuser7", "Nueva123", "127.0.0.1");
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser7", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
     }
 }

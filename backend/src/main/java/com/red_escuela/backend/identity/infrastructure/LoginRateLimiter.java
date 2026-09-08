@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.infrastructure;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;

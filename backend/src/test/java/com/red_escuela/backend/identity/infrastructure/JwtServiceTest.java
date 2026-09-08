@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.infrastructure;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;

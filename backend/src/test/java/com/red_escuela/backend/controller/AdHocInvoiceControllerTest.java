@@ -16,7 +16,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.identity.repository.RoleRepository;
-import com.red_escuela.backend.identity.service.JwtService;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

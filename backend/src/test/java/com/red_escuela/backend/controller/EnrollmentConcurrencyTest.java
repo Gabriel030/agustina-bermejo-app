@@ -32,7 +32,7 @@ import com.red_escuela.backend.repository.SubjectRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.repository.SubjectSectionRepository;
 import com.red_escuela.backend.repository.TermRepository;
-import com.red_escuela.backend.identity.service.JwtService;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

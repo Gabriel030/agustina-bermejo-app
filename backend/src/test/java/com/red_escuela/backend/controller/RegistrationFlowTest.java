@@ -153,7 +153,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Autowired
-    private com.red_escuela.backend.identity.service.JwtService jwtService;
+    private com.red_escuela.backend.identity.infrastructure.JwtService jwtService;
 
     private String tokenDePreceptor() {
         Address address = new Address();

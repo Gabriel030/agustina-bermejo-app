@@ -1,37 +1,29 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.usecase.person;
 
 import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
-import com.red_escuela.backend.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * RF-AL-13: cualquier rol autenticado edita sus propios datos. El Person nunca se
- * resuelve desde un id de la URL, sino del "sub" del JWT (JwtAuthenticationFilter
- * lo deja como el name del Authentication) — así el endpoint no puede, ni por error
- * de implementación, afectar a otra persona.
- */
-@Service
-public class PersonProfileService {
+@UseCase
+public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
 
     private final PersonRepository personRepository;
+    private final CurrentPersonService currentPersonService;
 
-    public PersonProfileService(PersonRepository personRepository) {
+    public UpdateOwnProfileService(PersonRepository personRepository, CurrentPersonService currentPersonService) {
         this.personRepository = personRepository;
+        this.currentPersonService = currentPersonService;
     }
 
-    public Person getOwnProfile() {
-        return resolveAuthenticatedPerson();
-    }
-
+    @Override
     @Transactional
     public Person updateOwnProfile(UpdateOwnProfileRequest request) {
-        Person person = resolveAuthenticatedPerson();
+        Person person = currentPersonService.resolveCurrentPerson();
 
         if (request.email() != null) {
             person.setEmail(request.email());
@@ -71,11 +63,5 @@ public class PersonProfileService {
         } catch (DataIntegrityViolationException e) {
             throw new DniAlreadyExistsException(request.dni());
         }
-    }
-
-    private Person resolveAuthenticatedPerson() {
-        Long personId = Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName());
-        return personRepository.findById(personId)
-                .orElseThrow(() -> new PersonNotFoundException(personId));
     }
 }

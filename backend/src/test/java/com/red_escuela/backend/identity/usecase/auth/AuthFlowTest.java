@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
@@ -26,10 +26,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class AuthServiceTest extends AbstractIntegrationTest {
+class AuthFlowTest extends AbstractIntegrationTest {
 
     @Autowired
-    private AuthService authService;
+    private LoginUseCase loginUseCase;
+
+    @Autowired
+    private RefreshTokenUseCase refreshTokenUseCase;
+
+    @Autowired
+    private LogoutUseCase logoutUseCase;
 
     @Autowired
     private LoginAttemptRepository loginAttemptRepository;
@@ -63,7 +69,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     void loginConPasswordCorrectaDevuelveTokensValidosYRegistraAttemptExitoso() {
         persistPerson("docente1", "correcta123", AuthProvider.LOCAL);
 
-        AuthTokens tokens = authService.login("docente1", "correcta123", "127.0.0.1");
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("docente1", "correcta123", "127.0.0.1"));
 
         assertThat(tokens.accessToken()).isNotBlank();
         assertThat(tokens.refreshToken()).isNotBlank();
@@ -79,9 +85,9 @@ class AuthServiceTest extends AbstractIntegrationTest {
     void loginConPasswordIncorrectaLanzaLaMismaExcepcionQueUsuarioInexistente() {
         persistPerson("docente2", "correcta123", AuthProvider.LOCAL);
 
-        assertThatThrownBy(() -> authService.login("docente2", "incorrecta", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("docente2", "incorrecta", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
-        assertThatThrownBy(() -> authService.login("no-existe", "cualquiera", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("no-existe", "cualquiera", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
 
         List<LoginAttempt> attempts = loginAttemptRepository.findAll();
@@ -97,7 +103,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     void loginSobrePersonaGoogleSinPasswordRechaza() {
         persistPerson("googleuser", null, AuthProvider.GOOGLE);
 
-        assertThatThrownBy(() -> authService.login("googleuser", "cualquiera", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("googleuser", "cualquiera", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
@@ -105,7 +111,7 @@ class AuthServiceTest extends AbstractIntegrationTest {
     void loginSobrePersonaGoogleConPasswordSeteadaFunciona() {
         persistPerson("googleuser2", "correcta123", AuthProvider.GOOGLE);
 
-        AuthTokens tokens = authService.login("googleuser2", "correcta123", "127.0.0.1");
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("googleuser2", "correcta123", "127.0.0.1"));
 
         assertThat(tokens.accessToken()).isNotBlank();
     }
@@ -115,34 +121,34 @@ class AuthServiceTest extends AbstractIntegrationTest {
         persistPerson("bloqueable", "correcta123", AuthProvider.LOCAL);
 
         for (int i = 0; i < lockoutMaxAttempts; i++) {
-            assertThatThrownBy(() -> authService.login("bloqueable", "mal", "127.0.0.1"))
+            assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("bloqueable", "mal", "127.0.0.1")))
                     .isInstanceOf(InvalidCredentialsException.class);
         }
 
-        assertThatThrownBy(() -> authService.login("bloqueable", "correcta123", "127.0.0.1"))
+        assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("bloqueable", "correcta123", "127.0.0.1")))
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
     void refreshConTokenValidoRotaYElTokenViejoDejaDeServir() {
         persistPerson("refrescable", "correcta123", AuthProvider.LOCAL);
-        AuthTokens original = authService.login("refrescable", "correcta123", "127.0.0.1");
+        AuthTokens original = loginUseCase.login(new LoginCommand("refrescable", "correcta123", "127.0.0.1"));
 
-        AuthTokens rotated = authService.refresh(original.refreshToken());
+        AuthTokens rotated = refreshTokenUseCase.refresh(original.refreshToken());
 
         assertThat(rotated.refreshToken()).isNotEqualTo(original.refreshToken());
-        assertThatThrownBy(() -> authService.refresh(original.refreshToken()))
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(original.refreshToken()))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 
     @Test
     void logoutInvalidaElRefreshToken() {
         persistPerson("desloguable", "correcta123", AuthProvider.LOCAL);
-        AuthTokens tokens = authService.login("desloguable", "correcta123", "127.0.0.1");
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("desloguable", "correcta123", "127.0.0.1"));
 
-        authService.logout(tokens.refreshToken());
+        logoutUseCase.logout(tokens.refreshToken());
 
-        assertThatThrownBy(() -> authService.refresh(tokens.refreshToken()))
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
 }

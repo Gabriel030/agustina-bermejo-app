@@ -11,12 +11,17 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.usecase.student.GetStudentRecordUseCase;
+import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;
+import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
+import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
+import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
+import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
-import com.red_escuela.backend.identity.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,17 +41,25 @@ import java.util.stream.Stream;
 @RequestMapping("/students")
 public class StudentController {
 
-    private final StudentService studentService;
+    private final ListStudentsUseCase listStudentsUseCase;
+    private final GetStudentRecordUseCase getStudentRecordUseCase;
+    private final WithdrawStudentUseCase withdrawStudentUseCase;
+    private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
     private final InvoiceQueryService invoiceQueryService;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CreditNoteService creditNoteService;
     private final StudentRepository studentRepository;
 
-    public StudentController(StudentService studentService, InvoiceQueryService invoiceQueryService,
-                              CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                              CreditNoteService creditNoteService, StudentRepository studentRepository) {
-        this.studentService = studentService;
+    public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
+                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
+                              InvoiceQueryService invoiceQueryService, CourseEnrollmentRepository courseEnrollmentRepository,
+                              ProgramEnrollmentRepository programEnrollmentRepository, CreditNoteService creditNoteService,
+                              StudentRepository studentRepository) {
+        this.listStudentsUseCase = listStudentsUseCase;
+        this.getStudentRecordUseCase = getStudentRecordUseCase;
+        this.withdrawStudentUseCase = withdrawStudentUseCase;
+        this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
         this.invoiceQueryService = invoiceQueryService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -62,27 +75,27 @@ public class StudentController {
     public List<StudentResponse> list(
             @RequestParam(required = false) StatusType status,
             @RequestParam(required = false) StudentOnboardingStatus onboardingStatus) {
-        return studentService.list(status, onboardingStatus).stream().map(StudentResponse::from).toList();
+        return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus)).stream().map(StudentResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public StudentResponse getRecord(@PathVariable Long id) {
-        return StudentResponse.from(studentService.getRecord(id));
+        return StudentResponse.from(getStudentRecordUseCase.getRecord(id));
     }
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
-        studentService.withdraw(id, request);
+        withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(id, request));
     }
 
     @PostMapping("/{id}/reset-password")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public void resetPassword(@PathVariable Long id) {
-        studentService.resetPassword(id);
+        resetStudentPasswordUseCase.resetPassword(id);
     }
 
     // Versión mínima de esta fase (Fase 6.3): billingStanding + invoices por cada enrollment del

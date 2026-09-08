@@ -2,7 +2,8 @@ package com.red_escuela.backend.identity.controller;
 
 import com.red_escuela.backend.identity.dto.PersonResponse;
 import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
-import com.red_escuela.backend.identity.service.PersonProfileService;
+import com.red_escuela.backend.identity.usecase.person.GetOwnProfileUseCase;
+import com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileUseCase;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,19 +15,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/me")
 public class PersonController {
 
-    private final PersonProfileService personProfileService;
+    private final GetOwnProfileUseCase getOwnProfileUseCase;
+    private final UpdateOwnProfileUseCase updateOwnProfileUseCase;
 
-    public PersonController(PersonProfileService personProfileService) {
-        this.personProfileService = personProfileService;
+    public PersonController(GetOwnProfileUseCase getOwnProfileUseCase, UpdateOwnProfileUseCase updateOwnProfileUseCase) {
+        this.getOwnProfileUseCase = getOwnProfileUseCase;
+        this.updateOwnProfileUseCase = updateOwnProfileUseCase;
     }
 
     @GetMapping
     public PersonResponse getOwnProfile() {
-        return PersonResponse.from(personProfileService.getOwnProfile());
+        return PersonResponse.from(getOwnProfileUseCase.getOwnProfile());
     }
 
     @PutMapping
     public PersonResponse updateOwnProfile(@Valid @RequestBody UpdateOwnProfileRequest request) {
-        return PersonResponse.from(personProfileService.updateOwnProfile(request));
+        return PersonResponse.from(updateOwnProfileUseCase.updateOwnProfile(request));
     }
 }

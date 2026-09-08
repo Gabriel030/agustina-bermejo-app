@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
@@ -30,10 +30,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class StaffServiceTest extends AbstractIntegrationTest {
+class StaffUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
-    private StaffService staffService;
+    private CreateStaffUseCase createStaffUseCase;
+
+    @Autowired
+    private UpdateStaffUseCase updateStaffUseCase;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -76,7 +79,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void administrativoDaDeAltaUnDocenteFunciona() {
         autenticarComoActor("B0000001", "ADMINISTRATIVO");
 
-        Person creado = staffService.createStaff(requestParaRol("B0000011", "DOCENTE"));
+        Person creado = createStaffUseCase.create(requestParaRol("B0000011", "DOCENTE")).person();
 
         assertThat(creado.getId()).isNotNull();
         assertThat(creado.getRoles()).extracting(Role::getName).containsExactly("DOCENTE");
@@ -86,7 +89,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void administrativoIntentaDarDeAltaUnAdministrativoFalla() {
         autenticarComoActor("B0000002", "ADMINISTRATIVO");
 
-        assertThatThrownBy(() -> staffService.createStaff(requestParaRol("B0000012", "ADMINISTRATIVO")))
+        assertThatThrownBy(() -> createStaffUseCase.create(requestParaRol("B0000012", "ADMINISTRATIVO")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
@@ -94,7 +97,7 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void directorDaDeAltaUnAdministrativoFunciona() {
         autenticarComoActor("B0000003", "DIRECTOR");
 
-        Person creado = staffService.createStaff(requestParaRol("B0000013", "ADMINISTRATIVO"));
+        Person creado = createStaffUseCase.create(requestParaRol("B0000013", "ADMINISTRATIVO")).person();
 
         assertThat(creado.getId()).isNotNull();
         assertThat(creado.getRoles()).extracting(Role::getName).containsExactly("ADMINISTRATIVO");
@@ -104,22 +107,22 @@ class StaffServiceTest extends AbstractIntegrationTest {
     void directorIntentaDarDeAltaUnDocenteFalla() {
         autenticarComoActor("B0000004", "DIRECTOR");
 
-        assertThatThrownBy(() -> staffService.createStaff(requestParaRol("B0000014", "DOCENTE")))
+        assertThatThrownBy(() -> createStaffUseCase.create(requestParaRol("B0000014", "DOCENTE")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
     @Test
     void directorNoPuedeEditarUnDocenteYAdministrativoSiPuede() {
         autenticarComoActor("B0000005", "ADMINISTRATIVO");
-        Person docente = staffService.createStaff(requestParaRol("B0000015", "DOCENTE"));
+        Person docente = createStaffUseCase.create(requestParaRol("B0000015", "DOCENTE")).person();
 
         autenticarComoActor("B0000006", "DIRECTOR");
         UpdateStaffRequest edicion = new UpdateStaffRequest("nuevo@example.com", null, null, null, null, null, null, null, null);
-        assertThatThrownBy(() -> staffService.updateStaff(docente.getId(), edicion))
+        assertThatThrownBy(() -> updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
 
         autenticarComoActor("B0000007", "ADMINISTRATIVO");
-        Person editado = staffService.updateStaff(docente.getId(), edicion);
+        Person editado = updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)).person();
         assertThat(editado.getEmail()).isEqualTo("nuevo@example.com");
     }
 }

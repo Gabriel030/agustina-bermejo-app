@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.dto;
 
-import com.red_escuela.backend.identity.service.AuthTokens;
+import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 
 public record AuthResponse(String accessToken, String refreshToken, long expiresIn) {
 
