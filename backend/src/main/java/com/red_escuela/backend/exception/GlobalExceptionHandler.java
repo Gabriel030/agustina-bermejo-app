@@ -52,6 +52,27 @@ import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanExc
 import com.red_escuela.backend.billing.exception.ScholarshipNotFoundException;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
 import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
+import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
+import com.red_escuela.backend.academicstructure.exception.InvalidElectiveRangeException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ProgramSubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
+import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

@@ -1,14 +1,14 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.CreateSectionRequest;
+import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.ExamBoard;
-import com.red_escuela.backend.entity.Holiday;
-import com.red_escuela.backend.entity.Instructor;
-import com.red_escuela.backend.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.Holiday;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.entity.Notification;
 import com.red_escuela.backend.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
@@ -16,10 +16,10 @@ import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Subject;
-import com.red_escuela.backend.entity.SubjectSection;
-import com.red_escuela.backend.entity.SubjectSectionInstructor;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.exception.InvalidEvaluationDateException;
 import com.red_escuela.backend.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.exception.NotOwnSectionException;
@@ -44,6 +44,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
 
 @SpringBootTest
 @ActiveProfiles("test")

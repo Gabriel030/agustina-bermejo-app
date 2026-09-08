@@ -1,9 +1,9 @@
 package com.red_escuela.backend.dto;
 
-import com.red_escuela.backend.entity.CurricularTerm;
-import com.red_escuela.backend.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.entity.SubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;

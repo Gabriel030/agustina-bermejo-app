@@ -6,7 +6,7 @@ import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 
 // Fase 6.6: test 130 (alta manual de CreditNote, razón válida vs. rechazada) y test 106
 // (consumo concurrente de CreditNote no debe fallar espuriamente si el pool alcanza).
@@ -75,7 +76,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     private PersonRepository personRepository;
 
     @Autowired
-    private com.red_escuela.backend.repository.InstitutionRepository institutionRepository;
+    private com.red_escuela.backend.academicstructure.repository.InstitutionRepository institutionRepository;
 
     @Autowired
     private StudentRepository studentRepository;

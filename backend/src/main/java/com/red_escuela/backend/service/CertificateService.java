@@ -6,7 +6,7 @@ import com.red_escuela.backend.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;

@@ -7,9 +7,9 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import com.red_escuela.backend.academicstructure.entity.Course;
 
 // Builds a new Invoice. Idempotent by design: the DB-level unique constraint on
 // (billable, feeType, period) is the real guard against duplicates under concurrency — this
@@ -164,7 +165,7 @@ public class InvoiceFactory {
     }
 
     @Transactional
-    public Invoice crearAdHocParaCurso(com.red_escuela.backend.entity.Course course, FeeType feeType, YearMonth period, LocalDate dueDate) {
+    public Invoice crearAdHocParaCurso(Course course, FeeType feeType, YearMonth period, LocalDate dueDate) {
         var price = priceRevisionService.resolveCurrentForCourse(course.getId(), feeType, dueDate);
         return saveAdHoc(feeType, period, dueDate, price);
     }

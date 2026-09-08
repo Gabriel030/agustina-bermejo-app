@@ -6,13 +6,13 @@ import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
-import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
@@ -20,20 +20,20 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.repository.AddressRepository;
-import com.red_escuela.backend.repository.InstitutionRepository;
+import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.repository.TermRepository;
+import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +49,9 @@ import java.time.YearMonth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
+import com.red_escuela.backend.entity.CourseEnrollment;
 
 /**
  * Fase 6.1, decisión 2026-09-03 (cohortes): tests 16, 136-139. NO @Transactional a propósito:
@@ -489,7 +492,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         // Un curso corto, independiente, para el mismo alumno.
         Term courseTerm = persistTerm(2026);
-        com.red_escuela.backend.entity.Course course = new com.red_escuela.backend.entity.Course();
+        Course course = new Course();
         course.setName("Curso simultáneo " + System.nanoTime());
         course.setTerm(courseTerm);
         course.setCapacity(20);
@@ -506,7 +509,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         courseRevision.setCreatedBy(director);
         priceRevisionRepository.save(courseRevision);
 
-        com.red_escuela.backend.entity.CourseEnrollment courseEnrollment = new com.red_escuela.backend.entity.CourseEnrollment();
+        CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
         courseEnrollment.setCourse(course);
         courseEnrollment.setStatus(com.red_escuela.backend.entity.EnrollmentStatus.ENROLLED);
@@ -535,7 +538,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Autowired
-    private com.red_escuela.backend.repository.CourseRepository courseRepository;
+    private com.red_escuela.backend.academicstructure.repository.CourseRepository courseRepository;
 
     @Autowired
     private com.red_escuela.backend.repository.CourseEnrollmentRepository courseEnrollmentRepository;

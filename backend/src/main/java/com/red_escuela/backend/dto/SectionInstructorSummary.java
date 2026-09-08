@@ -1,6 +1,6 @@
 package com.red_escuela.backend.dto;
 
-import com.red_escuela.backend.entity.SubjectSectionInstructor;
+import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 
 public record SectionInstructorSummary(String name, String role) {
     public static SectionInstructorSummary from(SubjectSectionInstructor instructor) {

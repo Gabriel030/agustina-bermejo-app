@@ -4,9 +4,9 @@ import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.billing.service.PaymentPlanOptionBuilder;
-import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.exception.ProgramNotFoundException;
-import com.red_escuela.backend.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

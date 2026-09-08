@@ -17,12 +17,12 @@ import com.red_escuela.backend.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.exception.NotOwnSectionException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.repository.ExamBoardRepository;
 import com.red_escuela.backend.repository.GradeItemRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

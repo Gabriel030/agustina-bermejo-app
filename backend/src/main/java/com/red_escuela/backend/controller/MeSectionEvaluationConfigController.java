@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.dto.UpdateSectionEvaluationConfigRequest;
-import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.service.CurrentInstructorService;

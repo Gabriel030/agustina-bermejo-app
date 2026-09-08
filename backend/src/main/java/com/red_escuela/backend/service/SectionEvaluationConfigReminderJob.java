@@ -1,13 +1,13 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.entity.InstructorRole;
+import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.repository.SectionEvaluationConfigRepository;
-import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

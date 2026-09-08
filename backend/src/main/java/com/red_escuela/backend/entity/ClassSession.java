@@ -8,6 +8,9 @@ import org.hibernate.annotations.Check;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 
 /*
  * "Clase" puntual de una comisión, en una fecha. Existe para colgar temario/observaciones/

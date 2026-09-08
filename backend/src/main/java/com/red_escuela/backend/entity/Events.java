@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import com.red_escuela.backend.academicstructure.entity.Course;
 
 @Getter
 @Setter

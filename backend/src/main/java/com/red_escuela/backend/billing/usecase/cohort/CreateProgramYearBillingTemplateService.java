@@ -1,15 +1,15 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
-import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.exception.ProgramNotFoundException;
-import com.red_escuela.backend.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.repository.ProgramRepository;
-import com.red_escuela.backend.repository.TermRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
