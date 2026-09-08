@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
-import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import org.springframework.stereotype.Service;

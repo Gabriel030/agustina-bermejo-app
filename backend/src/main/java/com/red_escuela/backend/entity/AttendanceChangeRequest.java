@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 
 /*
  * Solicitud del Docente para cambiar el estado de una asistencia ya cargada (ej. Ausente ->

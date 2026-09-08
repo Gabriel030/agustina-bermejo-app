@@ -99,6 +99,46 @@ Antes de agregar una operación nueva a `billing`, mirá si encaja en un
 subdominio existente de `usecase/` o si necesita uno nuevo — no la agregues
 como método suelto a un colaborador de `service/`.
 
+## Paquete por feature: `academicstructure`
+
+Institución/Programa/Curso/Materia/Comisión/Período (`Institution`, `Program`,
+`ProgramSubject`, `Course`, `CourseSubject`, `CourseSubjectSection`,
+`SubjectSection`, `ElectiveGroup`, `Term`, `Holiday`, `Instructor`, etc.)
+viven en `com.red_escuela.backend.academicstructure.*`.
+
+**Acá la mayoría de los services quedan cohesivos, sin Use Case** —
+`CourseService`, `CourseSubjectService`, `CourseSectionService`,
+`ProgramService`, `ProgramSubjectService`, `SubjectService`,
+`SubjectSectionService`, `ElectiveGroupService`. Cada uno mezcla CRUD del
+recurso con una operación relacionada del mismo concepto (ej.
+`CourseSectionService` = CRUD de comisión + asignar/quitar docente de esa
+misma comisión; `ProgramSubjectService` = CRUD de materia de plan +
+correlatividades de esa materia) — no es un "cajón de sastre" de
+capacidades no relacionadas, así que no se fuerza la descomposición (mismo
+criterio que `InvoiceFactory`/`PriceRevisionService` en billing). Los tres
+controllers que son solo lectura pegan directo al repository, sin service
+intermedio: `InstitutionController`, `InstructorController`,
+`HolidayController`.
+
+**Única excepción real, migrada al patrón Use Case**:
+`academicstructure/usecase/term/` — el viejo `TermController`/`TermService`
+sí mezclaba dos capacidades no relacionadas: CRUD de período (crear/editar/
+activar/desactivar/listar/detalle) y gestión de la ventana de inscripción
+(`abrirInscripcion`/`cerrarInscripcion`/`quitarOverride`, sobre
+`TermEnrollmentOverride`) — un actor y motivo distinto del CRUD del período
+en sí. Se descompuso en 9 use cases (`CreateTermUseCase`,
+`UpdateTermUseCase`, `ListTermsUseCase`, `GetTermUseCase`,
+`DeactivateTermUseCase`, `ActivateTermUseCase`, `OpenTermEnrollmentUseCase`,
+`CloseTermEnrollmentUseCase`, `ClearTermEnrollmentOverrideUseCase`). El
+`findOrThrow` compartido por 7 de los 9 quedó extraído en un colaborador
+`TermFinder` (`academicstructure/service/`), sin `@UseCase` — no es en sí
+una operación que un actor pide hacer.
+
+`StudyProgram`/`StudyProgramCourse` no se movieron: no tienen repository,
+service ni controller — parecen legacy sin uso, quedaron en
+`com.red_escuela.backend.entity` a la espera de una decisión explícita
+sobre si se eliminan.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

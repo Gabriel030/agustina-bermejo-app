@@ -6,6 +6,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.academicstructure.entity.Term;
 
 /*
  * Mesa de examen final, organizada por Subject/CourseSubject + Term (no por comisión):

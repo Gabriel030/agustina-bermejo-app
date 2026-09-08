@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.dto.GradeItemResponse;
-import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.service.CurrentInstructorService;
 import com.red_escuela.backend.service.GradeItemService;
 import jakarta.validation.Valid;

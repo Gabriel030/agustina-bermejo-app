@@ -14,7 +14,7 @@ import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.Subject;
 
 // Aggregate Root — Invoice is the root; InvoiceAdjustment (this phase) and PaymentAllocation
 // (Fase 6.2) are children only ever modified through Invoice's own methods (applyAdjustment,

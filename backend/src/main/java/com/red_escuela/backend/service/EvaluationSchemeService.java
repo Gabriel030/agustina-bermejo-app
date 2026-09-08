@@ -4,9 +4,9 @@ import com.red_escuela.backend.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.entity.EvaluationScheme;
 import com.red_escuela.backend.exception.EvaluationSchemeInUseException;
 import com.red_escuela.backend.exception.EvaluationSchemeNotFoundException;
-import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.repository.EvaluationSchemeRepository;
-import com.red_escuela.backend.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;

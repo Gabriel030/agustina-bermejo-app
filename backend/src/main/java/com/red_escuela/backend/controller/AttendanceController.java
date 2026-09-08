@@ -7,7 +7,7 @@ import com.red_escuela.backend.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.dto.ClassSessionResponse;
 import com.red_escuela.backend.dto.JustificarAsistenciaRequest;
 import com.red_escuela.backend.dto.RosterEntryResponse;
-import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.service.AttendanceExportService;
 import com.red_escuela.backend.service.AttendanceService;
 import com.red_escuela.backend.service.CurrentInstructorService;

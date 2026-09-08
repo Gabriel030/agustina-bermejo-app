@@ -5,7 +5,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.dto.CreateProspectRequest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Role;

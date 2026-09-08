@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
-import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
@@ -12,7 +12,7 @@ import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.exception.RoleNotFoundException;
-import com.red_escuela.backend.repository.InstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;

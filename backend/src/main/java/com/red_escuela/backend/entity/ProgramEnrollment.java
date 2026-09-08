@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.academicstructure.entity.Program;
 
 @Getter
 @Setter

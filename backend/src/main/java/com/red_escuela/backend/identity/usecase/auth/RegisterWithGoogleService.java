@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
-import com.red_escuela.backend.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -11,7 +11,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.identity.service.PersonFactory;
-import com.red_escuela.backend.repository.InstitutionRepository;
+import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;

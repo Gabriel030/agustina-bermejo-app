@@ -1,11 +1,11 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.notification.CourseWaitlistExpiredEvent;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.repository.CourseRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;

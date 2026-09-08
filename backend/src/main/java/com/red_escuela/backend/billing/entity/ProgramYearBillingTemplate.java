@@ -8,8 +8,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Term;
 
 // One template per program per Term: how many monthly installments that year's cohorts have.
 // Admission/cursada dates live in ProgramCohort, not here (2026-09-03 decision).

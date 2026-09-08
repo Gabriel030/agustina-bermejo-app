@@ -7,9 +7,9 @@ import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Program;
 
 @Getter
 @Setter

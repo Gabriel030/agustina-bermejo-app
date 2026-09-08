@@ -1,7 +1,7 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.TeachingSectionResponse;
-import com.red_escuela.backend.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.service.CurrentInstructorService;
 import com.red_escuela.backend.service.TeachingSectionService;
 import org.springframework.security.access.prepost.PreAuthorize;

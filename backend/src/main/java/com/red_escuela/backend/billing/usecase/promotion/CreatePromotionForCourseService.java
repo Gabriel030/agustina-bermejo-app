@@ -4,9 +4,9 @@ import com.red_escuela.backend.billing.dto.CreatePromotionRequest;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.repository.PromotionRepository;
 import com.red_escuela.backend.billing.service.PromotionBuilder;
-import com.red_escuela.backend.entity.Course;
-import com.red_escuela.backend.exception.CourseNotFoundException;
-import com.red_escuela.backend.repository.CourseRepository;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

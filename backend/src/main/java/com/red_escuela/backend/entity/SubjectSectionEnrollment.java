@@ -8,6 +8,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 
 /*
  * Inscripción de un alumno a una comisión (SubjectSection) de una materia de carrera,

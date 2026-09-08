@@ -1,7 +1,0 @@
-package com.red_escuela.backend.exception;
-
-public class SectionNotFoundException extends RuntimeException {
-    public SectionNotFoundException(Long id) {
-        super("Comisión no encontrada: " + id);
-    }
-}
