@@ -100,6 +100,9 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     @Autowired
     private com.red_escuela.backend.billing.repository.ScholarshipRepository scholarshipRepository;
 
+    @Autowired
+    private com.red_escuela.backend.billing.repository.CreditNoteRepository creditNoteRepository;
+
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -349,6 +352,34 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         assertThat(reloaded.getInstallments())
                 .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.CANCELLED)
                 .hasSize(2);
+        assertThat(reloaded.getInstallments())
+                .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.APPLIED)
+                .hasSize(1);
+    }
+
+    // Fase 6.6: una beca otorgada DESPUÉS de que la cuota del período corriente ya se generó y
+    // pagó no puede recuperar ese descuento vía un ajuste sobre esa Invoice (ya está PAID) — en
+    // vez de eso genera una CreditNote por la diferencia y consume igual la primera installment.
+    @Test
+    void otorgarUnaBecaConLaCuotaDelMesYaPagaGeneraUnaNotaDeCreditoRetroactiva() {
+        Person director = persistPerson("director.scholarship9." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        CourseEnrollment enrollment = persistCourseEnrollment("88000009", course);
+        seleccionarPlanMensual(enrollment, director);
+
+        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        Invoice cuotaDelMes = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0);
+        cuotaDelMes.setStatus(InvoiceStatus.PAID);
+        invoiceRepository.save(cuotaDelMes);
+
+        var scholarship = scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
+                new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20% tardía", 3));
+
+        var creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
+        assertThat(creditNote.getReasonType()).isEqualTo(com.red_escuela.backend.billing.entity.CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP);
+        assertThat(creditNote.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(2000));
+
+        var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
         assertThat(reloaded.getInstallments())
                 .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.APPLIED)
                 .hasSize(1);

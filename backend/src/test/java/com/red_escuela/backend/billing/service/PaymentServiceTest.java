@@ -18,9 +18,13 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.billing.entity.CreditNote;
+import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
+import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
+import com.red_escuela.backend.billing.repository.CreditNoteRepository;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.CourseRepository;
@@ -60,6 +64,12 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+
+    @Autowired
+    private CreditNoteRepository creditNoteRepository;
+
+    @Autowired
+    private CreditNoteService creditNoteService;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -293,5 +303,43 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), intruder.getPerson()))
                 .isInstanceOf(InvoiceNotFoundException.class);
+    }
+
+    @Test
+    void creditBalancePaymentConsumesTheCreditNoteAndStillPaysTheInvoice() {
+        Person admin = persistPerson("admin.pago11." + System.nanoTime());
+        Student student = persistStudent("96000011");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(1000), InvoiceStatus.PENDING);
+        creditNoteService.createFor(student, BigDecimal.valueOf(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
+
+        Payment payment = paymentService.registerPayment(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(1000))),
+                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
+
+        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        // getRemainingAmount() necesita la colección lazy de applications, que no se puede
+        // inicializar fuera de una sesión activa (test sin @Transactional a propósito, mismo
+        // motivo que paymentThatCoversFullBalanceMarksInvoiceAsPaid más arriba) — el status
+        // PARTIALLY_CONSUMED ya prueba que se consumió parcialmente.
+        CreditNote reloaded = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).get(0);
+        assertThat(reloaded.getStatus().name()).isEqualTo("PARTIALLY_CONSUMED");
+        assertThat(payment.getAllocations()).hasSize(1);
+    }
+
+    @Test
+    void creditBalancePaymentWithoutEnoughCreditIsRejectedAndNothingChanges() {
+        Person admin = persistPerson("admin.pago12." + System.nanoTime());
+        Student student = persistStudent("96000012");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(1000), InvoiceStatus.PENDING);
+        creditNoteService.createFor(student, BigDecimal.valueOf(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
+
+        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(1000))),
+                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin))
+                .isInstanceOf(InsufficientCreditBalanceException.class);
+
+        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
     }
 }

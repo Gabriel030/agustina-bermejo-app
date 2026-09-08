@@ -32,12 +32,14 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final CurrentStudentService currentStudentService;
+    private final CreditNoteService creditNoteService;
 
     public PaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
-                           CurrentStudentService currentStudentService) {
+                           CurrentStudentService currentStudentService, CreditNoteService creditNoteService) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.currentStudentService = currentStudentService;
+        this.creditNoteService = creditNoteService;
     }
 
     // registeredBy es explícito, no se resuelve acá vía CurrentPersonService — este método lo
@@ -109,6 +111,12 @@ public class PaymentService {
         payment.setExternalReference(request.externalReference());
         payment.setCardInstallments(request.cardInstallments());
         payment.setNotes(request.notes());
+        // Se persiste ANTES del loop (no solo al final, como antes de CREDIT_BALANCE): una
+        // CreditApplication referencia este Payment vía FK, y Hibernate rechaza cascadear una
+        // asociación hacia una entidad todavía transient (sin id) apenas la próxima query fuerza
+        // un auto-flush — CreditNoteService.consumeForInvoice ya dispara una dentro de este mismo
+        // loop.
+        payment = paymentRepository.save(payment);
 
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
@@ -125,9 +133,16 @@ public class PaymentService {
             // (uk_payment_allocation) porque ambos lados tienen cascade=ALL sobre el mismo objeto.
             PaymentAllocation allocation = invoice.registerPayment(amountApplied, payment);
             payment.getAllocations().add(allocation);
+            // CREDIT_BALANCE no aporta plata real: la Invoice se salda igual (arriba), pero acá
+            // además se consume el saldo de CreditNote del dueño de esa Invoice puntual — no se
+            // asume que todas las invoices de un mismo Payment sean del mismo alumno (podría ser
+            // una carrera y un curso, cada uno con su propio saldo).
+            if (request.method() == PaymentMethod.CREDIT_BALANCE) {
+                creditNoteService.consumeForInvoice(resolveOwnerStudentId(invoice), amountApplied, invoice, payment);
+            }
         }
 
-        return paymentRepository.save(payment);
+        return payment;
     }
 
     // Endpoint compartido (spec: "ADMINISTRATIVO|autoservicio alumno (solo sobre invoices
@@ -140,12 +155,15 @@ public class PaymentService {
     // NotOwnEnrollmentException, reservada para chequeos enrollment-scoped por id de la URL).
     private void validateOwnershipIfStudent(Invoice invoice) {
         currentStudentService.findCurrentStudent().ifPresent(student -> {
-            Long ownerId = invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
-                    : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
-                    : null;
-            if (!student.getId().equals(ownerId)) {
+            if (!student.getId().equals(resolveOwnerStudentId(invoice))) {
                 throw new InvoiceNotFoundException(invoice.getId());
             }
         });
+    }
+
+    private Long resolveOwnerStudentId(Invoice invoice) {
+        return invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
+                : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
+                : null;
     }
 }

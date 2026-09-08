@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
@@ -57,6 +58,7 @@ public class CourseEnrollmentService {
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
+    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
 
     public CourseEnrollmentService(
             CourseEnrollmentRepository courseEnrollmentRepository,
@@ -66,7 +68,7 @@ public class CourseEnrollmentService {
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService) {
+            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -76,6 +78,7 @@ public class CourseEnrollmentService {
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
+        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
     }
 
     // Épica 7: variante para MeEnrollmentController (autoservicio). No se agrega el
@@ -248,6 +251,7 @@ public class CourseEnrollmentService {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
+        enrollmentWithdrawalCreditService.handleCourseEnrollmentWithdrawal(enrollment);
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
+import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.dto.StudentResponse;
@@ -10,6 +12,7 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.service.StudentService;
 import jakarta.validation.Valid;
@@ -35,13 +38,16 @@ public class StudentController {
     private final InvoiceQueryService invoiceQueryService;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CreditNoteService creditNoteService;
 
     public StudentController(StudentService studentService, InvoiceQueryService invoiceQueryService,
-                              CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository) {
+                              CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
+                              CreditNoteService creditNoteService) {
         this.studentService = studentService;
         this.invoiceQueryService = invoiceQueryService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
+        this.creditNoteService = creditNoteService;
     }
 
     // Matriz de permisos (sección 3): Director tiene R sobre el legajo de un alumno, a
@@ -92,5 +98,20 @@ public class StudentController {
     private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
         return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
                 invoices.stream().map(InvoiceResponse::from).toList());
+    }
+
+    @GetMapping("/{id}/credit-notes")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public List<CreditNoteResponse> creditNotes(@PathVariable Long id) {
+        return creditNoteService.listForStudent(id).stream().map(CreditNoteResponse::from).toList();
+    }
+
+    // Solo ADMINISTRATIVE_CORRECTION/OTHER (CreditNoteService.createManual lo valida) — las otras
+    // dos razones (EARLY_WITHDRAWAL_UPFRONT_UNUSED/RETROACTIVE_SCHOLARSHIP) las genera el sistema.
+    @PostMapping("/{id}/credit-notes")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public CreditNoteResponse createCreditNote(@PathVariable Long id, @Valid @RequestBody CreateCreditNoteRequest request) {
+        return CreditNoteResponse.from(creditNoteService.createManual(id, request));
     }
 }

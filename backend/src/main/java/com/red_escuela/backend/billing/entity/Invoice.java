@@ -151,6 +151,23 @@ public class Invoice {
         applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
     }
 
+    // Fase 6.6: baja voluntaria de un enrollment cancela sus Invoice PENDING (generadas pero
+    // no vencidas) — EnrollmentWithdrawalCreditService es el único caller, nunca un setStatus
+    // directo desde afuera, misma invariante de Aggregate Root que registerPayment/markOverdue.
+    // Guarda de estado (auditoría 2026-09-07): PAID/WAIVED representan plata ya resuelta —
+    // cancelarlas "borraría" ese resultado en vez de reflejarlo — y CANCELLED ya lo está. El único
+    // caller real ya filtra por PENDING antes de llamar, pero el propio Aggregate Root no debería
+    // depender de que todo caller futuro filtre bien aguas arriba.
+    public void cancel(Person cancelledBy, String reason) {
+        if (status == InvoiceStatus.PAID || status == InvoiceStatus.WAIVED || status == InvoiceStatus.CANCELLED) {
+            throw new IllegalStateException("Invoice " + id + " en estado " + status + " no puede cancelarse");
+        }
+        status = InvoiceStatus.CANCELLED;
+        this.cancelledBy = cancelledBy;
+        this.cancelledReason = reason;
+        this.cancelledAt = LocalDateTime.now();
+    }
+
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
         applyAdjustment(type, value, reason, appliedBy, null);
     }
