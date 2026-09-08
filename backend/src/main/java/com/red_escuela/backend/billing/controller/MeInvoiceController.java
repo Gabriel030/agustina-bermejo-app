@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.BillingStandingResponse;
+import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.service.CurrentStudentService;
+import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.service.PaymentReceiptService;
 import org.springframework.http.HttpStatus;
@@ -34,15 +36,23 @@ public class MeInvoiceController {
     private final PaymentReceiptService paymentReceiptService;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CreditNoteService creditNoteService;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 PaymentReceiptService paymentReceiptService, CourseEnrollmentRepository courseEnrollmentRepository,
-                                ProgramEnrollmentRepository programEnrollmentRepository) {
+                                ProgramEnrollmentRepository programEnrollmentRepository, CreditNoteService creditNoteService) {
         this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
         this.paymentReceiptService = paymentReceiptService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
+        this.creditNoteService = creditNoteService;
+    }
+
+    @GetMapping("/credit-notes")
+    public List<CreditNoteResponse> myCreditNotes() {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return creditNoteService.listForStudent(studentId).stream().map(CreditNoteResponse::from).toList();
     }
 
     @PostMapping("/invoices/{id}/payment-receipts")

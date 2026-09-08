@@ -10,7 +10,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException;
+import com.red_escuela.backend.billing.exception.CreditNoteNotFoundException;
 import com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException;
+import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
+import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -125,6 +128,8 @@ public class GlobalExceptionHandler {
             ProgramYearBillingTemplateExceedsTermSpanException.class,
             ScholarshipExceedsCohortSpanException.class,
             DuplicatePromotionBenefitFeeTypeException.class,
+            InvalidCreditNoteReasonException.class,
+            InsufficientCreditBalanceException.class,
             // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
             // combination by throwing IllegalArgumentException from its own constructors — mapped
             // here rather than wrapped in a domain exception, since the Value Object itself is the
@@ -174,7 +179,8 @@ public class GlobalExceptionHandler {
             PaymentReceiptNotFoundException.class,
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
-            PromotionNotFoundException.class
+            PromotionNotFoundException.class,
+            CreditNoteNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {

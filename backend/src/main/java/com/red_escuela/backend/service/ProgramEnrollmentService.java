@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
@@ -65,6 +66,7 @@ public class ProgramEnrollmentService {
     private final AttendanceService attendanceService;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
+    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
 
     public ProgramEnrollmentService(
             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -76,7 +78,7 @@ public class ProgramEnrollmentService {
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             AttendanceService attendanceService, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService) {
+            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -88,6 +90,7 @@ public class ProgramEnrollmentService {
         this.attendanceService = attendanceService;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
+        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
     }
 
     @Transactional
@@ -150,6 +153,7 @@ public class ProgramEnrollmentService {
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
+        enrollmentWithdrawalCreditService.handleProgramEnrollmentWithdrawal(enrollment);
     }
 
     public ProgramEnrollment verDetalle(Long id) {
