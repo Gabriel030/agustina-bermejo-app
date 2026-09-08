@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
@@ -8,6 +9,7 @@ import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
@@ -175,6 +177,42 @@ public class InvoiceFactory {
         invoice.setBaseAmount(price);
         invoice.setStatus(InvoiceStatus.PENDING);
         return invoiceRepository.saveAndFlush(invoice);
+    }
+
+    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) sobre un enrollment
+    // que YA existe — a diferencia de crearAdHocPara*(Curso|Carrera) de arriba (Épica 7), que son
+    // para el caso de pago pre-matrícula sin ningún enrollment todavía. No resuelve PriceRevision:
+    // el Administrativo define el monto a mano, sin plantilla de precios que consultar.
+    @Transactional
+    public Invoice createAdHocFeeForCourseEnrollment(CourseEnrollment courseEnrollment, FeeType feeType, java.math.BigDecimal amount,
+                                                       LocalDate dueDate, String description, Subject subject, ExamBoardRegistration examBoardRegistration) {
+        Invoice invoice = new Invoice();
+        invoice.setCourseEnrollment(courseEnrollment);
+        invoice.setFeeType(feeType);
+        invoice.setPeriod(YearMonth.from(dueDate));
+        invoice.setDueDate(dueDate);
+        invoice.setBaseAmount(amount);
+        invoice.setDescription(description);
+        invoice.setSubject(subject);
+        invoice.setExamBoardRegistration(examBoardRegistration);
+        invoice.setStatus(InvoiceStatus.PENDING);
+        return invoiceRepository.save(invoice);
+    }
+
+    @Transactional
+    public Invoice createAdHocFeeForProgramEnrollment(ProgramEnrollment programEnrollment, FeeType feeType, java.math.BigDecimal amount,
+                                                        LocalDate dueDate, String description, Subject subject, ExamBoardRegistration examBoardRegistration) {
+        Invoice invoice = new Invoice();
+        invoice.setProgramEnrollment(programEnrollment);
+        invoice.setFeeType(feeType);
+        invoice.setPeriod(YearMonth.from(dueDate));
+        invoice.setDueDate(dueDate);
+        invoice.setBaseAmount(amount);
+        invoice.setDescription(description);
+        invoice.setSubject(subject);
+        invoice.setExamBoardRegistration(examBoardRegistration);
+        invoice.setStatus(InvoiceStatus.PENDING);
+        return invoiceRepository.save(invoice);
     }
 
     private Invoice saveIdempotently(Invoice invoice) {

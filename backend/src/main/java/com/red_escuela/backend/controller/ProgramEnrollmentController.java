@@ -1,6 +1,9 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest;
+import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.service.AdHocInvoiceService;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
@@ -22,9 +25,11 @@ import java.util.List;
 public class ProgramEnrollmentController {
 
     private final ProgramEnrollmentService programEnrollmentService;
+    private final AdHocInvoiceService adHocInvoiceService;
 
-    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService) {
+    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, AdHocInvoiceService adHocInvoiceService) {
         this.programEnrollmentService = programEnrollmentService;
+        this.adHocInvoiceService = adHocInvoiceService;
     }
 
     @PostMapping("/students/{id}/program-enrollments")
@@ -71,5 +76,14 @@ public class ProgramEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public ProgramEnrollmentResponse avanzarAñoLectivo(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
         return ProgramEnrollmentResponse.from(programEnrollmentService.avanzarAñoLectivo(id, request.templateId()));
+    }
+
+    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) — no pasa por
+    // InvoiceGenerationService ni por ninguna plantilla anual.
+    @PostMapping("/program-enrollments/{id}/invoices/ad-hoc")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request) {
+        return InvoiceResponse.from(adHocInvoiceService.createForProgramEnrollment(id, request));
     }
 }
