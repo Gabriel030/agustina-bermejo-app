@@ -8,6 +8,8 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 
 /*
  * Asistencia de un alumno a una clase puntual (por fecha), atada a la fila de inscripción

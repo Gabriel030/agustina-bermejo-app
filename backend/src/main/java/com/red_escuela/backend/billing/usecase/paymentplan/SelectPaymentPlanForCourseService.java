@@ -10,10 +10,10 @@ import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository
 import com.red_escuela.backend.billing.service.PaymentPlanOptionFinder;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionGuard;
 import com.red_escuela.backend.billing.service.PromotionRedeemer;
-import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.service.RecurringFeeWindowService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;

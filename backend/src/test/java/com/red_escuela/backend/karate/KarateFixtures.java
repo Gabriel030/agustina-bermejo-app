@@ -22,6 +22,7 @@ import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 
 /**
  * Puente Java para setup que no tiene sentido hacer vía HTTP desde un .feature de Karate
@@ -207,8 +208,8 @@ public class KarateFixtures {
     // ProgramEnrollment concreto, usado por graduacion-y-excepciones.feature para simular
     // "tiene una cuota impaga" sin armar todo el plan de facturación.
     public static Long crearInvoicePendiente(Long programEnrollmentId, String dueDate) {
-        com.red_escuela.backend.repository.ProgramEnrollmentRepository programEnrollmentRepository =
-                context().getBean(com.red_escuela.backend.repository.ProgramEnrollmentRepository.class);
+        com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository programEnrollmentRepository =
+                context().getBean(com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository.class);
         com.red_escuela.backend.billing.repository.InvoiceRepository invoiceRepository =
                 context().getBean(com.red_escuela.backend.billing.repository.InvoiceRepository.class);
 

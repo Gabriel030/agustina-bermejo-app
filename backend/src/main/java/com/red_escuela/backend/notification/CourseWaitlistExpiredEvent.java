@@ -1,6 +1,6 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.NotificationType;
 
 import java.util.List;

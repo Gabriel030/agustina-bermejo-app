@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.dto.CreateInvoiceAdjustmentRequest;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.entity.BillableEnrollment;
+import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentCommand;

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 // Registro de auditoría de emisión (ajuste de producto sobre la spec original: sí se quiere
 // historial). El PDF en sí sigue sin persistirse — se genera on-demand — solo se guarda quién

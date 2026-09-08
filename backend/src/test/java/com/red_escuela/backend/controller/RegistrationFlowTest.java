@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
-import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
+import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -14,16 +14,16 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
-import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentApplicationRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -48,6 +48,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 
 /**
  * Épica 7: registro independiente + solicitud de alta en carrera + inscripción
@@ -335,7 +336,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         Student student = persisted.getStudent();
         assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(),
-                java.util.List.of(com.red_escuela.backend.entity.ProgramEnrollmentStatus.ENROLLED)))
+                java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
                 .isNotEmpty();
         assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
         // Aprobar la solicitud aprueba también el comprobante en la misma transacción
@@ -382,7 +383,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         Student student = persisted.getStudent();
         assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(),
-                java.util.List.of(com.red_escuela.backend.entity.ProgramEnrollmentStatus.ENROLLED)))
+                java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
                 .isEmpty();
         assertThat(student.getPerson().getRoles()).isEmpty();
     }
