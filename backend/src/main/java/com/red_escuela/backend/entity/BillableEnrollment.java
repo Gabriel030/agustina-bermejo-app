@@ -1,6 +1,7 @@
 package com.red_escuela.backend.entity;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 
 // Interfaz de dominio pura (no un patrón GoF/DDD con nombre propio): resuelve tratar
 // CourseEnrollment/ProgramEnrollment (y Subscription desde Fase 6.10) de forma polimórfica en

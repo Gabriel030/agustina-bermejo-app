@@ -5,16 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollmentApplication;
-import com.red_escuela.backend.entity.FeeType;
-import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.exception.StudentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.repository.CourseRepository;
-import com.red_escuela.backend.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +24,8 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
+import com.red_escuela.backend.billing.service.InvoiceFactory;
+import com.red_escuela.backend.billing.service.PaymentReceiptService;
 
 /**
  * Solicitud de inscripción a un curso con pago de la primera cuota (Épica 7 Fase 3).

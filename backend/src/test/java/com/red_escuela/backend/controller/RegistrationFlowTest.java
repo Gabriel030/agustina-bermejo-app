@@ -5,17 +5,17 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.RegisterRequest;
 import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.CohortIntake;
+import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.entity.Course;
-import com.red_escuela.backend.entity.FeeType;
+import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.PriceRevision;
+import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
@@ -341,7 +341,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         // (ver ProgramEnrollmentApplicationService.aprobar) — el Payment real ya existe.
         assertThat(persisted.getPaymentReceipt()).isNotNull();
         assertThat(persisted.getPaymentReceipt().getStatus())
-                .isEqualTo(com.red_escuela.backend.entity.PaymentReceiptStatus.APPROVED);
+                .isEqualTo(com.red_escuela.backend.billing.entity.PaymentReceiptStatus.APPROVED);
     }
 
     @Test

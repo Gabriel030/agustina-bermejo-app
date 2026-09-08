@@ -26,6 +26,23 @@ un factory estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.fr
   regla fina vive en el **service**, no en la anotación — ver
   `StaffService` (mapa `actorRole -> rolesQuePuedeCrear`).
 
+## Paquete por feature: `billing`
+
+El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
+`Promotion`, `CollectionsPolicy`, `ProgramCohort`, `ProgramYearBillingTemplate`,
+etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
+`com.red_escuela.backend.billing.{entity,service,controller,repository,dto,exception}`,
+no en los paquetes por capa de la raíz. Es la única excepción a "todo en un
+paquete por capa" — se separó porque es ~25% de todo el backend y bastante
+autocontenido. **Código nuevo de facturación va ahí, no en `entity/`/`service/`
+de la raíz.** El acoplamiento es en ambas direcciones y es esperado, no un
+smell: `billing.*` importa `Person`/`Course`/`Program`/`CourseEnrollment`/
+`ProgramEnrollment` (siguen en la raíz), y `CourseEnrollmentService`/
+`ProgramEnrollmentService` (raíz) importan `ScholarshipService`/
+`StudentDebtResolutionService` (billing) para el flujo de baja. Si otro
+dominio (ej. evaluación y asistencia) llega a crecer igual de grande y
+autocontenido, este es el precedente a seguir — no antes de eso.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

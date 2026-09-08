@@ -5,35 +5,35 @@ import com.red_escuela.backend.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
 import com.red_escuela.backend.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
-import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramNotFoundException;
-import com.red_escuela.backend.exception.ProgramYearBillingTemplateMismatchException;
-import com.red_escuela.backend.exception.ProgramYearBillingTemplateNotFoundException;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.exception.StudentNotActiveException;
 import com.red_escuela.backend.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.StudentNotFoundException;
-import com.red_escuela.backend.repository.ProgramCohortRepository;
+import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
 import com.red_escuela.backend.repository.ProgramSubjectRepository;
-import com.red_escuela.backend.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.repository.StudentRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;
@@ -42,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.service.ScholarshipService;
+import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
 /**
  * RF-PR-02: alta/baja de matriculación a Program (carrera), exclusiva de Preceptor/
@@ -257,7 +259,11 @@ public class ProgramEnrollmentService {
     // CourseEnrollmentService.validarPuedeMatricular. Desde Fase 6.1 la ventana vive en
     // ProgramCohort (LocalDate, no LocalDateTime), no en Program — una carrera tiene 2 cohortes
     // por año, cada una con la suya.
-    void validarVentanaDeAdmision(ProgramCohort cohort) {
+    // Visibilidad pública (antes package-private): ProgramCohortBillingTest quedó en el paquete
+    // billing.service tras la reorganización por feature, y necesita ejercitar esta validación
+    // en aislamiento (mismo motivo por el que ya era package-private, solo que ahora el test que
+    // la necesita vive en otro paquete Java).
+    public void validarVentanaDeAdmision(ProgramCohort cohort) {
         if (cohort.getAdmissionStart().isAfter(cohort.getAdmissionEnd())) {
             throw new InvalidWindowConfigurationException(
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "

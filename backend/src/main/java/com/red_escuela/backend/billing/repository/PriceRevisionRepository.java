@@ -1,0 +1,17 @@
+package com.red_escuela.backend.billing.repository;
+
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.PriceRevision;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+public interface PriceRevisionRepository extends JpaRepository<PriceRevision, Long> {
+
+    Optional<PriceRevision> findTopByCourseIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(
+            Long courseId, FeeType feeType, LocalDate effectiveFrom);
+
+    Optional<PriceRevision> findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(
+            Long programId, FeeType feeType, LocalDate effectiveFrom);
+}

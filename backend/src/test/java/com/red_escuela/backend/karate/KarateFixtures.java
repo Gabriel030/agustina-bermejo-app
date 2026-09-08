@@ -209,20 +209,20 @@ public class KarateFixtures {
     public static Long crearInvoicePendiente(Long programEnrollmentId, String dueDate) {
         com.red_escuela.backend.repository.ProgramEnrollmentRepository programEnrollmentRepository =
                 context().getBean(com.red_escuela.backend.repository.ProgramEnrollmentRepository.class);
-        com.red_escuela.backend.repository.InvoiceRepository invoiceRepository =
-                context().getBean(com.red_escuela.backend.repository.InvoiceRepository.class);
+        com.red_escuela.backend.billing.repository.InvoiceRepository invoiceRepository =
+                context().getBean(com.red_escuela.backend.billing.repository.InvoiceRepository.class);
 
         var enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
 
-        com.red_escuela.backend.entity.Invoice invoice = new com.red_escuela.backend.entity.Invoice();
+        com.red_escuela.backend.billing.entity.Invoice invoice = new com.red_escuela.backend.billing.entity.Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(com.red_escuela.backend.entity.FeeType.RECURRING_FEE);
+        invoice.setFeeType(com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE);
         java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
         invoice.setPeriod(java.time.YearMonth.from(due));
         invoice.setDueDate(due);
         invoice.setBaseAmount(java.math.BigDecimal.valueOf(5000));
-        invoice.setStatus(com.red_escuela.backend.entity.InvoiceStatus.PENDING);
+        invoice.setStatus(com.red_escuela.backend.billing.entity.InvoiceStatus.PENDING);
         return invoiceRepository.save(invoice).getId();
     }
 }

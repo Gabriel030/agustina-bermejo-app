@@ -2,7 +2,7 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.CreateProgramRequest;
 import com.red_escuela.backend.dto.UpdateProgramRequest;
-import com.red_escuela.backend.entity.FeeType;
+import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.StatusType;
@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.red_escuela.backend.billing.service.PriceRevisionService;
 
 @Service
 public class ProgramService {

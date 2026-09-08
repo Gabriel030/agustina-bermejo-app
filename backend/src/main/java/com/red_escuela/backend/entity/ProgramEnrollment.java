@@ -8,6 +8,11 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 
 @Getter
 @Setter

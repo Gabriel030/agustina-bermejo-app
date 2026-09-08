@@ -8,6 +8,33 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException;
+import com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException;
+import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
+import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
+import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
+import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
+import com.red_escuela.backend.billing.exception.NoActivePaymentPlanException;
+import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
+import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchException;
+import com.red_escuela.backend.billing.exception.PaymentPlanOptionNotFoundException;
+import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
+import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
+import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
+import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.billing.exception.ProgramEnrollmentMissingCohortException;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
+import com.red_escuela.backend.billing.exception.PromotionAlreadyClosedException;
+import com.red_escuela.backend.billing.exception.PromotionNotFoundException;
+import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException;
+import com.red_escuela.backend.billing.exception.ScholarshipNotFoundException;
+import com.red_escuela.backend.billing.exception.StudentInDebtException;
+import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

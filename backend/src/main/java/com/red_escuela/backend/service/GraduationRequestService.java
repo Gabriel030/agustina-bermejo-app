@@ -9,7 +9,7 @@ import com.red_escuela.backend.exception.GraduationRequestAlreadyActiveException
 import com.red_escuela.backend.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.exception.NotEligibleForGraduationException;
-import com.red_escuela.backend.exception.PendingDebtException;
+import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.notification.GraduationRequestApprovedEvent;
 import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 
 /**
  * RF-AL-15/RF-DI-05: flujo de egreso con estados explícitos (decisión 8) — Alumno solicita,

@@ -27,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 
 /**
  * RF-AL-12: constancias en PDF sin entidad propia (decisión 6) — se generan 100% on-demand a

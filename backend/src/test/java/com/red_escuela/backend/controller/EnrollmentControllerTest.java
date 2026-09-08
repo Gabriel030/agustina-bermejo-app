@@ -17,7 +17,7 @@ import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
@@ -147,7 +147,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Person systemActor = persistSystemActor();
         Term term = persistTerm(null, null);
 
-        com.red_escuela.backend.entity.ProgramYearBillingTemplate template = new com.red_escuela.backend.entity.ProgramYearBillingTemplate();
+        com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate template = new com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
         template.setRecurringFeeInvoicesCount(10);
@@ -156,7 +156,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
-        cohort.setIntake(com.red_escuela.backend.entity.CohortIntake.FIRST);
+        cohort.setIntake(com.red_escuela.backend.billing.entity.CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(java.time.LocalDate.now());
