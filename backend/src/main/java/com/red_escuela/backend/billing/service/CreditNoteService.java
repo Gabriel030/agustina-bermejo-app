@@ -39,6 +39,9 @@ public class CreditNoteService {
 
     @Transactional(readOnly = true)
     public List<CreditNote> listForStudent(Long studentId) {
+        if (!studentRepository.existsById(studentId)) {
+            throw new StudentNotFoundException(studentId);
+        }
         return creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
     }
 

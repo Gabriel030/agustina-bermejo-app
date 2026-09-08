@@ -10,8 +10,10 @@ import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.exception.StudentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.repository.StudentRepository;
 import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.service.StudentService;
@@ -39,15 +41,17 @@ public class StudentController {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CreditNoteService creditNoteService;
+    private final StudentRepository studentRepository;
 
     public StudentController(StudentService studentService, InvoiceQueryService invoiceQueryService,
                               CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                              CreditNoteService creditNoteService) {
+                              CreditNoteService creditNoteService, StudentRepository studentRepository) {
         this.studentService = studentService;
         this.invoiceQueryService = invoiceQueryService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.creditNoteService = creditNoteService;
+        this.studentRepository = studentRepository;
     }
 
     // Matriz de permisos (sección 3): Director tiene R sobre el legajo de un alumno, a
@@ -87,6 +91,9 @@ public class StudentController {
     @GetMapping("/{id}/billing-overview")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<EnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
+        if (!studentRepository.existsById(id)) {
+            throw new StudentNotFoundException(id);
+        }
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(id).stream()
                         .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.porCurso(enrollment.getId()))),

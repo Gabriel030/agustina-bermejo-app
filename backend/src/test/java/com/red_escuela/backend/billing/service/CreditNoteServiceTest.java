@@ -106,6 +106,14 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         return studentRepository.save(student);
     }
 
+    // Hallazgo de QA manual (2026-09-08): listForStudent devolvía [] para un student_id
+    // inexistente en vez de 404 — inconsistente con createManual, que sí valida.
+    @Test
+    void listForStudentConStudentInexistenteLanza404() {
+        assertThatThrownBy(() -> creditNoteService.listForStudent(999999L))
+                .isInstanceOf(com.red_escuela.backend.exception.StudentNotFoundException.class);
+    }
+
     @Test
     void createManualConRazonAdministrativaEsAceptada() {
         Person admin = persistPerson("admin.credit1." + System.nanoTime());

@@ -152,6 +152,17 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Fase 6.6 (auditoría de QA): billing-overview consultaba los enrollment repositories
+    // directo, sin validar que el id de la URL fuera un Student real — un id inexistente daba
+    // 200 con lista vacía en vez de 404, mismo gap que tenía credit-notes (ver CreditNoteServiceTest).
+    @Test
+    void billingOverviewConStudentInexistenteDevuelve404() throws Exception {
+        String token = tokenWithRole("administrativo.billing1", "ADMINISTRATIVO");
+
+        mockMvc.perform(get("/students/{id}/billing-overview", 999999L).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
     @Test
     void listarSinFiltroTraeSoloConfirmados() throws Exception {
         Institution institution = persistInstitution();
