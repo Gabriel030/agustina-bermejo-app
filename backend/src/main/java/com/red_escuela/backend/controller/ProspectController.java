@@ -3,7 +3,7 @@ package com.red_escuela.backend.controller;
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.dto.CreateProspectRequest;
 import com.red_escuela.backend.dto.StudentDocumentResponse;
-import com.red_escuela.backend.dto.StudentResponse;
+import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.entity.DocumentType;
 import com.red_escuela.backend.service.ProspectService;
 import jakarta.validation.Valid;

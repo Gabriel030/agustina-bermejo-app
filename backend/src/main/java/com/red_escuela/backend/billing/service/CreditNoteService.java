@@ -1,4 +1,7 @@
 package com.red_escuela.backend.billing.service;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 
 import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.billing.entity.CreditApplication;
@@ -11,11 +14,8 @@ import com.red_escuela.backend.billing.exception.CreditNoteNotFoundException;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.billing.repository.CreditNoteRepository;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.exception.StudentNotFoundException;
-import com.red_escuela.backend.repository.StudentRepository;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -2,13 +2,13 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest;
 import com.red_escuela.backend.billing.entity.BillingPeriod;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.repository.BillingPeriodRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class BillingPeriodService {

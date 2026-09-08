@@ -1,22 +1,19 @@
 package com.red_escuela.backend.billing.service;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
-import com.red_escuela.backend.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
-import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
 
 // Bean separado de PaymentReceiptService a propósito (corrección 2026-09-04, auditoría): el
 // upload real del archivo (I/O potencialmente lento) no debe correr con el lock pesimista de la

@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.ReinstateEnrollmentRequest;
 import com.red_escuela.backend.entity.ReinstatementDecision;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

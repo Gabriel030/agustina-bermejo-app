@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.entity.Notification;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.repository.NotificationRepository;
 import org.springframework.stereotype.Component;
 

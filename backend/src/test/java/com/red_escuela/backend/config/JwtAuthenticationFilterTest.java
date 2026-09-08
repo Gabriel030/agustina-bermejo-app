@@ -1,8 +1,8 @@
 package com.red_escuela.backend.config;
 
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Role;
-import com.red_escuela.backend.service.JwtService;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Role;
+import com.red_escuela.backend.identity.service.JwtService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;

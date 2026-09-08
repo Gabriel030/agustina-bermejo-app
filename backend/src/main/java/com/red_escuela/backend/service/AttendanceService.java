@@ -1,4 +1,5 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 
 import com.red_escuela.backend.dto.AttendanceHistoryResponse;
 import com.red_escuela.backend.dto.AttendanceRiskResponse;
@@ -12,7 +13,7 @@ import com.red_escuela.backend.entity.CourseSubjectSection;
 import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.Instructor;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.exception.AttendanceNotFoundException;
@@ -29,7 +30,6 @@ import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentReposito
 import com.red_escuela.backend.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.repository.InstructorRepository;
-import com.red_escuela.backend.repository.PersonRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.repository.SubjectSectionRepository;

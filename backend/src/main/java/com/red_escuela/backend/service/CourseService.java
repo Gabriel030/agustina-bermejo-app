@@ -1,10 +1,11 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.dto.CreateCourseRequest;
 import com.red_escuela.backend.dto.UpdateCourseRequest;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.exception.CourseNotFoundException;

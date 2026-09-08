@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
@@ -25,8 +25,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
-import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
 import com.red_escuela.backend.service.CourseEnrollmentService;
 import com.red_escuela.backend.service.FileStorageService;
 

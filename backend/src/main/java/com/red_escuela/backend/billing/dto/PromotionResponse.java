@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.Promotion;
 
 import java.time.LocalDate;

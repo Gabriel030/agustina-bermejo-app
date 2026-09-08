@@ -8,7 +8,7 @@ import com.red_escuela.backend.entity.ExamBoardInstructor;
 import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.entity.ExamBoardStatus;
 import com.red_escuela.backend.entity.Instructor;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.Subject;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.exception.CourseSubjectNotFoundException;

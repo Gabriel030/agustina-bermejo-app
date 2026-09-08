@@ -1,4 +1,17 @@
 package com.red_escuela.backend.exception;
+import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
+import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
+import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
+import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
+import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
+import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.exception.InvalidStaffRoleException;
+import com.red_escuela.backend.identity.exception.StudentNotActiveException;
+import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.identity.exception.TooManyRequestsException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;

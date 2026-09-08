@@ -8,9 +8,7 @@ import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
-import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 // Decisión 2026-09-03: solo el Director otorga becas/descuentos/condonaciones — Administrativo
 // ya no puede cargar un DISCOUNT/WAIVE_DEBT directo, solo registrar pagos (ver PaymentController)

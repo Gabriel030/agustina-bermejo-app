@@ -1,12 +1,13 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.entity.CertificateIssuance;
 import com.red_escuela.backend.entity.CertificateType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.ProgramSubject;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CertificateIssuanceRepository;

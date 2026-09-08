@@ -1,4 +1,11 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.exception.StudentNotActiveException;
+import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.service.PersonRoleGranter;
 
 import com.red_escuela.backend.dto.CourseProgressResponse;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
@@ -9,8 +16,6 @@ import com.red_escuela.backend.entity.CourseSubjectSection;
 import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.exception.AmbiguousSectionException;
@@ -20,15 +25,11 @@ import com.red_escuela.backend.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.IncompleteSectionSetupException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.exception.SectionNotFoundException;
-import com.red_escuela.backend.exception.StudentNotActiveException;
-import com.red_escuela.backend.exception.StudentNotConfirmedException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.CourseRepository;
 import com.red_escuela.backend.repository.CourseSubjectRepository;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
-import com.red_escuela.backend.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,7 +94,7 @@ public class CourseEnrollmentService {
     @Transactional
     public CourseEnrollment matricularComoAutoservicio(Long studentId, CreateCourseEnrollmentRequest request) {
         CourseEnrollment enrollment = matricular(studentId, request);
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(enrollment.getStudent().getPerson());
+        personRoleGranter.grantStudentRoleIfMissing(enrollment.getStudent().getPerson());
         return enrollment;
     }
 

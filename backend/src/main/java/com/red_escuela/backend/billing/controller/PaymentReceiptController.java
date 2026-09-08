@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.billing.service.PaymentReceiptService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;

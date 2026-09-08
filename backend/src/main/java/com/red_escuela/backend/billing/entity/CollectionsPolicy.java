@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 
 // Value Object con vigencia temporal — mismo idioma que PriceRevision y PaymentPlanSelection
 // (Fase 6.1): resolverVigente busca la de effectiveFrom más reciente que ya rige hoy.

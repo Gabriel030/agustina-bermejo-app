@@ -1,6 +1,6 @@
 package com.red_escuela.backend.config;
+import com.red_escuela.backend.identity.service.JwtService;
 
-import com.red_escuela.backend.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;

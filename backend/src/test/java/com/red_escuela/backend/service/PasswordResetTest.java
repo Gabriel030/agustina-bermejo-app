@@ -1,15 +1,18 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.AuthTokens;
+
+import com.red_escuela.backend.identity.service.AuthService;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.AuthProvider;
-import com.red_escuela.backend.entity.PasswordResetToken;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.AuthProvider;
+import com.red_escuela.backend.identity.entity.PasswordResetToken;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.exception.InvalidCredentialsException;
-import com.red_escuela.backend.exception.InvalidPasswordPolicyException;
-import com.red_escuela.backend.exception.InvalidPasswordResetTokenException;
-import com.red_escuela.backend.repository.PasswordResetTokenRepository;
+import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
+import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
+import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.util.TokenHashUtil;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;

@@ -4,7 +4,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.Notification;
 import com.red_escuela.backend.entity.NotificationType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.exception.NotOwnNotificationException;
 import jakarta.persistence.EntityManager;

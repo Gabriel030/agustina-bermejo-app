@@ -2,10 +2,10 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.dto.SectionEvaluationConfigResponse;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.service.SectionEvaluationConfigService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;

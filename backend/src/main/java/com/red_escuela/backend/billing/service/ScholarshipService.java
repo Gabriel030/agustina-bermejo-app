@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.service;
+import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.Student;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
@@ -20,7 +20,7 @@ import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.service.RecurringFeeWindowService;
 
 import java.math.BigDecimal;

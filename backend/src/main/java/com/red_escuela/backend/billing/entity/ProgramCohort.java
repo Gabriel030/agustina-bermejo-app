@@ -6,7 +6,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 
 // Every program opens exactly 2 cohorts per year (institutional policy) — each one
 // administratively independent, with its own admission window and its own real cursada start.

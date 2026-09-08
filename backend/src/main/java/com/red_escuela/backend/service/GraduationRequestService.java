@@ -1,8 +1,9 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.entity.GraduationRequest;
 import com.red_escuela.backend.entity.GraduationRequestStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.exception.GraduationRequestAlreadyActiveException;
