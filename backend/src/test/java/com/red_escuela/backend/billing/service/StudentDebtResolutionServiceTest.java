@@ -54,7 +54,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     private ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
-    private PaymentService paymentService;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -185,7 +185,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        paymentService.registerPayment(new RegisterPaymentRequest(
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
@@ -202,7 +202,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        paymentService.registerPayment(new RegisterPaymentRequest(
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(2000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
@@ -286,7 +286,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(StudentInDebtException.class);
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
-        paymentService.registerPayment(new RegisterPaymentRequest(
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 

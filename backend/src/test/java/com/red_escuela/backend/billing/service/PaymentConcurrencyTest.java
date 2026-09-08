@@ -60,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PaymentConcurrencyTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PaymentService paymentService;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -146,7 +146,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
                                              CountDownLatch listos, CountDownLatch arranca) throws Exception {
         listos.countDown();
         arranca.await();
-        return paymentService.registerPayment(new RegisterPaymentRequest(
+        return registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoiceId, monto)),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
     }

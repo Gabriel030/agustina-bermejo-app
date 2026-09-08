@@ -1,28 +1,27 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.usecase.billingperiod;
 
 import com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest;
 import com.red_escuela.backend.billing.entity.BillingPeriod;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.repository.BillingPeriodRepository;
-import org.springframework.stereotype.Service;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
-
-@Service
-public class BillingPeriodService {
+@UseCase
+public class CreateBillingPeriodService implements CreateBillingPeriodUseCase {
 
     private final BillingPeriodRepository billingPeriodRepository;
     private final CurrentPersonService currentPersonService;
 
-    public BillingPeriodService(BillingPeriodRepository billingPeriodRepository, CurrentPersonService currentPersonService) {
+    public CreateBillingPeriodService(BillingPeriodRepository billingPeriodRepository, CurrentPersonService currentPersonService) {
         this.billingPeriodRepository = billingPeriodRepository;
         this.currentPersonService = currentPersonService;
     }
 
+    @Override
     @Transactional
-    public BillingPeriod crear(CreateBillingPeriodRequest request) {
+    public BillingPeriod create(CreateBillingPeriodRequest request) {
         Person actor = currentPersonService.resolveCurrentPerson();
         BillingPeriod billingPeriod = new BillingPeriod();
         billingPeriod.setStartDay(request.startDay());
@@ -30,9 +29,5 @@ public class BillingPeriodService {
         billingPeriod.setEffectiveFrom(request.effectiveFrom());
         billingPeriod.setCreatedBy(actor);
         return billingPeriodRepository.save(billingPeriod);
-    }
-
-    public BillingPeriod current() {
-        return billingPeriodRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(LocalDate.now()).orElse(null);
     }
 }

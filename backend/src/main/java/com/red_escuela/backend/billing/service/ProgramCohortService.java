@@ -1,49 +1,19 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class ProgramCohortService {
 
     private final ProgramCohortRepository programCohortRepository;
-    private final ProgramYearBillingTemplateService templateService;
-    private final CurrentPersonService currentPersonService;
 
-    public ProgramCohortService(ProgramCohortRepository programCohortRepository, ProgramYearBillingTemplateService templateService,
-                                 CurrentPersonService currentPersonService) {
+    public ProgramCohortService(ProgramCohortRepository programCohortRepository) {
         this.programCohortRepository = programCohortRepository;
-        this.templateService = templateService;
-        this.currentPersonService = currentPersonService;
-    }
-
-    @Transactional
-    public ProgramCohort crear(Long templateId, CreateProgramCohortRequest request) {
-        ProgramYearBillingTemplate template = templateService.findOrThrow(templateId);
-        Person actor = currentPersonService.resolveCurrentPerson();
-
-        ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
-        cohort.setIntake(request.intake());
-        cohort.setAdmissionStart(request.admissionStart());
-        cohort.setAdmissionEnd(request.admissionEnd());
-        cohort.setCursadaStart(request.cursadaStart());
-        cohort.setCreatedBy(actor);
-        return programCohortRepository.save(cohort);
-    }
-
-    public List<ProgramCohort> listarPorPlantilla(Long templateId) {
-        return programCohortRepository.findByTemplateId(templateId);
     }
 
     public ProgramCohort findOrThrow(Long id) {

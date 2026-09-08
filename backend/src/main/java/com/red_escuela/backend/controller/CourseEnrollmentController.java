@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
-import com.red_escuela.backend.billing.service.AdHocInvoiceService;
+import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase;
 import com.red_escuela.backend.dto.CourseEnrollmentResponse;
 import com.red_escuela.backend.dto.CourseProgressResponse;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
@@ -23,11 +23,11 @@ import java.util.List;
 public class CourseEnrollmentController {
 
     private final CourseEnrollmentService courseEnrollmentService;
-    private final AdHocInvoiceService adHocInvoiceService;
+    private final CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService, AdHocInvoiceService adHocInvoiceService) {
+    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService, CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase) {
         this.courseEnrollmentService = courseEnrollmentService;
-        this.adHocInvoiceService = adHocInvoiceService;
+        this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
 
     @PostMapping("/students/{id}/course-enrollments")
@@ -68,6 +68,6 @@ public class CourseEnrollmentController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request) {
-        return InvoiceResponse.from(adHocInvoiceService.createForCourseEnrollment(id, request));
+        return InvoiceResponse.from(createAdHocInvoiceUseCase.create(id, request));
     }
 }

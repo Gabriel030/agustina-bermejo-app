@@ -1,26 +1,26 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.usecase.collectionspolicy;
 
 import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
-import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
-import org.springframework.stereotype.Service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 
-@Service
-public class CollectionsPolicyService {
+@UseCase
+public class CreateCollectionsPolicyService implements CreateCollectionsPolicyUseCase {
 
     private final CollectionsPolicyRepository collectionsPolicyRepository;
     private final CurrentPersonService currentPersonService;
 
-    public CollectionsPolicyService(CollectionsPolicyRepository collectionsPolicyRepository, CurrentPersonService currentPersonService) {
+    public CreateCollectionsPolicyService(CollectionsPolicyRepository collectionsPolicyRepository, CurrentPersonService currentPersonService) {
         this.collectionsPolicyRepository = collectionsPolicyRepository;
         this.currentPersonService = currentPersonService;
     }
 
+    @Override
     @Transactional
     public CollectionsPolicy create(CreateCollectionsPolicyRequest request) {
         CollectionsPolicy policy = new CollectionsPolicy();
@@ -33,10 +33,5 @@ public class CollectionsPolicyService {
         policy.setEffectiveFrom(request.effectiveFrom() != null ? request.effectiveFrom() : LocalDate.now());
         policy.setCreatedBy(currentPersonService.resolveCurrentPerson());
         return collectionsPolicyRepository.save(policy);
-    }
-
-    public CollectionsPolicy findCurrent() {
-        return collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(LocalDate.now())
-                .orElseThrow(NoActiveCollectionsPolicyException::new);
     }
 }

@@ -34,7 +34,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -79,7 +82,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, null, null);
 
-        assertThatThrownBy(() -> paymentPlanOptionService.crearParaCarrera(program.getId(), request))
+        assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
     }
 
@@ -90,7 +93,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
 
-        assertThatThrownBy(() -> paymentPlanOptionService.crearParaCarrera(program.getId(), request))
+        assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
     }
 
@@ -103,7 +106,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, start, end);
 
-        var option = paymentPlanOptionService.crearParaCarrera(program.getId(), request);
+        var option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
         // Corrección 2026-09-04 (auditoría de calidad de tests): el único assert previo miraba
         // isUpfrontWindowEnabled() (un booleano ajeno a las fechas) — un bug que dejara
@@ -121,7 +124,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
 
-        var option = paymentPlanOptionService.crearParaCarrera(program.getId(), request);
+        var option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
         assertThat(option.getCadence()).isEqualTo(PaymentPlanCadence.MONTHLY);
     }

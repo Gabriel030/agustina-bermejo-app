@@ -61,7 +61,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PaymentReceiptService paymentReceiptService;
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.ListPendingPaymentReceiptsUseCase listPendingPaymentReceiptsUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -186,7 +198,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
@@ -197,7 +209,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         // filtrar por su propio Invoice termina aprobando este comprobante ajeno en vez del suyo
         // (hallazgo real de auditoría 2026-09-08: rompía RegistrationFlowTest bajo cierto orden
         // de ejecución de Surefire, nunca bajo @Transactional/rollback).
-        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
+        rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
     @Test
@@ -206,14 +218,14 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile()))
+        assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(PaymentReceiptAlreadyPendingException.class);
 
         // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
         // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
-        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
+        rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
     @Test
@@ -222,9 +234,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000003");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt approved = paymentReceiptService.aprobar(receipt.getId(), admin);
+        PaymentReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
 
         assertThat(approved.getStatus()).isEqualTo(PaymentReceiptStatus.APPROVED);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
@@ -236,19 +248,19 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000004");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt rejected = paymentReceiptService.reject(receipt.getId(), "Comprobante ilegible", admin);
+        PaymentReceipt rejected = rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin);
         assertThat(rejected.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
         assertThat(rejected.getRejectionReason()).isEqualTo("Comprobante ilegible");
 
         // Sin límite de reintentos: la Invoice vuelve a estar disponible.
-        PaymentReceipt retry = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt retry = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         assertThat(retry.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
 
         // Limpieza: sin esto el retry queda PENDING_REVIEW colgado en la cola global (ver
         // comentario de uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
-        paymentReceiptService.reject(retry.getId(), "Limpieza de test", admin);
+        rejectPaymentReceiptUseCase.reject(retry.getId(), "Limpieza de test", admin);
     }
 
     @Test
@@ -258,7 +270,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(owner);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), intruder.getId(), receiptFile()))
+        assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), intruder.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotFoundException.class);
     }
 
@@ -281,7 +293,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000008");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         CountDownLatch listos = new CountDownLatch(2);
         CountDownLatch arranca = new CountDownLatch(1);
@@ -290,12 +302,12 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Callable<PaymentReceipt> intentoAprobar = () -> {
             listos.countDown();
             arranca.await();
-            return paymentReceiptService.aprobar(receipt.getId(), admin1);
+            return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1);
         };
         Callable<PaymentReceipt> intentoRechazar = () -> {
             listos.countDown();
             arranca.await();
-            return paymentReceiptService.reject(receipt.getId(), "Comprobante ilegible", admin2);
+            return rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin2);
         };
 
         Future<PaymentReceipt> resultadoAprobar = executor.submit(intentoAprobar);
@@ -339,7 +351,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PAID);
 
-        assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile()))
+        assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotPayableException.class);
     }
 
@@ -349,14 +361,14 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000009");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student);
         Invoice invoice = persistInvoice(programEnrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        List<PaymentReceipt> ownReceipts = paymentReceiptService.findOwn(student.getId());
+        List<PaymentReceipt> ownReceipts = findOwnPaymentReceiptsUseCase.findOwn(student.getId());
 
         assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
 
         // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
         // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
-        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
+        rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 }

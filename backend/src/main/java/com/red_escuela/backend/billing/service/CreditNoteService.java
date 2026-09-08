@@ -1,9 +1,5 @@
 package com.red_escuela.backend.billing.service;
-import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.StudentRepository;
 
-import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.billing.entity.CreditApplication;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
@@ -12,10 +8,9 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.exception.CreditNoteNotFoundException;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
-import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.billing.repository.CreditNoteRepository;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.entity.Student;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,26 +18,17 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+// Colaborador interno del pool de crédito de un alumno — las operaciones que un actor pide
+// directo (listar, alta manual) viven en usecase/creditnote/, esta clase es lo que varios de
+// esos use cases (y RegisterPaymentService, ScholarshipService, EnrollmentWithdrawalCreditService)
+// comparten para crear/consumir CreditNote sin duplicar la lógica de saldo/lock.
 @Service
 public class CreditNoteService {
 
     private final CreditNoteRepository creditNoteRepository;
-    private final StudentRepository studentRepository;
-    private final CurrentPersonService currentPersonService;
 
-    public CreditNoteService(CreditNoteRepository creditNoteRepository, StudentRepository studentRepository,
-                              CurrentPersonService currentPersonService) {
+    public CreditNoteService(CreditNoteRepository creditNoteRepository) {
         this.creditNoteRepository = creditNoteRepository;
-        this.studentRepository = studentRepository;
-        this.currentPersonService = currentPersonService;
-    }
-
-    @Transactional(readOnly = true)
-    public List<CreditNote> listForStudent(Long studentId) {
-        if (!studentRepository.existsById(studentId)) {
-            throw new StudentNotFoundException(studentId);
-        }
-        return creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
     }
 
     // Se calcula, nunca se guarda como contador mutable (mismo criterio que
@@ -52,15 +38,6 @@ public class CreditNoteService {
         return creditNoteRepository.findByStudentIdAndStatusNotOrderByCreatedAtAsc(studentId, CreditNoteStatus.CONSUMED).stream()
                 .map(CreditNote::getRemainingAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    @Transactional
-    public CreditNote createManual(Long studentId, CreateCreditNoteRequest request) {
-        if (request.reasonType() != CreditNoteReasonType.ADMINISTRATIVE_CORRECTION && request.reasonType() != CreditNoteReasonType.OTHER) {
-            throw new InvalidCreditNoteReasonException(request.reasonType());
-        }
-        Student student = studentRepository.findById(studentId).orElseThrow(() -> new StudentNotFoundException(studentId));
-        return createFor(student, request.amount(), request.reasonType(), request.reason(), currentPersonService.resolveCurrentPerson());
     }
 
     @Transactional
@@ -82,13 +59,9 @@ public class CreditNoteService {
     // CreditNote SIN lock (para un pre-chequeo rápido de saldo total) y recién después pedía cada
     // una lockeada por id — pero como la entidad ya quedaba en el persistence context de ESTA
     // transacción desde la primera lectura, Hibernate devolvía esa misma instancia cacheada al
-    // "relockearla" en vez de refrescar su estado tras esperar el lock (el SELECT ... FOR UPDATE
-    // sí bloquea la fila en la base, pero no pisa los campos ya cargados en memoria). Un
-    // consumidor concurrente legítimo terminaba viendo el saldo PRE-commit del otro y fallaba con
-    // ObjectOptimisticLockingFailureException al hacer flush, en vez de tener éxito con el saldo
-    // real post-commit. Fix: solo se piden ids acá (sin hidratar la entidad completa) — la
-    // PRIMERA vez que una CreditNote entra al persistence context de esta transacción es siempre
-    // vía findByIdForUpdate, ya bajo lock.
+    // "relockearla" en vez de refrescar su estado tras esperar el lock. Fix: solo se piden ids
+    // acá (sin hidratar la entidad completa) — la PRIMERA vez que una CreditNote entra al
+    // persistence context de esta transacción es siempre vía findByIdForUpdate, ya bajo lock.
     @Transactional
     public List<CreditApplication> consumeForInvoice(Long studentId, BigDecimal amount, Invoice invoice, Payment payment) {
         List<Long> candidateIds = creditNoteRepository.findIdsByStudentIdAndStatusNotOrderByCreatedAtAsc(studentId, CreditNoteStatus.CONSUMED);

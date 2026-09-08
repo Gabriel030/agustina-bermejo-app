@@ -28,7 +28,8 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceFactory;
-import com.red_escuela.backend.billing.service.PaymentReceiptService;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import com.red_escuela.backend.billing.service.ProgramCohortService;
 
 /**
@@ -54,7 +55,8 @@ public class ProgramEnrollmentApplicationService {
     private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
     private final InvoiceFactory invoiceFactory;
-    private final PaymentReceiptService paymentReceiptService;
+    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+    private final ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
     private final ProgramCohortService programCohortService;
 
     public ProgramEnrollmentApplicationService(
@@ -65,7 +67,8 @@ public class ProgramEnrollmentApplicationService {
             ProgramEnrollmentService programEnrollmentService,
             PersonRoleGranter personRoleGranter,
             InvoiceFactory invoiceFactory,
-            PaymentReceiptService paymentReceiptService,
+            UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase,
+            ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase,
             ProgramCohortService programCohortService) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
@@ -74,7 +77,8 @@ public class ProgramEnrollmentApplicationService {
         this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
         this.invoiceFactory = invoiceFactory;
-        this.paymentReceiptService = paymentReceiptService;
+        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
+        this.approvePaymentReceiptUseCase = approvePaymentReceiptUseCase;
         this.programCohortService = programCohortService;
     }
 
@@ -95,7 +99,7 @@ public class ProgramEnrollmentApplicationService {
                 });
 
         Invoice invoice = invoiceFactory.crearAdHocParaCarrera(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), comprobante);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), comprobante);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);
@@ -156,16 +160,16 @@ public class ProgramEnrollmentApplicationService {
 
         // Recién ahora existe el ProgramEnrollment — la factura de matrícula (generada
         // al solicitar, sin vínculo posible en ese momento) se completa retroactivamente,
-        // mismo criterio que PaymentReceiptService.matricularCurso para el caso de curso.
+        // mismo criterio que ApprovePaymentReceiptService.matricularCurso para el caso de curso.
         if (application.getPaymentReceipt() != null) {
             application.getPaymentReceipt().getInvoice().setProgramEnrollment(enrollment);
         }
 
         // Documentación + comprobante se deciden juntos, una sola decisión (ver spec
         // funcional) — aprobar la solicitud aprueba también el comprobante en la MISMA
-        // transacción, lo que crea el Payment real (PaymentReceiptService.aprobar).
+        // transacción, lo que crea el Payment real (ApprovePaymentReceiptService.approve).
         if (application.getPaymentReceipt() != null) {
-            paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), decidedBy);
+            approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), decidedBy);
         }
 
         return application;

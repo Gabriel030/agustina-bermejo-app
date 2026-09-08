@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private ProgramYearBillingTemplateService templateService;
+    private com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
 
     @Autowired
     private ProgramRepository programRepository;
@@ -95,7 +95,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Term term = persistTerm(base, base.plusMonths(3)); // 4 meses exactos (cuatrimestre)
 
-        assertThatThrownBy(() -> templateService.crear(program.getId(), term.getId(), 5))
+        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), term.getId(), 5))
                 .isInstanceOf(ProgramYearBillingTemplateExceedsTermSpanException.class);
     }
 
@@ -107,7 +107,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Term term = persistTerm(base, base.plusMonths(3)); // 4 meses exactos
 
-        var template = templateService.crear(program.getId(), term.getId(), 4);
+        var template = createTemplateUseCase.create(program.getId(), term.getId(), 4);
 
         assertThat(template.getRecurringFeeInvoicesCount()).isEqualTo(4);
     }
@@ -125,7 +125,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
 
-        var template = templateService.crear(program.getId(), term.getId(), 999);
+        var template = createTemplateUseCase.create(program.getId(), term.getId(), 999);
 
         assertThat(template.getRecurringFeeInvoicesCount()).isEqualTo(999);
     }

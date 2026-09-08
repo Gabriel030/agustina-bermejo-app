@@ -2,8 +2,10 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ListPendingPaymentReceiptsUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.RejectPaymentReceiptUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.billing.service.PaymentReceiptService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,30 +21,36 @@ import java.util.List;
 @RequestMapping("/payment-receipts")
 public class PaymentReceiptController {
 
-    private final PaymentReceiptService paymentReceiptService;
+    private final ListPendingPaymentReceiptsUseCase listPendingPaymentReceiptsUseCase;
+    private final ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
+    private final RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase;
     private final CurrentPersonService currentPersonService;
 
-    public PaymentReceiptController(PaymentReceiptService paymentReceiptService, CurrentPersonService currentPersonService) {
-        this.paymentReceiptService = paymentReceiptService;
+    public PaymentReceiptController(ListPendingPaymentReceiptsUseCase listPendingPaymentReceiptsUseCase,
+                                     ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase, RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase,
+                                     CurrentPersonService currentPersonService) {
+        this.listPendingPaymentReceiptsUseCase = listPendingPaymentReceiptsUseCase;
+        this.approvePaymentReceiptUseCase = approvePaymentReceiptUseCase;
+        this.rejectPaymentReceiptUseCase = rejectPaymentReceiptUseCase;
         this.currentPersonService = currentPersonService;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<PaymentReceiptResponse> listarPendientes() {
-        return paymentReceiptService.listarPendientes().stream().map(PaymentReceiptResponse::from).toList();
+        return listPendingPaymentReceiptsUseCase.list().stream().map(PaymentReceiptResponse::from).toList();
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public PaymentReceiptResponse aprobar(@PathVariable Long id) {
-        return PaymentReceiptResponse.from(paymentReceiptService.aprobar(id, currentPersonService.resolveCurrentPerson()));
+        return PaymentReceiptResponse.from(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public PaymentReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
         return PaymentReceiptResponse.from(
-                paymentReceiptService.reject(id, request.rejectionReason(), currentPersonService.resolveCurrentPerson()));
+                rejectPaymentReceiptUseCase.reject(id, request.rejectionReason(), currentPersonService.resolveCurrentPerson()));
     }
 }

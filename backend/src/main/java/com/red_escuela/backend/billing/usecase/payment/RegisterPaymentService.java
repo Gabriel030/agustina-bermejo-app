@@ -1,5 +1,4 @@
-package com.red_escuela.backend.billing.service;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
+package com.red_escuela.backend.billing.usecase.payment;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
@@ -9,13 +8,15 @@ import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
-import org.springframework.stereotype.Service;
+import com.red_escuela.backend.billing.service.CreditNoteService;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -23,16 +24,16 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
-@Service
-public class PaymentService {
+@UseCase
+public class RegisterPaymentService implements RegisterPaymentUseCase {
 
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final CurrentStudentService currentStudentService;
     private final CreditNoteService creditNoteService;
 
-    public PaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
-                           CurrentStudentService currentStudentService, CreditNoteService creditNoteService) {
+    public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
+                                   CurrentStudentService currentStudentService, CreditNoteService creditNoteService) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.currentStudentService = currentStudentService;
@@ -41,11 +42,12 @@ public class PaymentService {
 
     // registeredBy es explícito, no se resuelve acá vía CurrentPersonService — este método lo
     // llaman tanto un controller (que sí puede resolver "quién está autenticado ahora") como
-    // PaymentReceiptService.aprobar (que ya recibe el actor como parámetro, decidido por SU
-    // propio caller) — resolverlo acá duplicaría la fuente de verdad y rompería el segundo caso
-    // en cualquier llamada que no pase por un request HTTP real (ej. un test de service directo).
+    // ApprovePaymentReceiptService (que ya recibe el actor como parámetro, decidido por SU propio
+    // caller) — resolverlo acá duplicaría la fuente de verdad y rompería el segundo caso en
+    // cualquier llamada que no pase por un request HTTP real (ej. un test de service directo).
+    @Override
     @Transactional
-    public Payment registerPayment(RegisterPaymentRequest request, Person registeredBy) {
+    public Payment register(RegisterPaymentRequest request, Person registeredBy) {
         BigDecimal total = request.allocations().stream()
                 .map(PaymentAllocationRequest::amountApplied)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -121,13 +123,9 @@ public class PaymentService {
 
             // Invoice.registerPayment (no invoice.setStatus directo): PaymentAllocation y la
             // transición a PAID son responsabilidad del propio Aggregate Root, no de este service
-            // (hallazgo de auditoría 2026-09-04 — la cabecera de Invoice.java ya declaraba esta
-            // invariante, este era el único caller que la violaba). No hace falta invoiceRepository
-            // .save(invoice) acá: invoice ya es una entidad managed (viene de findByIdForUpdate en
-            // ESTA misma transacción), Hibernate flushea el cambio de status solo. La única
-            // persistencia explícita de la PaymentAllocation es vía la cascada de payment.save()
-            // al final — cascadearla también desde el lado de Invoice duplicaba el INSERT
-            // (uk_payment_allocation) porque ambos lados tienen cascade=ALL sobre el mismo objeto.
+            // (hallazgo de auditoría 2026-09-04). No hace falta invoiceRepository.save(invoice)
+            // acá: invoice ya es una entidad managed (viene de findByIdForUpdate en ESTA misma
+            // transacción), Hibernate flushea el cambio de status solo.
             PaymentAllocation allocation = invoice.registerPayment(amountApplied, payment);
             payment.getAllocations().add(allocation);
             // CREDIT_BALANCE no aporta plata real: la Invoice se salda igual (arriba), pero acá
@@ -146,10 +144,8 @@ public class PaymentService {
     // propias)") — Optional.empty() de findCurrentStudent() significa que el actor es staff
     // (Administrativo/Director, sin fila Student propia), que puede pagar cualquier Invoice.
     //
-    // InvoiceNotFoundException (404), no NotOwnEnrollmentException (403) — corrección 2026-09-04
-    // (auditoría): mismo criterio "404-no-403" que ya sigue PaymentReceiptService.validateOwnership
-    // para este mismo tipo de chequeo (ownership sobre un recurso Invoice-scoped, a diferencia de
-    // NotOwnEnrollmentException, reservada para chequeos enrollment-scoped por id de la URL).
+    // InvoiceNotFoundException (404), no NotOwnEnrollmentException (403) — mismo criterio
+    // "404-no-403" que sigue el resto de estos chequeos de ownership Invoice-scoped.
     private void validateOwnershipIfStudent(Invoice invoice) {
         currentStudentService.findCurrentStudent().ifPresent(student -> {
             if (!student.getId().equals(resolveOwnerStudentId(invoice))) {

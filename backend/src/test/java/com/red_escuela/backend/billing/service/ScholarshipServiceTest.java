@@ -50,16 +50,25 @@ import com.red_escuela.backend.service.CourseEnrollmentService;
 class ScholarshipServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private ScholarshipService scholarshipService;
+    private com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase grantScholarshipForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase grantScholarshipForProgramUseCase;
 
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
 
     @Autowired
-    private PaymentPlanSelectionService paymentPlanSelectionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -175,10 +184,10 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
     private void seleccionarPlanMensual(CourseEnrollment enrollment, Person director) {
         autenticarComo(director);
-        var option = paymentPlanOptionService.crearParaCurso(enrollment.getCourse().getId(),
+        var option = createPaymentPlanOptionForCourseUseCase.create(enrollment.getCourse().getId(),
                 new com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest(
                         "Mensual", com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY, null, false, null, null));
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(),
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(),
                 new com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest(option.getId(), null));
     }
 
@@ -189,7 +198,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000001", course);
         seleccionarPlanMensual(enrollment, director);
 
-        scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
+        grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(null, BigDecimal.ONE), "Beca completa", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
@@ -207,7 +216,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000002", course);
         seleccionarPlanMensual(enrollment, director);
 
-        scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
+        grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.30)), "Beca 30%", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
@@ -226,7 +235,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000003", course);
         seleccionarPlanMensual(enrollment, director);
 
-        scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
+        grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(5000), null), "Beca fija $5.000", 3));
 
         // Sube el precio del curso (nuevo PriceRevision).
@@ -314,7 +323,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000006", course);
         seleccionarPlanMensual(enrollment, director);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> scholarshipService.grantForCourse(enrollment.getId(),
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> grantScholarshipForCourseUseCase.grant(enrollment.getId(),
                         new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 5)))
                 .isInstanceOf(com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException.class);
     }
@@ -326,10 +335,10 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000008", course);
         seleccionarPlanMensual(enrollment, director);
 
-        scholarshipService.grantForCourse(enrollment.getId(),
+        grantScholarshipForCourseUseCase.grant(enrollment.getId(),
                 new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> scholarshipService.grantForCourse(enrollment.getId(),
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> grantScholarshipForCourseUseCase.grant(enrollment.getId(),
                         new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 2)))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
@@ -341,7 +350,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000007", course);
         seleccionarPlanMensual(enrollment, director);
 
-        var scholarship = scholarshipService.grantForCourse(enrollment.getId(),
+        var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(),
                 new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
@@ -372,7 +381,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         cuotaDelMes.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(cuotaDelMes);
 
-        var scholarship = scholarshipService.grantForCourse(enrollment.getId(), new CreateScholarshipRequest(
+        var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20% tardía", 3));
 
         var creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);

@@ -50,7 +50,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private AdHocInvoiceService adHocInvoiceService;
+    private com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceForCourseEnrollmentUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceForProgramEnrollmentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -153,7 +156,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.EXAM_RIGHT, BigDecimal.valueOf(1500), LocalDate.now(), "Derecho de examen final", null, null);
 
-        Invoice created = adHocInvoiceService.createForProgramEnrollment(enrollment.getId(), request);
+        Invoice created = createAdHocInvoiceForProgramEnrollmentUseCase.create(enrollment.getId(), request);
 
         assertThat(created.getId()).isNotNull();
         assertThat(created.getFeeType()).isEqualTo(FeeType.EXAM_RIGHT);
@@ -174,8 +177,8 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest segundo = new CreateAdHocInvoiceRequest(
                 FeeType.EXAM_RIGHT, BigDecimal.valueOf(1000), dueDate, "Derecho de examen — Física", null, null);
 
-        Invoice invoiceUno = adHocInvoiceService.createForCourseEnrollment(enrollment.getId(), primero);
-        Invoice invoiceDos = adHocInvoiceService.createForCourseEnrollment(enrollment.getId(), segundo);
+        Invoice invoiceUno = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), primero);
+        Invoice invoiceDos = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), segundo);
 
         assertThat(invoiceUno.getId()).isNotEqualTo(invoiceDos.getId());
         assertThat(invoiceUno.getPeriod()).isEqualTo(YearMonth.from(dueDate));
@@ -188,7 +191,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.RECURRING_FEE, BigDecimal.valueOf(500), LocalDate.now(), "Intento inválido", null, null);
 
-        assertThatThrownBy(() -> adHocInvoiceService.createForCourseEnrollment(enrollment.getId(), request))
+        assertThatThrownBy(() -> createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request))
                 .isInstanceOf(InvalidAdHocFeeTypeException.class);
     }
 
@@ -198,7 +201,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.RETAKEN_SUBJECT_FEE, BigDecimal.valueOf(800), LocalDate.now(), "Recursada informal", null, null);
 
-        Invoice created = adHocInvoiceService.createForCourseEnrollment(enrollment.getId(), request);
+        Invoice created = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request);
 
         assertThat(created.getDescription()).isEqualTo("Recursada informal");
         assertThat(created.getSubject()).isNull();

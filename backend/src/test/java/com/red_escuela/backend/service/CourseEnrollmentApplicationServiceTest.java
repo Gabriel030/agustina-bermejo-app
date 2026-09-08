@@ -33,15 +33,13 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.billing.service.PaymentReceiptService;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 
 /**
  * Épica 7 Fase 3: inscripción a curso con pago de la primera cuota. A diferencia de
  * carrera, no hay una "solicitud" que alguien apruebe/rechace — el CourseEnrollment
- * real recién se crea cuando PaymentReceiptService.aprobar aprueba el comprobante
- * (ver PaymentReceiptService, javadoc). PaymentReceiptService es un placeholder mínimo
- * hasta Fase 6.2 (Pagos y allocations) — acá alcanza con verificar que la Invoice pasa
- * a PAID, sin un Payment real todavía.
+ * real recién se crea cuando ApprovePaymentReceiptService aprueba el comprobante —
+ * acá alcanza con verificar que la Invoice pasa a PAID, sin un Payment real todavía.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -58,7 +56,10 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     private CourseEnrollmentRepository courseEnrollmentRepository;
 
     @Autowired
-    private PaymentReceiptService paymentReceiptService;
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -159,7 +160,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         administrativo.getRoles().add(rolAdministrativo);
         entityManager.flush();
 
-        paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), administrativo);
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), administrativo);
 
         entityManager.flush();
         entityManager.clear();

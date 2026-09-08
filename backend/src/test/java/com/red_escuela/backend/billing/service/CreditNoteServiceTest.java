@@ -57,6 +57,12 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     private CreditNoteService creditNoteService;
 
     @Autowired
+    private com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteUseCase createManualCreditNoteUseCase;
+
+    @Autowired
     private InvoiceRepository invoiceRepository;
 
     @Autowired
@@ -110,7 +116,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     // inexistente en vez de 404 — inconsistente con createManual, que sí valida.
     @Test
     void listForStudentConStudentInexistenteLanza404() {
-        assertThatThrownBy(() -> creditNoteService.listForStudent(999999L))
+        assertThatThrownBy(() -> listCreditNotesForStudentUseCase.list(999999L))
                 .isInstanceOf(com.red_escuela.backend.identity.exception.StudentNotFoundException.class);
     }
 
@@ -120,7 +126,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("99100001." + System.nanoTime());
         authenticateAs(admin);
 
-        CreditNote creditNote = creditNoteService.createManual(student.getId(),
+        CreditNote creditNote = createManualCreditNoteUseCase.create(student.getId(),
                 new CreateCreditNoteRequest(BigDecimal.valueOf(500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Corrección de cobro duplicado"));
 
         assertThat(creditNote.getId()).isNotNull();
@@ -133,7 +139,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("99100002." + System.nanoTime());
         authenticateAs(admin);
 
-        assertThatThrownBy(() -> creditNoteService.createManual(student.getId(),
+        assertThatThrownBy(() -> createManualCreditNoteUseCase.create(student.getId(),
                 new CreateCreditNoteRequest(BigDecimal.valueOf(500), CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED, "Intento inválido")))
                 .isInstanceOf(InvalidCreditNoteReasonException.class);
     }
