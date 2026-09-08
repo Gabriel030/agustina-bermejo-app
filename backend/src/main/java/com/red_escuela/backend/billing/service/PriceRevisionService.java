@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
-import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 
 // Value Object with temporal validity — hooked from ProgramService/CourseService.crear/editar
 // (Fase 6.1, "Impacto en código existente"): without this, a freshly created Course/Program

@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.service;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
@@ -8,7 +9,7 @@ import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
@@ -21,10 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
-import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
-import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
-import com.red_escuela.backend.service.CurrentStudentService;
 
 @Service
 public class PaymentService {

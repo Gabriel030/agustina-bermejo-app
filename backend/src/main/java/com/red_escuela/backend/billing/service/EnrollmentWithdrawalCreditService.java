@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.service;
+import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
@@ -8,10 +9,9 @@ import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

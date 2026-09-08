@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 
 // Aggregate Root propio (junto a Invoice) — un Payment puede saldar varias Invoice a la vez vía
 // PaymentAllocation (patrón contable estándar), nunca al revés.

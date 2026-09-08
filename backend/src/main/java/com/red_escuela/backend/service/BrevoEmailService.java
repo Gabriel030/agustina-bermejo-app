@@ -1,7 +1,7 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.repository.InstitutionRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

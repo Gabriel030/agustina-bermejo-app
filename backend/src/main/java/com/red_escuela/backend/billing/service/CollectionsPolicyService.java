@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class CollectionsPolicyService {

@@ -1,16 +1,17 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.PersonRoleGranter;
 
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.entity.DocumentType;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.entity.StudentDocument;
 import com.red_escuela.backend.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.exception.ProgramEnrollmentApplicationNotFoundException;
@@ -151,7 +152,7 @@ public class ProgramEnrollmentApplicationService {
         Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
         var enrollment = programEnrollmentService.matricular(student.getId(),
                 new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+        personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
 
         // Recién ahora existe el ProgramEnrollment — la factura de matrícula (generada
         // al solicitar, sin vínculo posible en ese momento) se completa retroactivamente,

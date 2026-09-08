@@ -5,7 +5,7 @@ import com.red_escuela.backend.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.dto.SectionInstructorSummary;
 import com.red_escuela.backend.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.entity.InstructorRole;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.entity.SubjectSection;

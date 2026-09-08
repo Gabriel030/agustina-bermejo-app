@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.entity;
+import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,8 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Person;
 
 // Aggregate Root — mismo criterio que Invoice (Fase 6.1): el único método que cambia status y
 // crea un CreditApplication es consume(), nunca un setStatus directo desde un service.

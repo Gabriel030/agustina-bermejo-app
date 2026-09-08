@@ -17,7 +17,7 @@ import com.red_escuela.backend.exception.ExamBoardRegistrationWindowClosedExcept
 import com.red_escuela.backend.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.StudentNotRegularException;
+import com.red_escuela.backend.identity.exception.StudentNotRegularException;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.repository.ExamBoardRepository;

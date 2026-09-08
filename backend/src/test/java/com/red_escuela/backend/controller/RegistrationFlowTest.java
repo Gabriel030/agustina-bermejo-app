@@ -3,29 +3,29 @@ package com.red_escuela.backend.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.RegisterRequest;
+import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.entity.Role;
+import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.entity.Term;
 import com.red_escuela.backend.repository.CourseRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
-import com.red_escuela.backend.repository.RoleRepository;
+import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.repository.TermRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -153,7 +153,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Autowired
-    private com.red_escuela.backend.service.JwtService jwtService;
+    private com.red_escuela.backend.identity.infrastructure.JwtService jwtService;
 
     private String tokenDePreceptor() {
         Address address = new Address();

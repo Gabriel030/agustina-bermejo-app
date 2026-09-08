@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class PromotionService {

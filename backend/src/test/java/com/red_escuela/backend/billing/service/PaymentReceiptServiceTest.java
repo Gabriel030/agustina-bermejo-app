@@ -9,16 +9,17 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
@@ -27,10 +28,10 @@ import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.CourseRepository;
 import com.red_escuela.backend.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.repository.PersonRepository;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
-import com.red_escuela.backend.repository.StudentRepository;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.repository.TermRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -265,6 +266,14 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     // concurrentes sobre el mismo comprobante podían "ganar" ambos — uno dejaba un Payment
     // CONFIRMED real y la Invoice en PAID, el otro pisaba el status a REJECTED sin detectar el
     // conflicto. Con el lock optimista, exactamente uno de los dos tiene que ganar.
+    //
+    // El perdedor puede fallar de DOS formas legítimas según el timing real del scheduler
+    // (hallazgo de CI 2026-09-08, antes solo se contemplaba la primera): si los dos leen el
+    // comprobante en PENDING_REVIEW antes de que cualquiera commitee, el que pierde la carrera
+    // de flush recibe ObjectOptimisticLockingFailureException (@Version). Pero si el ganador ya
+    // commiteó completo antes de que el otro siquiera lea el estado, ese segundo directamente ve
+    // el status ya cambiado y falla en el guard con InvalidPaymentReceiptStateException — ninguna
+    // de las dos es un bug, ambas son "el perdedor no pisó al ganador".
     @Test
     void aprobarYRechazarEnParaleloSobreElMismoComprobanteSoloUnoGana() throws Exception {
         Person admin1 = persistPerson("admin.receipt8a." + System.nanoTime());
@@ -301,7 +310,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                 resultado.get(30, TimeUnit.SECONDS);
                 exitos++;
             } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOf(org.springframework.orm.ObjectOptimisticLockingFailureException.class);
+                assertThat(e.getCause()).isInstanceOfAny(
+                        org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+                        InvalidPaymentReceiptStateException.class);
                 conflictos++;
             }
         }

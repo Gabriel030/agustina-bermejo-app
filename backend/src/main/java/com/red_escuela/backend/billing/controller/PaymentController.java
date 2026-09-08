@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.PaymentResponse;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.billing.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import com.red_escuela.backend.billing.service.PaymentService;
 
 @RestController
 public class PaymentController {

@@ -1,4 +1,5 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Student;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;

@@ -12,17 +12,17 @@ import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.repository.PersonRepository;
-import com.red_escuela.backend.repository.StudentRepository;
+import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,7 +111,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     @Test
     void listForStudentConStudentInexistenteLanza404() {
         assertThatThrownBy(() -> creditNoteService.listForStudent(999999L))
-                .isInstanceOf(com.red_escuela.backend.exception.StudentNotFoundException.class);
+                .isInstanceOf(com.red_escuela.backend.identity.exception.StudentNotFoundException.class);
     }
 
     @Test

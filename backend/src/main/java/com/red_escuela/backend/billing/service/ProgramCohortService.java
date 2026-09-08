@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class ProgramCohortService {

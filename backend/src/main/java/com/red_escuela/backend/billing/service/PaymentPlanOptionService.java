@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.entity.Course;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.entity.Program;
 import com.red_escuela.backend.exception.CourseNotFoundException;
@@ -14,8 +14,7 @@ import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.repository.ProgramRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.red_escuela.backend.billing.exception.PaymentPlanOptionNotFoundException;
-import com.red_escuela.backend.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 @Service
 public class PaymentPlanOptionService {

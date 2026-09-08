@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.controller;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 
 import com.red_escuela.backend.billing.dto.BillingStandingResponse;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
@@ -10,7 +11,6 @@ import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.service.CurrentStudentService;
 import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.service.PaymentReceiptService;

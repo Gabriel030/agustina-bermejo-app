@@ -1,4 +1,6 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.exception.InvalidProgramEnrollmentApplicationStateException;
 import jakarta.persistence.*;

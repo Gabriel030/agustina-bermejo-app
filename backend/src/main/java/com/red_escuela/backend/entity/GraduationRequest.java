@@ -1,4 +1,5 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Person;
 
 import jakarta.persistence.*;
 import lombok.Getter;
