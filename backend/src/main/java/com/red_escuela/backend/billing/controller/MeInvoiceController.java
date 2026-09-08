@@ -11,9 +11,10 @@ import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
-import com.red_escuela.backend.billing.service.PaymentReceiptService;
+import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,39 +34,42 @@ public class MeInvoiceController {
 
     private final InvoiceQueryService invoiceQueryService;
     private final CurrentStudentService currentStudentService;
-    private final PaymentReceiptService paymentReceiptService;
+    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+    private final FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CreditNoteService creditNoteService;
+    private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
-                                PaymentReceiptService paymentReceiptService, CourseEnrollmentRepository courseEnrollmentRepository,
-                                ProgramEnrollmentRepository programEnrollmentRepository, CreditNoteService creditNoteService) {
+                                UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
+                                CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
+                                ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase) {
         this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
-        this.paymentReceiptService = paymentReceiptService;
+        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
+        this.findOwnPaymentReceiptsUseCase = findOwnPaymentReceiptsUseCase;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.creditNoteService = creditNoteService;
+        this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
     }
 
     @GetMapping("/credit-notes")
     public List<CreditNoteResponse> myCreditNotes() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return creditNoteService.listForStudent(studentId).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesForStudentUseCase.list(studentId).stream().map(CreditNoteResponse::from).toList();
     }
 
     @PostMapping("/invoices/{id}/payment-receipts")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return PaymentReceiptResponse.from(paymentReceiptService.subir(id, studentId, comprobante));
+        return PaymentReceiptResponse.from(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
     }
 
     @GetMapping("/payment-receipts")
     public List<PaymentReceiptResponse> myReceipts() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return paymentReceiptService.findOwn(studentId).stream().map(PaymentReceiptResponse::from).toList();
+        return findOwnPaymentReceiptsUseCase.findOwn(studentId).stream().map(PaymentReceiptResponse::from).toList();
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

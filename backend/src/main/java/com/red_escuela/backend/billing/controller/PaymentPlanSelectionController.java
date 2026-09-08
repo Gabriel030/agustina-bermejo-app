@@ -2,7 +2,8 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.PaymentPlanSelectionResponse;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.billing.service.PaymentPlanSelectionService;
+import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase;
+import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,27 +16,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class PaymentPlanSelectionController {
 
-    private final PaymentPlanSelectionService paymentPlanSelectionService;
+    private final SelectPaymentPlanForCourseUseCase selectForCourseUseCase;
+    private final SelectPaymentPlanForProgramUseCase selectForProgramUseCase;
 
-    public PaymentPlanSelectionController(PaymentPlanSelectionService paymentPlanSelectionService) {
-        this.paymentPlanSelectionService = paymentPlanSelectionService;
+    public PaymentPlanSelectionController(SelectPaymentPlanForCourseUseCase selectForCourseUseCase,
+                                           SelectPaymentPlanForProgramUseCase selectForProgramUseCase) {
+        this.selectForCourseUseCase = selectForCourseUseCase;
+        this.selectForProgramUseCase = selectForProgramUseCase;
     }
 
     // Spec: "ADMINISTRATIVO|autoservicio alumno" sobre el mismo path — el chequeo de ownership
-    // (esta matriculación es del alumno autenticado) vive en el service
-    // (PaymentPlanSelectionService.validarPropiaSiEsAlumno), no acá: un Administrativo no tiene
-    // fila Student propia, así que el mismo código sirve para ambos roles sin ramificar.
+    // (esta matriculación es del alumno autenticado) vive en PaymentPlanSelectionGuard, no acá:
+    // un Administrativo no tiene fila Student propia, así que el mismo código sirve para ambos
+    // roles sin ramificar.
     @PostMapping("/course-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
     public PaymentPlanSelectionResponse seleccionarParaCurso(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
-        return PaymentPlanSelectionResponse.from(paymentPlanSelectionService.seleccionarParaCurso(id, request));
+        return PaymentPlanSelectionResponse.from(selectForCourseUseCase.select(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
     public PaymentPlanSelectionResponse seleccionarParaCarrera(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
-        return PaymentPlanSelectionResponse.from(paymentPlanSelectionService.seleccionarParaCarrera(id, request));
+        return PaymentPlanSelectionResponse.from(selectForProgramUseCase.select(id, request));
     }
 }

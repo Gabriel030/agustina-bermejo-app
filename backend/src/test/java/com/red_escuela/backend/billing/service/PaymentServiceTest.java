@@ -60,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PaymentService paymentService;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -166,7 +166,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        Payment payment = paymentService.registerPayment(new RegisterPaymentRequest(
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
@@ -184,7 +184,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.CANCELLED);
 
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin))
                 .isInstanceOf(InvoiceNotPayableException.class);
@@ -197,7 +197,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        Payment payment = paymentService.registerPayment(new RegisterPaymentRequest(
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CARD, true, "Tarjeta rechazada", null, null, null), admin);
 
@@ -226,7 +226,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         allocations.add(new PaymentAllocationRequest(enrollmentFee.getId(), BigDecimal.valueOf(5000)));
         installments.forEach(invoice -> allocations.add(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(1000))));
 
-        Payment payment = paymentService.registerPayment(
+        Payment payment = registerPaymentUseCase.register(
                 new RegisterPaymentRequest(allocations, PaymentMethod.TRANSFER, false, null, null, null, null), admin);
 
         assertThat(payment.getAllocations()).hasSize(6);
@@ -242,7 +242,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(15000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin))
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
@@ -258,7 +258,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(-100))),
                 PaymentMethod.CASH, false, null, null, null, null), admin))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -271,7 +271,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.ZERO)),
                 PaymentMethod.CASH, false, null, null, null, null), admin))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -284,7 +284,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
         authenticateAs(student.getPerson());
-        Payment payment = paymentService.registerPayment(new RegisterPaymentRequest(
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), student.getPerson());
 
@@ -299,7 +299,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
 
         authenticateAs(intruder.getPerson());
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), intruder.getPerson()))
                 .isInstanceOf(InvoiceNotFoundException.class);
@@ -313,7 +313,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(1000), InvoiceStatus.PENDING);
         creditNoteService.createFor(student, BigDecimal.valueOf(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
 
-        Payment payment = paymentService.registerPayment(new RegisterPaymentRequest(
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(1000))),
                 PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
 
@@ -335,7 +335,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Invoice invoice = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(1000), InvoiceStatus.PENDING);
         creditNoteService.createFor(student, BigDecimal.valueOf(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
 
-        assertThatThrownBy(() -> paymentService.registerPayment(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(1000))),
                 PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin))
                 .isInstanceOf(InsufficientCreditBalanceException.class);

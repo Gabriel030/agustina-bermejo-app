@@ -3,7 +3,11 @@ package com.red_escuela.backend.billing.controller;
 import com.red_escuela.backend.billing.dto.CreatePromotionRequest;
 import com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse;
 import com.red_escuela.backend.billing.dto.PromotionResponse;
-import com.red_escuela.backend.billing.service.PromotionService;
+import com.red_escuela.backend.billing.usecase.promotion.ClosePromotionUseCase;
+import com.red_escuela.backend.billing.usecase.promotion.CreatePromotionForCourseUseCase;
+import com.red_escuela.backend.billing.usecase.promotion.CreatePromotionForProgramUseCase;
+import com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsUseCase;
+import com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,31 +24,42 @@ import java.util.List;
 @RestController
 public class PromotionController {
 
-    private final PromotionService promotionService;
+    private final CreatePromotionForCourseUseCase createPromotionForCourseUseCase;
+    private final CreatePromotionForProgramUseCase createPromotionForProgramUseCase;
+    private final ClosePromotionUseCase closePromotionUseCase;
+    private final FindActivePromotionsUseCase findActivePromotionsUseCase;
+    private final FindLostPromotionBenefitsUseCase findLostPromotionBenefitsUseCase;
 
-    public PromotionController(PromotionService promotionService) {
-        this.promotionService = promotionService;
+    public PromotionController(CreatePromotionForCourseUseCase createPromotionForCourseUseCase,
+                                CreatePromotionForProgramUseCase createPromotionForProgramUseCase,
+                                ClosePromotionUseCase closePromotionUseCase, FindActivePromotionsUseCase findActivePromotionsUseCase,
+                                FindLostPromotionBenefitsUseCase findLostPromotionBenefitsUseCase) {
+        this.createPromotionForCourseUseCase = createPromotionForCourseUseCase;
+        this.createPromotionForProgramUseCase = createPromotionForProgramUseCase;
+        this.closePromotionUseCase = closePromotionUseCase;
+        this.findActivePromotionsUseCase = findActivePromotionsUseCase;
+        this.findLostPromotionBenefitsUseCase = findLostPromotionBenefitsUseCase;
     }
 
     @PostMapping("/courses/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public PromotionResponse createForCourse(@PathVariable Long id, @Valid @RequestBody CreatePromotionRequest request) {
-        return PromotionResponse.from(promotionService.createForCourse(id, request));
+        return PromotionResponse.from(createPromotionForCourseUseCase.create(id, request));
     }
 
     @PostMapping("/programs/{id}/promotions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public PromotionResponse createForProgram(@PathVariable Long id, @Valid @RequestBody CreatePromotionRequest request) {
-        return PromotionResponse.from(promotionService.createForProgram(id, request));
+        return PromotionResponse.from(createPromotionForProgramUseCase.create(id, request));
     }
 
     @PostMapping("/promotions/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('DIRECTOR')")
     public void close(@PathVariable Long id) {
-        promotionService.close(id);
+        closePromotionUseCase.close(id);
     }
 
     // status=active es el único filtro con caso de uso real hoy (elegir a qué promociones
@@ -52,12 +67,12 @@ public class PromotionController {
     @GetMapping("/promotions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<PromotionResponse> findActive(@RequestParam(defaultValue = "active") String status) {
-        return promotionService.findActive().stream().map(PromotionResponse::from).toList();
+        return findActivePromotionsUseCase.findActive().stream().map(PromotionResponse::from).toList();
     }
 
     @GetMapping("/reports/billing/promotions/lost-benefits")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<LostPromotionBenefitResponse> lostBenefits() {
-        return promotionService.findLostBenefits();
+        return findLostPromotionBenefitsUseCase.find();
     }
 }

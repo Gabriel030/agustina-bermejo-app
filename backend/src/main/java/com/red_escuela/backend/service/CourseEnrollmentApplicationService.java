@@ -25,15 +25,15 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import com.red_escuela.backend.billing.service.InvoiceFactory;
-import com.red_escuela.backend.billing.service.PaymentReceiptService;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 
 /**
  * Solicitud de inscripción a un curso con pago de la primera cuota (Épica 7 Fase 3).
  * Servicio separado de {@link CourseEnrollmentService} (SRP: acá se orquesta
  * Invoice+PaymentReceipt+CourseEnrollmentApplication, no la matriculación en sí) y
- * de {@link PaymentReceiptService} (evita un ciclo — PaymentReceiptService ya
- * depende de CourseEnrollmentService para disparar la matriculación real al
- * aprobar, así que este service es el único punto que depende de los tres).
+ * de ApprovePaymentReceiptService (evita un ciclo — esa clase ya depende de
+ * CourseEnrollmentService para disparar la matriculación real al aprobar, así
+ * que este service es el único punto que depende de los tres).
  * Reusa {@link CourseEnrollmentService#validarPuedeMatricular} para no pedirle un
  * comprobante a alguien que de todas formas no podría matricularse (ventana
  * cerrada, ya inscripto, etc.) — misma validación que matricular() directo.
@@ -46,20 +46,20 @@ public class CourseEnrollmentApplicationService {
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final InvoiceFactory invoiceFactory;
-    private final PaymentReceiptService paymentReceiptService;
+    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ObjectMapper objectMapper;
 
     public CourseEnrollmentApplicationService(
             StudentRepository studentRepository, CourseRepository courseRepository,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            InvoiceFactory invoiceFactory, PaymentReceiptService paymentReceiptService, ObjectMapper objectMapper) {
+            InvoiceFactory invoiceFactory, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.invoiceFactory = invoiceFactory;
-        this.paymentReceiptService = paymentReceiptService;
+        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.objectMapper = objectMapper;
     }
 
@@ -72,7 +72,7 @@ public class CourseEnrollmentApplicationService {
         courseEnrollmentService.validarPuedeMatricular(student, course);
 
         Invoice invoice = invoiceFactory.crearAdHocParaCurso(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), studentId, comprobante);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);

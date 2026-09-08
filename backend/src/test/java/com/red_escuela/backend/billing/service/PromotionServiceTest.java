@@ -67,16 +67,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PromotionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PromotionService promotionService;
+    private com.red_escuela.backend.billing.usecase.promotion.CreatePromotionForCourseUseCase createPromotionForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.promotion.CreatePromotionForProgramUseCase createPromotionForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.promotion.ClosePromotionUseCase closePromotionUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsUseCase findActivePromotionsUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsUseCase findLostPromotionBenefitsUseCase;
 
     @Autowired
     private PromotionRepository promotionRepository;
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
 
     @Autowired
-    private PaymentPlanSelectionService paymentPlanSelectionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
@@ -192,9 +210,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
     private PaymentPlanSelection seleccionarPlanMensualCurso(CourseEnrollment enrollment, Person director) {
         autenticarComo(director);
-        PaymentPlanOption option = paymentPlanOptionService.crearParaCurso(enrollment.getCourse().getId(),
+        PaymentPlanOption option = createPaymentPlanOptionForCourseUseCase.create(enrollment.getCourse().getId(),
                 new CreatePaymentPlanOptionRequest("Mensual " + System.nanoTime(), PaymentPlanCadence.MONTHLY, null, false, null, null));
-        return paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), null));
+        return selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), null));
     }
 
     private ProgramEnrollment persistProgramEnrollment(String dni, LocalDateTime enrollmentDate, Person director) {
@@ -266,9 +284,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
     private PaymentPlanSelection seleccionarPlanMensualCarrera(ProgramEnrollment enrollment, Person director) {
         autenticarComo(director);
-        PaymentPlanOption option = paymentPlanOptionService.crearParaCarrera(enrollment.getProgram().getId(),
+        PaymentPlanOption option = createPaymentPlanOptionForProgramUseCase.create(enrollment.getProgram().getId(),
                 new CreatePaymentPlanOptionRequest("Mensual " + System.nanoTime(), PaymentPlanCadence.MONTHLY, null, false, null, null));
-        return paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), null));
+        return selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), null));
     }
 
     private Invoice invoiceConAjustesDe(CourseEnrollment enrollment, int index) {
@@ -282,7 +300,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo108." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -301,7 +319,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo109." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(10), LocalDate.now().minusDays(3),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -319,7 +337,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo110." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 2))));
 
@@ -342,7 +360,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo111." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), null))));
 
@@ -364,7 +382,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo113." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        var promotion = promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        var promotion = createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -372,7 +390,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensualCurso(yaCalificado, director);
 
         autenticarComo(director);
-        promotionService.close(promotion.getId());
+        closePromotionUseCase.close(promotion.getId());
         assertThat(promotionRepository.findById(promotion.getId()).orElseThrow().getStatus()).isEqualTo(PromotionStatus.CLOSED);
 
         CourseEnrollment despuesDelCierre = persistCourseEnrollment("89000113b", course, LocalDateTime.now());
@@ -391,11 +409,11 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo114." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Promo A", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Promo B", LocalDate.now().minusDays(1), LocalDate.now().plusDays(6),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), 3))));
 
@@ -416,7 +434,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo115." + System.nanoTime());
         ProgramEnrollment enrollment = persistProgramEnrollment("89000115", LocalDateTime.now(), director);
         autenticarComo(director);
-        promotionService.createForProgram(enrollment.getProgram().getId(), new CreatePromotionRequest(
+        createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -442,7 +460,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo116." + System.nanoTime());
         ProgramEnrollment enrollment = persistProgramEnrollment("89000116", LocalDateTime.now(), director);
         autenticarComo(director);
-        promotionService.createForProgram(enrollment.getProgram().getId(), new CreatePromotionRequest(
+        createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -463,7 +481,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo122." + System.nanoTime());
         ProgramEnrollment enrollment = persistProgramEnrollment("89000122", LocalDateTime.now(), director);
         autenticarComo(director);
-        promotionService.createForProgram(enrollment.getProgram().getId(), new CreatePromotionRequest(
+        createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -472,7 +490,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         // Cambia de plan habiendo consumido solo 1 de las 3 cuotas de descuento — quedan 2 sin usar.
         seleccionarPlanMensualCarrera(enrollment, director);
 
-        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = promotionService.findLostBenefits();
+        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = findLostPromotionBenefitsUseCase.find();
         assertThat(perdidos).anyMatch(p -> p.studentName().equals("Persona 89000122")
                 && p.remaining() == 2 && p.used() == 1 && p.feeType().equals("RECURRING_FEE"));
     }
@@ -483,7 +501,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo117." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
-        promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
@@ -506,14 +524,14 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.promo123." + System.nanoTime());
         ProgramEnrollment enrollment = persistProgramEnrollment("89000123", LocalDateTime.now(), director);
         autenticarComo(director);
-        promotionService.createForProgram(enrollment.getProgram().getId(), new CreatePromotionRequest(
+        createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                 List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
 
         seleccionarPlanMensualCarrera(enrollment, director);
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, YearMonth.now());
 
-        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = promotionService.findLostBenefits();
+        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = findLostPromotionBenefitsUseCase.find();
         assertThat(perdidos).noneMatch(p -> p.studentName().equals("Persona 89000123"));
     }
 
@@ -523,7 +541,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                         "Promo con benefits duplicados", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                         List.of(
                                 new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3),
@@ -537,7 +555,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         autenticarComo(director);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> promotionService.createForCourse(course.getId(), new CreatePromotionRequest(
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                         "Promo con fechas invertidas", LocalDate.now().plusDays(5), LocalDate.now().minusDays(2),
                         List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3)))))
                 .isInstanceOf(com.red_escuela.backend.exception.InvalidWindowConfigurationException.class);

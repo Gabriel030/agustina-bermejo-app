@@ -6,8 +6,9 @@ import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.service.InvoiceAdjustmentService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentCommand;
+import com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,11 +25,11 @@ import java.util.List;
 public class InvoiceController {
 
     private final InvoiceQueryService invoiceQueryService;
-    private final InvoiceAdjustmentService invoiceAdjustmentService;
+    private final ApplyInvoiceAdjustmentUseCase applyInvoiceAdjustmentUseCase;
 
-    public InvoiceController(InvoiceQueryService invoiceQueryService, InvoiceAdjustmentService invoiceAdjustmentService) {
+    public InvoiceController(InvoiceQueryService invoiceQueryService, ApplyInvoiceAdjustmentUseCase applyInvoiceAdjustmentUseCase) {
         this.invoiceQueryService = invoiceQueryService;
-        this.invoiceAdjustmentService = invoiceAdjustmentService;
+        this.applyInvoiceAdjustmentUseCase = applyInvoiceAdjustmentUseCase;
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
@@ -49,7 +50,7 @@ public class InvoiceController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public InvoiceResponse applyAdjustment(@PathVariable Long id, @Valid @RequestBody CreateInvoiceAdjustmentRequest request) {
-        return InvoiceResponse.from(invoiceAdjustmentService.applyAdjustment(id, request));
+        return InvoiceResponse.from(applyInvoiceAdjustmentUseCase.apply(new ApplyInvoiceAdjustmentCommand(id, request)));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

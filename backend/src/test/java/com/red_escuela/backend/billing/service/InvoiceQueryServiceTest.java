@@ -55,7 +55,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     private InvoiceQueryService invoiceQueryService;
 
     @Autowired
-    private PaymentService paymentService;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -157,7 +157,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(BigDecimal.valueOf(0.10)),
                 "Descuento de prueba", director);
         invoiceRepository.save(invoice);
-        paymentService.registerPayment(new RegisterPaymentRequest(
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(4000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 

@@ -2,7 +2,8 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.PaymentPlanOptionResponse;
-import com.red_escuela.backend.billing.service.PaymentPlanOptionService;
+import com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase;
+import com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,10 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class PaymentPlanOptionController {
 
-    private final PaymentPlanOptionService paymentPlanOptionService;
+    private final CreatePaymentPlanOptionForCourseUseCase createForCourseUseCase;
+    private final CreatePaymentPlanOptionForProgramUseCase createForProgramUseCase;
 
-    public PaymentPlanOptionController(PaymentPlanOptionService paymentPlanOptionService) {
-        this.paymentPlanOptionService = paymentPlanOptionService;
+    public PaymentPlanOptionController(CreatePaymentPlanOptionForCourseUseCase createForCourseUseCase,
+                                        CreatePaymentPlanOptionForProgramUseCase createForProgramUseCase) {
+        this.createForCourseUseCase = createForCourseUseCase;
+        this.createForProgramUseCase = createForProgramUseCase;
     }
 
     // Defines cadence and the on-time-payment discount — it's a pricing rule, not an
@@ -27,13 +31,13 @@ public class PaymentPlanOptionController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentPlanOptionResponse crearParaCurso(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
-        return PaymentPlanOptionResponse.from(paymentPlanOptionService.crearParaCurso(id, request));
+        return PaymentPlanOptionResponse.from(createForCourseUseCase.create(id, request));
     }
 
     @PostMapping("/programs/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public PaymentPlanOptionResponse crearParaCarrera(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
-        return PaymentPlanOptionResponse.from(paymentPlanOptionService.crearParaCarrera(id, request));
+        return PaymentPlanOptionResponse.from(createForProgramUseCase.create(id, request));
     }
 }

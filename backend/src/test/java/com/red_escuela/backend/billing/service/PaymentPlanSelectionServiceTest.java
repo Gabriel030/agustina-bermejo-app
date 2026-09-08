@@ -52,10 +52,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
 
     @Autowired
-    private PaymentPlanSelectionService paymentPlanSelectionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
@@ -161,14 +167,14 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         autenticarComoPersona(director);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, windowEnabled, start, end);
-        return paymentPlanOptionService.crearParaCurso(course.getId(), request);
+        return createPaymentPlanOptionForCourseUseCase.create(course.getId(), request);
     }
 
     private PaymentPlanOption persistMonthlyOption(Course course, Person director) {
         autenticarComoPersona(director);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        return paymentPlanOptionService.crearParaCurso(course.getId(), request);
+        return createPaymentPlanOptionForCourseUseCase.create(course.getId(), request);
     }
 
     // 4. cursoDeSeisMesesOfreceUnaCuotaOSeisCuotasSegúnElPlanElegido
@@ -181,7 +187,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollmentMonthly = persistCourseEnrollment(studentMonthly, courseMonthly);
         PaymentPlanOption monthlyOption = persistMonthlyOption(courseMonthly, director);
         autenticarComoPersona(director);
-        paymentPlanSelectionService.seleccionarParaCurso(enrollmentMonthly.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
+        selectPaymentPlanForCourseUseCase.select(enrollmentMonthly.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
 
         YearMonth mesInicial = YearMonth.now();
         for (int i = 0; i < 6; i++) {
@@ -194,7 +200,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollmentUpfront = persistCourseEnrollment(studentUpfront, courseUpfront);
         PaymentPlanOption upfrontOption = persistUpfrontOption(courseUpfront, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), director);
         autenticarComoPersona(director);
-        paymentPlanSelectionService.seleccionarParaCurso(enrollmentUpfront.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 6));
+        selectPaymentPlanForCourseUseCase.select(enrollmentUpfront.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 6));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollmentUpfront, mesInicial);
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollmentUpfront.getId())).hasSize(6);
@@ -210,7 +216,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, false, null, null, director);
         autenticarComoPersona(director);
 
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6)))
                 .isInstanceOf(UpfrontWindowClosedException.class);
     }
@@ -225,7 +231,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().plusDays(10), LocalDate.now().plusDays(20), director);
         autenticarComoPersona(director);
 
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6)))
                 .isInstanceOf(UpfrontWindowClosedException.class);
     }
@@ -240,7 +246,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(20), LocalDate.now().minusDays(10), director);
         autenticarComoPersona(director);
 
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6)))
                 .isInstanceOf(UpfrontWindowClosedException.class);
     }
@@ -260,7 +266,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now(), LocalDate.now().plusDays(10), director);
         autenticarComoPersona(director);
 
-        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+        var selection = selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6));
         assertThat(selection).isNotNull();
         assertThat(selection.getPaymentPlanOption().getId()).isEqualTo(option.getId());
@@ -276,7 +282,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(10), LocalDate.now(), director);
         autenticarComoPersona(director);
 
-        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+        var selection = selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 6));
         assertThat(selection).isNotNull();
         assertThat(selection.getPaymentPlanOption().getId()).isEqualTo(option.getId());
@@ -292,7 +298,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), director);
         autenticarComoPersona(director);
 
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 10));
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 10));
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())).hasSize(10);
@@ -308,11 +314,11 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), director);
         autenticarComoPersona(director);
 
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 0)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
 
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), -3)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
@@ -335,7 +341,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption upfrontOption = persistUpfrontOption(course, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), director);
         autenticarComoPersona(director);
 
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 5));
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 5));
         YearMonth mesInicial = YearMonth.now();
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, mesInicial);
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())).hasSize(5);
@@ -363,10 +369,10 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         // "Hoy" queda fuera de las dos ventanas (mayo) — ambas tienen que rechazar por separado,
         // confirmando que la ventana es por PaymentPlanOption, no un valor global.
         autenticarComoPersona(director);
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollmentA.getId(), new SelectPaymentPlanRequest(optionA.getId(), 6)))
                 .isInstanceOf(UpfrontWindowClosedException.class);
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollmentB.getId(), new SelectPaymentPlanRequest(optionB.getId(), 6)))
                 .isInstanceOf(UpfrontWindowClosedException.class);
     }
@@ -382,7 +388,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         autenticarComoPersona(director);
 
         // MONTHLY nunca tiene ventana propia — elegirla siempre funciona.
-        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+        var selection = selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
         assertThat(selection).isNotNull();
     }
@@ -397,7 +403,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption option = persistUpfrontOption(course, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), director);
         autenticarComoPersona(director);
 
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 5));
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 5));
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId())).hasSize(5);
@@ -414,7 +420,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student, course);
         PaymentPlanOption mensual = persistMonthlyOption(course, director);
         autenticarComoPersona(director);
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         YearMonth base = YearMonth.now();
         for (int i = 0; i < 5; i++) {
@@ -459,7 +465,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student, course);
         PaymentPlanOption mensual = persistMonthlyOption(course, director);
         autenticarComoPersona(director);
-        paymentPlanSelectionService.seleccionarParaCurso(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForCourseUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         // El Term solo cubre 3 meses (base..base+2) aunque durationMonths permitiría 6.
         for (int i = 0; i < 5; i++) {
@@ -480,7 +486,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption mensual = persistMonthlyOption(course, director);
 
         autenticarComoPersona(student.getPerson());
-        var selection = paymentPlanSelectionService.seleccionarParaCurso(
+        var selection = selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         // Corrección 2026-09-04 (auditoría de calidad de tests): el único assert previo
@@ -501,7 +507,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         PaymentPlanOption mensual = persistMonthlyOption(course, director);
 
         autenticarComoPersona(intruso.getPerson());
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCurso(
+        assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null)))
                 .isInstanceOf(com.red_escuela.backend.exception.NotOwnEnrollmentException.class);
     }

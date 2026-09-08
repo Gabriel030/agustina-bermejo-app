@@ -71,10 +71,16 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     private ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
 
     @Autowired
-    private PaymentPlanSelectionService paymentPlanSelectionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
@@ -217,13 +223,13 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
     private PaymentPlanOption monthlyPlan(Program program, Person director) {
         authenticateAs(director);
-        return paymentPlanOptionService.crearParaCarrera(program.getId(),
+        return createPaymentPlanOptionForProgramUseCase.create(program.getId(),
                 new CreatePaymentPlanOptionRequest("Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null));
     }
 
     private PaymentPlanOption upfrontPlan(Program program, Person director) {
         authenticateAs(director);
-        return paymentPlanOptionService.crearParaCarrera(program.getId(),
+        return createPaymentPlanOptionForProgramUseCase.create(program.getId(),
                 new CreatePaymentPlanOptionRequest("Adelantado", PaymentPlanCadence.UPFRONT, null, true,
                         LocalDate.now().minusDays(1), LocalDate.now().plusDays(60)));
     }
@@ -251,7 +257,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
@@ -299,7 +305,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
         }
@@ -346,7 +352,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
         }
@@ -360,7 +366,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 10));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 10));
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base);
 
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20); // 10 del año 1 + 10 de la repetición
@@ -393,7 +399,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         // Año 1: 4 meses por MONTHLY...
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 4; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
         }
@@ -405,7 +411,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         // del año 1 queda en 6, no en 4+6.
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 6));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 6));
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base);
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(6);
 
@@ -414,7 +420,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption mensualAño2 = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensualAño2.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensualAño2.getId(), null));
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
         }
@@ -444,7 +450,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
         }
@@ -455,7 +461,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         // El año 2 solo tiene 8 cuotas de plantilla — pedir 9 tiene que rechazarse, aunque el
         // alumno ya haya facturado 10 en el año anterior sin ningún problema.
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCarrera(
+        assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 9)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
@@ -482,7 +488,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         // Pide 6 meses aunque la plantilla del cohorte solo tiene 4 — los 2 de más no se crean.
         for (int i = 0; i < 6; i++) {
@@ -517,7 +523,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         // Un solo mes dentro de la ventana (1 de 3 del tope, todavía queda cupo de sobra) y
         // después un período bien afuera de la ventana del Term — el rechazo tiene que venir

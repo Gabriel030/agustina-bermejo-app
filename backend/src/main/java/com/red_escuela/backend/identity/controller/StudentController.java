@@ -20,8 +20,9 @@ import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteUseCase;
+import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,14 +49,15 @@ public class StudentController {
     private final InvoiceQueryService invoiceQueryService;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CreditNoteService creditNoteService;
+    private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
+    private final CreateManualCreditNoteUseCase createManualCreditNoteUseCase;
     private final StudentRepository studentRepository;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
                               WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
                               InvoiceQueryService invoiceQueryService, CourseEnrollmentRepository courseEnrollmentRepository,
-                              ProgramEnrollmentRepository programEnrollmentRepository, CreditNoteService creditNoteService,
-                              StudentRepository studentRepository) {
+                              ProgramEnrollmentRepository programEnrollmentRepository, ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
+                              CreateManualCreditNoteUseCase createManualCreditNoteUseCase, StudentRepository studentRepository) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
@@ -63,7 +65,8 @@ public class StudentController {
         this.invoiceQueryService = invoiceQueryService;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.creditNoteService = creditNoteService;
+        this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
+        this.createManualCreditNoteUseCase = createManualCreditNoteUseCase;
         this.studentRepository = studentRepository;
     }
 
@@ -123,15 +126,15 @@ public class StudentController {
     @GetMapping("/{id}/credit-notes")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<CreditNoteResponse> creditNotes(@PathVariable Long id) {
-        return creditNoteService.listForStudent(id).stream().map(CreditNoteResponse::from).toList();
+        return listCreditNotesForStudentUseCase.list(id).stream().map(CreditNoteResponse::from).toList();
     }
 
-    // Solo ADMINISTRATIVE_CORRECTION/OTHER (CreditNoteService.createManual lo valida) — las otras
+    // Solo ADMINISTRATIVE_CORRECTION/OTHER (CreateManualCreditNoteService lo valida) — las otras
     // dos razones (EARLY_WITHDRAWAL_UPFRONT_UNUSED/RETROACTIVE_SCHOLARSHIP) las genera el sistema.
     @PostMapping("/{id}/credit-notes")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public CreditNoteResponse createCreditNote(@PathVariable Long id, @Valid @RequestBody CreateCreditNoteRequest request) {
-        return CreditNoteResponse.from(creditNoteService.createManual(id, request));
+        return CreditNoteResponse.from(createManualCreditNoteUseCase.create(id, request));
     }
 }

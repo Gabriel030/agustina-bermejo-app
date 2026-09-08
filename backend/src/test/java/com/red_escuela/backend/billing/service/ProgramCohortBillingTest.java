@@ -104,10 +104,16 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
     @Autowired
-    private PaymentPlanOptionService paymentPlanOptionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForCourseUseCase createPaymentPlanOptionForCourseUseCase;
 
     @Autowired
-    private PaymentPlanSelectionService paymentPlanSelectionService;
+    private com.red_escuela.backend.billing.usecase.paymentplan.CreatePaymentPlanOptionForProgramUseCase createPaymentPlanOptionForProgramUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
@@ -356,10 +362,10 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption option = paymentPlanOptionService.crearParaCarrera(program.getId(), request);
+        PaymentPlanOption option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
         // La plantilla tiene 10 cuotas — pedir 12 excede lo que queda del año.
-        assertThatThrownBy(() -> paymentPlanSelectionService.seleccionarParaCarrera(
+        assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
@@ -387,8 +393,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = paymentPlanOptionService.crearParaCarrera(program.getId(), upfrontRequest);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 10));
+        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 10));
 
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial);
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
@@ -411,8 +417,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = paymentPlanOptionService.crearParaCarrera(program.getId(), monthlyRequest);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
+        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial.plusMonths(10));
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
@@ -438,8 +444,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = paymentPlanOptionService.crearParaCarrera(program.getId(), monthlyRequest);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
+        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
 
         YearMonth mesInicial = YearMonth.now();
         for (int i = 0; i < 3; i++) {
@@ -451,8 +457,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         // idempotente, y solo se generan los 4 meses que faltaban del bloque.
         CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = paymentPlanOptionService.crearParaCarrera(program.getId(), upfrontRequest);
-        paymentPlanSelectionService.seleccionarParaCarrera(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 7));
+        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 7));
         invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial);
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
@@ -478,8 +484,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest programMonthly = new CreatePaymentPlanOptionRequest(
                 "Mensual carrera", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption programOption = paymentPlanOptionService.crearParaCarrera(program.getId(), programMonthly);
-        paymentPlanSelectionService.seleccionarParaCarrera(programEnrollment.getId(), new SelectPaymentPlanRequest(programOption.getId(), null));
+        PaymentPlanOption programOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), programMonthly);
+        selectPaymentPlanForProgramUseCase.select(programEnrollment.getId(), new SelectPaymentPlanRequest(programOption.getId(), null));
 
         // Un curso corto, independiente, para el mismo alumno.
         Term courseTerm = persistTerm(2026);
@@ -509,8 +515,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         CreatePaymentPlanOptionRequest courseMonthly = new CreatePaymentPlanOptionRequest(
                 "Mensual curso", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption courseOption = paymentPlanOptionService.crearParaCurso(course.getId(), courseMonthly);
-        paymentPlanSelectionService.seleccionarParaCurso(courseEnrollment.getId(), new SelectPaymentPlanRequest(courseOption.getId(), null));
+        PaymentPlanOption courseOption = createPaymentPlanOptionForCourseUseCase.create(course.getId(), courseMonthly);
+        selectPaymentPlanForCourseUseCase.select(courseEnrollment.getId(), new SelectPaymentPlanRequest(courseOption.getId(), null));
 
         YearMonth mesInicial = YearMonth.now();
         invoiceGenerationService.generarProximaCuotaParaCarrera(programEnrollment, mesInicial);

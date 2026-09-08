@@ -40,7 +40,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
 
     @Autowired
-    private CollectionsPolicyService collectionsPolicyService;
+    private com.red_escuela.backend.billing.usecase.collectionspolicy.CreateCollectionsPolicyUseCase createCollectionsPolicyUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.collectionspolicy.FindCurrentCollectionsPolicyUseCase findCurrentCollectionsPolicyUseCase;
 
     @Autowired
     private PersonRepository personRepository;
@@ -72,13 +75,13 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
     void aFutureEffectiveFromPolicyDoesNotAffectWhatIsCurrentToday() {
         Person director = persistPerson("director.policy1." + System.nanoTime());
         authenticateAs(director);
-        CollectionsPolicy today = collectionsPolicyService.create(new CreateCollectionsPolicyRequest(
+        CollectionsPolicy today = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
                 10, BigDecimal.valueOf(0.10), 30, 2, 60, 3, LocalDate.now()));
 
-        collectionsPolicyService.create(new CreateCollectionsPolicyRequest(
+        createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
                 5, BigDecimal.valueOf(0.20), 15, 1, 30, 2, LocalDate.now().plusMonths(1)));
 
-        CollectionsPolicy current = collectionsPolicyService.findCurrent();
+        CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
         assertThat(current.getId()).isEqualTo(today.getId());
         assertThat(current.getGracePeriodDays()).isEqualTo(10);
@@ -88,12 +91,12 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
     void theMostRecentPastOrPresentPolicyWins() {
         Person director = persistPerson("director.policy2." + System.nanoTime());
         authenticateAs(director);
-        collectionsPolicyService.create(new CreateCollectionsPolicyRequest(
+        createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
                 10, BigDecimal.valueOf(0.10), 30, 2, 60, 3, LocalDate.now().minusMonths(2)));
-        CollectionsPolicy mostRecent = collectionsPolicyService.create(new CreateCollectionsPolicyRequest(
+        CollectionsPolicy mostRecent = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
                 7, BigDecimal.valueOf(0.15), 20, 1, 45, 2, LocalDate.now().minusDays(1)));
 
-        CollectionsPolicy current = collectionsPolicyService.findCurrent();
+        CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
         assertThat(current.getId()).isEqualTo(mostRecent.getId());
         assertThat(current.getGracePeriodDays()).isEqualTo(7);
