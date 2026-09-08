@@ -180,6 +180,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Test
     void uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice() {
+        Person admin = persistPerson("admin.receipt1." + System.nanoTime());
         Student student = persistStudent("97000001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
@@ -188,17 +189,30 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+
+        // Sin esto, el comprobante queda PENDING_REVIEW colgado para el resto de la corrida —
+        // PaymentReceiptService.listarPendientes() es una cola GLOBAL sin scope por alumno, y
+        // cualquier otro test (ej. RegistrationFlowTest) que tome el primero de esa cola sin
+        // filtrar por su propio Invoice termina aprobando este comprobante ajeno en vez del suyo
+        // (hallazgo real de auditoría 2026-09-08: rompía RegistrationFlowTest bajo cierto orden
+        // de ejecución de Surefire, nunca bajo @Transactional/rollback).
+        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
     @Test
     void cannotUploadASecondReceiptWhileTheFirstIsStillPending() {
+        Person admin = persistPerson("admin.receipt2." + System.nanoTime());
         Student student = persistStudent("97000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
-        paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
+        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
 
         assertThatThrownBy(() -> paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(PaymentReceiptAlreadyPendingException.class);
+
+        // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
+        // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
+        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
     @Test
@@ -230,6 +244,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         // Sin límite de reintentos: la Invoice vuelve a estar disponible.
         PaymentReceipt retry = paymentReceiptService.subir(invoice.getId(), student.getId(), receiptFile());
         assertThat(retry.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+
+        // Limpieza: sin esto el retry queda PENDING_REVIEW colgado en la cola global (ver
+        // comentario de uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
+        paymentReceiptService.reject(retry.getId(), "Limpieza de test", admin);
     }
 
     @Test
@@ -316,6 +334,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Test
     void findOwnIncludesReceiptsFromProgramEnrollmentInvoicesNotOnlyCourseEnrollment() {
+        Person admin = persistPerson("admin.receipt9." + System.nanoTime());
         Student student = persistStudent("97000009");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student);
         Invoice invoice = persistInvoice(programEnrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
@@ -324,5 +343,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         List<PaymentReceipt> ownReceipts = paymentReceiptService.findOwn(student.getId());
 
         assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
+
+        // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
+        // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
+        paymentReceiptService.reject(receipt.getId(), "Limpieza de test", admin);
     }
 }
