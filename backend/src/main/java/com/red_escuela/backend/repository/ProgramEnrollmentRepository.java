@@ -1,6 +1,6 @@
 package com.red_escuela.backend.repository;
 
-import com.red_escuela.backend.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;

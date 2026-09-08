@@ -2,12 +2,12 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.entity.DocumentType;
-import com.red_escuela.backend.entity.FeeType;
-import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.entity.Student;
@@ -26,6 +26,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceFactory;
+import com.red_escuela.backend.billing.service.PaymentReceiptService;
+import com.red_escuela.backend.billing.service.ProgramCohortService;
 
 /**
  * Solicitud de alta en una carrera para el registro independiente (Épica 7).

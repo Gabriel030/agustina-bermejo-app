@@ -1,16 +1,16 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.EnrollmentBillingStatusResponse;
-import com.red_escuela.backend.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.dto.StudentResponse;
 import com.red_escuela.backend.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.entity.BillableEnrollment;
-import com.red_escuela.backend.entity.Invoice;
+import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

@@ -1,21 +1,22 @@
 package com.red_escuela.backend.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.RegisterRequest;
 import com.red_escuela.backend.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.CohortIntake;
+import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.entity.Course;
-import com.red_escuela.backend.entity.FeeType;
+import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
 import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.PriceRevision;
+import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
@@ -341,7 +342,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         // (ver ProgramEnrollmentApplicationService.aprobar) — el Payment real ya existe.
         assertThat(persisted.getPaymentReceipt()).isNotNull();
         assertThat(persisted.getPaymentReceipt().getStatus())
-                .isEqualTo(com.red_escuela.backend.entity.PaymentReceiptStatus.APPROVED);
+                .isEqualTo(com.red_escuela.backend.billing.entity.PaymentReceiptStatus.APPROVED);
     }
 
     @Test
@@ -445,7 +446,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        Long receiptId = objectMapper.readTree(pendientesResponse).get(0).get("id").asLong();
+        // La cola es global (sin scope por alumno) y ordenada por uploadedAt ascendente — tomar
+        // el último elemento (el más reciente) en vez de .get(0) hace que el test no dependa de
+        // que ningún otro test haya dejado un comprobante PENDING_REVIEW más viejo sin resolver
+        // (hallazgo real de auditoría 2026-09-08: bajo cierto orden de ejecución de Surefire,
+        // .get(0) tomaba un comprobante ajeno dejado por PaymentReceiptServiceTest).
+        JsonNode pendientes = objectMapper.readTree(pendientesResponse);
+        Long receiptId = pendientes.get(pendientes.size() - 1).get("id").asLong();
 
         mockMvc.perform(post("/payment-receipts/" + receiptId + "/approve")
                         .header("Authorization", "Bearer " + tokenAdministrativo))

@@ -5,12 +5,12 @@ import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollmentApplication;
-import com.red_escuela.backend.entity.FeeType;
+import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.InvoiceStatus;
-import com.red_escuela.backend.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
 import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.PriceRevision;
+import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.entity.Student;
@@ -33,6 +33,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.billing.service.PaymentReceiptService;
 
 /**
  * Épica 7 Fase 3: inscripción a curso con pago de la primera cuota. A diferencia de
@@ -181,6 +182,6 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> courseEnrollmentApplicationService.solicitarConPago(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante()))
-                .isInstanceOf(com.red_escuela.backend.exception.PriceRevisionNotFoundException.class);
+                .isInstanceOf(com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException.class);
     }
 }

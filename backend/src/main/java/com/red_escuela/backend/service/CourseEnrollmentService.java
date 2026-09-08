@@ -37,6 +37,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.red_escuela.backend.billing.service.ScholarshipService;
+import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
 /**
  * RF-PR-02: alta/baja de matriculación a Course (curso corto), exclusiva de Preceptor/

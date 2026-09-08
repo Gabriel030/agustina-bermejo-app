@@ -1,6 +1,6 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.AdvanceBillingYearRequest;
+import com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;

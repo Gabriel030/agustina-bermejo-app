@@ -3,6 +3,7 @@ package com.red_escuela.backend.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
 
 /**
  * Vínculo intent→resultado entre el pago de la primera cuota de un curso y la
