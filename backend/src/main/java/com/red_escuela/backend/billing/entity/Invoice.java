@@ -11,8 +11,10 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.entity.ExamBoardRegistration;
 import com.red_escuela.backend.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.entity.Subject;
 
 // Aggregate Root — Invoice is the root; InvoiceAdjustment (this phase) and PaymentAllocation
 // (Fase 6.2) are children only ever modified through Invoice's own methods (applyAdjustment,
@@ -22,8 +24,7 @@ import com.red_escuela.backend.entity.ProgramEnrollment;
 // always null until Fase 6.10 adds Subscription). Adding a column that references a table that
 // doesn't exist yet — and stays permanently null in the meantime — is exactly the kind of
 // speculative column this project avoids; Fase 6.10 adds it together with the Subscription
-// entity itself. Same applies to PaymentPlanOption/PaymentPlanSelection.subscription_id, and to
-// Invoice.subject_id/exam_board_registration_id (Fase 6.7, ad-hoc invoices).
+// entity itself. Same applies to PaymentPlanOption/PaymentPlanSelection.subscription_id.
 @Getter
 @Setter
 @Entity
@@ -51,6 +52,22 @@ public class Invoice {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_plan_selection_id")
     private PaymentPlanSelection paymentPlanSelection;
+
+    // Fase 6.7: ambas opcionales, sin CHECK de exclusividad — un EXAM_RIGHT referencia
+    // naturalmente las dos (materia + mesa puntual), mientras que los FeeType recurrentes
+    // nunca las usan.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id")
+    private Subject subject;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exam_board_registration_id")
+    private ExamBoardRegistration examBoardRegistration;
+
+    // Solo se completa en las Invoice ad-hoc (Fase 6.7) — las recurrentes no lo necesitan,
+    // feeType+period ya las describe.
+    @Column(name = "description", length = 500)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "fee_type", nullable = false)

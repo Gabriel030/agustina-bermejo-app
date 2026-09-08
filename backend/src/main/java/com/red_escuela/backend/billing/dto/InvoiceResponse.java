@@ -18,7 +18,8 @@ public record InvoiceResponse(
         List<InvoiceAdjustmentResponse> adjustments, String fiscalInvoiceStatus,
         LocalDateTime createdAt, LocalDateTime updatedAt,
         String cancelledByName, String cancelledReason, LocalDateTime cancelledAt,
-        Long studentId, String studentDni, ProductRef productRef) {
+        Long studentId, String studentDni, ProductRef productRef,
+        String description, Long subjectId, Long examBoardRegistrationId) {
 
     public static InvoiceResponse from(Invoice invoice) {
         Long studentId = null;
@@ -43,6 +44,9 @@ public record InvoiceResponse(
                 invoice.getCreatedAt(), invoice.getUpdatedAt(),
                 invoice.getCancelledBy() == null ? null : invoice.getCancelledBy().getName() + " " + invoice.getCancelledBy().getLastname(),
                 invoice.getCancelledReason(), invoice.getCancelledAt(),
-                studentId, studentDni, productRef);
+                studentId, studentDni, productRef,
+                invoice.getDescription(),
+                invoice.getSubject() == null ? null : invoice.getSubject().getId(),
+                invoice.getExamBoardRegistration() == null ? null : invoice.getExamBoardRegistration().getId());
     }
 }
