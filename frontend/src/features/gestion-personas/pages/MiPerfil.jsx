@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, Eye, EyeOff } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -15,6 +15,8 @@ import {
   useRevocarTodasLasSesiones,
   usePreferenciasNotificaciones,
   useActualizarPreferenciasNotificaciones,
+  useAvatar,
+  useSubirAvatar,
 } from '@/features/gestion-personas/hooks/useMiPerfil';
 
 const ETIQUETAS_EVENTO = {
@@ -62,6 +64,58 @@ function InputContrasena({ value, onChange, required, placeholder }) {
       >
         {visible ? <EyeOff size={15} /> : <Eye size={15} />}
       </button>
+    </div>
+  );
+}
+
+function AvatarUpload() {
+  const { data: perfil } = usePerfilPropio();
+  const { data: avatarUrl } = useAvatar(perfil?.hasAvatar);
+  const subir = useSubirAvatar();
+  const fileRef = useRef(null);
+
+  function iniciales(nombre, apellido) {
+    return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
+  }
+
+  async function onFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await subir.mutateAsync(file);
+    e.target.value = '';
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={subir.isPending}
+        className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl transition-opacity hover:opacity-90"
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-xl font-bold text-white">
+            {iniciales(perfil?.nombre, perfil?.apellido)}
+          </div>
+        )}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+          <Camera size={18} className="text-white" />
+        </div>
+      </button>
+      <div>
+        <p className="text-[13px] font-medium text-ink">Foto de perfil</p>
+        <p className="text-[11px] text-ink-faint">JPG o PNG, máx. 5 MB</p>
+        {subir.isPending && <p className="text-[11px] text-ink-faint">Subiendo...</p>}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        className="hidden"
+        onChange={onFileChange}
+      />
     </div>
   );
 }
@@ -118,6 +172,7 @@ function TabDatosPropios() {
 
   return (
     <form onSubmit={guardar} className="flex flex-col gap-5">
+      <AvatarUpload />
       {perfil?.legajo && (
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Legajo</span>

@@ -82,4 +82,7 @@ public class Person {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "avatar_path", length = 500)
+    private String avatarPath;
+
 }
