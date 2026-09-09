@@ -299,7 +299,7 @@ class SectionEvaluationConfigServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         LocalDate finalCall1 = LocalDate.now().plusDays(80);
-        LocalDate finalCall2 = LocalDate.now().plusDays(90);
+        LocalDate finalCall2 = LocalDate.now().plusDays(92);
         sectionEvaluationConfigService.saveDraft(section.getId(), leadInstructor.getId(),
                 new UpdateSectionEvaluationConfigRequest(2, LocalDate.now().plusDays(40), null, null,
                         LocalDate.now().plusDays(45), LocalDate.now().plusDays(60), null, null, finalCall1, finalCall2));
