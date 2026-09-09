@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -36,6 +37,31 @@ function CampoFormulario({ label, children }) {
     <div className="flex flex-col gap-1.5">
       <label className="text-[13px] font-medium text-ink-soft">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function InputContrasena({ value, onChange, required, placeholder }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        tabIndex={-1}
+        aria-label={visible ? 'Ocultar contraseña' : 'Ver contraseña'}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+      >
+        {visible ? <EyeOff size={15} /> : <Eye size={15} />}
+      </button>
     </div>
   );
 }
@@ -250,8 +276,7 @@ function TabSeguridad() {
         <form onSubmit={guardarContrasena} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <CampoFormulario label="Contraseña actual">
-              <Input
-                type="password"
+              <InputContrasena
                 value={pass.actual}
                 onChange={(e) => setPass((p) => ({ ...p, actual: e.target.value }))}
                 required
@@ -259,16 +284,14 @@ function TabSeguridad() {
             </CampoFormulario>
             <div />
             <CampoFormulario label="Nueva contraseña">
-              <Input
-                type="password"
+              <InputContrasena
                 value={pass.nueva}
                 onChange={(e) => setPass((p) => ({ ...p, nueva: e.target.value }))}
                 required
               />
             </CampoFormulario>
             <CampoFormulario label="Confirmar nueva contraseña">
-              <Input
-                type="password"
+              <InputContrasena
                 value={pass.confirmar}
                 onChange={(e) => setPass((p) => ({ ...p, confirmar: e.target.value }))}
                 required
