@@ -4,8 +4,11 @@ import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.dto.StudentDocumentResponse;
+import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
+import com.red_escuela.backend.repository.StudentDocumentRepository;
 import com.red_escuela.backend.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.StatusType;
@@ -52,12 +55,14 @@ public class StudentController {
     private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
     private final CreateManualCreditNoteUseCase createManualCreditNoteUseCase;
     private final StudentRepository studentRepository;
+    private final StudentDocumentRepository studentDocumentRepository;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
                               WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
                               InvoiceQueryService invoiceQueryService, CourseEnrollmentRepository courseEnrollmentRepository,
                               ProgramEnrollmentRepository programEnrollmentRepository, ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
-                              CreateManualCreditNoteUseCase createManualCreditNoteUseCase, StudentRepository studentRepository) {
+                              CreateManualCreditNoteUseCase createManualCreditNoteUseCase, StudentRepository studentRepository,
+                              StudentDocumentRepository studentDocumentRepository) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
@@ -68,23 +73,31 @@ public class StudentController {
         this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
         this.createManualCreditNoteUseCase = createManualCreditNoteUseCase;
         this.studentRepository = studentRepository;
+        this.studentDocumentRepository = studentDocumentRepository;
     }
 
-    // Matriz de permisos (sección 3): Director tiene R sobre el legajo de un alumno, a
-    // diferencia de las operaciones de escritura de abajo (baja/reset), que son exclusivas
-    // de Preceptor/Administrativo.
     @GetMapping
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<StudentResponse> list(
             @RequestParam(required = false) StatusType status,
-            @RequestParam(required = false) StudentOnboardingStatus onboardingStatus) {
-        return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus)).stream().map(StudentResponse::from).toList();
+            @RequestParam(required = false) StudentOnboardingStatus onboardingStatus,
+            @RequestParam(required = false) String search) {
+        return listStudentsUseCase.list(new ListStudentsCommand(status, onboardingStatus, search))
+                .stream().map(StudentResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public StudentResponse getRecord(@PathVariable Long id) {
-        return StudentResponse.from(getStudentRecordUseCase.getRecord(id));
+    public StudentRecordResponse getRecord(@PathVariable Long id) {
+        return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id));
+    }
+
+    @GetMapping("/{id}/documents")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
+    public List<StudentDocumentResponse> getDocuments(@PathVariable Long id) {
+        if (!studentRepository.existsById(id)) throw new StudentNotFoundException(id);
+        return studentDocumentRepository.findByStudentId(id).stream()
+                .map(StudentDocumentResponse::from).toList();
     }
 
     @PostMapping("/{id}/withdraw")

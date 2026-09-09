@@ -3,6 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
+import { PadronAlumnos } from '@/features/gestion-personas/pages/PadronAlumnos';
+import { LegajoAlumno } from '@/features/gestion-personas/pages/LegajoAlumno';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -60,17 +62,17 @@ const RUTAS_POR_ROL = {
   preceptor: {
     Layout: PreceptorLayout,
     paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { 'mesas-de-examen': PreceptorMesaExamen },
+    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen },
   },
   administrativo: {
     Layout: AdministrativoLayout,
     paginas: ['inicio', 'alumnos', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginasReales: { alumnos: PadronAlumnos, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'aprobaciones', 'esquemas-evaluacion'],
-    paginasReales: { aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+    paginas: ['inicio', 'alumnos', 'aprobaciones', 'esquemas-evaluacion'],
+    paginasReales: { alumnos: PadronAlumnos, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
   },
 };
 
@@ -141,6 +143,9 @@ export function AppRouter() {
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
+          {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
+            <Route path="alumnos/:id" element={<LegajoAlumno />} />
+          )}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
           {rol === 'director' && <Route path="aprobaciones/egresos" element={<DirectorAprobacionesEgresos />} />}
