@@ -64,6 +64,11 @@
   --radius-xl: 1.75rem;
 }
 
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -71,6 +76,10 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+  }
+
+  [data-slot="tabs-content"][data-state="active"] {
+    animation: tab-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   /* Scrollbar nativa fina y discreta en vez del track gris sólido por default

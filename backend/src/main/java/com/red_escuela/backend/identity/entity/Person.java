@@ -20,7 +20,7 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "file")
+    @Column(name = "file", insertable = false, updatable = false)
     private String file;
 
     @Column(name = "name")
@@ -81,5 +81,8 @@ public class Person {
 
     @Column(name = "phone_number")
     private String phoneNumber;
+
+    @Column(name = "avatar_path", length = 500)
+    private String avatarPath;
 
 }

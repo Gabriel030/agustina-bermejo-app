@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
+import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -117,6 +118,7 @@ export function AppRouter() {
             la ruta vieja redirige en vez de 404 para no romper bookmarks. */}
         <Route path="/mis-solicitudes" element={<Navigate to="/catalogo?tab=mis-solicitudes" replace />} />
         <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
+        <Route path="/perfil" element={<MiPerfil />} />
       </Route>
 
       {Object.entries(RUTAS_POR_ROL).map(([rol, { Layout, paginas, paginasReales }]) => (

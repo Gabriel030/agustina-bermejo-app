@@ -31,6 +31,9 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());
         }
+        if (request.sexo() != null) {
+            person.setSex(request.sexo());
+        }
         if (request.dni() != null) {
             person.setDni(request.dni());
         }
