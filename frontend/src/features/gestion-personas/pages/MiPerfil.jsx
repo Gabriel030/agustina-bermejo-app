@@ -118,6 +118,14 @@ function TabDatosPropios() {
 
   return (
     <form onSubmit={guardar} className="flex flex-col gap-5">
+      {perfil?.legajo && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">Legajo</span>
+          <span className="rounded-full bg-accent-soft px-3 py-0.5 text-[13px] font-semibold text-brand">
+            #{perfil.legajo}
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CampoFormulario label="Nombre">
           <Input value={valores.nombre ?? ''} disabled className="bg-neutral-bg/50" />
