@@ -58,7 +58,7 @@ export function LegajoAlumno() {
           )}
 
           <Tabs defaultValue="datos-personales">
-            <TabsList className="w-full">
+            <TabsList variant="line" className="w-full">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
               </TabsTrigger>

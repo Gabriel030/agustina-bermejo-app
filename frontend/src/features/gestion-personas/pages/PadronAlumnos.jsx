@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
@@ -120,7 +120,7 @@ export function PadronAlumnos() {
 
           <Tabs value={tabActivo} onValueChange={setTabActivo} className="mt-3">
             <div className="px-4">
-              <TabsList className="w-full">
+              <TabsList variant="line" className="w-full">
                 {TABS.map((tab) => (
                   <TabsTrigger key={tab.id} value={tab.id} className="flex-1">
                     {tab.label}
