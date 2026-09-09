@@ -218,6 +218,87 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvalidCredentialsException.class);
     }
 
+    private Student persistStudentWithName(
+            String dni, String username, String name, String lastname,
+            StudentOnboardingStatus onboardingStatus, Institution institution) {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName(name);
+        person.setLastname(lastname);
+        person.setDni(dni);
+        person.setUsername(username);
+        person.setEmail(username + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        Student student = new Student();
+        student.setPerson(person);
+        student.setInstitution(institution);
+        student.setOnboardingStatus(onboardingStatus);
+        entityManager.persist(student);
+        entityManager.flush();
+        return student;
+    }
+
+    @Test
+    void buscarPorNombreFiltraCorrectamente() throws Exception {
+        Institution institution = persistInstitution();
+        persistStudentWithName("41100001", "garcia.juan", "Juan", "Garcia", StudentOnboardingStatus.CONFIRMADO, institution);
+        persistStudentWithName("41100002", "perez.maria", "Maria", "Perez", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("preceptor.search1", "PRECEPTOR");
+
+        mockMvc.perform(get("/students").param("search", "garcia").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.dni=='41100001')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.dni=='41100002')]").isEmpty());
+    }
+
+    @Test
+    void buscarPorDniFiltraCorrectamente() throws Exception {
+        Institution institution = persistInstitution();
+        persistStudent("41200001", "alumno.dni1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
+        persistStudent("41200002", "alumno.dni2", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("preceptor.search2", "PRECEPTOR");
+
+        mockMvc.perform(get("/students").param("search", "41200001").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.dni=='41200001')]").isNotEmpty())
+                .andExpect(jsonPath("$[?(@.dni=='41200002')]").isEmpty());
+    }
+
+    @Test
+    void legajoDevuelveDatosExtendidos() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("41300001", "alumno.record1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("preceptor.record1", "PRECEPTOR");
+
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(student.getId()))
+                .andExpect(jsonPath("$.dni").value("41300001"))
+                .andExpect(jsonPath("$.onboardingStatus").value("CONFIRMADO"));
+    }
+
+    @Test
+    void documentosConStudentInexistenteDevuelve404() throws Exception {
+        String token = tokenWithRole("preceptor.docs1", "PRECEPTOR");
+
+        mockMvc.perform(get("/students/{id}/documents", 999888L).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void documentosConStudentSinDocumentosDevuelveListaVacia() throws Exception {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("41400001", "alumno.docs1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
+        String token = tokenWithRole("preceptor.docs2", "PRECEPTOR");
+
+        mockMvc.perform(get("/students/{id}/documents", student.getId()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
     @Test
     void resetPasswordGeneraTokenSinExponerLaPassword() throws Exception {
         Institution institution = persistInstitution();
