@@ -3,6 +3,7 @@ import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
+import com.red_escuela.backend.identity.exception.InvalidCurrentPasswordException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
@@ -155,6 +156,7 @@ public class GlobalExceptionHandler {
             NotEligibleForGraduationException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
+            InvalidCurrentPasswordException.class,
             InvalidSectionOverridesException.class,
             InvalidEvaluationDateException.class,
             SubmissionWindowClosedException.class,
