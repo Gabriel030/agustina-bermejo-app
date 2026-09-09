@@ -78,7 +78,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "nuevo.email@example.com", "1155556666", null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                "nuevo.email@example.com", "1155556666", null, null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +106,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, "60999000", null, null, null, null, null, null, null);
+                null, null, null, "60999000", null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,7 +128,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, "60111333", null, null, null, null, null, null, null);
+                null, null, null, "60111333", null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -159,7 +159,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     @Test
     void putMeSinAuthDevuelve401OForbidden() throws Exception {
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "x@example.com", null, null, null, null, null, null, null, null, null);
+                "x@example.com", null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
