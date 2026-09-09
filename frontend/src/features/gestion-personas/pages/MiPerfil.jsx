@@ -417,21 +417,35 @@ function TabSeguridad() {
 function TabNotificaciones() {
   const { data, isLoading } = usePreferenciasNotificaciones();
   const actualizar = useActualizarPreferenciasNotificaciones();
-  const [guardado, setGuardado] = useState(false);
+  const [pendiente, setPendiente] = useState(null);
   const [error, setError] = useState('');
 
-  async function togglePref(evento, canal, valorActual) {
-    setGuardado(false);
+  const prefsOriginales = data?.preferences ?? {};
+  const prefs = pendiente ?? prefsOriginales;
+  const haycambios = pendiente !== null;
+
+  function togglePref(evento, canal) {
+    const base = pendiente ?? prefsOriginales;
+    const valorActual = base[evento]?.[canal] ?? true;
+    setPendiente({
+      ...base,
+      [evento]: { ...(base[evento] ?? {}), [canal]: !valorActual },
+    });
     setError('');
-    const nuevoValor = !valorActual;
+  }
+
+  async function guardar() {
     try {
-      await actualizar.mutateAsync({
-        preferences: { [evento]: { [canal]: nuevoValor } },
-      });
-      setGuardado(true);
+      await actualizar.mutateAsync({ preferences: pendiente });
+      setPendiente(null);
     } catch (err) {
       setError(err.message ?? 'No se pudo guardar.');
     }
+  }
+
+  function cancelar() {
+    setPendiente(null);
+    setError('');
   }
 
   if (isLoading) {
@@ -444,7 +458,6 @@ function TabNotificaciones() {
     );
   }
 
-  const prefs = data?.preferences ?? {};
   const eventos = Object.keys(ETIQUETAS_EVENTO);
   const canales = Object.keys(ETIQUETAS_CANAL);
 
@@ -472,7 +485,7 @@ function TabNotificaciones() {
                     <td key={canal} className="py-3 text-center">
                       <button
                         type="button"
-                        onClick={() => togglePref(evento, canal, activo)}
+                        onClick={() => togglePref(evento, canal)}
                         disabled={actualizar.isPending}
                         aria-label={`${ETIQUETAS_EVENTO[evento]} — ${ETIQUETAS_CANAL[canal]}: ${activo ? 'activado' : 'desactivado'}`}
                         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
@@ -494,7 +507,16 @@ function TabNotificaciones() {
         </table>
       </div>
       {error && <p className="text-[13px] text-danger">{error}</p>}
-      {guardado && <p className="text-[13px] text-success">Preferencia guardada.</p>}
+      {haycambios && (
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="ghost" onClick={cancelar} disabled={actualizar.isPending}>
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={guardar} disabled={actualizar.isPending}>
+            {actualizar.isPending ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
