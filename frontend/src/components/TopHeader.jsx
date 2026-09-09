@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { MobileMenu } from '@/components/MobileMenu';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -20,7 +21,7 @@ export function TopHeader({ titulo, items }) {
 
         <div className="flex shrink-0 items-center gap-3">
           {usuario && (
-            <div className="flex items-center gap-2.5">
+            <Link to="/perfil" className="flex items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-brand font-heading text-[13px] font-bold text-white">
                 {iniciales(usuario.nombre, usuario.apellido)}
               </div>
@@ -30,7 +31,7 @@ export function TopHeader({ titulo, items }) {
                 </div>
                 <div className="truncate text-[11px] leading-tight text-ink-faint">{titulo}</div>
               </div>
-            </div>
+            </Link>
           )}
           <NotificationBell />
         </div>
