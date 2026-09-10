@@ -5,6 +5,7 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
 import { PadronAlumnos } from '@/features/gestion-personas/pages/PadronAlumnos';
 import { LegajoAlumno } from '@/features/gestion-personas/pages/LegajoAlumno';
+import { NuevoAlumno } from '@/features/gestion-personas/pages/NuevoAlumno';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -145,6 +146,9 @@ export function AppRouter() {
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
           {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
             <Route path="alumnos/:id" element={<LegajoAlumno />} />
+          )}
+          {(rol === 'preceptor' || rol === 'administrativo') && (
+            <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
           )}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
