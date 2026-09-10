@@ -4,6 +4,32 @@ Leé esto antes de tocar `frontend/`. Es la propuesta de patrones para el proyec
 lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que falta
 (Épica 2 en adelante) la toma como punto de partida obligatorio.
 
+## Protocolo obligatorio antes de tocar cualquier componente o pantalla
+
+**Siempre antes de crear o modificar cualquier componente, pantalla o pieza de UI:**
+
+1. **Listar el catálogo existente** — `ls src/components/` y `ls src/components/ui/`
+   para saber qué componentes compartidos hay. No inventar uno nuevo sin primero
+   verificar que no existe ya.
+2. **Leer 1-2 pantallas similares ya implementadas** — buscar en
+   `src/features/*/pages/` o `src/pages/` una pantalla del mismo tipo (lista,
+   detalle, formulario, wizard) y copiar sus patrones de layout, filas, botones
+   y cards exactamente, sin reinventarlos.
+3. **Verificar variantes de componentes existentes** antes de extender — si el
+   componente admite `variant=`, revisar cuáles existen antes de agregar estilos
+   a mano. Ejemplo: `Button` tiene `default/outline/secondary/ghost/destructive/
+   gradient`; `TabsList` tiene `variant="line"` obligatorio en este proyecto.
+4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
+   hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
+   `flex flex-col gap-1`. No usar `divide-y divide-border` — fue descartado a favor
+   de este patrón (ver DocenteMisComisiones, PadronAlumnos).
+5. **Campos de solo lectura**: usar `<Input value={...} readOnly className="cursor-default" />`
+   en vez de `<span>`. Mantiene consistencia visual con formularios editables.
+6. **Botón de acción primaria**: `variant="gradient"`. Acción secundaria/cancelar:
+   `variant="outline"`. Destructivo: `variant="destructive"`.
+
+Este protocolo aplica tanto para implementación como para mockups.
+
 ## Filosofía general
 
 Mismo principio que el backend: sin abstracciones especulativas, sin librerías
