@@ -1,5 +1,7 @@
 import { useDocumentosAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
 import { Skeleton } from '@/components/Skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const TIPO_DOCUMENTO = {
   DNI_FRENTE: 'DNI frente',
@@ -28,9 +30,9 @@ const MOTIVO_BAJA = {
 function Campo({ label, value }) {
   if (!value) return null;
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       <span className="text-[11px] font-medium uppercase tracking-wider text-ink-faint">{label}</span>
-      <span className="text-[14px] text-ink">{value}</span>
+      <Input value={value} readOnly className="cursor-default" />
     </div>
   );
 }
@@ -74,7 +76,7 @@ function DocumentosSection({ studentId }) {
   );
 }
 
-export function DatosPersonalesTab({ legajo }) {
+export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onReset, onBaja }) {
   if (!legajo) return <Skeleton className="h-64 w-full" />;
 
   const domicilio = legajo.domicilio;
@@ -114,6 +116,34 @@ export function DatosPersonalesTab({ legajo }) {
       )}
 
       <DocumentosSection studentId={legajo.id} />
+
+      {puedeAccionar && (
+        <div className="flex flex-col gap-4">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Acciones</h3>
+          <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+            <div className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[14px] font-medium text-ink">Resetear contraseña</span>
+                <span className="text-[12px] text-ink-faint">Envía un link de recuperación al email del alumno.</span>
+              </div>
+              <Button variant="gradient" size="sm" onClick={onReset}>
+                Resetear contraseña
+              </Button>
+            </div>
+            {puedeDarDeBaja && (
+              <div className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-medium text-ink">Dar de baja</span>
+                  <span className="text-[12px] text-ink-faint">Marca al alumno como dado de baja del sistema. Esta acción no se puede deshacer.</span>
+                </div>
+                <Button variant="destructive" size="sm" onClick={onBaja}>
+                  Dar de baja
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

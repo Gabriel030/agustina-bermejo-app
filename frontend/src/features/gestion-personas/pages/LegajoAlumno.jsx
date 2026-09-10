@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/Skeleton';
+import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
+import { useWithdrawStudent, useResetStudentPassword } from '@/features/gestion-personas/hooks/useAccionesLegajo';
+import { DarDeBajaModal } from '@/features/gestion-personas/components/DarDeBajaModal';
+import { ResetPasswordModal } from '@/features/gestion-personas/components/ResetPasswordModal';
 import { DatosPersonalesTab } from './tabs/DatosPersonalesTab';
 import { AcademicoTab } from './tabs/AcademicoTab';
 import { EvaluacionTab } from './tabs/EvaluacionTab';
@@ -12,13 +17,24 @@ import { FinancieroTab } from './tabs/FinancieroTab';
 
 const ESTADO_STATUS_BADGE = {
   ACTIVE: { label: 'Activo', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  INACTIVE: { label: 'Dado de baja', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  DELETED: { label: 'Dado de baja', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
 export function LegajoAlumno() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const { data: legajo, isLoading, isError } = useLegajoAlumno(id);
+
+  const [bajaOpen, setBajaOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+
+  const withdrawMutation = useWithdrawStudent(id);
+  const resetMutation = useResetStudentPassword(id);
+
+  const rolBase = usuario?.roles[0]?.toLowerCase();
+  const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
+  const puededarDeBaja = puedeAccionar && legajo?.status !== 'DELETED';
 
   const badge = ESTADO_STATUS_BADGE[legajo?.status];
 
@@ -74,7 +90,13 @@ export function LegajoAlumno() {
             </TabsList>
 
             <TabsContent value="datos-personales" className="mt-4">
-              <DatosPersonalesTab legajo={legajo} />
+              <DatosPersonalesTab
+                legajo={legajo}
+                puedeAccionar={puedeAccionar}
+                puedeDarDeBaja={puededarDeBaja}
+                onReset={() => setResetOpen(true)}
+                onBaja={() => setBajaOpen(true)}
+              />
             </TabsContent>
             <TabsContent value="academico" className="mt-4">
               <AcademicoTab />
@@ -88,6 +110,21 @@ export function LegajoAlumno() {
           </Tabs>
         </GlassCard>
       </div>
+
+      <DarDeBajaModal
+        open={bajaOpen}
+        onClose={() => setBajaOpen(false)}
+        onConfirmar={(data) => withdrawMutation.mutate(data, { onSuccess: () => setBajaOpen(false) })}
+        isPending={withdrawMutation.isPending}
+      />
+
+      <ResetPasswordModal
+        open={resetOpen}
+        onClose={() => setResetOpen(false)}
+        email={legajo?.email}
+        onConfirmar={() => resetMutation.mutateAsync()}
+        isPending={resetMutation.isPending}
+      />
     </PageContainer>
   );
 }

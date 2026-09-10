@@ -13,7 +13,7 @@ import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 const TABS = [
   { id: 'activos', label: 'Activos', params: { status: 'ACTIVE', onboardingStatus: 'CONFIRMADO' } },
   { id: 'prospectos', label: 'Prospectos', params: { onboardingStatus: 'PROSPECTO' } },
-  { id: 'bajas', label: 'Bajas', params: { status: 'INACTIVE' } },
+  { id: 'bajas', label: 'Bajas', params: { status: 'DELETED' } },
 ];
 
 const ESTADO_ONBOARDING = {
