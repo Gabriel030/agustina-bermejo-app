@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
-import com.red_escuela.backend.dto.StudentDocumentResponse;
+import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
