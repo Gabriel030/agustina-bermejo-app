@@ -12,6 +12,7 @@ public record AddressResponse(
         String pais) {
 
     public static AddressResponse from(Address a) {
+        if (a == null) return null;
         return new AddressResponse(
                 a.getStreet(), a.getNumber(), a.getFloor(),
                 a.getCity(), a.getState(), a.getPostalCode(), a.getCountry());
