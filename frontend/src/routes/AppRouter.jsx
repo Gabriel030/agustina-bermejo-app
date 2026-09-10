@@ -5,7 +5,6 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
-import { Inscripcion } from '@/pages/Inscripcion';
 import { VerificacionEmail } from '@/pages/VerificacionEmail';
 import { Catalogo } from '@/pages/Catalogo';
 import { DetalleCarrera } from '@/pages/DetalleCarrera';
@@ -103,7 +102,6 @@ export function AppRouter() {
         <Route path="/registrarse" element={<Registrarse />} />
         <Route path="/olvide-mi-contrasena" element={<ForgotPassword />} />
         <Route path="/no-autorizado" element={<NoAutorizado />} />
-        <Route path="/inscripcion" element={<Inscripcion />} />
         <Route path="/verificar-email" element={<VerificacionEmail />} />
       </Route>
 
