@@ -5,6 +5,8 @@ import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
+import { Inscripcion } from '@/pages/Inscripcion';
+import { VerificacionEmail } from '@/pages/VerificacionEmail';
 import { Catalogo } from '@/pages/Catalogo';
 import { DetalleCarrera } from '@/pages/DetalleCarrera';
 import { DetalleCurso } from '@/pages/DetalleCurso';
@@ -22,6 +24,8 @@ import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEval
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
+import { PadronAlumnos } from '@/pages/PadronAlumnos';
+import { NuevoAlumno } from '@/pages/NuevoAlumno';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
 import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
 import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
@@ -59,12 +63,12 @@ const RUTAS_POR_ROL = {
   preceptor: {
     Layout: PreceptorLayout,
     paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { 'mesas-de-examen': PreceptorMesaExamen },
+    paginasReales: { 'mesas-de-examen': PreceptorMesaExamen, alumnos: PadronAlumnos },
   },
   administrativo: {
     Layout: AdministrativoLayout,
     paginas: ['inicio', 'alumnos', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginasReales: { 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia, alumnos: PadronAlumnos },
   },
   director: {
     Layout: DirectorLayout,
@@ -99,6 +103,8 @@ export function AppRouter() {
         <Route path="/registrarse" element={<Registrarse />} />
         <Route path="/olvide-mi-contrasena" element={<ForgotPassword />} />
         <Route path="/no-autorizado" element={<NoAutorizado />} />
+        <Route path="/inscripcion" element={<Inscripcion />} />
+        <Route path="/verificar-email" element={<VerificacionEmail />} />
       </Route>
 
       <Route
@@ -139,6 +145,7 @@ export function AppRouter() {
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
+          {(rol === 'preceptor' || rol === 'administrativo') && <Route path="alumnos/nuevo" element={<NuevoAlumno />} />}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
           {rol === 'director' && <Route path="aprobaciones/egresos" element={<DirectorAprobacionesEgresos />} />}
