@@ -6,6 +6,8 @@ import lombok.Setter;
 import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 
 @Getter
 @Setter

@@ -1,0 +1,137 @@
+package com.red_escuela.backend.enrollment.controller;
+
+import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
+import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
+import com.red_escuela.backend.enrollment.entity.DocumentType;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentApplicationNotFoundException;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.GetProgramEnrollmentApplicationUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ListMyProgramEnrollmentApplicationsUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ListPendingProgramEnrollmentApplicationsUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RejectProgramEnrollmentApplicationCommand;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RejectProgramEnrollmentApplicationUseCase;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationCommand;
+import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationUseCase;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+/**
+ * Autoservicio (/me/...) sin @PreAuthorize adicional — mismo criterio que
+ * MeEnrollmentController, la autenticación ya la exige el filtro JWT global.
+ * Los endpoints de decisión (approve/reject) sí llevan @PreAuthorize — mismo
+ * rol que ya confirma prospectos (ProspectController).
+ */
+@RestController
+public class ProgramEnrollmentApplicationController {
+
+    private final CurrentStudentService currentStudentService;
+    private final CurrentPersonService currentPersonService;
+    private final RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase;
+    private final ListMyProgramEnrollmentApplicationsUseCase listMyProgramEnrollmentApplicationsUseCase;
+    private final ListPendingProgramEnrollmentApplicationsUseCase listPendingProgramEnrollmentApplicationsUseCase;
+    private final GetProgramEnrollmentApplicationUseCase getProgramEnrollmentApplicationUseCase;
+    private final AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase;
+    private final ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase;
+    private final RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
+
+    public ProgramEnrollmentApplicationController(
+            CurrentStudentService currentStudentService,
+            CurrentPersonService currentPersonService,
+            RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase,
+            ListMyProgramEnrollmentApplicationsUseCase listMyProgramEnrollmentApplicationsUseCase,
+            ListPendingProgramEnrollmentApplicationsUseCase listPendingProgramEnrollmentApplicationsUseCase,
+            GetProgramEnrollmentApplicationUseCase getProgramEnrollmentApplicationUseCase,
+            AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase,
+            ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase,
+            RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase) {
+        this.currentStudentService = currentStudentService;
+        this.currentPersonService = currentPersonService;
+        this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
+        this.listMyProgramEnrollmentApplicationsUseCase = listMyProgramEnrollmentApplicationsUseCase;
+        this.listPendingProgramEnrollmentApplicationsUseCase = listPendingProgramEnrollmentApplicationsUseCase;
+        this.getProgramEnrollmentApplicationUseCase = getProgramEnrollmentApplicationUseCase;
+        this.addProgramEnrollmentApplicationDocumentUseCase = addProgramEnrollmentApplicationDocumentUseCase;
+        this.approveProgramEnrollmentApplicationUseCase = approveProgramEnrollmentApplicationUseCase;
+        this.rejectProgramEnrollmentApplicationUseCase = rejectProgramEnrollmentApplicationUseCase;
+    }
+
+    @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProgramEnrollmentApplicationResponse solicitar(
+            @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
+        Student student = currentStudentService.resolveCurrentStudent();
+        ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
+                new RequestProgramEnrollmentApplicationCommand(student, programId, cohortId, comprobante));
+        return ProgramEnrollmentApplicationResponse.from(application);
+    }
+
+    @GetMapping("/me/program-enrollment-applications")
+    public List<ProgramEnrollmentApplicationResponse> misSolicitudes() {
+        Student student = currentStudentService.resolveCurrentStudent();
+        return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
+                .map(ProgramEnrollmentApplicationResponse::from).toList();
+    }
+
+    @PostMapping("/me/program-enrollment-applications/{id}/documents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void agregarDocumento(@PathVariable Long id, @RequestParam DocumentType type, @RequestPart MultipartFile file) {
+        Student student = currentStudentService.resolveCurrentStudent();
+        ProgramEnrollmentApplication application = getProgramEnrollmentApplicationUseCase.get(id);
+        exigirPropietario(application, student);
+        addProgramEnrollmentApplicationDocumentUseCase.add(new AddProgramEnrollmentApplicationDocumentCommand(id, type, file));
+    }
+
+    @GetMapping("/program-enrollment-applications")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public List<ProgramEnrollmentApplicationResponse> listarPendientes() {
+        return listPendingProgramEnrollmentApplicationsUseCase.list().stream()
+                .map(ProgramEnrollmentApplicationResponse::from).toList();
+    }
+
+    @PostMapping("/program-enrollment-applications/{id}/approve")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public ProgramEnrollmentApplicationResponse aprobar(@PathVariable Long id) {
+        Person decidedBy = currentPersonService.resolveCurrentPerson();
+        return ProgramEnrollmentApplicationResponse.from(
+                approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(id, decidedBy)));
+    }
+
+    @PostMapping("/program-enrollment-applications/{id}/reject")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public ProgramEnrollmentApplicationResponse rechazar(
+            @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request) {
+        Person decidedBy = currentPersonService.resolveCurrentPerson();
+        return ProgramEnrollmentApplicationResponse.from(
+                rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(id, decidedBy, request.reason())));
+    }
+
+    // Mismo patrón que MeEnrollmentController.exigirPropietario: 404 (no 403) para
+    // no revelar que una solicitud ajena existe.
+    private void exigirPropietario(ProgramEnrollmentApplication application, Student student) {
+        if (!application.getStudent().getId().equals(student.getId())) {
+            throw new ProgramEnrollmentApplicationNotFoundException(application.getId());
+        }
+    }
+}

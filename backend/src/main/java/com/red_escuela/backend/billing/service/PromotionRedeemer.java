@@ -5,8 +5,8 @@ import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
 import com.red_escuela.backend.billing.repository.PromotionRedemptionRepository;
 import com.red_escuela.backend.billing.repository.PromotionRepository;
-import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

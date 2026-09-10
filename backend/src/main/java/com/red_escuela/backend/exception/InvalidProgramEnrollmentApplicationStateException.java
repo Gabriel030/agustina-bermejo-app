@@ -1,6 +1,6 @@
 package com.red_escuela.backend.exception;
 
-import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 
 public class InvalidProgramEnrollmentApplicationStateException extends RuntimeException {
     public InvalidProgramEnrollmentApplicationStateException(Long id, ProgramEnrollmentApplicationStatus status) {

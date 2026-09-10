@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 @Getter
 @Setter

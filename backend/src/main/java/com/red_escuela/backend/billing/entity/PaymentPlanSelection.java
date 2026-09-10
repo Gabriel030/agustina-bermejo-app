@@ -6,9 +6,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 @Getter
 @Setter

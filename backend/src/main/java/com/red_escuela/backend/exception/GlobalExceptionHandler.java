@@ -74,6 +74,31 @@ import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyE
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
+import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
+import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
+import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
+import com.red_escuela.backend.enrollment.exception.AmbiguousSectionException;
+import com.red_escuela.backend.enrollment.exception.InvalidSectionChangeException;
+import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentApplicationNotFoundException;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
+import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
+import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
+import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
+import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
+import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupException;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlreadyActiveException;
+import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
+import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
+import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

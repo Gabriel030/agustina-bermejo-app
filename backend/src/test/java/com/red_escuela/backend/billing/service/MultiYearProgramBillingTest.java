@@ -13,8 +13,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -27,7 +27,7 @@ import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -46,7 +46,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 /**
  * Decisión 2026-09-03 (progresión multi-año): carreras de 2, 2.5, 3 y 3.5 años, avance de año,

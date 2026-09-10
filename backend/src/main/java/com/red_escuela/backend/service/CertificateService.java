@@ -4,14 +4,14 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.entity.CertificateIssuance;
 import com.red_escuela.backend.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.exception.CertificateNotEligibleException;
-import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CertificateIssuanceRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 /**
  * RF-AL-12: constancias en PDF sin entidad propia (decisión 6) — se generan 100% on-demand a

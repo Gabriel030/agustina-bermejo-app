@@ -1,16 +1,16 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;

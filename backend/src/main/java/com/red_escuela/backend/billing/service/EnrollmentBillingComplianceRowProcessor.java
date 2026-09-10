@@ -1,18 +1,18 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.entity.BillableEnrollment;
+import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
-import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import com.red_escuela.backend.service.CourseEnrollmentService;
-import com.red_escuela.backend.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 // Bean separado de EnrollmentBillingComplianceSweepService por el mismo motivo que
 // InvoiceOverdueRowProcessor: @Transactional(REQUIRES_NEW) no se respeta en una auto-invocación

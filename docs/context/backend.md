@@ -139,6 +139,44 @@ service ni controller — parecen legacy sin uso, quedaron en
 `com.red_escuela.backend.entity` a la espera de una decisión explícita
 sobre si se eliminan.
 
+## Paquete por feature: `enrollment`
+
+Matriculación a curso/carrera y sus solicitudes (`CourseEnrollment`,
+`ProgramEnrollment`, `CourseEnrollmentApplication`,
+`ProgramEnrollmentApplication`, `SubjectSectionEnrollment`,
+`DirectorApprovalRequest`, alta de prospectos) viven en
+`com.red_escuela.backend.enrollment.*`. `StudentDocument`/`DocumentType`
+entraron acá también — pese al nombre, su único uso real es como adjunto de
+`ProspectService`/`ProgramEnrollmentApplicationService`, no es un concepto
+de `identity`.
+
+**La mayoría de los services quedan cohesivos, sin Use Case**:
+`CourseEnrollmentService`, `CourseEnrollmentApplicationService`,
+`CourseSectionEnrollmentService`, `ProgramEnrollmentService`,
+`ProspectService`, `SubjectSectionEnrollmentService` — mismo criterio que
+`academicstructure`, cada uno es CRUD/lifecycle de un solo concepto sin
+mezclar actores. `CourseEnrollmentWaitlistExpiryJob` es un job programado,
+tampoco es use case.
+
+**Dos excepciones reales, migradas al patrón Use Case** — mismo criterio
+que el viejo `PaymentReceiptService` de billing: dos actores con motivos
+distintos mezclados en un mismo service/controller:
+
+1. `enrollment/usecase/directorapproval/` — el viejo
+   `DirectorApprovalRequestService` mezclaba Preceptor/Administrativo
+   *solicitando* una excepción con Director *aprobando/rechazando/
+   listando*. 5 use cases, con `DirectorApprovalRequestFinder` (findOrThrow
+   compartido) y `DirectorApprovalRequestDecisionRecorder` (lógica de
+   aprobar/rechazar compartida entre `ApproveDirectorApprovalRequestService`
+   y `RejectDirectorApprovalRequestService`) como colaboradores en
+   `enrollment/service/`.
+2. `enrollment/usecase/programenrollmentapplication/` — el viejo
+   `ProgramEnrollmentApplicationService` mezclaba autoservicio del Alumno
+   (`solicitar con pago`/`ver las propias`/`agregar documento`) con
+   decisión de Preceptor/Administrativo (`listar pendientes`/`aprobar`/
+   `rechazar`). 7 use cases, con `ProgramEnrollmentApplicationFinder` como
+   colaborador del findOrThrow compartido.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

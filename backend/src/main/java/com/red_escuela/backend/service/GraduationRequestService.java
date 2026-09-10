@@ -4,18 +4,18 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.entity.GraduationRequest;
 import com.red_escuela.backend.entity.GraduationRequestStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
-import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.notification.GraduationRequestApprovedEvent;
 import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
 import com.red_escuela.backend.repository.GraduationRequestRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 /**
  * RF-AL-15/RF-DI-05: flujo de egreso con estados explícitos (decisión 8) — Alumno solicita,

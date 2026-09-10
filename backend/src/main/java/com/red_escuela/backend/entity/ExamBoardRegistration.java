@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 
 /*
  * Inscripción de un alumno a una mesa de examen: referencia la fila de inscripción puntual

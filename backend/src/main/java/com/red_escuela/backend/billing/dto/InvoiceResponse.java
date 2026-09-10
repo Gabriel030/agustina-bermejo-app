@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -6,9 +6,9 @@ import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
@@ -21,7 +21,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
-import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -40,7 +40,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.red_escuela.backend.service.CourseEnrollmentService;
+import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 
 // Fase 6.4: tests 11, 32/82 (monto fijo no se ajusta solo), 80, 81. NO @Transactional a
 // propósito: InvoiceFactory.crearParaCurso usa REQUIRES_NEW (mismo motivo que el resto de los
