@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 
@@ -103,6 +104,9 @@ export function PadronAlumnos() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Padrón de alumnos</h1>
+          {(rolBase === 'preceptor' || rolBase === 'administrativo') && (
+            <Button onClick={() => navigate(`/${rolBase}/alumnos/nuevo`)}>Nuevo alumno</Button>
+          )}
         </div>
 
         <GlassCard className="overflow-hidden p-0">
