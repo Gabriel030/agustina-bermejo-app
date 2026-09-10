@@ -1,23 +1,23 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.PersonRoleGranter;
 
-import com.red_escuela.backend.dto.CreateInvoiceFromFeeScheduleRequest;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.entity.DocumentType;
-import com.red_escuela.backend.entity.FeeScheduleConcept;
-import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.PaymentReceipt;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Program;
-import com.red_escuela.backend.entity.ProgramCohort;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.entity.ProgramEnrollmentApplicationStatus;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.entity.StudentDocument;
 import com.red_escuela.backend.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.exception.ProgramEnrollmentApplicationNotFoundException;
-import com.red_escuela.backend.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.repository.ProgramEnrollmentApplicationRepository;
-import com.red_escuela.backend.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.repository.StudentDocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceFactory;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
+import com.red_escuela.backend.billing.service.ProgramCohortService;
 
 /**
  * Solicitud de alta en una carrera para el registro independiente (Épica 7).
@@ -49,8 +54,9 @@ public class ProgramEnrollmentApplicationService {
     private final FileStorageService fileStorageService;
     private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
-    private final InvoiceService invoiceService;
-    private final PaymentReceiptService paymentReceiptService;
+    private final InvoiceFactory invoiceFactory;
+    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+    private final ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
     private final ProgramCohortService programCohortService;
 
     public ProgramEnrollmentApplicationService(
@@ -60,8 +66,9 @@ public class ProgramEnrollmentApplicationService {
             FileStorageService fileStorageService,
             ProgramEnrollmentService programEnrollmentService,
             PersonRoleGranter personRoleGranter,
-            InvoiceService invoiceService,
-            PaymentReceiptService paymentReceiptService,
+            InvoiceFactory invoiceFactory,
+            UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase,
+            ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase,
             ProgramCohortService programCohortService) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
@@ -69,8 +76,9 @@ public class ProgramEnrollmentApplicationService {
         this.fileStorageService = fileStorageService;
         this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
-        this.invoiceService = invoiceService;
-        this.paymentReceiptService = paymentReceiptService;
+        this.invoiceFactory = invoiceFactory;
+        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
+        this.approvePaymentReceiptUseCase = approvePaymentReceiptUseCase;
         this.programCohortService = programCohortService;
     }
 
@@ -90,10 +98,8 @@ public class ProgramEnrollmentApplicationService {
                     throw new AlreadyHasPendingApplicationException(student.getId(), programId);
                 });
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(student.getId(),
-                new CreateInvoiceFromFeeScheduleRequest(programId, null, FeeScheduleConcept.MATRICULA, LocalDate.now()),
-                cohort, null, null, null, null);
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+        Invoice invoice = invoiceFactory.crearAdHocParaCarrera(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), comprobante);
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);
@@ -150,20 +156,20 @@ public class ProgramEnrollmentApplicationService {
         Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
         var enrollment = programEnrollmentService.matricular(student.getId(),
                 new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(student.getPerson());
+        personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
 
         // Recién ahora existe el ProgramEnrollment — la factura de matrícula (generada
         // al solicitar, sin vínculo posible en ese momento) se completa retroactivamente,
-        // mismo criterio que PaymentReceiptService.matricularCurso para el caso de curso.
+        // mismo criterio que ApprovePaymentReceiptService.matricularCurso para el caso de curso.
         if (application.getPaymentReceipt() != null) {
             application.getPaymentReceipt().getInvoice().setProgramEnrollment(enrollment);
         }
 
         // Documentación + comprobante se deciden juntos, una sola decisión (ver spec
         // funcional) — aprobar la solicitud aprueba también el comprobante en la MISMA
-        // transacción, lo que crea el Payment real (PaymentReceiptService.aprobar).
+        // transacción, lo que crea el Payment real (ApprovePaymentReceiptService.approve).
         if (application.getPaymentReceipt() != null) {
-            paymentReceiptService.aprobar(application.getPaymentReceipt().getId(), decidedBy);
+            approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), decidedBy);
         }
 
         return application;

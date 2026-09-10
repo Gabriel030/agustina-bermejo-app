@@ -4,9 +4,9 @@ import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.SectionNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

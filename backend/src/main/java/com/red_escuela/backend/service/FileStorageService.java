@@ -57,6 +57,31 @@ public class FileStorageService {
         }
     }
 
+    public String storeAvatar(Long personId, MultipartFile file) {
+        String extension = switch (file.getContentType()) {
+            case "image/jpeg" -> "jpg";
+            case "image/png" -> "png";
+            default -> throw new UnsupportedFileTypeException(file.getContentType());
+        };
+        Path dir = uploadsDirectory.resolve("avatars");
+        try {
+            Files.createDirectories(dir);
+            Path dest = dir.resolve(personId + "." + extension);
+            file.transferTo(dest);
+            return uploadsDirectory.relativize(dest).toString();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public byte[] readBytes(String relativePath) {
+        try {
+            return Files.readAllBytes(uploadsDirectory.resolve(relativePath));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void delete(String relativePath) {
         try {
             Files.deleteIfExists(uploadsDirectory.resolve(relativePath));

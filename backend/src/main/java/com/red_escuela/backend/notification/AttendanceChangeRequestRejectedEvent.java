@@ -2,7 +2,7 @@ package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.entity.NotificationType;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 
 import java.util.List;
 

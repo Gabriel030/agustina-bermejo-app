@@ -2,11 +2,11 @@ package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.CreateEvaluationSchemeRequest;
-import com.red_escuela.backend.dto.CreateSectionRequest;
+import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.entity.EvaluationScheme;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Subject;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.exception.EvaluationSchemeInUseException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
 
 @SpringBootTest
 @ActiveProfiles("test")

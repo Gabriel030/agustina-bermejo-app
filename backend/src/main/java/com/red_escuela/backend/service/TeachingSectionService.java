@@ -1,8 +1,8 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.dto.TeachingSectionResponse;
-import com.red_escuela.backend.repository.CourseSubjectSectionInstructorRepository;
-import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

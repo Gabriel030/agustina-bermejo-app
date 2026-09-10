@@ -1,24 +1,31 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
+import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.dto.CreateProspectRequest;
+import com.red_escuela.backend.dto.SaveProspectDraftRequest;
+import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.DocumentType;
-import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Role;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Role;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.entity.StudentDocument;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.exception.DniAlreadyExistsException;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.exception.InstitutionNotFoundException;
 import com.red_escuela.backend.exception.ProspectAlreadyConfirmedException;
 import com.red_escuela.backend.exception.RoleNotFoundException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
-import com.red_escuela.backend.repository.InstitutionRepository;
-import com.red_escuela.backend.repository.RoleRepository;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.repository.StudentDocumentRepository;
-import com.red_escuela.backend.repository.StudentRepository;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +48,8 @@ public class ProspectService {
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
-    private final AuthService authService;
+    private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+    private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 
     public ProspectService(
             StudentRepository studentRepository,
@@ -50,14 +58,16 @@ public class ProspectService {
             RoleRepository roleRepository,
             PersonFactory personFactory,
             FileStorageService fileStorageService,
-            AuthService authService) {
+            RequestPasswordResetUseCase requestPasswordResetUseCase,
+            SendEmailVerificationUseCase sendEmailVerificationUseCase) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
-        this.authService = authService;
+        this.requestPasswordResetUseCase = requestPasswordResetUseCase;
+        this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
     }
 
     @Transactional
@@ -65,7 +75,7 @@ public class ProspectService {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
-        Person person = personFactory.crearPersonBase(request.nombre(), request.apellido(), request.email());
+        Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
         person.setPhoneNumber(request.telefono());
 
         Student student = new Student();
@@ -73,7 +83,45 @@ public class ProspectService {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
 
-        return studentRepository.save(student);
+        Student saved = studentRepository.save(student);
+
+        boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
+                instanceof AnonymousAuthenticationToken;
+        if (isAnonymous) {
+            sendEmailVerificationUseCase.sendVerification(saved.getId());
+        }
+
+        return saved;
+    }
+
+    @Transactional
+    public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
+        Student student = findStudentOrThrow(studentId);
+        Person person = student.getPerson();
+
+        if (request.dni() != null) {
+            person.setDni(request.dni());
+        }
+
+        Address address = person.getAddress();
+        if (request.street() != null) address.setStreet(request.street());
+        if (request.number() != null) address.setNumber(request.number());
+        if (request.floor() != null) address.setFloor(request.floor());
+        if (request.city() != null) address.setCity(request.city());
+        if (request.state() != null) address.setState(request.state());
+        if (request.postalCode() != null) address.setPostalCode(request.postalCode());
+        if (request.country() != null) address.setCountry(request.country());
+
+        try {
+            studentRepository.saveAndFlush(student);
+        } catch (DataIntegrityViolationException e) {
+            throw new DniAlreadyExistsException(request.dni());
+        }
+    }
+
+    public void sendVerification(Long studentId) {
+        findStudentOrThrow(studentId);
+        sendEmailVerificationUseCase.sendVerification(studentId);
     }
 
     @Transactional
@@ -135,7 +183,7 @@ public class ProspectService {
             throw new DniAlreadyExistsException(request.dni());
         }
 
-        authService.requestPasswordReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.getEmail());
 
         return student;
     }

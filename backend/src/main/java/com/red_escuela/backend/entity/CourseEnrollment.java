@@ -1,4 +1,5 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,12 +9,14 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.academicstructure.entity.Course;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "course_enrollment")
-public class CourseEnrollment {
+public class CourseEnrollment implements BillableEnrollment {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +44,14 @@ public class CourseEnrollment {
 
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
+
+    // Mantenido por EnrollmentBillingComplianceSweepService (Fase 6.3) — ver BillableEnrollment.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_standing", nullable = false)
+    private EnrollmentBillingStanding billingStanding = EnrollmentBillingStanding.UP_TO_DATE;
+
+    @Column(name = "billing_standing_updated_at")
+    private LocalDateTime billingStandingUpdatedAt;
 
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;

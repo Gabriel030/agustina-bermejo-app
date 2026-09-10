@@ -1,7 +1,7 @@
 package com.red_escuela.backend.dto;
 
-import com.red_escuela.backend.entity.CourseSubjectSection;
-import com.red_escuela.backend.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 
 import java.time.LocalDateTime;
 

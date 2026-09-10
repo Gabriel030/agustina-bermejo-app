@@ -1,12 +1,13 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.repository.PersonRepository;
 
 import com.red_escuela.backend.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.entity.Attendance;
 import com.red_escuela.backend.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
-import com.red_escuela.backend.entity.Instructor;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.exception.AttendanceChangeRequestNotFoundException;
 import com.red_escuela.backend.exception.AttendanceNotFoundException;
@@ -17,9 +18,8 @@ import com.red_escuela.backend.notification.AttendanceChangeRequestApprovedEvent
 import com.red_escuela.backend.notification.AttendanceChangeRequestRejectedEvent;
 import com.red_escuela.backend.repository.AttendanceChangeRequestRepository;
 import com.red_escuela.backend.repository.AttendanceRepository;
-import com.red_escuela.backend.repository.CourseSubjectSectionInstructorRepository;
-import com.red_escuela.backend.repository.PersonRepository;
-import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -49,7 +49,14 @@ describe('DetalleCurso', () => {
     expect(screen.getByText('Módulo 1 — Fundamentos')).toBeInTheDocument();
   });
 
+  // Auditoría 2026-09-04 (calidad de tests): el handler devolvía siempre 201 sin mirar si
+  // realmente llegó un comprobante adjunto — un bug que dejara el FormData sin el archivo
+  // (ej. el estado del wizard no capturó el archivo subido) hubiera pasado inadvertido. Se
+  // espía fetch en vez de leer request.formData() dentro del handler de MSW: en este entorno
+  // (jsdom + MSW node) leer el body de una request cuyo FormData incluye un File real cuelga la
+  // promesa para siempre (ver el comentario equivalente en registro.integration.test.jsx).
   it('el wizard de curso arranca en documentación (sin cohorte) y no pide documentos', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     server.use(
       http.post(`${API}/me/course-enrollments`, () =>
         HttpResponse.json({ id: 7, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
@@ -82,5 +89,11 @@ describe('DetalleCurso', () => {
     await user.click(within(modal).getByRole('button', { name: 'Sí, confirmar' }));
 
     expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+
+    const [, inscribirmeOpts] = fetchSpy.mock.calls.find(
+      ([url, opts]) => String(url).endsWith('/me/course-enrollments') && opts?.method === 'POST',
+    );
+    expect(inscribirmeOpts.body.get('courseId')).toBe('1');
+    expect(inscribirmeOpts.body.get('comprobante').name).toBe('comprobante.pdf');
   });
 });

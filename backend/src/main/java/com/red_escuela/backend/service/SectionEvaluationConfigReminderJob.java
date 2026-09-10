@@ -1,16 +1,17 @@
 package com.red_escuela.backend.service;
 
-import com.red_escuela.backend.entity.InstructorRole;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.academicstructure.entity.InstructorRole;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.repository.SectionEvaluationConfigRepository;
-import com.red_escuela.backend.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +37,7 @@ public class SectionEvaluationConfigReminderJob {
     }
 
     @Scheduled(cron = "0 0 8 * * *")
+    @Transactional(readOnly = true)
     public void sendReminders() {
         LocalDate today = LocalDate.now();
         List<SectionEvaluationConfig> pending = configRepository.findByStatusIn(List.of(

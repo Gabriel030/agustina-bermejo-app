@@ -1,8 +1,8 @@
 package com.red_escuela.backend.repository;
 
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 /**

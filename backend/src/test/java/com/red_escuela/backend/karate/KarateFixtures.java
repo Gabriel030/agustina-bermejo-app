@@ -3,21 +3,21 @@ package com.red_escuela.backend.karate;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.EvaluationScheme;
 import com.red_escuela.backend.entity.GradeAggregationMethod;
-import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Instructor;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Role;
+import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.repository.AddressRepository;
 import com.red_escuela.backend.repository.EvaluationSchemeTestRepository;
-import com.red_escuela.backend.repository.InstitutionRepository;
-import com.red_escuela.backend.repository.InstructorRepository;
-import com.red_escuela.backend.repository.PersonRepository;
-import com.red_escuela.backend.repository.RoleRepository;
-import com.red_escuela.backend.repository.StudentRepository;
-import com.red_escuela.backend.service.JwtService;
+import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
+import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
@@ -199,5 +199,30 @@ public class KarateFixtures {
         scheme.setMinRegularGrade(4.0);
         scheme.setMinApprovalGrade(6.0);
         return evaluationSchemeRepository.save(scheme).getId();
+    }
+
+    // Fase 6.0: ya no hay POST /students/{id}/invoices (Fase 4, eliminado) — una Invoice
+    // real nace siempre de un plan de pagos (Fase 6.1), demasiada carga para un fixture de
+    // un solo escenario. Este atajo persiste una Invoice PENDING directo contra un
+    // ProgramEnrollment concreto, usado por graduacion-y-excepciones.feature para simular
+    // "tiene una cuota impaga" sin armar todo el plan de facturación.
+    public static Long crearInvoicePendiente(Long programEnrollmentId, String dueDate) {
+        com.red_escuela.backend.repository.ProgramEnrollmentRepository programEnrollmentRepository =
+                context().getBean(com.red_escuela.backend.repository.ProgramEnrollmentRepository.class);
+        com.red_escuela.backend.billing.repository.InvoiceRepository invoiceRepository =
+                context().getBean(com.red_escuela.backend.billing.repository.InvoiceRepository.class);
+
+        var enrollment = programEnrollmentRepository.findById(programEnrollmentId)
+                .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
+
+        com.red_escuela.backend.billing.entity.Invoice invoice = new com.red_escuela.backend.billing.entity.Invoice();
+        invoice.setProgramEnrollment(enrollment);
+        invoice.setFeeType(com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE);
+        java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
+        invoice.setPeriod(java.time.YearMonth.from(due));
+        invoice.setDueDate(due);
+        invoice.setBaseAmount(java.math.BigDecimal.valueOf(5000));
+        invoice.setStatus(com.red_escuela.backend.billing.entity.InvoiceStatus.PENDING);
+        return invoiceRepository.save(invoice).getId();
     }
 }

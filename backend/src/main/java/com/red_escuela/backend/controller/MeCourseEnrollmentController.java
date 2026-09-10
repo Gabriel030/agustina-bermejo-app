@@ -1,9 +1,9 @@
 package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.CourseEnrollmentResponse;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.service.CourseEnrollmentService;
-import com.red_escuela.backend.service.CurrentStudentService;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

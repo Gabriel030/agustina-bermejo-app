@@ -3,34 +3,37 @@ package com.red_escuela.backend.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
-import com.red_escuela.backend.dto.CreateInvoiceFromFeeScheduleRequest;
-import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollmentApplication;
-import com.red_escuela.backend.entity.FeeScheduleConcept;
-import com.red_escuela.backend.entity.Invoice;
-import com.red_escuela.backend.entity.PaymentReceipt;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.exception.CourseNotFoundException;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.InvalidSectionOverridesException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentApplicationRepository;
-import com.red_escuela.backend.repository.CourseRepository;
-import com.red_escuela.backend.repository.StudentRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
+import com.red_escuela.backend.billing.service.InvoiceFactory;
+import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 
 /**
  * Solicitud de inscripción a un curso con pago de la primera cuota (Épica 7 Fase 3).
  * Servicio separado de {@link CourseEnrollmentService} (SRP: acá se orquesta
  * Invoice+PaymentReceipt+CourseEnrollmentApplication, no la matriculación en sí) y
- * de {@link PaymentReceiptService} (evita un ciclo — PaymentReceiptService ya
- * depende de CourseEnrollmentService para disparar la matriculación real al
- * aprobar, así que este service es el único punto que depende de los tres).
+ * de ApprovePaymentReceiptService (evita un ciclo — esa clase ya depende de
+ * CourseEnrollmentService para disparar la matriculación real al aprobar, así
+ * que este service es el único punto que depende de los tres).
  * Reusa {@link CourseEnrollmentService#validarPuedeMatricular} para no pedirle un
  * comprobante a alguien que de todas formas no podría matricularse (ventana
  * cerrada, ya inscripto, etc.) — misma validación que matricular() directo.
@@ -42,21 +45,21 @@ public class CourseEnrollmentApplicationService {
     private final CourseRepository courseRepository;
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
-    private final InvoiceService invoiceService;
-    private final PaymentReceiptService paymentReceiptService;
+    private final InvoiceFactory invoiceFactory;
+    private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ObjectMapper objectMapper;
 
     public CourseEnrollmentApplicationService(
             StudentRepository studentRepository, CourseRepository courseRepository,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            InvoiceService invoiceService, PaymentReceiptService paymentReceiptService, ObjectMapper objectMapper) {
+            InvoiceFactory invoiceFactory, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
-        this.invoiceService = invoiceService;
-        this.paymentReceiptService = paymentReceiptService;
+        this.invoiceFactory = invoiceFactory;
+        this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.objectMapper = objectMapper;
     }
 
@@ -68,9 +71,8 @@ public class CourseEnrollmentApplicationService {
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         courseEnrollmentService.validarPuedeMatricular(student, course);
 
-        Invoice invoice = invoiceService.crearDesdeFeeSchedule(studentId,
-                new CreateInvoiceFromFeeScheduleRequest(null, request.courseId(), FeeScheduleConcept.CUOTA_MENSUAL, LocalDate.now()));
-        PaymentReceipt receipt = paymentReceiptService.subir(invoice.getId(), comprobante);
+        Invoice invoice = invoiceFactory.crearAdHocParaCurso(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);

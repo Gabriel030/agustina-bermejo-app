@@ -2,8 +2,8 @@ package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.ForgotPasswordRequest;
-import com.red_escuela.backend.dto.LoginRequest;
+import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
+import com.red_escuela.backend.identity.dto.LoginRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

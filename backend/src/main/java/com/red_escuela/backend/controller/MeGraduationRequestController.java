@@ -2,9 +2,9 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.GraduationRequestResponse;
 import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.service.CurrentStudentService;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.service.GraduationRequestService;
 import com.red_escuela.backend.service.ProgramEnrollmentService;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -56,6 +56,21 @@ describe('flujo de registro end-to-end', () => {
   });
 
   it('registrarse → detalle de carrera → wizard con pago → ver la solicitud PENDING en Mis solicitudes', async () => {
+    // Auditoría 2026-09-04 (calidad de tests): ningún handler de este test miraba el body/FormData
+    // real de la request — devolvían una respuesta fija sin importar qué se mandó, así que un bug
+    // real (mandar el cohortId equivocado, o un comprobante vacío en el FormData) hubiera pasado
+    // inadvertido.
+    //
+    // Se verifica acá espiando fetch directamente (fetchSpy.mock.calls), no leyendo
+    // request.formData()/request.json() dentro de un handler de MSW: en este entorno (jsdom +
+    // MSW node interceptors) leer el body de una request cuyo FormData incluye un File real
+    // (creado vía user.upload) cuelga la promesa para siempre — jsdom no implementa el stream
+    // real que undici necesita para parsear ese multipart body, así que la mutación queda
+    // "Enviando…" sin resolver ni rechazar nunca. Espiar fetch evita ese problema por completo:
+    // se inspecciona el FormData/JSON tal como el propio cliente lo arma, antes de serializarlo
+    // a bytes, sin que MSW tenga que reparsearlo.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
     server.use(
       http.get(`${API}/me`, () =>
         HttpResponse.json({ id: 9, nombre: 'Sofía', apellido: 'Ramírez', email: 'sofia@example.com', roles: [] }),
@@ -123,5 +138,29 @@ describe('flujo de registro end-to-end', () => {
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
+
+    // Verificación real de lo que se mandó al backend (no solo del status code mockeado de
+    // vuelta) — un bug que mande el cohortId equivocado, el DNI sin actualizar, o un comprobante
+    // vacío en el FormData ahora sí hace fallar este test.
+    const llamadaA = (urlSufijo, method) =>
+      fetchSpy.mock.calls.find(([url, opts]) => String(url).endsWith(urlSufijo) && opts?.method === method);
+
+    const [, actualizarPerfilOpts] = llamadaA('/me', 'PUT');
+    expect(JSON.parse(actualizarPerfilOpts.body)).toMatchObject({ dni: '30111222', street: 'Calle Falsa', number: '123', city: 'Ciudad' });
+
+    const [, solicitarCarreraOpts] = llamadaA('/me/program-enrollment-applications', 'POST');
+    const solicitudFormData = solicitarCarreraOpts.body;
+    expect(solicitudFormData.get('programId')).toBe('1');
+    expect(solicitudFormData.get('cohortId')).toBe('1');
+    expect(solicitudFormData.get('comprobante').name).toBe('comprobante.pdf');
+
+    const documentosSubidos = fetchSpy.mock.calls
+      .filter(([url]) => String(url).includes('/documents?type='))
+      .map(([url, opts]) => ({ type: new URL(url).searchParams.get('type'), fileName: opts.body.get('file')?.name }));
+    expect(documentosSubidos).toEqual([
+      { type: 'DNI_FRENTE', fileName: 'dni-frente.jpg' },
+      { type: 'DNI_DORSO', fileName: 'dni-dorso.jpg' },
+      { type: 'ANALITICO_SECUNDARIO', fileName: 'analitico.pdf' },
+    ]);
   });
 });

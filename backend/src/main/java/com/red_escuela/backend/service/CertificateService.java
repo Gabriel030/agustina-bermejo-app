@@ -1,13 +1,13 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.entity.CertificateIssuance;
 import com.red_escuela.backend.entity.CertificateType;
-import com.red_escuela.backend.entity.PaymentStanding;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.ProgramSubject;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.repository.CertificateIssuanceRepository;
@@ -28,6 +28,7 @@ import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 
 /**
  * RF-AL-12: constancias en PDF sin entidad propia (decisión 6) — se generan 100% on-demand a
@@ -42,17 +43,17 @@ public class CertificateService {
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final InvoiceService invoiceService;
+    private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
 
     public CertificateService(
             ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
-            InvoiceService invoiceService, CertificateIssuanceRepository certificateIssuanceRepository,
+            InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
             CurrentPersonService currentPersonService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.invoiceService = invoiceService;
+        this.invoiceQueryService = invoiceQueryService;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
     }
@@ -74,9 +75,8 @@ public class CertificateService {
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
-        PaymentStanding standing = invoiceService.calcularEstadoDePago(student.getId());
-        if (standing != PaymentStanding.AL_DIA) {
-            throw new CertificateNotEligibleException("el alumno no está al día con sus pagos (" + standing + ")");
+        if (invoiceQueryService.tieneDeudaVencida(student.getId())) {
+            throw new CertificateNotEligibleException("el alumno no está al día con sus pagos");
         }
 
         Person person = student.getPerson();

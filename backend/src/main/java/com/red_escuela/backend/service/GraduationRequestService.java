@@ -1,16 +1,16 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
 
-import com.red_escuela.backend.dto.DebtSummaryResponse;
 import com.red_escuela.backend.entity.GraduationRequest;
 import com.red_escuela.backend.entity.GraduationRequestStatus;
-import com.red_escuela.backend.entity.Person;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.exception.NotEligibleForGraduationException;
-import com.red_escuela.backend.exception.PendingDebtException;
+import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.notification.GraduationRequestApprovedEvent;
 import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
@@ -23,12 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 
 /**
  * RF-AL-15/RF-DI-05: flujo de egreso con estados explícitos (decisión 8) — Alumno solicita,
  * Administrativo verifica deuda, Director aprueba. Reusa ProgramEnrollmentService.calcularProgreso
  * tal cual (elegibleParaCompletar) sin tocarlo, y InvoiceService.calcularDeuda para el paso de
- * verificación.
+ * verificación (InvoiceQueryService.tieneDeuda desde Fase 6.1, reemplaza al InvoiceService
+ * viejo eliminado en Fase 6.0).
  */
 @Service
 public class GraduationRequestService {
@@ -36,18 +38,18 @@ public class GraduationRequestService {
     private final GraduationRequestRepository graduationRequestRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final InvoiceService invoiceService;
+    private final InvoiceQueryService invoiceQueryService;
     private final CurrentPersonService currentPersonService;
     private final ApplicationEventPublisher eventPublisher;
 
     public GraduationRequestService(
             GraduationRequestRepository graduationRequestRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-            ProgramEnrollmentService programEnrollmentService, InvoiceService invoiceService,
+            ProgramEnrollmentService programEnrollmentService, InvoiceQueryService invoiceQueryService,
             CurrentPersonService currentPersonService, ApplicationEventPublisher eventPublisher) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.invoiceService = invoiceService;
+        this.invoiceQueryService = invoiceQueryService;
         this.currentPersonService = currentPersonService;
         this.eventPublisher = eventPublisher;
     }
@@ -103,8 +105,7 @@ public class GraduationRequestService {
         }
 
         Long studentId = request.getProgramEnrollment().getStudent().getId();
-        DebtSummaryResponse deuda = invoiceService.calcularDeuda(studentId);
-        if (deuda.tieneDeuda()) {
+        if (invoiceQueryService.tieneDeuda(studentId)) {
             throw new PendingDebtException(studentId);
         }
 

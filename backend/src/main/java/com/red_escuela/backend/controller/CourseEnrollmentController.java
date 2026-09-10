@@ -1,5 +1,8 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase;
 import com.red_escuela.backend.dto.CourseEnrollmentResponse;
 import com.red_escuela.backend.dto.CourseProgressResponse;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
@@ -20,9 +23,11 @@ import java.util.List;
 public class CourseEnrollmentController {
 
     private final CourseEnrollmentService courseEnrollmentService;
+    private final CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService) {
+    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService, CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase) {
         this.courseEnrollmentService = courseEnrollmentService;
+        this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
 
     @PostMapping("/students/{id}/course-enrollments")
@@ -55,5 +60,14 @@ public class CourseEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public CourseProgressResponse verProgreso(@PathVariable Long id) {
         return courseEnrollmentService.calcularProgreso(id);
+    }
+
+    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) — no pasa por
+    // InvoiceGenerationService ni por ninguna plantilla anual.
+    @PostMapping("/course-enrollments/{id}/invoices/ad-hoc")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request) {
+        return InvoiceResponse.from(createAdHocInvoiceUseCase.create(id, request));
     }
 }

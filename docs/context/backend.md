@@ -3,28 +3,141 @@
 Leé esto antes de tocar `backend/`. Todo acá está verificado contra código real del
 repo, no es aspiracional.
 
-## Estructura por capa
+## Estructura: package-by-feature + Use Case
 
-`controller/` → `service/` → `repository/` (Spring Data JPA, interfaces sin
-implementación) → `entity/`. DTOs de request/response en `dto/` como `record`,
-nunca se expone una `entity` directo en un controller. Cada DTO de response tiene
-un factory estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
+**Convención vigente desde 2026-09-08** (PR #47, `identity/`; en curso para
+`billing/`). El backend se está migrando de "todo en un paquete por capa"
+(`entity/`, `service/`, `controller/` planos en la raíz) a **un paquete por
+feature de dominio**, y dentro de cada feature, **un caso de uso por
+operación** en vez de un `Service` con muchos métodos no relacionados entre
+sí. `identity/` es la referencia completa — mirala antes de replicar el
+patrón en una feature nueva.
 
-- **Un controller = un `@RequestMapping` de recurso.** No hay controllers "god" que
-  agrupen dominios distintos. Los endpoints de autoservicio del rol autenticado
-  van bajo `/me/...` en su propio controller (`MeEnrollmentController`,
-  `MeInvoiceController`, etc.) — nunca reutilizan el controller del recurso
-  administrado por staff.
-- **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve del
-  `sub` del JWT vía `SecurityContextHolder.getContext().getAuthentication().getName()`
-  — ver `CurrentPersonService.resolveCurrentPerson()` (reusable) y el patrón
-  equivalente en `PersonProfileService`. Esto es lo que hace imposible, incluso por
-  error de implementación, que un endpoint de autoservicio afecte a otra persona.
-- **Autorización de rol grueso vía `@PreAuthorize("hasRole('X')")`** a nivel de
-  clase o método del controller. Cuando la regla de autorización depende de datos
-  (ej. "Administrativo puede crear Docente/Preceptor pero no Administrativo"), esa
-  regla fina vive en el **service**, no en la anotación — ver
-  `StaffService` (mapa `actorRole -> rolesQuePuedeCrear`).
+```
+<feature>/
+  usecase/<subdominio>/
+    <Verbo><Sustantivo>UseCase.java      interfaz — un solo método de negocio
+    <Verbo><Sustantivo>Service.java      implementación, anotada @UseCase
+    <Verbo><Sustantivo>Command.java      input, solo si son 2+ parámetros
+  service/        colaboradores compartidos entre varios use cases (NO son
+                   ellos mismos un caso de uso — ver más abajo)
+  infrastructure/ técnico puro, no toca reglas de negocio (JWT, rate
+                   limiting, verificación de tokens externos)
+  entity/  controller/  repository/  dto/  exception/
+```
+
+- **`@UseCase`** (`shared/UseCase.java`) es una anotación real (meta-anotada
+  `@Component`), no una convención de carpeta — patrón de Tom Hombergs
+  ([buckpal](https://github.com/thombergs/buckpal), *Get Your Hands Dirty on
+  Clean Architecture*). Cada operación de negocio real (algo que un actor
+  pide hacer, con su propio endpoint) es una interfaz `XxxUseCase` + una
+  clase `XxxService implements XxxUseCase` anotada `@UseCase`. El método de
+  la interfaz tiene nombre de dominio (`login`, `withdraw`, `create`), nunca
+  un `execute()` genérico.
+- **`Command`** solo cuando el caso de uso necesita 2+ parámetros — un solo
+  `Long id` o un DTO existente que ya calza (`CreateStaffRequest`,
+  `RegisterRequest`) se pasa directo, sin wrapper artificial.
+- **Colaboradores en `service/`** (sin `@UseCase`): lógica compartida entre
+  varios use cases del mismo subdominio que no es en sí "algo que un actor
+  pide hacer" — ver `AuthTokenIssuer`, `PasswordPolicyValidator`,
+  `StaffRoleAssignmentPolicy`, `CurrentPersonService` en `identity/service/`.
+  Si un helper se usa desde un solo use case, va como método privado ahí
+  adentro — no se extrae un colaborador "por las dudas".
+- **`infrastructure/`**: lo que no representa una regla de negocio (firmar
+  JWT, verificar un idToken de Google, rate limiting en memoria) — ver
+  `identity/infrastructure/`.
+- **Los Controllers NO se explotan uno por use case.** Siguen siendo uno por
+  `@RequestMapping` de recurso (`StudentController`, `AuthController`), cada
+  endpoint inyecta el/los `UseCase` que necesita — decisión explícita tomada
+  al diseñar el patrón, no un olvido.
+- **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
+  del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
+  (`identity/service/`) — reusalo, no dupliques esa resolución en un use case
+  nuevo.
+- **Autorización de rol grueso vía `@PreAuthorize("hasRole('X')")`** a nivel
+  de clase o método del controller. Cuando la regla depende de datos (ej.
+  "Administrativo puede crear Docente/Preceptor pero no Administrativo"), esa
+  regla fina vive en un colaborador de `service/` — ver
+  `StaffRoleAssignmentPolicy` (mapa `actorRole -> rolesQuePuedeCrear`), nunca
+  en la anotación ni en el controller.
+
+DTOs de request/response en `dto/` como `record`, nunca se expone una
+`entity` directo en un controller. Cada DTO de response tiene un factory
+estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
+
+## Paquete por feature: `billing`
+
+El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
+`Promotion`, `CollectionsPolicy`, `ProgramCohort`, `ProgramYearBillingTemplate`,
+etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
+`com.red_escuela.backend.billing.*`. Es ~25% de todo el backend, bastante
+autocontenido — si otro dominio (ej. evaluación y asistencia) llega a crecer
+igual de grande, este es el precedente a seguir, no antes de eso. El
+acoplamiento cruzado es esperado, no un smell: `billing.*` importa
+`Person`/`Course`/`Program`/`CourseEnrollment`/`ProgramEnrollment` (raíz), y
+`CourseEnrollmentService`/`ProgramEnrollmentService` (raíz) importan use
+cases de `billing` para el flujo de baja.
+
+**Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
+(`invoice`, `payment`, `paymentreceipt`, `creditnote`, `scholarship`,
+`promotion`, `paymentplan`, `billingperiod`, `collectionspolicy`, `cohort`)
+tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
+controller invoca directo. Lo que queda en `billing/service/` son
+colaboradores de una sola responsabilidad, no use cases — tres categorías:
+1. **Compartidos entre varios use cases** del mismo subdominio (evitan
+   duplicar lógica): `PaymentPlanSelectionGuard`, `PromotionRedeemer`,
+   `ScholarshipGrantSupport`, `PaymentReceiptFinder`, etc.
+2. **Ya cohesivos de por sí**, no tenían el problema de "cajón de sastre"
+   (varios métodos, pero todos sobre el mismo concepto — mismo criterio que
+   `PersonFactory`/`CurrentPersonService` en `identity`): `InvoiceFactory`
+   (Factory pattern), `PriceRevisionService`, `InvoiceQueryService`.
+3. **Jobs programados** (sin actor HTTP detrás, se disparan por cron):
+   `InvoiceOverdueSweepService`, `EnrollmentBillingComplianceSweepService`,
+   `ProgramEnrollmentBillingScheduler` y sus `*RowProcessor`.
+
+Antes de agregar una operación nueva a `billing`, mirá si encaja en un
+subdominio existente de `usecase/` o si necesita uno nuevo — no la agregues
+como método suelto a un colaborador de `service/`.
+
+## Paquete por feature: `academicstructure`
+
+Institución/Programa/Curso/Materia/Comisión/Período (`Institution`, `Program`,
+`ProgramSubject`, `Course`, `CourseSubject`, `CourseSubjectSection`,
+`SubjectSection`, `ElectiveGroup`, `Term`, `Holiday`, `Instructor`, etc.)
+viven en `com.red_escuela.backend.academicstructure.*`.
+
+**Acá la mayoría de los services quedan cohesivos, sin Use Case** —
+`CourseService`, `CourseSubjectService`, `CourseSectionService`,
+`ProgramService`, `ProgramSubjectService`, `SubjectService`,
+`SubjectSectionService`, `ElectiveGroupService`. Cada uno mezcla CRUD del
+recurso con una operación relacionada del mismo concepto (ej.
+`CourseSectionService` = CRUD de comisión + asignar/quitar docente de esa
+misma comisión; `ProgramSubjectService` = CRUD de materia de plan +
+correlatividades de esa materia) — no es un "cajón de sastre" de
+capacidades no relacionadas, así que no se fuerza la descomposición (mismo
+criterio que `InvoiceFactory`/`PriceRevisionService` en billing). Los tres
+controllers que son solo lectura pegan directo al repository, sin service
+intermedio: `InstitutionController`, `InstructorController`,
+`HolidayController`.
+
+**Única excepción real, migrada al patrón Use Case**:
+`academicstructure/usecase/term/` — el viejo `TermController`/`TermService`
+sí mezclaba dos capacidades no relacionadas: CRUD de período (crear/editar/
+activar/desactivar/listar/detalle) y gestión de la ventana de inscripción
+(`abrirInscripcion`/`cerrarInscripcion`/`quitarOverride`, sobre
+`TermEnrollmentOverride`) — un actor y motivo distinto del CRUD del período
+en sí. Se descompuso en 9 use cases (`CreateTermUseCase`,
+`UpdateTermUseCase`, `ListTermsUseCase`, `GetTermUseCase`,
+`DeactivateTermUseCase`, `ActivateTermUseCase`, `OpenTermEnrollmentUseCase`,
+`CloseTermEnrollmentUseCase`, `ClearTermEnrollmentOverrideUseCase`). El
+`findOrThrow` compartido por 7 de los 9 quedó extraído en un colaborador
+`TermFinder` (`academicstructure/service/`), sin `@UseCase` — no es en sí
+una operación que un actor pide hacer.
+
+`StudyProgram`/`StudyProgramCourse` no se movieron: no tienen repository,
+service ni controller — parecen legacy sin uso, quedaron en
+`com.red_escuela.backend.entity` a la espera de una decisión explícita
+sobre si se eliminan.
 
 ## Excepciones
 

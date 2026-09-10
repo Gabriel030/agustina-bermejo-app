@@ -1,34 +1,35 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.exception.StudentNotActiveException;
+import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
+import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.service.PersonRoleGranter;
 
 import com.red_escuela.backend.dto.CourseProgressResponse;
 import com.red_escuela.backend.dto.CreateCourseEnrollmentRequest;
-import com.red_escuela.backend.entity.Course;
+import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.CourseSubject;
-import com.red_escuela.backend.entity.CourseSubjectSection;
+import com.red_escuela.backend.academicstructure.entity.CourseSubject;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.entity.EnrollmentStatus;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.exception.AmbiguousSectionException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
 import com.red_escuela.backend.exception.CourseEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.exception.IncompleteSectionSetupException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.exception.SectionNotFoundException;
-import com.red_escuela.backend.exception.StudentNotActiveException;
-import com.red_escuela.backend.exception.StudentNotConfirmedException;
-import com.red_escuela.backend.exception.StudentNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.repository.CourseRepository;
-import com.red_escuela.backend.repository.CourseSubjectRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.repository.CourseSubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.repository.CourseSubjectSectionRepository;
-import com.red_escuela.backend.repository.StudentRepository;
+import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
+import com.red_escuela.backend.billing.service.ScholarshipService;
+import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
 /**
  * RF-PR-02: alta/baja de matriculación a Course (curso corto), exclusiva de Preceptor/
@@ -53,6 +57,9 @@ public class CourseEnrollmentService {
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final PersonRoleGranter personRoleGranter;
+    private final StudentDebtResolutionService studentDebtResolutionService;
+    private final ScholarshipService scholarshipService;
+    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
 
     public CourseEnrollmentService(
             CourseEnrollmentRepository courseEnrollmentRepository,
@@ -61,7 +68,8 @@ public class CourseEnrollmentService {
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            PersonRoleGranter personRoleGranter) {
+            PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
+            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -69,6 +77,9 @@ public class CourseEnrollmentService {
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.personRoleGranter = personRoleGranter;
+        this.studentDebtResolutionService = studentDebtResolutionService;
+        this.scholarshipService = scholarshipService;
+        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
     }
 
     // Épica 7: variante para MeEnrollmentController (autoservicio). No se agrega el
@@ -83,7 +94,7 @@ public class CourseEnrollmentService {
     @Transactional
     public CourseEnrollment matricularComoAutoservicio(Long studentId, CreateCourseEnrollmentRequest request) {
         CourseEnrollment enrollment = matricular(studentId, request);
-        personRoleGranter.otorgarAlumnoSiNoLoTiene(enrollment.getStudent().getPerson());
+        personRoleGranter.grantStudentRoleIfMissing(enrollment.getStudent().getPerson());
         return enrollment;
     }
 
@@ -91,6 +102,7 @@ public class CourseEnrollmentService {
     public CourseEnrollment matricular(Long studentId, CreateCourseEnrollmentRequest request) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
+        studentDebtResolutionService.verifyNoDebt(studentId);
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         validarPuedeMatricular(student, course);
@@ -98,6 +110,12 @@ public class CourseEnrollmentService {
 
         // Resolver TODAS las comisiones antes de crear nada: si algún módulo falla (sin
         // comisión / ambiguo), no debe quedar ninguna fila creada (todo o nada, decisión 15).
+        // Esto se hace SIEMPRE, esté o no lleno el cupo del curso — Course.capacity es un tope
+        // aparte (aula/financiero) del cupo propio de cada comisión, que ya tiene su propio
+        // sistema de cupo y lista de espera independiente (calcularStatusPorCupo). Quedar
+        // WAITLISTED a nivel curso no le saca el lugar ya reservado en sus comisiones; si el
+        // cupo del curso nunca se libera antes del corte, CourseEnrollmentWaitlistExpiryJob
+        // cancela todo junto (la matriculación y esas reservas de comisión).
         Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
             resueltas.put(courseSubject, resolverSeccion(courseSubject, course, request));
@@ -106,7 +124,7 @@ public class CourseEnrollmentService {
         CourseEnrollment enrollment = new CourseEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourse(course);
-        enrollment.setStatus(EnrollmentStatus.ENROLLED);
+        enrollment.setStatus(calculateStatusByCourseCapacity(course));
         enrollment.setEnrollmentDate(now);
         CourseEnrollment savedEnrollment = courseEnrollmentRepository.save(enrollment);
 
@@ -195,6 +213,21 @@ public class CourseEnrollmentService {
         return nueva;
     }
 
+    // Cupo del curso como conjunto (Course.capacity) — distinto del cupo de cada comisión
+    // (calcularStatusPorCupo, más abajo). Mismo patrón de lock: sin serializar acá, dos altas
+    // concurrentes al último lugar disponible pueden leer "ocupadas < capacity" ambas antes de
+    // que cualquiera haga commit, y las dos terminar ENROLLED por encima del cupo real. La
+    // decisión en sí (¿hay lugar?) es invariante de Course.hasCapacityFor — este método solo
+    // hace la orquestación (lock + conteo) que Course no puede hacer por sí solo.
+    private EnrollmentStatus calculateStatusByCourseCapacity(Course course) {
+        courseRepository.findByIdForUpdate(course.getId())
+                .orElseThrow(() -> new CourseNotFoundException(course.getId()));
+        long occupied = courseEnrollmentRepository
+                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED))
+                .size();
+        return course.hasCapacityFor(occupied) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
     private EnrollmentStatus calcularStatusPorCupo(CourseSubjectSection section) {
         // Lock de fila: serializa altas/bajas/promociones concurrentes sobre la MISMA
         // comisión — sin esto, dos altas simultáneas a capacity=1 pueden leer "ocupadas=0"
@@ -212,12 +245,25 @@ public class CourseEnrollmentService {
     @Transactional
     public void darDeBaja(Long id) {
         CourseEnrollment enrollment = findOrThrow(id);
-        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED) {
-            throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED, no se puede dar de baja");
+        if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
+            throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }
+        boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
+        scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
+        enrollmentWithdrawalCreditService.handleCourseEnrollmentWithdrawal(enrollment);
+        cancelModuleEnrollments(enrollment);
+        if (liberaCupoDelCurso) {
+            promoteNextFromCourseWaitlist(enrollment.getCourse());
+        }
+    }
 
+    // Usado por darDeBaja (baja voluntaria) y por CourseEnrollmentWaitlistExpiryJob (cancelación
+    // automática por vencimiento de lista de espera) — mismo motivo en los dos casos: el alumno
+    // deja de estar en el curso, así que sus reservas de comisión (decisión 15, todas juntas en
+    // la misma alta) tienen que liberarse igual, sea cual sea la causa de la baja.
+    void cancelModuleEnrollments(CourseEnrollment enrollment) {
         // A diferencia de ProgramEnrollment (donde las SubjectSectionEnrollment las elige el
         // alumno una por una y no se tocan al dar de baja la carrera, para preservar su
         // historial de cursadas independiente), las CourseSubjectSectionEnrollment de un Course
@@ -225,7 +271,7 @@ public class CourseEnrollmentService {
         // esa alta, no elecciones independientes del alumno. Sin cascada acá, el cupo de cada
         // módulo queda ocupado para siempre por alguien que ya no cursa nada.
         LocalDateTime now = LocalDateTime.now();
-        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(id)) {
+        for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
             if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS
                     || estadoAnterior == EnrollmentStatus.WAITLISTED) {
@@ -237,6 +283,21 @@ public class CourseEnrollmentService {
                 }
             }
         }
+    }
+
+    // Cupo de Course.capacity: a diferencia de la lista de espera de una comisión (donde
+    // promover exige elegir de nuevo la sección, porque ahí sí puede haber ambigüedad), acá
+    // alcanza con cambiar el status — al alumno WAITLISTED ya se le reservaron sus módulos en
+    // matricular() (ver comentario ahí), así que no hay nada más que resolver.
+    private void promoteNextFromCourseWaitlist(Course course) {
+        courseRepository.findByIdForUpdate(course.getId())
+                .orElseThrow(() -> new CourseNotFoundException(course.getId()));
+        courseEnrollmentRepository
+                .findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(course.getId(), EnrollmentStatus.WAITLISTED)
+                .ifPresent(siguiente -> {
+                    siguiente.setStatus(EnrollmentStatus.ENROLLED);
+                    courseEnrollmentRepository.save(siguiente);
+                });
     }
 
     private void promoverSiguienteEnListaDeEspera(Long courseSubjectSectionId) {

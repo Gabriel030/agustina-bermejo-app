@@ -1,22 +1,24 @@
 package com.red_escuela.backend.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.CreateInvoiceRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.CertificateIssuance;
 import com.red_escuela.backend.entity.EnrollmentStatus;
-import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.Program;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.entity.Subject;
-import com.red_escuela.backend.entity.SubjectSection;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.repository.CertificateIssuanceRepository;
 import jakarta.persistence.EntityManager;
@@ -49,9 +51,6 @@ class CertificateServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private CertificateService certificateService;
-
-    @Autowired
-    private InvoiceService invoiceService;
 
     @Autowired
     private CertificateIssuanceRepository certificateIssuanceRepository;
@@ -146,6 +145,17 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         entityManager.persist(sse);
     }
 
+    private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
+        Invoice invoice = new Invoice();
+        invoice.setProgramEnrollment(enrollment);
+        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setPeriod(java.time.YearMonth.from(dueDate));
+        invoice.setDueDate(dueDate);
+        invoice.setBaseAmount(BigDecimal.valueOf(100));
+        invoice.setStatus(InvoiceStatus.PENDING);
+        entityManager.persist(invoice);
+    }
+
     private void autenticarComoPersona(String dni) {
         Person persona = persistPersonBase(dni);
         entityManager.flush();
@@ -171,8 +181,8 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("CarreraMoroso");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         persistCursadaActiva(student, enrollment);
+        persistInvoice(enrollment, LocalDate.now().minusDays(5));
         entityManager.flush();
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota vencida", BigDecimal.valueOf(100), LocalDate.now().minusDays(5)));
         autenticarComoPersona("ADMIN90000002");
 
         assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
@@ -185,11 +195,10 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         Program program = persistProgram("CarreraRegularCompleta");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         persistCursadaActiva(student, enrollment);
+        // InvoiceQueryService.tieneDeuda solo cuenta como deuda una Invoice OVERDUE o PENDING
+        // ya vencida — una cuota futura no vencida nunca cuenta como deuda.
+        persistInvoice(enrollment, LocalDate.now().plusDays(30));
         entityManager.flush();
-        // AL_DIA exige tener al menos una factura sin vencer (SIN_INFORMACION, sin ninguna
-        // factura cargada, no alcanza — decisión 17: no se le puede exigir una condición de
-        // pago a quien nunca fue facturado, y "regular" acá pide explícitamente AL_DIA).
-        invoiceService.crear(student.getId(), new CreateInvoiceRequest("Cuota al día", BigDecimal.valueOf(100), LocalDate.now().plusDays(30)));
         autenticarComoPersona("ADMIN90000003");
 
         byte[] pdf = certificateService.emitirConstanciaRegular(enrollment.getId());

@@ -5,6 +5,7 @@ import com.red_escuela.backend.entity.ExamBoardInstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.red_escuela.backend.academicstructure.dto.InstructorSummaryResponse;
 
 public record ExamBoardResponse(
         Long id, Long subjectId, String subjectName, Long courseSubjectId, String courseSubjectName, Long termId,

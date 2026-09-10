@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -66,7 +66,11 @@ describe('DetalleSolicitud', () => {
     expect(await screen.findByText('Solicitud no encontrada')).toBeInTheDocument();
   });
 
+  // Auditoría 2026-09-04 (calidad de tests): el handler devolvía siempre 201 sin mirar el
+  // FormData/query param real. Se espía fetch (no request.formData() dentro del handler de MSW,
+  // que cuelga con un File real en este entorno — ver el comentario en registro.integration.test.jsx).
   it('sube un documento y lo refleja como subido en la lista', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([{ id: 1, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
@@ -76,13 +80,22 @@ describe('DetalleSolicitud', () => {
     const user = userEvent.setup();
     renderDetalle('1');
 
-    await screen.findByText('DNI — frente');
-    // DNI frente es el primer TIPOS_DOCUMENTO — mismo orden que los inputs en el DOM.
-    const [fileInput] = document.querySelectorAll('input[type="file"]');
+    const dniFrenteLabel = await screen.findByText('DNI — frente');
+    // Corrección 2026-09-04 (auditoría de calidad de tests): antes se tomaba el input por
+    // posición en el DOM ("es el primero"), frágil ante un reordenamiento de TIPOS_DOCUMENTO que
+    // rompería el test en silencio sin que hubiera ningún fallo real de la feature — se ubica acá
+    // el input real asociado a la fila "DNI — frente" navegando desde su propio label visible.
+    const fileInput = dniFrenteLabel.closest('.border-b').querySelector('input[type="file"]');
     const file = new File(['contenido'], 'dni-frente.pdf', { type: 'application/pdf' });
 
     await user.upload(fileInput, file);
 
     expect(await screen.findByText(/dni-frente\.pdf · subido/)).toBeInTheDocument();
+
+    const [url, opts] = fetchSpy.mock.calls.find(
+      ([callUrl, callOpts]) => String(callUrl).includes('/documents?type=') && callOpts?.method === 'POST',
+    );
+    expect(new URL(url).searchParams.get('type')).toBe('DNI_FRENTE');
+    expect(opts.body.get('file').name).toBe('dni-frente.pdf');
   });
 });

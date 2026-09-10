@@ -5,21 +5,26 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.dto.CreateProspectRequest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.Institution;
-import com.red_escuela.backend.entity.Person;
-import com.red_escuela.backend.entity.PasswordResetToken;
-import com.red_escuela.backend.entity.Role;
+import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.PasswordResetToken;
+import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
+import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.entity.StudentDocument;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.repository.PasswordResetTokenRepository;
-import com.red_escuela.backend.repository.RoleRepository;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
+import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.repository.StudentDocumentRepository;
-import com.red_escuela.backend.repository.StudentRepository;
-import com.red_escuela.backend.service.AuthService;
-import com.red_escuela.backend.service.AuthTokens;
-import com.red_escuela.backend.service.JwtService;
+import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
+import com.red_escuela.backend.identity.usecase.auth.LoginUseCase;
+import com.red_escuela.backend.identity.usecase.auth.ResetPasswordCommand;
+import com.red_escuela.backend.identity.usecase.auth.ResetPasswordUseCase;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
+import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
+import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
+import com.red_escuela.backend.identity.infrastructure.JwtService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +78,13 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
-    private AuthService authService;
+    private LoginUseCase loginUseCase;
+
+    @Autowired
+    private VerifyResetCodeUseCase verifyResetCodeUseCase;
+
+    @Autowired
+    private ResetPasswordUseCase resetPasswordUseCase;
 
     @Value("${app.uploads.directory}")
     private String uploadsDirectory;
@@ -145,11 +156,12 @@ class ProspectControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.username").doesNotExist())
                 .andExpect(jsonPath("$.dni").doesNotExist());
 
-        List<Student> students = studentRepository.findAll();
-        assertThat(students).hasSize(1);
-        assertThat(students.get(0).getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
-        assertThat(students.get(0).getPerson().getUsername()).isNull();
-        assertThat(students.get(0).getPerson().getDni()).isNull();
+        Student student = studentRepository.findAll().stream()
+                .filter(s -> "juan.perez@example.com".equals(s.getPerson().getEmail()))
+                .findFirst().orElseThrow();
+        assertThat(student.getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
+        assertThat(student.getPerson().getUsername()).isNull();
+        assertThat(student.getPerson().getDni()).isNull();
     }
 
     // El caso "PDF de 6MB -> 400" (spring.servlet.multipart.max-file-size) no se puede
@@ -245,9 +257,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         entityManager.merge(existing);
         entityManager.flush();
 
-        String exchangeToken = authService.verifyResetCode(confirmado.getPerson().getEmail(), rawPasswordResetCode);
-        authService.resetPassword(exchangeToken, "nuevaPassword123");
-        AuthTokens tokens = authService.login("30111222", "nuevaPassword123", "127.0.0.1");
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(confirmado.getPerson().getEmail(), rawPasswordResetCode));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "nuevaPassword123"));
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("30111222", "nuevaPassword123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
     }
 

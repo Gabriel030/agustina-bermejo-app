@@ -1,5 +1,9 @@
 package com.red_escuela.backend.controller;
 
+import com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest;
+import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
+import com.red_escuela.backend.billing.dto.InvoiceResponse;
+import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase;
 import com.red_escuela.backend.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.dto.ProgramProgressResponse;
@@ -21,9 +25,11 @@ import java.util.List;
 public class ProgramEnrollmentController {
 
     private final ProgramEnrollmentService programEnrollmentService;
+    private final CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService) {
+    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase) {
         this.programEnrollmentService = programEnrollmentService;
+        this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
 
     @PostMapping("/students/{id}/program-enrollments")
@@ -62,5 +68,22 @@ public class ProgramEnrollmentController {
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public List<SubjectAttendanceSummaryResponse> verResumenAsistencia(@PathVariable Long id) {
         return programEnrollmentService.resumenAsistenciaPorMateria(id);
+    }
+
+    // Fase 6.1 (decisión 2026-09-03): progresar de año (o repetir uno) cambia a qué plantilla
+    // anual se le factura de ahí en adelante — no toca la cohorte de origen ni recobra matrícula.
+    @PostMapping("/program-enrollments/{id}/advance-billing-year")
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public ProgramEnrollmentResponse avanzarAñoLectivo(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.avanzarAñoLectivo(id, request.templateId()));
+    }
+
+    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) — no pasa por
+    // InvoiceGenerationService ni por ninguna plantilla anual.
+    @PostMapping("/program-enrollments/{id}/invoices/ad-hoc")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request) {
+        return InvoiceResponse.from(createAdHocInvoiceUseCase.create(id, request));
     }
 }

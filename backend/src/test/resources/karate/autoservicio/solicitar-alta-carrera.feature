@@ -16,29 +16,37 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
     * def directorToken = fixtures.tokenParaRol('DIRECTOR')
 
-    # Carrera de prueba (staff)
+    # Carrera de prueba (staff) — Fase 6.1: matrícula (enrollmentFeeAmount) es un
+    # PriceRevision propio, separado de la cuota mensual (price).
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
     * def programId = response.id
 
-    # Épica 7 Fase 3: solicitar exige que el Director haya definido la matrícula
-    # (FeeSchedule) de esta carrera — sin esto, crearDesdeFeeSchedule() falla 404.
-    Given path '/fee-schedules'
-    And header Authorization = 'Bearer ' + directorToken
-    And request { programId: '#(programId)', concept: 'MATRICULA', amount: 50000, vigenteDesde: '2020-01-01' }
+    * def descripcionPeriodoCarrera = 'Karate - Periodo carrera ' + java.lang.System.nanoTime()
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2026, description: '#(descripcionPeriodoCarrera)', type: 'ANUAL', startDate: '2026-01-01T00:00:00', endDate: '2026-12-31T00:00:00' }
     When method post
     Then status 201
+    * def termId = response.id
 
-    # Épica 8 Fase 2: solicitar exige una cohorte concreta — la ventana de admisión
-    # vive acá, no en la carrera.
-    Given path '/program-cohorts'
+    # Fase 6.1: solicitar exige una cohorte concreta, colgada de una plantilla anual —
+    # la ventana de admisión vive en la cohorte, no en la carrera.
+    Given path '/programs', programId, 'year-billing-templates'
     And header Authorization = 'Bearer ' + directorToken
-    And request { programId: '#(programId)', label: 'Cohorte de prueba', ordenEnAnio: 1, cursadaStart: '2026-03-01' }
+    And request { termId: '#(termId)', recurringFeeInvoicesCount: 10 }
+    When method post
+    Then status 201
+    * def templateId = response.id
+
+    Given path '/year-billing-templates', templateId, 'cohorts'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { intake: 'FIRST', admissionStart: '2025-01-01', admissionEnd: '2026-12-31', cursadaStart: '2026-03-01' }
     When method post
     Then status 201
     * def cohortId = response.id

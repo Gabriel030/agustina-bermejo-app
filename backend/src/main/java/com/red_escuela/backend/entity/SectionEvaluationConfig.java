@@ -1,4 +1,5 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Person;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -6,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 
 @Getter
 @Setter

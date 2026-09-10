@@ -1,4 +1,6 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.exception.InvalidProgramEnrollmentApplicationStateException;
 import jakarta.persistence.*;
@@ -6,6 +8,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.Program;
 
 /**
  * Solicitud de alta en una carrera, previa a un {@link ProgramEnrollment} real —

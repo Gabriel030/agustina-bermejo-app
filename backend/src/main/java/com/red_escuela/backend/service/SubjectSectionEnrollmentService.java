@@ -3,21 +3,24 @@ package com.red_escuela.backend.service;
 import com.red_escuela.backend.dto.ChangeSectionRequest;
 import com.red_escuela.backend.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.entity.EnrollmentStatus;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.CurricularTerm;
-import com.red_escuela.backend.entity.ProgramSubject;
-import com.red_escuela.backend.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.entity.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
+import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.entity.Student;
-import com.red_escuela.backend.entity.StudentOnboardingStatus;
-import com.red_escuela.backend.entity.SubjectSection;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.entity.Term;
-import com.red_escuela.backend.entity.TermEnrollmentOverride;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.exception.CannotWithdrawException;
+import com.red_escuela.backend.exception.EnrollmentFeeNotPaidException;
 import com.red_escuela.backend.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.exception.InvalidSectionChangeException;
 import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
@@ -25,16 +28,17 @@ import com.red_escuela.backend.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.exception.SectionEnrollmentNotFoundException;
-import com.red_escuela.backend.exception.SectionNotFoundException;
-import com.red_escuela.backend.exception.StudentNotActiveException;
-import com.red_escuela.backend.exception.StudentNotConfirmedException;
+import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
+import com.red_escuela.backend.identity.exception.StudentNotActiveException;
+import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.exception.TermEnrollmentOverrideClosedException;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.repository.ProgramSubjectPrerequisiteRepository;
-import com.red_escuela.backend.repository.ProgramSubjectRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.repository.SubjectSectionEnrollmentRepository;
-import com.red_escuela.backend.repository.SubjectSectionRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,18 +61,21 @@ public class SubjectSectionEnrollmentService {
     private final SubjectSectionRepository subjectSectionRepository;
     private final ProgramSubjectRepository programSubjectRepository;
     private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
+    private final InvoiceRepository invoiceRepository;
 
     public SubjectSectionEnrollmentService(
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramEnrollmentRepository programEnrollmentRepository,
             SubjectSectionRepository subjectSectionRepository,
             ProgramSubjectRepository programSubjectRepository,
-            ProgramSubjectPrerequisiteRepository prerequisiteRepository) {
+            ProgramSubjectPrerequisiteRepository prerequisiteRepository,
+            InvoiceRepository invoiceRepository) {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.programSubjectRepository = programSubjectRepository;
         this.prerequisiteRepository = prerequisiteRepository;
+        this.invoiceRepository = invoiceRepository;
     }
 
     @Transactional
@@ -77,6 +84,7 @@ public class SubjectSectionEnrollmentService {
         validarProgramEnrollmentActivo(programEnrollment);
         Student student = programEnrollment.getStudent();
         validarStudentHabilitado(student);
+        validarMatriculaPaga(programEnrollment);
 
         SubjectSection section = subjectSectionRepository.findById(request.sectionId())
                 .orElseThrow(() -> new SectionNotFoundException(request.sectionId()));
@@ -342,6 +350,18 @@ public class SubjectSectionEnrollmentService {
         }
         if (student.getPerson().getStatus() != StatusType.ACTIVE) {
             throw new StudentNotActiveException(student.getId());
+        }
+    }
+
+    // Decisión 2026-09-03: la matrícula (ENROLLMENT_FEE) paga habilita inscribirse a materias —
+    // la regla en sí vive en ProgramEnrollment.canEnrollInSubjects, esto solo busca la Invoice
+    // que la entidad necesita para autoevaluarse.
+    private void validarMatriculaPaga(ProgramEnrollment programEnrollment) {
+        Invoice enrollmentFeeInvoice = invoiceRepository
+                .findByProgramEnrollmentIdAndFeeType(programEnrollment.getId(), FeeType.ENROLLMENT_FEE)
+                .orElse(null);
+        if (!programEnrollment.canEnrollInSubjects(enrollmentFeeInvoice)) {
+            throw new EnrollmentFeeNotPaidException(programEnrollment.getId());
         }
     }
 
