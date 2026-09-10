@@ -4,7 +4,6 @@ import { ArrowLeft } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
@@ -59,31 +58,17 @@ export function LegajoAlumno() {
           ) : isError ? (
             <p className="text-[14px] text-ink-faint">No se pudo cargar el legajo.</p>
           ) : (
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="font-heading text-xl font-bold text-ink">
-                    {legajo.apellido}, {legajo.nombre}
-                  </h1>
-                  <p className="text-[13px] text-ink-faint">DNI {legajo.dni}</p>
-                </div>
-                {badge && (
-                  <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold ${badge.className}`}>
-                    {badge.label}
-                  </span>
-                )}
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="font-heading text-xl font-bold text-ink">
+                  {legajo.apellido}, {legajo.nombre}
+                </h1>
+                <p className="text-[13px] text-ink-faint">DNI {legajo.dni}</p>
               </div>
-              {puedeAccionar && (
-                <div className="flex shrink-0 gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setResetOpen(true)}>
-                    Resetear contraseña
-                  </Button>
-                  {puededarDeBaja && (
-                    <Button variant="destructive" size="sm" onClick={() => setBajaOpen(true)}>
-                      Dar de baja
-                    </Button>
-                  )}
-                </div>
+              {badge && (
+                <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold ${badge.className}`}>
+                  {badge.label}
+                </span>
               )}
             </div>
           )}
@@ -105,7 +90,13 @@ export function LegajoAlumno() {
             </TabsList>
 
             <TabsContent value="datos-personales" className="mt-4">
-              <DatosPersonalesTab legajo={legajo} />
+              <DatosPersonalesTab
+                legajo={legajo}
+                puedeAccionar={puedeAccionar}
+                puedeDarDeBaja={puededarDeBaja}
+                onReset={() => setResetOpen(true)}
+                onBaja={() => setBajaOpen(true)}
+              />
             </TabsContent>
             <TabsContent value="academico" className="mt-4">
               <AcademicoTab />
