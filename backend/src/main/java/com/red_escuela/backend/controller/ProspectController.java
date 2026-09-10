@@ -2,6 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.dto.CreateProspectRequest;
+import com.red_escuela.backend.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.dto.StudentDocumentResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.entity.DocumentType;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,9 +56,23 @@ public class ProspectController {
         return prospectService.listarDocumentos(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void saveDraft(@PathVariable Long id, @RequestBody SaveProspectDraftRequest request) {
+        prospectService.saveDraft(id, request);
+    }
+
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
     public StudentResponse confirmarAlta(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
         return StudentResponse.from(prospectService.confirmarAlta(id, request));
+    }
+
+    @PostMapping("/{id}/send-verification")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    public void sendVerification(@PathVariable Long id) {
+        prospectService.sendVerification(id);
     }
 }

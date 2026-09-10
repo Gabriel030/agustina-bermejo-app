@@ -11,4 +11,8 @@ public class NoOpEmailService implements EmailService {
     @Override
     public void sendPasswordResetCode(Person person, String code) {
     }
+
+    @Override
+    public void sendEmailVerification(Person person, String verificationLink) {
+    }
 }
