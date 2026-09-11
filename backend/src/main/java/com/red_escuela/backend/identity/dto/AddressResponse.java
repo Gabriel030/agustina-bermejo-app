@@ -3,13 +3,13 @@ package com.red_escuela.backend.identity.dto;
 import com.red_escuela.backend.entity.Address;
 
 public record AddressResponse(
-        String calle,
-        String numero,
-        String piso,
-        String ciudad,
-        String provincia,
-        String codigoPostal,
-        String pais) {
+        String street,
+        String number,
+        String floor,
+        String city,
+        String state,
+        String postalCode,
+        String country) {
 
     public static AddressResponse from(Address a) {
         if (a == null) return null;
