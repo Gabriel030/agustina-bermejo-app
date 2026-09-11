@@ -212,6 +212,51 @@ Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
   una comisión (colaborador cross-feature, no un Use Case porque no lo
   dispara un actor con su propio endpoint).
 
+## Paquete por feature: `attendance`
+
+Toma de asistencia, justificación, workflow de solicitudes de cambio y
+ciclo de vida de la "clase" puntual (`Attendance`, `AttendanceChangeRequest`,
+`ClassSession`) viven en `com.red_escuela.backend.attendance.*`.
+
+**Caso real de "cajón de sastre"** — a diferencia de `academicstructure`/
+`enrollment`/`evaluation` (donde casi todo quedó cohesivo), acá el viejo
+`AttendanceService` (21 métodos públicos) mezclaba genuinamente 5
+capacidades no relacionadas con actores distintos:
+1. **Cargar asistencia** (Docente) → `LoadProgramSectionAttendanceUseCase`,
+   `LoadCourseSectionAttendanceUseCase`.
+2. **Workflow de justificación** (Docente/Alumno *justifica* vs.
+   Preceptor/Administrativo *aprueba/rechaza* — mismo patrón que
+   `ProgramEnrollmentApplicationService`) → `JustifyAttendanceUseCase`,
+   `SubmitAttendanceProofUseCase` (autoservicio del alumno),
+   `ApproveAttendanceJustificationUseCase`,
+   `RejectAttendanceJustificationUseCase`.
+3. **Consultas** → `GetAttendanceUseCase`,
+   `List{Program,Course}EnrollmentAttendanceUseCase`,
+   `Calculate{Program,Course}EnrollmentAttendanceRiskUseCase`.
+4. **Reportes/roster** → `Get{Program,Course}SectionRosterUseCase`,
+   `Get{Program,Course}SectionAbsenceReportUseCase`,
+   `Get{Program,Course}SectionAttendanceHistoryUseCase`.
+5. **Ciclo de vida de la clase** → `Get{Program,Course}SectionClassSessionUseCase`,
+   `Cancel{Program,Course}SectionClassSessionUseCase`.
+
+Todos en `attendance/usecase/attendance/` (21 use cases), con colaboradores
+en `attendance/service/`: `AttendanceFinder`, `AttendanceSectionAccess`
+(pertenencia de Docente a comisión + resolución de `Instructor`),
+`AttendanceRiskCalculator`, `SectionRosterBuilder`, `AttendanceHistoryBuilder`,
+`ClassSessionUpserter`. `AttendanceExportService` queda cohesivo (exportar a
+PDF/XLS es un solo concepto) y consume los use cases de historial/reporte.
+
+`AttendanceChangeRequestService` (5 métodos) es la segunda excepción real,
+mismo patrón: Docente *solicita* un cambio vs. Preceptor/Administrativo
+*decide*. 5 use cases en `attendance/usecase/attendancechangerequest/`, con
+`AttendanceChangeRequestFinder` como colaborador (findOrThrow +
+`requirePending`).
+
+La resolución de la persona autenticada para justificar/aprobar/rechazar
+reusa `CurrentPersonService` (identity) en vez de leer
+`SecurityContextHolder` directo — el service viejo lo hacía manualmente,
+duplicando el mismo mecanismo.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

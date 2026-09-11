@@ -45,7 +45,7 @@ import java.util.List;
 import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
-import com.red_escuela.backend.service.AttendanceService;
+import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
 
 /**
  * RF-PR-02: alta/baja de matriculación a Program (carrera), exclusiva de Preceptor/
@@ -64,7 +64,7 @@ public class ProgramEnrollmentService {
     private final ProgramElectiveGroupRepository programElectiveGroupRepository;
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
-    private final AttendanceService attendanceService;
+    private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
@@ -78,7 +78,8 @@ public class ProgramEnrollmentService {
             ProgramElectiveGroupRepository programElectiveGroupRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceService attendanceService, StudentDebtResolutionService studentDebtResolutionService,
+            CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
+            StudentDebtResolutionService studentDebtResolutionService,
             ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -88,7 +89,7 @@ public class ProgramEnrollmentService {
         this.programElectiveGroupRepository = programElectiveGroupRepository;
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
-        this.attendanceService = attendanceService;
+        this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
         this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
@@ -219,7 +220,7 @@ public class ProgramEnrollmentService {
     public List<SubjectAttendanceSummaryResponse> resumenAsistenciaPorMateria(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
-                    var riesgo = attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(enrollment.getId());
+                    var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
                     Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
