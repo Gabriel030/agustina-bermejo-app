@@ -1,6 +1,6 @@
-package com.red_escuela.backend.repository;
+package com.red_escuela.backend.notification.repository;
 
-import com.red_escuela.backend.entity.Notification;
+import com.red_escuela.backend.notification.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

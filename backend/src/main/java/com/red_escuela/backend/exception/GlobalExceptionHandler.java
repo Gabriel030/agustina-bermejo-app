@@ -128,6 +128,8 @@ import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundExc
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
+import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
+import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

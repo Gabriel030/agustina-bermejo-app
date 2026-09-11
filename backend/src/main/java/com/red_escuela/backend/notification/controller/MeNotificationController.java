@@ -1,8 +1,8 @@
-package com.red_escuela.backend.controller;
+package com.red_escuela.backend.notification.controller;
 
-import com.red_escuela.backend.dto.NotificationResponse;
+import com.red_escuela.backend.notification.dto.NotificationResponse;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.service.NotificationService;
+import com.red_escuela.backend.notification.service.NotificationService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

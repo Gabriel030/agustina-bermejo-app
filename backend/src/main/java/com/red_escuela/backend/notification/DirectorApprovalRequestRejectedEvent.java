@@ -1,7 +1,7 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
-import com.red_escuela.backend.entity.NotificationType;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 
 import java.util.List;

@@ -5,13 +5,16 @@ repo, no es aspiracional.
 
 ## Estructura: package-by-feature + Use Case
 
-**Convención vigente desde 2026-09-08** (PR #47, `identity/`; en curso para
-`billing/`). El backend se está migrando de "todo en un paquete por capa"
-(`entity/`, `service/`, `controller/` planos en la raíz) a **un paquete por
-feature de dominio**, y dentro de cada feature, **un caso de uso por
-operación** en vez de un `Service` con muchos métodos no relacionados entre
-sí. `identity/` es la referencia completa — mirala antes de replicar el
-patrón en una feature nueva.
+**Migración completa desde 2026-09-11** (arrancó con PR #47, `identity/`).
+El backend quedó reorganizado de "todo en un paquete por capa" (`entity/`,
+`service/`, `controller/` planos en la raíz) a **un paquete por feature de
+dominio** — `identity`, `billing`, `academicstructure`, `enrollment`,
+`evaluation`, `attendance`, `graduation`, `notification` — y dentro de cada
+feature, **un caso de uso por operación** en vez de un `Service` con muchos
+métodos no relacionados entre sí, ahí donde el service realmente mezclaba
+capacidades de actores distintos (no en todos lados — ver el criterio de
+alcance en cada sección de feature más abajo). `identity/` es la
+referencia completa del patrón — mirala antes de tocar código nuevo.
 
 ```
 <feature>/
@@ -285,6 +288,51 @@ Quedó como el colaborador `GraduationRequestAutoRequester`
 (`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
 — un colaborador plano puede depender de un Use Case de su propia feature,
 no hace falta que todo pase por otro Use Case.
+
+## Paquete por feature: `notification`
+
+**Última feature del roadmap package-by-feature** — a diferencia del resto,
+acá ya existía de antes un paquete `notification` (singular) con la
+infraestructura de eventos de dominio: `NotificationDispatcher`, los
+`NotificationChannel` (`InAppNotificationChannel`), tópicos, destinatarios
+(`PersonRecipient`/`RoleRecipient`) y los eventos de cada feature
+(`GraduationRequestApprovedEvent`, `SectionEvaluationConfigRejectedEvent`,
+etc. — cada feature publica los suyos, cross-package, mismo patrón que
+`ApplicationEventPublisher` ya usado en todo el backend). Ese paquete
+YA escribía directo en la entidad `Notification` (`InAppNotificationChannel`
+→ `NotificationRepository`) — la bandeja de notificaciones del alumno y la
+infraestructura de eventos son, en los hechos, la misma feature.
+
+Por eso acá NO se creó un paquete `notifications` (plural) nuevo — hubiera
+quedado un choque de nombres confuso con el `notification` ya existente.
+Se movieron `Notification`/`NotificationType`/`NotificationService`/
+`MeNotificationController`/`NotificationRepository` como
+`entity/service/controller/repository` **dentro** de `notification/`,
+junto a los eventos y el dispatcher que ya vivían ahí en la raíz del
+paquete (mismo patrón que `shared/UseCase.java` conviviendo con
+subcarpetas de cada feature). `NotificationService` queda cohesivo, sin
+Use Case (2 métodos, un solo actor: el alumno viendo/marcando como leídas
+sus propias notificaciones).
+
+`BatchExecutionLog`/`BatchExecutionStatus` NO son de esta feature pese al
+nombre genérico — su comentario original decía explícitamente que existen
+solo para que `InvoiceOverdueSweepService`/
+`EnrollmentBillingComplianceSweepService` (billing) dejen rastro de cada
+corrida. Se movieron a `billing/entity`/`billing/repository`, no a
+`notification/`.
+
+`Events.java` (entity) quedó sin mover — igual que `StudyProgram`/
+`StudyProgramCourse` en `academicstructure`, no tiene repository, service
+ni controller, parece legacy sin uso real. Pendiente una decisión explícita
+sobre si se elimina.
+
+`EmailService`/`BrevoEmailService`/`FileStorageService` **no** entraron a
+esta feature — son infraestructura genérica ya usada cross-feature
+(`EmailService` solo lo llama `identity.usecase.auth.RequestPasswordResetService`,
+nada que ver con el sistema de eventos; `FileStorageService` lo usan
+enrollment/evaluation/billing) y quedan en `service/` a nivel raíz, mismo
+criterio que otros colaboradores verdaderamente compartidos entre features
+que nunca migraron a un paquete propio.
 
 ## Excepciones
 

@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
