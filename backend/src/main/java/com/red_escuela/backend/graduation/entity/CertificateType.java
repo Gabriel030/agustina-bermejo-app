@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.graduation.entity;
 
 // Catálogo abierto (decisión 6 de la spec): esta fase solo emite estos dos tipos.
 public enum CertificateType {

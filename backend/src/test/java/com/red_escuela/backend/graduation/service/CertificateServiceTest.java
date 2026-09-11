@@ -1,8 +1,8 @@
-package com.red_escuela.backend.service;
+package com.red_escuela.backend.graduation.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.CertificateIssuance;
+import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
@@ -19,8 +19,8 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.exception.CertificateNotEligibleException;
-import com.red_escuela.backend.repository.CertificateIssuanceRepository;
+import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
+import com.red_escuela.backend.graduation.repository.CertificateIssuanceRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +38,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.graduation.service.CertificateService;
 
 /**
  * RF-AL-12: constancias sin entidad propia (decisión 6). REGULAR_STUDENT exige (ajuste de

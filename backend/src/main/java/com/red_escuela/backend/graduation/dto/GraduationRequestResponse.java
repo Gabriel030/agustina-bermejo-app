@@ -1,6 +1,6 @@
-package com.red_escuela.backend.dto;
+package com.red_escuela.backend.graduation.dto;
 
-import com.red_escuela.backend.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
 
 import java.time.LocalDateTime;
 

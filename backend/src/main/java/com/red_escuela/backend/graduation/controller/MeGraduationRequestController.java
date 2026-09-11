@@ -1,12 +1,12 @@
-package com.red_escuela.backend.controller;
+package com.red_escuela.backend.graduation.controller;
 
-import com.red_escuela.backend.dto.GraduationRequestResponse;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.identity.service.CurrentStudentService;
-import com.red_escuela.backend.service.GraduationRequestService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.graduation.dto.GraduationRequestResponse;
+import com.red_escuela.backend.graduation.usecase.graduationrequest.RequestGraduationUseCase;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.identity.service.CurrentStudentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,14 +21,14 @@ public class MeGraduationRequestController {
 
     private final CurrentStudentService currentStudentService;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final GraduationRequestService graduationRequestService;
+    private final RequestGraduationUseCase requestGraduationUseCase;
 
     public MeGraduationRequestController(
             CurrentStudentService currentStudentService, ProgramEnrollmentService programEnrollmentService,
-            GraduationRequestService graduationRequestService) {
+            RequestGraduationUseCase requestGraduationUseCase) {
         this.currentStudentService = currentStudentService;
         this.programEnrollmentService = programEnrollmentService;
-        this.graduationRequestService = graduationRequestService;
+        this.requestGraduationUseCase = requestGraduationUseCase;
     }
 
     @PostMapping
@@ -39,6 +39,6 @@ public class MeGraduationRequestController {
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(id);
         }
-        return GraduationRequestResponse.from(graduationRequestService.solicitar(id));
+        return GraduationRequestResponse.from(requestGraduationUseCase.request(id));
     }
 }

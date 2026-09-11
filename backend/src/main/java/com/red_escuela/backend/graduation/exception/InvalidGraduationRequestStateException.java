@@ -1,4 +1,4 @@
-package com.red_escuela.backend.exception;
+package com.red_escuela.backend.graduation.exception;
 
 public class InvalidGraduationRequestStateException extends RuntimeException {
     public InvalidGraduationRequestStateException(Long id) {

@@ -257,6 +257,35 @@ reusa `CurrentPersonService` (identity) en vez de leer
 `SecurityContextHolder` directo — el service viejo lo hacía manualmente,
 duplicando el mismo mecanismo.
 
+## Paquete por feature: `graduation`
+
+Trámite de egreso y constancias (`GraduationRequest`, `CertificateIssuance`)
+viven en `com.red_escuela.backend.graduation.*`.
+
+**`CertificateService` queda cohesivo, sin Use Case** — emitir constancia
+regular o de materias aprobadas son la misma operación (generar un
+documento a pedido, nunca persistido) para el mismo actor (el Alumno,
+autoservicio vía `MeCertificateController`).
+
+**`GraduationRequestService` sí es una excepción real** — mismo patrón que
+`ProgramEnrollmentApplicationService`/`SectionEvaluationConfigService`/
+`AttendanceChangeRequestService`: Alumno *solicita* el trámite de egreso,
+Administrativo *verifica deuda*, Director *aprueba*, Administrativo/Director
+*rechaza*. 7 use cases en `usecase/graduationrequest/`
+(`RequestGraduationUseCase`, `VerifyGraduationRequestDebtUseCase`,
+`ApproveGraduationRequestUseCase`, `RejectGraduationRequestUseCase`,
+`List{ByProgramEnrollment,ByStatus}GraduationRequestsUseCase`,
+`GetGraduationRequestUseCase`), con `GraduationRequestFinder` como
+colaborador del findOrThrow compartido.
+
+`createGraduationRequestIfEligible` (se dispara solo al aprobarse una
+materia, ver `evaluation.service.GradeItemService`) no es un use case — nadie
+lo pide desde un endpoint propio, es un efecto automático de otro flujo.
+Quedó como el colaborador `GraduationRequestAutoRequester`
+(`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
+— un colaborador plano puede depender de un Use Case de su propia feature,
+no hace falta que todo pase por otro Use Case.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

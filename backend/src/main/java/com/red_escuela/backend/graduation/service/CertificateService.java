@@ -1,16 +1,16 @@
-package com.red_escuela.backend.service;
+package com.red_escuela.backend.graduation.service;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 
-import com.red_escuela.backend.entity.CertificateIssuance;
-import com.red_escuela.backend.entity.CertificateType;
+import com.red_escuela.backend.graduation.entity.CertificateIssuance;
+import com.red_escuela.backend.graduation.entity.CertificateType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.exception.CertificateNotEligibleException;
+import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.repository.CertificateIssuanceRepository;
+import com.red_escuela.backend.graduation.repository.CertificateIssuanceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;

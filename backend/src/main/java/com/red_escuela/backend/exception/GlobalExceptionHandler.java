@@ -123,6 +123,11 @@ import com.red_escuela.backend.attendance.exception.AttendanceChangeRequestNotFo
 import com.red_escuela.backend.attendance.exception.CannotJustifyException;
 import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
+import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
+import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundException;
+import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
+import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
