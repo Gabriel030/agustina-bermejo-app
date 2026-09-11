@@ -177,6 +177,41 @@ distintos mezclados en un mismo service/controller:
    `rechazar`). 7 use cases, con `ProgramEnrollmentApplicationFinder` como
    colaborador del findOrThrow compartido.
 
+## Paquete por feature: `evaluation`
+
+Mesas de examen, notas, esquemas de evaluación y configuración de
+evaluación de comisión (`ExamBoard`, `ExamBoardRegistration`, `GradeItem`,
+`EvaluationScheme`, `SectionEvaluationConfig`) viven en
+`com.red_escuela.backend.evaluation.*`.
+
+**La mayoría de los services quedan cohesivos, sin Use Case**:
+`EvaluationSchemeService`, `ExamBoardService` (CRUD de mesa + asignar
+tribunal — mismo concepto, mismo criterio que `CourseSectionService`),
+`ExamBoardRegistrationService` (inscribir/dar de baja, usado tanto por
+staff como por autoservicio del alumno — es la misma operación invocada
+por actores distintos, no un workflow de decisión), `GradeItemService`
+(cargar nota es el Docente, ver notas es Preceptor/Administrativo/Director
+— lectura vs. escritura del mismo recurso, no dos procesos de negocio
+distintos). `SectionEvaluationConfigReminderJob` es un job programado.
+
+**Única excepción real, migrada al patrón Use Case**:
+`SectionEvaluationConfigService` sí mezclaba autoservicio del Docente
+(crear borrador/guardar borrador/enviar a aprobación) con decisión de
+Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
+`ProgramEnrollmentApplicationService` en enrollment. 8 use cases en
+`evaluation/usecase/sectionevaluationconfig/`, con tres colaboradores en
+`evaluation/service/`:
+- `SectionEvaluationConfigFinder` — findOrThrow compartido.
+- `SectionEvaluationConfigInstructorAccess` — validación de pertenencia/
+  liderazgo de comisión y armado de la lista de docentes de la respuesta;
+  se inyecta directo en los controllers para las consultas de soporte de
+  UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
+  no todo tiene que pasar por un Use Case.
+- `SectionEvaluationConfigDraftInitializer` — `createInitialDraft`, se
+  invoca desde `academicstructure.service.SubjectSectionService` al crear
+  una comisión (colaborador cross-feature, no un Use Case porque no lo
+  dispara un actor con su propio endpoint).
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

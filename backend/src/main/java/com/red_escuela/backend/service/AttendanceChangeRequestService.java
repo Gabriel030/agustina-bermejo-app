@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.exception.AttendanceChangeRequestNotFoundException;
 import com.red_escuela.backend.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.exception.InvalidAttendanceChangeRequestStateException;
-import com.red_escuela.backend.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
 import com.red_escuela.backend.exception.PersonNotFoundException;
 import com.red_escuela.backend.notification.AttendanceChangeRequestApprovedEvent;
 import com.red_escuela.backend.notification.AttendanceChangeRequestRejectedEvent;

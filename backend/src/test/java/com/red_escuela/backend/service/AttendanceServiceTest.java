@@ -24,7 +24,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.exception.CannotJustifyException;
-import com.red_escuela.backend.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

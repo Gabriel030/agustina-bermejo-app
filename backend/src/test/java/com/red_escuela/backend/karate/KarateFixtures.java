@@ -1,8 +1,8 @@
 package com.red_escuela.backend.karate;
 
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.EvaluationScheme;
-import com.red_escuela.backend.entity.GradeAggregationMethod;
+import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.identity.entity.Person;

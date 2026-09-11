@@ -99,6 +99,24 @@ import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlrea
 import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
+import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
+import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
+import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
+import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
+import com.red_escuela.backend.evaluation.exception.SectionEvaluationConfigNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
+import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoardException;
+import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherExamBoardException;
+import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
+import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

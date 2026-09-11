@@ -20,7 +20,7 @@ import com.red_escuela.backend.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.exception.CannotJustifyException;
 import com.red_escuela.backend.exception.ClassSessionAlreadyCanceledException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
-import com.red_escuela.backend.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
 import com.red_escuela.backend.exception.PersonNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
