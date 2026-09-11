@@ -54,7 +54,7 @@ public class AttendanceChangeRequestController {
     @PostMapping("/attendance/{id}/change-requests")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public AttendanceChangeRequestResponse crear(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
+    public AttendanceChangeRequestResponse create(@PathVariable Long id, @Valid @RequestBody CreateAttendanceChangeRequestRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         AttendanceChangeRequest created = requestAttendanceChangeUseCase.request(
                 new RequestAttendanceChangeCommand(id, instructor, request));
@@ -63,27 +63,27 @@ public class AttendanceChangeRequestController {
 
     @GetMapping("/attendance/change-requests")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<AttendanceChangeRequestResponse> listarPendientes(
+    public List<AttendanceChangeRequestResponse> listByStatus(
             @RequestParam(defaultValue = "PENDING") AttendanceChangeRequestStatus status) {
         return listAttendanceChangeRequestsByStatusUseCase.list(status).stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/me/attendance-change-requests")
     @PreAuthorize("hasRole('DOCENTE')")
-    public List<AttendanceChangeRequestResponse> misSolicitudes() {
+    public List<AttendanceChangeRequestResponse> mine() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return listMyAttendanceChangeRequestsUseCase.list(instructor.getId()).stream().map(this::toResponse).toList();
     }
 
     @PostMapping("/attendance/change-requests/{id}/approve")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceChangeRequestResponse aprobar(@PathVariable Long id) {
+    public AttendanceChangeRequestResponse approve(@PathVariable Long id) {
         return toResponse(approveAttendanceChangeRequestUseCase.approve(id));
     }
 
     @PostMapping("/attendance/change-requests/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public AttendanceChangeRequestResponse rechazar(@PathVariable Long id) {
+    public AttendanceChangeRequestResponse reject(@PathVariable Long id) {
         return toResponse(rejectAttendanceChangeRequestUseCase.reject(id));
     }
 
@@ -105,11 +105,11 @@ public class AttendanceChangeRequestController {
         }
         Person requestedByPerson = request.getRequestedBy().getPerson();
         return AttendanceChangeRequestResponse.from(
-                request, nombreCompleto(requestedByPerson), subjectName, sectionName,
-                attendance.getClassDate(), nombreCompleto(studentPerson));
+                request, fullName(requestedByPerson), subjectName, sectionName,
+                attendance.getClassDate(), fullName(studentPerson));
     }
 
-    private String nombreCompleto(Person person) {
+    private String fullName(Person person) {
         return person.getName() + " " + person.getLastname();
     }
 }
