@@ -8,13 +8,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 
-/*
- * Solicitud del Docente para cambiar el estado de una asistencia ya cargada (ej. Ausente ->
- * Presente). A diferencia de la justificación (Attendance.justify, que solo agrega contexto a
- * un Ausente), esto permite cambiar a CUALQUIER estado, pero nunca impacta directo: siempre
- * queda PENDING hasta que Preceptor/Administrativo la resuelve (mismos roles que ya aprueban
- * justificaciones, ver AttendanceController.aprobarJustificacion).
- */
 @Getter
 @Setter
 @Entity

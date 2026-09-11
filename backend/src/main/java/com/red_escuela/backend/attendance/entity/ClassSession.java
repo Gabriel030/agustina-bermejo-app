@@ -12,12 +12,6 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 
-/*
- * "Clase" puntual de una comisión, en una fecha. Existe para colgar temario/observaciones/
- * cancelación de esa fecha, sin depender de un concepto de horario o aula estructurados (esos
- * no existen todavía en el dominio — ver Épica 4 del roadmap frontend). classroom/startTime/
- * endTime quedan nullable y sin uso por ahora, reservados para cuando esa épica los necesite.
- */
 @Getter
 @Setter
 @Entity

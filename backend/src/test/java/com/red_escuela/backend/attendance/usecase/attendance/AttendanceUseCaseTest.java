@@ -42,12 +42,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Verifica: no-duplicado de asistencia (misma fecha, incluso dos entries del mismo alumno en
- * el MISMO payload bulk), autorización de "comisión propia" del Docente, y el cálculo derivado
- * de "libre por inasistencias" (nunca persistido — decisión 5 de la spec técnica; LATE cuenta
- * como presente, JUSTIFIED no cuenta ni a favor ni en contra).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -78,7 +72,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -148,7 +142,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         return section;
     }
 
-    private void asignarDocente(SubjectSection section, Instructor instructor) {
+    private void assignInstructor(SubjectSection section, Instructor instructor) {
         SubjectSectionInstructor asignacion = new SubjectSectionInstructor();
         asignacion.setSection(section);
         asignacion.setInstructor(instructor);
@@ -188,7 +182,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void docenteQueNoIntegraLaComisionNoPuedeCargarAsistencia() {
+    void instructorNotInSectionCannotLoadAttendance() {
         Institution institution = persistInstitution();
         Instructor instructorAjeno = persistInstructor("80000001");
         Subject subject = persistSubject("MateriaAsistenciaAjena");
@@ -203,14 +197,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarAsistenciaDosVecesElMismoDiaActualizaLaFilaExistenteNoLaDuplica() {
+    void loadingAttendanceTwiceOnSameDayUpdatesExistingRowInsteadOfDuplicating() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000002", institution);
         Instructor instructor = persistInstructor("80000003");
         Subject subject = persistSubject("MateriaAsistenciaDuplicada");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAsistenciaDuplicada");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -228,21 +222,19 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void duplicadoDentroDelMismoPayloadBulkNoCreaDosFilas() {
+    void duplicateWithinSameBulkPayloadDoesNotCreateTwoRows() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000004", institution);
         Instructor instructor = persistInstructor("80000005");
         Subject subject = persistSubject("MateriaBulkDuplicado");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraBulkDuplicado");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        // Mismo enrollmentId dos veces en el MISMO request: la última entry tiene que ganar,
-        // sin crear dos filas de asistencia para la misma clase.
         CargarAsistenciaRequest request = new CargarAsistenciaRequest(LocalDate.now(), List.of(
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT),
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null);
@@ -255,14 +247,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void justificarUnaFilaQueNoEstaAbsentFalla() {
+    void justifyingARowThatIsNotAbsentFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000006", institution);
         Instructor instructor = persistInstructor("80000007");
         Subject subject = persistSubject("MateriaJustificacionInvalida");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraJustificacionInvalida");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -281,14 +273,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void justificarUnaAusenciaLaPasaAJustified() {
+    void justifyingAnAbsenceMovesItToJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000009", institution);
         Instructor instructor = persistInstructor("80000010");
         Subject subject = persistSubject("MateriaJustificacionValida");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraJustificacionValida");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -309,7 +301,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alumnoConCeroClasesTomadasNoDaFalsoPositivoDeLibre() {
+    void studentWithZeroClassesTakenDoesNotGiveFalsePositiveOfRisk() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000012", institution);
         Subject subject = persistSubject("MateriaSinClases");
@@ -327,22 +319,19 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alumnoQueSuperaElPorcentajeMaximoDeAusentismoQuedaLibre() {
+    void studentExceedingMaxAbsencePercentageIsAtRisk() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000013", institution);
         Instructor instructor = persistInstructor("80000014");
         Subject subject = persistSubject("MateriaLibrePorInasistencias");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, 0.25);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraLibrePorInasistencias");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        // 4 clases: 2 ausentes (50%) > 25% permitido. LATE y JUSTIFIED no deberían contar como
-        // ausentes (decisión de producto), así que se agregan también para verificar que no
-        // distorsionan el porcentaje.
         LocalDate d = LocalDate.now();
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
@@ -360,14 +349,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void subirComprobanteDejaLaAsistenciaEnJustificationPendingNoEnJustified() {
+    void submittingProofLeavesAttendanceInJustificationPendingNotJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000015", institution);
         Instructor instructor = persistInstructor("80000016");
         Subject subject = persistSubject("MateriaComprobantePendiente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraComprobantePendiente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -383,14 +372,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaJustificacionPendienteLaPasaAJustified() {
+    void approvingAPendingJustificationMovesItToJustified() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000017", institution);
         Instructor instructor = persistInstructor("80000018");
         Subject subject = persistSubject("MateriaAprobarJustificacion");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAprobarJustificacion");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -411,14 +400,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarUnaJustificacionPendienteLaVuelveAAbsent() {
+    void rejectingAPendingJustificationReturnsItToAbsent() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000020", institution);
         Instructor instructor = persistInstructor("80000021");
         Subject subject = persistSubject("MateriaRechazarJustificacion");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraRechazarJustificacion");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -434,14 +423,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaAsistenciaSinJustificacionPendienteFalla() {
+    void approvingAnAttendanceWithoutPendingJustificationFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000022", institution);
         Instructor instructor = persistInstructor("80000023");
         Subject subject = persistSubject("MateriaAprobarSinPendiente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraAprobarSinPendiente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -460,14 +449,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unaJustificacionPendienteSigueContandoComoAusenteParaElRiesgo() {
+    void aPendingJustificationStillCountsAsAbsentForRisk() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000025", institution);
         Instructor instructor = persistInstructor("80000026");
         Subject subject = persistSubject("MateriaPendienteCuentaComoAusente");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, 0.25);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPendienteCuentaComoAusente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
