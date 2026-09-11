@@ -117,6 +117,12 @@ import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherEx
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
 import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
+import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
+import com.red_escuela.backend.attendance.exception.ClassSessionNotFoundException;
+import com.red_escuela.backend.attendance.exception.AttendanceChangeRequestNotFoundException;
+import com.red_escuela.backend.attendance.exception.CannotJustifyException;
+import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
+import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
