@@ -2,12 +2,12 @@ package com.red_escuela.backend.billing.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.entity.BatchExecutionLog;
-import com.red_escuela.backend.entity.BatchExecutionStatus;
+import com.red_escuela.backend.billing.entity.BatchExecutionLog;
+import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import org.springframework.data.domain.PageRequest;

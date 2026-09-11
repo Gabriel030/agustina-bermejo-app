@@ -1,6 +1,6 @@
-package com.red_escuela.backend.dto;
+package com.red_escuela.backend.notification.dto;
 
-import com.red_escuela.backend.entity.Notification;
+import com.red_escuela.backend.notification.entity.Notification;
 
 import java.time.LocalDateTime;
 

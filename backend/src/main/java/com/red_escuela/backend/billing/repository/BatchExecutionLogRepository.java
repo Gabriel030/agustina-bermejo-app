@@ -1,6 +1,6 @@
-package com.red_escuela.backend.repository;
+package com.red_escuela.backend.billing.repository;
 
-import com.red_escuela.backend.entity.BatchExecutionLog;
+import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
