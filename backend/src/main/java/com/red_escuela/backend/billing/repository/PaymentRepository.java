@@ -4,4 +4,6 @@ import com.red_escuela.backend.billing.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
+    boolean existsByExternalReference(String externalReference);
 }
