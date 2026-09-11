@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useLegajoAlumno(studentId) {
+export function useLegajoAlumno(studentId, enabled = true) {
   return useQuery({
     queryKey: ['alumno', studentId],
     queryFn: () => apiFetch(`/students/${studentId}`),
-    enabled: !!studentId,
+    enabled: !!studentId && enabled,
   });
 }
 

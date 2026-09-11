@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,7 +21,6 @@ const ESTADO_STATUS_BADGE = {
 
 export function LegajoAlumno() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { usuario } = useAuth();
   const { data: legajo, isLoading, isError } = useLegajoAlumno(id);
 
@@ -41,17 +39,6 @@ export function LegajoAlumno() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-[13px] text-ink-faint transition-colors hover:text-ink"
-          >
-            <ArrowLeft size={15} />
-            Volver
-          </button>
-        </div>
-
         <GlassCard className="flex flex-col gap-4 p-5">
           {isLoading ? (
             <Skeleton className="h-10 w-64" />
