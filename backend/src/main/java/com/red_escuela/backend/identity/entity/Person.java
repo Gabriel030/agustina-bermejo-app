@@ -85,4 +85,6 @@ public class Person {
     @Column(name = "avatar_path", length = 500)
     private String avatarPath;
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified;
 }
