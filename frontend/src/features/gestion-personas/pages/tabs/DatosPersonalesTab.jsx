@@ -98,13 +98,13 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
 
       {domicilio && (
         <Seccion titulo="Domicilio">
-          <Campo label="Calle" value={domicilio.calle} />
-          <Campo label="Número" value={domicilio.numero} />
-          <Campo label="Piso" value={domicilio.piso} />
-          <Campo label="Ciudad" value={domicilio.ciudad} />
-          <Campo label="Provincia" value={domicilio.provincia} />
-          <Campo label="Código postal" value={domicilio.codigoPostal} />
-          <Campo label="País" value={domicilio.pais} />
+          <Campo label="Calle" value={domicilio.street} />
+          <Campo label="Número" value={domicilio.number} />
+          <Campo label="Piso" value={domicilio.floor} />
+          <Campo label="Ciudad" value={domicilio.city} />
+          <Campo label="Provincia" value={domicilio.state} />
+          <Campo label="Código postal" value={domicilio.postalCode} />
+          <Campo label="País" value={domicilio.country} />
         </Seccion>
       )}
 
