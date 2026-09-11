@@ -31,12 +31,6 @@ import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
-/**
- * RF-AL-12: constancias en PDF sin entidad propia (decisión 6) — se generan 100% on-demand a
- * partir de datos que ya existen, mismo criterio que "libre por inasistencias" de Evaluación y
- * asistencia. Solo se persiste el registro de auditoría de la emisión (CertificateIssuance,
- * ajuste de producto sobre la spec original), nunca el PDF en sí.
- */
 @Service
 public class CertificateService {
 
@@ -59,14 +53,8 @@ public class CertificateService {
         this.currentPersonService = currentPersonService;
     }
 
-    /**
-     * Ajuste de producto sobre la spec original: alumno regular exige, además de
-     * ProgramEnrollment.status == ENROLLED, tener una cursada activa en este momento
-     * (ENROLLED/IN_PROGRESS/REGULAR) Y estar AL_DIA de pago (decisión 17, usado acá como
-     * condición de una constancia, no como bloqueo de inscripción).
-     */
     @Transactional
-    public byte[] emitirConstanciaRegular(Long programEnrollmentId) {
+    public byte[] issueRegularCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
@@ -84,13 +72,13 @@ public class CertificateService {
         String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
                 + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
-        byte[] pdf = generarPdf("Constancia de alumno regular", texto);
-        registrarEmision(enrollment, CertificateType.REGULAR_STUDENT);
+        byte[] pdf = generatePdf("Constancia de alumno regular", texto);
+        recordIssuance(enrollment, CertificateType.REGULAR_STUDENT);
         return pdf;
     }
 
     @Transactional
-    public byte[] emitirConstanciaMateriasAprobadas(Long programEnrollmentId) {
+    public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Person person = enrollment.getStudent().getPerson();
         List<ProgramSubject> aprobadas = programEnrollmentService.listarMateriasAprobadas(programEnrollmentId);
@@ -106,12 +94,12 @@ public class CertificateService {
                 texto.append("\n- ").append(entrada.getSubject().getName());
             }
         }
-        byte[] pdf = generarPdf("Constancia de materias aprobadas", texto.toString());
-        registrarEmision(enrollment, CertificateType.APPROVED_SUBJECTS);
+        byte[] pdf = generatePdf("Constancia de materias aprobadas", texto.toString());
+        recordIssuance(enrollment, CertificateType.APPROVED_SUBJECTS);
         return pdf;
     }
 
-    private void registrarEmision(ProgramEnrollment enrollment, CertificateType type) {
+    private void recordIssuance(ProgramEnrollment enrollment, CertificateType type) {
         CertificateIssuance issuance = new CertificateIssuance();
         issuance.setType(type);
         issuance.setProgramEnrollment(enrollment);
@@ -120,7 +108,7 @@ public class CertificateService {
         certificateIssuanceRepository.save(issuance);
     }
 
-    private byte[] generarPdf(String titulo, String cuerpo) {
+    private byte[] generatePdf(String titulo, String cuerpo) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);

@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * RF-AL-12: emisión de constancias, autoservicio del alumno. Sin entidad propia (decisión 6):
- * el PDF se arma on-demand y se devuelve directo en la respuesta HTTP.
- */
 @RestController
 @RequestMapping("/me/program-enrollments/{id}/certificates")
 public class MeCertificateController {
@@ -36,20 +32,18 @@ public class MeCertificateController {
     }
 
     @GetMapping("/regular")
-    public ResponseEntity<byte[]> constanciaRegular(@PathVariable Long id) {
-        exigirPropietario(id);
-        return pdfResponse(certificateService.emitirConstanciaRegular(id), "constancia-regular.pdf");
+    public ResponseEntity<byte[]> regularCertificate(@PathVariable Long id) {
+        requireOwner(id);
+        return pdfResponse(certificateService.issueRegularCertificate(id), "constancia-regular.pdf");
     }
 
     @GetMapping("/approved-subjects")
-    public ResponseEntity<byte[]> constanciaMateriasAprobadas(@PathVariable Long id) {
-        exigirPropietario(id);
-        return pdfResponse(certificateService.emitirConstanciaMateriasAprobadas(id), "constancia-materias-aprobadas.pdf");
+    public ResponseEntity<byte[]> approvedSubjectsCertificate(@PathVariable Long id) {
+        requireOwner(id);
+        return pdfResponse(certificateService.issueApprovedSubjectsCertificate(id), "constancia-materias-aprobadas.pdf");
     }
 
-    // 404 (no 403) si la ProgramEnrollment no es del alumno autenticado — mismo criterio que
-    // MeEnrollmentController.exigirPropietario.
-    private void exigirPropietario(Long programEnrollmentId) {
+    private void requireOwner(Long programEnrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollment enrollment = programEnrollmentService.verDetalle(programEnrollmentId);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
