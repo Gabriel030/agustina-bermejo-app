@@ -4,11 +4,11 @@ import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.service.AdHocInvoiceRequestResolver;
 import com.red_escuela.backend.billing.service.InvoiceFactory;
-import com.red_escuela.backend.entity.ExamBoardRegistration;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

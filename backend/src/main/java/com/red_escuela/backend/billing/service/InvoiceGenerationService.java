@@ -1,15 +1,15 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.entity.BillableEnrollment;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.exception.NoActivePaymentPlanException;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import org.springframework.stereotype.Service;

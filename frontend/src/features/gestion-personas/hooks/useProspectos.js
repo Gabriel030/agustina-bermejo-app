@@ -10,8 +10,14 @@ export function useProspectosList() {
 
 export function useCrearProspecto() {
   return useMutation({
-    mutationFn: (datos) =>
-      apiFetch('/prospects', { method: 'POST', body: JSON.stringify(datos) }),
+    mutationFn: async ({ nombre, apellido, email, telefono }) => {
+      const institutions = await apiFetch('/institutions');
+      const institutionId = institutions[0]?.id;
+      return apiFetch('/prospects', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, apellido, email, telefono, institutionId }),
+      });
+    },
   });
 }
 

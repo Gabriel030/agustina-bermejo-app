@@ -1,47 +1,54 @@
-import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export function Stepper({ steps, currentStep }) {
+export function Stepper({ steps, currentStep, pasos, pasoActual, pasosVisitados, onStepClick }) {
+  const pasosNorm = pasos ?? steps?.map((label, i) => ({ key: String(i), label })) ?? [];
+  const pasoActualNorm = pasoActual ?? (currentStep != null ? String(currentStep) : '0');
+  const indiceActual = pasosNorm.findIndex((p) => p.key === pasoActualNorm);
+
   return (
-    <div className="flex items-center gap-0 w-full mb-8">
-      {steps.map((step, index) => {
-        const isComplete = index < currentStep;
-        const isActive = index === currentStep;
+    <div className="flex items-center">
+      {pasosNorm.map((paso, i) => {
+        const completado = i < indiceActual;
+        const activo = i === indiceActual;
+        const navegable = onStepClick && pasosVisitados?.includes(paso.key) && !activo;
 
         return (
-          <div key={index} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-shrink-0">
+          <div key={paso.key} className={cn('flex items-center', i < pasosNorm.length - 1 && 'flex-1')}>
+            <button
+              type="button"
+              disabled={!navegable}
+              onClick={() => navegable && onStepClick(paso.key)}
+              className={cn('flex flex-col items-center gap-1.5', navegable ? 'cursor-pointer' : 'cursor-default')}
+            >
               <div
-                className={[
-                  'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors',
-                  isComplete
-                    ? 'bg-green-500 text-white'
-                    : isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-muted text-muted-foreground',
-                ].join(' ')}
+                aria-hidden="true"
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                  (completado || activo) && 'bg-gradient-to-br from-brand to-accent-2 text-white',
+                  activo && 'ring-4 ring-accent-soft',
+                  !completado && !activo && 'bg-neutral-bg text-ink-faint',
+                )}
               >
-                {isComplete ? <Check size={14} strokeWidth={2.5} /> : index + 1}
+                {completado ? '✓' : i + 1}
               </div>
               <span
-                className={[
-                  'mt-1.5 text-[11px] font-medium text-center whitespace-nowrap',
-                  isComplete
-                    ? 'text-green-600'
-                    : isActive
-                      ? 'text-blue-600'
-                      : 'text-muted-foreground',
-                ].join(' ')}
+                className={cn(
+                  'whitespace-nowrap text-[11px] font-semibold',
+                  activo || completado ? 'text-ink' : 'text-ink-faint',
+                )}
               >
-                {step}
+                {paso.label}
               </span>
-            </div>
-            {index < steps.length - 1 && (
-              <div
-                className={[
-                  'flex-1 h-[2px] mx-2 mb-5 transition-colors',
-                  isComplete ? 'bg-green-400' : 'bg-border',
-                ].join(' ')}
-              />
+            </button>
+            {i < pasosNorm.length - 1 && (
+              <div className="mx-2 h-[2px] flex-1 -translate-y-2.5 overflow-hidden rounded-full bg-neutral-bg">
+                <div
+                  className={cn(
+                    'h-full bg-gradient-to-r from-brand to-accent-2 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    completado ? 'w-full' : 'w-0',
+                  )}
+                />
+              </div>
             )}
           </div>
         );

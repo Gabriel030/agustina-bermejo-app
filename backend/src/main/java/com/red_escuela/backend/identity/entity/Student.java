@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.entity;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 import jakarta.persistence.*;
 import lombok.Getter;

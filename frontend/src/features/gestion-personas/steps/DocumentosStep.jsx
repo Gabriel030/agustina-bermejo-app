@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { Upload, CheckCircle2, FileText } from 'lucide-react';
-import { useSubirDocumentoProspecto } from '../hooks/useProspectos';
 
 const TIPOS = [
   { key: 'DNI_FRENTE', label: 'DNI frente' },
@@ -8,48 +7,34 @@ const TIPOS = [
   { key: 'ANALITICO_SECUNDARIO', label: 'Analítico secundario' },
 ];
 
-export function DocumentosStep({ studentId, documentosSubidos, onDocumentoSubido }) {
-  const subir = useSubirDocumentoProspecto();
-
-  function handleFileChange(type, e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    subir.mutate(
-      { studentId, type, file },
-      {
-        onSuccess: (doc) => onDocumentoSubido(type, doc),
-      }
-    );
-  }
+export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading, error, errorValidacion }) {
+  const subidos = TIPOS.filter(({ key }) => !!documentosSubidos?.[key]).length;
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Documentos</h2>
       <p className="text-[13px] text-muted-foreground">
-        Subí los documentos del alumno. Todos son opcionales — podés avanzar sin ellos.
+        Subí los documentos del alumno para continuar.{' '}
+        <span className="text-ink-soft">{subidos}/{TIPOS.length} subidos</span>
       </p>
       <div className="flex flex-col gap-3">
-        {TIPOS.map(({ key, label }) => {
-          const subido = documentosSubidos?.[key];
-          return (
-            <DocumentoRow
-              key={key}
-              label={label}
-              subido={subido}
-              isPending={subir.isPending}
-              onChange={(e) => handleFileChange(key, e)}
-            />
-          );
-        })}
+        {TIPOS.map(({ key, label }) => (
+          <DocumentoRow
+            key={key}
+            label={label}
+            subido={!!documentosSubidos?.[key]}
+            isUploading={isUploading}
+            onChange={(file) => onFileSelected(key, file)}
+          />
+        ))}
       </div>
-      {subir.isError && (
-        <p className="text-[12px] text-danger">No se pudo subir el archivo. Intentá de nuevo.</p>
-      )}
+      {error && <p className="text-[12px] text-danger">No se pudo subir el archivo. Intentá de nuevo.</p>}
+      {errorValidacion && <p className="text-[12px] text-danger">{errorValidacion}</p>}
     </div>
   );
 }
 
-function DocumentoRow({ label, subido, isPending, onChange }) {
+function DocumentoRow({ label, subido, isUploading, onChange }) {
   const inputRef = useRef(null);
 
   return (
@@ -60,19 +45,12 @@ function DocumentoRow({ label, subido, isPending, onChange }) {
         ) : (
           <FileText size={18} className="text-muted-foreground flex-shrink-0" />
         )}
-        <div>
-          <p className="text-[13px] font-medium text-ink">{label}</p>
-          {subido && (
-            <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">
-              Cargado
-            </p>
-          )}
-        </div>
+        <p className="text-[13px] font-medium text-ink">{label}</p>
       </div>
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={isPending}
+        disabled={isUploading}
         className="flex items-center gap-1.5 text-[12px] font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
       >
         <Upload size={13} />
@@ -81,9 +59,13 @@ function DocumentoRow({ label, subido, isPending, onChange }) {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.jpg,.jpeg,.png"
+        accept=".pdf,.jpg,.jpeg"
+        capture="environment"
         className="hidden"
-        onChange={onChange}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onChange(file);
+        }}
       />
     </div>
   );

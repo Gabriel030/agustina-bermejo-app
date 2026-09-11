@@ -139,6 +139,153 @@ service ni controller — parecen legacy sin uso, quedaron en
 `com.red_escuela.backend.entity` a la espera de una decisión explícita
 sobre si se eliminan.
 
+## Paquete por feature: `enrollment`
+
+Matriculación a curso/carrera y sus solicitudes (`CourseEnrollment`,
+`ProgramEnrollment`, `CourseEnrollmentApplication`,
+`ProgramEnrollmentApplication`, `SubjectSectionEnrollment`,
+`DirectorApprovalRequest`, alta de prospectos) viven en
+`com.red_escuela.backend.enrollment.*`. `StudentDocument`/`DocumentType`
+entraron acá también — pese al nombre, su único uso real es como adjunto de
+`ProspectService`/`ProgramEnrollmentApplicationService`, no es un concepto
+de `identity`.
+
+**La mayoría de los services quedan cohesivos, sin Use Case**:
+`CourseEnrollmentService`, `CourseEnrollmentApplicationService`,
+`CourseSectionEnrollmentService`, `ProgramEnrollmentService`,
+`ProspectService`, `SubjectSectionEnrollmentService` — mismo criterio que
+`academicstructure`, cada uno es CRUD/lifecycle de un solo concepto sin
+mezclar actores. `CourseEnrollmentWaitlistExpiryJob` es un job programado,
+tampoco es use case.
+
+**Dos excepciones reales, migradas al patrón Use Case** — mismo criterio
+que el viejo `PaymentReceiptService` de billing: dos actores con motivos
+distintos mezclados en un mismo service/controller:
+
+1. `enrollment/usecase/directorapproval/` — el viejo
+   `DirectorApprovalRequestService` mezclaba Preceptor/Administrativo
+   *solicitando* una excepción con Director *aprobando/rechazando/
+   listando*. 5 use cases, con `DirectorApprovalRequestFinder` (findOrThrow
+   compartido) y `DirectorApprovalRequestDecisionRecorder` (lógica de
+   aprobar/rechazar compartida entre `ApproveDirectorApprovalRequestService`
+   y `RejectDirectorApprovalRequestService`) como colaboradores en
+   `enrollment/service/`.
+2. `enrollment/usecase/programenrollmentapplication/` — el viejo
+   `ProgramEnrollmentApplicationService` mezclaba autoservicio del Alumno
+   (`solicitar con pago`/`ver las propias`/`agregar documento`) con
+   decisión de Preceptor/Administrativo (`listar pendientes`/`aprobar`/
+   `rechazar`). 7 use cases, con `ProgramEnrollmentApplicationFinder` como
+   colaborador del findOrThrow compartido.
+
+## Paquete por feature: `evaluation`
+
+Mesas de examen, notas, esquemas de evaluación y configuración de
+evaluación de comisión (`ExamBoard`, `ExamBoardRegistration`, `GradeItem`,
+`EvaluationScheme`, `SectionEvaluationConfig`) viven en
+`com.red_escuela.backend.evaluation.*`.
+
+**La mayoría de los services quedan cohesivos, sin Use Case**:
+`EvaluationSchemeService`, `ExamBoardService` (CRUD de mesa + asignar
+tribunal — mismo concepto, mismo criterio que `CourseSectionService`),
+`ExamBoardRegistrationService` (inscribir/dar de baja, usado tanto por
+staff como por autoservicio del alumno — es la misma operación invocada
+por actores distintos, no un workflow de decisión), `GradeItemService`
+(cargar nota es el Docente, ver notas es Preceptor/Administrativo/Director
+— lectura vs. escritura del mismo recurso, no dos procesos de negocio
+distintos). `SectionEvaluationConfigReminderJob` es un job programado.
+
+**Única excepción real, migrada al patrón Use Case**:
+`SectionEvaluationConfigService` sí mezclaba autoservicio del Docente
+(crear borrador/guardar borrador/enviar a aprobación) con decisión de
+Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
+`ProgramEnrollmentApplicationService` en enrollment. 8 use cases en
+`evaluation/usecase/sectionevaluationconfig/`, con tres colaboradores en
+`evaluation/service/`:
+- `SectionEvaluationConfigFinder` — findOrThrow compartido.
+- `SectionEvaluationConfigInstructorAccess` — validación de pertenencia/
+  liderazgo de comisión y armado de la lista de docentes de la respuesta;
+  se inyecta directo en los controllers para las consultas de soporte de
+  UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
+  no todo tiene que pasar por un Use Case.
+- `SectionEvaluationConfigDraftInitializer` — `createInitialDraft`, se
+  invoca desde `academicstructure.service.SubjectSectionService` al crear
+  una comisión (colaborador cross-feature, no un Use Case porque no lo
+  dispara un actor con su propio endpoint).
+
+## Paquete por feature: `attendance`
+
+Toma de asistencia, justificación, workflow de solicitudes de cambio y
+ciclo de vida de la "clase" puntual (`Attendance`, `AttendanceChangeRequest`,
+`ClassSession`) viven en `com.red_escuela.backend.attendance.*`.
+
+**Caso real de "cajón de sastre"** — a diferencia de `academicstructure`/
+`enrollment`/`evaluation` (donde casi todo quedó cohesivo), acá el viejo
+`AttendanceService` (21 métodos públicos) mezclaba genuinamente 5
+capacidades no relacionadas con actores distintos:
+1. **Cargar asistencia** (Docente) → `LoadProgramSectionAttendanceUseCase`,
+   `LoadCourseSectionAttendanceUseCase`.
+2. **Workflow de justificación** (Docente/Alumno *justifica* vs.
+   Preceptor/Administrativo *aprueba/rechaza* — mismo patrón que
+   `ProgramEnrollmentApplicationService`) → `JustifyAttendanceUseCase`,
+   `SubmitAttendanceProofUseCase` (autoservicio del alumno),
+   `ApproveAttendanceJustificationUseCase`,
+   `RejectAttendanceJustificationUseCase`.
+3. **Consultas** → `GetAttendanceUseCase`,
+   `List{Program,Course}EnrollmentAttendanceUseCase`,
+   `Calculate{Program,Course}EnrollmentAttendanceRiskUseCase`.
+4. **Reportes/roster** → `Get{Program,Course}SectionRosterUseCase`,
+   `Get{Program,Course}SectionAbsenceReportUseCase`,
+   `Get{Program,Course}SectionAttendanceHistoryUseCase`.
+5. **Ciclo de vida de la clase** → `Get{Program,Course}SectionClassSessionUseCase`,
+   `Cancel{Program,Course}SectionClassSessionUseCase`.
+
+Todos en `attendance/usecase/attendance/` (21 use cases), con colaboradores
+en `attendance/service/`: `AttendanceFinder`, `AttendanceSectionAccess`
+(pertenencia de Docente a comisión + resolución de `Instructor`),
+`AttendanceRiskCalculator`, `SectionRosterBuilder`, `AttendanceHistoryBuilder`,
+`ClassSessionUpserter`. `AttendanceExportService` queda cohesivo (exportar a
+PDF/XLS es un solo concepto) y consume los use cases de historial/reporte.
+
+`AttendanceChangeRequestService` (5 métodos) es la segunda excepción real,
+mismo patrón: Docente *solicita* un cambio vs. Preceptor/Administrativo
+*decide*. 5 use cases en `attendance/usecase/attendancechangerequest/`, con
+`AttendanceChangeRequestFinder` como colaborador (findOrThrow +
+`requirePending`).
+
+La resolución de la persona autenticada para justificar/aprobar/rechazar
+reusa `CurrentPersonService` (identity) en vez de leer
+`SecurityContextHolder` directo — el service viejo lo hacía manualmente,
+duplicando el mismo mecanismo.
+
+## Paquete por feature: `graduation`
+
+Trámite de egreso y constancias (`GraduationRequest`, `CertificateIssuance`)
+viven en `com.red_escuela.backend.graduation.*`.
+
+**`CertificateService` queda cohesivo, sin Use Case** — emitir constancia
+regular o de materias aprobadas son la misma operación (generar un
+documento a pedido, nunca persistido) para el mismo actor (el Alumno,
+autoservicio vía `MeCertificateController`).
+
+**`GraduationRequestService` sí es una excepción real** — mismo patrón que
+`ProgramEnrollmentApplicationService`/`SectionEvaluationConfigService`/
+`AttendanceChangeRequestService`: Alumno *solicita* el trámite de egreso,
+Administrativo *verifica deuda*, Director *aprueba*, Administrativo/Director
+*rechaza*. 7 use cases en `usecase/graduationrequest/`
+(`RequestGraduationUseCase`, `VerifyGraduationRequestDebtUseCase`,
+`ApproveGraduationRequestUseCase`, `RejectGraduationRequestUseCase`,
+`List{ByProgramEnrollment,ByStatus}GraduationRequestsUseCase`,
+`GetGraduationRequestUseCase`), con `GraduationRequestFinder` como
+colaborador del findOrThrow compartido.
+
+`createGraduationRequestIfEligible` (se dispara solo al aprobarse una
+materia, ver `evaluation.service.GradeItemService`) no es un use case — nadie
+lo pide desde un endpoint propio, es un efecto automático de otro flujo.
+Quedó como el colaborador `GraduationRequestAutoRequester`
+(`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
+— un colaborador plano puede depender de un Use Case de su propia feature,
+no hace falta que todo pase por otro Use Case.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema

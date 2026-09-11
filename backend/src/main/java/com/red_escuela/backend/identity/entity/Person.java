@@ -87,5 +87,4 @@ public class Person {
 
     @Column(name = "email_verified")
     private Boolean emailVerified;
-
 }

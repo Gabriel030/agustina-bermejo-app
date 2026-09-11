@@ -1,3 +1,5 @@
+import { Input } from '@/components/ui/input';
+
 export function DatosBasicosStep({ register, errors, isLoading }) {
   return (
     <div className="flex flex-col gap-4">
@@ -5,9 +7,8 @@ export function DatosBasicosStep({ register, errors, isLoading }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1">
           <label className="text-[13px] font-medium text-ink">Nombre</label>
-          <input
+          <Input
             {...register('nombre')}
-            className="input"
             placeholder="Juan"
             disabled={isLoading}
           />
@@ -15,9 +16,8 @@ export function DatosBasicosStep({ register, errors, isLoading }) {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-[13px] font-medium text-ink">Apellido</label>
-          <input
+          <Input
             {...register('apellido')}
-            className="input"
             placeholder="Pérez"
             disabled={isLoading}
           />
@@ -26,10 +26,9 @@ export function DatosBasicosStep({ register, errors, isLoading }) {
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-[13px] font-medium text-ink">Email</label>
-        <input
+        <Input
           {...register('email')}
           type="email"
-          className="input"
           placeholder="juan.perez@email.com"
           disabled={isLoading}
         />
@@ -39,10 +38,9 @@ export function DatosBasicosStep({ register, errors, isLoading }) {
         <label className="text-[13px] font-medium text-ink">
           Teléfono <span className="text-muted-foreground font-normal">(opcional)</span>
         </label>
-        <input
+        <Input
           {...register('telefono')}
           type="tel"
-          className="input"
           placeholder="1122334455"
           disabled={isLoading}
         />

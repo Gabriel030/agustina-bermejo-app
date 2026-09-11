@@ -1,14 +1,14 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.ExamBoardRegistration;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;

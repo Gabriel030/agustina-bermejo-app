@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.repository.StudentSpecifications;
 import com.red_escuela.backend.shared.UseCase;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
@@ -18,8 +19,6 @@ public class ListStudentsService implements ListStudentsUseCase {
         this.studentRepository = studentRepository;
     }
 
-    // onboardingStatus por defecto es CONFIRMADO (decisión de la spec): sin filtro
-    // explícito, el listado de legajos no mezcla prospectos de preinscripción.
     @Override
     public List<Student> list(ListStudentsCommand command) {
         StudentOnboardingStatus effectiveOnboarding = command.onboardingStatus() == null
@@ -28,8 +27,9 @@ public class ListStudentsService implements ListStudentsUseCase {
 
         Specification<Student> spec = Specification
                 .where(StudentSpecifications.withPersonStatus(command.status()))
-                .and(StudentSpecifications.withOnboardingStatus(effectiveOnboarding));
+                .and(StudentSpecifications.withOnboardingStatus(effectiveOnboarding))
+                .and(StudentSpecifications.withSearch(command.search()));
 
-        return studentRepository.findAll(spec);
+        return studentRepository.findAll(spec, Sort.by("person.lastname", "person.name"));
     }
 }

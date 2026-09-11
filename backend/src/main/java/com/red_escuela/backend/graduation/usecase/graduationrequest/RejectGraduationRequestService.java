@@ -1,0 +1,51 @@
+package com.red_escuela.backend.graduation.usecase.graduationrequest;
+
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
+import com.red_escuela.backend.graduation.service.GraduationRequestFinder;
+import com.red_escuela.backend.identity.service.CurrentPersonService;
+import com.red_escuela.backend.notification.GraduationRequestRejectedEvent;
+import com.red_escuela.backend.shared.UseCase;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@UseCase
+public class RejectGraduationRequestService implements RejectGraduationRequestUseCase {
+
+    private final GraduationRequestRepository graduationRequestRepository;
+    private final GraduationRequestFinder graduationRequestFinder;
+    private final CurrentPersonService currentPersonService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    public RejectGraduationRequestService(GraduationRequestRepository graduationRequestRepository,
+                                           GraduationRequestFinder graduationRequestFinder,
+                                           CurrentPersonService currentPersonService,
+                                           ApplicationEventPublisher eventPublisher) {
+        this.graduationRequestRepository = graduationRequestRepository;
+        this.graduationRequestFinder = graduationRequestFinder;
+        this.currentPersonService = currentPersonService;
+        this.eventPublisher = eventPublisher;
+    }
+
+    @Override
+    @Transactional
+    public GraduationRequest reject(RejectGraduationRequestCommand command) {
+        GraduationRequest request = graduationRequestFinder.findOrThrow(command.graduationRequestId());
+        if (request.getStatus() == GraduationRequestStatus.APPROVED || request.getStatus() == GraduationRequestStatus.REJECTED) {
+            throw new InvalidGraduationRequestStateException(command.graduationRequestId());
+        }
+
+        request.setStatus(GraduationRequestStatus.REJECTED);
+        request.setDecidedBy(currentPersonService.resolveCurrentPerson());
+        request.setDecidedAt(LocalDateTime.now());
+        request.setRejectionReason(command.motivo());
+        GraduationRequest saved = graduationRequestRepository.save(request);
+
+        eventPublisher.publishEvent(new GraduationRequestRejectedEvent(saved, saved.getProgramEnrollment().getStudent().getPerson()));
+        return saved;
+    }
+}

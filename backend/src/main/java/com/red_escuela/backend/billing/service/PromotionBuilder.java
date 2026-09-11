@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException;
-import com.red_escuela.backend.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import org.springframework.stereotype.Service;
 

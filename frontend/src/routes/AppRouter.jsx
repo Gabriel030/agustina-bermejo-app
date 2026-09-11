@@ -3,6 +3,11 @@ import { useAuth } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { AnyAuthenticatedRoute } from '@/routes/AnyAuthenticatedRoute';
 import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
+import { PadronAlumnos } from '@/features/gestion-personas/pages/PadronAlumnos';
+import { LegajoAlumno } from '@/features/gestion-personas/pages/LegajoAlumno';
+import { NuevoAlumno } from '@/features/gestion-personas/pages/NuevoAlumno';
+import { GestionPersonal } from '@/features/gestion-personas/pages/GestionPersonal';
+import { LegajoPersonal } from '@/features/gestion-personas/pages/LegajoPersonal';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -24,8 +29,6 @@ import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEval
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
-import { PadronAlumnos } from '@/pages/PadronAlumnos';
-import { NuevoAlumno } from '@/pages/NuevoAlumno';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
 import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
 import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
@@ -63,17 +66,17 @@ const RUTAS_POR_ROL = {
   preceptor: {
     Layout: PreceptorLayout,
     paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { 'mesas-de-examen': PreceptorMesaExamen, alumnos: PadronAlumnos },
+    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen },
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    paginas: ['inicio', 'alumnos', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia, alumnos: PadronAlumnos },
+    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'aprobaciones', 'esquemas-evaluacion'],
-    paginasReales: { aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
   },
 };
 
@@ -145,7 +148,15 @@ export function AppRouter() {
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
-          {(rol === 'preceptor' || rol === 'administrativo') && <Route path="alumnos/nuevo" element={<NuevoAlumno />} />}
+          {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
+            <Route path="alumnos/:id" element={<LegajoAlumno />} />
+          )}
+          {(rol === 'preceptor' || rol === 'administrativo') && (
+            <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
+          )}
+          {(rol === 'administrativo' || rol === 'director') && (
+            <Route path="personal/:id" element={<LegajoPersonal />} />
+          )}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
           {rol === 'director' && <Route path="aprobaciones/egresos" element={<DirectorAprobacionesEgresos />} />}

@@ -9,8 +9,8 @@ import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.entity.CourseEnrollment;
-import com.red_escuela.backend.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
@@ -21,8 +21,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.entity.ProgramEnrollment;
-import com.red_escuela.backend.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.entity.PromotionStatus;
 import com.red_escuela.backend.entity.StatusType;
@@ -30,14 +30,14 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.repository.AddressRepository;
-import com.red_escuela.backend.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.repository.PromotionRepository;
@@ -58,6 +58,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
 
 // Fase 6.5: tests 108-117, 122, 123 de la spec (Obsidian), adaptados al código real de las Fases
 // 6.1/6.4. NO @Transactional a propósito: InvoiceFactory usa REQUIRES_NEW (mismo motivo que
@@ -558,6 +559,6 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                         "Promo con fechas invertidas", LocalDate.now().plusDays(5), LocalDate.now().minusDays(2),
                         List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3)))))
-                .isInstanceOf(com.red_escuela.backend.exception.InvalidWindowConfigurationException.class);
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException.class);
     }
 }

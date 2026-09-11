@@ -7,10 +7,10 @@ import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.exception.ProgramEnrollmentMissingCohortException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

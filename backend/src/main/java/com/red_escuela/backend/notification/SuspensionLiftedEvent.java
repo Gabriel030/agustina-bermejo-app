@@ -1,9 +1,9 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.entity.BillableEnrollment;
-import com.red_escuela.backend.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.entity.NotificationType;
-import com.red_escuela.backend.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 import java.time.YearMonth;
 import java.util.List;
