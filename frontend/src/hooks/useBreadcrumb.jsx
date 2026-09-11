@@ -2,6 +2,7 @@ import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useMiInscripcion } from '@/hooks/useAlumno';
 import { useConfiguracionComision } from '@/hooks/useDocente';
 import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
+import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
 import { Skeleton } from '@/components/Skeleton';
 
 const ETIQUETA_TAB = {
@@ -9,6 +10,12 @@ const ETIQUETA_TAB = {
   notas: 'Notas',
   'mesas-de-examen': 'Mesas de examen',
   asistencia: 'Asistencia',
+};
+
+const ETIQUETA_TAB_PADRON = {
+  activos: 'Activos',
+  prospectos: 'Prospectos',
+  bajas: 'Bajas',
 };
 
 // Mapea la ruta actual a los items del breadcrumb (Épica 2 Fase 2). Vive acá
@@ -31,11 +38,27 @@ export function useBreadcrumb() {
   // logueado como Preceptor/Docente/etc., rompiendo esas pantallas.
   const { data: inscripcion } = useMiInscripcion(params.id, enDetalleMateria);
 
+  const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
+  const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);
+
   const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname);
   const { data: comision } = useConfiguracionComision(enDetalleComision ? params.sectionId : undefined);
 
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
+
+  if (enLegajoAlumno) {
+    const rolBase = location.pathname.split('/')[1];
+    const tabOrigen = searchParams.get('tab');
+    const items = [
+      { label: 'Padrón de alumnos', to: `/${rolBase}/alumnos` },
+    ];
+    if (tabOrigen && ETIQUETA_TAB_PADRON[tabOrigen]) {
+      items.push({ label: ETIQUETA_TAB_PADRON[tabOrigen], to: `/${rolBase}/alumnos?tab=${tabOrigen}` });
+    }
+    items.push({ label: legajo ? `${legajo.apellido}, ${legajo.nombre}` : <Skeleton className="h-4 w-24" /> });
+    return items;
+  }
 
   if (enDetalleComision) {
     return [
