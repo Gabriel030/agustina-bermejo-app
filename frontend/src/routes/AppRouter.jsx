@@ -6,6 +6,8 @@ import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
 import { PadronAlumnos } from '@/features/gestion-personas/pages/PadronAlumnos';
 import { LegajoAlumno } from '@/features/gestion-personas/pages/LegajoAlumno';
 import { NuevoAlumno } from '@/features/gestion-personas/pages/NuevoAlumno';
+import { GestionPersonal } from '@/features/gestion-personas/pages/GestionPersonal';
+import { LegajoPersonal } from '@/features/gestion-personas/pages/LegajoPersonal';
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
@@ -67,13 +69,13 @@ const RUTAS_POR_ROL = {
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    paginas: ['inicio', 'alumnos', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { alumnos: PadronAlumnos, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'alumnos', 'aprobaciones', 'esquemas-evaluacion'],
-    paginasReales: { alumnos: PadronAlumnos, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
   },
 };
 
@@ -149,6 +151,9 @@ export function AppRouter() {
           )}
           {(rol === 'preceptor' || rol === 'administrativo') && (
             <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
+          )}
+          {(rol === 'administrativo' || rol === 'director') && (
+            <Route path="personal/:id" element={<LegajoPersonal />} />
           )}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
