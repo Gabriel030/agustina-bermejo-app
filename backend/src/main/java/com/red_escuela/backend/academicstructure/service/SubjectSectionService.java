@@ -3,14 +3,14 @@ package com.red_escuela.backend.academicstructure.service;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
-import com.red_escuela.backend.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.exception.EvaluationSchemeNotFoundException;
+import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.service.SectionEvaluationConfigService;
+import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigDraftInitializer;
 
 @Service
 public class SubjectSectionService {
@@ -40,7 +40,7 @@ public class SubjectSectionService {
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
-    private final SectionEvaluationConfigService sectionEvaluationConfigService;
+    private final SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer;
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
@@ -49,14 +49,14 @@ public class SubjectSectionService {
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
-            SectionEvaluationConfigService sectionEvaluationConfigService) {
+            SectionEvaluationConfigDraftInitializer sectionEvaluationConfigDraftInitializer) {
         this.sectionRepository = sectionRepository;
         this.subjectRepository = subjectRepository;
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
-        this.sectionEvaluationConfigService = sectionEvaluationConfigService;
+        this.sectionEvaluationConfigDraftInitializer = sectionEvaluationConfigDraftInitializer;
     }
 
     @Transactional
@@ -78,7 +78,7 @@ public class SubjectSectionService {
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         SubjectSection guardada = sectionRepository.save(section);
-        sectionEvaluationConfigService.createInitialDraft(guardada);
+        sectionEvaluationConfigDraftInitializer.createInitialDraft(guardada);
         return guardada;
     }
 

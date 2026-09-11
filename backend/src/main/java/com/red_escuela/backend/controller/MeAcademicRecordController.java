@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.red_escuela.backend.dto.AttendanceResponse;
 import com.red_escuela.backend.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.dto.GradeItemResponse;
+import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
 import com.red_escuela.backend.entity.Attendance;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
@@ -12,7 +12,7 @@ import com.red_escuela.backend.exception.UnsupportedFileTypeException;
 import com.red_escuela.backend.service.AttendanceService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.service.FileStorageService;
-import com.red_escuela.backend.service.GradeItemService;
+import com.red_escuela.backend.evaluation.service.GradeItemService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
