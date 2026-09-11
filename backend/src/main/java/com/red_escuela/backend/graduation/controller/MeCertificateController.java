@@ -1,9 +1,9 @@
-package com.red_escuela.backend.controller;
+package com.red_escuela.backend.graduation.controller;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.service.CertificateService;
+import com.red_escuela.backend.graduation.service.CertificateService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import org.springframework.http.ContentDisposition;

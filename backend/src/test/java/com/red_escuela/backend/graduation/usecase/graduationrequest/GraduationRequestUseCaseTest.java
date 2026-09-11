@@ -1,11 +1,11 @@
-package com.red_escuela.backend.service;
+package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.billing.entity.FeeType;
-import com.red_escuela.backend.entity.GraduationRequest;
-import com.red_escuela.backend.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -18,8 +18,8 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.exception.GraduationRequestAlreadyActiveException;
-import com.red_escuela.backend.exception.NotEligibleForGraduationException;
+import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
+import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -46,10 +46,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class GraduationRequestServiceTest extends AbstractIntegrationTest {
+class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
-    private GraduationRequestService graduationRequestService;
+    private RequestGraduationUseCase requestGraduationUseCase;
+
+    @Autowired
+    private VerifyGraduationRequestDebtUseCase verifyGraduationRequestDebtUseCase;
+
+    @Autowired
+    private ApproveGraduationRequestUseCase approveGraduationRequestUseCase;
+
+    @Autowired
+    private RejectGraduationRequestUseCase rejectGraduationRequestUseCase;
 
     @Autowired
     private EntityManager entityManager;
@@ -159,7 +168,7 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        assertThatThrownBy(() -> graduationRequestService.solicitar(enrollment.getId()))
+        assertThatThrownBy(() -> requestGraduationUseCase.request(enrollment.getId()))
                 .isInstanceOf(NotEligibleForGraduationException.class);
     }
 
@@ -170,9 +179,9 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        graduationRequestService.solicitar(enrollment.getId());
+        requestGraduationUseCase.request(enrollment.getId());
 
-        assertThatThrownBy(() -> graduationRequestService.solicitar(enrollment.getId()))
+        assertThatThrownBy(() -> requestGraduationUseCase.request(enrollment.getId()))
                 .isInstanceOf(GraduationRequestAlreadyActiveException.class);
     }
 
@@ -183,11 +192,11 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest request = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
         persistInvoice(enrollment, LocalDate.now().plusDays(30));
         entityManager.flush();
 
-        assertThatThrownBy(() -> graduationRequestService.verificarDeuda(request.getId()))
+        assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId()))
                 .isInstanceOf(PendingDebtException.class);
 
         GraduationRequest recargado = entityManager.find(GraduationRequest.class, request.getId());
@@ -201,11 +210,11 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest request = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
         autenticarComoPersona("ADMIN80000004");
-        graduationRequestService.verificarDeuda(request.getId());
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
         autenticarComoPersona("DIRECTOR80000004");
-        graduationRequestService.aprobar(request.getId());
+        approveGraduationRequestUseCase.approve(request.getId());
 
         GraduationRequest recargado = entityManager.find(GraduationRequest.class, request.getId());
         assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.APPROVED);
@@ -221,14 +230,14 @@ class GraduationRequestServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest primero = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest primero = requestGraduationUseCase.request(enrollment.getId());
         autenticarComoPersona("ADMIN80000005");
-        graduationRequestService.rechazar(primero.getId(), "Datos incompletos");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(primero.getId(), "Datos incompletos"));
 
         GraduationRequest recargado = entityManager.find(GraduationRequest.class, primero.getId());
         assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.REJECTED);
 
-        GraduationRequest segundo = graduationRequestService.solicitar(enrollment.getId());
+        GraduationRequest segundo = requestGraduationUseCase.request(enrollment.getId());
         assertThat(segundo.getId()).isNotEqualTo(primero.getId());
         assertThat(segundo.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
     }

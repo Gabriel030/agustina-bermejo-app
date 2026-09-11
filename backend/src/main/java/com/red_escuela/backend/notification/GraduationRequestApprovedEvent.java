@@ -1,6 +1,6 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 

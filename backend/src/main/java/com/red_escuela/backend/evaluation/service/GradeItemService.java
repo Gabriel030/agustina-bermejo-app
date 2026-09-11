@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import com.red_escuela.backend.service.GraduationRequestService;
+import com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester;
 
 /**
  * RF-DO-05/06/07, RF-AL-07: carga de notas respetando el EvaluationScheme de la comisión, y
@@ -48,7 +48,7 @@ public class GradeItemService {
     private final CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
-    private final GraduationRequestService graduationRequestService;
+    private final GraduationRequestAutoRequester graduationRequestAutoRequester;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -58,7 +58,7 @@ public class GradeItemService {
             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestService graduationRequestService) {
+            GraduationRequestAutoRequester graduationRequestAutoRequester) {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -66,7 +66,7 @@ public class GradeItemService {
         this.courseSubjectSectionInstructorRepository = courseSubjectSectionInstructorRepository;
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
-        this.graduationRequestService = graduationRequestService;
+        this.graduationRequestAutoRequester = graduationRequestAutoRequester;
     }
 
     @Transactional
@@ -102,7 +102,7 @@ public class GradeItemService {
             }
             subjectSectionEnrollmentRepository.save(enrollment);
             if (resultado.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestService.createGraduationRequestIfEligible(enrollment.getProgramEnrollment().getId());
+                graduationRequestAutoRequester.createIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
         return gradeItem;

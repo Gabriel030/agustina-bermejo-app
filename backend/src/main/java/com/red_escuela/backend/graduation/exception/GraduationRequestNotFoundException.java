@@ -1,4 +1,4 @@
-package com.red_escuela.backend.exception;
+package com.red_escuela.backend.graduation.exception;
 
 public class GraduationRequestNotFoundException extends RuntimeException {
     public GraduationRequestNotFoundException(Long id) {

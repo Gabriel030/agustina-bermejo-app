@@ -1,4 +1,4 @@
-package com.red_escuela.backend.dto;
+package com.red_escuela.backend.graduation.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

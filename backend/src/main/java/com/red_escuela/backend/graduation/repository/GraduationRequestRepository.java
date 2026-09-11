@@ -1,7 +1,7 @@
-package com.red_escuela.backend.repository;
+package com.red_escuela.backend.graduation.repository;
 
-import com.red_escuela.backend.entity.GraduationRequest;
-import com.red_escuela.backend.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

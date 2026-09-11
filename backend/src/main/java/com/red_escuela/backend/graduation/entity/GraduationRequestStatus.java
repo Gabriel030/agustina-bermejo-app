@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.graduation.entity;
 
 public enum GraduationRequestStatus {
     REQUESTED,

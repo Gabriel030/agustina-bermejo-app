@@ -1,6 +1,6 @@
-package com.red_escuela.backend.repository;
+package com.red_escuela.backend.graduation.repository;
 
-import com.red_escuela.backend.entity.CertificateIssuance;
+import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
