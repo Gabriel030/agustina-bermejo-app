@@ -5,13 +5,16 @@ repo, no es aspiracional.
 
 ## Estructura: package-by-feature + Use Case
 
-**Convención vigente desde 2026-09-08** (PR #47, `identity/`; en curso para
-`billing/`). El backend se está migrando de "todo en un paquete por capa"
-(`entity/`, `service/`, `controller/` planos en la raíz) a **un paquete por
-feature de dominio**, y dentro de cada feature, **un caso de uso por
-operación** en vez de un `Service` con muchos métodos no relacionados entre
-sí. `identity/` es la referencia completa — mirala antes de replicar el
-patrón en una feature nueva.
+**Migración completa desde 2026-09-11** (arrancó con PR #47, `identity/`).
+El backend quedó reorganizado de "todo en un paquete por capa" (`entity/`,
+`service/`, `controller/` planos en la raíz) a **un paquete por feature de
+dominio** — `identity`, `billing`, `academicstructure`, `enrollment`,
+`evaluation`, `attendance`, `graduation`, `notification` — y dentro de cada
+feature, **un caso de uso por operación** en vez de un `Service` con muchos
+métodos no relacionados entre sí, ahí donde el service realmente mezclaba
+capacidades de actores distintos (no en todos lados — ver el criterio de
+alcance en cada sección de feature más abajo). `identity/` es la
+referencia completa del patrón — mirala antes de tocar código nuevo.
 
 ```
 <feature>/
@@ -176,6 +179,160 @@ distintos mezclados en un mismo service/controller:
    decisión de Preceptor/Administrativo (`listar pendientes`/`aprobar`/
    `rechazar`). 7 use cases, con `ProgramEnrollmentApplicationFinder` como
    colaborador del findOrThrow compartido.
+
+## Paquete por feature: `evaluation`
+
+Mesas de examen, notas, esquemas de evaluación y configuración de
+evaluación de comisión (`ExamBoard`, `ExamBoardRegistration`, `GradeItem`,
+`EvaluationScheme`, `SectionEvaluationConfig`) viven en
+`com.red_escuela.backend.evaluation.*`.
+
+**La mayoría de los services quedan cohesivos, sin Use Case**:
+`EvaluationSchemeService`, `ExamBoardService` (CRUD de mesa + asignar
+tribunal — mismo concepto, mismo criterio que `CourseSectionService`),
+`ExamBoardRegistrationService` (inscribir/dar de baja, usado tanto por
+staff como por autoservicio del alumno — es la misma operación invocada
+por actores distintos, no un workflow de decisión), `GradeItemService`
+(cargar nota es el Docente, ver notas es Preceptor/Administrativo/Director
+— lectura vs. escritura del mismo recurso, no dos procesos de negocio
+distintos). `SectionEvaluationConfigReminderJob` es un job programado.
+
+**Única excepción real, migrada al patrón Use Case**:
+`SectionEvaluationConfigService` sí mezclaba autoservicio del Docente
+(crear borrador/guardar borrador/enviar a aprobación) con decisión de
+Director/Administrativo (aprobar/rechazar/listar) — mismo patrón que
+`ProgramEnrollmentApplicationService` en enrollment. 8 use cases en
+`evaluation/usecase/sectionevaluationconfig/`, con tres colaboradores en
+`evaluation/service/`:
+- `SectionEvaluationConfigFinder` — findOrThrow compartido.
+- `SectionEvaluationConfigInstructorAccess` — validación de pertenencia/
+  liderazgo de comisión y armado de la lista de docentes de la respuesta;
+  se inyecta directo en los controllers para las consultas de soporte de
+  UI (mismo patrón que `CurrentPersonService`/`CurrentInstructorService`),
+  no todo tiene que pasar por un Use Case.
+- `SectionEvaluationConfigDraftInitializer` — `createInitialDraft`, se
+  invoca desde `academicstructure.service.SubjectSectionService` al crear
+  una comisión (colaborador cross-feature, no un Use Case porque no lo
+  dispara un actor con su propio endpoint).
+
+## Paquete por feature: `attendance`
+
+Toma de asistencia, justificación, workflow de solicitudes de cambio y
+ciclo de vida de la "clase" puntual (`Attendance`, `AttendanceChangeRequest`,
+`ClassSession`) viven en `com.red_escuela.backend.attendance.*`.
+
+**Caso real de "cajón de sastre"** — a diferencia de `academicstructure`/
+`enrollment`/`evaluation` (donde casi todo quedó cohesivo), acá el viejo
+`AttendanceService` (21 métodos públicos) mezclaba genuinamente 5
+capacidades no relacionadas con actores distintos:
+1. **Cargar asistencia** (Docente) → `LoadProgramSectionAttendanceUseCase`,
+   `LoadCourseSectionAttendanceUseCase`.
+2. **Workflow de justificación** (Docente/Alumno *justifica* vs.
+   Preceptor/Administrativo *aprueba/rechaza* — mismo patrón que
+   `ProgramEnrollmentApplicationService`) → `JustifyAttendanceUseCase`,
+   `SubmitAttendanceProofUseCase` (autoservicio del alumno),
+   `ApproveAttendanceJustificationUseCase`,
+   `RejectAttendanceJustificationUseCase`.
+3. **Consultas** → `GetAttendanceUseCase`,
+   `List{Program,Course}EnrollmentAttendanceUseCase`,
+   `Calculate{Program,Course}EnrollmentAttendanceRiskUseCase`.
+4. **Reportes/roster** → `Get{Program,Course}SectionRosterUseCase`,
+   `Get{Program,Course}SectionAbsenceReportUseCase`,
+   `Get{Program,Course}SectionAttendanceHistoryUseCase`.
+5. **Ciclo de vida de la clase** → `Get{Program,Course}SectionClassSessionUseCase`,
+   `Cancel{Program,Course}SectionClassSessionUseCase`.
+
+Todos en `attendance/usecase/attendance/` (21 use cases), con colaboradores
+en `attendance/service/`: `AttendanceFinder`, `AttendanceSectionAccess`
+(pertenencia de Docente a comisión + resolución de `Instructor`),
+`AttendanceRiskCalculator`, `SectionRosterBuilder`, `AttendanceHistoryBuilder`,
+`ClassSessionUpserter`. `AttendanceExportService` queda cohesivo (exportar a
+PDF/XLS es un solo concepto) y consume los use cases de historial/reporte.
+
+`AttendanceChangeRequestService` (5 métodos) es la segunda excepción real,
+mismo patrón: Docente *solicita* un cambio vs. Preceptor/Administrativo
+*decide*. 5 use cases en `attendance/usecase/attendancechangerequest/`, con
+`AttendanceChangeRequestFinder` como colaborador (findOrThrow +
+`requirePending`).
+
+La resolución de la persona autenticada para justificar/aprobar/rechazar
+reusa `CurrentPersonService` (identity) en vez de leer
+`SecurityContextHolder` directo — el service viejo lo hacía manualmente,
+duplicando el mismo mecanismo.
+
+## Paquete por feature: `graduation`
+
+Trámite de egreso y constancias (`GraduationRequest`, `CertificateIssuance`)
+viven en `com.red_escuela.backend.graduation.*`.
+
+**`CertificateService` queda cohesivo, sin Use Case** — emitir constancia
+regular o de materias aprobadas son la misma operación (generar un
+documento a pedido, nunca persistido) para el mismo actor (el Alumno,
+autoservicio vía `MeCertificateController`).
+
+**`GraduationRequestService` sí es una excepción real** — mismo patrón que
+`ProgramEnrollmentApplicationService`/`SectionEvaluationConfigService`/
+`AttendanceChangeRequestService`: Alumno *solicita* el trámite de egreso,
+Administrativo *verifica deuda*, Director *aprueba*, Administrativo/Director
+*rechaza*. 7 use cases en `usecase/graduationrequest/`
+(`RequestGraduationUseCase`, `VerifyGraduationRequestDebtUseCase`,
+`ApproveGraduationRequestUseCase`, `RejectGraduationRequestUseCase`,
+`List{ByProgramEnrollment,ByStatus}GraduationRequestsUseCase`,
+`GetGraduationRequestUseCase`), con `GraduationRequestFinder` como
+colaborador del findOrThrow compartido.
+
+`createGraduationRequestIfEligible` (se dispara solo al aprobarse una
+materia, ver `evaluation.service.GradeItemService`) no es un use case — nadie
+lo pide desde un endpoint propio, es un efecto automático de otro flujo.
+Quedó como el colaborador `GraduationRequestAutoRequester`
+(`graduation/service/`), que internamente invoca `RequestGraduationUseCase`
+— un colaborador plano puede depender de un Use Case de su propia feature,
+no hace falta que todo pase por otro Use Case.
+
+## Paquete por feature: `notification`
+
+**Última feature del roadmap package-by-feature** — a diferencia del resto,
+acá ya existía de antes un paquete `notification` (singular) con la
+infraestructura de eventos de dominio: `NotificationDispatcher`, los
+`NotificationChannel` (`InAppNotificationChannel`), tópicos, destinatarios
+(`PersonRecipient`/`RoleRecipient`) y los eventos de cada feature
+(`GraduationRequestApprovedEvent`, `SectionEvaluationConfigRejectedEvent`,
+etc. — cada feature publica los suyos, cross-package, mismo patrón que
+`ApplicationEventPublisher` ya usado en todo el backend). Ese paquete
+YA escribía directo en la entidad `Notification` (`InAppNotificationChannel`
+→ `NotificationRepository`) — la bandeja de notificaciones del alumno y la
+infraestructura de eventos son, en los hechos, la misma feature.
+
+Por eso acá NO se creó un paquete `notifications` (plural) nuevo — hubiera
+quedado un choque de nombres confuso con el `notification` ya existente.
+Se movieron `Notification`/`NotificationType`/`NotificationService`/
+`MeNotificationController`/`NotificationRepository` como
+`entity/service/controller/repository` **dentro** de `notification/`,
+junto a los eventos y el dispatcher que ya vivían ahí en la raíz del
+paquete (mismo patrón que `shared/UseCase.java` conviviendo con
+subcarpetas de cada feature). `NotificationService` queda cohesivo, sin
+Use Case (2 métodos, un solo actor: el alumno viendo/marcando como leídas
+sus propias notificaciones).
+
+`BatchExecutionLog`/`BatchExecutionStatus` NO son de esta feature pese al
+nombre genérico — su comentario original decía explícitamente que existen
+solo para que `InvoiceOverdueSweepService`/
+`EnrollmentBillingComplianceSweepService` (billing) dejen rastro de cada
+corrida. Se movieron a `billing/entity`/`billing/repository`, no a
+`notification/`.
+
+`Events.java` (entity) quedó sin mover — igual que `StudyProgram`/
+`StudyProgramCourse` en `academicstructure`, no tiene repository, service
+ni controller, parece legacy sin uso real. Pendiente una decisión explícita
+sobre si se elimina.
+
+`EmailService`/`BrevoEmailService`/`FileStorageService` **no** entraron a
+esta feature — son infraestructura genérica ya usada cross-feature
+(`EmailService` solo lo llama `identity.usecase.auth.RequestPasswordResetService`,
+nada que ver con el sistema de eventos; `FileStorageService` lo usan
+enrollment/evaluation/billing) y quedan en `service/` a nivel raíz, mismo
+criterio que otros colaboradores verdaderamente compartidos entre features
+que nunca migraron a un paquete propio.
 
 ## Excepciones
 

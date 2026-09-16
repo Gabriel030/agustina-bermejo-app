@@ -1,18 +1,22 @@
 package com.red_escuela.backend.controller;
 
-import com.red_escuela.backend.dto.AttendanceResponse;
-import com.red_escuela.backend.dto.AttendanceRiskResponse;
-import com.red_escuela.backend.dto.GradeItemResponse;
-import com.red_escuela.backend.entity.Attendance;
+import com.red_escuela.backend.attendance.dto.AttendanceResponse;
+import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
+import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
+import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.exception.AttendanceNotFoundException;
+import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.exception.UnsupportedFileTypeException;
-import com.red_escuela.backend.service.AttendanceService;
+import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.GetAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.ListProgramEnrollmentAttendanceUseCase;
+import com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofCommand;
+import com.red_escuela.backend.attendance.usecase.attendance.SubmitAttendanceProofUseCase;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.service.FileStorageService;
-import com.red_escuela.backend.service.GradeItemService;
+import com.red_escuela.backend.evaluation.service.GradeItemService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,19 +42,28 @@ public class MeAcademicRecordController {
 
     private final CurrentStudentService currentStudentService;
     private final SubjectSectionEnrollmentService subjectSectionEnrollmentService;
-    private final AttendanceService attendanceService;
+    private final ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
+    private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
+    private final GetAttendanceUseCase getAttendanceUseCase;
+    private final SubmitAttendanceProofUseCase submitAttendanceProofUseCase;
     private final GradeItemService gradeItemService;
     private final FileStorageService fileStorageService;
 
     public MeAcademicRecordController(
             CurrentStudentService currentStudentService,
             SubjectSectionEnrollmentService subjectSectionEnrollmentService,
-            AttendanceService attendanceService,
+            ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase,
+            CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
+            GetAttendanceUseCase getAttendanceUseCase,
+            SubmitAttendanceProofUseCase submitAttendanceProofUseCase,
             GradeItemService gradeItemService,
             FileStorageService fileStorageService) {
         this.currentStudentService = currentStudentService;
         this.subjectSectionEnrollmentService = subjectSectionEnrollmentService;
-        this.attendanceService = attendanceService;
+        this.listProgramEnrollmentAttendanceUseCase = listProgramEnrollmentAttendanceUseCase;
+        this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
+        this.getAttendanceUseCase = getAttendanceUseCase;
+        this.submitAttendanceProofUseCase = submitAttendanceProofUseCase;
         this.gradeItemService = gradeItemService;
         this.fileStorageService = fileStorageService;
     }
@@ -58,17 +71,16 @@ public class MeAcademicRecordController {
     @GetMapping("/section-enrollments/{id}/attendance")
     public List<AttendanceResponse> miAsistencia(@PathVariable Long id) {
         exigirPropietario(id);
-        return attendanceService.listarPorProgramEnrollment(id).stream().map(AttendanceResponse::from).toList();
+        return listProgramEnrollmentAttendanceUseCase.list(id).stream().map(AttendanceResponse::from).toList();
     }
 
     // % de ausentismo real y si eso ya supera el máximo permitido de la comisión
     // (SubjectSection.maxAbsencePercentage, política institucional real — nunca un
-    // 70% fijo hardcodeado) — reusa el mismo cálculo que ya usa Preceptoría
-    // (AttendanceService.calcularRiesgoDeLibrePorProgramEnrollment), autoservicio.
+    // 70% fijo hardcodeado) — reusa el mismo cálculo que ya usa Preceptoría, autoservicio.
     @GetMapping("/section-enrollments/{id}/attendance/risk")
     public AttendanceRiskResponse miRiesgoDeAsistencia(@PathVariable Long id) {
         exigirPropietario(id);
-        return attendanceService.calcularRiesgoDeLibrePorProgramEnrollment(id);
+        return calculateProgramEnrollmentAttendanceRiskUseCase.calculate(id);
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
@@ -81,7 +93,7 @@ public class MeAcademicRecordController {
     public AttendanceResponse justificarMiInasistencia(
             @PathVariable Long id, @RequestParam(required = false) String reason, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
-        Attendance attendance = attendanceService.verDetalle(id);
+        Attendance attendance = getAttendanceUseCase.get(id);
         exigirPropietarioDeAsistencia(attendance, student);
         String tipo = comprobante.getContentType();
         boolean tipoPermitido = MediaType.APPLICATION_PDF_VALUE.equals(tipo) || MediaType.IMAGE_JPEG_VALUE.equals(tipo);
@@ -90,7 +102,7 @@ public class MeAcademicRecordController {
         }
         String relativePath = fileStorageService.store(student.getId(), "justificaciones-asistencia", comprobante);
         String motivo = reason != null && !reason.isBlank() ? reason : "Comprobante subido por el alumno";
-        return AttendanceResponse.from(attendanceService.subirComprobante(id, motivo, relativePath));
+        return AttendanceResponse.from(submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(id, motivo, relativePath)));
     }
 
     // 404 (no 403) si la cursada no es del alumno autenticado — mismo criterio que

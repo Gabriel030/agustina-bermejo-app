@@ -1,8 +1,8 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.entity.NotificationType;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.util.List;
 

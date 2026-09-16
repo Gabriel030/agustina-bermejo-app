@@ -100,6 +100,37 @@ import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalReque
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
+import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
+import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
+import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
+import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
+import com.red_escuela.backend.evaluation.exception.SectionEvaluationConfigNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
+import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoardException;
+import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInAnotherExamBoardException;
+import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
+import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
+import com.red_escuela.backend.attendance.exception.AttendanceNotFoundException;
+import com.red_escuela.backend.attendance.exception.ClassSessionNotFoundException;
+import com.red_escuela.backend.attendance.exception.AttendanceChangeRequestNotFoundException;
+import com.red_escuela.backend.attendance.exception.CannotJustifyException;
+import com.red_escuela.backend.attendance.exception.ClassSessionAlreadyCanceledException;
+import com.red_escuela.backend.attendance.exception.InvalidAttendanceChangeRequestStateException;
+import com.red_escuela.backend.graduation.exception.CertificateNotEligibleException;
+import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundException;
+import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
+import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
+import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
+import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

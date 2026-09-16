@@ -9,7 +9,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.entity.FinalGradeType;
+import com.red_escuela.backend.evaluation.entity.FinalGradeType;
 
 /*
  * Inscripción de un alumno a una comisión (SubjectSection) de una materia de carrera,
