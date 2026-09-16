@@ -23,6 +23,12 @@ import { Placeholder } from '@/pages/Placeholder';
 import { AlumnoInicio } from '@/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
+import { AlumnoPagos } from '@/pages/AlumnoPagos';
+import { AlumnoPagoDetalle } from '@/pages/AlumnoPagoDetalle';
+import { AlumnoPagarSeleccion } from '@/pages/AlumnoPagarSeleccion';
+import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
+import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
+import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
@@ -54,8 +60,8 @@ const RUTAS_POR_ROL = {
     // Notas, Asistencia y Mesas de examen dejaron de ser páginas de nav de primer
     // nivel (Épica 2 Fase 2) — ahora son pestañas dentro de Mis carreras, ver
     // AlumnoMisCarreras.jsx y el comentario más abajo sobre la ruta de detalle.
-    paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'opciones'],
-    paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras },
+    paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'pagos', 'opciones'],
+    paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras, pagos: AlumnoPagos },
   },
   docente: {
     Layout: DocenteLayout,
@@ -145,6 +151,12 @@ export function AppRouter() {
               nav como el resto de `paginas`, cuelga de la pestaña Materias dentro de Mis
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/estado" element={<AlumnoPagoEstado />} />}
+          {rol === 'alumno' && <Route path="pagos/curso/:enrollmentId" element={<AlumnoPagoDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/carrera/:enrollmentId" element={<AlumnoPagoDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/seleccion" element={<AlumnoPagarSeleccion />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/online" element={<AlumnoPagarOnline />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
           {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
             <Route path="alumnos/:id" element={<LegajoAlumno />} />

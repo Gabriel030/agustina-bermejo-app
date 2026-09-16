@@ -98,6 +98,7 @@ import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupExcept
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlreadyActiveException;
 import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
+import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
@@ -363,6 +364,11 @@ public class GlobalExceptionHandler {
     // SecurityConfig) — ya no queda enmascarada como 403, mismo criterio que el resto
     // de esta clase de todas formas: no manejar lo que no se conoce todavía, dejar
     // que Spring Boot muestre su error default en vez de inventar un mapeo a ciegas.
+    @ExceptionHandler(MercadoPagoGatewayException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public void handleMercadoPagoGateway() {
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleDataIntegrityViolation() {

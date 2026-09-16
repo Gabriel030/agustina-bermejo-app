@@ -1,5 +1,5 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { useMiInscripcion } from '@/hooks/useAlumno';
+import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
 import { useConfiguracionComision } from '@/hooks/useDocente';
 import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
 import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
@@ -27,6 +27,12 @@ export function useBreadcrumb() {
   const enDetalleMateria = /^\/alumno\/mis-carreras\/materias\/[^/]+$/.test(location.pathname);
   const { data: inscripcion } = useMiInscripcion(params.id, enDetalleMateria);
 
+  const enDetallePagosCurso = /^\/alumno\/pagos\/curso\/[^/]+$/.test(location.pathname);
+  const enDetallePagosCarrera = /^\/alumno\/pagos\/carrera\/[^/]+$/.test(location.pathname);
+  const enDetallePagos = enDetallePagosCurso || enDetallePagosCarrera;
+  const { data: cursos } = useMisCursos();
+  const { data: carreras } = useMisMatriculaciones();
+
   const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);
 
@@ -38,6 +44,27 @@ export function useBreadcrumb() {
 
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
+
+  const enPagos = location.pathname === '/alumno/pagos';
+  if (enPagos) {
+    return [{ label: 'Mis pagos' }];
+  }
+
+  if (enDetallePagos) {
+    let productName;
+    const id = +params.enrollmentId;
+    if (enDetallePagosCurso) {
+      const found = cursos?.find((c) => c.id === id);
+      productName = found ? (found.courseName ?? `Curso #${found.courseId}`) : <Skeleton className="h-4 w-32" />;
+    } else {
+      const found = carreras?.find((m) => m.id === id);
+      productName = found ? (found.programName ?? `Carrera #${found.programId}`) : <Skeleton className="h-4 w-32" />;
+    }
+    return [
+      { label: 'Mis pagos', to: '/alumno/pagos' },
+      { label: productName },
+    ];
+  }
 
   if (enLegajoPersonal) {
     const rolBase = location.pathname.split('/')[1];

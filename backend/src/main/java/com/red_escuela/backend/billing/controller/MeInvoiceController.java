@@ -12,7 +12,9 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
 import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
+import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import org.springframework.http.HttpStatus;
@@ -39,11 +41,13 @@ public class MeInvoiceController {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
+    private final CreateMpPreferenceUseCase createMpPreferenceUseCase;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
                                 CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                                ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase) {
+                                ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
+                                CreateMpPreferenceUseCase createMpPreferenceUseCase) {
         this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
@@ -51,12 +55,20 @@ public class MeInvoiceController {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
+        this.createMpPreferenceUseCase = createMpPreferenceUseCase;
     }
 
     @GetMapping("/credit-notes")
     public List<CreditNoteResponse> myCreditNotes() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
         return listCreditNotesForStudentUseCase.list(studentId).stream().map(CreditNoteResponse::from).toList();
+    }
+
+    @PostMapping("/invoices/{id}/mp-preference")
+    @ResponseStatus(HttpStatus.CREATED)
+    public MpPreferenceResponse createMpPreference(@PathVariable Long id) {
+        Long studentId = currentStudentService.resolveCurrentStudent().getId();
+        return createMpPreferenceUseCase.create(id, studentId);
     }
 
     @PostMapping("/invoices/{id}/payment-receipts")

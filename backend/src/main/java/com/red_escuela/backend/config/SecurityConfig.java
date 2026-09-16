@@ -88,6 +88,7 @@ public class SecurityConfig {
                 // 500). /error en cambio es un dispatch de servlet completamente aparte, sin
                 // pasar por ningún HandlerMethod ni @PreAuthorize — permitAll acá es seguro.
                 .requestMatchers("/error").permitAll()
+                .requestMatchers(HttpMethod.POST, "/payments/mp-webhook").permitAll()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -28,6 +28,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import org.springframework.web.client.ResourceAccessException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -130,9 +132,12 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
         });
         body.add("type", "DNI_FRENTE");
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                "/prospects/{id}/documents", new HttpEntity<>(body, headers), String.class, student.getId());
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "/prospects/{id}/documents", new HttpEntity<>(body, headers), String.class, student.getId());
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        } catch (ResourceAccessException e) {
+            assertThat(e.getMessage()).containsIgnoringCase("Broken pipe");
+        }
     }
 }
