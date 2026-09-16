@@ -1,210 +1,160 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronRight, Search } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
-import { useFacturasDeCurso, useFacturasDeMatricula, useBillingStanding } from '@/hooks/useBilling';
-import { cn } from '@/lib/utils';
+import { useBillingStanding } from '@/hooks/useBilling';
 
-const FEE_TYPE_LABELS = {
-  RECURRING_FEE: 'Cuota mensual',
-  ENROLLMENT_FEE: 'Matrícula',
-  SUBSCRIPTION_FEE: 'Cuota anual',
-  EXAM_RIGHT: 'Derecho a examen',
-  RETAKEN_SUBJECT_FEE: 'Recurse',
-  DEGREE_ISSUANCE: 'Emisión de título',
-  ADMINISTRATIVE_FEE: 'Gestión administrativa',
+const STANDING_CONFIG = {
+  UP_TO_DATE: { label: 'Al día', tone: 'success' },
+  OVERDUE: { label: 'Moroso', tone: 'danger' },
+  SUSPENDED: { label: 'Suspendido', tone: 'warning' },
+  WITHDRAWN_FOR_NONPAYMENT: { label: 'Dado de baja', tone: 'neutral' },
 };
 
-const STATUS_LABELS = {
-  PENDING: { label: 'Pendiente', tone: 'warning' },
-  OVERDUE: { label: 'Vencida', tone: 'danger' },
-  PAID: { label: 'Pagada', tone: 'success' },
-  WAIVED: { label: 'Bonificada', tone: 'neutral' },
-  CANCELLED: { label: 'Anulada', tone: 'neutral' },
+const ENROLLMENT_STATUS_LABELS = {
+  ENROLLED: 'En curso',
+  COMPLETED: 'Finalizado',
+  WITHDRAWN: 'Dado de baja',
+  SUSPENDED: 'Suspendido',
 };
-
-const BILLING_STANDING_LABELS = {
-  AL_DIA: { label: 'Al día', tone: 'success' },
-  MOROSO: { label: 'Moroso', tone: 'danger' },
-  SIN_INFORMACION: { label: 'Sin info', tone: 'neutral' },
-};
-
-function formatPeriod(period) {
-  if (!period) return '-';
-  const [year, month] = period.split('-');
-  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${MESES[parseInt(month, 10) - 1]} ${year}`;
-}
-
-function formatMonto(amount) {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
-}
 
 function formatFecha(date) {
   if (!date) return '-';
-  const d = new Date(date + 'T00:00:00');
+  const d = new Date(date);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-function EnrollmentTab({ label, isActive, billingStanding, onClick }) {
-  const standing = billingStanding ? (BILLING_STANDING_LABELS[billingStanding] ?? { label: billingStanding, tone: 'neutral' }) : null;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex min-w-[140px] flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors',
-        isActive
-          ? 'border-brand bg-accent-soft text-ink'
-          : 'border-border bg-surface text-ink-faint hover:border-brand/50 hover:text-ink',
-      )}
-    >
-      <span className="line-clamp-1 text-[13px] font-semibold">{label}</span>
-      {standing && <StatusPill tone={standing.tone} label={standing.label} />}
-    </button>
-  );
-}
-
-function InvoicesTable({ invoices, onPagar }) {
-  const navigate = useNavigate();
-  if (!invoices?.length) {
-    return <p className="py-8 text-center text-sm text-ink-faint">No hay facturas para esta inscripción.</p>;
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-[12px] font-semibold uppercase tracking-wide text-ink-faint">
-            <th className="py-2.5 pr-4">Concepto</th>
-            <th className="py-2.5 pr-4">Período</th>
-            <th className="py-2.5 pr-4">Vencimiento</th>
-            <th className="py-2.5 pr-4 text-right">Importe</th>
-            <th className="py-2.5 pr-4">Estado</th>
-            <th className="py-2.5" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {invoices.map((inv) => {
-            const statusInfo = STATUS_LABELS[inv.status] ?? { label: inv.status, tone: 'neutral' };
-            const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE';
-            return (
-              <tr key={inv.id} className="hover:bg-neutral-bg/40">
-                <td className="py-3 pr-4 font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</td>
-                <td className="py-3 pr-4 text-ink-faint">{formatPeriod(inv.period)}</td>
-                <td className="py-3 pr-4 text-ink-faint">{formatFecha(inv.dueDate)}</td>
-                <td className="py-3 pr-4 text-right font-mono font-semibold tabular-nums">
-                  {formatMonto(inv.remainingBalance)}
-                </td>
-                <td className="py-3 pr-4">
-                  <StatusPill tone={statusInfo.tone} label={statusInfo.label} />
-                </td>
-                <td className="py-3">
-                  {pagable && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/alumno/pagos/${inv.id}/seleccion`)}
-                      className="rounded-lg bg-gradient-to-r from-brand to-accent-2 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-                    >
-                      Pagar
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function EnrollmentInvoices({ enrollment }) {
-  const isCourse = enrollment.type === 'course';
-  const cursoQuery = useFacturasDeCurso(isCourse ? enrollment.enrollmentId : null);
-  const matriculaQuery = useFacturasDeMatricula(!isCourse ? enrollment.enrollmentId : null);
-  const { data, isLoading } = isCourse ? cursoQuery : matriculaQuery;
-
-  if (isLoading) return <Skeleton className="h-32" />;
-  return <InvoicesTable invoices={data?.invoices} />;
-}
-
 export function AlumnoPagos() {
+  const navigate = useNavigate();
+  const [busqueda, setBusqueda] = useState('');
+
   const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
   const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
   const { data: standings } = useBillingStanding();
-  const [seleccionado, setSeleccionado] = useState(null);
 
   const cargando = cargandoCursos || cargandoCarreras;
 
-  function findStanding(type, id) {
-    const enrollmentType = type === 'course' ? 'CourseEnrollment' : 'ProgramEnrollment';
+  function findStanding(enrollmentType, id) {
     return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.billingStanding ?? null;
   }
 
-  const enrollments = [
+  const allEnrollments = useMemo(() => [
     ...(cursos ?? []).map((c) => ({
-      id: `course-${c.id}`,
-      type: 'course',
-      enrollmentId: c.id,
-      label: c.courseName ?? `Curso #${c.courseId}`,
-      billingStanding: findStanding('course', c.id),
+      key: `curso-${c.id}`,
+      id: c.id,
+      type: 'curso',
+      typeLabel: 'Curso',
+      name: c.courseName ?? `Curso #${c.courseId}`,
+      status: c.status,
+      enrollmentDate: c.enrollmentDate,
+      standing: findStanding('CourseEnrollment', c.id),
     })),
     ...(carreras ?? []).map((m) => ({
-      id: `program-${m.id}`,
-      type: 'program',
-      enrollmentId: m.id,
-      label: m.programName ?? `Carrera #${m.programId}`,
-      billingStanding: findStanding('program', m.id),
+      key: `carrera-${m.id}`,
+      id: m.id,
+      type: 'carrera',
+      typeLabel: 'Carrera',
+      name: m.programName ?? `Carrera #${m.programId}`,
+      status: m.status,
+      enrollmentDate: m.enrollmentDate,
+      standing: findStanding('ProgramEnrollment', m.id),
     })),
-  ];
+  ], [cursos, carreras, standings]);
 
-  const seleccionadoObj = enrollments.find((e) => e.id === seleccionado) ?? enrollments[0] ?? null;
-
-  if (!seleccionado && enrollments.length > 0 && seleccionadoObj) {
-    setSeleccionado(seleccionadoObj.id);
-  }
+  const enrollments = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return allEnrollments;
+    return allEnrollments.filter((e) =>
+      e.name.toLowerCase().includes(q) || e.typeLabel.toLowerCase().includes(q),
+    );
+  }, [allEnrollments, busqueda]);
 
   return (
     <PageContainer>
-      <h1 className="text-xl font-bold">Mis pagos</h1>
+      <div className="relative">
+        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+        <input
+          type="text"
+          placeholder="Buscar curso o carrera…"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-brand"
+        />
+      </div>
 
-      {cargando && (
-        <div className="flex gap-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-40" />)}
-        </div>
-      )}
-
-      {!cargando && enrollments.length === 0 && (
-        <GlassCard className="p-8 text-center text-sm text-ink-faint">
-          No tenés inscripciones activas.
-        </GlassCard>
-      )}
-
-      {!cargando && enrollments.length > 0 && (
-        <>
-          <div className="flex flex-wrap gap-3">
-            {enrollments.map((e) => (
-              <EnrollmentTab
-                key={e.id}
-                label={e.label}
-                isActive={seleccionado === e.id}
-                billingStanding={e.billingStanding}
-                onClick={() => setSeleccionado(e.id)}
-              />
+      <GlassCard className="overflow-hidden p-0">
+        {cargando && (
+          <div className="flex flex-col divide-y divide-border">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-4">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
             ))}
           </div>
+        )}
 
-          {seleccionadoObj && (
-            <GlassCard className="p-5">
-              <EnrollmentInvoices enrollment={seleccionadoObj} />
-            </GlassCard>
-          )}
-        </>
-      )}
+        {!cargando && enrollments.length === 0 && (
+          <p className="px-5 py-10 text-center text-sm text-ink-faint">
+            {busqueda ? 'No hay resultados para esa búsqueda.' : 'No tenés inscripciones activas.'}
+          </p>
+        )}
+
+        {!cargando && enrollments.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <th className="px-5 pb-3 pt-4">Nombre</th>
+                  <th className="pb-3 pr-5 pt-4">Tipo</th>
+                  <th className="pb-3 pr-5 pt-4">Estado de inscripción</th>
+                  <th className="pb-3 pr-5 pt-4">Inscripto desde</th>
+                  <th className="pb-3 pr-5 pt-4">Estado de cuenta</th>
+                  <th className="pb-3 pr-5 pt-4" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {enrollments.map((e) => {
+                  const standingInfo = e.standing
+                    ? (STANDING_CONFIG[e.standing] ?? { label: e.standing, tone: 'neutral' })
+                    : null;
+                  return (
+                    <tr
+                      key={e.key}
+                      onClick={() => navigate(`/alumno/pagos/${e.type}/${e.id}`)}
+                      className="cursor-pointer transition-colors hover:bg-neutral-bg/50"
+                    >
+                      <td className="px-5 py-3.5 font-semibold text-ink">{e.name}</td>
+                      <td className="py-3.5 pr-5 text-ink-faint">{e.typeLabel}</td>
+                      <td className="py-3.5 pr-5">
+                        <StatusPill tone="neutral">
+                          {ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}
+                        </StatusPill>
+                      </td>
+                      <td className="py-3.5 pr-5 text-ink-faint">{formatFecha(e.enrollmentDate)}</td>
+                      <td className="py-3.5 pr-5">
+                        {standingInfo ? (
+                          <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
+                        ) : (
+                          <span className="text-ink-faint">—</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 pr-5">
+                        <ChevronRight size={16} className="text-ink-faint" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
     </PageContainer>
   );
 }

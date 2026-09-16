@@ -24,6 +24,7 @@ import { AlumnoInicio } from '@/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
 import { AlumnoPagos } from '@/pages/AlumnoPagos';
+import { AlumnoPagoDetalle } from '@/pages/AlumnoPagoDetalle';
 import { AlumnoPagarSeleccion } from '@/pages/AlumnoPagarSeleccion';
 import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
 import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
@@ -151,6 +152,8 @@ export function AppRouter() {
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
           {rol === 'alumno' && <Route path="pagos/estado" element={<AlumnoPagoEstado />} />}
+          {rol === 'alumno' && <Route path="pagos/curso/:enrollmentId" element={<AlumnoPagoDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/carrera/:enrollmentId" element={<AlumnoPagoDetalle />} />}
           {rol === 'alumno' && <Route path="pagos/:invoiceId/seleccion" element={<AlumnoPagarSeleccion />} />}
           {rol === 'alumno' && <Route path="pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />}
           {rol === 'alumno' && <Route path="pagos/:invoiceId/online" element={<AlumnoPagarOnline />} />}
