@@ -5,9 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
-import { useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
 import { useFacturasDeCurso, useFacturasDeMatricula } from '@/hooks/useBilling';
-import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
 
@@ -104,7 +102,7 @@ function PaymentDetailModal({ invoice, onClose }) {
   );
 }
 
-function InvoiceTable({ invoices, onPagar, onDetalle }) {
+function InvoiceTable({ invoices, onDetalle }) {
   const navigate = useNavigate();
 
   if (!invoices?.length) {
@@ -183,18 +181,7 @@ export function AlumnoPagoDetalle() {
   const [page, setPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-  const { data: cursos } = useMisCursos();
-  const { data: carreras } = useMisMatriculaciones();
-
   const isCurso = type === 'curso';
-
-  const enrollment = isCurso
-    ? cursos?.find((c) => c.id === +enrollmentId)
-    : carreras?.find((m) => m.id === +enrollmentId);
-
-  const productName = isCurso
-    ? (enrollment?.courseName ?? (enrollment ? `Curso #${enrollment.courseId}` : `Curso #${enrollmentId}`))
-    : (enrollment?.programName ?? (enrollment ? `Carrera #${enrollment.programId}` : `Carrera #${enrollmentId}`));
 
   const cursoQuery = useFacturasDeCurso(isCurso ? enrollmentId : null);
   const carreraQuery = useFacturasDeMatricula(!isCurso ? enrollmentId : null);
