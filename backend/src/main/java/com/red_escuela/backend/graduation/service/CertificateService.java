@@ -60,7 +60,7 @@ public class CertificateService {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
         Student student = enrollment.getStudent();
-        boolean cursandoAlgo = programEnrollmentService.tieneCursadaActiva(programEnrollmentId);
+        boolean cursandoAlgo = programEnrollmentService.hasActiveEnrollment(programEnrollmentId);
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
@@ -81,7 +81,7 @@ public class CertificateService {
     public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Person person = enrollment.getStudent().getPerson();
-        List<ProgramSubject> aprobadas = programEnrollmentService.listarMateriasAprobadas(programEnrollmentId);
+        List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()

@@ -34,29 +34,29 @@ public class ProspectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StudentResponse crearProspecto(@Valid @RequestBody CreateProspectRequest request) {
-        return StudentResponse.from(prospectService.crearProspecto(request));
+    public StudentResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
+        return StudentResponse.from(prospectService.createProspect(request));
     }
 
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentDocumentResponse agregarDocumento(
+    public StudentDocumentResponse addDocument(
             @PathVariable Long id,
             @RequestParam DocumentType type,
             @RequestPart MultipartFile file) {
-        return StudentDocumentResponse.from(prospectService.agregarDocumento(id, type, file));
+        return StudentDocumentResponse.from(prospectService.addDocument(id, type, file));
     }
 
     @GetMapping("/{id}/documents")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<StudentDocumentResponse> listarDocumentos(@PathVariable Long id) {
-        return prospectService.listarDocumentos(id).stream().map(StudentDocumentResponse::from).toList();
+    public List<StudentDocumentResponse> listDocuments(@PathVariable Long id) {
+        return prospectService.listDocuments(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentResponse confirmarAlta(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
-        return StudentResponse.from(prospectService.confirmarAlta(id, request));
+    public StudentResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
+        return StudentResponse.from(prospectService.confirm(id, request));
     }
 }

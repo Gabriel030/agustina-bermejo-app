@@ -145,7 +145,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         Invoice pendiente = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
 
         authenticateAs(persistPerson("preceptor.baja1." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         Invoice reloaded = invoiceRepository.findById(pendiente.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
@@ -161,7 +161,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
 
         authenticateAs(persistPerson("preceptor.baja2." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         CreditNote creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
         assertThat(creditNote.getReasonType()).isEqualTo(CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED);
@@ -181,7 +181,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         Invoice futura3 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(3));
 
         authenticateAs(persistPerson("preceptor.baja4." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         Long creditNoteId = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0).getId();
         CreditNote creditNote = creditNoteRepository.findByIdWithSourceInvoices(creditNoteId).orElseThrow();
@@ -199,7 +199,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
 
         authenticateAs(persistPerson("preceptor.baja5." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         assertThat(creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId())).isEmpty();
     }
@@ -214,7 +214,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
 
         // Sin autenticar a propósito: la baja automática por mora corre sin JWT (job en
         // background) — si esto intentara resolver un actor igual, fallaría acá con NPE.
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         assertThat(invoiceRepository.findById(pendiente.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
         assertThat(creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId())).isEmpty();

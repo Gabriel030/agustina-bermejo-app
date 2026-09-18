@@ -10,9 +10,6 @@ public record CourseEnrollmentApplicationResponse(
         String paymentStatus,
         String rejectionReason,
         Long courseEnrollmentId) {
-
-    // paymentStatus/rejectionReason salen del PaymentReceipt, no de un estado
-    // propio de esta entidad — no tiene uno (ver javadoc de CourseEnrollmentApplication).
     public static CourseEnrollmentApplicationResponse from(CourseEnrollmentApplication application) {
         return new CourseEnrollmentApplicationResponse(
                 application.getId(),

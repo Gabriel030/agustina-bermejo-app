@@ -34,7 +34,7 @@ public class MeGraduationRequestController {
     @ResponseStatus(HttpStatus.CREATED)
     public GraduationRequestResponse request(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.verDetalle(id);
+        ProgramEnrollment enrollment = programEnrollmentService.get(id);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(id);
         }

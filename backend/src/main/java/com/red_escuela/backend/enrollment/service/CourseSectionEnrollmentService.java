@@ -13,15 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Solo lectura + baja puntual de un módulo (ej. el alumno reprueba un módulo del curso y
- * hay que sacarlo de ese módulo sin afectar el resto). El alta es exclusivamente
- * automática desde CourseEnrollmentService.matricular — no hay alta manual por módulo
- * (decisión 15, misma coherencia que "una sola alta, todos los módulos incluidos").
- */
 @Service
 public class CourseSectionEnrollmentService {
-
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
 
@@ -32,12 +25,12 @@ public class CourseSectionEnrollmentService {
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
     }
 
-    public List<CourseSubjectSectionEnrollment> listarPorMatriculacion(Long courseEnrollmentId) {
+    public List<CourseSubjectSectionEnrollment> listByEnrollment(Long courseEnrollmentId) {
         return courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(courseEnrollmentId);
     }
 
     @Transactional
-    public void darDeBaja(Long id) {
+    public void withdraw(Long id) {
         CourseSubjectSectionEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.IN_PROGRESS) {
             throw new CannotWithdrawException(
@@ -46,10 +39,10 @@ public class CourseSectionEnrollmentService {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setDroppedAt(LocalDateTime.now());
         courseSubjectSectionEnrollmentRepository.save(enrollment);
-        promoverSiguienteEnListaDeEspera(enrollment.getCourseSubjectSection().getId());
+        promoteNextFromWaitlist(enrollment.getCourseSubjectSection().getId());
     }
 
-    private void promoverSiguienteEnListaDeEspera(Long courseSubjectSectionId) {
+    private void promoteNextFromWaitlist(Long courseSubjectSectionId) {
         courseSubjectSectionRepository.findByIdForUpdate(courseSubjectSectionId)
                 .orElseThrow(() -> new SectionNotFoundException(courseSubjectSectionId));
         courseSubjectSectionEnrollmentRepository

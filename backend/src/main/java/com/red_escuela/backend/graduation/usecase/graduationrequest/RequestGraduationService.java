@@ -36,7 +36,7 @@ public class RequestGraduationService implements RequestGraduationUseCase {
     public GraduationRequest request(Long programEnrollmentId) {
         ProgramEnrollment programEnrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
-        if (!programEnrollmentService.calcularProgreso(programEnrollmentId).elegibleParaCompletar()) {
+        if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
             throw new NotEligibleForGraduationException(programEnrollmentId);
         }
 

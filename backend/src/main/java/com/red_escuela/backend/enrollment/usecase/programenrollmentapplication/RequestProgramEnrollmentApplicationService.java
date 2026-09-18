@@ -54,7 +54,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
         Program program = programRepository.findById(command.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(command.programId()));
         ProgramCohort cohort = programCohortService.findOrThrow(command.cohortId());
-        programEnrollmentService.validarVentanaDeAdmision(cohort);
+        programEnrollmentService.validateAdmissionWindow(cohort);
 
         applicationRepository
                 .findByStudentIdAndProgramIdAndStatus(student.getId(), command.programId(), ProgramEnrollmentApplicationStatus.PENDING)

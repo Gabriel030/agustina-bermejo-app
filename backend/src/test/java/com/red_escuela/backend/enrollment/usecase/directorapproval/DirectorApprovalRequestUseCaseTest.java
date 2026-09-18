@@ -39,17 +39,10 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * RF-DI-03: flujo de solicitud/aprobación/rechazo de excepciones del Director. Decisión 12:
- * esta fase NO implementa el efecto real de destrabar la validación correspondiente — se
- * verifica explícitamente que aprobar una excepción no tiene ningún efecto cruzado sobre
- * ExamBoardRegistrationService (deuda técnica documentada, no cableada).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
-
     @Autowired
     private RequestDirectorApprovalUseCase requestDirectorApprovalUseCase;
 
@@ -66,7 +59,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -120,7 +113,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         return enrollment;
     }
 
-    private void autenticarComoPersona(String dni) {
+    private void authenticateAsPerson(String dni) {
         Person persona = persistPersonBase(dni);
         entityManager.flush();
         SecurityContextHolder.getContext().setAuthentication(
@@ -128,17 +121,17 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void decidirUnaSolicitudYaDecididaFalla() {
+    void decidingAnAlreadyDecidedRequestFails() {
         Student student = persistStudent("A0000001");
         Program program = persistProgram("CarreraExcepcion1");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
-        autenticarComoPersona("PRECEPTOR_A0000001");
+        authenticateAsPerson("PRECEPTOR_A0000001");
 
         DirectorApprovalRequest request = requestDirectorApprovalUseCase.request(
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), null, "Justificación de prueba"));
 
-        autenticarComoPersona("DIRECTOR_A0000001");
+        authenticateAsPerson("DIRECTOR_A0000001");
         approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(request.getId(), "OK"));
 
         assertThatThrownBy(() -> rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(request.getId(), "tarde")))
@@ -146,7 +139,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarUnaExcepcionLateExamNoDestrabaUnaInscripcionAMesaFueraDeVentana() {
+    void approvingALateExamExceptionDoesNotUnlockRegistrationInAnExamBoardOutsideTheWindow() {
         Student student = persistStudent("A0000002");
         Program program = persistProgram("CarreraExcepcion2");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -176,7 +169,6 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         sse.setAttemptNumber(1);
         entityManager.persist(sse);
 
-        // Mesa con la ventana de inscripción ya cerrada.
         ExamBoard examBoard = new ExamBoard();
         examBoard.setSubject(subject);
         examBoard.setTerm(term);
@@ -187,15 +179,14 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(examBoard);
         entityManager.flush();
 
-        autenticarComoPersona("PRECEPTOR_A0000002");
+        authenticateAsPerson("PRECEPTOR_A0000002");
         DirectorApprovalRequest request = requestDirectorApprovalUseCase.request(
                 new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), subject.getId(), "Llegó tarde por paro de transporte"));
 
-        autenticarComoPersona("DIRECTOR_A0000002");
+        authenticateAsPerson("DIRECTOR_A0000002");
         DirectorApprovalRequest aprobada = approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(request.getId(), "Aprobado"));
         assertThat(aprobada.getStatus()).isEqualTo(DirectorApprovalRequestStatus.APPROVED);
 
-        // Decisión 12: sin efecto cruzado — la mesa sigue rechazando fuera de ventana igual.
         assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), sse.getId()))
                 .isInstanceOf(ExamBoardRegistrationWindowClosedException.class);
     }

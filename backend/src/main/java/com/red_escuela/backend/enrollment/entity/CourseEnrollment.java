@@ -45,7 +45,6 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
-    // Mantenido por EnrollmentBillingComplianceSweepService (Fase 6.3) — ver BillableEnrollment.
     @Enumerated(EnumType.STRING)
     @Column(name = "billing_standing", nullable = false)
     private EnrollmentBillingStanding billingStanding = EnrollmentBillingStanding.UP_TO_DATE;

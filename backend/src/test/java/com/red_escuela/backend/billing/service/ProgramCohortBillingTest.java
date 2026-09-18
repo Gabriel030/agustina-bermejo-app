@@ -282,7 +282,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(30), LocalDate.now(), director);
 
-        assertThatThrownBy(() -> programEnrollmentService.validarVentanaDeAdmision(cohort))
+        assertThatThrownBy(() -> programEnrollmentService.validateAdmissionWindow(cohort))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
     }
 
@@ -407,15 +407,15 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         // Año 2 real (no solo un mes futuro dentro del mismo template — con el tope de plantilla
         // ahora exigido también en la generación, no alcanza con "otro mes", hace falta avanzar
-        // de verdad vía avanzarAñoLectivo, mismo mecanismo que MultiYearProgramBillingTest):
+        // de verdad vía advanceAcademicYear, mismo mecanismo que MultiYearProgramBillingTest):
         // plan mensual — no arrastra nada de lo ya generado en el año 1.
         Term term2 = persistTerm(2027);
         term2.setStartDate(mesInicial.plusMonths(10).atDay(1).atStartOfDay());
         term2.setEndDate(mesInicial.plusMonths(19).atEndOfMonth().atTime(23, 59));
         termRepository.save(term2);
         ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 10, director);
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template2.getId());
-        // avanzarAñoLectivo persiste sobre una instancia propia, distinta de `enrollment` — sin
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
+        // advanceAcademicYear persiste sobre una instancia propia, distinta de `enrollment` — sin
         // recargar, generarProximaCuotaParaCarrera seguiría viendo el currentBillingTemplate
         // viejo (null) y caería al template del año 1 vía programCohort.
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();

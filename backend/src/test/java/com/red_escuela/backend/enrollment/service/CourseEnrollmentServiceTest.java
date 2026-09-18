@@ -35,17 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentWaitlistExpiryJob;
 
-/**
- * Decisión 2026-09-03: Course.capacity pasa de campo decorativo a un cupo real, con lista de
- * espera FIFO (mismo patrón que CourseSubjectSection/SubjectSection) y corte configurable
- * (Course.waitlistDeadlineOffsetDays) que CourseEnrollmentWaitlistExpiryJob hace cumplir. Cubre
- * el gap señalado explícitamente como deuda de testing en RegistrationFlowTest.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
 
@@ -117,21 +110,18 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         return courseRepository.save(course);
     }
 
-    // Sin CourseSubject/CourseSubjectSection: el curso no tiene módulos configurados, así que
-    // matricular() itera una lista vacía y no crea ninguna CourseSubjectSectionEnrollment — no
-    // afecta lo que se está probando acá (el cupo del CURSO, no el de sus comisiones).
     @Test
     void fourthEnrolleeIsWaitlistedWhenCapacityIsThree() {
         Term term = persistTerm(LocalDateTime.now().plusMonths(1));
         Course course = persistCourse(term, 3, null);
 
-        CourseEnrollment e1 = courseEnrollmentService.matricular(
+        CourseEnrollment e1 = courseEnrollmentService.enroll(
                 persistStudent("90000001").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment e2 = courseEnrollmentService.matricular(
+        CourseEnrollment e2 = courseEnrollmentService.enroll(
                 persistStudent("90000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment e3 = courseEnrollmentService.matricular(
+        CourseEnrollment e3 = courseEnrollmentService.enroll(
                 persistStudent("90000003").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment e4 = courseEnrollmentService.matricular(
+        CourseEnrollment e4 = courseEnrollmentService.enroll(
                 persistStudent("90000004").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
 
         assertThat(e1.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
@@ -146,7 +136,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse(term, null, null);
 
         for (int i = 0; i < 5; i++) {
-            CourseEnrollment enrollment = courseEnrollmentService.matricular(
+            CourseEnrollment enrollment = courseEnrollmentService.enroll(
                     persistStudent("9100000" + i).getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
             assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         }
@@ -157,34 +147,31 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm(LocalDateTime.now().plusMonths(1));
         Course course = persistCourse(term, 1, null);
 
-        CourseEnrollment primero = courseEnrollmentService.matricular(
+        CourseEnrollment primero = courseEnrollmentService.enroll(
                 persistStudent("92000001").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment segundo = courseEnrollmentService.matricular(
+        CourseEnrollment segundo = courseEnrollmentService.enroll(
                 persistStudent("92000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
         assertThat(primero.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.darDeBaja(primero.getId());
+        courseEnrollmentService.withdraw(primero.getId());
 
         CourseEnrollment segundoRecargado = courseEnrollmentRepository.findById(segundo.getId()).orElseThrow();
         assertThat(segundoRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 
-    // Alguien en lista de espera del curso se da de baja voluntariamente ANTES del corte —
-    // no debe promover a nadie, porque nunca ocupó el cupo (WAITLISTED no cuenta en
-    // calculateStatusByCourseCapacity).
     @Test
     void withdrawingWhileWaitlistedPromotesNoOne() {
         Term term = persistTerm(LocalDateTime.now().plusMonths(1));
         Course course = persistCourse(term, 1, null);
 
-        CourseEnrollment primero = courseEnrollmentService.matricular(
+        CourseEnrollment primero = courseEnrollmentService.enroll(
                 persistStudent("93000001").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment segundo = courseEnrollmentService.matricular(
+        CourseEnrollment segundo = courseEnrollmentService.enroll(
                 persistStudent("93000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.darDeBaja(segundo.getId());
+        courseEnrollmentService.withdraw(segundo.getId());
 
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
@@ -194,14 +181,12 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
 
     @Test
     void jobCancelsExpiredWaitlistAndNotifiesStudent() {
-        // Corte = term.startDate - 5 días, y term.startDate ya pasó hace 10 días -> corte ya
-        // pasó también (hace 5 días) -> el job tiene que cancelar.
         Term term = persistTerm(LocalDateTime.now().minusDays(10));
         Course course = persistCourse(term, 1, -5);
 
-        CourseEnrollment primero = courseEnrollmentService.matricular(
+        CourseEnrollment primero = courseEnrollmentService.enroll(
                 persistStudent("94000001").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment segundo = courseEnrollmentService.matricular(
+        CourseEnrollment segundo = courseEnrollmentService.enroll(
                 persistStudent("94000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
@@ -209,7 +194,6 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
 
         CourseEnrollment segundoRecargado = courseEnrollmentRepository.findById(segundo.getId()).orElseThrow();
         assertThat(segundoRecargado.getStatus()).isEqualTo(EnrollmentStatus.WAITLIST_EXPIRED);
-        // El primero (ENROLLED, con su cupo) no se toca.
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
 
@@ -221,13 +205,12 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
 
     @Test
     void jobDoesNotTouchWaitlistsBeforeDeadline() {
-        // Corte = term.startDate + 5 días, term.startDate es en 1 mes -> el corte todavía no llegó.
         Term term = persistTerm(LocalDateTime.now().plusMonths(1));
         Course course = persistCourse(term, 1, 5);
 
-        courseEnrollmentService.matricular(
+        courseEnrollmentService.enroll(
                 persistStudent("95000001").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
-        CourseEnrollment segundo = courseEnrollmentService.matricular(
+        CourseEnrollment segundo = courseEnrollmentService.enroll(
                 persistStudent("95000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
 
         waitlistExpiryJob.expireWaitlists();
