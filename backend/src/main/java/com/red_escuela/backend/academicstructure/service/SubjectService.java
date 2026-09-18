@@ -15,7 +15,6 @@ import java.util.List;
 
 @Service
 public class SubjectService {
-
     private final SubjectRepository subjectRepository;
 
     public SubjectService(SubjectRepository subjectRepository) {
@@ -23,11 +22,11 @@ public class SubjectService {
     }
 
     @Transactional
-    public Subject crearMateria(CreateSubjectRequest request) {
+    public Subject create(CreateSubjectRequest request) {
         Subject subject = new Subject();
         subject.setName(request.name());
         subject.setDescription(request.description());
-        subject.setCode(generarProximoCodigo());
+        subject.setCode(generateNextCode());
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
@@ -35,16 +34,13 @@ public class SubjectService {
         }
     }
 
-    // Código de 4 dígitos, secuencial a partir del último asignado (backfill de la
-    // migración arrancó en 1001) — quien da de alta la materia no lo elige, ver
-    // comentario en Subject.java.
-    private String generarProximoCodigo() {
+    private String generateNextCode() {
         int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
         return String.format("%04d", ultimo + 1);
     }
 
     @Transactional
-    public Subject editarMateria(Long id, UpdateSubjectRequest request) {
+    public Subject update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
         if (request.name() != null) {
             subject.setName(request.name());
@@ -55,23 +51,23 @@ public class SubjectService {
         return subjectRepository.save(subject);
     }
 
-    public List<Subject> listar(StatusType status) {
+    public List<Subject> list(StatusType status) {
         return status == null ? subjectRepository.findAll() : subjectRepository.findByStatus(status);
     }
 
-    public Subject verDetalle(Long id) {
+    public Subject get(Long id) {
         return findOrThrow(id);
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         Subject subject = findOrThrow(id);
         subject.setStatus(StatusType.INACTIVE);
         subjectRepository.save(subject);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         Subject subject = findOrThrow(id);
         subject.setStatus(StatusType.ACTIVE);
         subjectRepository.save(subject);

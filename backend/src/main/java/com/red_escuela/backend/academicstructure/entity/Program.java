@@ -23,13 +23,9 @@ public class Program {
     @Column(name = "status")
     private StatusType status;
 
-    // Monthly recurring fee (RECURRING_FEE) amount — mirrored into a PriceRevision on create/update
-    // (Fase 6.1, PriceRevisionService).
     @Column(name = "price")
     private BigDecimal price;
 
-    // Enrollment fee (ENROLLMENT_FEE, matrícula) — separate from the monthly tuition above,
-    // also mirrored into its own PriceRevision (Fase 6.1).
     @Column(name = "enrollment_fee_amount")
     private BigDecimal enrollmentFeeAmount;
 

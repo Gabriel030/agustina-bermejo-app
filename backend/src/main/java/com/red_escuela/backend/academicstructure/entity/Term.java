@@ -42,15 +42,10 @@ public class Term {
     @Column(name = "enrollment_end")
     private LocalDateTime enrollmentEnd;
 
-    // null = sin override, se sigue validando por enrollmentStart/enrollmentEnd (default).
     @Enumerated(EnumType.STRING)
     @Column(name = "enrollment_override")
     private TermEnrollmentOverride enrollmentOverride;
 
-    // Invariante propia del Term (decisión 2026-09-03): "¿este mes cae dentro de mi período
-    // lectivo?" — antes vivía duplicada en cada consumidor (facturación de carrera, facturación
-    // de curso). Sin startDate/endDate configurados no hay ventana real que hacer cumplir
-    // (fixtures viejas/incompletas): no bloquea, no es el caso esperado en producción.
     public boolean contains(YearMonth period) {
         if (startDate == null || endDate == null) {
             return true;
@@ -60,8 +55,6 @@ public class Term {
         return !period.isBefore(start) && !period.isAfter(end);
     }
 
-    // Cantidad de meses calendario que dura este Term, inclusive en ambas puntas (marzo a junio
-    // = 4 meses). null = sin fechas configuradas, no hay span que calcular.
     public Long spanInMonths() {
         if (startDate == null || endDate == null) {
             return null;

@@ -26,7 +26,7 @@ public class CourseSubjectService {
     }
 
     @Transactional
-    public CourseSubject agregarModulo(Long courseId, CreateCourseSubjectRequest request) {
+    public CourseSubject addModule(Long courseId, CreateCourseSubjectRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CourseNotFoundException(courseId));
 
@@ -42,7 +42,7 @@ public class CourseSubjectService {
     }
 
     @Transactional
-    public CourseSubject editarModulo(Long id, UpdateCourseSubjectRequest request) {
+    public CourseSubject update(Long id, UpdateCourseSubjectRequest request) {
         CourseSubject courseSubject = findOrThrow(id);
         if (request.name() != null) {
             courseSubject.setName(request.name());
@@ -62,25 +62,25 @@ public class CourseSubjectService {
         return courseSubjectRepository.save(courseSubject);
     }
 
-    public List<CourseSubject> listarPorCurso(Long courseId, StatusType status) {
+    public List<CourseSubject> listByCourse(Long courseId, StatusType status) {
         return status == null
                 ? courseSubjectRepository.findByCourseIdOrderBySortOrder(courseId)
                 : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(courseId, status);
     }
 
-    public CourseSubject verDetalle(Long id) {
+    public CourseSubject get(Long id) {
         return findOrThrow(id);
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         CourseSubject courseSubject = findOrThrow(id);
         courseSubject.setStatus(StatusType.INACTIVE);
         courseSubjectRepository.save(courseSubject);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         CourseSubject courseSubject = findOrThrow(id);
         courseSubject.setStatus(StatusType.ACTIVE);
         courseSubjectRepository.save(courseSubject);

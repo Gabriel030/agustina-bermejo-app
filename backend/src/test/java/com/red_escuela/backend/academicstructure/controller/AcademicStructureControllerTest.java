@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class AcademicStructureControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -80,7 +79,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearSubjectConRolAdministrativoDevuelve201() throws Exception {
+    void creatingSubjectWithAdministrativeRoleReturns201() throws Exception {
         String token = tokenWithRole("admin-academico1", "ADMINISTRATIVO");
         CreateSubjectRequest request = new CreateSubjectRequest("Química General", null);
 
@@ -93,7 +92,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearSubjectSinRolAdministrativoDevuelve403() throws Exception {
+    void creatingSubjectWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-academico1", "PRECEPTOR");
         CreateSubjectRequest request = new CreateSubjectRequest("Biología", null);
 
@@ -105,7 +104,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearSubjectConNombreDuplicadoDevuelve409() throws Exception {
+    void creatingSubjectWithDuplicateNameReturns409() throws Exception {
         String token = tokenWithRole("admin-academico2", "ADMINISTRATIVO");
         CreateSubjectRequest request = new CreateSubjectRequest("Historia", null);
 
@@ -123,7 +122,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCarreraConCreditosPersisteTodosLosCampos() throws Exception {
+    void creatingProgramWithCreditsPersistsAllFields() throws Exception {
         String token = tokenWithRole("admin-academico3", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest(
                 "Tecnicatura en Sistemas", 3, null, null, 240);
@@ -138,7 +137,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarProgramasConCualquierRolAutenticadoDevuelve200() throws Exception {
+    void listingProgramsWithAnyAuthenticatedRoleReturns200() throws Exception {
         String token = tokenWithRole("alumno-academico1", "ALUMNO");
 
         mockMvc.perform(get("/programs").header("Authorization", "Bearer " + token))
@@ -146,7 +145,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearGrupoElectivoYAsignarRangoACarrera() throws Exception {
+    void creatingElectiveGroupAndAssigningRangeToProgram() throws Exception {
         String token = tokenWithRole("admin-academico4", "ADMINISTRATIVO");
         CreateElectiveGroupRequest groupRequest = new CreateElectiveGroupRequest("Idiomas", "Grupo de idiomas");
 
@@ -178,7 +177,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verDetalleDeGrupoElectivoYListarPorCarreraDevuelven200() throws Exception {
+    void gettingElectiveGroupDetailAndListingByProgramReturn200() throws Exception {
         String token = tokenWithRole("admin-academico6", "ADMINISTRATIVO");
 
         CreateElectiveGroupRequest groupRequest = new CreateElectiveGroupRequest("Optativas", null);
@@ -216,7 +215,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarCorrelatividadConMinGradeFueraDeRangoDevuelve400() throws Exception {
+    void addingPrerequisiteWithMinGradeOutOfRangeReturns400() throws Exception {
         String token = tokenWithRole("admin-academico5", "ADMINISTRATIVO");
 
         Program program = new Program();
@@ -242,9 +241,6 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entradaA.setStatus(StatusType.ACTIVE);
         entityManager.persist(entradaA);
 
-        // entradaB en el cuatrimestre ANTERIOR de entradaA (mismo año) — cronológicamente
-        // válida como correlativa, para que este test ejercite específicamente la
-        // validación de minGrade fuera de rango y no la de orden cronológico.
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(program);
         entradaB.setSubject(subjectB);
@@ -265,12 +261,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ---------------------------------------------------------------------
-    // Desactivación / reactivación / filtro por status
-    // ---------------------------------------------------------------------
-
     @Test
-    void desactivarYReactivarProgramaFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingProgramWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-baja1", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, null, 100);
         String body = mockMvc.perform(post("/programs")
@@ -296,7 +288,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarProgramaSinRolAdministrativoDevuelve403() throws Exception {
+    void deactivatingProgramWithoutAdministrativeRoleReturns403() throws Exception {
         String adminToken = tokenWithRole("admin-baja2", "ADMINISTRATIVO");
         String body = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -312,7 +304,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarCursoFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingCourseWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-curso1", "ADMINISTRATIVO");
         Term term = new Term();
         term.setYear(2026);
@@ -344,7 +336,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCursoConTermInexistenteDevuelve404() throws Exception {
+    void creatingCourseWithNonExistentTermReturns404() throws Exception {
         String token = tokenWithRole("admin-curso2", "ADMINISTRATIVO");
         CreateCourseRequest request = new CreateCourseRequest(
                 "Curso sin term", 999999L, null, 10, null, null, null, null);
@@ -357,7 +349,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearCursoSinRolAdministrativoDevuelve403() throws Exception {
+    void creatingCourseWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-curso1", "PRECEPTOR");
         CreateCourseRequest request = new CreateCourseRequest(
                 "Curso sin permiso", 1L, null, 10, null, null, null, null);
@@ -370,7 +362,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarPeriodoFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingTermWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("preceptor-term1", "PRECEPTOR");
         CreateTermRequest request = new CreateTermRequest(
                 2026, "Term Baja", "1C", LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
@@ -393,7 +385,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearPeriodoSinRolPreceptorNiAdministrativoDevuelve403() throws Exception {
+    void creatingTermWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("alumno-term1", "ALUMNO");
         CreateTermRequest request = new CreateTermRequest(
                 2026, "Term sin permiso", "1C", LocalDateTime.now(), LocalDateTime.now().plusMonths(4), null, null);
@@ -406,7 +398,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarSubjectFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-subject-baja1", "ADMINISTRATIVO");
         CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", null);
         String body = mockMvc.perform(post("/subjects")
@@ -427,13 +419,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
-    // ---------------------------------------------------------------------
-    // ProgramSubject: desactivar/reactivar/filtro + roles a nivel HTTP
-    // (antes solo estaban probados a nivel servicio, sin pasar por @PreAuthorize)
-    // ---------------------------------------------------------------------
-
     @Test
-    void agregarMateriaSinRolAdministrativoDevuelve403() throws Exception {
+    void addingSubjectWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-programsubject1", "PRECEPTOR");
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 1L, 1, CurricularTerm.FIRST, 5, null, null, null);
@@ -446,7 +433,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarProgramSubjectFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingProgramSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-programsubject1", "ADMINISTRATIVO");
 
         Program program = new Program();
@@ -487,13 +474,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
-    // ---------------------------------------------------------------------
-    // CourseSubject: CRUD, desactivar/reactivar/filtro y roles
-    // (CourseSubjectController no tenía ningún test todavía)
-    // ---------------------------------------------------------------------
-
     @Test
-    void agregarModuloConRolAdministrativoDevuelve201() throws Exception {
+    void addingModuleWithAdministrativeRoleReturns201() throws Exception {
         String token = tokenWithRole("admin-coursesubject1", "ADMINISTRATIVO");
         Term term = new Term();
         term.setYear(2026);
@@ -524,7 +506,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarModuloSinRolAdministrativoDevuelve403() throws Exception {
+    void addingModuleWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-coursesubject1", "PRECEPTOR");
         CreateCourseSubjectRequest request = new CreateCourseSubjectRequest("Módulo sin permiso", 1, 4, null, null);
 
@@ -536,7 +518,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarCourseSubjectFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingCourseSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-coursesubject2", "ADMINISTRATIVO");
         Term term = new Term();
         term.setYear(2026);
@@ -576,12 +558,8 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
-    // ---------------------------------------------------------------------
-    // ElectiveGroup: editar y quitar de una carrera (con el caso "todavía en uso")
-    // ---------------------------------------------------------------------
-
     @Test
-    void editarGrupoElectivoActualizaNombreYDescripcion() throws Exception {
+    void updatingElectiveGroupUpdatesNameAndDescription() throws Exception {
         String token = tokenWithRole("admin-editar-grupo", "ADMINISTRATIVO");
         String body = mockMvc.perform(post("/elective-groups")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -601,7 +579,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarGrupoElectivoDeCarreraSinMateriasAsociadasFunciona() throws Exception {
+    void removingElectiveGroupFromProgramWithoutAssociatedSubjectsWorks() throws Exception {
         String token = tokenWithRole("admin-quitar-grupo1", "ADMINISTRATIVO");
         String groupBody = mockMvc.perform(post("/elective-groups")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -635,7 +613,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarGrupoElectivoDeCarreraConMateriasAsociadasDevuelve409() throws Exception {
+    void removingElectiveGroupFromProgramWithAssociatedSubjectsReturns409() throws Exception {
         String token = tokenWithRole("admin-quitar-grupo2", "ADMINISTRATIVO");
         String groupBody = mockMvc.perform(post("/elective-groups")
                         .contentType(MediaType.APPLICATION_JSON)

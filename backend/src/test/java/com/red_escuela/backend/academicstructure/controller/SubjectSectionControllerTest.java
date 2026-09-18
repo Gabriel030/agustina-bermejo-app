@@ -43,7 +43,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class SubjectSectionControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -100,7 +99,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionSobreSubjectCompartidoPorDosCarrerasQuedaComoUnaSolaFila() throws Exception {
+    void creatingSectionOverASubjectSharedByTwoProgramsEndsUpAsOneSingleRow() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Inglés Compartido");
@@ -153,12 +152,11 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
 
         List<SubjectSection> sections = subjectSectionRepository.findBySubjectId(subject.getId());
         assertThat(sections).hasSize(1);
-        // La comisión no tiene ninguna referencia a Program: el modelo la desacopló de la carrera.
         assertThat(sections.get(0).getSubject().getId()).isEqualTo(subject.getId());
     }
 
     @Test
-    void asignarElMismoDocenteConElMismoRolDosVecesDevuelve409() throws Exception {
+    void assigningTheSameInstructorWithTheSameRoleTwiceReturns409() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para docentes");
@@ -202,7 +200,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionSinRolPreceptorNiAdministrativoDevuelve403() throws Exception {
+    void creatingSectionWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject sin permiso");
@@ -220,7 +218,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionConEvaluationSchemeInexistenteDevuelve404() throws Exception {
+    void creatingSectionWithNonExistentEvaluationSchemeReturns404() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject con esquema inválido");
@@ -246,7 +244,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarDocenteDeUnaComisionQueNoLeCorrespondeDevuelve404() throws Exception {
+    void removingInstructorFromASectionTheyDoNotBelongToReturns404() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para cruce de comisiones");
@@ -293,7 +291,6 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         Long assignmentId = objectMapper.readTree(body).get("id").asLong();
 
-        // La asignación pertenece a "otraSeccion", no a "sectionReal" -> tiene que fallar.
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/program-sections/{id}/instructors/{aid}", sectionReal.getId(), assignmentId)
                         .header("Authorization", "Bearer " + token))
@@ -301,10 +298,10 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSeccionesConCualquierRolAutenticadoDevuelve200() throws Exception {
+    void listingSectionsWithAnyAuthenticatedRoleReturns200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
-        subject.setName("Subject para listar");
+        subject.setName("Subject para list");
         entityManager.persist(subject);
         entityManager.flush();
 
@@ -316,7 +313,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarComisionFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingSectionWorksAndTheListingFiltersByStatus() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para baja de comisión");
@@ -359,15 +356,15 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarDocentesDeUnaComisionDevuelve200() throws Exception {
+    void listingInstructorsOfASectionReturns200() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
-        subject.setName("Subject para listar docentes");
+        subject.setName("Subject para list docentes");
         entityManager.persist(subject);
 
         Term term = new Term();
         term.setYear(2026);
-        term.setDescription("2026 term listar docentes");
+        term.setDescription("2026 term list docentes");
         term.setType("1C");
         term.setStartDate(LocalDateTime.now());
         term.setEndDate(LocalDateTime.now().plusMonths(4));
@@ -385,7 +382,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("docente-listado");
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-listar-docentes", "PRECEPTOR");
+        String token = tokenWithRole("preceptor-list-docentes", "PRECEPTOR");
         mockMvc.perform(post("/program-sections/{id}/instructors", section.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -401,7 +398,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void editarComisionActualizaCampos() throws Exception {
+    void updatingSectionUpdatesFields() throws Exception {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("Subject para editar comisión");

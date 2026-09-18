@@ -37,17 +37,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Mismo patrón que SubjectSectionControllerTest, sobre el lado Course del modelo
- * (CourseSubjectSection, que a diferencia de SubjectSection sí sigue atada a un único
- * Course/CourseSubject — decisión 9 de la spec, los módulos de un curso no se comparten).
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class CourseSectionControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -139,7 +133,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionDeModuloConRolPreceptorDevuelve201() throws Exception {
+    void creatingModuleSectionWithPreceptorRoleReturns201() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo A");
         Term term = persistSectionTerm();
         entityManager.flush();
@@ -160,7 +154,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearComisionSinRolPreceptorNiAdministrativoDevuelve403() throws Exception {
+    void creatingSectionWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo sin permiso");
         entityManager.flush();
 
@@ -175,8 +169,8 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarComisionesConCualquierRolAutenticadoDevuelve200() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo para listar");
+    void listingSectionsWithAnyAuthenticatedRoleReturns200() throws Exception {
+        CourseSubject courseSubject = persistCourseSubject("Módulo para list");
         entityManager.flush();
 
         String token = tokenWithRole("alumno-course-section2", "ALUMNO");
@@ -186,7 +180,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void asignarElMismoDocenteConElMismoRolDosVecesDevuelve409() throws Exception {
+    void assigningTheSameInstructorWithTheSameRoleTwiceReturns409() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo para docentes");
         Term term = persistSectionTerm();
 
@@ -220,8 +214,8 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarDocentesDeUnaComisionDevuelve200() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo para listar docentes");
+    void listingInstructorsOfASectionReturns200() throws Exception {
+        CourseSubject courseSubject = persistCourseSubject("Módulo para list docentes");
         Term term = persistSectionTerm();
 
         CourseSubjectSection section = new CourseSubjectSection();
@@ -236,7 +230,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("docente-course-listado");
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-course-listar-docentes", "PRECEPTOR");
+        String token = tokenWithRole("preceptor-course-list-docentes", "PRECEPTOR");
         mockMvc.perform(post("/course-sections/{id}/instructors", section.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -251,7 +245,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarDocenteDeUnaComisionQueNoLeCorrespondeDevuelve404() throws Exception {
+    void removingInstructorFromASectionTheyDoNotBelongToReturns404() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo para cruce");
         Term term = persistSectionTerm();
 
@@ -292,7 +286,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void quitarDocenteInexistenteDevuelve404() throws Exception {
+    void removingNonExistentInstructorReturns404() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo para quitar inexistente");
         Term term = persistSectionTerm();
 
@@ -313,7 +307,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desactivarYReactivarComisionFuncionaYElListadoFiltraPorStatus() throws Exception {
+    void deactivatingAndReactivatingSectionWorksAndTheListingFiltersByStatus() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo para baja de comisión");
         Term term = persistSectionTerm();
         entityManager.flush();
@@ -345,7 +339,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void editarComisionActualizaCampos() throws Exception {
+    void updatingSectionUpdatesFields() throws Exception {
         CourseSubject courseSubject = persistCourseSubject("Módulo para editar comisión");
         Term term = persistSectionTerm();
         entityManager.flush();

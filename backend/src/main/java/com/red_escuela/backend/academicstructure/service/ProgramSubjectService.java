@@ -38,7 +38,6 @@ import java.util.Set;
 
 @Service
 public class ProgramSubjectService {
-
     private final ProgramSubjectRepository programSubjectRepository;
     private final ProgramRepository programRepository;
     private final SubjectRepository subjectRepository;
@@ -62,7 +61,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public ProgramSubject agregarMateria(Long programId, CreateProgramSubjectRequest request) {
+    public ProgramSubject addSubject(Long programId, CreateProgramSubjectRequest request) {
         Program program = programRepository.findById(programId)
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         Subject subject = subjectRepository.findById(request.subjectId())
@@ -76,8 +75,6 @@ public class ProgramSubjectService {
         if (request.electiveGroupId() != null) {
             electiveGroup = electiveGroupRepository.findById(request.electiveGroupId())
                     .orElseThrow(() -> new ElectiveGroupNotFoundException(request.electiveGroupId()));
-            // Decisión 8: no se puede tagear una materia con un grupo que esa carrera
-            // todavía no asignó (sin rango definido, quedaría una electiva huérfana).
             programElectiveGroupRepository.findByProgramIdAndElectiveGroupId(programId, request.electiveGroupId())
                     .orElseThrow(() -> new ElectiveGroupNotAssignedException(programId, request.electiveGroupId()));
         }
@@ -101,7 +98,7 @@ public class ProgramSubjectService {
     }
 
     @Transactional
-    public ProgramSubject editarMateria(Long id, UpdateProgramSubjectRequest request) {
+    public ProgramSubject update(Long id, UpdateProgramSubjectRequest request) {
         ProgramSubject programSubject = findOrThrow(id);
 
         if (request.curricularYear() != null) {
@@ -131,32 +128,32 @@ public class ProgramSubjectService {
         return programSubjectRepository.save(programSubject);
     }
 
-    public List<ProgramSubject> listarPorCarrera(Long programId, StatusType status) {
+    public List<ProgramSubject> listByProgram(Long programId, StatusType status) {
         return status == null
                 ? programSubjectRepository.findByProgramId(programId)
                 : programSubjectRepository.findByProgramIdAndStatus(programId, status);
     }
 
-    public ProgramSubject verDetalle(Long id) {
+    public ProgramSubject get(Long id) {
         return findOrThrow(id);
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
         programSubject.setStatus(StatusType.INACTIVE);
         programSubjectRepository.save(programSubject);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
         programSubject.setStatus(StatusType.ACTIVE);
         programSubjectRepository.save(programSubject);
     }
 
     @Transactional
-    public ProgramSubjectPrerequisite agregarCorrelatividad(Long programSubjectId, AddPrerequisiteRequest request) {
+    public ProgramSubjectPrerequisite addPrerequisite(Long programSubjectId, AddPrerequisiteRequest request) {
         ProgramSubject objetivo = findOrThrow(programSubjectId);
         ProgramSubject prerequisitePropuesto = findOrThrow(request.prerequisiteProgramSubjectId());
 
@@ -167,7 +164,7 @@ public class ProgramSubjectService {
             throw new InvalidPrerequisiteException(
                     "Las correlatividades solo pueden darse entre materias de la misma carrera");
         }
-        validarOrdenCronologico(objetivo, prerequisitePropuesto);
+        validateChronologicalOrder(objetivo, prerequisitePropuesto);
         if (prerequisiteRepository.existsByProgramSubjectIdAndPrerequisiteProgramSubjectIdAndRequirementType(
                 objetivo.getId(), prerequisitePropuesto.getId(), request.requirementType())) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
@@ -190,26 +187,7 @@ public class ProgramSubjectService {
         }
     }
 
-    /**
-     * Una correlativa tiene que haber terminado de cursarse antes de que empiece la
-     * materia que la requiere — no alcanza con "año anterior o igual", hace falta que
-     * los períodos de cursada no se toquen. Pedido explícito del usuario: una materia
-     * anual de 1er año no puede ser correlativa de otra anual de 1er año (se cursan al
-     * mismo tiempo), pero sí puede depender del cuatrimestre anterior del mismo año, o
-     * del año anterior en el mismo cuatrimestre.
-     * <p>
-     * Se modela cada (año, cuatrimestre) como un rango de "medios años" dentro del plan
-     * (1er cuatrimestre de año Y ocupa un solo medio-año, 2do cuatrimestre el siguiente,
-     * anual ocupa los dos medios-años de ese Y) y se exige que la correlativa termine
-     * estrictamente antes de que arranque la materia objetivo — eso además cubre, sin
-     * necesidad de un caso aparte, combinaciones que el usuario no mencionó explícitamente
-     * pero tienen el mismo problema de fondo (ej. 1er cuatrimestre correlativa de la
-     * anual del mismo año: se solapan igual, aunque no compartan el mismo "tipo").
-     * Si a alguna de las dos materias le falta año/cuatrimestre en el plan, no hay con
-     * qué validar — se deja pasar (esa incompletitud no es responsabilidad de esta
-     * validación).
-     */
-    private void validarOrdenCronologico(ProgramSubject objetivo, ProgramSubject prerequisito) {
+    private void validateChronologicalOrder(ProgramSubject objetivo, ProgramSubject prerequisito) {
         if (objetivo.getCurricularYear() == null || objetivo.getCurricularTerm() == null
                 || prerequisito.getCurricularYear() == null || prerequisito.getCurricularTerm() == null) {
             return;
@@ -231,13 +209,6 @@ public class ProgramSubjectService {
         return (ps.getCurricularYear() - 1) * 2 + (ps.getCurricularTerm() == CurricularTerm.FIRST ? 1 : 2);
     }
 
-    /**
-     * DFS sobre "quién requiere a quién": arranca en el prerrequisito propuesto y
-     * recorre lo que ESE, a su vez, ya requiere (transitivamente). Si en algún punto
-     * se llega de vuelta a la materia objetivo, agregar el arco objetivo->prerequisito
-     * cerraría un ciclo — se rechaza antes de tocar la base (Spec Estructura académica,
-     * sección "Servicios propuestos").
-     */
     private boolean seCreariaUnCiclo(Long programSubjectObjetivoId, Long prerequisitePropuestoId) {
         Set<Long> visitados = new HashSet<>();
         Deque<Long> pila = new ArrayDeque<>();
@@ -258,14 +229,12 @@ public class ProgramSubjectService {
         return false;
     }
 
-    public List<ProgramSubjectPrerequisite> listarCorrelatividades(Long programSubjectId) {
+    public List<ProgramSubjectPrerequisite> listPrerequisites(Long programSubjectId) {
         return prerequisiteRepository.findByProgramSubjectId(programSubjectId);
     }
 
     @Transactional
-    public void quitarCorrelatividad(Long prerequisiteId) {
-        // deleteById no tira excepción si el id no existe (findById().ifPresent(...) por
-        // dentro) — sin este chequeo, borrar un id inexistente devolvería 204 igual.
+    public void removePrerequisite(Long prerequisiteId) {
         ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)
                 .orElseThrow(() -> new PrerequisiteNotFoundException(prerequisiteId));
         prerequisiteRepository.delete(prerequisite);
