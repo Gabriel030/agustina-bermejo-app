@@ -265,10 +265,10 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(10);
 
         // Avanza al año 2 — programCohort NO cambia, solo currentBillingTemplate. Recargar es
-        // obligatorio: avanzarAñoLectivo persiste sobre una instancia propia (findOrThrow
+        // obligatorio: advanceAcademicYear persiste sobre una instancia propia (findOrThrow
         // interno), distinta de esta variable — sin recargar, generarProximaCuotaParaCarrera
         // seguiría viendo currentBillingTemplate=null y caería al template del año 1.
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), templateAño2.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), templateAño2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
@@ -310,13 +310,13 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
         }
 
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template2.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
         }
 
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template3Corto.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template3Corto.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 5; i++) {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(20 + i));
@@ -362,7 +362,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         // Si el remanente se calculara contra el total de la carrera (10 ya generadas + 10
         // nuevas) esto se rechazaría por error — tiene que aceptarse, porque se mide únicamente
         // contra la plantilla de ESTE año.
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), templateRepite.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), templateRepite.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
@@ -416,7 +416,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(6);
 
         // Año 2: vuelve a MONTHLY, arranca fresco (remanente = 10, no 4).
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template2.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption mensualAño2 = monthlyPlan(program, director);
         authenticateAs(director);
@@ -455,7 +455,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
             invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
         }
 
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template2.getId());
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
 

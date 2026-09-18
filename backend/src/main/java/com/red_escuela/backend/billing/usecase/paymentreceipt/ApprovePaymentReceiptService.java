@@ -84,7 +84,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
 
     private void matricularCurso(CourseEnrollmentApplication application) {
         Map<Long, Long> overrides = deserializarOverrides(application.getSectionOverrides());
-        CourseEnrollment enrollment = courseEnrollmentService.matricularComoAutoservicio(
+        CourseEnrollment enrollment = courseEnrollmentService.enrollSelfService(
                 application.getStudent().getId(), new CreateCourseEnrollmentRequest(application.getCourse().getId(), overrides));
         application.setCourseEnrollment(enrollment);
         courseEnrollmentApplicationRepository.save(application);

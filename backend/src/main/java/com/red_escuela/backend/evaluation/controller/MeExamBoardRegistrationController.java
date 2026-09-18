@@ -70,7 +70,7 @@ public class MeExamBoardRegistrationController {
     @ResponseStatus(HttpStatus.CREATED)
     public ExamBoardRegistrationResponse register(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(request.programSectionEnrollmentId());
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.get(request.programSectionEnrollmentId());
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(request.programSectionEnrollmentId());
         }

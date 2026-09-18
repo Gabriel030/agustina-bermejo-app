@@ -20,7 +20,7 @@ public class GraduationRequestAutoRequester {
 
     @Transactional
     public void createIfEligible(Long programEnrollmentId) {
-        if (!programEnrollmentService.calcularProgreso(programEnrollmentId).elegibleParaCompletar()) {
+        if (!programEnrollmentService.calculateProgress(programEnrollmentId).elegibleParaCompletar()) {
             return;
         }
         try {

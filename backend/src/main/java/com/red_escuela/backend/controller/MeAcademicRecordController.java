@@ -109,7 +109,7 @@ public class MeAcademicRecordController {
     // MeEnrollmentController.exigirPropietario.
     private void exigirPropietario(Long enrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(enrollmentId);
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.get(enrollmentId);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(enrollmentId);
         }

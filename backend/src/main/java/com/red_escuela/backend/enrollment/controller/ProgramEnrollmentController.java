@@ -23,7 +23,6 @@ import java.util.List;
 
 @RestController
 public class ProgramEnrollmentController {
-
     private final ProgramEnrollmentService programEnrollmentService;
     private final CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase;
 
@@ -35,51 +34,47 @@ public class ProgramEnrollmentController {
     @PostMapping("/students/{id}/program-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentResponse matricular(@PathVariable Long id, @Valid @RequestBody CreateProgramEnrollmentRequest request) {
-        return ProgramEnrollmentResponse.from(programEnrollmentService.matricular(id, request));
+    public ProgramEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateProgramEnrollmentRequest request) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.enroll(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        programEnrollmentService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        programEnrollmentService.withdraw(id);
     }
 
     @GetMapping("/students/{id}/program-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<ProgramEnrollmentResponse> listarPorAlumno(@PathVariable Long id) {
-        return programEnrollmentService.listarPorAlumno(id).stream().map(ProgramEnrollmentResponse::from).toList();
+    public List<ProgramEnrollmentResponse> listByStudent(@PathVariable Long id) {
+        return programEnrollmentService.listByStudent(id).stream().map(ProgramEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/program-enrollments/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ProgramEnrollmentResponse verDetalle(@PathVariable Long id) {
-        return ProgramEnrollmentResponse.from(programEnrollmentService.verDetalle(id));
+    public ProgramEnrollmentResponse get(@PathVariable Long id) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.get(id));
     }
 
     @GetMapping("/program-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public ProgramProgressResponse verProgreso(@PathVariable Long id) {
-        return programEnrollmentService.calcularProgreso(id);
+    public ProgramProgressResponse getProgress(@PathVariable Long id) {
+        return programEnrollmentService.calculateProgress(id);
     }
 
     @GetMapping("/program-enrollments/{id}/attendance-summary")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<SubjectAttendanceSummaryResponse> verResumenAsistencia(@PathVariable Long id) {
-        return programEnrollmentService.resumenAsistenciaPorMateria(id);
+    public List<SubjectAttendanceSummaryResponse> getAttendanceSummary(@PathVariable Long id) {
+        return programEnrollmentService.attendanceSummaryBySubject(id);
     }
 
-    // Fase 6.1 (decisión 2026-09-03): progresar de año (o repetir uno) cambia a qué plantilla
-    // anual se le factura de ahí en adelante — no toca la cohorte de origen ni recobra matrícula.
     @PostMapping("/program-enrollments/{id}/advance-billing-year")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentResponse avanzarAñoLectivo(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
-        return ProgramEnrollmentResponse.from(programEnrollmentService.avanzarAñoLectivo(id, request.templateId()));
+    public ProgramEnrollmentResponse advanceAcademicYear(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
+        return ProgramEnrollmentResponse.from(programEnrollmentService.advanceAcademicYear(id, request.templateId()));
     }
 
-    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) — no pasa por
-    // InvoiceGenerationService ni por ninguna plantilla anual.
     @PostMapping("/program-enrollments/{id}/invoices/ad-hoc")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")

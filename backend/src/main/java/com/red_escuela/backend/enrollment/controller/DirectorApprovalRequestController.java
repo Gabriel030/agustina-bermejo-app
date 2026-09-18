@@ -49,26 +49,26 @@ public class DirectorApprovalRequestController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public DirectorApprovalRequestResponse solicitar(@Valid @RequestBody CreateDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse request(@Valid @RequestBody CreateDirectorApprovalRequestRequest request) {
         return DirectorApprovalRequestResponse.from(requestDirectorApprovalUseCase.request(request));
     }
 
     @GetMapping
     @PreAuthorize("hasRole('DIRECTOR')")
-    public List<DirectorApprovalRequestResponse> listar(@RequestParam(required = false) DirectorApprovalRequestStatus status) {
+    public List<DirectorApprovalRequestResponse> list(@RequestParam(required = false) DirectorApprovalRequestStatus status) {
         return listDirectorApprovalRequestsUseCase.list(status).stream()
                 .map(DirectorApprovalRequestResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse verDetalle(@PathVariable Long id) {
+    public DirectorApprovalRequestResponse get(@PathVariable Long id) {
         return DirectorApprovalRequestResponse.from(getDirectorApprovalRequestUseCase.get(id));
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse aprobar(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse approve(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request == null ? null : request.notas();
         return DirectorApprovalRequestResponse.from(
                 approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(id, notas)));
@@ -76,7 +76,7 @@ public class DirectorApprovalRequestController {
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse rechazar(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse reject(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request == null ? null : request.notas();
         return DirectorApprovalRequestResponse.from(
                 rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(id, notas)));

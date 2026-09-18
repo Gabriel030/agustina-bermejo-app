@@ -64,7 +64,7 @@ public class ProgramEnrollmentBillingScheduler {
         }
         // currentBillingTemplate arranca en la plantilla de la cohorte de origen — a diferencia
         // de programCohort (fijo), este campo es lo que avanza cuando el alumno progresa o repite
-        // un año (ver ProgramEnrollmentService.avanzarAñoLectivo).
+        // un año (ver ProgramEnrollmentService.advanceAcademicYear).
         if (enrollment.getCurrentBillingTemplate() == null) {
             enrollment.setCurrentBillingTemplate(cohort.getTemplate());
             programEnrollmentRepository.save(enrollment);

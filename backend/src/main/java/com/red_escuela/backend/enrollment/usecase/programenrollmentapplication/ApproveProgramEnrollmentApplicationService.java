@@ -33,11 +33,11 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
     @Transactional
     public ProgramEnrollmentApplication approve(ApproveProgramEnrollmentApplicationCommand command) {
         ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.id());
-        application.aprobar(command.decidedBy());
+        application.approve(command.decidedBy());
 
         Student student = application.getStudent();
         Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
-        ProgramEnrollment enrollment = programEnrollmentService.matricular(student.getId(),
+        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
                 new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
         personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
 

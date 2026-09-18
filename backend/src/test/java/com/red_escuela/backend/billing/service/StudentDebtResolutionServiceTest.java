@@ -135,7 +135,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("88010001");
         Program program = persistPrograma();
 
-        var enrollment = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var enrollment = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
         assertThat(enrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -147,7 +147,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         persistOldWithdrawnCycle(student, programConDeuda, BigDecimal.valueOf(5000));
         Program programNuevo = persistPrograma();
 
-        assertThatThrownBy(() -> programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
                 .isInstanceOf(StudentInDebtException.class);
     }
 
@@ -172,7 +172,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         invoiceRepository.save(invoice);
 
         Program programNuevo = persistPrograma();
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
 
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -189,7 +189,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -206,7 +206,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(2000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
-        assertThatThrownBy(() -> programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
     }
 
@@ -223,7 +223,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow();
         assertThat(deudaVieja.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
 
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -245,7 +245,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         scholarshipRepository.save(scholarship);
 
         studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
         assertThat(scholarshipRepository.findByProgramEnrollmentId(nuevaMatricula.getId())).isEmpty();
         assertThat(scholarshipRepository.findByProgramEnrollmentId(cicloViejo.getId())).hasSize(1);
@@ -268,7 +268,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         assertThat(deuda1.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
         assertThat(deuda2.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
 
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -282,7 +282,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, programConDeudaVieja, BigDecimal.valueOf(5000));
         Program programNuevo = persistPrograma();
 
-        assertThatThrownBy(() -> programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
                 .isInstanceOf(StudentInDebtException.class);
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
@@ -290,7 +290,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
-        var nuevaMatricula = programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -302,7 +302,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Program program = persistPrograma();
         persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
-        assertThatThrownBy(() -> programEnrollmentService.matricular(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
     }
 }

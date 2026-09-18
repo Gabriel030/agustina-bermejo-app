@@ -63,7 +63,7 @@ public class EnrollmentBillingComplianceRowProcessor {
         recalculateStanding(enrollment,
                 () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByCourseEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
-                policy, today, () -> courseEnrollmentService.darDeBaja(id));
+                policy, today, () -> courseEnrollmentService.withdraw(id));
         courseEnrollmentRepository.save(enrollment);
     }
 
@@ -73,7 +73,7 @@ public class EnrollmentBillingComplianceRowProcessor {
         recalculateStanding(enrollment,
                 () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByProgramEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
-                policy, today, () -> programEnrollmentService.darDeBaja(id));
+                policy, today, () -> programEnrollmentService.withdraw(id));
         programEnrollmentRepository.save(enrollment);
     }
 

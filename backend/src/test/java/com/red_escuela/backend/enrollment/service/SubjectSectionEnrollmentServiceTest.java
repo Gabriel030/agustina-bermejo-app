@@ -48,17 +48,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 
-/**
- * Tests de regresión de la auditoría de integridad post-PR #7: hallazgos que necesitan
- * verificar el TIPO exacto de excepción de dominio, no solo el status HTTP (los handlers
- * de GlobalExceptionHandler no devuelven body, así que un test de controller no puede
- * distinguir entre dos excepciones que mapean al mismo status).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private SubjectSectionEnrollmentService subjectSectionEnrollmentService;
 
@@ -155,44 +148,41 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirConVentanaDeInscripcionInvertidaLanzaExcepcionDeConfiguracionNoDeVentanaCerrada() {
+    void enrollingWithInvertedEnrollmentWindowThrowsConfigurationExceptionNotWindowClosed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000001", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaVentanaInvertida");
         Program program = persistProgram("CarreraVentanaInvertida");
         persistProgramSubject(program, subject);
         LocalDateTime now = LocalDateTime.now();
-        // Ventana invertida: start posterior a end — error de carga de datos, no "está cerrada".
         Term term = persistTerm(now.plusDays(10), now.minusDays(10));
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
     }
 
     @Test
-    void inscribirAUnaSeccionCuyaMateriaNoEstaEnElPlanDeLaCarreraLanzaExcepcionEspecifica() {
+    void enrollingInASectionWhoseSubjectIsNotInTheProgramPlanThrowsSpecificException() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000002", StatusType.ACTIVE, institution);
         Subject subjectFueraDePlan = persistSubject("MateriaFueraDePlan");
         Program program = persistProgram("CarreraSinEsaMateria");
-        // Nota: NO se crea ProgramSubject para (program, subjectFueraDePlan) — combinación
-        // inconsistente de programEnrollmentId + sectionId.
         Term term = persistTerm(null, null);
         SubjectSection section = persistSubjectSection(subjectFueraDePlan, term, null);
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(SubjectNotInProgramPlanException.class);
     }
 
     @Test
-    void reinscribirseSinPasarPorCambiarComisionAOtraSeccionDelMismoTermNoIncrementaAttemptNumber() {
+    void reEnrollingWithoutChangeSectionToAnotherSectionOfTheSameTermDoesNotIncrementAttemptNumber() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000003", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaReinscripcionManual");
@@ -204,21 +194,19 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionA.getId()));
         assertThat(primera.getAttemptNumber()).isEqualTo(1);
 
-        subjectSectionEnrollmentService.darDeBaja(primera.getId());
+        subjectSectionEnrollmentService.withdraw(primera.getId());
 
-        // Reinscripción MANUAL (no change-section) a otra comisión de la MISMA materia,
-        // mismo Term: por decisión 8, esto no es un intento nuevo.
-        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionB.getId()));
         assertThat(segunda.getAttemptNumber()).isEqualTo(1);
     }
 
     @Test
-    void reinscribirseAOtroTermTrasBajaSiIncrementaAttemptNumber() {
+    void reEnrollingInAnotherTermAfterWithdrawalDoesIncrementAttemptNumber() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000004", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOtroTerm");
@@ -231,17 +219,17 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment primera = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionTerm1.getId()));
-        subjectSectionEnrollmentService.darDeBaja(primera.getId());
+        subjectSectionEnrollmentService.withdraw(primera.getId());
 
-        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment segunda = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionTerm2.getId()));
         assertThat(segunda.getAttemptNumber()).isEqualTo(2);
     }
 
     @Test
-    void cambiarComisionConAlumnoInactivoFalla() {
+    void changeSectionWithInactiveStudentFails() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000005", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaAlumnoInactivo");
@@ -253,21 +241,19 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment original = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment original = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(seccionA.getId()));
 
         student.getPerson().setStatus(StatusType.DELETED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.cambiarComision(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.changeSection(
                 original.getId(), new ChangeSectionRequest(seccionB.getId())))
                 .isInstanceOf(StudentNotActiveException.class);
     }
 
-    // Decisión 5 de la Spec Procesos administrativos: override manual con prioridad sobre la
-    // validación por fecha ya existente, sin tocarla ni duplicarla.
     @Test
-    void cerrarManualmenteLaVentanaRechazaLaInscripcionAunqueLaFechaSigaVigente() {
+    void manuallyClosingTheWindowRejectsEnrollmentEvenIfTheDateIsStillValid() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000006", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOverrideCerrado");
@@ -280,13 +266,13 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(TermEnrollmentOverrideClosedException.class);
     }
 
     @Test
-    void abrirManualmenteLaVentanaPermiteInscribirseAunqueLaFechaYaHayaVencido() {
+    void manuallyOpeningTheWindowAllowsEnrollingEvenIfTheDateHasAlreadyExpired() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000007", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaOverrideAbierto");
@@ -299,32 +285,28 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment enrollmentResult = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment enrollmentResult = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
         assertThat(enrollmentResult.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 
     @Test
-    void sinOverrideSigueRigiendoSePorFechaComoAntes() {
+    void withoutOverrideItStillGoesByDateAsBefore() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000008", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaSinOverride");
         Program program = persistProgram("CarreraSinOverride");
         persistProgramSubject(program, subject);
         LocalDateTime now = LocalDateTime.now();
-        // Sin override (null, default) y fecha ya vencida: tiene que seguir rechazando por
-        // fecha, no por override (comportamiento previo a esta fase, sin cambios).
         Term term = persistTerm(now.minusDays(20), now.minusDays(10));
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException.class);
     }
-
-    // ---------- decisión 2026-09-03: matrícula paga habilita inscribirse a materias ----------
 
     private ProgramCohort persistCohort(Program program, Term term) {
         Person director = new Person();
@@ -377,7 +359,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirseSinHaberPagadoLaMatriculaDeUnaMatriculacionConCohorteSeRechaza() {
+    void enrollingWithoutHavingPaidTheFeeOfAnEnrollmentWithCohortIsRejected() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000009", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaMatriculaImpaga");
@@ -391,13 +373,13 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PENDING);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.inscribir(
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
                 .isInstanceOf(EnrollmentFeeNotPaidException.class);
     }
 
     @Test
-    void inscribirseConLaMatriculaPagaFunciona() {
+    void enrollingWithTheFeePaidWorks() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000010", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaMatriculaPaga");
@@ -411,18 +393,14 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID);
         entityManager.flush();
 
-        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
 
         assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 
-    // Regresión (encontrada corriendo la suite completa al agregar esta regla): ~10 fixtures de
-    // Épica 2 preexistentes matriculan sin cohorte a propósito (ver el comentario de
-    // ProgramEnrollmentService.matricular sobre cohortId nullable) — sin cohorte no hay concepto
-    // de matrícula que exigir, así que la regla nueva no puede bloquearlas.
     @Test
-    void inscribirseSinCohorteNoExigeMatricula() {
+    void enrollingWithoutCohortDoesNotRequireFee() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000011", StatusType.ACTIVE, institution);
         Subject subject = persistSubject("MateriaSinCohorte");
@@ -434,7 +412,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
 
-        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.inscribir(
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
 
         assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);

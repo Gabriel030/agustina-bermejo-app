@@ -354,7 +354,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
 
         invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(com.red_escuela.backend.billing.entity.ScholarshipStatus.INACTIVE);
