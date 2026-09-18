@@ -9,8 +9,9 @@ import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
-import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
@@ -131,9 +132,18 @@ public class StudentController {
                 .toList();
     }
 
-    private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
-        return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
-                invoices.stream().map(InvoiceResponse::from).toList());
+    private EnrollmentBillingStatusResponse toStatusResponse(CourseEnrollment enrollment, List<Invoice> invoices) {
+        return new EnrollmentBillingStatusResponse(
+                enrollment.getBillingStanding().name(), enrollment.getBillingStandingUpdatedAt(),
+                invoices.stream().map(InvoiceResponse::from).toList(),
+                "COURSE", enrollment.getId(), enrollment.getCourse().getName(), enrollment.getCourse().getId());
+    }
+
+    private EnrollmentBillingStatusResponse toStatusResponse(ProgramEnrollment enrollment, List<Invoice> invoices) {
+        return new EnrollmentBillingStatusResponse(
+                enrollment.getBillingStanding().name(), enrollment.getBillingStandingUpdatedAt(),
+                invoices.stream().map(InvoiceResponse::from).toList(),
+                "PROGRAM", enrollment.getId(), enrollment.getProgram().getName(), enrollment.getProgram().getId());
     }
 
     @GetMapping("/{id}/credit-notes")

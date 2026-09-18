@@ -58,3 +58,45 @@ export function usePaymentConfig() {
     queryFn: () => apiFetch('/payment-config'),
   });
 }
+
+export function useAdminBillingOverview(studentId) {
+  return useQuery({
+    queryKey: ['students', studentId, 'billing-overview'],
+    queryFn: () => apiFetch(`/students/${studentId}/billing-overview`),
+    enabled: !!studentId,
+  });
+}
+
+export function useRegistrarPago() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload) => apiFetch('/payments', { method: 'POST', body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+  });
+}
+
+export function useComprobantesAdmin() {
+  return useQuery({
+    queryKey: ['admin', 'payment-receipts'],
+    queryFn: () => apiFetch('/payment-receipts'),
+  });
+}
+
+export function useAprobarComprobante() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => apiFetch(`/payment-receipts/${id}/approve`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] }),
+  });
+}
+
+export function useRechazarComprobante() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, rejectionReason }) =>
+      apiFetch(`/payment-receipts/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] }),
+  });
+}

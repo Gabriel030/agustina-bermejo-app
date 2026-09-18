@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, X, Receipt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Receipt, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -25,6 +25,8 @@ const STATUS_CONFIG = {
   PENDING: { label: 'Pendiente de pago', tone: 'warning' },
   OVERDUE: { label: 'Vencida', tone: 'danger' },
   PAID: { label: 'Pagada', tone: 'success' },
+  PARTIALLY_PAID: { label: 'Pago parcial', tone: 'warning' },
+  PENDING_REVIEW: { label: 'En revisión', tone: 'neutral' },
   WAIVED: { label: 'Bonificada', tone: 'neutral' },
   CANCELLED: { label: 'Anulada', tone: 'neutral' },
 };
@@ -132,7 +134,7 @@ function InvoiceTable({ invoices, onDetalle }) {
       <TableBody>
         {invoices.map((inv) => {
           const statusInfo = STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-          const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE';
+          const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID';
           const paid = inv.status === 'PAID';
           return (
             <TableRow key={inv.id}>
@@ -170,6 +172,7 @@ function InvoiceTable({ invoices, onDetalle }) {
 
 export function AlumnoPagoDetalle() {
   const { type, enrollmentId } = useParams();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
@@ -179,7 +182,12 @@ export function AlumnoPagoDetalle() {
   const carreraQuery = useFacturasDeMatricula(!isCurso ? enrollmentId : null);
   const { data, isLoading } = isCurso ? cursoQuery : carreraQuery;
 
+  const enrollmentLabel = isCurso ? 'Curso' : 'Carrera';
+  const enrollmentName = data?.enrollmentName ?? data?.name ?? null;
+
   const sorted = [...(data?.invoices ?? [])].sort((a, b) => {
+    if (!a.period) return 1;
+    if (!b.period) return -1;
     if (b.period < a.period) return -1;
     if (b.period > a.period) return 1;
     return 0;
@@ -190,6 +198,21 @@ export function AlumnoPagoDetalle() {
 
   return (
     <PageContainer>
+      <button
+        type="button"
+        onClick={() => navigate('/alumno/pagos')}
+        className="mb-4 flex items-center gap-1.5 text-sm text-ink-faint transition-colors hover:text-ink"
+      >
+        <ArrowLeft size={16} />
+        Mis pagos
+      </button>
+
+      {enrollmentName && (
+        <h1 className="mb-4 font-heading text-xl font-bold text-ink">
+          {enrollmentLabel}: {enrollmentName}
+        </h1>
+      )}
+
       {isLoading && <Skeleton className="h-40 w-full rounded-2xl" />}
 
       {!isLoading && (

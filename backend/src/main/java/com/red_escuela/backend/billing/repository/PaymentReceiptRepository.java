@@ -9,6 +9,21 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, Long> {
+
+    @Query("""
+            select r from PaymentReceipt r
+            join fetch r.invoice i
+            left join fetch i.courseEnrollment ce
+            left join fetch ce.student ces
+            left join fetch ces.person cep
+            left join fetch i.programEnrollment pe
+            left join fetch pe.student pes
+            left join fetch pes.person pep
+            where r.status = :status
+            order by r.uploadedAt asc
+            """)
+    List<PaymentReceipt> findByStatusWithStudentDetails(@Param("status") PaymentReceiptStatus status);
+
     List<PaymentReceipt> findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus status);
 
     boolean existsByInvoiceIdAndStatus(Long invoiceId, PaymentReceiptStatus status);
