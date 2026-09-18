@@ -1,4 +1,4 @@
-import { Home, CheckCircle2, ClipboardCheck, Users, UserCog } from 'lucide-react';
+import { Home, CheckCircle2, ClipboardCheck, Users, UserCog, BarChart2 } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 const ITEMS = [
@@ -7,6 +7,7 @@ const ITEMS = [
   { to: '/director/personal', label: 'Personal', icon: UserCog },
   { to: '/director/aprobaciones', label: 'Aprobaciones', icon: CheckCircle2 },
   { to: '/director/esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
+  { to: '/director/financiero', label: 'Financiero', icon: BarChart2 },
 ];
 
 export function DirectorLayout() {

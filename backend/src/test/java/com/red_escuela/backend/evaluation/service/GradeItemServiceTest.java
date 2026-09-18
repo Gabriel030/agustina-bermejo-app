@@ -6,7 +6,6 @@ import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
-import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -36,13 +35,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.evaluation.service.GradeItemService;
 
-/**
- * Verifica el algoritmo central recalcularEstadoCursada (decisión 6 de la spec técnica): la
- * cursada nunca la mueve el Docente a mano, es una consecuencia calculada de las notas + el
- * EvaluationScheme (piso institucional minRegularGrade=4.0/minApprovalGrade=6.0 por V19).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -152,12 +145,12 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         return section;
     }
 
-    private void asignarDocente(SubjectSection section, Instructor instructor) {
-        SubjectSectionInstructor asignacion = new SubjectSectionInstructor();
-        asignacion.setSection(section);
-        asignacion.setInstructor(instructor);
-        asignacion.setRole(InstructorRole.LEAD);
-        entityManager.persist(asignacion);
+    private void assignInstructor(SubjectSection section, Instructor instructor) {
+        SubjectSectionInstructor assignment = new SubjectSectionInstructor();
+        assignment.setSection(section);
+        assignment.setInstructor(instructor);
+        assignment.setRole(InstructorRole.LEAD);
+        entityManager.persist(assignment);
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student, Program program) {
@@ -192,14 +185,14 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarNotaSinEsquemaAsignadoLanzaExcepcion() {
+    void loadingGradeWithoutAssignedSchemeThrowsException() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000001", institution);
         Instructor instructor = persistInstructor("71000002");
         Subject subject = persistSubject("MateriaSinEsquema");
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term, null);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraSinEsquema");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -208,20 +201,19 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         CreateGradeItemRequest request = new CreateGradeItemRequest(
                 GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null);
 
-        assertThatThrownBy(() -> gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(), request))
+        assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(), request))
                 .isInstanceOf(NoEvaluationSchemeException.class);
     }
 
     @Test
-    void docenteQueNoIntegraLaComisionNoPuedeCargarNota() {
+    void instructorNotInSectionCannotLoadGrade() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000003", institution);
-        Instructor instructorAjeno = persistInstructor("71000004");
+        Instructor outsideInstructor = persistInstructor("71000004");
         Subject subject = persistSubject("MateriaComisionAjena");
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(1, 0, false);
         SubjectSection section = persistSection(subject, term, scheme);
-        // Nota: NO se asigna instructorAjeno a esta comisión.
         Program program = persistProgram("CarreraComisionAjena");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -230,12 +222,12 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         CreateGradeItemRequest request = new CreateGradeItemRequest(
                 GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null);
 
-        assertThatThrownBy(() -> gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructorAjeno.getId(), request))
+        assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), outsideInstructor.getId(), request))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
     @Test
-    void promedioDeParcialesPorDebajoDelMinimoRegularDejaLaCursadaEnFailed() {
+    void averageOfExamsBelowMinRegularLeavesEnrollmentFailed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000005", institution);
         Instructor instructor = persistInstructor("71000006");
@@ -243,15 +235,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(2, 0, false);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPromedioBajo");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 2.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 3.0, 10.0, null, null));
 
         entityManager.flush();
@@ -260,25 +252,23 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void promedioDeParcialesPorEncimaDelMinimoRegularDejaLaCursadaEnRegular() {
+    void averageOfExamsAboveMinRegularLeavesEnrollmentRegular() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000007", institution);
         Instructor instructor = persistInstructor("71000008");
         Subject subject = persistSubject("MateriaPromedioAlto");
         Term term = persistTerm();
-        // hasFinal=true: completar los parciales por encima del mínimo deja la cursada en
-        // REGULAR (no APPROVED todavía, porque falta rendir el final).
         EvaluationScheme scheme = persistScheme(2, 0, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPromedioAlto");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
 
         entityManager.flush();
@@ -287,7 +277,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cargarLaMismaEvaluacionDosVecesCorrigeLaNotaEnVezDeDuplicarla() {
+    void loadingSameEvaluationTwiceCorrectsGradeInsteadOfDuplicating() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000009", institution);
         Instructor instructor = persistInstructor("71000010");
@@ -295,24 +285,24 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(1, 0, false);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraCorreccionNota");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 2.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 9.0, 10.0, "corregida", null));
 
-        var items = gradeItemService.listarPorProgramEnrollment(enrollment.getId());
+        var items = gradeItemService.listByProgramEnrollment(enrollment.getId());
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getScore()).isEqualTo(9.0);
     }
 
     @Test
-    void notaFinalPorEncimaDelMinimoDeAprobacionApruebaLaCursadaYFijaFinalScore() {
+    void finalGradeAboveApprovalMinimumApprovesEnrollmentAndSetsFinalScore() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000011", institution);
         Instructor instructor = persistInstructor("71000012");
@@ -320,14 +310,14 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(0, 0, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraConFinal");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         enrollment.setStatus(EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
 
         entityManager.flush();
@@ -336,28 +326,24 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         assertThat(enrollment.getFinalScore()).isEqualTo(8.0);
     }
 
-    // --- Promoción sin final (EvaluationScheme.promotionMinGrade) ---
-
     @Test
-    void ambosParcialesPorEncimaDeLaNotaDePromocionPromocionaSinFinal() {
+    void bothExamsAbovePromotionGradePromotesWithoutFinal() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000013", institution);
         Instructor instructor = persistInstructor("71000014");
         Subject subject = persistSubject("MateriaPromocionable");
         Term term = persistTerm();
-        // hasFinal=true (la materia SÍ tiene final, la promoción es un atajo por encima) +
-        // promotionMinGrade=7: ambos parciales >= 7 promociona directo sin pasar por Regular.
         EvaluationScheme scheme = persistScheme(2, 0, true, 7.0);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPromocionable");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
 
         entityManager.flush();
@@ -367,10 +353,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.PROMOTION);
     }
 
-    // Pedido explícito del usuario: "si un alumno no promociona una materia cuatrimestral,
-    // saca 6 y 5, el alumno aprobó la cursada pero no la materia aún, requiere final".
     @Test
-    void parcialesQueNoLleganALaNotaDePromocionPeroSiAlPisoRegularQuedanEnRegular() {
+    void examsBelowPromotionGradeButAbovePassingFloorLeaveEnrollmentRegular() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000015", institution);
         Instructor instructor = persistInstructor("71000016");
@@ -378,15 +362,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(2, 0, true, 7.0);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraCasiPromociona");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 6.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 5.0, 10.0, null, null));
 
         entityManager.flush();
@@ -394,10 +378,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
-    // --- TPs como gate individual (no se promedian, tienen que aprobarse cada uno) ---
-
     @Test
-    void unTpDesaprobadoDejaLaCursadaEnFailedAunqueElPromedioGeneralAlcance() {
+    void oneFailedTpLeavesEnrollmentFailedEvenIfOverallAverageIsEnough() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000017", institution);
         Instructor instructor = persistInstructor("71000018");
@@ -405,18 +387,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(1, 1, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraConTpBajo");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        // Exam = 10 (muy por encima del piso), TP = 1 (muy por debajo) — el promedio general
-        // (5.5) superaría minRegularGrade (4.0), pero el TP individualmente no llega, así que
-        // tiene que desaprobar igual.
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 10.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), 1.0, 10.0, null, null));
 
         entityManager.flush();
@@ -424,10 +403,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
     }
 
-    // --- Final con más de un llamado (Subject.maxFinalExamAttempts) ---
-
     @Test
-    void desaprobarElPrimerLlamadoDelFinalDejaLaCursadaEnRegularSiQuedanIntentos() {
+    void failingFirstFinalCallLeavesEnrollmentRegularWhenAttemptsRemain() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000019", institution);
         Instructor instructor = persistInstructor("71000020");
@@ -435,14 +412,14 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(0, 0, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraDosLlamados");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         enrollment.setStatus(EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
 
         entityManager.flush();
@@ -451,7 +428,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarElSegundoLlamadoDelFinalApruebaLaMateriaConEsaNota() {
+    void passingSecondFinalCallApprovesSubjectWithThatGrade() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000021", institution);
         Instructor instructor = persistInstructor("71000022");
@@ -459,16 +436,16 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(0, 0, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraSegundoLlamadoOk");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         enrollment.setStatus(EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
 
         entityManager.flush();
@@ -479,7 +456,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desaprobarLosDosLlamadosDelFinalDejaLaMateriaEnFailed() {
+    void failingBothFinalCallsLeavesSubjectFailed() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000023", institution);
         Instructor instructor = persistInstructor("71000024");
@@ -487,16 +464,16 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm();
         EvaluationScheme scheme = persistScheme(0, 0, true);
         SubjectSection section = persistSection(subject, term, scheme);
-        asignarDocente(section, instructor);
+        assignInstructor(section, instructor);
         Program program = persistProgram("CarreraDosLlamadosFallidos");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         enrollment.setStatus(EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
-        gradeItemService.cargarNotaProgramEnrollment(enrollment.getId(), instructor.getId(),
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
                 new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 2.0, 10.0, null, null));
 
         entityManager.flush();

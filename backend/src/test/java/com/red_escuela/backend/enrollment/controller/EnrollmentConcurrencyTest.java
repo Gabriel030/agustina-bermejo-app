@@ -50,20 +50,10 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-/**
- * Regresión del hallazgo crítico de la auditoría post-PR #7: sin lock, dos altas
- * concurrentes a una comisión con capacity=1 podían leer el mismo conteo de "ocupadas"
- * antes de que cualquiera hiciera commit, y ambas terminar ENROLLED. Deliberadamente SIN
- * @Transactional a nivel de clase: cada request necesita su propia transacción real para
- * que el lock pesimista (SubjectSectionRepository.findByIdForUpdate) tenga sentido —
- * si todo corriera en una única transacción de test, ambos hilos compartirían la misma
- * conexión/lock y no se probaría nada.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -196,7 +186,6 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .content(body));
             } catch (Exception ignored) {
-                // El resultado se verifica consultando la base al final, no acá.
             }
         };
         Runnable llamada2 = () -> {
@@ -208,7 +197,6 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .content(body));
             } catch (Exception ignored) {
-                // Idem.
             }
         };
 
@@ -229,10 +217,6 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
             assertThat(enrolled).isEqualTo(1L);
             assertThat(waitlisted).isEqualTo(1L);
         } finally {
-            // Sin @Transactional a nivel de clase (necesario para que el lock pesimista se
-            // pruebe con transacciones reales por request), nada se revierte solo: hay que
-            // limpiar a mano para no contaminar el conteo de otros tests que listan "todos
-            // los Student" sin filtro sobre el mismo contenedor Postgres compartido.
             subjectSectionEnrollmentRepository.deleteAll(
                     subjectSectionEnrollmentRepository.findBySubjectSectionIdAndStatusIn(
                             section.getId(), List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.WAITLISTED)));

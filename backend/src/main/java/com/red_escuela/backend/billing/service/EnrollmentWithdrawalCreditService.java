@@ -19,14 +19,8 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.List;
 
-// Domain Service: coordina Invoice/CreditNote/Student ante un único evento de negocio (baja de
-// un enrollment), ninguna de esas entidades puede resolver esto por sí sola. Solo actúa sobre
-// bajas VOLUNTARIAS (Fase 6.6, spec "flujo 11") — una baja automática por mora ya llega acá con
-// billingStanding=WITHDRAWN_FOR_NONPAYMENT seteado por EnrollmentBillingComplianceSweepService
-// ANTES de invocar darDeBaja, así que esa distinción no necesita tocar EnrollmentStatus.
 @Service
 public class EnrollmentWithdrawalCreditService {
-
     private final InvoiceRepository invoiceRepository;
     private final CreditNoteService creditNoteService;
     private final CurrentPersonService currentPersonService;
@@ -62,9 +56,6 @@ public class EnrollmentWithdrawalCreditService {
         return enrollment.getBillingStanding() == EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
     }
 
-    // La Person autenticada solo se resuelve si efectivamente hay algo que cancelar/acreditar —
-    // la mayoría de los enrollment sin ninguna Invoice (fixtures de Épica 2 sin facturación, o un
-    // enrollment recién creado) no deberían exigir un JWT solo para pasar por acá.
     private void process(Student student, List<Invoice> pending, List<Invoice> paid) {
         YearMonth withdrawalPeriod = YearMonth.now();
         List<Invoice> paidFuturePeriods = paid.stream()

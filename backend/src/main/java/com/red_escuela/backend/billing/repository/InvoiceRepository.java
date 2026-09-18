@@ -10,39 +10,30 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
-
     List<Invoice> findByCourseEnrollmentIdOrderByPeriod(Long courseEnrollmentId);
 
     List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long programEnrollmentId);
 
-    // Matrícula: nace una sola vez por ProgramEnrollment (ver
-    // ProgramEnrollment.canEnrollInSubjects) — a lo sumo una fila.
     Optional<Invoice> findByProgramEnrollmentIdAndFeeType(Long programEnrollmentId, FeeType feeType);
 
-    // adjustments es lazy — para un caller que necesita leerlas fuera de la transacción que hizo
-    // la consulta (ej. un test), este variant las trae ya cargadas en la misma query.
     @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);
 
     @Query("select i from Invoice i left join fetch i.adjustments where i.id = :id")
     Optional<Invoice> findByIdWithAdjustments(@Param("id") Long id);
 
-    // Lock pesimista explícito (SELECT ... FOR UPDATE) — @Version protege el caso de dos pagos
-    // que cubren el saldo COMPLETO en paralelo, pero no dos pagos PARCIALES simultáneos que
-    // individualmente no superan el saldo pero sumados sí (PaymentService.registrarPago).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Invoice i where i.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
 
-    // InvoiceOverdueSweepService (Fase 6.3): keyset pagination (id > :lastId), no OFFSET — paginar
-    // con OFFSET sobre un WHERE status=PENDING mientras la misma corrida muta ese status a OVERDUE
-    // pierde filas sin error visible (ver nota de la spec).
     List<Invoice> findByStatusAndDueDateBeforeAndIdGreaterThanOrderByIdAsc(
             InvoiceStatus status, LocalDate dueDate, Long lastId, Pageable pageable);
 
@@ -71,10 +62,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<InvoiceStatus> statuses);
 
-    // Cuenta cuántas Invoice de este feeType, bajo ESTA selección de plan puntual, ya llevan un
-    // InvoiceAdjustment que referencia este benefit — el conteo se calcula, nunca se guarda como
-    // contador mutable (mismo criterio que getAmountDue()/getRemainingBalance()), así nunca se
-    // desincroniza de la realidad (Fase 6.5).
     @Query("""
             select count(i) from Invoice i join i.adjustments a
             where i.paymentPlanSelection.id = :paymentPlanSelectionId
@@ -83,4 +70,47 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             """)
     long countByPaymentPlanSelectionAndFeeTypeAndPromotionBenefit(
             @Param("paymentPlanSelectionId") Long paymentPlanSelectionId, @Param("feeType") FeeType feeType, @Param("promotionBenefitId") Long promotionBenefitId);
+
+    @Query("select distinct ce.student.id from Invoice i join i.courseEnrollment ce where i.status = :status")
+    List<Long> findCourseStudentIdsByStatus(@Param("status") InvoiceStatus status);
+
+    @Query("select distinct pe.student.id from Invoice i join i.programEnrollment pe where i.status = :status")
+    List<Long> findProgramStudentIdsByStatus(@Param("status") InvoiceStatus status);
+
+    @Query("select distinct i from Invoice i left join fetch i.adjustments where i.status in :statuses")
+    List<Invoice> findByStatusInWithAdjustments(@Param("statuses") Collection<InvoiceStatus> statuses);
+
+    @Query("""
+            select alloc.invoice.id, coalesce(sum(alloc.amountApplied), 0)
+            from PaymentAllocation alloc
+            where alloc.invoice.id in :invoiceIds
+            group by alloc.invoice.id
+            """)
+    List<Object[]> sumAllocatedByInvoiceIds(@Param("invoiceIds") Collection<Long> invoiceIds);
+
+    @Query("""
+            select i from Invoice i
+            join fetch i.courseEnrollment ce
+            join fetch ce.student s
+            join fetch s.person
+            join fetch ce.course
+            where i.status in :statuses
+            """)
+    List<Invoice> findByCourseEnrollmentStatusInWithStudent(@Param("statuses") Collection<InvoiceStatus> statuses);
+
+    @Query("""
+            select i from Invoice i
+            join fetch i.programEnrollment pe
+            join fetch pe.student s
+            join fetch s.person
+            join fetch pe.program
+            where i.status in :statuses
+            """)
+    List<Invoice> findByProgramEnrollmentStatusInWithStudent(@Param("statuses") Collection<InvoiceStatus> statuses);
+
+    @Query("select coalesce(sum(i.baseAmount), 0) from Invoice i where i.period = :period and i.status <> 'CANCELLED'")
+    BigDecimal sumBaseAmountByPeriod(@Param("period") YearMonth period);
+
+    @Query("select coalesce(sum(i.baseAmount), 0) from Invoice i where i.period = :period and i.status in :statuses")
+    BigDecimal sumBaseAmountByPeriodAndStatusIn(@Param("period") YearMonth period, @Param("statuses") Collection<InvoiceStatus> statuses);
 }

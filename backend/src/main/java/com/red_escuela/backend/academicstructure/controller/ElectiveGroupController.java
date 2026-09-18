@@ -32,41 +32,41 @@ public class ElectiveGroupController {
     @PostMapping("/elective-groups")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ElectiveGroupResponse crearGrupo(@Valid @RequestBody CreateElectiveGroupRequest request) {
-        return ElectiveGroupResponse.from(electiveGroupService.crearGrupo(request));
+    public ElectiveGroupResponse create(@Valid @RequestBody CreateElectiveGroupRequest request) {
+        return ElectiveGroupResponse.from(electiveGroupService.create(request));
     }
 
     @PutMapping("/elective-groups/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ElectiveGroupResponse editarGrupo(@PathVariable Long id, @RequestBody UpdateElectiveGroupRequest request) {
-        return ElectiveGroupResponse.from(electiveGroupService.editarGrupo(id, request));
+    public ElectiveGroupResponse update(@PathVariable Long id, @RequestBody UpdateElectiveGroupRequest request) {
+        return ElectiveGroupResponse.from(electiveGroupService.update(id, request));
     }
 
     @GetMapping("/elective-groups")
-    public List<ElectiveGroupResponse> listar() {
-        return electiveGroupService.listar().stream().map(ElectiveGroupResponse::from).toList();
+    public List<ElectiveGroupResponse> list() {
+        return electiveGroupService.list().stream().map(ElectiveGroupResponse::from).toList();
     }
 
     @GetMapping("/elective-groups/{id}")
-    public ElectiveGroupResponse verDetalle(@PathVariable Long id) {
-        return ElectiveGroupResponse.from(electiveGroupService.verDetalle(id));
+    public ElectiveGroupResponse get(@PathVariable Long id) {
+        return ElectiveGroupResponse.from(electiveGroupService.get(id));
     }
 
     @GetMapping("/programs/{id}/elective-groups")
-    public List<ProgramElectiveGroupResponse> listarPorCarrera(@PathVariable Long id) {
-        return electiveGroupService.listarPorCarrera(id).stream().map(ProgramElectiveGroupResponse::from).toList();
+    public List<ProgramElectiveGroupResponse> listByProgram(@PathVariable Long id) {
+        return electiveGroupService.listByProgram(id).stream().map(ProgramElectiveGroupResponse::from).toList();
     }
 
     @PostMapping("/programs/{id}/elective-groups")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramElectiveGroupResponse asignarACarrera(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
-        return ProgramElectiveGroupResponse.from(electiveGroupService.asignarACarrera(id, request));
+    public ProgramElectiveGroupResponse assignToProgram(@PathVariable Long id, @Valid @RequestBody AssignElectiveGroupRequest request) {
+        return ProgramElectiveGroupResponse.from(electiveGroupService.assignToProgram(id, request));
     }
 
     @DeleteMapping("/programs/{id}/elective-groups/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void quitarDeCarrera(@PathVariable Long id, @PathVariable Long groupId) {
-        electiveGroupService.quitarDeCarrera(id, groupId);
+    public void removeFromProgram(@PathVariable Long id, @PathVariable Long groupId) {
+        electiveGroupService.removeFromProgram(id, groupId);
     }
 }

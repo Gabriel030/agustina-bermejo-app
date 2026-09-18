@@ -31,37 +31,37 @@ public class CourseSubjectController {
     @PostMapping("/courses/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseSubjectResponse agregarModulo(@PathVariable Long id, @Valid @RequestBody CreateCourseSubjectRequest request) {
-        return CourseSubjectResponse.from(courseSubjectService.agregarModulo(id, request));
+    public CourseSubjectResponse addModule(@PathVariable Long id, @Valid @RequestBody CreateCourseSubjectRequest request) {
+        return CourseSubjectResponse.from(courseSubjectService.addModule(id, request));
     }
 
     @PutMapping("/course-subjects/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseSubjectResponse editarModulo(@PathVariable Long id, @RequestBody UpdateCourseSubjectRequest request) {
-        return CourseSubjectResponse.from(courseSubjectService.editarModulo(id, request));
+    public CourseSubjectResponse update(@PathVariable Long id, @RequestBody UpdateCourseSubjectRequest request) {
+        return CourseSubjectResponse.from(courseSubjectService.update(id, request));
     }
 
     @GetMapping("/courses/{id}/subjects")
-    public List<CourseSubjectResponse> listarPorCurso(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
-        return courseSubjectService.listarPorCurso(id, status).stream().map(CourseSubjectResponse::from).toList();
+    public List<CourseSubjectResponse> listByCourse(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return courseSubjectService.listByCourse(id, status).stream().map(CourseSubjectResponse::from).toList();
     }
 
     @GetMapping("/course-subjects/{id}")
-    public CourseSubjectResponse verDetalle(@PathVariable Long id) {
-        return CourseSubjectResponse.from(courseSubjectService.verDetalle(id));
+    public CourseSubjectResponse get(@PathVariable Long id) {
+        return CourseSubjectResponse.from(courseSubjectService.get(id));
     }
 
     @PostMapping("/course-subjects/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        courseSubjectService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        courseSubjectService.deactivate(id);
     }
 
     @PostMapping("/course-subjects/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        courseSubjectService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        courseSubjectService.reactivate(id);
     }
 }

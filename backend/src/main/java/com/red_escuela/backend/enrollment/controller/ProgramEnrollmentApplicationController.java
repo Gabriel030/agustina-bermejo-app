@@ -37,15 +37,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * Autoservicio (/me/...) sin @PreAuthorize adicional — mismo criterio que
- * MeEnrollmentController, la autenticación ya la exige el filtro JWT global.
- * Los endpoints de decisión (approve/reject) sí llevan @PreAuthorize — mismo
- * rol que ya confirma prospectos (ProspectController).
- */
 @RestController
 public class ProgramEnrollmentApplicationController {
-
     private final CurrentStudentService currentStudentService;
     private final CurrentPersonService currentPersonService;
     private final RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase;
@@ -79,7 +72,7 @@ public class ProgramEnrollmentApplicationController {
 
     @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public ProgramEnrollmentApplicationResponse solicitar(
+    public ProgramEnrollmentApplicationResponse request(
             @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
@@ -88,7 +81,7 @@ public class ProgramEnrollmentApplicationController {
     }
 
     @GetMapping("/me/program-enrollment-applications")
-    public List<ProgramEnrollmentApplicationResponse> misSolicitudes() {
+    public List<ProgramEnrollmentApplicationResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
         return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
@@ -96,23 +89,23 @@ public class ProgramEnrollmentApplicationController {
 
     @PostMapping("/me/program-enrollment-applications/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    public void agregarDocumento(@PathVariable Long id, @RequestParam DocumentType type, @RequestPart MultipartFile file) {
+    public void addDocument(@PathVariable Long id, @RequestParam DocumentType type, @RequestPart MultipartFile file) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollmentApplication application = getProgramEnrollmentApplicationUseCase.get(id);
-        exigirPropietario(application, student);
+        requireOwner(application, student);
         addProgramEnrollmentApplicationDocumentUseCase.add(new AddProgramEnrollmentApplicationDocumentCommand(id, type, file));
     }
 
     @GetMapping("/program-enrollment-applications")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<ProgramEnrollmentApplicationResponse> listarPendientes() {
+    public List<ProgramEnrollmentApplicationResponse> listPending() {
         return listPendingProgramEnrollmentApplicationsUseCase.list().stream()
                 .map(ProgramEnrollmentApplicationResponse::from).toList();
     }
 
     @PostMapping("/program-enrollment-applications/{id}/approve")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentApplicationResponse aprobar(@PathVariable Long id) {
+    public ProgramEnrollmentApplicationResponse approve(@PathVariable Long id) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
         return ProgramEnrollmentApplicationResponse.from(
                 approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(id, decidedBy)));
@@ -120,16 +113,14 @@ public class ProgramEnrollmentApplicationController {
 
     @PostMapping("/program-enrollment-applications/{id}/reject")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ProgramEnrollmentApplicationResponse rechazar(
+    public ProgramEnrollmentApplicationResponse reject(
             @PathVariable Long id, @Valid @RequestBody RejectProgramEnrollmentApplicationRequest request) {
         Person decidedBy = currentPersonService.resolveCurrentPerson();
         return ProgramEnrollmentApplicationResponse.from(
                 rejectProgramEnrollmentApplicationUseCase.reject(new RejectProgramEnrollmentApplicationCommand(id, decidedBy, request.reason())));
     }
 
-    // Mismo patrón que MeEnrollmentController.exigirPropietario: 404 (no 403) para
-    // no revelar que una solicitud ajena existe.
-    private void exigirPropietario(ProgramEnrollmentApplication application, Student student) {
+    private void requireOwner(ProgramEnrollmentApplication application, Student student) {
         if (!application.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentApplicationNotFoundException(application.getId());
         }

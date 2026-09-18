@@ -59,7 +59,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class EnrollmentControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -77,8 +76,6 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private CourseEnrollmentRepository courseEnrollmentRepository;
-
-    // ---------- helpers ----------
 
     private String tokenWithRole(String username, String roleName) {
         Address address = new Address();
@@ -141,8 +138,6 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         return program;
     }
 
-    // Fase 6.1: la ventana de admisión vive en ProgramCohort (vía ProgramYearBillingTemplate),
-    // no en Program.
     private ProgramCohort persistProgramCohort(Program program, java.time.LocalDate admissionStart, java.time.LocalDate admissionEnd) {
         Person systemActor = persistSystemActor();
         Term term = persistTerm(null, null);
@@ -286,8 +281,6 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         return section;
     }
 
-    // ---------- tests ----------
-
     @Test
     void matricularProspectoDevuelve400() throws Exception {
         Institution institution = persistInstitution();
@@ -325,10 +318,6 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
-    // Renombrado (2026-09-03, auditoría Fase 6.1): CohortAdmissionWindowClosedException mapea a
-    // 409, no 400 — ya estaba declarada y registrada en GlobalExceptionHandler pero el código
-    // lanzaba la genérica AdmissionWindowClosedException (400) en su lugar, un bug real
-    // encontrado al confrontar el código contra la spec de Fase 6.1 (test 138).
     @Test
     void matricularFueraDeVentanaAdmisionDevuelve409() throws Exception {
         Institution institution = persistInstitution();
@@ -390,20 +379,17 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
         ProgramEnrollment enrollmentA = persistProgramEnrollment(student, carreraA, ProgramEnrollmentStatus.ENROLLED);
         ProgramEnrollment enrollmentB = persistProgramEnrollment(student, carreraB, ProgramEnrollmentStatus.ENROLLED);
-        // Aprobó Física I compartida, pero solo bajo la ProgramEnrollment de la Carrera A.
         persistSectionEnrollment(student, enrollmentA, seccionCompartidaA, EnrollmentStatus.APPROVED, 1);
         entityManager.flush();
 
         String token = tokenWithRole("preceptor-insc5", "PRECEPTOR");
 
-        // Bajo Carrera A: correlatividad cumplida -> inscripción a Física II ok.
         mockMvc.perform(post("/program-enrollments/{id}/section-enrollments", enrollmentA.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateSectionEnrollmentRequest(seccionAvanzadaA.getId()))))
                 .andExpect(status().isCreated());
 
-        // Bajo Carrera B: NO cumplida (scope por carrera, decisión 7) -> 400, aunque sea la misma Subject.
         mockMvc.perform(post("/program-enrollments/{id}/section-enrollments", enrollmentB.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -454,7 +440,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cupoLlenoQuedaWaitlistedYBajaPromueveAlSiguiente() throws Exception {
+    void fullCapacityLeavesWaitlistedAndWithdrawalPromotesTheNext() throws Exception {
         Institution institution = persistInstitution();
         Student estudiante1 = persistStudent("50000007", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student estudiante2 = persistStudent("50000008", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
@@ -501,7 +487,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cambiarComisionALaMismaComisionEsNoOpYNoPierdeLaPlazaContraLaListaDeEspera() throws Exception {
+    void changeSectionToTheSameSectionIsNoOpAndDoesNotLoseThePlaceAgainstTheWaitlist() throws Exception {
         Institution institution = persistInstitution();
         Student estudiante1 = persistStudent("50000017", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student estudiante2 = persistStudent("50000018", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
@@ -553,7 +539,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaYReinscripcionALaMismaComisionReactivaLaMismaFila() throws Exception {
+    void withdrawalAndReEnrollmentToTheSameSectionReactivatesTheSameRow() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000010", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia10");
@@ -639,7 +625,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void progresoConTodoAprobadoEsElegibleParaCompletarSinCambiarStatus() throws Exception {
+    void progressWithEverythingApprovedIsEligibleToCompleteWithoutChangingStatus() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000013", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia13");
@@ -698,7 +684,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaYReinscripcionAlMismoCourseReactivaLasSubInscripcionesSinViolarConstraintUnica() throws Exception {
+    void withdrawalAndReEnrollmentToTheSameCourseReactivatesTheSubEnrollmentsWithoutViolatingUniqueConstraint() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000019", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Term term = persistTerm(null, null);
@@ -720,9 +706,6 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
-        // Antes del fix, este segundo alta resolvía la MISMA CourseSubjectSection (mismo Term)
-        // e intentaba un INSERT nuevo, chocando con la fila WITHDRAWN existente contra el
-        // unique constraint (student_id, course_section_id) -> 500 no controlado.
         mockMvc.perform(post("/students/{id}/course-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -737,7 +720,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaDeCourseLiberaCupoDeSusModulosYPromueveAlSiguienteEnListaDeEspera() throws Exception {
+    void courseWithdrawalFreesItsModulesCapacityAndPromotesTheNextInWaitlist() throws Exception {
         Institution institution = persistInstitution();
         Student estudiante1 = persistStudent("50000020", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student estudiante2 = persistStudent("50000021", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);

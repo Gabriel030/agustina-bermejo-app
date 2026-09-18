@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,15 +13,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// Versión mínima necesaria para que InvoiceOverdueSweepService/EnrollmentBillingComplianceSweepService
-// (Fase 6.3) dejen rastro consultable de cada corrida — la spec completa de observabilidad
-// (reintentos, alertas) es de Fase 6.11, esta entidad se adelanta como prerrequisito técnico.
 @Getter
 @NoArgsConstructor
 @Entity
 @Table(name = "batch_execution_log")
 public class BatchExecutionLog {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)

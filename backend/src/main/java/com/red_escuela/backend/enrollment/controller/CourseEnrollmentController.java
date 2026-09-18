@@ -21,7 +21,6 @@ import java.util.List;
 
 @RestController
 public class CourseEnrollmentController {
-
     private final CourseEnrollmentService courseEnrollmentService;
     private final CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase;
 
@@ -33,37 +32,35 @@ public class CourseEnrollmentController {
     @PostMapping("/students/{id}/course-enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public CourseEnrollmentResponse matricular(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
-        return CourseEnrollmentResponse.from(courseEnrollmentService.matricular(id, request));
+    public CourseEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
+        return CourseEnrollmentResponse.from(courseEnrollmentService.enroll(id, request));
     }
 
     @PostMapping("/course-enrollments/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void darDeBaja(@PathVariable Long id) {
-        courseEnrollmentService.darDeBaja(id);
+    public void withdraw(@PathVariable Long id) {
+        courseEnrollmentService.withdraw(id);
     }
 
     @GetMapping("/students/{id}/course-enrollments")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<CourseEnrollmentResponse> listarPorAlumno(@PathVariable Long id) {
-        return courseEnrollmentService.listarPorAlumno(id).stream().map(CourseEnrollmentResponse::from).toList();
+    public List<CourseEnrollmentResponse> listByStudent(@PathVariable Long id) {
+        return courseEnrollmentService.listByStudent(id).stream().map(CourseEnrollmentResponse::from).toList();
     }
 
     @GetMapping("/course-enrollments/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public CourseEnrollmentResponse verDetalle(@PathVariable Long id) {
-        return CourseEnrollmentResponse.from(courseEnrollmentService.verDetalle(id));
+    public CourseEnrollmentResponse get(@PathVariable Long id) {
+        return CourseEnrollmentResponse.from(courseEnrollmentService.get(id));
     }
 
     @GetMapping("/course-enrollments/{id}/progress")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public CourseProgressResponse verProgreso(@PathVariable Long id) {
-        return courseEnrollmentService.calcularProgreso(id);
+    public CourseProgressResponse getProgress(@PathVariable Long id) {
+        return courseEnrollmentService.calculateProgress(id);
     }
 
-    // Fase 6.7: cobro puntual (derecho de examen, recursada, título, trámite) — no pasa por
-    // InvoiceGenerationService ni por ninguna plantilla anual.
     @PostMapping("/course-enrollments/{id}/invoices/ad-hoc")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")

@@ -34,13 +34,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.service.FileStorageService;
 
-/**
- * Orquesta el proceso de preinscripción pública → prospecto → verificación de
- * documentación → alta definitiva (spec funcional, sección 5, pasos 1-4).
- */
 @Service
 public class ProspectService {
-
     private static final String ROLE_ALUMNO = "ALUMNO";
 
     private final StudentRepository studentRepository;
@@ -72,7 +67,7 @@ public class ProspectService {
     }
 
     @Transactional
-    public Student crearProspecto(CreateProspectRequest request) {
+    public Student createProspect(CreateProspectRequest request) {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
@@ -126,11 +121,9 @@ public class ProspectService {
     }
 
     @Transactional
-    public StudentDocument agregarDocumento(Long studentId, DocumentType type, MultipartFile file) {
+    public StudentDocument addDocument(Long studentId, DocumentType type, MultipartFile file) {
         Student student = findStudentOrThrow(studentId);
 
-        // Un tipo de documento tiene un único registro vigente: el nuevo reemplaza al
-        // anterior, tanto la fila como el archivo físico en disco.
         studentDocumentRepository.findByStudentIdAndType(studentId, type).ifPresent(existing -> {
             fileStorageService.delete(existing.getFilePath());
             studentDocumentRepository.delete(existing);
@@ -147,13 +140,13 @@ public class ProspectService {
         return studentDocumentRepository.save(document);
     }
 
-    public List<StudentDocument> listarDocumentos(Long studentId) {
+    public List<StudentDocument> listDocuments(Long studentId) {
         findStudentOrThrow(studentId);
         return studentDocumentRepository.findByStudentId(studentId);
     }
 
     @Transactional
-    public Student confirmarAlta(Long studentId, ConfirmProspectRequest request) {
+    public Student confirm(Long studentId, ConfirmProspectRequest request) {
         Student student = findStudentOrThrow(studentId);
         if (student.getOnboardingStatus() != StudentOnboardingStatus.PROSPECTO) {
             throw new ProspectAlreadyConfirmedException(studentId);

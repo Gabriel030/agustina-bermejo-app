@@ -11,14 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 import com.red_escuela.backend.identity.entity.Person;
 
-// Aggregate Root — mismo criterio que Invoice (Fase 6.1): el único método que cambia status y
-// crea un CreditApplication es consume(), nunca un setStatus directo desde un service.
 @Getter
 @Setter
 @Entity
 @Table(name = "credit_note")
 public class CreditNote {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)

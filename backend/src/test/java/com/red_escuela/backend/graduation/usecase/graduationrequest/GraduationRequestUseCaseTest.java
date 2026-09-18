@@ -38,11 +38,6 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * RF-AL-15/RF-DI-05: flujo de egreso con estados explícitos (decisión 8) — reusa
- * ProgramEnrollmentService.calcularProgreso sin tocarlo (decisión implícita de no duplicar), y
- * decisión 10: una deuda pendiente NO rechaza el trámite, lo deja en REQUESTED.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -64,7 +59,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -99,9 +94,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         return student;
     }
 
-    // totalCreditsRequired = 0 y sin ProgramSubject: elegibleParaCompletar da true trivialmente
-    // (sin obligatorias pendientes, créditos acumulados >= 0 requeridos, sin grupos electivos).
-    private Program persistProgramSinRequisitos(String name) {
+    private Program persistProgramWithoutRequirements(String name) {
         Program program = new Program();
         program.setName(name);
         program.setTotalYears(1);
@@ -110,7 +103,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         return program;
     }
 
-    private Program persistProgramConMateriaPendiente(String name) {
+    private Program persistProgramWithPendingSubject(String name) {
         Program program = new Program();
         program.setName(name);
         program.setTotalYears(1);
@@ -154,7 +147,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(invoice);
     }
 
-    private void autenticarComoPersona(String dni) {
+    private void authenticateAsPerson(String dni) {
         Person persona = persistPersonBase(dni);
         entityManager.flush();
         SecurityContextHolder.getContext().setAuthentication(
@@ -162,9 +155,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarSinSerElegibleFalla() {
+    void requestWithoutBeingEligibleFails() {
         Student student = persistStudent("80000001");
-        Program program = persistProgramConMateriaPendiente("CarreraConPendientes");
+        Program program = persistProgramWithPendingSubject("CarreraConPendientes");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
@@ -173,9 +166,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarDosVecesSinQueLaPrimeraSeRechaceFalla() {
+    void requestTwiceWithoutTheFirstOneBeingRejectedFails() {
         Student student = persistStudent("80000002");
-        Program program = persistProgramSinRequisitos("CarreraSinRequisitos1");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos1");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
@@ -186,9 +179,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verificarDeudaConFacturasPendientesFallaYElTramiteSigueEnRequested() {
+    void verifyDebtWithPendingInvoicesFailsAndTheRequestStaysRequested() {
         Student student = persistStudent("80000003");
-        Program program = persistProgramSinRequisitos("CarreraSinRequisitos2");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos2");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
@@ -199,46 +192,46 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId()))
                 .isInstanceOf(PendingDebtException.class);
 
-        GraduationRequest recargado = entityManager.find(GraduationRequest.class, request.getId());
-        assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+        GraduationRequest reloaded = entityManager.find(GraduationRequest.class, request.getId());
+        assertThat(reloaded.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
     }
 
     @Test
-    void aprobarElEgresoCompletaLaCarreraEnLaMismaTransaccion() {
+    void approveGraduationCompletesTheProgramEnrollmentInTheSameTransaction() {
         Student student = persistStudent("80000004");
-        Program program = persistProgramSinRequisitos("CarreraSinRequisitos3");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos3");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
         GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
-        autenticarComoPersona("ADMIN80000004");
+        authenticateAsPerson("ADMIN80000004");
         verifyGraduationRequestDebtUseCase.verify(request.getId());
-        autenticarComoPersona("DIRECTOR80000004");
+        authenticateAsPerson("DIRECTOR80000004");
         approveGraduationRequestUseCase.approve(request.getId());
 
-        GraduationRequest recargado = entityManager.find(GraduationRequest.class, request.getId());
-        assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.APPROVED);
-        ProgramEnrollment enrollmentRecargado = entityManager.find(ProgramEnrollment.class, enrollment.getId());
-        assertThat(enrollmentRecargado.getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
-        assertThat(enrollmentRecargado.getCompletionDate()).isNotNull();
+        GraduationRequest reloaded = entityManager.find(GraduationRequest.class, request.getId());
+        assertThat(reloaded.getStatus()).isEqualTo(GraduationRequestStatus.APPROVED);
+        ProgramEnrollment reloadedEnrollment = entityManager.find(ProgramEnrollment.class, enrollment.getId());
+        assertThat(reloadedEnrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(reloadedEnrollment.getCompletionDate()).isNotNull();
     }
 
     @Test
-    void rechazarUnTramiteRequestedPermiteSolicitarDeNuevo() {
+    void rejectingARequestedRequestAllowsRequestingAgain() {
         Student student = persistStudent("80000005");
-        Program program = persistProgramSinRequisitos("CarreraSinRequisitos4");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos4");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
-        GraduationRequest primero = requestGraduationUseCase.request(enrollment.getId());
-        autenticarComoPersona("ADMIN80000005");
-        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(primero.getId(), "Datos incompletos"));
+        GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson("ADMIN80000005");
+        rejectGraduationRequestUseCase.reject(new RejectGraduationRequestCommand(first.getId(), "Datos incompletos"));
 
-        GraduationRequest recargado = entityManager.find(GraduationRequest.class, primero.getId());
-        assertThat(recargado.getStatus()).isEqualTo(GraduationRequestStatus.REJECTED);
+        GraduationRequest reloaded = entityManager.find(GraduationRequest.class, first.getId());
+        assertThat(reloaded.getStatus()).isEqualTo(GraduationRequestStatus.REJECTED);
 
-        GraduationRequest segundo = requestGraduationUseCase.request(enrollment.getId());
-        assertThat(segundo.getId()).isNotEqualTo(primero.getId());
-        assertThat(segundo.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+        GraduationRequest second = requestGraduationUseCase.request(enrollment.getId());
+        assertThat(second.getId()).isNotEqualTo(first.getId());
+        assertThat(second.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
     }
 }

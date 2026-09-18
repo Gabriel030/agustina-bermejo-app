@@ -16,21 +16,11 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 
-// Aggregate Root — Invoice is the root; InvoiceAdjustment (this phase) and PaymentAllocation
-// (Fase 6.2) are children only ever modified through Invoice's own methods (applyAdjustment,
-// and registerPayment in Fase 6.2), never by setting status from the outside.
-//
-// Deviation from Fase 6.1 spec: no subscription_id column/FK yet (the spec declares it already,
-// always null until Fase 6.10 adds Subscription). Adding a column that references a table that
-// doesn't exist yet — and stays permanently null in the meantime — is exactly the kind of
-// speculative column this project avoids; Fase 6.10 adds it together with the Subscription
-// entity itself. Same applies to PaymentPlanOption/PaymentPlanSelection.subscription_id.
 @Getter
 @Setter
 @Entity
 @Table(name = "invoice")
 public class Invoice {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,14 +38,10 @@ public class Invoice {
     @JoinColumn(name = "program_enrollment_id")
     private ProgramEnrollment programEnrollment;
 
-    // Nullable — ad-hoc invoices (Fase 6.7) don't come from any plan.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_plan_selection_id")
     private PaymentPlanSelection paymentPlanSelection;
 
-    // Fase 6.7: ambas opcionales, sin CHECK de exclusividad — un EXAM_RIGHT referencia
-    // naturalmente las dos (materia + mesa puntual), mientras que los FeeType recurrentes
-    // nunca las usan.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
@@ -64,8 +50,6 @@ public class Invoice {
     @JoinColumn(name = "exam_board_registration_id")
     private ExamBoardRegistration examBoardRegistration;
 
-    // Solo se completa en las Invoice ad-hoc (Fase 6.7) — las recurrentes no lo necesitan,
-    // feeType+period ya las describe.
     @Column(name = "description", length = 500)
     private String description;
 
@@ -79,7 +63,6 @@ public class Invoice {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    // Snapshot of the PriceRevision at generation time.
     @Column(name = "base_amount", nullable = false)
     private BigDecimal baseAmount;
 
@@ -93,8 +76,6 @@ public class Invoice {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Cancellation audit — only used starting a later phase (voluntary withdrawal), but the
-    // columns are born with the rest of the table.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cancelled_by_id")
     private Person cancelledBy;
@@ -108,8 +89,6 @@ public class Invoice {
     @OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InvoiceAdjustment> adjustments = new ArrayList<>();
 
-    // PaymentAllocation is completed in Fase 6.2 — this relation is declared already, stays
-    // empty until then.
     @OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentAllocation> allocations = new ArrayList<>();
 
@@ -141,11 +120,6 @@ public class Invoice {
         return getAmountDue().subtract(applied);
     }
 
-    // Corrección 2026-09-04 (auditoría): el comentario de cabecera de esta clase ya prometía este
-    // método ("PaymentAllocation... solo se modifica a través de los métodos propios de Invoice
-    // — applyAdjustment, y registerPayment") pero nunca se había escrito — PaymentService seteaba
-    // status=PAID directo desde afuera, violando la invariante de Aggregate Root que esta misma
-    // clase declara.
     public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
         PaymentAllocation allocation = new PaymentAllocation();
         allocation.setInvoice(this);
@@ -158,23 +132,11 @@ public class Invoice {
         return allocation;
     }
 
-    // Corrección 2026-09-04 (auditoría, segunda pasada): InvoiceOverdueRowProcessor seteaba
-    // status=OVERDUE directo desde afuera, el único otro lugar (junto al ya corregido PAID) donde
-    // se violaba la invariante de Aggregate Root que esta clase declara — la transición a OVERDUE
-    // y el recargo automático que la acompaña son un único paso de dominio, no dos mutaciones
-    // independientes desde el service.
     public void markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
         status = InvoiceStatus.OVERDUE;
         applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
     }
 
-    // Fase 6.6: baja voluntaria de un enrollment cancela sus Invoice PENDING (generadas pero
-    // no vencidas) — EnrollmentWithdrawalCreditService es el único caller, nunca un setStatus
-    // directo desde afuera, misma invariante de Aggregate Root que registerPayment/markOverdue.
-    // Guarda de estado (auditoría 2026-09-07): PAID/WAIVED representan plata ya resuelta —
-    // cancelarlas "borraría" ese resultado en vez de reflejarlo — y CANCELLED ya lo está. El único
-    // caller real ya filtra por PENDING antes de llamar, pero el propio Aggregate Root no debería
-    // depender de que todo caller futuro filtre bien aguas arriba.
     public void cancel(Person cancelledBy, String reason) {
         if (status == InvoiceStatus.PAID || status == InvoiceStatus.WAIVED || status == InvoiceStatus.CANCELLED) {
             throw new IllegalStateException("Invoice " + id + " en estado " + status + " no puede cancelarse");
@@ -190,9 +152,6 @@ public class Invoice {
     }
 
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy, PromotionBenefit promotionBenefit) {
-        // SCHOLARSHIP/DISCOUNT resolve against baseAmount (order-independent from each other).
-        // SURCHARGE resolves against getRemainingBalance() computed BEFORE adding it — a partial
-        // payment made before falling into arrears is also subtracted from the surcharge base.
         BigDecimal base = (type == InvoiceAdjustmentType.SURCHARGE) ? getRemainingBalance() : this.baseAmount;
         InvoiceAdjustment adjustment = new InvoiceAdjustment();
         adjustment.setInvoice(this);
@@ -204,8 +163,6 @@ public class Invoice {
         adjustment.setAppliedAt(LocalDateTime.now());
         adjustment.setPromotionBenefit(promotionBenefit);
         adjustments.add(adjustment);
-        // Any adjustment that leaves getRemainingBalance() at zero transitions to WAIVED, from
-        // either PENDING or OVERDUE.
         if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0
                 && (status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE)) {
             status = InvoiceStatus.WAIVED;

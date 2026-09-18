@@ -11,12 +11,6 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 
-/*
- * Asistencia de un alumno a una clase puntual (por fecha), atada a la fila de inscripción
- * específica (no a (student, section) suelto) — mismo criterio que GradeItem: si un alumno
- * recursa (attemptNumber distinto), la inscripción ya identifica intento+comisión+alumno sin
- * ambigüedad. XOR course/program con el mismo patrón @PrePersist/@PreUpdate de GradeItem.
- */
 @Getter
 @Setter
 @Entity

@@ -11,7 +11,6 @@ import { LegajoPersonal } from '@/features/gestion-personas/pages/LegajoPersonal
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
-import { VerificacionEmail } from '@/pages/VerificacionEmail';
 import { Catalogo } from '@/pages/Catalogo';
 import { DetalleCarrera } from '@/pages/DetalleCarrera';
 import { DetalleCurso } from '@/pages/DetalleCurso';
@@ -24,9 +23,16 @@ import { Placeholder } from '@/pages/Placeholder';
 import { AlumnoInicio } from '@/pages/AlumnoInicio';
 import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
+import { AlumnoPagos } from '@/pages/AlumnoPagos';
+import { AlumnoPagoDetalle } from '@/pages/AlumnoPagoDetalle';
+import { AlumnoPagarSeleccion } from '@/pages/AlumnoPagarSeleccion';
+import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
+import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
+import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
+import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
@@ -37,6 +43,7 @@ import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExc
 import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
 import { DirectorEsquemasEvaluacion } from '@/pages/DirectorEsquemasEvaluacion';
 import { DirectorRevisarConfiguracion } from '@/pages/DirectorRevisarConfiguracion';
+import { DirectorFinanciero } from '@/pages/DirectorFinanciero';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
@@ -55,8 +62,8 @@ const RUTAS_POR_ROL = {
     // Notas, Asistencia y Mesas de examen dejaron de ser páginas de nav de primer
     // nivel (Épica 2 Fase 2) — ahora son pestañas dentro de Mis carreras, ver
     // AlumnoMisCarreras.jsx y el comentario más abajo sobre la ruta de detalle.
-    paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'opciones'],
-    paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras },
+    paginas: ['inicio', 'mis-cursos', 'mis-carreras', 'pagos', 'opciones'],
+    paginasReales: { inicio: AlumnoInicio, 'mis-carreras': AlumnoMisCarreras, pagos: AlumnoPagos },
   },
   docente: {
     Layout: DocenteLayout,
@@ -71,12 +78,12 @@ const RUTAS_POR_ROL = {
   administrativo: {
     Layout: AdministrativoLayout,
     paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion', 'financiero'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
   },
 };
 
@@ -106,7 +113,6 @@ export function AppRouter() {
         <Route path="/registrarse" element={<Registrarse />} />
         <Route path="/olvide-mi-contrasena" element={<ForgotPassword />} />
         <Route path="/no-autorizado" element={<NoAutorizado />} />
-        <Route path="/verificar-email" element={<VerificacionEmail />} />
       </Route>
 
       <Route
@@ -147,6 +153,12 @@ export function AppRouter() {
               nav como el resto de `paginas`, cuelga de la pestaña Materias dentro de Mis
               carreras, así que se agrega acá a mano en vez de sumarse a la lista de arriba. */}
           {rol === 'alumno' && <Route path="mis-carreras/materias/:id" element={<AlumnoMateriaDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/estado" element={<AlumnoPagoEstado />} />}
+          {rol === 'alumno' && <Route path="pagos/curso/:enrollmentId" element={<AlumnoPagoDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/carrera/:enrollmentId" element={<AlumnoPagoDetalle />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/seleccion" element={<AlumnoPagarSeleccion />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />}
+          {rol === 'alumno' && <Route path="pagos/:invoiceId/online" element={<AlumnoPagarOnline />} />}
           {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
           {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
             <Route path="alumnos/:id" element={<LegajoAlumno />} />

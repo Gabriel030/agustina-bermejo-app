@@ -45,13 +45,11 @@ import java.time.YearMonth;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Fase 6.4: test 46.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class ReenrollmentControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -155,7 +153,7 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void waiveConRolAdministrativoSeRechaza() throws Exception {
+    void waiveWithAdministrativeRoleIsRejected() throws Exception {
         Student student = persistStudent("88020001");
         Program program = persistProgram();
         persistOldWithdrawnCycleWithDebt(student, program);

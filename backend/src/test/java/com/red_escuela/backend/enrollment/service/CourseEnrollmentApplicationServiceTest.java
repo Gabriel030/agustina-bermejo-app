@@ -36,17 +36,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationService;
 
-/**
- * Épica 7 Fase 3: inscripción a curso con pago de la primera cuota. A diferencia de
- * carrera, no hay una "solicitud" que alguien apruebe/rechace — el CourseEnrollment
- * real recién se crea cuando ApprovePaymentReceiptService aprueba el comprobante —
- * acá alcanza con verificar que la Invoice pasa a PAID, sin un Payment real todavía.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private CourseEnrollmentApplicationService courseEnrollmentApplicationService;
 
@@ -125,20 +118,20 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         entityManager.persist(revision);
     }
 
-    private MultipartFile comprobante() {
+    private MultipartFile receiptFile() {
         return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
     }
 
     @Test
-    void solicitarConPagoNoCreaElCourseEnrollmentTodavia() {
+    void requestingWithPaymentDoesNotCreateTheCourseEnrollmentYet() {
         Student student = persistStudent("82000001");
         Course course = persistCurso(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
         persistPriceRevision(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
 
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(
-                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante());
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
+                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
 
         assertThat(application.getCourseEnrollment()).isNull();
         assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
@@ -146,15 +139,15 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aprobarElComprobanteDeLaPrimeraCuotaDisparaLaMatriculacionReal() {
+    void approvingTheFirstInstallmentReceiptTriggersTheActualEnrollment() {
         Student student = persistStudent("82000002");
         Course course = persistCurso(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
         persistPriceRevision(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
 
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.solicitarConPago(
-                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante());
+        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
+                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
 
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
         Role rolAdministrativo = roleRepository.findByName("ADMINISTRATIVO").orElseThrow();
@@ -177,13 +170,13 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoSinPriceRevisionConfiguradaFalla() {
+    void requestingWithPaymentWithoutConfiguredPriceRevisionFails() {
         Student student = persistStudent("82000003");
         Course course = persistCurso(20);
         entityManager.flush();
 
-        assertThatThrownBy(() -> courseEnrollmentApplicationService.solicitarConPago(
-                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), comprobante()))
+        assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(
+                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile()))
                 .isInstanceOf(com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException.class);
     }
 }

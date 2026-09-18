@@ -12,11 +12,8 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
-// Solo ADMINISTRATIVE_CORRECTION/OTHER — las otras dos razones (EARLY_WITHDRAWAL_UPFRONT_UNUSED/
-// RETROACTIVE_SCHOLARSHIP) las genera el sistema vía CreditNoteService.createFor directo.
 @UseCase
 public class CreateManualCreditNoteService implements CreateManualCreditNoteUseCase {
-
     private final StudentRepository studentRepository;
     private final CurrentPersonService currentPersonService;
     private final CreditNoteService creditNoteService;

@@ -1,4 +1,4 @@
-import { Home, BookOpen, GraduationCap, LayoutGrid, Settings } from 'lucide-react';
+import { Home, BookOpen, GraduationCap, LayoutGrid, Settings, CreditCard } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 // Notas, Asistencia y Mesas de examen dejaron de ser ítems de nav de primer
@@ -12,6 +12,7 @@ const ITEMS = [
   { to: '/alumno/mis-carreras', label: 'Mis carreras', icon: GraduationCap },
   // Ruta compartida fuera de RUTAS_POR_ROL (Épica 7 Fase 2): un Alumno ya
   // matriculado también puede sumarse a un curso suelto del catálogo.
+  { to: '/alumno/pagos', label: 'Pagos', icon: CreditCard },
   { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
   // "Opciones" se separa visualmente del resto (Sidebar/MobileMenu lo agrupan
   // junto a "Cerrar sesión" por label) — pedido explícito del usuario.

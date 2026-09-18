@@ -6,19 +6,22 @@
  * Tailwind expuestas en index.css (@theme inline).
  */
 :root {
-  /* Fondo mesh */
-  --bg1: oklch(96% 0.015 240);
-  --bg2: oklch(92% 0.03 255);
-  --bg3: oklch(94% 0.03 200);
+  /* Fondo mesh — bajado ~8-10 puntos de luminosidad respecto de la primera
+     versión (96/92/94%): esa se sentía demasiado blanca/lavada y le restaba
+     contraste al texto. El vidrio (blur, borde, sombra doble) no cambia,
+     solo lo que hay debajo. */
+  --bg1: oklch(88% 0.02 240);
+  --bg2: oklch(83% 0.035 255);
+  --bg3: oklch(85% 0.035 200);
 
   /* Superficie de vidrio */
-  --surface: oklch(99% 0.004 240 / 0.62);
-  --border: oklch(92% 0.015 240 / 0.7);
+  --surface: oklch(96% 0.006 240 / 0.7);
+  --border: oklch(80% 0.02 240 / 0.65);
 
   /* Tinta */
-  --ink: oklch(26% 0.035 260);
-  --ink-soft: oklch(46% 0.025 260);
-  --ink-faint: oklch(62% 0.02 260);
+  --ink: oklch(22% 0.035 260);
+  --ink-soft: oklch(40% 0.03 260);
+  --ink-faint: oklch(55% 0.025 260);
 
   /* Acento de marca — lightness bajado de 62%/64% a 46%/48%: en 62% el
      texto de los links (Login, Registrarse, Recuperar contraseña) quedaba
@@ -28,16 +31,70 @@
      acento — al contrario, ganan más contraste. */
   --accent: oklch(46% 0.16 225);
   --accent-2: oklch(48% 0.15 292);
-  --accent-soft: oklch(93% 0.045 225);
+  --accent-soft: oklch(87% 0.05 225);
 
   /* Semántica de estado — independiente del acento, nunca se usa
      el acento para comunicar éxito/advertencia/peligro. */
-  --success: oklch(64% 0.12 155);
-  --success-bg: oklch(94% 0.05 155);
-  --warning: oklch(72% 0.14 78);
-  --warning-bg: oklch(95% 0.06 78);
-  --danger: oklch(62% 0.16 25);
-  --danger-bg: oklch(94% 0.06 25);
-  --neutral-bg: oklch(93% 0.008 260);
-  --neutral-ink: oklch(45% 0.008 260);
+  --success: oklch(58% 0.13 155);
+  --success-bg: oklch(88% 0.06 155);
+  --warning: oklch(66% 0.15 78);
+  --warning-bg: oklch(89% 0.07 78);
+  --danger: oklch(56% 0.17 25);
+  --danger-bg: oklch(88% 0.07 25);
+  --neutral-bg: oklch(87% 0.014 260);
+  --neutral-ink: oklch(40% 0.01 260);
+
+  /* Barrido de brillo del Skeleton (shimmer) — ver components/Skeleton.jsx */
+  --shimmer-hi: oklch(99% 0.01 240 / 0.9);
+}
+
+/* Modo oscuro — mismo vidrio (blur, borde, sombra), segundo juego de valores
+   oklch por debajo. Se activa por preferencia de sistema (sin JS) o por
+   data-theme explícito (ThemeContext, ver src/context/ThemeContext.jsx),
+   que persiste la elección en localStorage y siempre gana sobre el sistema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg1: oklch(20% 0.025 260);
+    --bg2: oklch(16% 0.03 270);
+    --bg3: oklch(18% 0.03 245);
+    --surface: oklch(26% 0.02 260 / 0.55);
+    --border: oklch(38% 0.02 260 / 0.55);
+    --ink: oklch(95% 0.01 260);
+    --ink-soft: oklch(80% 0.015 260);
+    --ink-faint: oklch(60% 0.02 260);
+    --accent: oklch(74% 0.13 225);
+    --accent-2: oklch(76% 0.12 292);
+    --accent-soft: oklch(30% 0.06 225);
+    --success: oklch(70% 0.14 155);
+    --success-bg: oklch(28% 0.06 155);
+    --warning: oklch(76% 0.15 78);
+    --warning-bg: oklch(30% 0.07 78);
+    --danger: oklch(70% 0.17 25);
+    --danger-bg: oklch(30% 0.08 25);
+    --neutral-bg: oklch(30% 0.012 260);
+    --neutral-ink: oklch(78% 0.01 260);
+    --shimmer-hi: oklch(50% 0.02 260 / 0.9);
+  }
+}
+:root[data-theme='dark'] {
+  --bg1: oklch(20% 0.025 260);
+  --bg2: oklch(16% 0.03 270);
+  --bg3: oklch(18% 0.03 245);
+  --surface: oklch(26% 0.02 260 / 0.55);
+  --border: oklch(38% 0.02 260 / 0.55);
+  --ink: oklch(95% 0.01 260);
+  --ink-soft: oklch(80% 0.015 260);
+  --ink-faint: oklch(60% 0.02 260);
+  --accent: oklch(74% 0.13 225);
+  --accent-2: oklch(76% 0.12 292);
+  --accent-soft: oklch(30% 0.06 225);
+  --success: oklch(70% 0.14 155);
+  --success-bg: oklch(28% 0.06 155);
+  --warning: oklch(76% 0.15 78);
+  --warning-bg: oklch(30% 0.07 78);
+  --danger: oklch(70% 0.17 25);
+  --danger-bg: oklch(30% 0.08 25);
+  --neutral-bg: oklch(30% 0.012 260);
+  --neutral-ink: oklch(78% 0.01 260);
+  --shimmer-hi: oklch(50% 0.02 260 / 0.9);
 }

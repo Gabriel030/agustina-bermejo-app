@@ -25,16 +25,9 @@ import java.time.YearMonth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Decisión 2026-09-03: un pago nunca puede cubrir más de un cohorte (ej. no adelantar un año
- * entero de una carrera cuatrimestral) — RecurringFeeWindowService ya lo garantiza en runtime
- * acotando contra recurringFeeInvoicesCount de la plantilla, pero eso solo sirve si esa cifra refleja
- * la duración real del Term. Esto blinda esa precondición en el alta de la plantilla.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
 
@@ -93,7 +86,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         Program program = persistProgram("Carrera cuatrimestral " + System.nanoTime());
         YearMonth base = YearMonth.now();
-        Term term = persistTerm(base, base.plusMonths(3)); // 4 meses exactos (cuatrimestre)
+        Term term = persistTerm(base, base.plusMonths(3));
 
         assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), term.getId(), 5))
                 .isInstanceOf(ProgramYearBillingTemplateExceedsTermSpanException.class);
@@ -105,16 +98,13 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         Program program = persistProgram("Carrera cuatrimestral exacta " + System.nanoTime());
         YearMonth base = YearMonth.now();
-        Term term = persistTerm(base, base.plusMonths(3)); // 4 meses exactos
+        Term term = persistTerm(base, base.plusMonths(3));
 
         var template = createTemplateUseCase.create(program.getId(), term.getId(), 4);
 
         assertThat(template.getRecurringFeeInvoicesCount()).isEqualTo(4);
     }
 
-    // Term sin startDate/endDate configurados (fixtures viejas/incompletas): no hay ventana
-    // real contra la cual validar, así que no bloquea — mismo criterio de degradación que
-    // RecurringFeeWindowService.
     @Test
     void withoutTermDatesNothingIsValidated() {
         Person director = persistPerson("director.sinfechas." + System.nanoTime());

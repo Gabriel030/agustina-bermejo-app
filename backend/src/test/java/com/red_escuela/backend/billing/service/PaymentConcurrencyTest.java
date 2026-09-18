@@ -49,16 +49,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Fase 6.2 (Pagos y allocations): tests 18 y 83 de la spec, con hilos reales — el resto de la
- * fase (PaymentServiceTest) prueba la misma validación de forma secuencial, que no ejercita el
- * lock pesimista. Deliberadamente SIN @Transactional a nivel de clase, mismo motivo que
- * PaymentServiceTest: findByIdForUpdate necesita su propia transacción real por request.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class PaymentConcurrencyTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
@@ -152,7 +145,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void dosAdministrativosRegistrandoPagoSobreLaMismaCuotaEnParaleloNoDuplicaElSaldo() throws Exception {
+    void twoAdministrativesRegisteringPaymentOnTheSameInstallmentInParallelDoesNotDuplicateTheBalance() throws Exception {
         Person admin1 = persistPerson("admin.concurrencia1." + System.nanoTime());
         Person admin2 = persistPerson("admin.concurrencia2." + System.nanoTime());
         Student student = persistStudent("98000001");
@@ -193,7 +186,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void dosPagosParcialesConcurrentesNoSobrepasanElSaldo() throws Exception {
+    void twoConcurrentPartialPaymentsDoNotExceedTheBalance() throws Exception {
         Person admin1 = persistPerson("admin.concurrencia3." + System.nanoTime());
         Person admin2 = persistPerson("admin.concurrencia4." + System.nanoTime());
         Student student = persistStudent("98000002");

@@ -32,7 +32,6 @@ import java.util.List;
 
 @Service
 public class CourseSectionService {
-
     private final CourseSubjectSectionRepository sectionRepository;
     private final CourseSubjectRepository courseSubjectRepository;
     private final TermRepository termRepository;
@@ -56,7 +55,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public CourseSubjectSection crearComision(Long courseSubjectId, CreateSectionRequest request) {
+    public CourseSubjectSection create(Long courseSubjectId, CreateSectionRequest request) {
         CourseSubject courseSubject = courseSubjectRepository.findById(courseSubjectId)
                 .orElseThrow(() -> new CourseSubjectNotFoundException(courseSubjectId));
         Term term = termRepository.findById(request.termId())
@@ -77,7 +76,7 @@ public class CourseSectionService {
     }
 
     @Transactional
-    public CourseSubjectSection editarComision(Long id, UpdateSectionRequest request) {
+    public CourseSubjectSection update(Long id, UpdateSectionRequest request) {
         CourseSubjectSection section = findOrThrow(id);
         if (request.name() != null) {
             section.setName(request.name());
@@ -94,32 +93,32 @@ public class CourseSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<CourseSubjectSection> listarPorModulo(Long courseSubjectId, StatusType status) {
+    public List<CourseSubjectSection> listByCourseSubject(Long courseSubjectId, StatusType status) {
         return status == null
                 ? sectionRepository.findByCourseSubjectId(courseSubjectId)
                 : sectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, status);
     }
 
-    public CourseSubjectSection verDetalle(Long id) {
+    public CourseSubjectSection get(Long id) {
         return findOrThrow(id);
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         CourseSubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public CourseSubjectSectionInstructor asignarDocente(Long sectionId, AssignInstructorRequest request) {
+    public CourseSubjectSectionInstructor assignInstructor(Long sectionId, AssignInstructorRequest request) {
         CourseSubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
@@ -140,12 +139,12 @@ public class CourseSectionService {
         }
     }
 
-    public List<CourseSubjectSectionInstructor> listarDocentes(Long sectionId) {
+    public List<CourseSubjectSectionInstructor> listInstructors(Long sectionId) {
         return sectionInstructorRepository.findBySectionId(sectionId);
     }
 
     @Transactional
-    public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
+    public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
         CourseSubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
                 .filter(a -> a.getSection().getId().equals(sectionId))
                 .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
@@ -156,9 +155,6 @@ public class CourseSectionService {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    // Ver comentario equivalente en SubjectSectionService: getReference() no valida hasta
-    // el flush, dejando pasar un id inexistente como una DataIntegrityViolationException
-    // sin capturar (500) en vez de un 404 claro.
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
         if (scheme == null) {

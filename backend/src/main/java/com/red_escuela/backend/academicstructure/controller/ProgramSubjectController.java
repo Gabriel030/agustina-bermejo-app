@@ -34,56 +34,56 @@ public class ProgramSubjectController {
     @PostMapping("/programs/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramSubjectResponse agregarMateria(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
-        return ProgramSubjectResponse.from(programSubjectService.agregarMateria(id, request));
+    public ProgramSubjectResponse addSubject(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
+        return ProgramSubjectResponse.from(programSubjectService.addSubject(id, request));
     }
 
     @PutMapping("/program-subjects/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramSubjectResponse editarMateria(@PathVariable Long id, @RequestBody UpdateProgramSubjectRequest request) {
-        return ProgramSubjectResponse.from(programSubjectService.editarMateria(id, request));
+    public ProgramSubjectResponse update(@PathVariable Long id, @RequestBody UpdateProgramSubjectRequest request) {
+        return ProgramSubjectResponse.from(programSubjectService.update(id, request));
     }
 
     @GetMapping("/programs/{id}/subjects")
-    public List<ProgramSubjectResponse> listarPorCarrera(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
-        return programSubjectService.listarPorCarrera(id, status).stream().map(ProgramSubjectResponse::from).toList();
+    public List<ProgramSubjectResponse> listByProgram(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return programSubjectService.listByProgram(id, status).stream().map(ProgramSubjectResponse::from).toList();
     }
 
     @GetMapping("/program-subjects/{id}")
-    public ProgramSubjectResponse verDetalle(@PathVariable Long id) {
-        return ProgramSubjectResponse.from(programSubjectService.verDetalle(id));
+    public ProgramSubjectResponse get(@PathVariable Long id) {
+        return ProgramSubjectResponse.from(programSubjectService.get(id));
     }
 
     @PostMapping("/program-subjects/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        programSubjectService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        programSubjectService.deactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        programSubjectService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        programSubjectService.reactivate(id);
     }
 
     @PostMapping("/program-subjects/{id}/prerequisites")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public PrerequisiteResponse agregarCorrelatividad(@PathVariable Long id, @Valid @RequestBody AddPrerequisiteRequest request) {
-        return PrerequisiteResponse.from(programSubjectService.agregarCorrelatividad(id, request));
+    public PrerequisiteResponse addPrerequisite(@PathVariable Long id, @Valid @RequestBody AddPrerequisiteRequest request) {
+        return PrerequisiteResponse.from(programSubjectService.addPrerequisite(id, request));
     }
 
     @GetMapping("/program-subjects/{id}/prerequisites")
-    public List<PrerequisiteResponse> listarCorrelatividades(@PathVariable Long id) {
-        return programSubjectService.listarCorrelatividades(id).stream().map(PrerequisiteResponse::from).toList();
+    public List<PrerequisiteResponse> listPrerequisites(@PathVariable Long id) {
+        return programSubjectService.listPrerequisites(id).stream().map(PrerequisiteResponse::from).toList();
     }
 
     @DeleteMapping("/program-subjects/prerequisites/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void quitarCorrelatividad(@PathVariable Long id) {
-        programSubjectService.quitarCorrelatividad(id);
+    public void removePrerequisite(@PathVariable Long id) {
+        programSubjectService.removePrerequisite(id);
     }
 }

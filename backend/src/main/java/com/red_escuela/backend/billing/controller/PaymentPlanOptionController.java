@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class PaymentPlanOptionController {
-
     private final CreatePaymentPlanOptionForCourseUseCase createForCourseUseCase;
     private final CreatePaymentPlanOptionForProgramUseCase createForProgramUseCase;
 
@@ -25,19 +24,17 @@ public class PaymentPlanOptionController {
         this.createForProgramUseCase = createForProgramUseCase;
     }
 
-    // Defines cadence and the on-time-payment discount — it's a pricing rule, not an
-    // Administrativo operation (2026-09-03 decision).
     @PostMapping("/courses/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public PaymentPlanOptionResponse crearParaCurso(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
+    public PaymentPlanOptionResponse createForCourse(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
         return PaymentPlanOptionResponse.from(createForCourseUseCase.create(id, request));
     }
 
     @PostMapping("/programs/{id}/payment-plan-options")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public PaymentPlanOptionResponse crearParaCarrera(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
+    public PaymentPlanOptionResponse createForProgram(@PathVariable Long id, @Valid @RequestBody CreatePaymentPlanOptionRequest request) {
         return PaymentPlanOptionResponse.from(createForProgramUseCase.create(id, request));
     }
 }

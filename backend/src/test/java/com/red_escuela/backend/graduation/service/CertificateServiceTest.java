@@ -40,11 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.graduation.service.CertificateService;
 
-/**
- * RF-AL-12: constancias sin entidad propia (decisión 6). REGULAR_STUDENT exige (ajuste de
- * producto sobre la spec original) ENROLLED + cursada activa + PaymentStanding AL_DIA — las
- * 3 condiciones se prueban por separado para aislar cuál falla en cada caso.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -60,7 +55,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -123,7 +118,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         return term;
     }
 
-    private void persistCursadaActiva(Student student, ProgramEnrollment enrollment) {
+    private void persistActiveEnrollment(Student student, ProgramEnrollment enrollment) {
         Subject subject = new Subject();
         subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
         subject.setName("MateriaCursandoAhora" + System.nanoTime());
@@ -157,7 +152,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
         entityManager.persist(invoice);
     }
 
-    private void autenticarComoPersona(String dni) {
+    private void authenticateAsPerson(String dni) {
         Person persona = persistPersonBase(dni);
         entityManager.flush();
         SecurityContextHolder.getContext().setAuthentication(
@@ -165,46 +160,43 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularSinCursadaActivaFalla() {
+    void regularCertificateWithoutActiveEnrollmentFails() {
         Student student = persistStudent("90000001");
         Program program = persistProgram("CarreraSinCursadaActiva");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
-        autenticarComoPersona("ADMIN90000001");
+        authenticateAsPerson("ADMIN90000001");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
     @Test
-    void constanciaRegularConCursadaActivaPeroMorosoFalla() {
+    void regularCertificateWithActiveEnrollmentButOverdueDebtFails() {
         Student student = persistStudent("90000002");
         Program program = persistProgram("CarreraMoroso");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
-        persistCursadaActiva(student, enrollment);
+        persistActiveEnrollment(student, enrollment);
         persistInvoice(enrollment, LocalDate.now().minusDays(5));
         entityManager.flush();
-        autenticarComoPersona("ADMIN90000002");
+        authenticateAsPerson("ADMIN90000002");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
     @Test
-    void constanciaRegularConLosTresRequisitosEmiteUnPdfValidoYRegistraElHistorial() {
+    void regularCertificateWithAllThreeRequirementsIssuesValidPdfAndRecordsHistory() {
         Student student = persistStudent("90000003");
         Program program = persistProgram("CarreraRegularCompleta");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
-        persistCursadaActiva(student, enrollment);
-        // InvoiceQueryService.tieneDeuda solo cuenta como deuda una Invoice OVERDUE o PENDING
-        // ya vencida — una cuota futura no vencida nunca cuenta como deuda.
+        persistActiveEnrollment(student, enrollment);
         persistInvoice(enrollment, LocalDate.now().plusDays(30));
         entityManager.flush();
-        autenticarComoPersona("ADMIN90000003");
+        authenticateAsPerson("ADMIN90000003");
 
-        byte[] pdf = certificateService.emitirConstanciaRegular(enrollment.getId());
+        byte[] pdf = certificateService.issueRegularCertificate(enrollment.getId());
         assertThat(pdf).isNotEmpty();
-        // Encabezado estándar de un archivo PDF válido.
         assertThat(new String(pdf, 0, 5)).isEqualTo("%PDF-");
 
         List<CertificateIssuance> historial = certificateIssuanceRepository.findByProgramEnrollmentId(enrollment.getId());
@@ -212,26 +204,26 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void constanciaRegularDeUnaProgramEnrollmentNoEnrolledFalla() {
+    void regularCertificateOfANonEnrolledProgramEnrollmentFails() {
         Student student = persistStudent("90000004");
         Program program = persistProgram("CarreraDadaDeBaja");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.WITHDRAWN);
         entityManager.flush();
-        autenticarComoPersona("ADMIN90000004");
+        authenticateAsPerson("ADMIN90000004");
 
-        assertThatThrownBy(() -> certificateService.emitirConstanciaRegular(enrollment.getId()))
+        assertThatThrownBy(() -> certificateService.issueRegularCertificate(enrollment.getId()))
                 .isInstanceOf(CertificateNotEligibleException.class);
     }
 
     @Test
-    void constanciaDeMateriasAprobadasConCeroMateriasAprobadasEmiteUnPdfValidoSinExcepcion() {
+    void approvedSubjectsCertificateWithZeroApprovedSubjectsIssuesValidPdfWithoutException() {
         Student student = persistStudent("90000005");
         Program program = persistProgram("CarreraSinAprobadas");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
         entityManager.flush();
-        autenticarComoPersona("ADMIN90000005");
+        authenticateAsPerson("ADMIN90000005");
 
-        byte[] pdf = certificateService.emitirConstanciaMateriasAprobadas(enrollment.getId());
+        byte[] pdf = certificateService.issueApprovedSubjectsCertificate(enrollment.getId());
         assertThat(pdf).isNotEmpty();
     }
 }

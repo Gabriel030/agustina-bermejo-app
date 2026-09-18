@@ -2,14 +2,14 @@ package com.red_escuela.backend.billing.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.entity.BatchExecutionLog;
-import com.red_escuela.backend.entity.BatchExecutionStatus;
+import com.red_escuela.backend.billing.entity.BatchExecutionLog;
+import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -25,17 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Corre después de InvoiceOverdueSweepService (mismo cron diario, minuto siguiente). Corrección
-// 2026-09-04 (auditoría): la justificación original de esta clase decía que OFFSET normal era
-// seguro acá porque "solo modifica billingStanding, un campo distinto del que usa el WHERE" —
-// eso es falso para el camino de baja: al llegar a WITHDRAWN_FOR_NONPAYMENT, el row processor
-// llama a darDeBaja, que SÍ cambia el status académico (justo el campo que filtra el WHERE de
-// esta paginación). Con OFFSET, eso puede saltear una fila de la página siguiente en la misma
-// corrida (mismo patrón de bug que ya motivó el keyset pagination de InvoiceOverdueSweepService).
-// Se usa keyset pagination (id > lastId) acá también.
 @Service
 public class EnrollmentBillingComplianceSweepService {
-
     private static final int PAGE_SIZE = 200;
     private static final String JOB_NAME = "EnrollmentBillingComplianceSweepService";
 

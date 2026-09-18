@@ -7,7 +7,7 @@ const TIPOS = [
   { key: 'ANALITICO_SECUNDARIO', label: 'Analítico secundario' },
 ];
 
-export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading, error, errorValidacion }) {
+export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading, errorValidacion }) {
   const subidos = TIPOS.filter(({ key }) => !!documentosSubidos?.[key]).length;
 
   return (
@@ -28,7 +28,6 @@ export function DocumentosStep({ documentosSubidos, onFileSelected, isUploading,
           />
         ))}
       </div>
-      {error && <p className="text-[12px] text-danger">No se pudo subir el archivo. Intentá de nuevo.</p>}
       {errorValidacion && <p className="text-[12px] text-danger">{errorValidacion}</p>}
     </div>
   );

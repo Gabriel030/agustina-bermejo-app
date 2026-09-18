@@ -11,6 +11,5 @@ public interface ExamBoardInstructorRepository extends JpaRepository<ExamBoardIn
 
     List<ExamBoardInstructor> findByExamBoardId(Long examBoardId);
 
-    // Valida "¿este Docente integra el tribunal?" (RF-DO-06).
     boolean existsByExamBoardIdAndInstructorId(Long examBoardId, Long instructorId);
 }

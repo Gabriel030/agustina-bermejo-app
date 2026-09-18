@@ -27,11 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * RF-AL-05/06: autoservicio del alumno para ver mesas disponibles, inscribirse/darse de baja y
- * consultar sus propias inscripciones a mesas de examen final. Igual que el resto de /me/...,
- * alcance limitado al lado "program" por ahora.
- */
 @RestController
 @RequestMapping("/me")
 public class MeExamBoardRegistrationController {
@@ -56,42 +51,42 @@ public class MeExamBoardRegistrationController {
     }
 
     @GetMapping("/exam-boards")
-    public List<ExamBoardResponse> mesasDisponibles(@RequestParam Long subjectId) {
-        return examBoardService.listarDisponiblesPorSubject(subjectId).stream()
+    public List<ExamBoardResponse> availableExamBoards(@RequestParam Long subjectId) {
+        return examBoardService.listAvailableBySubject(subjectId).stream()
                 .map(ExamBoardResponse::from)
                 .toList();
     }
 
     @GetMapping("/exam-board-registrations")
-    public List<MyExamBoardRegistrationResponse> misInscripciones() {
+    public List<MyExamBoardRegistrationResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return examBoardRegistrationService.listarMisInscripciones(student.getId()).stream()
+        return examBoardRegistrationService.listByStudent(student.getId()).stream()
                 .map(r -> MyExamBoardRegistrationResponse.from(
-                        r, gradeItemService.obtenerNotaDeMesa(r.getExamBoard().getId(), r.getProgramSubjectSectionEnrollment().getId())))
+                        r, gradeItemService.getExamBoardScore(r.getExamBoard().getId(), r.getProgramSubjectSectionEnrollment().getId())))
                 .toList();
     }
 
     @PostMapping("/exam-board-registrations")
     @ResponseStatus(HttpStatus.CREATED)
-    public ExamBoardRegistrationResponse inscribirme(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
+    public ExamBoardRegistrationResponse register(@Valid @RequestBody CreateExamBoardRegistrationRequest request) {
         Student student = currentStudentService.resolveCurrentStudent();
-        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.verDetalle(request.programSectionEnrollmentId());
+        SubjectSectionEnrollment enrollment = subjectSectionEnrollmentService.get(request.programSectionEnrollmentId());
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new SectionEnrollmentNotFoundException(request.programSectionEnrollmentId());
         }
         return ExamBoardRegistrationResponse.from(
-                examBoardRegistrationService.inscribirProgramEnrollment(request.examBoardId(), request.programSectionEnrollmentId()));
+                examBoardRegistrationService.registerProgramEnrollment(request.examBoardId(), request.programSectionEnrollmentId()));
     }
 
     @PostMapping("/exam-board-registrations/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void darmeDeBaja(@PathVariable Long id) {
+    public void withdraw(@PathVariable Long id) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ExamBoardRegistration registration = examBoardRegistrationService.verDetalle(id);
+        ExamBoardRegistration registration = examBoardRegistrationService.get(id);
         SubjectSectionEnrollment enrollment = registration.getProgramSubjectSectionEnrollment();
         if (enrollment == null || !enrollment.getStudent().getId().equals(student.getId())) {
             throw new ExamBoardRegistrationNotFoundException(id);
         }
-        examBoardRegistrationService.darDeBaja(id);
+        examBoardRegistrationService.withdraw(id);
     }
 }

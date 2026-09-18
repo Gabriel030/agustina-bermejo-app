@@ -27,7 +27,7 @@ public class BillingPeriodController {
     @PostMapping("/billing-periods")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public BillingPeriodResponse crear(@Valid @RequestBody CreateBillingPeriodRequest request) {
+    public BillingPeriodResponse create(@Valid @RequestBody CreateBillingPeriodRequest request) {
         return BillingPeriodResponse.from(createBillingPeriodUseCase.create(request));
     }
 

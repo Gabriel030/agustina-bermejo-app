@@ -50,15 +50,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Fase 6.2 (Pagos y allocations): tests 10, 13, 14, 19 de la spec. NO @Transactional a
- * propósito — mismo motivo que ProgramCohortBillingTest (findByIdForUpdate necesita su propia
- * transacción real, no una anidada bajo un test @Transactional).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class PaymentServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
@@ -170,9 +164,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
-        // getRemainingBalance() necesita la colección lazy de allocations, que no se puede
-        // inicializar fuera de una sesión activa (test sin @Transactional a propósito, ver
-        // javadoc de la clase) — el status PAID ya prueba lo que importa acá.
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
         assertThat(payment.getAllocations()).hasSize(1);
     }
@@ -248,9 +239,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
     }
 
-    // Regresión (auditoría 2026-09-04): un amountApplied negativo nunca superaba
-    // getRemainingBalance() (esa comparación siempre es falsa para negativos), así que pasaba el
-    // chequeo sin disparar nunca PAID — corrompía el saldo en silencio.
     @Test
     void negativeAmountAppliedIsRejected() {
         Person admin = persistPerson("admin.pago9." + System.nanoTime());
@@ -318,10 +306,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
 
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
-        // getRemainingAmount() necesita la colección lazy de applications, que no se puede
-        // inicializar fuera de una sesión activa (test sin @Transactional a propósito, mismo
-        // motivo que paymentThatCoversFullBalanceMarksInvoiceAsPaid más arriba) — el status
-        // PARTIALLY_CONSUMED ya prueba que se consumió parcialmente.
         CreditNote reloaded = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).get(0);
         assertThat(reloaded.getStatus().name()).isEqualTo("PARTIALLY_CONSUMED");
         assertThat(payment.getAllocations()).hasSize(1);

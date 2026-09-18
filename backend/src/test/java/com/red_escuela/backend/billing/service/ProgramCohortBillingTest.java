@@ -55,17 +55,9 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 
-/**
- * Fase 6.1, decisión 2026-09-03 (cohortes): tests 16, 136-139. NO @Transactional a propósito:
- * InvoiceFactory.crearParaCarrera usa REQUIRES_NEW (ver su javadoc) — bajo un test
- * @Transactional, esa sub-transacción corre en otra conexión y no ve el fixture todavía sin
- * commitear. Por eso los helpers de acá persisten vía repository (cada save() es su propia
- * transacción, commiteada de una), mismo criterio que KarateFixtures.java.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class ProgramCohortBillingTest extends AbstractIntegrationTest {
-
     @Autowired
     private ProgramEnrollmentBillingScheduler billingScheduler;
 
@@ -141,7 +133,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         return personRepository.save(person);
     }
 
-    private void autenticarComoPersona(Person person) {
+    private void authenticateAsPerson(Person person) {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(person.getId().toString(), null));
     }
@@ -170,9 +162,6 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Term term = new Term();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
-        // Rango amplio (2 años) para que cualquier Invoice generada por un test con offsets de
-        // hasta 12 meses desde "hoy" siga cayendo dentro del Term — monthsLeftInTemplate ahora
-        // acota por Term.startDate/endDate (ver PaymentPlanSelectionService).
         term.setStartDate(java.time.LocalDateTime.of(year, 1, 1, 0, 0));
         term.setEndDate(java.time.LocalDateTime.of(year + 1, 12, 31, 23, 59));
         return termRepository.save(term);
@@ -220,11 +209,10 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         return programEnrollmentRepository.save(enrollment);
     }
 
-    // 136. alumnoQueSeMatriculaConAnticipaciónEnLaCohorteFirstDelAñoSiguienteNoRecibeCuotasAnteriores
     @Test
-    void alumnoQueSeMatriculaConAnticipaciónEnLaCohorteFirstDelAñoSiguienteNoRecibeCuotasAnteriores() {
+    void studentEnrollingEarlyInTheFirstCohortOfTheNextYearDoesNotReceiveEarlierInstallments() {
         Person director = persistPersonBase("DIR136" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera anticipada " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -236,8 +224,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100001");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        // Se matricula (paga la matrícula) en agosto 2025, meses antes de que arranque la cursada.
-        billingScheduler.generarMatricula(enrollment);
+        billingScheduler.generateEnrollmentFee(enrollment);
 
         var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -245,11 +232,10 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         assertThat(invoices.get(0).getDueDate()).isEqualTo(LocalDate.of(2026, 3, 1));
     }
 
-    // 137. matrículaDeLaCohorteSecondEsElCincuentaPorCientoAutomáticoDeLaFirst
     @Test
-    void matrículaDeLaCohorteSecondEsElCincuentaPorCientoAutomáticoDeLaFirst() {
+    void secondCohortEnrollmentFeeIsAutomaticallyFiftyPercentOfTheFirst() {
         Person director = persistPersonBase("DIR137" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera segunda cohorte " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -261,7 +247,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100002");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohortSecond);
 
-        billingScheduler.generarMatricula(enrollment);
+        billingScheduler.generateEnrollmentFee(enrollment);
 
         var invoices = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -272,9 +258,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         assertThat(invoice.getAdjustments().get(0).getAppliedBy()).isNull();
     }
 
-    // 138. matricularseFueraDeLaVentanaDeAdmisiónDeLaCohorteSeRechaza
     @Test
-    void matricularseFueraDeLaVentanaDeAdmisiónDeLaCohorteSeRechaza() {
+    void enrollingOutsideTheCohortsAdmissionWindowIsRejected() {
         Person director = persistPersonBase("DIR138" + System.nanoTime());
         Program program = persistPrograma("Carrera ventana cerrada " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -282,15 +267,14 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(30), LocalDate.now(), director);
 
-        assertThatThrownBy(() -> programEnrollmentService.validarVentanaDeAdmision(cohort))
+        assertThatThrownBy(() -> programEnrollmentService.validateAdmissionWindow(cohort))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
     }
 
-    // 139. dosCohortesDelMismoAñoTienenVentanasYCalendariosIndependientes
     @Test
-    void dosCohortesDelMismoAñoTienenVentanasYCalendariosIndependientes() {
+    void twoCohortsOfTheSameYearHaveIndependentWindowsAndCalendars() {
         Person director = persistPersonBase("DIR139" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera dos cohortes " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -306,24 +290,23 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollmentA = persistProgramEnrollment(studentA, program, first);
         ProgramEnrollment enrollmentB = persistProgramEnrollment(studentB, program, second);
 
-        billingScheduler.generarMatricula(enrollmentA);
-        billingScheduler.generarMatricula(enrollmentB);
+        billingScheduler.generateEnrollmentFee(enrollmentA);
+        billingScheduler.generateEnrollmentFee(enrollmentB);
 
         var invoicesA = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentA.getId());
         var invoicesB = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentB.getId());
 
         assertThat(invoicesA.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
-        assertThat(invoicesA.get(0).getAdjustments()).isEmpty(); // FIRST no tiene descuento
+        assertThat(invoicesA.get(0).getAdjustments()).isEmpty();
 
         assertThat(invoicesB.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 8));
-        assertThat(invoicesB.get(0).getAdjustments()).hasSize(1); // SECOND sí
+        assertThat(invoicesB.get(0).getAdjustments()).hasSize(1);
     }
 
-    // 16. ajusteDePrecioAMitadDeAñoNoAfectaCuotasYaGeneradas
     @Test
-    void ajusteDePrecioAMitadDeAñoNoAfectaCuotasYaGeneradas() {
+    void midYearPriceAdjustmentDoesNotAffectAlreadyGeneratedInstallments() {
         Person director = persistPersonBase("DIR16" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera ajuste de precio " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -335,24 +318,22 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100005");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        Invoice invoiceVieja = invoiceFactory.crearParaCarrera(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
+        Invoice invoiceVieja = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
         assertThat(invoiceVieja.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
 
-        // Ajuste de precio a mitad de año.
         persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
 
-        Invoice invoiceNueva = invoiceFactory.crearParaCarrera(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
+        Invoice invoiceNueva = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
         assertThat(invoiceNueva.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(15000));
 
         Invoice recargada = invoiceRepository.findById(invoiceVieja.getId()).orElseThrow();
         assertThat(recargada.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
     }
 
-    // 37. scopeMonthsMayorAlQueQuedaDelAñoSeRechaza
     @Test
-    void scopeMonthsMayorAlQueQuedaDelAñoSeRechaza() {
+    void scopeMonthsGreaterThanWhatRemainsOfTheYearIsRejected() {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera scope mayor " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -369,17 +350,15 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
         PaymentPlanOption option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
-        // La plantilla tiene 10 cuotas — pedir 12 excede lo que queda del año.
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
 
-    // 39. unAñoUpfrontCompletoYElSiguienteMensualSinArrastre
     @Test
-    void unAñoUpfrontCompletoYElSiguienteMensualSinArrastre() {
+    void oneFullUpfrontYearAndTheNextMonthlyWithoutCarryover() {
         Person director = persistPersonBase("DIR39" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera upfront luego mensual " + System.nanoTime());
         YearMonth mesInicial = YearMonth.now();
@@ -401,40 +380,32 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 10));
 
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial);
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(10);
 
-        // Año 2 real (no solo un mes futuro dentro del mismo template — con el tope de plantilla
-        // ahora exigido también en la generación, no alcanza con "otro mes", hace falta avanzar
-        // de verdad vía avanzarAñoLectivo, mismo mecanismo que MultiYearProgramBillingTest):
-        // plan mensual — no arrastra nada de lo ya generado en el año 1.
         Term term2 = persistTerm(2027);
         term2.setStartDate(mesInicial.plusMonths(10).atDay(1).atStartOfDay());
         term2.setEndDate(mesInicial.plusMonths(19).atEndOfMonth().atTime(23, 59));
         termRepository.save(term2);
         ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 10, director);
-        programEnrollmentService.avanzarAñoLectivo(enrollment.getId(), template2.getId());
-        // avanzarAñoLectivo persiste sobre una instancia propia, distinta de `enrollment` — sin
-        // recargar, generarProximaCuotaParaCarrera seguiría viendo el currentBillingTemplate
-        // viejo (null) y caería al template del año 1 vía programCohort.
+        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
 
         CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
         PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial.plusMonths(10));
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(10));
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(11);
     }
 
-    // 40. cambioDeMonthlyAUpfrontAMitadDeAñoTambiénFunciona
     @Test
-    void cambioDeMonthlyAUpfrontAMitadDeAñoTambiénFunciona() {
+    void switchingFromMonthlyToUpfrontMidYearAlsoWorks() {
         Person director = persistPersonBase("DIR40" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera mensual a upfront " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -454,27 +425,23 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         YearMonth mesInicial = YearMonth.now();
         for (int i = 0; i < 3; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(i));
         }
 
-        // La selección nueva siempre arranca "hoy" (mismo mes que las 3 ya generadas por
-        // MONTHLY) — el bloque UPFRONT de 7 meses se solapa con esos 3, que quedan como no-op
-        // idempotente, y solo se generan los 4 meses que faltaban del bloque.
         CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
         PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 7));
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, mesInicial);
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(7);
     }
 
-    // 21. alumnoConCarreraYCursoSimultáneosMantieneEstadosDeFacturaciónIndependientes
     @Test
-    void alumnoConCarreraYCursoSimultáneosMantieneEstadosDeFacturaciónIndependientes() {
+    void studentWithSimultaneousProgramAndCourseKeepsIndependentBillingStates() {
         Person director = persistPersonBase("DIR21" + System.nanoTime());
-        autenticarComoPersona(director);
+        authenticateAsPerson(director);
 
         Program program = persistPrograma("Carrera simultánea " + System.nanoTime());
         Term term = persistTerm(2026);
@@ -492,7 +459,6 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         PaymentPlanOption programOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), programMonthly);
         selectPaymentPlanForProgramUseCase.select(programEnrollment.getId(), new SelectPaymentPlanRequest(programOption.getId(), null));
 
-        // Un curso corto, independiente, para el mismo alumno.
         Term courseTerm = persistTerm(2026);
         Course course = new Course();
         course.setName("Curso simultáneo " + System.nanoTime());
@@ -524,11 +490,9 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         selectPaymentPlanForCourseUseCase.select(courseEnrollment.getId(), new SelectPaymentPlanRequest(courseOption.getId(), null));
 
         YearMonth mesInicial = YearMonth.now();
-        invoiceGenerationService.generarProximaCuotaParaCarrera(programEnrollment, mesInicial);
-        invoiceGenerationService.generarProximaCuotaParaCurso(courseEnrollment, mesInicial);
+        invoiceGenerationService.generateNextInstallmentForProgram(programEnrollment, mesInicial);
+        invoiceGenerationService.generateNextInstallmentForCourse(courseEnrollment, mesInicial);
 
-        // La matrícula de la carrera y la cuota del curso son totalmente independientes: cada
-        // una en su propia Invoice, sin acoplamiento entre courseEnrollment y programEnrollment.
         var invoicesCarrera = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId());
         var invoicesCurso = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollment.getId());
 

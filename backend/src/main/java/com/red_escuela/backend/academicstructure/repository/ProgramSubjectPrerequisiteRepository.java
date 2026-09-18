@@ -9,10 +9,8 @@ import java.util.List;
 
 @Repository
 public interface ProgramSubjectPrerequisiteRepository extends JpaRepository<ProgramSubjectPrerequisite, Long> {
-
     List<ProgramSubjectPrerequisite> findByProgramSubjectId(Long programSubjectId);
 
-    // Usada por la detección de ciclos: "quién requiere a esta materia".
     List<ProgramSubjectPrerequisite> findByPrerequisiteProgramSubjectId(Long prerequisiteProgramSubjectId);
 
     boolean existsByProgramSubjectIdAndPrerequisiteProgramSubjectIdAndRequirementType(

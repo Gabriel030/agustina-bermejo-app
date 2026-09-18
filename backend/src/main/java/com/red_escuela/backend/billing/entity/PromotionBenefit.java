@@ -21,7 +21,6 @@ import org.hibernate.annotations.ColumnTransformer;
 @Entity
 @Table(name = "promotion_benefit")
 public class PromotionBenefit {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,7 +39,6 @@ public class PromotionBenefit {
     @Column(name = "value", nullable = false, columnDefinition = "jsonb")
     private MonetaryAdjustmentValue value;
 
-    // null = sin límite de cuotas ("la matrícula lleva el descuento sin límite de cantidad").
     @Column(name = "invoice_scope_count")
     private Integer invoiceScopeCount;
 }

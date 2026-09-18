@@ -18,7 +18,7 @@ public class RejectProgramEnrollmentApplicationService implements RejectProgramE
     @Transactional
     public ProgramEnrollmentApplication reject(RejectProgramEnrollmentApplicationCommand command) {
         ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.id());
-        application.rechazar(command.decidedBy(), command.reason());
+        application.reject(command.decidedBy(), command.reason());
         return application;
     }
 }

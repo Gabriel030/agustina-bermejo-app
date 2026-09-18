@@ -42,18 +42,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Épica 7 Fase 3: solicitud de alta en carrera con pago de matrícula bloqueante
- * (Invoice+PaymentReceipt en la misma request que solicitar) y aprobación conjunta
- * de la solicitud y el comprobante en una sola transacción. PaymentReceiptService es
- * un placeholder mínimo hasta Fase 6.2 (Pagos y allocations) — alcanza con verificar
- * que la Invoice pasa a PAID, sin un Payment real todavía.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
-
     @Autowired
     private RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase;
 
@@ -147,12 +139,12 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(revision);
     }
 
-    private MultipartFile comprobante() {
+    private MultipartFile receiptFile() {
         return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
     }
 
     @Test
-    void solicitarConPagoCreaInvoicePaymentReceiptYSolicitudPendiente() {
+    void requestWithPaymentCreatesInvoicePaymentReceiptAndPendingRequest() {
         Student student = persistStudent("81000001");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
@@ -161,7 +153,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         ProgramEnrollmentApplication application =
-                requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante()));
+                requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile()));
 
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
@@ -170,7 +162,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void solicitarConPagoDosVecesMientrasLaPrimeraSiguePendienteFalla() {
+    void requestingWithPaymentTwiceWhileTheFirstIsStillPendingFails() {
         Student student = persistStudent("81000002");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
@@ -178,47 +170,43 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
-        requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante()));
+        requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile()));
 
-        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante())))
+        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile())))
                 .isInstanceOf(AlreadyHasPendingApplicationException.class);
     }
 
     @Test
-    void solicitarConPagoSinPriceRevisionConfiguradaFalla() {
+    void requestingWithPaymentWithoutConfiguredPriceRevisionFails() {
         Student student = persistStudent("81000003");
         Program program = persistPrograma("Sin Precio " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         entityManager.flush();
 
-        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante())))
+        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile())))
                 .isInstanceOf(PriceRevisionNotFoundException.class);
     }
 
     @Test
-    void solicitarConPagoFueraDeLaVentanaDeAdmisionFallaSinGenerarInvoiceNiComprobante() {
+    void requestingWithPaymentOutsideTheAdmissionWindowFailsWithoutGeneratingInvoiceOrReceipt() {
         Student student = persistStudent("81000005");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
-        // Ventana ya cerrada hace una semana — nadie debería poder pagar matrícula de una
-        // cohorte con inscripciones cerradas, ni aunque la carrera tenga PriceRevision configurada.
         ProgramCohort cohort = persistCohort(program, LocalDate.now().minusDays(30), LocalDate.now().minusDays(7), director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
 
-        // Cuenta contra el total en vez de asumir la tabla vacía — otros tests de la suite
-        // (Fase 6.1, no @Transactional) commitean Invoice reales en la misma base compartida.
         long invoicesAntes = invoiceRepository.count();
 
-        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante())))
+        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile())))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
 
         assertThat(invoiceRepository.count()).isEqualTo(invoicesAntes);
     }
 
     @Test
-    void aprobarLaSolicitudApruebaTambienElComprobanteYPasaLaInvoiceAPaid() {
+    void approvingTheRequestAlsoApprovesTheReceiptAndMarksTheInvoicePaid() {
         Student student = persistStudent("81000004");
         Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
@@ -226,7 +214,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
         entityManager.flush();
         ProgramEnrollmentApplication application =
-                requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), comprobante()));
+                requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile()));
 
         Person preceptor = persistPersonBase("PREC" + System.nanoTime());
         Role rolPreceptor = roleRepository.findByName("PRECEPTOR").orElseThrow();

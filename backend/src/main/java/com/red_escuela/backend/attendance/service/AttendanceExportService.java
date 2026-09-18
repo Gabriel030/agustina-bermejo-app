@@ -30,11 +30,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
- * Exportación on-demand de asistencia (clase puntual / historial / reporte de ausencias) a
- * PDF/XLS — mismo criterio que CertificateService: nunca se persiste el archivo generado, solo
- * los datos que ya existen.
- */
 @Service
 public class AttendanceExportService {
 
@@ -56,90 +51,90 @@ public class AttendanceExportService {
         this.getCourseSectionAbsenceReportUseCase = getCourseSectionAbsenceReportUseCase;
     }
 
-    public ExportedFile exportarProgramSection(
+    public ExportedFile exportProgramSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
-        Tabla tabla = construirTabla(scope, classDate,
+        Table table = buildTable(scope, classDate,
                 () -> getProgramSectionAttendanceHistoryUseCase.get(
                         new GetProgramSectionAttendanceHistoryCommand(sectionId, instructorIdIfDocente)),
                 () -> getProgramSectionAbsenceReportUseCase.get(
                         new GetProgramSectionAbsenceReportCommand(sectionId, instructorIdIfDocente, null)));
-        return generar(tabla, scope, format);
+        return generate(table, scope, format);
     }
 
-    public ExportedFile exportarCourseSection(
+    public ExportedFile exportCourseSection(
             Long sectionId, Long instructorIdIfDocente, String scope, String format, LocalDate classDate) {
-        Tabla tabla = construirTabla(scope, classDate,
+        Table table = buildTable(scope, classDate,
                 () -> getCourseSectionAttendanceHistoryUseCase.get(
                         new GetCourseSectionAttendanceHistoryCommand(sectionId, instructorIdIfDocente)),
                 () -> getCourseSectionAbsenceReportUseCase.get(
                         new GetCourseSectionAbsenceReportCommand(sectionId, instructorIdIfDocente, null)));
-        return generar(tabla, scope, format);
+        return generate(table, scope, format);
     }
 
-    private record Tabla(String titulo, List<String> encabezados, List<List<String>> filas) {
+    private record Table(String title, List<String> headers, List<List<String>> rows) {
     }
 
-    private Tabla construirTabla(
+    private Table buildTable(
             String scope, LocalDate classDate,
-            java.util.function.Supplier<AttendanceHistoryResponse> historial,
-            java.util.function.Supplier<List<RosterEntryResponse>> reporteDeAusencias) {
+            java.util.function.Supplier<AttendanceHistoryResponse> history,
+            java.util.function.Supplier<List<RosterEntryResponse>> absenceReport) {
         return switch (scope) {
-            case "class" -> tablaDeClase(historial.get(), classDate != null ? classDate : LocalDate.now());
-            case "history" -> tablaDeHistorial(historial.get());
-            case "absence-report" -> tablaDeReporte(reporteDeAusencias.get());
+            case "class" -> classTable(history.get(), classDate != null ? classDate : LocalDate.now());
+            case "history" -> historyTable(history.get());
+            case "absence-report" -> reportTable(absenceReport.get());
             default -> throw new IllegalArgumentException("scope de exportación desconocido: " + scope);
         };
     }
 
-    private Tabla tablaDeClase(AttendanceHistoryResponse historial, LocalDate classDate) {
-        List<String> encabezados = List.of("Alumno", "Estado");
-        List<List<String>> filas = historial.rows().stream()
-                .map(fila -> List.of(fila.studentName(), estadoDe(fila, classDate)))
+    private Table classTable(AttendanceHistoryResponse history, LocalDate classDate) {
+        List<String> headers = List.of("Alumno", "Estado");
+        List<List<String>> rows = history.rows().stream()
+                .map(row -> List.of(row.studentName(), statusOf(row, classDate)))
                 .toList();
-        return new Tabla("Asistencia · " + classDate, encabezados, filas);
+        return new Table("Asistencia · " + classDate, headers, rows);
     }
 
-    private Tabla tablaDeHistorial(AttendanceHistoryResponse historial) {
-        List<String> encabezados = new ArrayList<>();
-        encabezados.add("Alumno");
-        historial.classDates().forEach(fecha -> encabezados.add(fecha.toString()));
-        encabezados.add("% Asistencia");
+    private Table historyTable(AttendanceHistoryResponse history) {
+        List<String> headers = new ArrayList<>();
+        headers.add("Alumno");
+        history.classDates().forEach(date -> headers.add(date.toString()));
+        headers.add("% Asistencia");
 
-        List<List<String>> filas = historial.rows().stream().map(fila -> {
-            List<String> valores = new ArrayList<>();
-            valores.add(fila.studentName());
-            historial.classDates().forEach(fecha -> valores.add(estadoDe(fila, fecha)));
-            valores.add(fila.attendancePercentage() == null ? "-" : Math.round(fila.attendancePercentage() * 100) + "%");
-            return valores;
+        List<List<String>> rows = history.rows().stream().map(row -> {
+            List<String> values = new ArrayList<>();
+            values.add(row.studentName());
+            history.classDates().forEach(date -> values.add(statusOf(row, date)));
+            values.add(row.attendancePercentage() == null ? "-" : Math.round(row.attendancePercentage() * 100) + "%");
+            return values;
         }).toList();
-        return new Tabla("Historial de asistencia", encabezados, filas);
+        return new Table("Historial de asistencia", headers, rows);
     }
 
-    private String estadoDe(AttendanceHistoryResponse.StudentHistoryRow fila, LocalDate fecha) {
-        AttendanceHistoryResponse.HistoryCell celda = fila.cellsByDate().get(fecha);
-        return celda == null ? "-" : celda.status();
+    private String statusOf(AttendanceHistoryResponse.StudentHistoryRow row, LocalDate date) {
+        AttendanceHistoryResponse.HistoryCell cell = row.cellsByDate().get(date);
+        return cell == null ? "-" : cell.status();
     }
 
-    private Tabla tablaDeReporte(List<RosterEntryResponse> reporte) {
-        List<String> encabezados = List.of("Alumno", "DNI", "Ausencias", "% Asistencia");
-        List<List<String>> filas = reporte.stream()
-                .map(entrada -> List.of(
-                        entrada.studentName(), entrada.dni() == null ? "-" : entrada.dni(),
-                        String.valueOf(entrada.absenceCount()),
-                        entrada.attendancePercentage() == null ? "-" : Math.round(entrada.attendancePercentage() * 100) + "%"))
+    private Table reportTable(List<RosterEntryResponse> report) {
+        List<String> headers = List.of("Alumno", "DNI", "Ausencias", "% Asistencia");
+        List<List<String>> rows = report.stream()
+                .map(entry -> List.of(
+                        entry.studentName(), entry.dni() == null ? "-" : entry.dni(),
+                        String.valueOf(entry.absenceCount()),
+                        entry.attendancePercentage() == null ? "-" : Math.round(entry.attendancePercentage() * 100) + "%"))
                 .toList();
-        return new Tabla("Reporte de ausencias", encabezados, filas);
+        return new Table("Reporte de ausencias", headers, rows);
     }
 
-    private ExportedFile generar(Tabla tabla, String scope, String format) {
+    private ExportedFile generate(Table table, String scope, String format) {
         if ("xlsx".equalsIgnoreCase(format)) {
-            return new ExportedFile(generarXlsx(tabla), scope + ".xlsx",
+            return new ExportedFile(generateXlsx(table), scope + ".xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
-        return new ExportedFile(generarPdf(tabla), scope + ".pdf", "application/pdf");
+        return new ExportedFile(generatePdf(table), scope + ".pdf", "application/pdf");
     }
 
-    private byte[] generarPdf(Tabla tabla) {
+    private byte[] generatePdf(Table table) {
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -147,28 +142,28 @@ public class AttendanceExportService {
             PDFont fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 
             try (PDPageContentStream content = new PDPageContentStream(document, page)) {
-                float margen = 40;
-                float y = page.getMediaBox().getHeight() - margen;
+                float margin = 40;
+                float y = page.getMediaBox().getHeight() - margin;
 
                 content.beginText();
                 content.setFont(fontBold, 14);
-                content.newLineAtOffset(margen, y);
-                content.showText(tabla.titulo());
+                content.newLineAtOffset(margin, y);
+                content.showText(table.title());
                 content.endText();
                 y -= 30;
 
                 content.beginText();
                 content.setFont(fontBold, 9);
-                content.newLineAtOffset(margen, y);
-                content.showText(String.join("   |   ", tabla.encabezados()));
+                content.newLineAtOffset(margin, y);
+                content.showText(String.join("   |   ", table.headers()));
                 content.endText();
                 y -= 16;
 
                 content.beginText();
                 content.setFont(fontRegular, 9);
-                content.newLineAtOffset(margen, y);
-                for (List<String> fila : tabla.filas()) {
-                    content.showText(String.join("   |   ", fila));
+                content.newLineAtOffset(margin, y);
+                for (List<String> row : table.rows()) {
+                    content.showText(String.join("   |   ", row));
                     content.newLineAtOffset(0, -14);
                 }
                 content.endText();
@@ -182,19 +177,19 @@ public class AttendanceExportService {
         }
     }
 
-    private byte[] generarXlsx(Tabla tabla) {
+    private byte[] generateXlsx(Table table) {
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-            XSSFSheet sheet = workbook.createSheet(tabla.titulo());
-            Row encabezado = sheet.createRow(0);
-            for (int i = 0; i < tabla.encabezados().size(); i++) {
-                encabezado.createCell(i).setCellValue(tabla.encabezados().get(i));
+            XSSFSheet sheet = workbook.createSheet(table.title());
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < table.headers().size(); i++) {
+                headerRow.createCell(i).setCellValue(table.headers().get(i));
             }
-            for (int f = 0; f < tabla.filas().size(); f++) {
-                Row row = sheet.createRow(f + 1);
-                List<String> fila = tabla.filas().get(f);
-                for (int c = 0; c < fila.size(); c++) {
+            for (int r = 0; r < table.rows().size(); r++) {
+                Row row = sheet.createRow(r + 1);
+                List<String> values = table.rows().get(r);
+                for (int c = 0; c < values.size(); c++) {
                     Cell cell = row.createCell(c);
-                    cell.setCellValue(fila.get(c));
+                    cell.setCellValue(values.get(c));
                 }
             }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
