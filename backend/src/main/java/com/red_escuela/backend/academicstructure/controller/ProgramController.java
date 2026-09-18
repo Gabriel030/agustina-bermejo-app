@@ -34,37 +34,37 @@ public class ProgramController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramResponse crearCarrera(@Valid @RequestBody CreateProgramRequest request) {
-        return ProgramResponse.from(programService.crearCarrera(request));
+    public ProgramResponse create(@Valid @RequestBody CreateProgramRequest request) {
+        return ProgramResponse.from(programService.create(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramResponse editarCarrera(@PathVariable Long id, @RequestBody UpdateProgramRequest request) {
-        return ProgramResponse.from(programService.editarCarrera(id, request));
+    public ProgramResponse update(@PathVariable Long id, @RequestBody UpdateProgramRequest request) {
+        return ProgramResponse.from(programService.update(id, request));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        programService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        programService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        programService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        programService.reactivate(id);
     }
 
     @GetMapping
-    public List<ProgramResponse> listar(@RequestParam(required = false) StatusType status) {
-        return programService.listar(status).stream().map(ProgramResponse::from).toList();
+    public List<ProgramResponse> list(@RequestParam(required = false) StatusType status) {
+        return programService.list(status).stream().map(ProgramResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ProgramResponse verDetalle(@PathVariable Long id) {
-        return ProgramResponse.from(programService.verDetalle(id));
+    public ProgramResponse get(@PathVariable Long id) {
+        return ProgramResponse.from(programService.get(id));
     }
 }

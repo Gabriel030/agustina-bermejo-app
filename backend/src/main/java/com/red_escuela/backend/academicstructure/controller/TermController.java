@@ -63,60 +63,58 @@ public class TermController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public TermResponse crearPeriodo(@Valid @RequestBody CreateTermRequest request) {
+    public TermResponse create(@Valid @RequestBody CreateTermRequest request) {
         return TermResponse.from(createTermUseCase.create(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public TermResponse editarPeriodo(@PathVariable Long id, @RequestBody UpdateTermRequest request) {
+    public TermResponse update(@PathVariable Long id, @RequestBody UpdateTermRequest request) {
         return TermResponse.from(updateTermUseCase.update(new UpdateTermCommand(id, request)));
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
+    public void deactivate(@PathVariable Long id) {
         deactivateTermUseCase.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
+    public void reactivate(@PathVariable Long id) {
         activateTermUseCase.activate(id);
     }
 
     @GetMapping
-    public List<TermResponse> listar(@RequestParam(required = false) StatusType status) {
+    public List<TermResponse> list(@RequestParam(required = false) StatusType status) {
         return listTermsUseCase.list(status).stream().map(TermResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public TermResponse verDetalle(@PathVariable Long id) {
+    public TermResponse get(@PathVariable Long id) {
         return TermResponse.from(getTermUseCase.get(id));
     }
 
-    // Decisión 5 (Spec Procesos administrativos): override manual de ventana de inscripción.
-    // Preceptor comparte esto con Administrativo (decisión académica, no financiera).
     @PostMapping("/{id}/enrollment/open")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void abrirInscripcion(@PathVariable Long id) {
+    public void openEnrollment(@PathVariable Long id) {
         openTermEnrollmentUseCase.open(id);
     }
 
     @PostMapping("/{id}/enrollment/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void cerrarInscripcion(@PathVariable Long id) {
+    public void closeEnrollment(@PathVariable Long id) {
         closeTermEnrollmentUseCase.close(id);
     }
 
     @PostMapping("/{id}/enrollment/clear-override")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void quitarOverride(@PathVariable Long id) {
+    public void removeOverride(@PathVariable Long id) {
         clearTermEnrollmentOverrideUseCase.clear(id);
     }
 }

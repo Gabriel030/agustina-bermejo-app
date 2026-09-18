@@ -14,7 +14,6 @@ import java.util.Optional;
 
 @Repository
 public interface SubjectSectionRepository extends JpaRepository<SubjectSection, Long> {
-
     List<SubjectSection> findBySubjectId(Long subjectId);
 
     List<SubjectSection> findBySubjectIdAndStatus(Long subjectId, StatusType status);
@@ -23,9 +22,6 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
 
-    // Lock de fila para serializar operaciones que dependen del cupo (alta, baja, promoción
-    // de lista de espera) sobre la misma comisión — sin esto, dos transacciones concurrentes
-    // pueden leer el mismo conteo de "ocupadas" antes de que cualquiera haga commit.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SubjectSection s where s.id = :id")
     Optional<SubjectSection> findByIdForUpdate(@Param("id") Long id);

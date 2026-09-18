@@ -8,10 +8,8 @@ import java.util.List;
 
 @Repository
 public interface CourseSubjectSectionInstructorRepository extends JpaRepository<CourseSubjectSectionInstructor, Long> {
-
     List<CourseSubjectSectionInstructor> findBySectionId(Long sectionId);
 
-    // Resolver las comisiones propias del Docente, para la autorización de "comisión propia".
     List<CourseSubjectSectionInstructor> findByInstructorId(Long instructorId);
 
     boolean existsBySectionIdAndInstructorId(Long sectionId, Long instructorId);

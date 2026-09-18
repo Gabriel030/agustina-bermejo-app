@@ -15,16 +15,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * GET /institutions es público (Registrarse.jsx lo llama sin sesión) — la
- * única aserción que importa acá es que responde sin JWT.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class InstitutionControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -32,7 +27,7 @@ class InstitutionControllerTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @Test
-    void listarSinSesionDevuelveLasInstitucionesExistentes() throws Exception {
+    void listingWithoutSessionReturnsExistingInstitutions() throws Exception {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba");
         entityManager.persist(institution);

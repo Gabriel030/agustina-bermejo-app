@@ -22,8 +22,6 @@ public class ProgramSubject {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Program program;
 
-    // El Subject se comparte entre carreras (Spec Estructura académica, decisión 3):
-    // esta fila es "cómo ESTA carrera incluye ese Subject en su plan", no la materia en sí.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
@@ -31,7 +29,6 @@ public class ProgramSubject {
     @Column(name = "credits", nullable = false)
     private Integer credits = 0;
 
-    // Null = obligatoria (tiene que estar APPROVED sí o sí para egresar, ver decisión 4).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "elective_group_id")
     private ElectiveGroup electiveGroup;
@@ -54,12 +51,9 @@ public class ProgramSubject {
     @Column(name = "subject_recurrence")
     private SubjectRecurrence subjectRecurrence;
 
-    // Prerrequisitos (AND): materias requeridas para poder cursar esta ProgramSubject
     @OneToMany(mappedBy = "programSubject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubjectPrerequisite> prerequisites;
 
-    // Materias que dependen de esta ProgramSubject (referencias inversas)
     @OneToMany(mappedBy = "prerequisiteProgramSubject", fetch = FetchType.LAZY)
     private List<ProgramSubjectPrerequisite> requiredBy;
-
 }

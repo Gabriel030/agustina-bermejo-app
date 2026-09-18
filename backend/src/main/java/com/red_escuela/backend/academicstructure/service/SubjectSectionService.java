@@ -33,7 +33,6 @@ import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigDraftIn
 
 @Service
 public class SubjectSectionService {
-
     private final SubjectSectionRepository sectionRepository;
     private final SubjectRepository subjectRepository;
     private final TermRepository termRepository;
@@ -60,7 +59,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public SubjectSection crearComision(Long subjectId, CreateSectionRequest request) {
+    public SubjectSection create(Long subjectId, CreateSectionRequest request) {
         Subject subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
         Term term = termRepository.findById(request.termId())
@@ -83,7 +82,7 @@ public class SubjectSectionService {
     }
 
     @Transactional
-    public SubjectSection editarComision(Long id, UpdateSectionRequest request) {
+    public SubjectSection update(Long id, UpdateSectionRequest request) {
         SubjectSection section = findOrThrow(id);
         if (request.name() != null) {
             section.setName(request.name());
@@ -100,32 +99,32 @@ public class SubjectSectionService {
         return sectionRepository.save(section);
     }
 
-    public List<SubjectSection> listarPorMateria(Long subjectId, StatusType status) {
+    public List<SubjectSection> listBySubject(Long subjectId, StatusType status) {
         return status == null
                 ? sectionRepository.findBySubjectId(subjectId)
                 : sectionRepository.findBySubjectIdAndStatus(subjectId, status);
     }
 
-    public SubjectSection verDetalle(Long id) {
+    public SubjectSection get(Long id) {
         return findOrThrow(id);
     }
 
     @Transactional
-    public void desactivar(Long id) {
+    public void deactivate(Long id) {
         SubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.INACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public void reactivar(Long id) {
+    public void reactivate(Long id) {
         SubjectSection section = findOrThrow(id);
         section.setStatus(StatusType.ACTIVE);
         sectionRepository.save(section);
     }
 
     @Transactional
-    public SubjectSectionInstructor asignarDocente(Long sectionId, AssignInstructorRequest request) {
+    public SubjectSectionInstructor assignInstructor(Long sectionId, AssignInstructorRequest request) {
         SubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
@@ -146,15 +145,12 @@ public class SubjectSectionService {
         }
     }
 
-    public List<SubjectSectionInstructor> listarDocentes(Long sectionId) {
+    public List<SubjectSectionInstructor> listInstructors(Long sectionId) {
         return sectionInstructorRepository.findBySectionId(sectionId);
     }
 
     @Transactional
-    public void quitarDocente(Long sectionId, Long instructorAssignmentId) {
-        // Antes no validaba nada: ni que la asignación existiera (deleteById no tira
-        // excepción si falta), ni que perteneciera a ESTA comisión — se podía borrar la
-        // asignación de otra sección con solo conocer su id, ignorando el sectionId de la URL.
+    public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
         SubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
                 .filter(a -> a.getSection().getId().equals(sectionId))
                 .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
@@ -165,9 +161,6 @@ public class SubjectSectionService {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    // entityManager.getReference() no dispara la consulta hasta el flush, así que un id
-    // inexistente terminaba en una DataIntegrityViolationException sin capturar (500) en
-    // vez de un 404 claro. find() sí resuelve la fila ahora, permitiendo validar antes.
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         EvaluationScheme scheme = entityManager.find(EvaluationScheme.class, id);
         if (scheme == null) {

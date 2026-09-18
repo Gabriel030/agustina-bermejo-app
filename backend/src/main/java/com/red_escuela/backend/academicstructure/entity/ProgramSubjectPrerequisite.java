@@ -25,24 +25,22 @@ public class ProgramSubjectPrerequisite {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Materia objetivo (a la que quiero inscribirme)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "program_subject_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private ProgramSubject programSubject;
 
-    // Materia requerida (prerrequisito)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "prerequisite_program_subject_id", nullable = false)
     private ProgramSubject prerequisiteProgramSubject;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "requirement_type", nullable = false)
-    private RequirementType requirementType; // APPROVED o PASSED_COURSEWORK
+    private RequirementType requirementType;
 
     @Column(name = "min_grade")
-    private Double minGrade; // opcional
+    private Double minGrade;
 
     @Column(name = "notes", length = 500)
-    private String notes; // opcional
+    private String notes;
 }
