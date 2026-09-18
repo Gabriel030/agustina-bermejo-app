@@ -55,11 +55,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-// Fase 6.2, tests 140-145: comprobante subido por el Alumno.
 @SpringBootTest
 @ActiveProfiles("test")
 class PaymentReceiptServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
 
@@ -203,12 +201,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
 
-        // Sin esto, el comprobante queda PENDING_REVIEW colgado para el resto de la corrida —
-        // PaymentReceiptService.listarPendientes() es una cola GLOBAL sin scope por alumno, y
-        // cualquier otro test (ej. RegistrationFlowTest) que tome el primero de esa cola sin
-        // filtrar por su propio Invoice termina aprobando este comprobante ajeno en vez del suyo
-        // (hallazgo real de auditoría 2026-09-08: rompía RegistrationFlowTest bajo cierto orden
-        // de ejecución de Surefire, nunca bajo @Transactional/rollback).
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
@@ -223,8 +215,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(PaymentReceiptAlreadyPendingException.class);
 
-        // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
-        // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 
@@ -254,12 +244,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(rejected.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
         assertThat(rejected.getRejectionReason()).isEqualTo("Comprobante ilegible");
 
-        // Sin límite de reintentos: la Invoice vuelve a estar disponible.
         PaymentReceipt retry = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         assertThat(retry.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
 
-        // Limpieza: sin esto el retry queda PENDING_REVIEW colgado en la cola global (ver
-        // comentario de uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
         rejectPaymentReceiptUseCase.reject(retry.getId(), "Limpieza de test", admin);
     }
 
@@ -274,20 +261,8 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvoiceNotFoundException.class);
     }
 
-    // Regresión (auditoría 2026-09-04): sin @Version en PaymentReceipt, aprobar() y reject()
-    // concurrentes sobre el mismo comprobante podían "ganar" ambos — uno dejaba un Payment
-    // CONFIRMED real y la Invoice en PAID, el otro pisaba el status a REJECTED sin detectar el
-    // conflicto. Con el lock optimista, exactamente uno de los dos tiene que ganar.
-    //
-    // El perdedor puede fallar de DOS formas legítimas según el timing real del scheduler
-    // (hallazgo de CI 2026-09-08, antes solo se contemplaba la primera): si los dos leen el
-    // comprobante en PENDING_REVIEW antes de que cualquiera commitee, el que pierde la carrera
-    // de flush recibe ObjectOptimisticLockingFailureException (@Version). Pero si el ganador ya
-    // commiteó completo antes de que el otro siquiera lea el estado, ese segundo directamente ve
-    // el status ya cambiado y falla en el guard con InvalidPaymentReceiptStateException — ninguna
-    // de las dos es un bug, ambas son "el perdedor no pisó al ganador".
     @Test
-    void aprobarYRechazarEnParaleloSobreElMismoComprobanteSoloUnoGana() throws Exception {
+    void approvingAndRejectingInParallelOnTheSameReceiptOnlyOneWins() throws Exception {
         Person admin1 = persistPerson("admin.receipt8a." + System.nanoTime());
         Person admin2 = persistPerson("admin.receipt8b." + System.nanoTime());
         Student student = persistStudent("97000008");
@@ -333,8 +308,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(exitos).isEqualTo(1);
         assertThat(conflictos).isEqualTo(1);
 
-        // El estado final tiene que ser consistente entre sí: si ganó aprobar(), la Invoice está
-        // PAID; si ganó reject(), la Invoice sigue PENDING y no existe ningún Payment real.
         PaymentReceipt reloaded = paymentReceiptRepository.findById(receipt.getId()).orElseThrow();
         Invoice reloadedInvoice = invoiceRepository.findById(invoice.getId()).orElseThrow();
         if (reloaded.getStatus() == PaymentReceiptStatus.APPROVED) {
@@ -367,8 +340,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
 
-        // Limpieza: sin esto queda PENDING_REVIEW colgado en la cola global (ver comentario de
-        // uploadingAReceiptLeavesItPendingReviewWithoutTouchingTheInvoice).
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
 }

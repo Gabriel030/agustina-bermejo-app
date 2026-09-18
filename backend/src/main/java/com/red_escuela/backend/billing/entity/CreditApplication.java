@@ -7,15 +7,11 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Tabla de asociación "un CreditNote reparte contra varios comprobantes", mismo patrón que
-// PaymentAllocation (Fase 6.2) para un origen de plata distinto (crédito interno, no un pago
-// real) — append-only, sin updatedAt.
 @Getter
 @Setter
 @Entity
 @Table(name = "credit_application")
 public class CreditApplication {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,8 +25,6 @@ public class CreditApplication {
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 
-    // Nullable: una nota de crédito retroactiva (RETROACTIVE_SCHOLARSHIP) se aplica contra una
-    // Invoice ya PAID sin que exista un Payment nuevo asociado a ese crédito.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_id")
     private Payment payment;

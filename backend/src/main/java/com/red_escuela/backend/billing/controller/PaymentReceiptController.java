@@ -37,13 +37,13 @@ public class PaymentReceiptController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<PaymentReceiptResponse> listarPendientes() {
+    public List<PaymentReceiptResponse> listPending() {
         return listPendingPaymentReceiptsUseCase.list().stream().map(PaymentReceiptResponse::from).toList();
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public PaymentReceiptResponse aprobar(@PathVariable Long id) {
+    public PaymentReceiptResponse approve(@PathVariable Long id) {
         return PaymentReceiptResponse.from(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
     }
 

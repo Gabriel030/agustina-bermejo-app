@@ -17,7 +17,6 @@ import java.util.List;
 
 @Service
 public class ScholarshipGrantSupport {
-
     private final ScholarshipRepository scholarshipRepository;
     private final CreditNoteService creditNoteService;
 
@@ -41,11 +40,6 @@ public class ScholarshipGrantSupport {
         }
     }
 
-    // Una beca otorgada después de que ya se generó y pagó la cuota del período corriente no
-    // puede recuperar ese descuento vía Scholarship.consumeOne (esa Invoice ya está PAID, no se
-    // reabre) — en vez de eso se consume igual la primera installment (mismo criterio de conteo
-    // que si el descuento se hubiera aplicado en el momento) y la diferencia se devuelve como
-    // CreditNote en lugar de un ajuste sobre la Invoice.
     public void applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(Scholarship scholarship, List<Invoice> paidInvoices, Student student) {
         YearMonth currentPeriod = YearMonth.now();
         paidInvoices.stream()
@@ -54,9 +48,6 @@ public class ScholarshipGrantSupport {
                 .ifPresent(invoice -> {
                     scholarship.consumeOne(invoice);
                     scholarshipRepository.save(scholarship);
-                    // La installment se consume igual (arriba) aunque el descuento resuelva a $0 —
-                    // cuenta como "ya aplicada" a todos los efectos de la beca — pero solo si hay
-                    // plata real de por medio nace una CreditNote.
                     BigDecimal creditAmount = scholarship.getValue().resolve(invoice.getBaseAmount());
                     if (creditAmount.signum() > 0) {
                         var creditNote = creditNoteService.createFor(student, creditAmount, CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP,

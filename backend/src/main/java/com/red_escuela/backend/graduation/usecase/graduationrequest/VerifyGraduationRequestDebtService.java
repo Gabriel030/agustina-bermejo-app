@@ -40,7 +40,7 @@ public class VerifyGraduationRequestDebtService implements VerifyGraduationReque
         }
 
         Long studentId = request.getProgramEnrollment().getStudent().getId();
-        if (invoiceQueryService.tieneDeuda(studentId)) {
+        if (invoiceQueryService.hasDebt(studentId)) {
             throw new PendingDebtException(studentId);
         }
 

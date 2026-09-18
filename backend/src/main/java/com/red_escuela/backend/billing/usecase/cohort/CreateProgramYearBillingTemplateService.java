@@ -13,12 +13,8 @@ import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
-// La validación de recurringFeeInvoicesCount contra la duración del Term (decisión 2026-09-03: un
-// pago nunca puede cubrir más de un cohorte) vive en ProgramYearBillingTemplate misma
-// (@PrePersist) — se autovalida al persistirse, sin importar qué código la construya.
 @UseCase
 public class CreateProgramYearBillingTemplateService implements CreateProgramYearBillingTemplateUseCase {
-
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final ProgramRepository programRepository;
     private final TermRepository termRepository;

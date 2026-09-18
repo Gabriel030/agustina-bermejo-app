@@ -48,12 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 
-// Fase 6.6: test 130 (alta manual de CreditNote, razón válida vs. rechazada) y test 106
-// (consumo concurrente de CreditNote no debe fallar espuriamente si el pool alcanza).
 @SpringBootTest
 @ActiveProfiles("test")
 class CreditNoteServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private CreditNoteService creditNoteService;
 
@@ -113,16 +110,14 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         return studentRepository.save(student);
     }
 
-    // Hallazgo de QA manual (2026-09-08): listForStudent devolvía [] para un student_id
-    // inexistente en vez de 404 — inconsistente con createManual, que sí valida.
     @Test
-    void listForStudentConStudentInexistenteLanza404() {
+    void listForStudentWithNonExistentStudentThrows404() {
         assertThatThrownBy(() -> listCreditNotesForStudentUseCase.list(999999L))
                 .isInstanceOf(com.red_escuela.backend.identity.exception.StudentNotFoundException.class);
     }
 
     @Test
-    void createManualConRazonAdministrativaEsAceptada() {
+    void createManualWithAdministrativeReasonIsAccepted() {
         Person admin = persistPerson("admin.credit1." + System.nanoTime());
         Student student = persistStudent("99100001." + System.nanoTime());
         authenticateAs(admin);
@@ -131,11 +126,11 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
                 new CreateCreditNoteRequest(BigDecimal.valueOf(500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Corrección de cobro duplicado"));
 
         assertThat(creditNote.getId()).isNotNull();
-        assertThat(creditNoteService.saldoDisponible(student.getId())).isEqualByComparingTo(BigDecimal.valueOf(500));
+        assertThat(creditNoteService.availableBalance(student.getId())).isEqualByComparingTo(BigDecimal.valueOf(500));
     }
 
     @Test
-    void createManualConRazonDeSistemaEsRechazada() {
+    void createManualWithSystemReasonIsRejected() {
         Person admin = persistPerson("admin.credit2." + System.nanoTime());
         Student student = persistStudent("99100002." + System.nanoTime());
         authenticateAs(admin);
@@ -145,12 +140,8 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvalidCreditNoteReasonException.class);
     }
 
-    // Regresión de auditoría 2026-09-07: dos consumos concurrentes del mismo alumno, cada uno
-    // dentro del saldo total disponible, deben tener AMBOS éxito — antes del fix, uno de los dos
-    // fallaba con ObjectOptimisticLockingFailureException por una CreditNote cacheada sin lock en
-    // el persistence context de su propia transacción.
     @Test
-    void dosConsumosConcurrentesDentroDelSaldoTotalTienenAmbosExito() throws Exception {
+    void twoConcurrentConsumptionsWithinTheTotalBalanceBothSucceed() throws Exception {
         Person admin = persistPerson("admin.credit3." + System.nanoTime());
         Student student = persistStudent("99100003." + System.nanoTime());
         creditNoteService.createFor(student, BigDecimal.valueOf(600), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota 1", admin);
@@ -187,18 +178,16 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
                 resultado.get(30, TimeUnit.SECONDS);
                 exitos++;
             } catch (ExecutionException ignored) {
-                // Se cuentan solo los éxitos: con $1200 de pool para dos consumos de $600 no debería
-                // haber ningún fallo.
             }
         }
         executor.shutdown();
 
         assertThat(exitos).isEqualTo(2);
-        assertThat(creditNoteService.saldoDisponible(student.getId())).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(creditNoteService.availableBalance(student.getId())).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
-    void consumoSinSaldoSuficienteEsRechazado() {
+    void consumptionWithoutSufficientBalanceIsRejected() {
         Person admin = persistPerson("admin.credit4." + System.nanoTime());
         Student student = persistStudent("99100004." + System.nanoTime());
         creditNoteService.createFor(student, BigDecimal.valueOf(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota", admin);
@@ -209,9 +198,6 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InsufficientCreditBalanceException.class);
     }
 
-    // No hace falta un CourseEnrollment/ProgramEnrollment real: consumeForInvoice solo lee
-    // amountDue/status de la Invoice, y el studentId lo pasa el propio test explícitamente
-    // (chk_invoice_billable permite ambos en null, ver V43__billing_nucleo_facturacion.sql).
     private Invoice persistInvoice(Student student, BigDecimal amount) {
         Invoice invoice = new Invoice();
         invoice.setFeeType(FeeType.RECURRING_FEE);

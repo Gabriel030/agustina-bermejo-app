@@ -24,7 +24,6 @@ import java.util.List;
 
 @UseCase
 public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
-
     private final InvoiceRepository invoiceRepository;
     private final String accessToken;
     private final String frontendBaseUrl;
@@ -85,7 +84,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
             Preference preference = new PreferenceClient().create(request);
             return new MpPreferenceResponse(preference.getId(), preference.getInitPoint());
         } catch (MPException | MPApiException e) {
-            throw new MercadoPagoGatewayException("Error al crear preferencia de pago", e);
+            throw new MercadoPagoGatewayException("Error al create preferencia de pago", e);
         }
     }
 

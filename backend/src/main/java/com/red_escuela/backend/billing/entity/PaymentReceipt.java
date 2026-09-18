@@ -12,16 +12,11 @@ import com.red_escuela.backend.identity.entity.Person;
 @Entity
 @Table(name = "payment_receipt")
 public class PaymentReceipt {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Sin esto, aprobar() y reject() concurrentes sobre el mismo comprobante (dos
-    // Administrativos, o un doble clic) podían dejar el receipt en REJECTED mientras ya existía
-    // un Payment CONFIRMED real y la Invoice en PAID detrás — ninguno de los dos caminos
-    // detectaba al otro (hallazgo de auditoría 2026-09-04).
     @Version
     @Column(name = "version")
     private Long version;
@@ -50,9 +45,6 @@ public class PaymentReceipt {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
-    // El propio Alumno, vía CurrentStudentService — nunca un id de la URL. Nullable solo por
-    // retrocompatibilidad con las filas del flujo ad-hoc de Épica 7 Fase 3, donde la Invoice
-    // todavía no tiene enrollment vinculado y el studentId se recibe explícito.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by_id")
     private Person uploadedBy;

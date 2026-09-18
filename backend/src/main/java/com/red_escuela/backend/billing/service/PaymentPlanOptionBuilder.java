@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class PaymentPlanOptionBuilder {
-
     private final CurrentPersonService currentPersonService;
 
     public PaymentPlanOptionBuilder(CurrentPersonService currentPersonService) {
@@ -30,9 +29,6 @@ public class PaymentPlanOptionBuilder {
         return option;
     }
 
-    // Sin esto, una PaymentPlanOption con upfrontWindowEnabled=true pero start/end nulos o mal
-    // ordenados recién explotaba con NullPointerException cuando un alumno intentaba seleccionar
-    // el plan — 500 en vez de rechazar la creación con 400 (hallazgo de auditoría 2026-09-04).
     private void validateUpfrontWindow(CreatePaymentPlanOptionRequest request) {
         if (!request.upfrontWindowEnabled()) {
             return;

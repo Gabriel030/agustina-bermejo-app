@@ -10,11 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
-
     List<Promotion> findByStatus(com.red_escuela.backend.billing.entity.PromotionStatus status);
 
-    // "Solo la primera promoción vigente que matchea" — orderBy id asc para que, ante dos
-    // promociones ACTIVE elegibles al mismo tiempo, el resultado sea determinístico.
     @Query("""
             select p from Promotion p
             where p.course.id = :courseId

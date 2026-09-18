@@ -30,7 +30,6 @@ import java.util.Map;
 
 @UseCase
 public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCase {
-
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
@@ -63,36 +62,25 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         receipt.setReviewedBy(decidedBy);
         receipt.setReviewedAt(LocalDateTime.now());
 
-        // Mismo camino que un pago cargado a mano por Administrativo — el comprobante no
-        // distingue efectivo/transferencia, siempre es "subí un archivo", así que method =
-        // TRANSFER. RegisterPaymentService ya deja la Invoice en PAID/PARTIALLY_PAID según
-        // corresponda; no se toca acá.
         Invoice invoice = receipt.getInvoice();
         registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getRemainingBalance())),
                 PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
 
-        // A course has no separate "application" decision — approving the receipt of its first
-        // installment is the only trigger for the real enrollment (business decision, same as
-        // before: neither a program nor a course grants access until the payment is approved).
         courseEnrollmentApplicationRepository.findByPaymentReceiptId(id)
                 .filter(application -> application.getCourseEnrollment() == null)
-                .ifPresent(this::matricularCurso);
+                .ifPresent(this::enrollInCourse);
 
         return paymentReceiptRepository.save(receipt);
     }
 
-    private void matricularCurso(CourseEnrollmentApplication application) {
+    private void enrollInCourse(CourseEnrollmentApplication application) {
         Map<Long, Long> overrides = deserializarOverrides(application.getSectionOverrides());
         CourseEnrollment enrollment = courseEnrollmentService.enrollSelfService(
                 application.getStudent().getId(), new CreateCourseEnrollmentRequest(application.getCourse().getId(), overrides));
         application.setCourseEnrollment(enrollment);
         courseEnrollmentApplicationRepository.save(application);
 
-        // Only now does the CourseEnrollment exist — the first-installment invoice (created
-        // ad-hoc when the application was submitted, with no enrollment link possible yet) gets
-        // linked retroactively, so the recurring billing engine doesn't generate a duplicate for
-        // the month already paid this way.
         Invoice invoice = application.getPaymentReceipt().getInvoice();
         invoice.setCourseEnrollment(enrollment);
         invoiceRepository.save(invoice);

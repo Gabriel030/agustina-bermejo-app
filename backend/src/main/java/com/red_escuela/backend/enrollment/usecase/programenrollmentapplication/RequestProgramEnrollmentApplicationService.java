@@ -62,7 +62,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
                     throw new AlreadyHasPendingApplicationException(student.getId(), command.programId());
                 });
 
-        Invoice invoice = invoiceFactory.crearAdHocParaCarrera(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
+        Invoice invoice = invoiceFactory.createAdHocForProgram(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), command.comprobante());
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();

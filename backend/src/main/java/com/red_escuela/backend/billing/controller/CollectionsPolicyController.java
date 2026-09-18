@@ -13,11 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-// La política de mora es una decisión del Director (decisión 2026-09-03, Épica 8 reconciliada) —
-// Administrativo solo puede leerla, no cargarla.
 @RestController
 public class CollectionsPolicyController {
-
     private final CreateCollectionsPolicyUseCase createCollectionsPolicyUseCase;
     private final FindCurrentCollectionsPolicyUseCase findCurrentCollectionsPolicyUseCase;
 

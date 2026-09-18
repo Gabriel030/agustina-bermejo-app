@@ -13,13 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-// Reporte de beneficios cortados por cambio de plan — cada PromotionRedemption cuya selección ya
-// se cerró (effectiveTo != null) y todavía tenía cuotas de descuento sin usar cuando se cortó.
-// No se persiste como estado propio: se recalcula siempre contra la realidad de
-// InvoiceAdjustment, mismo criterio que getAmountDue().
 @UseCase
 public class FindLostPromotionBenefitsService implements FindLostPromotionBenefitsUseCase {
-
     private final PromotionRedemptionRepository promotionRedemptionRepository;
     private final InvoiceRepository invoiceRepository;
 

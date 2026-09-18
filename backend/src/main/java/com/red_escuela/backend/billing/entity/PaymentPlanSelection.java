@@ -15,17 +15,11 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 @Entity
 @Table(name = "payment_plan_selection")
 public class PaymentPlanSelection {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Corrección 2026-09-04 (auditoría): sin esto, cerrar la selección "abierta" anterior
-    // (PaymentPlanSelectionService, al setear effectiveTo) dependía únicamente de que dos
-    // requests concurrentes escribieran el mismo valor determinístico por casualidad — mismo
-    // patrón fragil de "protegido de rebote por un unique index en otra fila" que ya causó un bug
-    // real (uk_payment_allocation) en otra entidad de este mismo dominio.
     @Version
     @Column(name = "version")
     private Long version;
@@ -45,11 +39,9 @@ public class PaymentPlanSelection {
     @Column(name = "effective_from", nullable = false)
     private YearMonth effectiveFrom;
 
-    // null = still open, in effect until another selection replaces it.
     @Column(name = "effective_to")
     private YearMonth effectiveTo;
 
-    // Only set if paymentPlanOption.cadence = UPFRONT.
     @Column(name = "scope_months")
     private Integer scopeMonths;
 

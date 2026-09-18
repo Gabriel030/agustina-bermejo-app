@@ -30,12 +30,8 @@ import java.util.function.Supplier;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
-// Bean separado de EnrollmentBillingComplianceSweepService por el mismo motivo que
-// InvoiceOverdueRowProcessor: @Transactional(REQUIRES_NEW) no se respeta en una auto-invocación
-// dentro de la misma clase.
 @Service
 public class EnrollmentBillingComplianceRowProcessor {
-
     private final InvoiceRepository invoiceRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
@@ -77,16 +73,6 @@ public class EnrollmentBillingComplianceRowProcessor {
         programEnrollmentRepository.save(enrollment);
     }
 
-    // Criterio doble (decisión 2026-09-03): SUSPENDED/WITHDRAWN_FOR_NONPAYMENT se disparan por
-    // CUALQUIERA de las dos condiciones — antigüedad en días de la Invoice OVERDUE más vieja, o
-    // cantidad de Invoice OVERDUE simultáneas — la que se cumpla primero.
-    //
-    // Corrección 2026-09-04 (auditoría, hallazgo real): la condición de "cero deuda" que habilita
-    // volver a UP_TO_DATE tiene que mirar SOLO Invoice OVERDUE, nunca PENDING — antes esta misma
-    // consulta traía PENDING u OVERDUE, así que un enrollment SUSPENDED que saldaba toda su mora
-    // pero tenía una Invoice PENDING futura ya generada (plan UPFRONT, o matrícula+primera cuota
-    // nacidas juntas) nunca veía "oldestUnpaid vacío" y quedaba SUSPENDED para siempre — la propia
-    // regla de negocio dice "hasta llegar a cero Invoice OVERDUE", no "cero PENDING u OVERDUE".
     private void recalculateStanding(BillableEnrollment billable, Supplier<Optional<Invoice>> oldestOverdueInvoice,
                                       LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today, Runnable withdraw) {
         EnrollmentBillingStanding previous = billable.getBillingStanding();
@@ -105,10 +91,6 @@ public class EnrollmentBillingComplianceRowProcessor {
                 next = EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
                 withdraw.run();
                 meterRegistry.counter("billing_withdrawal_success_total").increment();
-                // SUSPENDED es "pegajoso" mientras siga habiendo alguna Invoice OVERDUE: un pago
-                // parcial que hace bajar días/cantidad por debajo del umbral no debe destrabar la
-                // suspensión solo — hace falta llegar a overdueInvoiceCount == 0 (rama de arriba)
-                // para volver a UP_TO_DATE (test 134).
             } else if (previous == EnrollmentBillingStanding.SUSPENDED
                     || daysOverdue > policy.getSuspensionAfterDays() || overdueInvoiceCount >= policy.getSuspensionAfterInvoiceCount()) {
                 if (previous != EnrollmentBillingStanding.SUSPENDED) {

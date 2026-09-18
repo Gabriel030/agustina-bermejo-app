@@ -41,12 +41,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
-// Fase 6.4: tests 44-49, 118-120. NO @Transactional a propósito (PaymentService/InvoiceFactory
-// necesitan su propia transacción real).
 @SpringBootTest
 @ActiveProfiles("test")
 class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private StudentDebtResolutionService studentDebtResolutionService;
 
@@ -131,7 +128,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unAlumnoSinDeudaPuedeMatricularseSinProblema() {
+    void aStudentWithoutDebtCanEnrollWithoutProblems() {
         Student student = persistStudent("88010001");
         Program program = persistPrograma();
 
@@ -141,7 +138,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void alumnoConDeudaOverdueEnUnaCarreraNoPuedeMatricularseEnOtraCarreraDistinta() {
+    void studentWithOverdueDebtInOneProgramCannotEnrollInADifferentProgram() {
         Student student = persistStudent("88010002");
         Program programConDeuda = persistPrograma();
         persistOldWithdrawnCycle(student, programConDeuda, BigDecimal.valueOf(5000));
@@ -152,10 +149,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unaInvoicePendingDentroDeLaGraciaNoBloqueaUnaAltaNueva() {
+    void aPendingInvoiceWithinTheGracePeriodDoesNotBlockANewEnrollment() {
         Student student = persistStudent("88010003");
         Program programConCuotaPendiente = persistPrograma();
-        // PENDING (todavía no OVERDUE) — no debería bloquear.
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
         enrollment.setProgram(programConCuotaPendiente);
@@ -178,7 +174,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void saldarCompletoHabilitaLaReMatriculacion() {
+    void payingInFullEnablesReEnrollment() {
         Person admin = persistPerson("admin.debt1." + System.nanoTime());
         Student student = persistStudent("88010004");
         Program program = persistPrograma();
@@ -195,7 +191,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void saldarParcialSigueBloqueando() {
+    void partialPaymentStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
         Program program = persistPrograma();
@@ -211,7 +207,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void condonarConRolDirectorLiberaLaDeudaSinPagoYPermiteMatricularDeInmediato() {
+    void waivingWithDirectorRoleReleasesTheDebtWithoutPaymentAndAllowsImmediateEnrollment() {
         Person director = persistPerson("director.debt3." + System.nanoTime());
         Student student = persistStudent("88010006");
         Program program = persistPrograma();
@@ -227,10 +223,8 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
-    // Test 68: una Scholarship vive atada al enrollment sobre el que se otorgó, no se traslada
-    // sola al ciclo nuevo al reincorporar.
     @Test
-    void becaDelCicloViejoNoSeArrastraAutomaticamenteAlReincorporar() {
+    void theOldCyclesScholarshipDoesNotCarryOverAutomaticallyOnReenrollment() {
         Person director = persistPerson("director.debt6." + System.nanoTime());
         Student student = persistStudent("88010010");
         Program program = persistPrograma();
@@ -252,7 +246,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void multiplesCiclosViejosConDeudaDebenResolverseTodos() {
+    void multipleOldCyclesWithDebtMustAllBeResolved() {
         Person director = persistPerson("director.debt4." + System.nanoTime());
         Student student = persistStudent("88010007");
         Program program = persistPrograma();
@@ -272,10 +266,8 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
-    // Test 120: la deuda no tiene que resolverse en el enrollment nuevo que se está por crear —
-    // saldarla en CUALQUIER otro enrollment del alumno ya desbloquea el alta.
     @Test
-    void saldarLaDeudaEnCualquierEnrollmentDesbloqueaAltasEnCualquierOtro() {
+    void payingOffDebtOnAnyEnrollmentUnblocksEnrollmentOnAnyOther() {
         Person admin = persistPerson("admin.debt5." + System.nanoTime());
         Student student = persistStudent("88010009");
         Program programConDeudaVieja = persistPrograma();
@@ -294,10 +286,8 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
-    // Test 49: bypass directo del endpoint de matriculación (sin pasar por
-    // StudentDebtResolutionService.reincorporar) sigue bloqueado — matricular() ya tiene el hook.
     @Test
-    void bypassDirectoDeMatricularSigueBloqueadoConDeudaVieja() {
+    void directBypassOfEnrollStillBlockedWithOldDebt() {
         Student student = persistStudent("88010008");
         Program program = persistPrograma();
         persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
