@@ -39,7 +39,7 @@ export function Catalogo() {
       </div>
 
       <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="line">
+        <TabsList variant="segmented">
           <TabsTrigger value="carreras">Carreras</TabsTrigger>
           <TabsTrigger value="cursos">Cursos</TabsTrigger>
           <TabsTrigger value="mis-solicitudes">Mis solicitudes</TabsTrigger>

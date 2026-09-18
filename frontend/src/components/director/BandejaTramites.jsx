@@ -91,7 +91,7 @@ export function BandejaTramites({
       <h1 className="font-heading text-2xl font-bold text-ink">{titulo}</h1>
 
       <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="line">
+        <TabsList variant="segmented">
           <TabsTrigger value="pendientes">Pendientes</TabsTrigger>
           <TabsTrigger value="historial">Historial</TabsTrigger>
         </TabsList>

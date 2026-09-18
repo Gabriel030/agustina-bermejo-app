@@ -14,7 +14,7 @@ export function SortableColumnHeader({ label, sortId, sortState, onToggle, extra
       <button
         type="button"
         onClick={() => onToggle(sortId)}
-        className="flex items-center gap-1 text-xs font-semibold text-ink-faint hover:text-ink"
+        className="flex items-center gap-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase hover:text-foreground"
       >
         {label}
         {sortState ? (
