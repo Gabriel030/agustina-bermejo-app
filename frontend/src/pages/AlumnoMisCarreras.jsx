@@ -145,7 +145,7 @@ export function AlumnoMisCarreras() {
       </div>
 
       <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="line">
+        <TabsList variant="segmented">
           <TabsTrigger value="materias">Materias</TabsTrigger>
           <TabsTrigger value="notas">Notas</TabsTrigger>
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>

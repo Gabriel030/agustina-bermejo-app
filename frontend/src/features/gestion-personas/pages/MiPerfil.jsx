@@ -531,7 +531,7 @@ export function MiPerfil() {
 
       <GlassCard className="flex flex-col gap-6 p-5 sm:p-7">
         <Tabs defaultValue="datos">
-          <TabsList variant="line" className="mb-6">
+          <TabsList variant="segmented" className="mb-6">
             <TabsTrigger value="datos">Mis datos</TabsTrigger>
             <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
             <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>

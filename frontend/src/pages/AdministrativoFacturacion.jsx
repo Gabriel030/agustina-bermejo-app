@@ -586,7 +586,7 @@ export function AdministrativoFacturacion() {
   return (
     <PageContainer>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList variant="line" className="w-full">
+        <TabsList variant="segmented" className="w-full">
           <TabsTrigger value="facturacion" className="flex-1">
             Facturación
           </TabsTrigger>

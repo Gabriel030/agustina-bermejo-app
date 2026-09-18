@@ -846,7 +846,7 @@ export function DocenteTomarAsistencia() {
         </GlassCard>
       ) : (
         <Tabs defaultValue="asistencia">
-          <TabsList variant="line">
+          <TabsList variant="segmented">
             <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
             <TabsTrigger value="historial">Historial</TabsTrigger>
             <TabsTrigger value="reporte">Reporte de asistencia</TabsTrigger>
