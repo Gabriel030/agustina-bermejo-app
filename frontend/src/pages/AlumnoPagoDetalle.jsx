@@ -5,6 +5,8 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { Button } from '@/components/ui/button';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useFacturasDeCurso, useFacturasDeMatricula } from '@/hooks/useBilling';
 
 const PAGE_SIZE = 10;
@@ -115,64 +117,54 @@ function InvoiceTable({ invoices, onDetalle }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            <th className="pb-2.5 pr-4 pt-0">Concepto</th>
-            <th className="pb-2.5 pr-4 pt-0">Período</th>
-            <th className="pb-2.5 pr-4 pt-0">Vencimiento</th>
-            <th className="pb-2.5 pr-4 pt-0">Fecha de pago</th>
-            <th className="pb-2.5 pr-4 pt-0 text-right">Importe</th>
-            <th className="pb-2.5 pr-4 pt-0">Estado</th>
-            <th className="pb-2.5 pt-0" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {invoices.map((inv) => {
-            const statusInfo = STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-            const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE';
-            const paid = inv.status === 'PAID';
-            return (
-              <tr key={inv.id} className="hover:bg-neutral-bg/40">
-                <td className="py-3 pr-4 font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</td>
-                <td className="py-3 pr-4 text-ink-faint">{formatPeriod(inv.period)}</td>
-                <td className="py-3 pr-4 text-ink-faint">{formatFecha(inv.dueDate)}</td>
-                <td className="py-3 pr-4 text-ink-faint">
-                  {inv.paymentDate ? formatFecha(inv.paymentDate) : <span className="text-border">—</span>}
-                </td>
-                <td className="py-3 pr-4 text-right font-mono font-semibold tabular-nums">
-                  {formatMonto(inv.remainingBalance)}
-                </td>
-                <td className="py-3 pr-4">
-                  <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                </td>
-                <td className="py-3">
-                  {pagable && (
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/alumno/pagos/${inv.id}/seleccion`)}
-                      className="rounded-lg bg-gradient-to-r from-brand to-accent-2 px-3 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-                    >
-                      Pagar
-                    </button>
-                  )}
-                  {paid && (
-                    <button
-                      type="button"
-                      onClick={() => onDetalle(inv)}
-                      className="rounded-lg border border-border px-3 py-1.5 text-[12px] font-semibold text-ink transition-colors hover:border-brand hover:text-brand"
-                    >
-                      Detalle
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Concepto</TableHead>
+          <TableHead>Período</TableHead>
+          <TableHead>Vencimiento</TableHead>
+          <TableHead>Fecha de pago</TableHead>
+          <TableHead className="text-right">Importe</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((inv) => {
+          const statusInfo = STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
+          const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE';
+          const paid = inv.status === 'PAID';
+          return (
+            <TableRow key={inv.id}>
+              <TableCell className="font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</TableCell>
+              <TableCell className="text-ink-faint">{formatPeriod(inv.period)}</TableCell>
+              <TableCell className="text-ink-faint">{formatFecha(inv.dueDate)}</TableCell>
+              <TableCell className="text-ink-faint">
+                {inv.paymentDate ? formatFecha(inv.paymentDate) : <span className="text-border">—</span>}
+              </TableCell>
+              <TableCell className="text-right font-mono font-semibold tabular-nums">
+                {formatMonto(inv.remainingBalance)}
+              </TableCell>
+              <TableCell>
+                <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+              </TableCell>
+              <TableCell>
+                {pagable && (
+                  <Button size="sm" variant="gradient" onClick={() => navigate(`/alumno/pagos/${inv.id}/seleccion`)}>
+                    Pagar
+                  </Button>
+                )}
+                {paid && (
+                  <Button size="sm" variant="outline" onClick={() => onDetalle(inv)}>
+                    Detalle
+                  </Button>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }
 

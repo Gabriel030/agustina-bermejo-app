@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
 import { useBillingStanding } from '@/hooks/useBilling';
 
@@ -106,53 +107,45 @@ export function AlumnoPagos() {
         )}
 
         {!cargando && enrollments.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-                  <th className="px-5 pb-3 pt-4">Nombre</th>
-                  <th className="pb-3 pr-5 pt-4">Tipo</th>
-                  <th className="pb-3 pr-5 pt-4">Estado de inscripción</th>
-                  <th className="pb-3 pr-5 pt-4">Inscripto desde</th>
-                  <th className="pb-3 pr-5 pt-4">Estado de cuenta</th>
-                  <th className="pb-3 pr-5 pt-4" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {enrollments.map((e) => {
-                  const standingInfo = e.standing
-                    ? (STANDING_CONFIG[e.standing] ?? { label: e.standing, tone: 'neutral' })
-                    : null;
-                  return (
-                    <tr
-                      key={e.key}
-                      onClick={() => navigate(`/alumno/pagos/${e.type}/${e.id}`)}
-                      className="cursor-pointer transition-colors hover:bg-neutral-bg/50"
-                    >
-                      <td className="px-5 py-3.5 font-semibold text-ink">{e.name}</td>
-                      <td className="py-3.5 pr-5 text-ink-faint">{e.typeLabel}</td>
-                      <td className="py-3.5 pr-5">
-                        <StatusPill tone="neutral">
-                          {ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}
-                        </StatusPill>
-                      </td>
-                      <td className="py-3.5 pr-5 text-ink-faint">{formatFecha(e.enrollmentDate)}</td>
-                      <td className="py-3.5 pr-5">
-                        {standingInfo ? (
-                          <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
-                        ) : (
-                          <span className="text-ink-faint">—</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 pr-5">
-                        <ChevronRight size={16} className="text-ink-faint" />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-5">Nombre</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Estado de inscripción</TableHead>
+                <TableHead>Inscripto desde</TableHead>
+                <TableHead>Estado de cuenta</TableHead>
+                <TableHead className="pr-5" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {enrollments.map((e) => {
+                const standingInfo = e.standing
+                  ? (STANDING_CONFIG[e.standing] ?? { label: e.standing, tone: 'neutral' })
+                  : null;
+                return (
+                  <TableRow key={e.key} onClick={() => navigate(`/alumno/pagos/${e.type}/${e.id}`)} className="cursor-pointer">
+                    <TableCell className="pl-5 font-semibold text-ink">{e.name}</TableCell>
+                    <TableCell className="text-ink-faint">{e.typeLabel}</TableCell>
+                    <TableCell>
+                      <StatusPill tone="neutral">{ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}</StatusPill>
+                    </TableCell>
+                    <TableCell className="text-ink-faint">{formatFecha(e.enrollmentDate)}</TableCell>
+                    <TableCell>
+                      {standingInfo ? (
+                        <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>
+                      ) : (
+                        <span className="text-ink-faint">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="pr-5">
+                      <ChevronRight size={16} className="text-ink-faint" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </GlassCard>
     </PageContainer>

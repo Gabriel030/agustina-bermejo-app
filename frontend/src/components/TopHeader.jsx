@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { MobileMenu } from '@/components/MobileMenu';
 import { NotificationBell } from '@/components/NotificationBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { usePerfilPropio, useAvatar } from '@/features/gestion-personas/hooks/useMiPerfil';
 
@@ -42,6 +43,7 @@ export function TopHeader({ titulo, items }) {
               </div>
             </Link>
           )}
+          <ThemeToggle />
           <NotificationBell />
         </div>
       </GlassCard>

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Copy, Check, Upload, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
-import { Stepper } from '@/components/Stepper/Stepper';
+import { Stepper } from '@/components/Stepper';
 import { Skeleton } from '@/components/Skeleton';
 import { usePaymentConfig, useSubirComprobante, useMisComprobantes } from '@/hooks/useBilling';
 

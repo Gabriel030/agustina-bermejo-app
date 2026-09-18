@@ -30,11 +30,11 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-white/60 text-ink-faint transition-transform hover:scale-105"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink-faint transition-transform hover:scale-105"
         >
           <Bell className="h-[17px] w-[17px]" />
           {noLeidas > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-[8.5px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-[15px] min-w-[15px] animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-[8.5px] font-bold text-white">
               {noLeidas > 9 ? '9+' : noLeidas}
             </span>
           )}
@@ -62,7 +62,11 @@ export function NotificationBell() {
                   } ${!n.read ? 'bg-accent-soft/30' : ''}`}
                 >
                   <div className="flex items-center gap-2">
-                    {!n.read && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />}
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full bg-brand transition-all duration-300 ${
+                        n.read ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                      }`}
+                    />
                     <span className={`text-[12px] font-bold ${TEXTO_TONO[tono]}`}>{TIPO_NOTIFICACION_LABEL[n.type] ?? n.type}</span>
                   </div>
                   <div className="text-[12px] text-ink-soft">{n.message}</div>
