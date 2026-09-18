@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cva } from "class-variance-authority";
 import { Slot } from "radix-ui"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -22,7 +23,7 @@ const buttonVariants = cva(
         // CTA principal del sistema de diseño (Vidrio Líquido) — antes repetido a
         // mano en cada pantalla (Catálogo, Detalle, wizard, Mis carreras...).
         gradient:
-          "rounded-xl bg-gradient-to-br from-brand to-accent-2 font-semibold text-white shadow-sm hover:scale-[1.02] hover:shadow-md",
+          "rounded-xl bg-gradient-to-br from-brand to-accent-2 font-semibold text-white shadow-[0_10px_24px_-8px_color-mix(in_oklch,var(--accent)_60%,transparent)] hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-8px_color-mix(in_oklch,var(--accent)_65%,transparent)] active:translate-y-0",
       },
       size: {
         default:
@@ -50,6 +51,9 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  disabled,
+  children,
   ...props
 }) {
   const Comp = asChild ? Slot.Root : "button"
@@ -59,8 +63,19 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
+      disabled={disabled || loading}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props} />
+      {...props}
+    >
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading && <Loader2 className="animate-spin" />}
+          {children}
+        </>
+      )}
+    </Comp>
   );
 }
 

@@ -5,12 +5,8 @@ import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Colaborador interno — el alta de becas vive en usecase/scholarship/ (GrantScholarshipFor*),
-// esta clase queda para lo que otras features (CourseEnrollmentService/ProgramEnrollmentService,
-// flujo de baja) necesitan: cortar la beca activa al dar de baja el enrollment.
 @Service
 public class ScholarshipService {
-
     private final ScholarshipRepository scholarshipRepository;
 
     public ScholarshipService(ScholarshipRepository scholarshipRepository) {

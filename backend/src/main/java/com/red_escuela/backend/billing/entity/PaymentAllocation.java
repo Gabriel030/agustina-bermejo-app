@@ -7,15 +7,11 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Tabla de asociación del patrón contable estándar "un pago cubre varios comprobantes" — nunca
-// se edita después de creada (append-only, sin updatedAt): corregir un monto mal aplicado es
-// borrar la fila y crear una nueva, no mutar esta.
 @Getter
 @Setter
 @Entity
 @Table(name = "payment_allocation")
 public class PaymentAllocation {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -12,12 +12,6 @@ public record SectionEnrollmentResponse(
         Long id, Long programEnrollmentId, Long sectionId, String sectionName, Long subjectId, String subjectCode, String subjectName,
         Integer curricularYear, String curricularTerm, String status, Integer attemptNumber, Double finalScore, String finalGradeType,
         LocalDateTime enrolledAt, LocalDateTime droppedAt, String schedule, String instructorTitular, String instructorAdjunto) {
-
-    // curricularYear/curricularTerm no viven en SubjectSectionEnrollment ni en SubjectSection —
-    // son propios del plan de UNA carrera (ProgramSubject, ver comentario de SubjectSection: una
-    // materia se comparte entre carreras, así que su año/cuatrimestre curricular depende de en
-    // cuál estás parado). Los callers que no necesitan mostrarlos (ej. confirmar una
-    // inscripción) usan el overload sin esos datos en vez de pagar el lookup.
     public static SectionEnrollmentResponse from(SubjectSectionEnrollment enrollment) {
         return from(enrollment, null, null);
     }
@@ -28,9 +22,6 @@ public record SectionEnrollmentResponse(
 
     public static SectionEnrollmentResponse from(
             SubjectSectionEnrollment enrollment, Integer curricularYear, CurricularTerm curricularTerm) {
-        // instructorTitular/instructorAdjunto: primer LEAD y primer ASSISTANT asignados a la
-        // comisión (una comisión puede tener varios de cada rol — Épica 2 Fase 1 solo necesita
-        // mostrar "el" profesor y "el" adjunto en la grilla del alumno, no la lista completa).
         String titular = nombrePorRol(enrollment, InstructorRole.LEAD);
         String adjunto = nombrePorRol(enrollment, InstructorRole.ASSISTANT);
         return new SectionEnrollmentResponse(

@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
-import { Stepper } from '@/components/catalogo/Stepper';
+import { Stepper } from '@/components/Stepper';
 import { useAuth } from '@/context/AuthContext';
 import {
   useSolicitarCarrera,

@@ -45,15 +45,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Fase 6.3: tests 24-28 — un billable SUSPENDED/WITHDRAWN_FOR_NONPAYMENT (o dado de baja
- * manualmente) no debe seguir generando cuotas nuevas, y al saldar la deuda vieja se retoma la
- * generación sin recuperar retroactivamente los meses salteados.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
-
     @Autowired
     private InvoiceGenerationService invoiceGenerationService;
 
@@ -155,35 +149,35 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void suspendidoNoGeneraCuotaNuevaElMesSiguiente() {
+    void suspendedDoesNotGenerateNewInstallmentTheFollowingMonth() {
         ProgramEnrollment enrollment = persistProgramEnrollment("99000201", ProgramEnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
 
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 
     @Test
-    void withdrawnForNonpaymentTampocoGeneraNada() {
+    void withdrawnForNonpaymentAlsoGeneratesNothing() {
         ProgramEnrollment enrollment = persistProgramEnrollment(
                 "99000202", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
 
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 
     @Test
-    void laMismaReglaAplicaAlosTresTiposDeBillable() {
+    void theSameRuleAppliesToAllThreeBillableTypes() {
         CourseEnrollment courseEnrollment = persistCourseEnrollment("99000203", EnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(courseEnrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(courseEnrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollment.getId())).isEmpty();
     }
 
     @Test
-    void alSaldarLaDeudaViejaSeRetomaLaGeneracionSinRecuperarLosMesesSalteados() {
+    void payingOffOldDebtResumesGenerationWithoutRecoveringSkippedMonths() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000205", EnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
         Person director = persistStudent("99000206").getPerson();
 
@@ -210,12 +204,10 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         selection.setCreatedBy(director);
         paymentPlanSelectionRepository.save(selection);
 
-        // Dos meses "salteados" mientras estuvo SUSPENDED: se saldó la deuda vieja y vuelve a
-        // UP_TO_DATE, pero esos dos meses nunca deberían generarse retroactivamente.
         enrollment.setBillingStanding(EnrollmentBillingStanding.UP_TO_DATE);
         courseEnrollmentRepository.save(enrollment);
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         List<Invoice> invoices = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -223,13 +215,10 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaManualPorAdministrativoDetieneLaGeneracionDeInmediato() {
-        // WITHDRAWN académico pero NO por mora (billingStanding sigue UP_TO_DATE) — el chequeo de
-        // status académico en InvoiceGenerationService es la única barrera acá, sin depender de
-        // que el sweep de cobranza haya corrido.
+    void manualWithdrawalByAdministrativeImmediatelyStopsGeneration() {
         ProgramEnrollment enrollment = persistProgramEnrollment("99000204", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.UP_TO_DATE);
 
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }

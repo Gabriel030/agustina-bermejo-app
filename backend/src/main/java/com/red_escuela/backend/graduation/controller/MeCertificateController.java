@@ -45,7 +45,7 @@ public class MeCertificateController {
 
     private void requireOwner(Long programEnrollmentId) {
         Student student = currentStudentService.resolveCurrentStudent();
-        ProgramEnrollment enrollment = programEnrollmentService.verDetalle(programEnrollmentId);
+        ProgramEnrollment enrollment = programEnrollmentService.get(programEnrollmentId);
         if (!enrollment.getStudent().getId().equals(student.getId())) {
             throw new ProgramEnrollmentNotFoundException(programEnrollmentId);
         }

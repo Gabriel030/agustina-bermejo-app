@@ -23,7 +23,6 @@ import java.util.List;
 
 @RestController
 public class InvoiceController {
-
     private final InvoiceQueryService invoiceQueryService;
     private final ApplyInvoiceAdjustmentUseCase applyInvoiceAdjustmentUseCase;
 
@@ -34,18 +33,16 @@ public class InvoiceController {
 
     @GetMapping("/course-enrollments/{id}/invoices")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public EnrollmentBillingStatusResponse porCurso(@PathVariable Long id) {
-        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.porCurso(id));
+    public EnrollmentBillingStatusResponse byCourse(@PathVariable Long id) {
+        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.byCourse(id));
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public EnrollmentBillingStatusResponse porCarrera(@PathVariable Long id) {
-        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.porCarrera(id));
+    public EnrollmentBillingStatusResponse byProgram(@PathVariable Long id) {
+        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.byProgram(id));
     }
 
-    // Decisión 2026-09-03: solo el Director otorga becas/descuentos/condonaciones —
-    // Administrativo ya no puede cargar un DISCOUNT/WAIVE_DEBT directo.
     @PostMapping("/invoices/{id}/adjustments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")

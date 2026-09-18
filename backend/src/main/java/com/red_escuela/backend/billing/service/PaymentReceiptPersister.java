@@ -15,16 +15,8 @@ import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Bean separado de PaymentReceiptService a propósito (corrección 2026-09-04, auditoría): el
-// upload real del archivo (I/O potencialmente lento) no debe correr con el lock pesimista de la
-// Invoice sostenido — PaymentReceiptService.subir hace el upload SIN transacción abierta y recién
-// después llama acá, a una transacción nueva y corta que re-valida todo bajo lock justo antes de
-// persistir (el mismo motivo por el que InvoiceOverdueRowProcessor es un bean aparte: un método
-// @Transactional de esta misma clase, llamado como this.metodo() desde PaymentReceiptService, no
-// pasaría por el proxy de Spring).
 @Service
 public class PaymentReceiptPersister {
-
     private final InvoiceRepository invoiceRepository;
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final StudentRepository studentRepository;

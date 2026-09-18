@@ -13,12 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-// Corte de la lista de espera del cupo de Course (decisión 2026-09-03): un alumno que no
-// consiguió lugar antes de course.waitlistDeadlineOffsetDays días de term.startDate pierde la
-// matriculación, con reembolso — mismo patrón cron que SectionEvaluationConfigReminderJob.
 @Service
 public class CourseEnrollmentWaitlistExpiryJob {
-
     private final CourseRepository courseRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final CourseEnrollmentService courseEnrollmentService;
@@ -44,10 +40,6 @@ public class CourseEnrollmentWaitlistExpiryJob {
                 enrollment.setStatus(EnrollmentStatus.WAITLIST_EXPIRED);
                 courseEnrollmentRepository.save(enrollment);
                 courseEnrollmentService.cancelModuleEnrollments(enrollment);
-                // TODO(Fase reembolsos): acá va la reversión real del pago — no existe todavía
-                // ningún mecanismo de reembolso en el sistema (sin entidad Refund, sin reversión
-                // de PaymentReceipt). Decisión 2026-09-03: queda pendiente de diseño aparte, no
-                // bloquea esta pieza. El aviso al alumno ya sale por acá.
                 eventPublisher.publishEvent(new CourseWaitlistExpiredEvent(enrollment));
             }
         }

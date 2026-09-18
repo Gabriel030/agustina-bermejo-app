@@ -32,19 +32,9 @@ import org.springframework.web.client.ResourceAccessException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Caso "PDF de 6MB -> 400" del checklist de verificación de la spec: necesita un
- * servidor HTTP real (RANDOM_PORT), no MockMvc, porque MaxUploadSizeExceededException
- * solo se dispara en el parseo real de multipart del servlet container — MockMvc lo
- * bypassea (ver comentario en ProspectControllerTest). Con RANDOM_PORT la request de
- * TestRestTemplate corre en un thread distinto al del test, así que @Transactional no
- * sirve para aislar los datos (esa transacción no es visible desde el otro thread) —
- * se limpia todo a mano en @AfterEach en vez de depender de un rollback.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
-
     @Autowired
     private TestRestTemplate restTemplate;
 
@@ -71,7 +61,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     private Institution institution;
 
     @AfterEach
-    void limpiar() {
+    void cleanUp() {
         if (student != null) {
             Long personId = student.getPerson().getId();
             Long addressId = student.getPerson().getAddress().getId();

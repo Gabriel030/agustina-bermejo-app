@@ -42,12 +42,9 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Fase 6.6: baja voluntaria cancela cuotas PENDING y acredita cuotas PAID de un período futuro;
-// una baja por mora no toca ninguna de las dos cosas.
 @SpringBootTest
 @ActiveProfiles("test")
 class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private CourseEnrollmentService courseEnrollmentService;
 
@@ -140,12 +137,12 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaVoluntariaCancelaLasCuotasPendientes() {
+    void voluntaryWithdrawalCancelsPendingInstallments() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000001." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
 
         authenticateAs(persistPerson("preceptor.baja1." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         Invoice reloaded = invoiceRepository.findById(pendiente.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
@@ -153,27 +150,21 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaVoluntariaConCuotasFuturasYaPagasGeneraNotaDeCreditoPorEsePeriodo() {
+    void voluntaryWithdrawalWithFutureInstallmentsAlreadyPaidGeneratesCreditNoteForThatPeriod() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000002." + System.nanoTime());
-        // Cuota del período corriente ya paga: NO genera crédito (ese mes ya se consideró usado).
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
-        // Cuota de un período futuro ya paga (alumno adelantó pagos): sí genera crédito.
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
 
         authenticateAs(persistPerson("preceptor.baja2." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         CreditNote creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
         assertThat(creditNote.getReasonType()).isEqualTo(CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED);
-        // Solo la cuota futura (futuraPaga): la del período corriente ya se consideró "usada" por
-        // ese mes, no genera crédito aunque también esté PAID (ver bajaVoluntariaConCuotasFuturasYaPagasGeneraNotaDeCreditoPorEsePeriodo).
         assertThat(creditNote.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
     }
 
-    // Test 71 (spec): un bloque de varias cuotas futuras ya pagas queda trazado completo en
-    // sourceInvoices, no solo el monto total agregado.
     @Test
-    void bajaVoluntariaConVariasCuotasFuturasYaPagasLasTrazaTodasEnSourceInvoices() {
+    void voluntaryWithdrawalWithSeveralFutureInstallmentsAlreadyPaidTracksAllOfThemInSourceInvoices() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000004." + System.nanoTime());
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
         Invoice futura1 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(1));
@@ -181,7 +172,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         Invoice futura3 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(3));
 
         authenticateAs(persistPerson("preceptor.baja4." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         Long creditNoteId = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0).getId();
         CreditNote creditNote = creditNoteRepository.findByIdWithSourceInvoices(creditNoteId).orElseThrow();
@@ -190,31 +181,27 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder(futura1.getId(), futura2.getId(), futura3.getId());
     }
 
-    // Test 72 (spec): sin ninguna cuota PAID de un período futuro, la baja voluntaria no genera
-    // ninguna CreditNote — solo cancela las PENDING (ya cubierto por bajaVoluntariaCancelaLasCuotasPendientes).
     @Test
-    void bajaVoluntariaSinCuotasFuturasYaPagasNoGeneraNingunaNotaDeCredito() {
+    void voluntaryWithdrawalWithoutFutureInstallmentsAlreadyPaidGeneratesNoCreditNote() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000005." + System.nanoTime());
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
 
         authenticateAs(persistPerson("preceptor.baja5." + System.nanoTime()));
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         assertThat(creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId())).isEmpty();
     }
 
     @Test
-    void bajaPorMoraNoCancelaCuotasNiGeneraCredito() {
+    void withdrawalForNonPaymentDoesNotCancelInstallmentsOrGenerateCredit() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000003." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
         persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
         enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
         courseEnrollmentRepository.save(enrollment);
 
-        // Sin autenticar a propósito: la baja automática por mora corre sin JWT (job en
-        // background) — si esto intentara resolver un actor igual, fallaría acá con NPE.
-        courseEnrollmentService.darDeBaja(enrollment.getId());
+        courseEnrollmentService.withdraw(enrollment.getId());
 
         assertThat(invoiceRepository.findById(pendiente.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
         assertThat(creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId())).isEmpty();

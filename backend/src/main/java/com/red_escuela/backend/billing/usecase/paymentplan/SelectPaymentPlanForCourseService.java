@@ -22,7 +22,6 @@ import java.time.YearMonth;
 
 @UseCase
 public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCourseUseCase {
-
     private final PaymentPlanSelectionRepository paymentPlanSelectionRepository;
     private final PaymentPlanOptionFinder paymentPlanOptionFinder;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
@@ -50,7 +49,6 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         CourseEnrollment courseEnrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
         guard.validateOwnershipIfStudent(courseEnrollment.getStudent().getId(), courseEnrollmentId);
-        // A course's payment plan is unique and immutable for the life of the enrollment.
         if (paymentPlanSelectionRepository.findByCourseEnrollmentIdAndEffectiveToIsNull(courseEnrollmentId).isPresent()) {
             throw new CoursePaymentPlanAlreadySetException(courseEnrollmentId);
         }
@@ -70,8 +68,6 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         }
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
-        // El plan de un curso es único e inmutable (chequeo de arriba) — toda selección de curso
-        // es, por definición, la primera, así que siempre se evalúa contra promociones vigentes.
         promotionRedeemer.redeemIfEligible(courseEnrollment, saved);
         return saved;
     }

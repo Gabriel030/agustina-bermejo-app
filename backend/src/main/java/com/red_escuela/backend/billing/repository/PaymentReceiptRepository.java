@@ -10,8 +10,6 @@ import java.util.List;
 
 public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, Long> {
 
-    List<PaymentReceipt> findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus status);
-
     @Query("""
             select r from PaymentReceipt r
             join fetch r.invoice i
@@ -26,11 +24,10 @@ public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, 
             """)
     List<PaymentReceipt> findByStatusWithStudentDetails(@Param("status") PaymentReceiptStatus status);
 
-    // Evita duplicados: una cuota en revisión no admite un segundo comprobante.
+    List<PaymentReceipt> findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus status);
+
     boolean existsByInvoiceIdAndStatus(Long invoiceId, PaymentReceiptStatus status);
 
-    // Autoservicio del alumno: sus propios comprobantes, sin importar el estado — Invoice no
-    // tiene un student directo, hay que llegar vía courseEnrollment o programEnrollment.
     @Query("""
             select r from PaymentReceipt r
             left join r.invoice.courseEnrollment ce

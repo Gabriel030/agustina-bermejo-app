@@ -66,7 +66,7 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
         if (examDate == null) {
             return;
         }
-        examBoardService.crear(new CreateExamBoardRequest(
+        examBoardService.create(new CreateExamBoardRequest(
                 section.getSubject().getId(), null, term.getId(),
                 examDate.atStartOfDay(), null, null, null));
     }

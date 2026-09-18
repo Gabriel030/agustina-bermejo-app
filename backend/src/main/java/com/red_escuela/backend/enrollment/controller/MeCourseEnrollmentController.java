@@ -10,16 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Autoservicio del alumno sobre sus propios CourseEnrollment (Épica 2 Fase 1, Alumno · Inicio
- * y Mis cursos) — mismo patrón que MeEnrollmentController.misMatriculaciones() para
- * ProgramEnrollment, que ya existía; a este le faltaba el equivalente de autoservicio (antes
- * solo /students/{id}/course-enrollments, de uso staff).
- */
 @RestController
 @RequestMapping("/me")
 public class MeCourseEnrollmentController {
-
     private final CurrentStudentService currentStudentService;
     private final CourseEnrollmentService courseEnrollmentService;
 
@@ -29,8 +22,8 @@ public class MeCourseEnrollmentController {
     }
 
     @GetMapping("/course-enrollments")
-    public List<CourseEnrollmentResponse> misCursos() {
+    public List<CourseEnrollmentResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return courseEnrollmentService.listarPorAlumno(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
+        return courseEnrollmentService.listByStudent(student.getId()).stream().map(CourseEnrollmentResponse::from).toList();
     }
 }

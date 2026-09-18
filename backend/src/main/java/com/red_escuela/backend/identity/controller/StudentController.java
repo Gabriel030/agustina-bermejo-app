@@ -126,9 +126,9 @@ public class StudentController {
         }
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(id).stream()
-                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.porCurso(enrollment.getId()))),
+                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.byCourse(enrollment.getId()))),
                 programEnrollmentRepository.findByStudentId(id).stream()
-                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.porCarrera(enrollment.getId()))))
+                        .map(enrollment -> toStatusResponse(enrollment, invoiceQueryService.byProgram(enrollment.getId()))))
                 .toList();
     }
 

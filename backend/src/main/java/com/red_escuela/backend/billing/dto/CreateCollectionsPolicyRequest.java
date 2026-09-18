@@ -12,7 +12,5 @@ public record CreateCollectionsPolicyRequest(
         @NotNull Integer suspensionAfterInvoiceCount,
         @NotNull Integer withdrawalAfterDays,
         @NotNull Integer withdrawalAfterInvoiceCount,
-        // null = rige desde hoy. Puede ser una fecha futura — una política cargada hoy con
-        // vigencia dentro de un mes no afecta nada hasta esa fecha (test 70).
         LocalDate effectiveFrom) {
 }

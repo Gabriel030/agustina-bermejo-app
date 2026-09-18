@@ -23,7 +23,6 @@ import java.util.List;
 
 @RestController
 public class PromotionController {
-
     private final CreatePromotionForCourseUseCase createPromotionForCourseUseCase;
     private final CreatePromotionForProgramUseCase createPromotionForProgramUseCase;
     private final ClosePromotionUseCase closePromotionUseCase;
@@ -62,8 +61,6 @@ public class PromotionController {
         closePromotionUseCase.close(id);
     }
 
-    // status=active es el único filtro con caso de uso real hoy (elegir a qué promociones
-    // vigentes atar una campaña) — la lista histórica completa no tiene consumidor todavía.
     @GetMapping("/promotions")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<PromotionResponse> findActive(@RequestParam(defaultValue = "active") String status) {

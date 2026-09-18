@@ -10,9 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface StudentDocumentRepository extends JpaRepository<StudentDocument, Long> {
-
     List<StudentDocument> findByStudentId(Long studentId);
 
-    // Usado para la lógica de reemplazo: un tipo de documento tiene un único registro vigente.
     Optional<StudentDocument> findByStudentIdAndType(Long studentId, DocumentType type);
 }
