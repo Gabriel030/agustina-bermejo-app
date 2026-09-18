@@ -7,6 +7,7 @@ import { StatCard } from '@/components/StatCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function formatPesos(amount) {
   if (amount == null) return '—';
@@ -74,36 +75,30 @@ function DebtorsTable({ data, isLoading }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="py-2 pl-4 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">Alumno</th>
-            <th className="py-2 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">DNI</th>
-            <th className="py-2 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">Inscripción</th>
-            <th className="py-2 text-right text-[11px] font-bold uppercase tracking-wide text-ink-faint">Deuda</th>
-            <th className="py-2 pr-4 text-right text-[11px] font-bold uppercase tracking-wide text-ink-faint">Vencida hace</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr
-              key={d.studentId}
-              className="cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-neutral-bg/40"
-              onClick={() => navigate(`/director/alumnos/${d.studentId}`)}
-            >
-              <td className="py-3 pl-4 font-medium text-ink">{d.fullName}</td>
-              <td className="py-3 text-ink-soft">{d.dni}</td>
-              <td className="py-3 text-ink-soft">{d.enrollmentName}</td>
-              <td className="py-3 text-right font-semibold text-danger">{formatPesos(d.totalDebt)}</td>
-              <td className="py-3 pr-4 text-right text-ink-soft">
-                {d.debtAgeDays === 0 ? 'Hoy' : `${d.debtAgeDays} día${d.debtAgeDays !== 1 ? 's' : ''}`}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="pl-4">Alumno</TableHead>
+          <TableHead>DNI</TableHead>
+          <TableHead>Inscripción</TableHead>
+          <TableHead className="text-right">Deuda</TableHead>
+          <TableHead className="pr-4 text-right">Vencida hace</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((d) => (
+          <TableRow key={d.studentId} className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
+            <TableCell className="pl-4 font-medium text-ink">{d.fullName}</TableCell>
+            <TableCell className="text-ink-soft">{d.dni}</TableCell>
+            <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>
+            <TableCell className="text-right font-semibold text-danger">{formatPesos(d.totalDebt)}</TableCell>
+            <TableCell className="pr-4 text-right text-ink-soft">
+              {d.debtAgeDays === 0 ? 'Hoy' : `${d.debtAgeDays} día${d.debtAgeDays !== 1 ? 's' : ''}`}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 

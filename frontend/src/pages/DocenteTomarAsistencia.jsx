@@ -411,19 +411,19 @@ function TabHistorial({ type, sectionId }) {
       <table className="border-separate border-spacing-0 text-[11.5px]">
         <thead>
           <tr>
-            <th rowSpan={3} className={`${celdaSticky} bg-[oklch(99%_0.004_240)] whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
+            <th rowSpan={3} className={`${celdaSticky} bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
               Alumno
             </th>
             {gruposPorAnio.map((a, i) => (
               <th
                 key={a.anio}
                 colSpan={a.meses.reduce((acc, m) => acc + m.dias.length, 0)}
-                className={`bg-[oklch(99%_0.004_240)] border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
+                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-1 py-1 text-center font-semibold text-ink-faint ${i < gruposPorAnio.length - 1 ? divisorDeAnio : ''}`}
               >
                 {a.anio}
               </th>
             ))}
-            <th rowSpan={3} className="bg-[oklch(99%_0.004_240)] border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
+            <th rowSpan={3} className="bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-2 py-1 text-center align-bottom font-semibold text-ink-faint">%</th>
           </tr>
           <tr>
             {gruposPorAnio.flatMap((a) =>
@@ -431,7 +431,7 @@ function TabHistorial({ type, sectionId }) {
                 <th
                   key={`${a.anio}-${m.mes}`}
                   colSpan={m.dias.length}
-                  className={`bg-[oklch(99%_0.004_240)] border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
+                  className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] border-b border-border px-1 py-1 text-center font-semibold capitalize text-ink-faint ${i === a.meses.length - 1 ? divisorDeAnio : divisorDeMes}`}
                 >
                   {m.etiqueta}
                 </th>
@@ -444,7 +444,7 @@ function TabHistorial({ type, sectionId }) {
                 key={fecha}
                 onMouseEnter={() => setFechaHover(fecha)}
                 onMouseLeave={() => setFechaHover(null)}
-                className={`bg-[oklch(99%_0.004_240)] w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
+                className={`bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-[inset_3px_0_0_var(--accent-2),inset_-3px_0_0_var(--accent-2)]' : ''}`}
               >
                 {Number(fecha.slice(8, 10))}
               </th>
@@ -462,7 +462,7 @@ function TabHistorial({ type, sectionId }) {
                 onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
                 className="cursor-pointer"
               >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent bg-[oklch(99%_0.004_240)] text-ink'}`}>
+                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6] text-ink'}`}>
                   {fila.studentName}
                 </td>
                 {historial.classDates.map((fecha) => {
