@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
-// Caja gris titilante para reemplazar "Cargando…" en requests que demoran —
-// `animate-pulse` es utilidad nativa de Tailwind, sin librería nueva.
+// Caja gris con un barrido de brillo (shimmer, ver .skeleton-shimmer en
+// index.css) para reemplazar "Cargando…" en requests que demoran.
 export function Skeleton({ className }) {
-  return <div className={cn('animate-pulse rounded-lg bg-neutral-bg', className)} />;
+  return <div className={cn('skeleton-shimmer rounded-lg bg-neutral-bg', className)} />;
 }

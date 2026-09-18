@@ -25,6 +25,14 @@ class MemoryStorage {
 Object.defineProperty(window, 'localStorage', { value: new MemoryStorage(), writable: true });
 globalThis.localStorage = window.localStorage;
 
+// jsdom no implementa matchMedia — ThemeContext lo usa para la preferencia de
+// sistema (prefers-color-scheme) cuando no hay nada guardado en localStorage.
+window.matchMedia =
+  window.matchMedia ||
+  function matchMedia() {
+    return { matches: false, addEventListener() {}, removeEventListener() {} };
+  };
+
 // MSW intercepta a nivel de red (fetch real) — nunca se mockea apiFetch ni los
 // hooks directamente, ver docs/context/testing.md.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

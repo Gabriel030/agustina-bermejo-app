@@ -11,6 +11,22 @@
       href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
     />
     <title>Agustina Bermejo</title>
+    <script>
+      // Evita el flash de tema equivocado: fija data-theme antes de que se
+      // cargue el CSS, en vez de esperar a que ThemeProvider monte (ver
+      // src/context/ThemeContext.jsx, misma fuente de verdad: localStorage
+      // primero, preferencia de sistema si no hay nada guardado).
+      (function () {
+        var guardado = localStorage.getItem('tema');
+        var tema =
+          guardado === 'light' || guardado === 'dark'
+            ? guardado
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        document.documentElement.dataset.theme = tema;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

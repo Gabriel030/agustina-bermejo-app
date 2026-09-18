@@ -56,7 +56,7 @@ export function Sidebar({ titulo, items }) {
           browser compute overflow-x como "auto" también (no "visible") — el
           hover:translate-x-[3px] de los NavLink alcanza para gatillar un scroll
           horizontal fantasma en el menú. */}
-      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
+      <nav className="scroll-fade-y flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden">
         {principales.map((item) => (
           <ItemNav key={item.to} {...item} />
         ))}

@@ -7,8 +7,10 @@
  * Mapeo de los tokens de Vidrio Líquido a las variables que usan las
  * primitivas de shadcn/ui (--primary, --card, etc.) más las clases
  * utilitarias propias (bg-success-bg, text-danger, bg-surface...).
- * Un solo tema — el diseño no define modo oscuro (ver Documento
- * maestro - Stack y sistema de diseño).
+ * Los valores de cada token cambian con `[data-theme]` (ver
+ * theme/tokens.css y context/ThemeContext.jsx) — estas clases no
+ * necesitan saber si el tema activo es claro u oscuro, solo consumen
+ * la variable.
  */
 @theme inline {
   --font-sans: 'Manrope', system-ui, sans-serif;
@@ -69,6 +71,10 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -105,4 +111,33 @@
   *::-webkit-scrollbar-thumb:hover {
     background-color: var(--ink-faint);
   }
+}
+
+/* Barrido de brillo del Skeleton (components/Skeleton.jsx) — reemplaza el
+   animate-pulse plano por un degradé que recorre la caja, mismo patrón que
+   Linear/Notion/Vercel para loading states. */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--shimmer-hi), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+  }
+}
+
+/* Desvanecido en los bordes de un contenedor con scroll vertical, en vez de
+   un corte duro — mask-image nativo, sin JS. Usado en el <main> de
+   RoleShell.jsx y en el <nav> de Sidebar.jsx. */
+.scroll-fade-y {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
 }
