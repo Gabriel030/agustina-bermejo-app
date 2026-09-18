@@ -75,6 +75,30 @@
   100% { transform: translateX(100%); }
 }
 
+@keyframes pop-in {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 25%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--accent) 8%, transparent); }
+}
+
+@keyframes badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -128,12 +152,6 @@
   background: linear-gradient(90deg, transparent, var(--shimmer-hi), transparent);
   animation: shimmer 1.6s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer::after {
-    animation: none;
-  }
-}
-
 /* Desvanecido en los bordes de un contenedor con scroll vertical, en vez de
    un corte duro — mask-image nativo, sin JS. Usado en el <main> de
    RoleShell.jsx y en el <nav> de Sidebar.jsx. */

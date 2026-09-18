@@ -1,0 +1,48 @@
+import { Toaster as Sonner } from "sonner";
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { useTheme } from "@/context/ThemeContext"
+
+const Toaster = ({
+  ...props
+}) => {
+  const { tema } = useTheme()
+
+  return (
+    <Sonner
+      theme={tema}
+      className="toaster group"
+      icons={{
+        success: (
+          <CircleCheckIcon className="size-4" />
+        ),
+        info: (
+          <InfoIcon className="size-4" />
+        ),
+        warning: (
+          <TriangleAlertIcon className="size-4" />
+        ),
+        error: (
+          <OctagonXIcon className="size-4" />
+        ),
+        loading: (
+          <Loader2Icon className="size-4 animate-spin" />
+        ),
+      }}
+      style={
+        {
+          "--normal-bg": "var(--surface)",
+          "--normal-text": "var(--ink)",
+          "--normal-border": "var(--border)",
+          "--border-radius": "var(--radius-lg)"
+        }
+      }
+      toastOptions={{
+        classNames: {
+          toast: "cn-toast backdrop-blur-[28px] backdrop-saturate-[1.6]",
+        },
+      }}
+      {...props} />
+  );
+}
+
+export { Toaster }

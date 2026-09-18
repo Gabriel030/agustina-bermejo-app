@@ -3,6 +3,7 @@ import { cva } from "class-variance-authority";
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { useSlidingIndicator } from "@/hooks/useSlidingIndicator"
 
 function Tabs({
   className,
@@ -34,50 +35,13 @@ const tabsListVariants = cva(
   }
 )
 
-// Píldora con el gradiente de marca que se desliza detrás del trigger activo
-// (variant="segmented") — mide su posición leyendo el DOM en vez de depender
-// del estado interno de Radix, así funciona con cualquier <Tabs> sin acoplarse
-// a su value.
-function SegmentedIndicator({ containerRef }) {
-  const [rect, setRect] = React.useState(null);
-
-  React.useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    function medir() {
-      const activo = container.querySelector('[data-slot="tabs-trigger"][data-state="active"]');
-      if (activo) setRect({ left: activo.offsetLeft, width: activo.offsetWidth });
-    }
-
-    medir();
-    const observer = new MutationObserver(medir);
-    observer.observe(container, { attributes: true, attributeFilter: ["data-state"], subtree: true });
-    window.addEventListener("resize", medir);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", medir);
-    };
-  }, [containerRef]);
-
-  if (!rect) return null;
-
-  return (
-    <div
-      aria-hidden="true"
-      className="absolute inset-y-[3px] left-0 z-0 rounded-md bg-gradient-to-br from-brand to-accent-2 shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--accent)_65%,transparent)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-      style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
-    />
-  );
-}
-
 function TabsList({
   className,
   variant = "default",
   children,
   ...props
 }) {
-  const containerRef = React.useRef(null);
+  const { containerRef, rect } = useSlidingIndicator('[data-slot="tabs-trigger"][data-state="active"]');
 
   return (
     <TabsPrimitive.List
@@ -87,7 +51,13 @@ function TabsList({
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
     >
-      {variant === "segmented" && <SegmentedIndicator containerRef={containerRef} />}
+      {variant === "segmented" && rect && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-[3px] left-0 z-0 rounded-md bg-gradient-to-br from-brand to-accent-2 shadow-[0_4px_16px_-4px_color-mix(in_oklch,var(--accent)_65%,transparent)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
+        />
+      )}
       {children}
     </TabsPrimitive.List>
   );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { NavLink } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { useAuth } from '@/context/AuthContext';
@@ -12,12 +12,47 @@ const NAV_ITEM_ACTIVO = 'bg-gradient-to-br from-brand to-accent-2 text-white sha
 const NAV_ITEM_BASE =
   'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink';
 
-function ItemNav({ to, label, icon: Icon, onNavigate }) {
+// Entrada escalonada (index * 40ms) al abrir el drawer, en vez de que todos
+// los ítems aparezcan juntos — animate-in/fade-in/slide-in-from-left son de
+// tw-animate-css (ya en uso en el Overlay/Content de este mismo Dialog).
+function ItemNav({ to, label, icon: Icon, onNavigate, index }) {
   return (
-    <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => cn(NAV_ITEM_BASE, isActive && NAV_ITEM_ACTIVO)}>
+    <NavLink
+      key={to}
+      to={to}
+      onClick={onNavigate}
+      style={{ animationDelay: `${index * 40}ms` }}
+      className={({ isActive }) =>
+        cn(NAV_ITEM_BASE, 'animate-in fade-in slide-in-from-left-2 fill-mode-both', isActive && NAV_ITEM_ACTIVO)
+      }
+    >
       {Icon && <Icon className="h-4 w-4 shrink-0" />}
       <span className="truncate">{label}</span>
     </NavLink>
+  );
+}
+
+// Botón hamburguesa cuyas 3 líneas giran y forman una X, en vez de cambiar de
+// ícono (Menu → X) en seco.
+function HamburgerIcon({ open }) {
+  return (
+    <span className="flex h-4 w-5 shrink-0 flex-col items-center justify-center gap-[5px]">
+      <span
+        className={cn(
+          'h-0.5 w-5 rounded-full bg-current transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          open && 'translate-y-[6.5px] rotate-45',
+        )}
+      />
+      <span
+        className={cn('h-0.5 w-5 rounded-full bg-current transition-opacity duration-200', open && 'opacity-0')}
+      />
+      <span
+        className={cn(
+          'h-0.5 w-5 rounded-full bg-current transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+          open && '-translate-y-[6.5px] -rotate-45',
+        )}
+      />
+    </span>
   );
 }
 
@@ -39,10 +74,10 @@ export function MobileMenu({ titulo, items }) {
       <DialogPrimitive.Trigger asChild>
         <button
           type="button"
-          aria-label="Abrir menú"
+          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink backdrop-blur-[28px] backdrop-saturate-[1.6] lg:hidden"
         >
-          <Menu className="h-5 w-5" />
+          <HamburgerIcon open={open} />
         </button>
       </DialogPrimitive.Trigger>
       <DialogPrimitive.Portal>
@@ -71,8 +106,8 @@ export function MobileMenu({ titulo, items }) {
           </div>
 
           <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-            {principales.map((item) => (
-              <ItemNav key={item.to} {...item} onNavigate={() => setOpen(false)} />
+            {principales.map((item, index) => (
+              <ItemNav key={item.to} {...item} index={index} onNavigate={() => setOpen(false)} />
             ))}
           </nav>
 
