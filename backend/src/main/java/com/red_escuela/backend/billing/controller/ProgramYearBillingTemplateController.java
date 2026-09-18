@@ -21,7 +21,6 @@ import java.util.List;
 
 @RestController
 public class ProgramYearBillingTemplateController {
-
     private final CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
     private final CreateProgramCohortUseCase createCohortUseCase;
     private final ListProgramCohortsForTemplateUseCase listCohortsForTemplateUseCase;
@@ -37,21 +36,20 @@ public class ProgramYearBillingTemplateController {
     @PostMapping("/programs/{id}/year-billing-templates")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public ProgramYearBillingTemplateResponse crear(@PathVariable Long id, @Valid @RequestBody CreateProgramYearBillingTemplateRequest request) {
+    public ProgramYearBillingTemplateResponse create(@PathVariable Long id, @Valid @RequestBody CreateProgramYearBillingTemplateRequest request) {
         return ProgramYearBillingTemplateResponse.from(createTemplateUseCase.create(id, request.termId(), request.recurringFeeInvoicesCount()));
     }
 
     @PostMapping("/year-billing-templates/{id}/cohorts")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
-    public ProgramCohortResponse crearCohorte(@PathVariable Long id, @Valid @RequestBody CreateProgramCohortRequest request) {
+    public ProgramCohortResponse createCohort(@PathVariable Long id, @Valid @RequestBody CreateProgramCohortRequest request) {
         return ProgramCohortResponse.from(createCohortUseCase.create(id, request));
     }
 
-    // Also reachable by student self-service to choose a cohort at enrollment time.
     @GetMapping("/year-billing-templates/{id}/cohorts")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR', 'ALUMNO')")
-    public List<ProgramCohortResponse> listarCohortes(@PathVariable Long id) {
+    public List<ProgramCohortResponse> listCohorts(@PathVariable Long id) {
         return listCohortsForTemplateUseCase.list(id).stream().map(ProgramCohortResponse::from).toList();
     }
 }

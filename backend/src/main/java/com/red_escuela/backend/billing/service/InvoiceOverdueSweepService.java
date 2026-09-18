@@ -2,12 +2,12 @@ package com.red_escuela.backend.billing.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.entity.BatchExecutionLog;
-import com.red_escuela.backend.entity.BatchExecutionStatus;
+import com.red_escuela.backend.billing.entity.BatchExecutionLog;
+import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import org.springframework.data.domain.PageRequest;
@@ -22,14 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Corre cada Invoice PENDING vencida hace más de gracePeriodDays en su propia transacción (ver
-// InvoiceOverdueRowProcessor). Paginación por keyset (id > lastId), NO OFFSET: paginar con OFFSET
-// sobre un WHERE status=PENDING mientras la misma corrida muta ese status a OVERDUE pierde filas
-// sin error visible — con 400 PENDING, la página 2 (OFFSET 200) se ejecutaría contra un conjunto
-// que ya solo tiene 200 filas PENDING, y las 200 restantes nunca se procesarían.
 @Service
 public class InvoiceOverdueSweepService {
-
     private static final int PAGE_SIZE = 200;
     private static final String JOB_NAME = "InvoiceOverdueSweepService";
 

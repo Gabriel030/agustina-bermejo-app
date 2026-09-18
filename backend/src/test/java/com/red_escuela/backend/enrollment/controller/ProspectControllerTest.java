@@ -52,7 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class ProspectControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -129,8 +128,6 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         Institution institution = entityManager.find(Institution.class, institutionId);
 
-        // Igual que PersonFactory: status ACTIVE explícito, si no AuthService.login
-        // rechaza cualquier login posterior (chequeo agregado en esta misma spec).
         person.setStatus(StatusType.ACTIVE);
 
         Student student = new Student();
@@ -163,12 +160,6 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         assertThat(student.getPerson().getUsername()).isNull();
         assertThat(student.getPerson().getDni()).isNull();
     }
-
-    // El caso "PDF de 6MB -> 400" (spring.servlet.multipart.max-file-size) no se puede
-    // probar acá: MockMultipartHttpServletRequest no pasa por el parseo real de multipart
-    // del servlet container, así que MaxUploadSizeExceededException nunca se dispara contra
-    // un mock request (verificado corriendo este mismo test contra MockMvc: da 201, no 400).
-    // Se prueba end-to-end con servidor real en ProspectDocumentUploadLimitTest.
 
     @Test
     void agregarDocumentoConTipoNoSoportadoDevuelve400() throws Exception {
@@ -208,7 +199,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void subirSegundoDocumentoDelMismoTipoReemplazaAlAnterior() throws Exception {
+    void uploadingSecondDocumentOfSameTypeReplacesThePrevious() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor4", "PRECEPTOR");
@@ -228,7 +219,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmarAltaTransicionaAConfirmadoAsignaRolYGeneraTokenDeReset() throws Exception {
+    void confirmTransitionsToConfirmedGrantsRoleAndGeneratesResetToken() throws Exception {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         String token = tokenWithRole("preceptor5", "PRECEPTOR");

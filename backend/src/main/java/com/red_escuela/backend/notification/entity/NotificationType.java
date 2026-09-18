@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.notification.entity;
 
 public enum NotificationType {
     SECTION_EVAL_CONFIG_PROPOSED,

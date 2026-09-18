@@ -2,7 +2,6 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
-import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
@@ -12,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,43 +34,29 @@ public class ProspectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StudentResponse crearProspecto(@Valid @RequestBody CreateProspectRequest request) {
-        return StudentResponse.from(prospectService.crearProspecto(request));
+    public StudentResponse createProspect(@Valid @RequestBody CreateProspectRequest request) {
+        return StudentResponse.from(prospectService.createProspect(request));
     }
 
     @PostMapping("/{id}/documents")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentDocumentResponse agregarDocumento(
+    public StudentDocumentResponse addDocument(
             @PathVariable Long id,
             @RequestParam DocumentType type,
             @RequestPart MultipartFile file) {
-        return StudentDocumentResponse.from(prospectService.agregarDocumento(id, type, file));
+        return StudentDocumentResponse.from(prospectService.addDocument(id, type, file));
     }
 
     @GetMapping("/{id}/documents")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public List<StudentDocumentResponse> listarDocumentos(@PathVariable Long id) {
-        return prospectService.listarDocumentos(id).stream().map(StudentDocumentResponse::from).toList();
-    }
-
-    @PutMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void saveDraft(@PathVariable Long id, @RequestBody SaveProspectDraftRequest request) {
-        prospectService.saveDraft(id, request);
+    public List<StudentDocumentResponse> listDocuments(@PathVariable Long id) {
+        return prospectService.listDocuments(id).stream().map(StudentDocumentResponse::from).toList();
     }
 
     @PostMapping("/{id}/confirm")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public StudentResponse confirmarAlta(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
-        return StudentResponse.from(prospectService.confirmarAlta(id, request));
-    }
-
-    @PostMapping("/{id}/send-verification")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void sendVerification(@PathVariable Long id) {
-        prospectService.sendVerification(id);
+    public StudentResponse confirm(@PathVariable Long id, @Valid @RequestBody ConfirmProspectRequest request) {
+        return StudentResponse.from(prospectService.confirm(id, request));
     }
 }

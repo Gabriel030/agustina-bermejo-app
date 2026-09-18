@@ -35,58 +35,58 @@ public class SubjectSectionController {
     @PostMapping("/subjects/{id}/sections")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SubjectSectionResponse crearComision(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
-        return SubjectSectionResponse.from(sectionService.crearComision(id, request));
+    public SubjectSectionResponse create(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
+        return SubjectSectionResponse.from(sectionService.create(id, request));
     }
 
     @PutMapping("/program-sections/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SubjectSectionResponse editarComision(@PathVariable Long id, @RequestBody UpdateSectionRequest request) {
-        return SubjectSectionResponse.from(sectionService.editarComision(id, request));
+    public SubjectSectionResponse update(@PathVariable Long id, @RequestBody UpdateSectionRequest request) {
+        return SubjectSectionResponse.from(sectionService.update(id, request));
     }
 
     @PostMapping("/program-sections/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void desactivar(@PathVariable Long id) {
-        sectionService.desactivar(id);
+    public void deactivate(@PathVariable Long id) {
+        sectionService.deactivate(id);
     }
 
     @PostMapping("/program-sections/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void reactivar(@PathVariable Long id) {
-        sectionService.reactivar(id);
+    public void reactivate(@PathVariable Long id) {
+        sectionService.reactivate(id);
     }
 
     @GetMapping("/subjects/{id}/sections")
-    public List<SubjectSectionResponse> listarPorMateria(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
-        return sectionService.listarPorMateria(id, status).stream().map(SubjectSectionResponse::from).toList();
+    public List<SubjectSectionResponse> listBySubject(@PathVariable Long id, @RequestParam(required = false) StatusType status) {
+        return sectionService.listBySubject(id, status).stream().map(SubjectSectionResponse::from).toList();
     }
 
     @GetMapping("/program-sections/{id}")
-    public SubjectSectionResponse verDetalle(@PathVariable Long id) {
-        return SubjectSectionResponse.from(sectionService.verDetalle(id));
+    public SubjectSectionResponse get(@PathVariable Long id) {
+        return SubjectSectionResponse.from(sectionService.get(id));
     }
 
     @PostMapping("/program-sections/{id}/instructors")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public SectionInstructorResponse asignarDocente(@PathVariable Long id, @Valid @RequestBody AssignInstructorRequest request) {
-        SubjectSectionInstructor assignment = sectionService.asignarDocente(id, request);
+    public SectionInstructorResponse assignInstructor(@PathVariable Long id, @Valid @RequestBody AssignInstructorRequest request) {
+        SubjectSectionInstructor assignment = sectionService.assignInstructor(id, request);
         return toResponse(assignment);
     }
 
     @GetMapping("/program-sections/{id}/instructors")
-    public List<SectionInstructorResponse> listarDocentes(@PathVariable Long id) {
-        return sectionService.listarDocentes(id).stream().map(this::toResponse).toList();
+    public List<SectionInstructorResponse> listInstructors(@PathVariable Long id) {
+        return sectionService.listInstructors(id).stream().map(this::toResponse).toList();
     }
 
     @DeleteMapping("/program-sections/{id}/instructors/{assignmentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void quitarDocente(@PathVariable Long id, @PathVariable Long assignmentId) {
-        sectionService.quitarDocente(id, assignmentId);
+    public void removeInstructor(@PathVariable Long id, @PathVariable Long assignmentId) {
+        sectionService.removeInstructor(id, assignmentId);
     }
 
     private SectionInstructorResponse toResponse(SubjectSectionInstructor assignment) {

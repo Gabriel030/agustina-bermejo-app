@@ -40,19 +40,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Regresión (auditoría 2026-09-04): antes, ProgramEnrollmentBillingScheduler.generarMatricula
- * creaba la Invoice de matrícula vía InvoiceFactory.crearParaCarrera (REQUIRES_NEW) — esa
- * Invoice quedaba commiteada en su propia transacción, ya cerrada, ANTES de que el resto de
- * generarMatricula (o de su caller, PaymentPlanSelectionService.seleccionarParaCarrera) terminara.
- * Si algo fallaba después, la Invoice de matrícula quedaba huérfana (sin PaymentPlanSelection y,
- * para cohorte SECOND, sin el 50% de descuento). El fix usa crearParaCarreraAtomica (REQUIRED),
- * atada a la MISMA transacción que el resto de generarMatricula.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
-
     @Autowired
     private ProgramEnrollmentBillingScheduler billingScheduler;
 
@@ -164,20 +154,16 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void siAlgoFallaDespuesDeGenerarMatriculaNoQuedaUnaInvoiceHuerfana() {
+    void ifSomethingFailsAfterGeneratingTheEnrollmentFeeNoOrphanInvoiceIsLeft() {
         ProgramEnrollment enrollment = persistProgramEnrollmentConCohorteSegunda("99000301");
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         try {
             transactionTemplate.executeWithoutResult(status -> {
-                billingScheduler.generarMatricula(enrollment);
-                // Simula una falla real DESPUÉS de crear la Invoice de matrícula, todavía dentro
-                // de la misma unidad de trabajo que en producción envuelve a generarMatricula
-                // (PaymentPlanSelectionService.seleccionarParaCarrera).
+                billingScheduler.generateEnrollmentFee(enrollment);
                 throw new RuntimeException("Falla simulada después de generar la matrícula");
             });
         } catch (RuntimeException ignored) {
-            // Esperado — lo que importa es el estado de la base después del rollback.
         }
 
         List<com.red_escuela.backend.billing.entity.Invoice> invoices =

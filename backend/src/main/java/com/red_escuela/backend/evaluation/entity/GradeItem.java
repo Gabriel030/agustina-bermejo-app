@@ -25,7 +25,6 @@ public class GradeItem {
     @Column(name = "version")
     private Long version;
 
-    // Enlaza a UNA inscripción de sección de curso o programa (no a ambas)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_section_enrollment_id")
     private CourseSubjectSectionEnrollment courseSubjectSectionEnrollment;
@@ -36,13 +35,11 @@ public class GradeItem {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private GradeItemType type; // EXAM, TP, FINAL
+    private GradeItemType type;
 
-    // Para EXAM: número de parcial (1..N). Para TP también puede numerarse si aplica.
     @Column(name = "sequence_number")
     private Integer sequenceNumber;
 
-    // Peso relativo para cálculo de nota final si corresponde (0..1)
     @Column(name = "weight")
     private Double weight;
 
@@ -58,8 +55,6 @@ public class GradeItem {
     @Column(name = "comments")
     private String comments;
 
-    // Solo se completa cuando el GradeItem (tipo FINAL) viene de una mesa de examen; cerrar
-    // el acta de la mesa (ExamBoard.status = CLOSED) bloquea altas/ediciones asociadas.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_board_id")
     private ExamBoard examBoard;

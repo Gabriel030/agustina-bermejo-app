@@ -6,6 +6,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMiInscripcion, useNotasDeMateria, useDarmeDeBajaDeMateria } from '@/hooks/useAlumno';
 import { COLUMNAS_NOTAS, mapearNotasAColumnas } from '@/lib/notas';
 import { MateriaContenidoMock } from '@/components/alumno/MateriaContenidoMock';
@@ -117,33 +118,31 @@ export function AlumnoMateriaDetalle() {
         {cargandoNotas ? (
           <Skeleton className="h-16" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] border-collapse text-sm">
-              <thead>
-                <tr>
+          <>
+            <Table className="min-w-[480px]">
+              <TableHeader>
+                <TableRow>
                   {COLUMNAS_NOTAS.map((columna) => (
-                    <th key={columna.key} className="border-b border-border px-3 py-2 text-left text-xs font-semibold text-ink-faint">
-                      {columna.label}
-                    </th>
+                    <TableHead key={columna.key}>{columna.label}</TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
                   {COLUMNAS_NOTAS.map((columna) => (
-                    <td key={columna.key} className="px-3 py-3 font-heading text-base font-bold text-ink">
+                    <TableCell key={columna.key} className="font-heading text-base font-bold text-ink">
                       {columnas[columna.key] ?? <span className="font-normal text-ink-faint">—</span>}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
-              </tbody>
-            </table>
+                </TableRow>
+              </TableBody>
+            </Table>
             {extras.length > 0 && (
               <div className="mt-3 text-xs text-ink-faint">
                 Notas adicionales: {extras.map((g) => `${g.type} ${g.sequenceNumber ?? ''}: ${g.score ?? '—'}`).join(' · ')}
               </div>
             )}
-          </div>
+          </>
         )}
       </GlassCard>
 

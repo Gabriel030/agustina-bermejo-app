@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** RF-PR-09/10: creación, tribunal y cierre de acta de mesas de examen. */
 @RestController
 public class ExamBoardController {
 
@@ -32,39 +31,39 @@ public class ExamBoardController {
     @PostMapping("/exam-boards")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public ExamBoardResponse crear(@Valid @RequestBody CreateExamBoardRequest request) {
-        return ExamBoardResponse.from(examBoardService.crear(request));
+    public ExamBoardResponse create(@Valid @RequestBody CreateExamBoardRequest request) {
+        return ExamBoardResponse.from(examBoardService.create(request));
     }
 
     @GetMapping("/exam-boards")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardResponse> listar(@RequestParam(required = false) ExamBoardStatus status) {
-        return examBoardService.listar(status).stream().map(ExamBoardResponse::from).toList();
+    public List<ExamBoardResponse> list(@RequestParam(required = false) ExamBoardStatus status) {
+        return examBoardService.list(status).stream().map(ExamBoardResponse::from).toList();
     }
 
     @GetMapping("/exam-boards/{id}")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public ExamBoardResponse verDetalle(@PathVariable Long id) {
-        return ExamBoardResponse.from(examBoardService.verDetalle(id));
+    public ExamBoardResponse get(@PathVariable Long id) {
+        return ExamBoardResponse.from(examBoardService.get(id));
     }
 
     @PostMapping("/exam-boards/{id}/tribunal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void asignarTribunal(@PathVariable Long id, @Valid @RequestBody AssignTribunalRequest request) {
-        examBoardService.asignarTribunal(id, request.instructorId());
+    public void assignTribunal(@PathVariable Long id, @Valid @RequestBody AssignTribunalRequest request) {
+        examBoardService.assignTribunal(id, request.instructorId());
     }
 
     @PostMapping("/exam-boards/{id}/close")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
-    public void cerrarActa(@PathVariable Long id) {
-        examBoardService.cerrarActa(id);
+    public void close(@PathVariable Long id) {
+        examBoardService.close(id);
     }
 
     @GetMapping("/exam-boards/{id}/registrations")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR') or hasRole('DOCENTE')")
-    public List<ExamBoardRegistrationSummaryResponse> listarAnotados(@PathVariable Long id) {
-        return examBoardService.listarAnotadosConDetalle(id);
+    public List<ExamBoardRegistrationSummaryResponse> listRegistrants(@PathVariable Long id) {
+        return examBoardService.listRegistrantsWithDetail(id);
     }
 }

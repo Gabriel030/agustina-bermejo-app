@@ -28,11 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * RF-PR-09/10: mesas de examen organizadas por Subject/CourseSubject + Term (decisión 7 de la
- * spec técnica), no por comisión — un alumno regular en una materia rinde en cualquier mesa de
- * esa materia, sin importar en qué comisión cursó.
- */
 @Service
 public class ExamBoardService {
 
@@ -62,7 +57,7 @@ public class ExamBoardService {
     }
 
     @Transactional
-    public ExamBoard crear(CreateExamBoardRequest request) {
+    public ExamBoard create(CreateExamBoardRequest request) {
         boolean hasSubject = request.subjectId() != null;
         boolean hasCourseSubject = request.courseSubjectId() != null;
         if (hasSubject == hasCourseSubject) {
@@ -91,56 +86,50 @@ public class ExamBoardService {
         return examBoardRepository.save(examBoard);
     }
 
-    // Mesas SCHEDULED de una materia — para que el alumno vea a qué llamado anotarse. Solo
-    // tiene sentido para materias donde ya está REGULAR (ese chequeo vive en
-    // ExamBoardRegistrationService, acá solo se lista lo que hay ofrecido).
-    public List<ExamBoard> listarDisponiblesPorSubject(Long subjectId) {
+    public List<ExamBoard> listAvailableBySubject(Long subjectId) {
         return examBoardRepository.findBySubjectIdAndStatus(subjectId, ExamBoardStatus.SCHEDULED);
     }
 
     @Transactional
-    public void asignarTribunal(Long examBoardId, Long instructorId) {
+    public void assignTribunal(Long examBoardId, Long instructorId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
         Instructor instructor = instructorRepository.findById(instructorId)
                 .orElseThrow(() -> new InstructorNotFoundException(instructorId));
         if (examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
             return;
         }
-        ExamBoardInstructor asignacion = new ExamBoardInstructor();
-        asignacion.setExamBoard(examBoard);
-        asignacion.setInstructor(instructor);
-        examBoardInstructorRepository.save(asignacion);
+        ExamBoardInstructor assignment = new ExamBoardInstructor();
+        assignment.setExamBoard(examBoard);
+        assignment.setInstructor(instructor);
+        examBoardInstructorRepository.save(assignment);
     }
 
     @Transactional
-    public ExamBoard cerrarActa(Long examBoardId) {
+    public ExamBoard close(Long examBoardId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
-        // Idempotente: cerrar un acta ya cerrada no es un error de negocio, mismo criterio que
-        // las operaciones de desactivación de Estructura académica (no-op si ya está en el
-        // estado destino).
         examBoard.setStatus(ExamBoardStatus.CLOSED);
         return examBoardRepository.save(examBoard);
     }
 
-    public List<ExamBoardRegistration> listarAnotados(Long examBoardId) {
+    public List<ExamBoardRegistration> listRegistrants(Long examBoardId) {
         findOrThrow(examBoardId);
         return examBoardRegistrationRepository.findByExamBoardId(examBoardId);
     }
 
-    public List<ExamBoardRegistrationSummaryResponse> listarAnotadosConDetalle(Long examBoardId) {
-        return listarAnotados(examBoardId).stream().map(this::aResumen).toList();
+    public List<ExamBoardRegistrationSummaryResponse> listRegistrantsWithDetail(Long examBoardId) {
+        return listRegistrants(examBoardId).stream().map(this::toSummary).toList();
     }
 
-    public ExamBoard verDetalle(Long id) {
+    public ExamBoard get(Long id) {
         return findOrThrow(id);
     }
 
-    public List<ExamBoard> listar(ExamBoardStatus status) {
+    public List<ExamBoard> list(ExamBoardStatus status) {
         return status == null ? examBoardRepository.findAllByOrderByExamDateDesc()
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);
     }
 
-    private ExamBoardRegistrationSummaryResponse aResumen(ExamBoardRegistration registration) {
+    private ExamBoardRegistrationSummaryResponse toSummary(ExamBoardRegistration registration) {
         String carrera;
         Integer attemptNumber;
         Person person;

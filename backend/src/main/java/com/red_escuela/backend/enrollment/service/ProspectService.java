@@ -1,12 +1,9 @@
 package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
-import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
 import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
-import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
-import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -24,8 +21,6 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,13 +29,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.service.FileStorageService;
 
-/**
- * Orquesta el proceso de preinscripción pública → prospecto → verificación de
- * documentación → alta definitiva (spec funcional, sección 5, pasos 1-4).
- */
 @Service
 public class ProspectService {
-
     private static final String ROLE_ALUMNO = "ALUMNO";
 
     private final StudentRepository studentRepository;
@@ -50,7 +40,6 @@ public class ProspectService {
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
-    private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 
     public ProspectService(
             StudentRepository studentRepository,
@@ -59,8 +48,7 @@ public class ProspectService {
             RoleRepository roleRepository,
             PersonFactory personFactory,
             FileStorageService fileStorageService,
-            RequestPasswordResetUseCase requestPasswordResetUseCase,
-            SendEmailVerificationUseCase sendEmailVerificationUseCase) {
+            RequestPasswordResetUseCase requestPasswordResetUseCase) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
@@ -68,11 +56,10 @@ public class ProspectService {
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
-        this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
     }
 
     @Transactional
-    public Student crearProspecto(CreateProspectRequest request) {
+    public Student createProspect(CreateProspectRequest request) {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
@@ -84,53 +71,13 @@ public class ProspectService {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
 
-        Student saved = studentRepository.save(student);
-
-        boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
-                instanceof AnonymousAuthenticationToken;
-        if (isAnonymous) {
-            sendEmailVerificationUseCase.sendVerification(saved.getId());
-        }
-
-        return saved;
+        return studentRepository.save(student);
     }
 
     @Transactional
-    public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
-        Student student = findStudentOrThrow(studentId);
-        Person person = student.getPerson();
-
-        if (request.dni() != null) {
-            person.setDni(request.dni());
-        }
-
-        Address address = person.getAddress();
-        if (request.street() != null) address.setStreet(request.street());
-        if (request.number() != null) address.setNumber(request.number());
-        if (request.floor() != null) address.setFloor(request.floor());
-        if (request.city() != null) address.setCity(request.city());
-        if (request.state() != null) address.setState(request.state());
-        if (request.postalCode() != null) address.setPostalCode(request.postalCode());
-        if (request.country() != null) address.setCountry(request.country());
-
-        try {
-            studentRepository.saveAndFlush(student);
-        } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
-        }
-    }
-
-    public void sendVerification(Long studentId) {
-        findStudentOrThrow(studentId);
-        sendEmailVerificationUseCase.sendVerification(studentId);
-    }
-
-    @Transactional
-    public StudentDocument agregarDocumento(Long studentId, DocumentType type, MultipartFile file) {
+    public StudentDocument addDocument(Long studentId, DocumentType type, MultipartFile file) {
         Student student = findStudentOrThrow(studentId);
 
-        // Un tipo de documento tiene un único registro vigente: el nuevo reemplaza al
-        // anterior, tanto la fila como el archivo físico en disco.
         studentDocumentRepository.findByStudentIdAndType(studentId, type).ifPresent(existing -> {
             fileStorageService.delete(existing.getFilePath());
             studentDocumentRepository.delete(existing);
@@ -147,13 +94,13 @@ public class ProspectService {
         return studentDocumentRepository.save(document);
     }
 
-    public List<StudentDocument> listarDocumentos(Long studentId) {
+    public List<StudentDocument> listDocuments(Long studentId) {
         findStudentOrThrow(studentId);
         return studentDocumentRepository.findByStudentId(studentId);
     }
 
     @Transactional
-    public Student confirmarAlta(Long studentId, ConfirmProspectRequest request) {
+    public Student confirm(Long studentId, ConfirmProspectRequest request) {
         Student student = findStudentOrThrow(studentId);
         if (student.getOnboardingStatus() != StudentOnboardingStatus.PROSPECTO) {
             throw new ProspectAlreadyConfirmedException(studentId);

@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 
 @UseCase
 public class RejectPaymentReceiptService implements RejectPaymentReceiptUseCase {
-
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
 
@@ -33,8 +32,6 @@ public class RejectPaymentReceiptService implements RejectPaymentReceiptUseCase 
         receipt.setRejectionReason(motivo);
         receipt.setReviewedBy(decidedBy);
         receipt.setReviewedAt(LocalDateTime.now());
-        // La Invoice vuelve a estar disponible para un comprobante nuevo — reintentos ilimitados
-        // (el índice único de "pending" solo bloquea mientras ESTE queda PENDING_REVIEW).
         return paymentReceiptRepository.save(receipt);
     }
 }

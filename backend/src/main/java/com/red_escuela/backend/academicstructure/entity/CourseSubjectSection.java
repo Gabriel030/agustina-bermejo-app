@@ -9,11 +9,6 @@ import java.util.List;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.entity.StatusType;
 
-/*
- * CourseSubjectSection: comisión de una materia/módulo de un curso (CourseSubject) en un Term.
- * Incluye datos operativos: instructor, cupo, horario y esquema de evaluación.
- * Nota: se reutiliza la misma tabla 'course_section' para evitar migraciones por ahora.
- */
 @Getter
 @Setter
 @Entity
@@ -56,8 +51,6 @@ public class CourseSubjectSection {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    // Porcentaje máximo de ausentismo permitido; si es null, no se calcula "libre por
-    // inasistencias" para esta comisión (nunca un campo persistido, siempre derivado).
     @Column(name = "max_absence_percentage")
     private Double maxAbsencePercentage;
 

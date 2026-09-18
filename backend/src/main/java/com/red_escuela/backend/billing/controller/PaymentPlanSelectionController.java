@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class PaymentPlanSelectionController {
-
     private final SelectPaymentPlanForCourseUseCase selectForCourseUseCase;
     private final SelectPaymentPlanForProgramUseCase selectForProgramUseCase;
 
@@ -25,21 +24,17 @@ public class PaymentPlanSelectionController {
         this.selectForProgramUseCase = selectForProgramUseCase;
     }
 
-    // Spec: "ADMINISTRATIVO|autoservicio alumno" sobre el mismo path — el chequeo de ownership
-    // (esta matriculación es del alumno autenticado) vive en PaymentPlanSelectionGuard, no acá:
-    // un Administrativo no tiene fila Student propia, así que el mismo código sirve para ambos
-    // roles sin ramificar.
     @PostMapping("/course-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
-    public PaymentPlanSelectionResponse seleccionarParaCurso(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
+    public PaymentPlanSelectionResponse selectForCourse(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
         return PaymentPlanSelectionResponse.from(selectForCourseUseCase.select(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/payment-plan")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
-    public PaymentPlanSelectionResponse seleccionarParaCarrera(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
+    public PaymentPlanSelectionResponse selectForProgram(@PathVariable Long id, @Valid @RequestBody SelectPaymentPlanRequest request) {
         return PaymentPlanSelectionResponse.from(selectForProgramUseCase.select(id, request));
     }
 }

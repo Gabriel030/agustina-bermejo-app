@@ -14,7 +14,6 @@ import java.util.Optional;
 
 @Repository
 public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubjectSection, Long> {
-
     List<CourseSubjectSection> findByCourseSubjectId(Long courseSubjectId);
 
     List<CourseSubjectSection> findByCourseSubjectIdAndStatus(Long courseSubjectId, StatusType status);
@@ -23,7 +22,6 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
 
-    // Ver SubjectSectionRepository.findByIdForUpdate: mismo propósito de serialización de cupo.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseSubjectSection s where s.id = :id")
     Optional<CourseSubjectSection> findByIdForUpdate(@Param("id") Long id);

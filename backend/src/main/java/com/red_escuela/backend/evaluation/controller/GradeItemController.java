@@ -17,10 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * RF-DO-05/06/07, RF-AL-07. La carga dispara el recálculo automático de status/finalScore de
- * la cursada (GradeItemService.recalcularEstadoCursada), nunca lo decide el Docente a mano.
- */
 @RestController
 public class GradeItemController {
 
@@ -35,28 +31,28 @@ public class GradeItemController {
     @PostMapping("/section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public GradeItemResponse cargarNotaProgramEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
+    public GradeItemResponse loadProgramEnrollmentGrade(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return GradeItemResponse.from(gradeItemService.cargarNotaProgramEnrollment(id, instructor.getId(), request));
+        return GradeItemResponse.from(gradeItemService.loadProgramEnrollmentGrade(id, instructor.getId(), request));
     }
 
     @PostMapping("/course-section-enrollments/{id}/grade-items")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DOCENTE')")
-    public GradeItemResponse cargarNotaCourseEnrollment(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
+    public GradeItemResponse loadCourseEnrollmentGrade(@PathVariable Long id, @Valid @RequestBody CreateGradeItemRequest request) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return GradeItemResponse.from(gradeItemService.cargarNotaCourseEnrollment(id, instructor.getId(), request));
+        return GradeItemResponse.from(gradeItemService.loadCourseEnrollmentGrade(id, instructor.getId(), request));
     }
 
     @GetMapping("/section-enrollments/{id}/grade-items")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GradeItemResponse> listarNotasProgramEnrollment(@PathVariable Long id) {
-        return gradeItemService.listarPorProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
+    public List<GradeItemResponse> listProgramEnrollmentGrades(@PathVariable Long id) {
+        return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @GetMapping("/course-section-enrollments/{id}/grade-items")
     @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
-    public List<GradeItemResponse> listarNotasCourseEnrollment(@PathVariable Long id) {
-        return gradeItemService.listarPorCourseEnrollment(id).stream().map(GradeItemResponse::from).toList();
+    public List<GradeItemResponse> listCourseEnrollmentGrades(@PathVariable Long id) {
+        return gradeItemService.listByCourseEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 }

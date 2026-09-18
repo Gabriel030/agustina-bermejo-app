@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class PaymentController {
-
     private final RegisterPaymentUseCase registerPaymentUseCase;
     private final CurrentPersonService currentPersonService;
 
@@ -23,10 +22,6 @@ public class PaymentController {
         this.currentPersonService = currentPersonService;
     }
 
-    // Spec: "ADMINISTRATIVO|autoservicio alumno (solo sobre invoices propias)" — el chequeo de
-    // ownership vive en RegisterPaymentService (mismo criterio que PaymentPlanSelectionGuard: un
-    // Administrativo no tiene fila Student propia, así que el mismo código sirve para ambos
-    // roles sin ramificar acá).
     @PostMapping("/payments")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")

@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
-import { Stepper } from '@/components/Stepper/Stepper';
+import { Stepper } from '@/components/Stepper';
 import { DatosBasicosStep } from '@/features/gestion-personas/steps/DatosBasicosStep';
 import { DocumentosStep } from '@/features/gestion-personas/steps/DocumentosStep';
 import { DatosConfirmacionStep } from '@/features/gestion-personas/steps/DatosConfirmacionStep';
@@ -66,7 +67,10 @@ export function NuevoAlumno() {
   function handleFileSelected(tipo, file) {
     subirDocumento.mutate(
       { studentId, type: tipo, file },
-      { onSuccess: (doc) => setDocumentos((prev) => ({ ...prev, [tipo]: doc })) }
+      {
+        onSuccess: (doc) => setDocumentos((prev) => ({ ...prev, [tipo]: doc })),
+        onError: () => toast.error('No se pudo subir el archivo. Intentá de nuevo.'),
+      }
     );
   }
 
@@ -97,6 +101,7 @@ export function NuevoAlumno() {
             setCurrentStep(1);
             setPasosVisitados((prev) => [...new Set([...prev, '1'])]);
           },
+          onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
         }
       );
       return;
@@ -120,9 +125,13 @@ export function NuevoAlumno() {
           onSuccess: () => {
             confirmarAlta.mutate(
               { studentId, datos: borrador },
-              { onSuccess: () => { setCurrentStep(3); setPasosVisitados((prev) => [...new Set([...prev, '3'])]); } }
+              {
+                onSuccess: () => { setCurrentStep(3); setPasosVisitados((prev) => [...new Set([...prev, '3'])]); },
+                onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
+              }
             );
           },
+          onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
         }
       );
       return;
@@ -144,8 +153,6 @@ export function NuevoAlumno() {
       setCurrentStep((s) => s - 1);
     }
   }
-
-  const errorMutation = crearProspecto.error || guardarBorrador.error || confirmarAlta.error;
 
   return (
     <PageContainer>
@@ -169,19 +176,12 @@ export function NuevoAlumno() {
               documentosSubidos={documentos}
               onFileSelected={handleFileSelected}
               isUploading={subirDocumento.isPending}
-              error={subirDocumento.isError}
               errorValidacion={errorDocumentos}
             />
           )}
           {currentStep === 2 && <DatosConfirmacionStep register={register} errors={errors} isLoading={isMutating} />}
           {currentStep === 3 && <ResumenStep alumno={getValues()} esAnonimo={false} />}
         </form>
-
-        {errorMutation && (
-          <p className="text-[12px] text-danger">
-            {errorMutation.message ?? 'Ocurrió un error. Intentá de nuevo.'}
-          </p>
-        )}
 
         <div className="flex items-center justify-between gap-3">
           {currentStep < 3 ? (

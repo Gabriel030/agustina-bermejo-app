@@ -25,24 +25,22 @@ public class CourseSubjectPrerequisite {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Materia de curso objetivo
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_subject_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private CourseSubject courseSubject;
 
-    // Materia de curso requerida
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "prerequisite_course_subject_id", nullable = false)
     private CourseSubject prerequisiteCourseSubject;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "requirement_type", nullable = false)
-    private RequirementType requirementType; // APPROVED o PASSED_COURSEWORK
+    private RequirementType requirementType;
 
     @Column(name = "min_grade")
-    private Double minGrade; // opcional
+    private Double minGrade;
 
     @Column(name = "notes", length = 500)
-    private String notes; // opcional
+    private String notes;
 }

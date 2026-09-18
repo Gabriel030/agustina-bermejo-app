@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "promotion_redemption")
 public class PromotionRedemption {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,9 +30,6 @@ public class PromotionRedemption {
     @JoinColumn(name = "promotion_id", nullable = false)
     private Promotion promotion;
 
-    // Atada a UNA PaymentPlanSelection puntual, no al enrollment — si esa selección se cierra (el
-    // alumno cambia de plan), la promoción no se traslada a la selección nueva (decisión explícita
-    // del dueño del producto, ver Fase 6.5 en Obsidian).
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "payment_plan_selection_id", nullable = false, unique = true)
     private PaymentPlanSelection paymentPlanSelection;

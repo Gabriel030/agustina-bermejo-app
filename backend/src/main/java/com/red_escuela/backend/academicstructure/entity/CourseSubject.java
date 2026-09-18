@@ -50,18 +50,12 @@ public class CourseSubject {
     @Column(name = "qualification_type")
     private String qualificationType;
 
-    // Prerrequisitos (AND): módulos requeridos para poder cursar este CourseSubject
     @OneToMany(mappedBy = "courseSubject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CourseSubjectPrerequisite> prerequisites;
 
-    // Módulos que dependen de este CourseSubject (referencias inversas)
     @OneToMany(mappedBy = "prerequisiteCourseSubject", fetch = FetchType.LAZY)
     private List<CourseSubjectPrerequisite> requiredBy;
 
-    // Tope de reintentos para rendir el final de este módulo. Null = sin límite, mismo
-    // criterio que Subject.maxFinalExamAttempts.
     @Column(name = "max_final_exam_attempts")
     private Integer maxFinalExamAttempts;
-
 }
-

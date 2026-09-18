@@ -9,12 +9,8 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
-// Decisión 2026-09-03: solo el Director otorga becas/descuentos/condonaciones — Administrativo
-// ya no puede cargar un DISCOUNT/WAIVE_DEBT directo, solo registrar pagos y emitir dentro de
-// las reglas que el Director definió (rol enforced en el controller).
 @UseCase
 public class ApplyInvoiceAdjustmentService implements ApplyInvoiceAdjustmentUseCase {
-
     private final InvoiceRepository invoiceRepository;
     private final CurrentPersonService currentPersonService;
 
@@ -23,9 +19,6 @@ public class ApplyInvoiceAdjustmentService implements ApplyInvoiceAdjustmentUseC
         this.currentPersonService = currentPersonService;
     }
 
-    // Mismo lock pesimista que un pago (RegisterPaymentService): dos Administrativos/Directores
-    // otorgando un descuento a la misma cuota al mismo tiempo tienen el mismo riesgo de carrera
-    // que dos pagos parciales simultáneos.
     @Override
     @Transactional
     public Invoice apply(ApplyInvoiceAdjustmentCommand command) {

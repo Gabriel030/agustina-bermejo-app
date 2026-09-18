@@ -1,4 +1,4 @@
-package com.red_escuela.backend.entity;
+package com.red_escuela.backend.notification.entity;
 import com.red_escuela.backend.identity.entity.Person;
 
 import jakarta.persistence.*;

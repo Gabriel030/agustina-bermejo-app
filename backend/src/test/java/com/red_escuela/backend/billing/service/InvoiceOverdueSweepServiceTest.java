@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.BatchExecutionStatus;
+import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -20,7 +20,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.repository.AddressRepository;
-import com.red_escuela.backend.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -42,16 +42,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Fase 6.3: tests 6 (con el borde de los 10 días inclusive), 66 (crash a mitad de fila no deja
- * estado inconsistente) y 79 (recargo sobre saldo con descuento ya aplicado, sustituto manual
- * mientras Scholarship de Fase 6.4 no existe). NO @Transactional a propósito: cada Invoice se
- * procesa en su propia transacción real (InvoiceOverdueRowProcessor, REQUIRES_NEW).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private InvoiceOverdueSweepService sweepService;
 
@@ -154,7 +147,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cuotaVencidaHaceMasDeDiezDiasPasaAOverdueConElRecargoVigente() {
+    void installmentOverdueForMoreThanTenDaysBecomesOverdueWithTheCurrentSurcharge() {
         Person director = persistPerson("director.sweep1." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000001");
@@ -170,7 +163,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void cuotaVencidaHaceExactamenteDiezDiasNoPasaAOverdueTodavia() {
+    void installmentOverdueForExactlyTenDaysDoesNotBecomeOverdueYet() {
         Person director = persistPerson("director.sweep2." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000002");
@@ -184,12 +177,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crashDelSweepAMitadDeUnaFilaNoDejaEstadoInconsistente() {
+    void sweepCrashMidRowDoesNotLeaveInconsistentState() {
         Person director = persistPerson("director.sweep3." + System.nanoTime());
-        // surchargePercentage > 1 hace que PercentageAmount lance IllegalArgumentException DESPUÉS
-        // de que invoice.setStatus(OVERDUE) ya corrió en memoria, dentro de la MISMA transacción
-        // de InvoiceOverdueRowProcessor.process — al propagar la excepción, esa transacción
-        // REQUIRES_NEW hace rollback completo (nunca llega a invoiceRepository.save()).
         CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(1.5));
         CourseEnrollment enrollment = persistCourseEnrollment("99000003");
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(11));
@@ -208,7 +197,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void procesoDiarioDebeRevisarCuatrocientasCuotasVencidasYNingunaQuedaSinProcesar() {
+    void dailyProcessMustReviewFourHundredOverdueInstallmentsAndNoneIsLeftUnprocessed() {
         Person director = persistPerson("director.sweep5." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000005");
@@ -227,7 +216,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void recargoDeMoraSeCalculaSobreElMontoConDescuentoYaAplicadoNoSobreElPrecioDeLista() {
+    void lateSurchargeIsCalculatedOnTheAmountWithDiscountAlreadyAppliedNotOnTheListPrice() {
         Person director = persistPerson("director.sweep4." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000004");
@@ -242,7 +231,6 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         List<InvoiceAdjustment> adjustments = reloaded.getAdjustments();
         assertThat(adjustments).hasSize(2);
         var surcharge = adjustments.stream().filter(a -> a.getType() == InvoiceAdjustmentType.SURCHARGE).findFirst().orElseThrow();
-        // Saldo efectivo antes del recargo: 1000 - 90% = 100. Recargo 10% de 100 = 10, no de 1000.
         assertThat(surcharge.getResolvedBase()).isEqualByComparingTo(BigDecimal.valueOf(100));
         assertThat(surcharge.signedAmount()).isEqualByComparingTo(BigDecimal.valueOf(10.00).setScale(2));
     }

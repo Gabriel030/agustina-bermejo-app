@@ -14,16 +14,11 @@ import java.util.Optional;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
-
     List<Course> findByIsActive(StatusType status);
 
-    // Ver SubjectSectionRepository.findByIdForUpdate: mismo propósito, ahora a nivel de
-    // Course.capacity (el cupo del curso como conjunto, no el de una comisión puntual).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Course c where c.id = :id")
     Optional<Course> findByIdForUpdate(@Param("id") Long id);
 
-    // CourseEnrollmentWaitlistExpiryJob solo necesita revisar los cursos que configuraron un
-    // corte — el resto tiene lista de espera abierta indefinidamente.
     List<Course> findByWaitlistDeadlineOffsetDaysIsNotNull();
 }

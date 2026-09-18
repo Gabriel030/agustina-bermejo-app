@@ -1,12 +1,12 @@
-package com.red_escuela.backend.service;
+package com.red_escuela.backend.notification.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.Notification;
-import com.red_escuela.backend.entity.NotificationType;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.exception.NotOwnNotificationException;
+import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.notification.service.NotificationService;
 
 @SpringBootTest
 @ActiveProfiles("test")

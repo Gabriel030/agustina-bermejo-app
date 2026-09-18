@@ -1,0 +1,91 @@
+package com.red_escuela.backend.billing.usecase.dashboard;
+
+import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.shared.UseCase;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@UseCase
+public class ListDebtorsService implements ListDebtorsUseCase {
+
+    private final InvoiceRepository invoiceRepository;
+
+    public ListDebtorsService(InvoiceRepository invoiceRepository) {
+        this.invoiceRepository = invoiceRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DebtorSummaryResponse> list(String sortBy) {
+        List<InvoiceStatus> debtStatuses = List.of(InvoiceStatus.OVERDUE);
+
+        List<Invoice> courseInvoices = invoiceRepository.findByCourseEnrollmentStatusInWithStudent(debtStatuses);
+        List<Invoice> programInvoices = invoiceRepository.findByProgramEnrollmentStatusInWithStudent(debtStatuses);
+
+        Map<Long, DebtorAccumulator> accumulators = new LinkedHashMap<>();
+
+        for (Invoice invoice : courseInvoices) {
+            Student student = invoice.getCourseEnrollment().getStudent();
+            String name = invoice.getCourseEnrollment().getCourse().getName();
+            accumulators.computeIfAbsent(student.getId(), id -> new DebtorAccumulator(student)).add(name, invoice);
+        }
+        for (Invoice invoice : programInvoices) {
+            Student student = invoice.getProgramEnrollment().getStudent();
+            String name = invoice.getProgramEnrollment().getProgram().getName();
+            accumulators.computeIfAbsent(student.getId(), id -> new DebtorAccumulator(student)).add(name, invoice);
+        }
+
+        Comparator<DebtorSummaryResponse> comparator = "DEBT_AMOUNT".equals(sortBy)
+                ? Comparator.comparing(DebtorSummaryResponse::totalDebt, Comparator.reverseOrder())
+                : Comparator.comparing(DebtorSummaryResponse::debtAgeDays, Comparator.reverseOrder());
+
+        return accumulators.values().stream()
+                .map(DebtorAccumulator::toResponse)
+                .sorted(comparator)
+                .collect(Collectors.toList());
+    }
+
+    private static class DebtorAccumulator {
+        private final Student student;
+        private String primaryEnrollmentName;
+        private LocalDate oldestDueDate;
+        private BigDecimal totalDebt = BigDecimal.ZERO;
+
+        DebtorAccumulator(Student student) {
+            this.student = student;
+        }
+
+        void add(String enrollmentName, Invoice invoice) {
+            totalDebt = totalDebt.add(invoice.getBaseAmount());
+            if (oldestDueDate == null || invoice.getDueDate().isBefore(oldestDueDate)) {
+                oldestDueDate = invoice.getDueDate();
+                primaryEnrollmentName = enrollmentName;
+            }
+        }
+
+        DebtorSummaryResponse toResponse() {
+            Person person = student.getPerson();
+            int debtAgeDays = oldestDueDate != null
+                    ? (int) ChronoUnit.DAYS.between(oldestDueDate, LocalDate.now())
+                    : 0;
+            return new DebtorSummaryResponse(
+                    student.getId(),
+                    person.getName() + " " + person.getLastname(),
+                    person.getDni(),
+                    primaryEnrollmentName,
+                    totalDebt,
+                    debtAgeDays
+            );
+        }
+    }
+}

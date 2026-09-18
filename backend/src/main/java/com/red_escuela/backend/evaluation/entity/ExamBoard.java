@@ -10,12 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 
-/*
- * Mesa de examen final, organizada por Subject/CourseSubject + Term (no por comisión):
- * un alumno regular en una materia puede rendir en cualquier mesa de esa materia en ese
- * período, sin importar en qué comisión cursó — coherente con que las materias ya se
- * comparten entre carreras. XOR subject/courseSubject con el mismo patrón de GradeItem.
- */
 @Getter
 @Setter
 @Entity
@@ -44,8 +38,6 @@ public class ExamBoard {
     @Column(name = "exam_date", nullable = false)
     private LocalDateTime examDate;
 
-    // Texto libre por ahora (todavía no está definido quién/cómo se asigna el aula real de
-    // cada mesa) — nullable, se completa cuando se sepa.
     @Column(name = "classroom")
     private String classroom;
 

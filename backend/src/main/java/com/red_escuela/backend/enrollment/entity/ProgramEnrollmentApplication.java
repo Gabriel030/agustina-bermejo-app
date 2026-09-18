@@ -12,12 +12,6 @@ import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.Program;
 
-/**
- * Solicitud de alta en una carrera, previa a un {@link ProgramEnrollment} real —
- * mismo patrón que {@link Student#getOnboardingStatus()} (Prospect) es un paso
- * previo a un Student confirmado, un nivel más arriba. La transición de estado
- * vive en la propia entidad (no desparramada en el service que la usa).
- */
 @Getter
 @Setter
 @Entity
@@ -61,29 +55,26 @@ public class ProgramEnrollmentApplication {
     @Column(name = "rejection_reason")
     private String rejectionReason;
 
-    // Nullable: filas viejas (de antes de esta fase) pueden no tener comprobante.
-    // El código nuevo siempre lo setea al crear la solicitud (ver
-    // ProgramEnrollmentApplicationService.solicitarConPago).
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_receipt_id")
     private PaymentReceipt paymentReceipt;
 
-    public void aprobar(Person decidedBy) {
-        exigirPendiente();
+    public void approve(Person decidedBy) {
+        requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
         this.decidedAt = LocalDateTime.now();
     }
 
-    public void rechazar(Person decidedBy, String reason) {
-        exigirPendiente();
+    public void reject(Person decidedBy, String reason) {
+        requirePending();
         this.status = ProgramEnrollmentApplicationStatus.REJECTED;
         this.decidedBy = decidedBy;
         this.decidedAt = LocalDateTime.now();
         this.rejectionReason = reason;
     }
 
-    private void exigirPendiente() {
+    private void requirePending() {
         if (status != ProgramEnrollmentApplicationStatus.PENDING) {
             throw new InvalidProgramEnrollmentApplicationStateException(id, status);
         }

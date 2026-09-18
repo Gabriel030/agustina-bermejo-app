@@ -12,16 +12,12 @@ import java.time.LocalDate;
 
 @Service
 public class PaymentPlanSelectionGuard {
-
     private final CurrentStudentService currentStudentService;
 
     public PaymentPlanSelectionGuard(CurrentStudentService currentStudentService) {
         this.currentStudentService = currentStudentService;
     }
 
-    // Endpoint compartido (spec: "ADMINISTRATIVO|autoservicio alumno") — Optional.empty() de
-    // findCurrentStudent() significa que el actor es staff (Administrativo/Director, sin fila
-    // Student propia), que puede operar sobre cualquier matriculación sin restricción.
     public void validateOwnershipIfStudent(Long ownerStudentId, Long enrollmentId) {
         currentStudentService.findCurrentStudent().ifPresent(student -> {
             if (!student.getId().equals(ownerStudentId)) {
