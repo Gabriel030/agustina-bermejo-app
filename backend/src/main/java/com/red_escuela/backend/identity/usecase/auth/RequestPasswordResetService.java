@@ -18,7 +18,6 @@ import java.util.Optional;
 
 @UseCase
 public class RequestPasswordResetService implements RequestPasswordResetUseCase {
-
     private static final Logger log = LoggerFactory.getLogger(RequestPasswordResetService.class);
 
     private final PersonRepository personRepository;
@@ -39,8 +38,6 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
     @Override
     @Transactional
     public void requestReset(String email) {
-        // Universal: cualquier Person con este email recibe el código — no hay ningún caso en
-        // el que este flujo no haga nada salvo que el email directamente no exista (anti-enumeración).
         Optional<Person> personOpt = personRepository.findByEmail(email);
         if (personOpt.isEmpty()) {
             return;

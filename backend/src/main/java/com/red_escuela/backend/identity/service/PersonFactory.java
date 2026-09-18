@@ -9,15 +9,8 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Patrón Factory: crear una Person siempre implica crear primero su Address vacía
- * (Person.address es not-null pero no tiene cascada) — ProspectService y StaffService
- * necesitan exactamente esa misma secuencia de dos pasos, así que se encapsula acá
- * en vez de duplicarla en ambos servicios.
- */
 @Service
 public class PersonFactory {
-
     private final PersonRepository personRepository;
     private final AddressRepository addressRepository;
 
@@ -39,20 +32,11 @@ public class PersonFactory {
         person.setAuthProvider(AuthProvider.LOCAL);
         person.setPassword(null);
         person.setUsername(null);
-        // Explícito, no queda en null: AuthService.login rechaza cualquier status != ACTIVE.
         person.setStatus(StatusType.ACTIVE);
 
         return personRepository.save(person);
     }
 
-    /**
-     * Registro independiente (Épica 7): a diferencia de {@link #createBasePerson},
-     * la persona elige su usuario/contraseña en el momento y puede loguearse de
-     * inmediato — no queda a la espera de que staff confirme el alta como en el
-     * flujo de Prospect. {@code passwordHasheada} ya viene codificada por el
-     * caller (mismo {@code PasswordEncoder} que usa AuthService), esta clase no
-     * conoce el algoritmo de hashing.
-     */
     @Transactional
     public Person createPersonWithCredentials(
             String firstName, String lastName, String email, String username, String passwordHasheada) {
@@ -62,11 +46,6 @@ public class PersonFactory {
         return personRepository.save(person);
     }
 
-    /**
-     * Épica 1 Fase 2 (Login con Google): igual que {@link #createPersonWithCredentials} pero sin
-     * password — la persona nunca elige una, entra siempre por Google. {@code username} es el
-     * email (mismo criterio que el registro independiente, no hay campo de usuario separado).
-     */
     @Transactional
     public Person createPersonWithGoogle(String firstName, String lastName, String email, String googleSubjectId) {
         Person person = createBasePerson(firstName, lastName, email);

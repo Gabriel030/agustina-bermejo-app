@@ -17,7 +17,6 @@ import java.util.Optional;
 
 @UseCase
 public class LoginService implements LoginUseCase {
-
     private final PersonRepository personRepository;
     private final LoginAttemptRepository loginAttemptRepository;
     private final PasswordEncoder passwordEncoder;
@@ -49,10 +48,6 @@ public class LoginService implements LoginUseCase {
 
         Person person = personOpt.get();
 
-        // Cuenta bloqueada, sin password seteado (alta por Google que nunca pasó por
-        // "olvidé mi contraseña" para ponerse una) o dada de baja (Spec Gestión de
-        // personas, RF-PR-03: status != ACTIVE tras un withdraw) se rechaza sin intentar
-        // el match, mismo error genérico en todos los casos.
         if (isLocked(person) || person.getPassword() == null
                 || person.getStatus() != StatusType.ACTIVE) {
             recordAttempt(command.username(), person, false, command.ipAddress());

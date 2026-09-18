@@ -8,11 +8,8 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Set;
 
-// RF-AD-05/RF-DI-04: el Administrativo da de alta Docente/Preceptor, el Director da de alta
-// Administrativo — cada actor solo puede crear/editar los roles que la spec le asigna.
 @Service
 public class StaffRoleAssignmentPolicy {
-
     public static final Set<String> STAFF_ROLES = Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO");
 
     private static final Map<String, Set<String>> CREATABLE_ROLES_BY_ROLE = Map.of(

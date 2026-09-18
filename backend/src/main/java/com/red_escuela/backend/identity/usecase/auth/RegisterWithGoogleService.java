@@ -16,13 +16,8 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
-// Épica 1 Fase 2 (Login con Google): mismo flujo que RegisterService, para cuando alguien
-// confirma explícitamente que quiere crear una cuenta nueva con un email de Google que no
-// coincide con ningún Person existente (LoginWithGoogleService tira GoogleAccountNotLinkedException
-// antes de llegar acá, el frontend le muestra la confirmación y recién ahí se llama a esto).
 @UseCase
 public class RegisterWithGoogleService implements RegisterWithGoogleUseCase {
-
     private final GoogleIdTokenService googleIdTokenService;
     private final PersonRepository personRepository;
     private final StudentRepository studentRepository;

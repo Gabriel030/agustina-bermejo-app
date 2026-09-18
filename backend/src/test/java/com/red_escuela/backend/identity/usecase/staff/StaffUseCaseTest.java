@@ -22,16 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * RF-AD-05/RF-DI-04 (hallazgo de la revisión de matriz de permisos): antes de este fix no
- * existía ningún camino para dar de alta un usuario ADMINISTRATIVO — el Director tiene que
- * poder hacerlo, y el Administrativo tiene que seguir limitado a Docente/Preceptor.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class StaffUseCaseTest extends AbstractIntegrationTest {
-
     @Autowired
     private CreateStaffUseCase createStaffUseCase;
 

@@ -17,11 +17,8 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
-// Alta de personal (Docente/Preceptor/Administrativo) — a diferencia del alumno no hay flujo
-// de prospecto, RF-AD-05 no lo describe así: dni/username se setean de una.
 @UseCase
 public class CreateStaffService implements CreateStaffUseCase {
-
     private final PersonRepository personRepository;
     private final InstructorRepository instructorRepository;
     private final RoleRepository roleRepository;

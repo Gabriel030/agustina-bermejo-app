@@ -18,12 +18,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-// Registro independiente (Épica 7): a diferencia del alta de Prospect (staff-driven, con
-// revisión de documentación antes de dar credenciales), acá la persona crea su propia cuenta
-// y queda logueada de inmediato — sin rol todavía, hasta su primera aprobación.
 @UseCase
 public class RegisterService implements RegisterUseCase {
-
     private final PersonRepository personRepository;
     private final StudentRepository studentRepository;
     private final InstitutionRepository institutionRepository;
@@ -57,10 +53,6 @@ public class RegisterService implements RegisterUseCase {
         Institution institution = institutionRepository.findById(request.institutionId())
                 .orElseThrow(() -> new InstitutionNotFoundException(request.institutionId()));
 
-        // El try/catch envuelve también la creación de Person (no solo el save de Student):
-        // Person.id es GenerationType.IDENTITY, así que personRepository.save(...) dentro de
-        // PersonFactory.createBasePerson ejecuta el INSERT de inmediato — un email duplicado
-        // con username distinto (uk_person_email) viola el constraint ahí mismo.
         try {
             Person person = personFactory.createPersonWithCredentials(
                     request.nombre(), request.apellido(), request.email(),
@@ -69,8 +61,6 @@ public class RegisterService implements RegisterUseCase {
             Student student = new Student();
             student.setPerson(person);
             student.setInstitution(institution);
-            // CONFIRMADO, no PROSPECTO: acá no hay revisión de documentación pendiente para
-            // la cuenta en sí — eso ocurre recién si pide una carrera.
             student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
             studentRepository.saveAndFlush(student);
 

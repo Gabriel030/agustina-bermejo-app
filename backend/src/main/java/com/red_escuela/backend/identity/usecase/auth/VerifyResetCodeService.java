@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 
 @UseCase
 public class VerifyResetCodeService implements VerifyResetCodeUseCase {
-
     private final PersonRepository personRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final SecureTokenGenerator secureTokenGenerator;
@@ -33,13 +32,6 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
         this.passwordResetExchangeTokenExpirationMinutes = passwordResetExchangeTokenExpirationMinutes;
     }
 
-    // noRollbackFor: sin esto, el incremento de attempts (registerFailedResetAttempt) se
-    // pierde — al lanzar InvalidPasswordResetTokenException dentro de la misma transacción,
-    // Spring hace rollback de todo lo hecho en el método, incluido el save() del intento
-    // fallido, que tiene que sobrevivir aunque la operación termine en excepción.
-    //
-    // Devuelve un token de intercambio de un solo uso, corta duración — separa "probaste
-    // que el código te llegó" de "ya elegiste la contraseña nueva".
     @Override
     @Transactional(noRollbackFor = InvalidPasswordResetTokenException.class)
     public String verify(VerifyResetCodeCommand command) {
@@ -58,8 +50,6 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
         String exchangeToken = secureTokenGenerator.generate();
         resetToken.setExchangeTokenHash(TokenHashUtil.sha256Hex(exchangeToken));
         resetToken.setExchangeExpiresAt(LocalDateTime.now().plusMinutes(passwordResetExchangeTokenExpirationMinutes));
-        // El código de 6 dígitos ya cumplió su función — se marca usado para que no sirva
-        // para un segundo intercambio, aunque la contraseña todavía no se haya cambiado.
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
 
