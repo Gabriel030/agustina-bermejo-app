@@ -32,6 +32,7 @@ import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
+import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
@@ -76,7 +77,7 @@ const RUTAS_POR_ROL = {
   administrativo: {
     Layout: AdministrativoLayout,
     paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   director: {
     Layout: DirectorLayout,

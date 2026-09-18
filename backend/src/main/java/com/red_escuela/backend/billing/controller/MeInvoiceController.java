@@ -123,6 +123,6 @@ public class MeInvoiceController {
 
     private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
         return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
-                invoices.stream().map(InvoiceResponse::from).toList());
+                invoices.stream().map(InvoiceResponse::from).toList(), null, null, null, null);
     }
 }

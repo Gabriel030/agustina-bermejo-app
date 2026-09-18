@@ -18,6 +18,6 @@ public class ListPendingPaymentReceiptsService implements ListPendingPaymentRece
 
     @Override
     public List<PaymentReceipt> list() {
-        return paymentReceiptRepository.findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus.PENDING_REVIEW);
+        return paymentReceiptRepository.findByStatusWithStudentDetails(PaymentReceiptStatus.PENDING_REVIEW);
     }
 }
