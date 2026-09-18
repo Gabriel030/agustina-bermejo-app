@@ -59,7 +59,7 @@ public class CourseEnrollmentApplicationService {
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         courseEnrollmentService.validateCanEnroll(student, course);
 
-        Invoice invoice = invoiceFactory.crearAdHocParaCurso(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
+        Invoice invoice = invoiceFactory.createAdHocForCourse(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();

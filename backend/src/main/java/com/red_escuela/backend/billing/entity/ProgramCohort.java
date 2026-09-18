@@ -8,14 +8,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.identity.entity.Person;
 
-// Every program opens exactly 2 cohorts per year (institutional policy) — each one
-// administratively independent, with its own admission window and its own real cursada start.
 @Getter
 @Setter
 @Entity
 @Table(name = "program_cohort", uniqueConstraints = @UniqueConstraint(columnNames = {"template_id", "intake"}))
 public class ProgramCohort {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,14 +26,12 @@ public class ProgramCohort {
     @Column(name = "intake", nullable = false)
     private CohortIntake intake;
 
-    // From when this cohort's enrollment fee can be paid.
     @Column(name = "admission_start", nullable = false)
     private LocalDate admissionStart;
 
     @Column(name = "admission_end", nullable = false)
     private LocalDate admissionEnd;
 
-    // First real month of this cohort's cursada — never the month the enrollment was requested.
     @Column(name = "cursada_start", nullable = false)
     private LocalDate cursadaStart;
 

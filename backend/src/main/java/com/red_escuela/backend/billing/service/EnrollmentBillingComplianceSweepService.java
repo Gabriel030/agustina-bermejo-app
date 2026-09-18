@@ -25,17 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// Corre después de InvoiceOverdueSweepService (mismo cron diario, minuto siguiente). Corrección
-// 2026-09-04 (auditoría): la justificación original de esta clase decía que OFFSET normal era
-// seguro acá porque "solo modifica billingStanding, un campo distinto del que usa el WHERE" —
-// eso es falso para el camino de baja: al llegar a WITHDRAWN_FOR_NONPAYMENT, el row processor
-// llama a darDeBaja, que SÍ cambia el status académico (justo el campo que filtra el WHERE de
-// esta paginación). Con OFFSET, eso puede saltear una fila de la página siguiente en la misma
-// corrida (mismo patrón de bug que ya motivó el keyset pagination de InvoiceOverdueSweepService).
-// Se usa keyset pagination (id > lastId) acá también.
 @Service
 public class EnrollmentBillingComplianceSweepService {
-
     private static final int PAGE_SIZE = 200;
     private static final String JOB_NAME = "EnrollmentBillingComplianceSweepService";
 

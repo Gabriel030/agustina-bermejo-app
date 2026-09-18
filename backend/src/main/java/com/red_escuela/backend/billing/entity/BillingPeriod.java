@@ -8,14 +8,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.identity.entity.Person;
 
-// Informational window during which the current installment's invoice can be issued (e.g. day 1
-// to 10) — does not block anything yet, reserved for future student self-service.
 @Getter
 @Setter
 @Entity
 @Table(name = "billing_period")
 public class BillingPeriod {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)

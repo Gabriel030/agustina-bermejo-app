@@ -48,25 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
-/**
- * Decisión 2026-09-03 (progresión multi-año): carreras de 2, 2.5, 3 y 3.5 años, avance de año,
- * repetición de año, atraso, e intercalado de forma de pago dentro y entre años. NO
- * @Transactional a propósito — mismo motivo que ProgramCohortBillingTest (InvoiceFactory usa
- * REQUIRES_NEW).
- *
- * Todos los períodos se anclan a YearMonth.now() y avanzan siempre hacia adelante — nunca hacia
- * atrás — porque PaymentPlanSelectionRepository.findActiveForProgramEnrollment exige
- * effectiveFrom <= period, y effectiveFrom siempre se fija a "hoy" real al seleccionar un plan
- * (ver PaymentPlanSelectionService.seleccionarParaCarrera). Por el mismo motivo, un bloque UPFRONT
- * siempre nace anclado a "hoy" (no a un período simulado futuro) — así que, para evitar que dos
- * años simulados choquen contra el mismo rango de períodos (Invoice es idempotente por
- * (programEnrollment, feeType, period): un choque no lanza error, simplemente no crea nada nuevo),
- * cada año usa un bloque de meses disjunto del resto.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class MultiYearProgramBillingTest extends AbstractIntegrationTest {
-
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
 
@@ -161,9 +145,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         return programRepository.save(program);
     }
 
-    // first/last son inclusive — el Term queda acotado EXACTAMENTE a esos meses, sin margen, para
-    // que dos años consecutivos (first/last disjuntos) nunca se superpongan en
-    // PaymentPlanSelectionService.monthsLeftInTemplate.
     private Term persistTerm(int label, YearMonth first, YearMonth last) {
         Term term = new Term();
         term.setYear(label);
@@ -234,8 +215,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
                         LocalDate.now().minusDays(1), LocalDate.now().plusDays(60)));
     }
 
-    // Carrera de 2 años: 2 ProgramYearBillingTemplate (10 cuotas c/u), avanza de año una vez,
-    // ambos años en MONTHLY — total 20 cuotas RECURRING_FEE, cada una independiente de la otra.
     @Test
     void twoYearCareerGeneratesEachYearsInvoicesSeparately() {
         YearMonth base = YearMonth.now();
@@ -260,18 +239,14 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
         }
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(10);
 
-        // Avanza al año 2 — programCohort NO cambia, solo currentBillingTemplate. Recargar es
-        // obligatorio: advanceAcademicYear persiste sobre una instancia propia (findOrThrow
-        // interno), distinta de esta variable — sin recargar, generarProximaCuotaParaCarrera
-        // seguiría viendo currentBillingTemplate=null y caería al template del año 1.
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), templateAño2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10 + i));
         }
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20);
 
@@ -280,7 +255,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         assertThat(recargado.getCurrentBillingTemplate().getId()).isEqualTo(templateAño2.getId());
     }
 
-    // Carrera de 2 años y medio: año 3 es una plantilla "corta" (5 cuotas, medio año).
     @Test
     void twoAndHalfYearCareerLastYearHasFewerInvoices() {
         YearMonth base = YearMonth.now();
@@ -298,7 +272,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 10, director);
 
         Term term3 = persistTerm(3, base.plusMonths(20), base.plusMonths(24));
-        ProgramYearBillingTemplate template3Corto = persistTemplate(program, term3, 5, director); // medio año
+        ProgramYearBillingTemplate template3Corto = persistTemplate(program, term3, 5, director);
 
         Student student = persistStudent("83000002");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort1);
@@ -307,28 +281,24 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
         }
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10 + i));
         }
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template3Corto.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         for (int i = 0; i < 5; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(20 + i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(20 + i));
         }
 
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(25); // 10 + 10 + 5
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(25);
     }
 
-    // Repetir un año NO acumula contra el total de la carrera: el remanente UPFRONT del año
-    // repetido se mide contra SU PROPIA plantilla, no contra lo ya facturado en años anteriores.
-    // El bloque UPFRONT del año repetido se ancla a "hoy" (base), así que el año 1 se simula
-    // deliberadamente MÁS ADELANTE en el calendario (base+10..+19) para no chocar contra él.
     @Test
     void studentRepeatingAYearDoesNotAccumulateAgainstCareerTotal() {
         YearMonth base = YearMonth.now();
@@ -342,8 +312,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         ProgramCohort cohort1 = persistCohort(template1, CohortIntake.FIRST,
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now(), director);
 
-        // "Repite el año 1": una plantilla nueva, con el mismo contenido de cuotas — el alumno
-        // vuelve a cursar las mismas materias.
         Term termRepite = persistTerm(2, base.minusMonths(1), base.plusMonths(9));
         ProgramYearBillingTemplate templateRepite = persistTemplate(program, termRepite, 10, director);
 
@@ -354,29 +322,20 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10 + i));
         }
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(10);
 
-        // Repite: avanza a la plantilla de repetición y pide TODO el año adelantado (10 meses).
-        // Si el remanente se calculara contra el total de la carrera (10 ya generadas + 10
-        // nuevas) esto se rechazaría por error — tiene que aceptarse, porque se mide únicamente
-        // contra la plantilla de ESTE año.
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), templateRepite.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 10));
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base);
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base);
 
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20); // 10 del año 1 + 10 de la repetición
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20);
     }
 
-    // Alumno intercala: paga los primeros meses de un año MONTHLY, después adelanta el resto de
-    // ESE MISMO año por UPFRONT (que se ancla a "hoy" y por lo tanto se superpone de forma
-    // idempotente con lo ya generado — mismo comportamiento que
-    // cambioDeMonthlyAUpfrontAMitadDeAñoTambiénFunciona en ProgramCohortBillingTest), y al año
-    // siguiente vuelve a MONTHLY — sin arrastre entre años.
     @Test
     void studentAlternatesPaymentMethodsWithinAndAcrossYearsNoCarryover() {
         YearMonth base = YearMonth.now();
@@ -396,39 +355,31 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("83000004");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort1);
 
-        // Año 1: 4 meses por MONTHLY...
         PaymentPlanOption mensual = monthlyPlan(program, director);
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 4; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
         }
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(4);
 
-        // ...y decide adelantar los 6 meses que le quedan del año 1 (10 - 4 = 6). El bloque
-        // UPFRONT nace en "hoy" (base) y se superpone con los 4 ya generados (base..base+3) —
-        // esos 4 quedan como no-op idempotente, solo se crean 2 nuevos (base+4, base+5): el total
-        // del año 1 queda en 6, no en 4+6.
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 6));
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base);
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base);
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(6);
 
-        // Año 2: vuelve a MONTHLY, arranca fresco (remanente = 10, no 4).
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
         PaymentPlanOption mensualAño2 = monthlyPlan(program, director);
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensualAño2.getId(), null));
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10 + i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10 + i));
         }
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(16); // 6 del año 1 + 10 del año 2
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(16);
     }
 
-    // Pedir UPFRONT por más de lo que queda del año CORRIENTE se rechaza, incluso si el alumno
-    // ya venía de un año anterior completo — el tope nunca es "total de la carrera menos esto".
     @Test
     void requestingMoreThanCurrentYearRemainderIsRejectedEvenAfterACompleteYear() {
         YearMonth base = YearMonth.now();
@@ -443,7 +394,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now(), director);
 
         Term term2 = persistTerm(2, base.plusMonths(10), base.plusMonths(18));
-        ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 8, director); // año 2 más corto
+        ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 8, director);
 
         Student student = persistStudent("83000005");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort1);
@@ -452,24 +403,18 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
         }
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
 
-        // El año 2 solo tiene 8 cuotas de plantilla — pedir 9 tiene que rechazarse, aunque el
-        // alumno ya haya facturado 10 en el año anterior sin ningún problema.
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 9)))
                 .isInstanceOf(InvalidPaymentPlanScopeException.class);
     }
 
-    // Gap real (2026-09-03): antes de RecurringFeeWindowService, MONTHLY no tenía ningún tope
-    // de cuotas ni de fecha para una carrera — solo se validaba una vez, al ELEGIR un plan
-    // UPFRONT, nunca en la generación real. Un cron mensual futuro habría seguido generando
-    // cuotas más allá de recurringFeeInvoicesCount, o fuera del cuatrimestre, indefinidamente.
     @Test
     void monthlyGenerationBeyondTemplateCapIsSilentNoOp() {
         YearMonth base = YearMonth.now();
@@ -479,7 +424,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term = persistTerm(1, base, base.plusMonths(9));
-        ProgramYearBillingTemplate template = persistTemplate(program, term, 4, director); // cuatrimestre
+        ProgramYearBillingTemplate template = persistTemplate(program, term, 4, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now(), director);
 
@@ -490,16 +435,13 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
-        // Pide 6 meses aunque la plantilla del cohorte solo tiene 4 — los 2 de más no se crean.
         for (int i = 0; i < 6; i++) {
-            invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
         }
 
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(4);
     }
 
-    // Mismo gap, ahora por FECHA: un período fuera del Term del cohorte corriente no genera
-    // cuota, aunque no se haya llegado todavía al tope de recurringFeeInvoicesCount.
     @Test
     void monthlyGenerationOutsideCohortWindowIsSilentNoOp() {
         YearMonth base = YearMonth.now();
@@ -508,11 +450,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(5000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
-        // Term de 5 meses (base..base+4) con una plantilla de 3 cuotas — el tope de plantilla
-        // (ProgramYearBillingTemplate ahora se autovalida contra la duración del Term, así que
-        // no podría configurarse un tope de cuotas MAYOR a esos 5 meses; para aislar el rechazo
-        // por FECHA del rechazo por CUPO, acá el tope de 3 queda deliberadamente sin alcanzar
-        // cuando se pide un período fuera de ventana).
         Term term = persistTerm(1, base, base.plusMonths(4));
         ProgramYearBillingTemplate template = persistTemplate(program, term, 3, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -525,11 +462,8 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null));
 
-        // Un solo mes dentro de la ventana (1 de 3 del tope, todavía queda cupo de sobra) y
-        // después un período bien afuera de la ventana del Term — el rechazo tiene que venir
-        // de la FECHA, no del cupo (que ni de cerca se alcanzó).
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base);
-        invoiceGenerationService.generarProximaCuotaParaCarrera(enrollment, base.plusMonths(10));
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base);
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10));
 
         assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(1);
     }

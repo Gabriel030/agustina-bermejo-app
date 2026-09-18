@@ -42,13 +42,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-// Fase 6.7: tests 76, 77, 78 (cobro de derecho de examen sin afectar la plantilla anual, dos
-// conceptos ad-hoc del mismo tipo en el mismo mes sin chocar con el unique constraint, y alta
-// ad-hoc restringida a ADMINISTRATIVO se cubre en el controller — acá se testea solo el service).
 @SpringBootTest
 @ActiveProfiles("test")
 class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceForCourseEnrollmentUseCase;
 
@@ -151,7 +147,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void administrativoCobraDerechoDeExamenSinAfectarLaPlantillaAnual() {
+    void administrativeChargesExamFeeWithoutAffectingTheAnnualTemplate() {
         ProgramEnrollment enrollment = persistProgramEnrollment("99200001." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.EXAM_RIGHT, BigDecimal.valueOf(1500), LocalDate.now(), "Derecho de examen final", null, null);
@@ -169,7 +165,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void dosDerechosDeExamenEnElMismoMesNoChocanConElUniqueConstraint() {
+    void twoExamFeesInTheSameMonthDoNotClashWithTheUniqueConstraint() {
         CourseEnrollment enrollment = persistCourseEnrollment("99200002." + System.nanoTime());
         LocalDate dueDate = LocalDate.now();
         CreateAdHocInvoiceRequest primero = new CreateAdHocInvoiceRequest(
@@ -186,7 +182,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void feeTypeRecurrenteEsRechazadoParaAltaAdHoc() {
+    void recurringFeeTypeIsRejectedForAdHocCreation() {
         CourseEnrollment enrollment = persistCourseEnrollment("99200003." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.RECURRING_FEE, BigDecimal.valueOf(500), LocalDate.now(), "Intento inválido", null, null);
@@ -196,7 +192,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaAdHocGuardaSubjectYDescripcion() {
+    void adHocCreationSavesSubjectAndDescription() {
         CourseEnrollment enrollment = persistCourseEnrollment("99200004." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.RETAKEN_SUBJECT_FEE, BigDecimal.valueOf(800), LocalDate.now(), "Recursada informal", null, null);

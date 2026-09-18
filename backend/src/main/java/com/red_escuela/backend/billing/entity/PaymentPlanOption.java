@@ -16,7 +16,6 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 @Entity
 @Table(name = "payment_plan_option")
 public class PaymentPlanOption {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,14 +36,11 @@ public class PaymentPlanOption {
     @Column(name = "cadence", nullable = false)
     private PaymentPlanCadence cadence;
 
-    // Only meaningful if cadence = UPFRONT. ColumnTransformer, no JdbcTypeCode — ver
-    // InvoiceAdjustment.value para el porqué.
     @Convert(converter = MonetaryAdjustmentValueConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "upfront_discount", columnDefinition = "jsonb")
     private MonetaryAdjustmentValue upfrontDiscount;
 
-    // The Director can turn this window on/off per program and per year — not a fixed benefit.
     @Column(name = "upfront_window_enabled", nullable = false)
     private boolean upfrontWindowEnabled;
 

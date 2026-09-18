@@ -10,12 +10,8 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// Solo la primera selección de un enrollment puede calificar (el caller decide cuándo llamar
-// esto) — acá solo se resuelve si hay una Promotion vigente para el curso/carrera en la fecha
-// de matriculación, y se registra la redención si la hay.
 @Service
 public class PromotionRedeemer {
-
     private final PromotionRepository promotionRepository;
     private final PromotionRedemptionRepository promotionRedemptionRepository;
 

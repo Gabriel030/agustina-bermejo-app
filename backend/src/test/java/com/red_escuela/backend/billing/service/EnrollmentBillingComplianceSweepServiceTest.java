@@ -35,17 +35,9 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Fase 6.3: tests 7, 8, 9 (mora de un mes suspende, dos meses da de baja, pagar antes de la baja
- * la evita), 132-134 (criterio doble: antigüedad O cantidad de cuotas OVERDUE) y 3/5 (billingStanding
- * consistente con una mezcla de cuotas pagas y pendientes-no-vencidas). NO @Transactional a
- * propósito: cada enrollment se procesa en su propia transacción real
- * (EnrollmentBillingComplianceRowProcessor, REQUIRES_NEW).
- */
 @SpringBootTest
 @ActiveProfiles("test")
 class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private EnrollmentBillingComplianceSweepService sweepService;
 
@@ -112,9 +104,6 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         return persistInvoice(enrollment, amount, dueDate, YearMonth.from(dueDate), status);
     }
 
-    // period explícito y distinto de dueDate: dos Invoice OVERDUE simultáneas del mismo
-    // enrollment necesitan un period distinto cada una (uk_invoice_billable_period), aunque
-    // ambas venzan dentro del mismo mes calendario real.
     private Invoice persistInvoice(ProgramEnrollment enrollment, BigDecimal amount, LocalDate dueDate, YearMonth period, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
@@ -145,7 +134,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void alumnoConMoraDeUnMesQuedaSuspendido() {
+    void studentWithOneMonthOfNonPaymentIsSuspended() {
         Person director = persistPerson("director.compliance1." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000101");
@@ -157,7 +146,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void alumnoSuspendidoSinPagarDosMesesEsDadoDeBajaAutomaticamente() {
+    void suspendedStudentUnpaidForTwoMonthsIsAutomaticallyWithdrawn() {
         Person director = persistPerson("director.compliance2." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000102");
@@ -171,7 +160,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void alumnoSuspendidoQuePagaAntesDeDosMesesVuelveAAlDiaSinDarseDeBaja() {
+    void suspendedStudentWhoPaysBeforeTwoMonthsReturnsToGoodStandingWithoutBeingWithdrawn() {
         Person director = persistPerson("director.compliance3." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000103");
@@ -189,12 +178,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
-    // Test 132 de la spec (el nombre original de la spec dice "tres", pero su propia descripción
-    // en prosa pide "un alumno con 2 Invoice OVERDUE recientes" con suspensionAfterInvoiceCount=2
-    // — inconsistencia de la spec misma, no del test; se corrige acá el nombre del método para que
-    // coincida con lo que realmente se ejercita, auditoría de calidad de tests 2026-09-04).
     @Test
-    void dosInvoicesOverdueSimultaneasSuspendenAunqueNingunaSeaMuyVieja() {
+    void twoSimultaneousOverdueInvoicesSuspendEvenIfNoneIsVeryOld() {
         Person director = persistPerson("director.compliance4." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000104");
@@ -207,7 +192,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void unaSolaInvoiceMuyViejaSuspendeAunqueSeaLaUnicaOverdue() {
+    void aSingleVeryOldInvoiceSuspendsEvenIfItIsTheOnlyOverdueOne() {
         Person director = persistPerson("director.compliance5." + System.nanoTime());
         persistPolicy(director, 30, 5, 60, 6);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000105");
@@ -219,7 +204,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void unPagoParcialDeUnaDeLasCuotasQueSuspendieronNoLevantaLaSuspensionSola() {
+    void aPartialPaymentOfOneOfTheInstallmentsThatCausedSuspensionDoesNotLiftTheSuspensionAlone() {
         Person director = persistPerson("director.compliance6." + System.nanoTime());
         persistPolicy(director, 30, 2, 60, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000106");
@@ -235,12 +220,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
     }
 
-    // Regresión (auditoría 2026-09-04): antes, la condición de "cero deuda" para volver a
-    // UP_TO_DATE miraba Invoice PENDING u OVERDUE — un enrollment SUSPENDED que saldaba TODA su
-    // mora pero tenía una Invoice PENDING futura ya generada (plan UPFRONT, o matrícula+primera
-    // cuota nacidas juntas) nunca veía "cero" y quedaba SUSPENDED para siempre.
     @Test
-    void saldarTodaLaMoraLevantaLaSuspensionAunqueHayaUnaCuotaFuturaPendienteTodaviaNoVencida() {
+    void payingOffAllTheOverdueDebtLiftsTheSuspensionEvenIfThereIsAFutureInstallmentNotYetDue() {
         Person director = persistPerson("director.compliance9." + System.nanoTime());
         persistPolicy(director, 10, 2, 30, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000109");
@@ -250,8 +231,6 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
         overdue.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(overdue);
-        // Cuota futura ya generada (ej. bloque UPFRONT), todavía dentro de su propio período —
-        // no debería impedir que la suspensión se levante, porque no es deuda vencida.
         persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusDays(20), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
 
@@ -259,12 +238,11 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void alumnoQueCambiaDePlanDePagoAMitadDeCarreraSigueAlDiaConsistentemente() {
+    void studentWhoChangesPaymentPlanMidProgramStaysConsistentlyInGoodStanding() {
         Person director = persistPerson("director.compliance7." + System.nanoTime());
         persistPolicy(director, 10, 2, 30, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000107");
 
-        // Primer semestre (simulando UPFRONT ya pagado completo): 5 cuotas, todas PAID.
         YearMonth base = YearMonth.now().minusMonths(6);
         for (int i = 0; i < 5; i++) {
             persistInvoice(enrollment, BigDecimal.valueOf(1000), base.plusMonths(i).atDay(1), InvoiceStatus.PAID);
@@ -272,13 +250,10 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
 
-        // Segundo semestre (simulando MONTHLY mes a mes): la cuota del mes actual todavía no
-        // venció — billingStanding tiene que seguir UP_TO_DATE, no hay nada vencido.
         Invoice monthlyInvoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusDays(5), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
 
-        // Un mes después, esa cuota ya se pagó y nace la siguiente, tampoco vencida todavía.
         monthlyInvoice.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(monthlyInvoice);
         persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusMonths(1).plusDays(5), InvoiceStatus.PENDING);
@@ -286,13 +261,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
     }
 
-    // Test 5 de la spec. Corrección 2026-09-04 (auditoría de calidad de tests): el nombre original
-    // ("...SinImportarCombinacionDePlanes") sugería variar tipo de plan (MONTHLY/UPFRONT) — esa
-    // variación real la cubre alumnoQueCambiaDePlanDePagoAMitadDeCarreraSigueAlDiaConsistentemente
-    // (arriba); este test solo verifica una progresión lineal de cuotas pagas + una pendiente
-    // futura consultada en tres momentos distintos, sin variar el tipo de plan.
     @Test
-    void billingStandingSeMantieneUpToDateConsultadoEnTresMomentosDistintos() {
+    void billingStandingStaysUpToDateWhenQueriedAtThreeDifferentMoments() {
         Person director = persistPerson("director.compliance8." + System.nanoTime());
         persistPolicy(director, 10, 2, 30, 3);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000108");

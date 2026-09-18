@@ -44,13 +44,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Gap de test detectado en la auditoría 2026-09-04: priceBreakdown (Flujo 16, "transparencia de
-// precio") no tenía ningún test dedicado en todo el proyecto.
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class InvoiceQueryServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private InvoiceQueryService invoiceQueryService;
 
@@ -138,7 +135,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void desgloseIncluyeAjustesPagosYLaDescripcionDelPriceRevisionVigente() {
+    void breakdownIncludesAdjustmentsPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Person admin = persistPerson("admin.breakdown1." + System.nanoTime());
         Course course = persistCourse();

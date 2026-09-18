@@ -20,7 +20,7 @@ public class ProgramCohortService {
         return programCohortRepository.findById(id).orElseThrow(() -> new ProgramCohortNotFoundException(id));
     }
 
-    public boolean estaDentroDeLaVentanaDeAdmision(ProgramCohort cohort, LocalDate at) {
+    public boolean isWithinAdmissionWindow(ProgramCohort cohort, LocalDate at) {
         return !at.isBefore(cohort.getAdmissionStart()) && !at.isAfter(cohort.getAdmissionEnd());
     }
 }

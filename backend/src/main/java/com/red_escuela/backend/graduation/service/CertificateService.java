@@ -64,7 +64,7 @@ public class CertificateService {
         if (!cursandoAlgo) {
             throw new CertificateNotEligibleException("el alumno no tiene ninguna cursada activa en este momento");
         }
-        if (invoiceQueryService.tieneDeudaVencida(student.getId())) {
+        if (invoiceQueryService.hasOverdueDebt(student.getId())) {
             throw new CertificateNotEligibleException("el alumno no está al día con sus pagos");
         }
 

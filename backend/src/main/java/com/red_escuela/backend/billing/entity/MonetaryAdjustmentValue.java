@@ -3,10 +3,7 @@ package com.red_escuela.backend.billing.entity;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-// Polymorphic Value Object (sealed interface): "fixed amount or percentage, never both" is an
-// invariant of the type itself, not a DB constraint that a direct UPDATE could bypass.
 public sealed interface MonetaryAdjustmentValue permits MonetaryAdjustmentValue.FixedAmount, MonetaryAdjustmentValue.PercentageAmount {
-
     BigDecimal resolve(BigDecimal baseAmount);
 
     record FixedAmount(BigDecimal amount) implements MonetaryAdjustmentValue {

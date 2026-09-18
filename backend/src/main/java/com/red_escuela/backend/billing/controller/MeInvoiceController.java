@@ -91,15 +91,15 @@ public class MeInvoiceController {
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse misCuotasDeCurso(@PathVariable Long id) {
+    public EnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.porCursoPropio(studentId, id));
+        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.byOwnCourse(studentId, id));
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse misCuotasDeCarrera(@PathVariable Long id) {
+    public EnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.porCarreraPropia(studentId, id));
+        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.byOwnProgram(studentId, id));
     }
 
     @GetMapping("/billing-standing")

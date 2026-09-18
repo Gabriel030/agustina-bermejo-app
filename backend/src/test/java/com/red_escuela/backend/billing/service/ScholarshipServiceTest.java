@@ -42,13 +42,9 @@ import java.time.YearMonth;
 import static org.assertj.core.api.Assertions.assertThat;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 
-// Fase 6.4: tests 11, 32/82 (monto fijo no se ajusta solo), 80, 81. NO @Transactional a
-// propósito: InvoiceFactory.crearParaCurso usa REQUIRES_NEW (mismo motivo que el resto de los
-// tests de facturación de este proyecto).
 @SpringBootTest
 @ActiveProfiles("test")
 class ScholarshipServiceTest extends AbstractIntegrationTest {
-
     @Autowired
     private com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase grantScholarshipForCourseUseCase;
 
@@ -172,7 +168,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         return course;
     }
 
-    private void autenticarComo(Person person) {
+    private void authenticateAs(Person person) {
         org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
                 new org.springframework.security.authentication.TestingAuthenticationToken(person.getId().toString(), null));
     }
@@ -183,7 +179,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     private void seleccionarPlanMensual(CourseEnrollment enrollment, Person director) {
-        autenticarComo(director);
+        authenticateAs(director);
         var option = createPaymentPlanOptionForCourseUseCase.create(enrollment.getCourse().getId(),
                 new com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest(
                         "Mensual", com.red_escuela.backend.billing.entity.PaymentPlanCadence.MONTHLY, null, false, null, null));
@@ -192,7 +188,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void becaDelCienPorCientoHaceNacerLaInvoiceDirectamenteEnWaived() {
+    void hundredPercentScholarshipMakesTheInvoiceBornDirectlyWaived() {
         Person director = persistPerson("director.scholarship1." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000001", course);
@@ -201,7 +197,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(null, BigDecimal.ONE), "Beca completa", 3));
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
@@ -210,7 +206,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void becaParcialDescuentaCorrectamenteDeCadaCuotaNueva() {
+    void partialScholarshipCorrectlyDiscountsFromEachNewInstallment() {
         Person director = persistPerson("director.scholarship2." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000002", course);
@@ -219,7 +215,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.30)), "Beca 30%", 3));
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
@@ -227,9 +223,8 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(7000));
     }
 
-    // Test 32/82: una Scholarship(FixedAmount) no se ajusta sola por un PriceRevision nuevo.
     @Test
-    void becaDeMontoFijoNoSeAjustaSolaPorUnAumentoDePrecio() {
+    void fixedAmountScholarshipDoesNotAdjustItselfForAPriceIncrease() {
         Person director = persistPerson("director.scholarship3." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000003", course);
@@ -238,7 +233,6 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(5000), null), "Beca fija $5.000", 3));
 
-        // Sube el precio del curso (nuevo PriceRevision).
         PriceRevision aumento = new PriceRevision();
         aumento.setCourse(course);
         aumento.setFeeType(FeeType.RECURRING_FEE);
@@ -248,20 +242,16 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         aumento.setCreatedBy(director);
         priceRevisionRepository.save(aumento);
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
-        // Precio nuevo 20000, descuento sigue siendo $5.000 fijo (no un % actualizado).
         assertThat(invoice.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(20000));
         assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(15000));
     }
 
-    // Test 80: otorgar un ajuste manual del 100% sobre una Invoice PENDING ya existente la deja
-    // en WAIVED — no hace falta que nazca así, la transición corre para cualquier ajuste que deje
-    // el saldo en cero.
     @Test
-    void unAjusteManualQueSaldaElTotalDejaLaInvoiceEnWaived() {
+    void aManualAdjustmentThatSettlesTheTotalLeavesTheInvoiceWaived() {
         Person director = persistPerson("director.scholarship4." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(5000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000004", course);
@@ -282,9 +272,8 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
     }
 
-    // Test 81: una Invoice WAIVED con dueDate ya pasada no es tocada por el sweep de mora.
     @Test
-    void unaCuotaWaivedNuncaRecibeRecargoAunqueVenza() {
+    void aWaivedInstallmentNeverReceivesASurchargeEvenIfItBecomesOverdue() {
         Person director = persistPerson("director.scholarship5." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(5000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000005", course);
@@ -317,7 +306,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void otorgarBecaConMasCuotasQueLaDuracionDelCursoSeRechaza() {
+    void grantingAScholarshipWithMoreInstallmentsThanTheCourseDurationIsRejected() {
         Person director = persistPerson("director.scholarship6." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000), 3);
         CourseEnrollment enrollment = persistCourseEnrollment("88000006", course);
@@ -329,7 +318,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unSegundoOtorgamientoMientrasHayUnaBecaActivaSeRechazaPorElConstraintDeBase() {
+    void aSecondGrantWhileAScholarshipIsActiveIsRejectedByTheDatabaseConstraint() {
         Person director = persistPerson("director.scholarship8." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000008", course);
@@ -344,7 +333,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void darDeBajaCancelaLosInstallmentsPendientesDeLaBeca() {
+    void withdrawingCancelsTheScholarshipsPendingInstallments() {
         Person director = persistPerson("director.scholarship7." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000007", course);
@@ -353,7 +342,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(),
                 new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         courseEnrollmentService.withdraw(enrollment.getId());
 
         var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
@@ -366,17 +355,14 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 .hasSize(1);
     }
 
-    // Fase 6.6: una beca otorgada DESPUÉS de que la cuota del período corriente ya se generó y
-    // pagó no puede recuperar ese descuento vía un ajuste sobre esa Invoice (ya está PAID) — en
-    // vez de eso genera una CreditNote por la diferencia y consume igual la primera installment.
     @Test
-    void otorgarUnaBecaConLaCuotaDelMesYaPagaGeneraUnaNotaDeCreditoRetroactiva() {
+    void grantingAScholarshipWithTheCurrentMonthsInstallmentAlreadyPaidGeneratesARetroactiveCreditNote() {
         Person director = persistPerson("director.scholarship9." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000009", course);
         seleccionarPlanMensual(enrollment, director);
 
-        invoiceGenerationService.generarProximaCuotaParaCurso(enrollment, YearMonth.now());
+        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         Invoice cuotaDelMes = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0);
         cuotaDelMes.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(cuotaDelMes);

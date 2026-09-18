@@ -11,14 +11,11 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 
-// Value Object with temporal validity: a price that changes over time without retroactively
-// affecting invoices already generated. Every change is a new row, never an UPDATE.
 @Getter
 @Setter
 @Entity
 @Table(name = "price_revision")
 public class PriceRevision {
-
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
