@@ -28,6 +28,7 @@ import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedExcept
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
+import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,9 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private HolidayRepository holidayRepository;
 
     @AfterEach
     void clearSecurityContext() {
@@ -142,6 +146,14 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(assignment);
     }
 
+    private LocalDate nonHolidayDate(int daysFromNow) {
+        LocalDate date = LocalDate.now().plusDays(daysFromNow);
+        while (holidayRepository.existsByDate(date)) {
+            date = date.plusDays(1);
+        }
+        return date;
+    }
+
     private UpdateSectionEvaluationConfigRequest validRequest(LocalDate exam1, LocalDate exam2, LocalDate finalCall) {
         return new UpdateSectionEvaluationConfigRequest(2, exam1.plusDays(20), null, null, exam1, exam2, null, null, finalCall, null);
     }
@@ -179,7 +191,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), outsider.getId(),
-                validRequest(LocalDate.now().plusDays(40), LocalDate.now().plusDays(60), LocalDate.now().plusDays(80)))))
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80)))))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
@@ -195,7 +207,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), assistant.getId(),
-                validRequest(LocalDate.now().plusDays(40), LocalDate.now().plusDays(60), LocalDate.now().plusDays(80)))))
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80)))))
                 .isInstanceOf(NotSectionLeadInstructorException.class);
     }
 
@@ -230,18 +242,18 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         SectionEvaluationConfig saved = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
-                new UpdateSectionEvaluationConfigRequest(2, LocalDate.now().plusDays(40), null, null,
-                        LocalDate.now().plusDays(60), LocalDate.now().plusDays(120),
-                        LocalDate.now().plusDays(180), LocalDate.now().plusDays(240),
-                        LocalDate.now().plusDays(250), null)));
+                new UpdateSectionEvaluationConfigRequest(2, nonHolidayDate(40), null, null,
+                        nonHolidayDate(60), nonHolidayDate(120),
+                        nonHolidayDate(180), nonHolidayDate(240),
+                        nonHolidayDate(250), null)));
 
-        assertThat(saved.getExam3Date()).isEqualTo(LocalDate.now().plusDays(180));
-        assertThat(saved.getExam4Date()).isEqualTo(LocalDate.now().plusDays(240));
+        assertThat(saved.getExam3Date()).isEqualTo(nonHolidayDate(180));
+        assertThat(saved.getExam4Date()).isEqualTo(nonHolidayDate(240));
     }
 
     @Test
     void savingADateThatFallsOnAHolidayFails() {
-        LocalDate holidayDate = LocalDate.now().plusDays(45);
+        LocalDate holidayDate = nonHolidayDate(45);
         Holiday holiday = new Holiday();
         holiday.setDate(holidayDate);
         holiday.setDescription("Feriado de prueba");
@@ -289,7 +301,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
-                validRequest(LocalDate.now().plusDays(40), LocalDate.now().plusDays(60), LocalDate.now().plusDays(80))));
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
         SectionEvaluationConfig submitted = submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
         assertThat(submitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
@@ -310,11 +322,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Person actor = persistPersonWithRole("90000009", "DIRECTOR");
         entityManager.flush();
 
-        LocalDate finalCall1 = LocalDate.now().plusDays(80);
-        LocalDate finalCall2 = LocalDate.now().plusDays(92);
+        LocalDate finalCall1 = nonHolidayDate(80);
+        LocalDate finalCall2 = nonHolidayDate(92);
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
-                new UpdateSectionEvaluationConfigRequest(2, LocalDate.now().plusDays(40), null, null,
-                        LocalDate.now().plusDays(45), LocalDate.now().plusDays(60), null, null, finalCall1, finalCall2)));
+                new UpdateSectionEvaluationConfigRequest(2, nonHolidayDate(40), null, null,
+                        nonHolidayDate(45), nonHolidayDate(60), null, null, finalCall1, finalCall2)));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
         SectionEvaluationConfig approved = approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
@@ -340,7 +352,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
-                validRequest(LocalDate.now().plusDays(40), LocalDate.now().plusDays(60), LocalDate.now().plusDays(80))));
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
         submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
 
         SectionEvaluationConfig rejected = rejectSectionEvaluationConfigUseCase.reject(new RejectSectionEvaluationConfigCommand(section.getId(), actor,
@@ -349,7 +361,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         assertThat(rejected.getRejectionReason()).isEqualTo("Faltan fechas de TP");
 
         SectionEvaluationConfig updated = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
-                validRequest(LocalDate.now().plusDays(41), LocalDate.now().plusDays(61), LocalDate.now().plusDays(81))));
+                validRequest(nonHolidayDate(41), nonHolidayDate(61), nonHolidayDate(81))));
         assertThat(updated.getStatus()).isEqualTo(SectionEvaluationConfigStatus.DRAFT);
         assertThat(updated.getRejectionReason()).isNull();
     }
