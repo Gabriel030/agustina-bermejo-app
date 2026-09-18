@@ -6,14 +6,8 @@ import com.red_escuela.backend.academicstructure.repository.InstructorRepository
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-/**
- * Resuelve el Instructor del docente autenticado a partir del "sub" del JWT (personId),
- * nunca de un id de la URL — calco de CurrentStudentService, usado por la autorización de
- * "comisión propia" y por los endpoints propios del Docente.
- */
 @Service
 public class CurrentInstructorService {
-
     private final InstructorRepository instructorRepository;
 
     public CurrentInstructorService(InstructorRepository instructorRepository) {

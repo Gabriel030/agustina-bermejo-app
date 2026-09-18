@@ -38,16 +38,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-/**
- * RF-AUTH-03: código de recuperación de 6 dígitos, universal para cualquier authProvider,
- * en dos pasos — verifyResetCode(email, code) da un token de intercambio de un solo uso,
- * y recién con ese token resetPassword(resetToken, newPassword) cambia la contraseña.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class PasswordResetTest extends AbstractIntegrationTest {
-
     @Autowired
     private LoginUseCase loginUseCase;
 
@@ -213,10 +207,8 @@ class PasswordResetTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
-    // RF-AUTH-05: política mínima configurable (auth.password.min-length=8,
-    // auth.password.require-letter-and-digit=true en application.properties).
     @Test
-    void resetPasswordConContraseñaMuyCortaFalla() {
+    void resetPasswordWithTooShortPasswordFails() {
         Person person = persistPerson("resetuser5", "resetuser5@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "555555", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser5@example.com", "555555"));
@@ -226,7 +218,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConContraseñaSinDigitoFalla() {
+    void resetPasswordWithoutDigitFails() {
         Person person = persistPerson("resetuser6", "resetuser6@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "666666", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser6@example.com", "666666"));
@@ -236,7 +228,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConContraseñaInvalidaNoConsumeElTokenDeIntercambio() {
+    void resetPasswordWithInvalidPasswordDoesNotConsumeTheExchangeToken() {
         Person person = persistPerson("resetuser7", "resetuser7@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "777777", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser7@example.com", "777777"));
@@ -244,8 +236,6 @@ class PasswordResetTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "corta")))
                 .isInstanceOf(InvalidPasswordPolicyException.class);
 
-        // El mismo token de intercambio, con una contraseña que sí cumple la política,
-        // tiene que seguir sirviendo.
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser7", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();

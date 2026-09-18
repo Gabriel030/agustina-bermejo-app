@@ -17,13 +17,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Unitario, sin HTTP real: instancia el filtro directo y llama doFilterInternal (protected,
- * mismo paquete). Evita depender de un endpoint HTTP real solo para el test — no hay
- * ninguno protegido todavía y no corresponde inventar uno solo para esto.
- */
 class JwtAuthenticationFilterTest {
-
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
     private final JwtService jwtService = new JwtService(SECRET, 15);

@@ -50,17 +50,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 
-/**
- * Épica 7: registro independiente + solicitud de alta en carrera + inscripción
- * directa a curso. Integración real contra Postgres (AbstractIntegrationTest),
- * nada de mocks de repository — ver docs/context/testing.md.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class RegistrationFlowTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -104,7 +98,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return programRepository.save(program);
     }
 
-    // Fase 6.1: solicitar alta en carrera exige una cohorte concreta.
     private ProgramCohort persistCohort(Program program) {
         Address address = new Address();
         entityManager.persist(address);
@@ -186,8 +179,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    // Fase 6.1: matrícula/cuota salen de PriceRevision, no de Program.price/Course.price —
-    // sin esto, InvoiceFactory falla con PriceRevisionNotFoundException.
     private void persistPriceRevision(Program program, Course course, FeeType feeType, BigDecimal amount) {
         Address address = new Address();
         entityManager.persist(address);
@@ -233,8 +224,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
         String accessToken = objectMapper.readTree(response).get("accessToken").asText();
 
-        // Las credenciales elegidas en el registro ya sirven para pegarle a un
-        // endpoint protegido de inmediato, sin paso de confirmación intermedio.
         mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("Sofía"))
@@ -255,14 +244,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().isConflict());
     }
 
-    // Regresión (encontrado probando con qa/bruno, no por este test): a diferencia del
-    // caso de arriba, acá el username es distinto — la única colisión es el email. El
-    // servicio no valida esto de forma explícita (solo chequea username), pero el
-    // constraint uk_person_email a nivel DB sí lo rechaza. Antes del fix, esto escapaba
-    // sin manejar como DataIntegrityViolationException (Person.id es IDENTITY, el
-    // insert se ejecuta antes de llegar al try/catch de RegistrationService) y, por un
-    // bug separado y sistémico (/error no era permitAll), el 500 real quedaba
-    // enmascarado como un 403 vacío y engañoso.
     @Test
     void registrarseConEmailYaExistenteYUsernameDistintoDevuelve409() throws Exception {
         Long institutionId = persistInstitution();
@@ -313,7 +294,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();
 
-        // Segunda solicitud a la misma carrera mientras la primera sigue PENDING -> 409.
         mockMvc.perform(multipart("/me/program-enrollment-applications")
                         .file(comprobante())
                         .param("programId", program.getId().toString())
@@ -339,8 +319,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
                 .isNotEmpty();
         assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
-        // Aprobar la solicitud aprueba también el comprobante en la misma transacción
-        // (ver ProgramEnrollmentApplicationService.aprobar) — el Payment real ya existe.
         assertThat(persisted.getPaymentReceipt()).isNotNull();
         assertThat(persisted.getPaymentReceipt().getStatus())
                 .isEqualTo(com.red_escuela.backend.billing.entity.PaymentReceiptStatus.APPROVED);
@@ -414,9 +392,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().is4xxClientError());
     }
 
-    // Épica 7 Fase 3: ya no otorga el rol en el momento — el pago de la primera
-    // cuota es un paso bloqueante, la matriculación real (y el rol) recién ocurren
-    // cuando Administración aprueba el comprobante (PaymentReceiptService.aprobar).
     @Test
     void inscribirmeAUnCursoQuedaEnRevisionYRecienOtorgaElRolAlAprobarElComprobante() throws Exception {
         Long institutionId = persistInstitution();
@@ -437,7 +412,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.paymentStatus").value("PENDING_REVIEW"))
                 .andExpect(jsonPath("$.courseEnrollmentId").doesNotExist());
 
-        // Sin acceso todavía: ni rol ALUMNO ni CourseEnrollment real.
         mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles").isEmpty());
@@ -447,11 +421,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        // La cola es global (sin scope por alumno) y ordenada por uploadedAt ascendente — tomar
-        // el último elemento (el más reciente) en vez de .get(0) hace que el test no dependa de
-        // que ningún otro test haya dejado un comprobante PENDING_REVIEW más viejo sin resolver
-        // (hallazgo real de auditoría 2026-09-08: bajo cierto orden de ejecución de Surefire,
-        // .get(0) tomaba un comprobante ajeno dejado por PaymentReceiptServiceTest).
         JsonNode pendientes = objectMapper.readTree(pendientesResponse);
         Long receiptId = pendientes.get(pendientes.size() - 1).get("id").asLong();
 
@@ -460,7 +429,6 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
-        // Recién ahora: rol ALUMNO otorgado y CourseEnrollment real creado.
         mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles[0]").value("ALUMNO"));
@@ -471,10 +439,4 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(misSolicitudesResponse).get(0).get("courseEnrollmentId").isNull()).isFalse();
     }
-
-    // No hay test acá de "curso sin cupo" — Course.capacity (cupo del curso como conjunto,
-    // distinto del cupo de cada CourseSubjectSection) y su lista de espera con corte
-    // configurable están cubiertos en CourseEnrollmentServiceTest (decisión 2026-09-03). Lo que
-    // sí es responsabilidad de esta fase — que el endpoint nuevo delegue la validación sin
-    // bypassearla — está cubierto por el happy path de arriba.
 }
