@@ -43,6 +43,7 @@ import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExc
 import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
 import { DirectorEsquemasEvaluacion } from '@/pages/DirectorEsquemasEvaluacion';
 import { DirectorRevisarConfiguracion } from '@/pages/DirectorRevisarConfiguracion';
+import { DirectorFinanciero } from '@/pages/DirectorFinanciero';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { AlumnoLayout } from '@/layouts/AlumnoLayout';
 import { DocenteLayout } from '@/layouts/DocenteLayout';
@@ -81,8 +82,8 @@ const RUTAS_POR_ROL = {
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion', 'financiero'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
   },
 };
 
