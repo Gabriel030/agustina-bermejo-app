@@ -11,16 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-/**
- * Responsabilidad única: validar y persistir un MultipartFile a disco, devolver la
- * ruta relativa guardada. La ruta devuelta es una referencia opaca para el caller
- * (no asume que el storage siga siendo siempre filesystem — ver deuda técnica de la
- * spec: el día que se containerice la app o se migre a object storage, esta interfaz
- * no debería tener que cambiar).
- */
 @Service
 public class FileStorageService {
-
     private static final Map<String, String> ALLOWED_CONTENT_TYPES = Map.of(
             "application/pdf", "pdf",
             "image/jpeg", "jpg",
@@ -33,12 +25,6 @@ public class FileStorageService {
         this.uploadsDirectory = Path.of(uploadsDirectory);
     }
 
-    // `carpeta` agrupa el archivo dentro del directorio del alumno (hoy: el nombre
-    // de un DocumentType para documentos de alta, o "comprobantes" para
-    // PaymentReceipt) — generalizado desde un DocumentType tipado porque un
-    // comprobante de pago no es un "documento de alumno" en el mismo sentido, no
-    // tiene por qué acoplar este service a ese enum (ver Deuda técnica / spec
-    // técnica de Épica 7 Fase 3).
     public String store(Long studentId, String carpeta, MultipartFile file) {
         String extension = ALLOWED_CONTENT_TYPES.get(file.getContentType());
         if (extension == null) {

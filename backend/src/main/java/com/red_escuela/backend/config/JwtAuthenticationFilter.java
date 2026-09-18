@@ -18,15 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Arma el Authentication a partir del access token, si hay uno válido. No bloquea la
- * request acá si no hay token o es inválido — eso lo decide SecurityFilterChain (hoy
- * permitAll() en todo, así que no bloquea nada). Deja lista la infraestructura para que,
- * cuando existan endpoints de negocio, alcance con @PreAuthorize sin tocar este filtro.
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
