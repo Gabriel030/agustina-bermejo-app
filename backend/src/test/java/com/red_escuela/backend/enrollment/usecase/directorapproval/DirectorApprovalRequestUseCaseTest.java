@@ -196,7 +196,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         assertThat(aprobada.getStatus()).isEqualTo(DirectorApprovalRequestStatus.APPROVED);
 
         // Decisión 12: sin efecto cruzado — la mesa sigue rechazando fuera de ventana igual.
-        assertThatThrownBy(() -> examBoardRegistrationService.inscribirProgramEnrollment(examBoard.getId(), sse.getId()))
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), sse.getId()))
                 .isInstanceOf(ExamBoardRegistrationWindowClosedException.class);
     }
 }

@@ -86,7 +86,7 @@ public class MeAcademicRecordController {
     @GetMapping("/section-enrollments/{id}/grade-items")
     public List<GradeItemResponse> misNotas(@PathVariable Long id) {
         exigirPropietario(id);
-        return gradeItemService.listarPorProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
+        return gradeItemService.listByProgramEnrollment(id).stream().map(GradeItemResponse::from).toList();
     }
 
     @PostMapping(value = "/attendance/{id}/justify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

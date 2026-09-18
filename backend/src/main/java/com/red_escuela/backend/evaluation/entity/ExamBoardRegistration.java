@@ -8,13 +8,6 @@ import java.time.LocalDateTime;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 
-/*
- * Inscripción de un alumno a una mesa de examen: referencia la fila de inscripción puntual
- * (SubjectSectionEnrollment/CourseSubjectSectionEnrollment), no solo el Student — mismo
- * criterio de scope-por-carrera que las correlatividades de Inscripciones académicas. La
- * nota final vive únicamente en GradeItem (tipo FINAL): esta entidad solo trackea el ciclo
- * de vida de la anotación (status), nunca duplica el puntaje.
- */
 @Getter
 @Setter
 @Entity
