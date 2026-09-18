@@ -27,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @Transactional
 class AuthFlowTest extends AbstractIntegrationTest {
-
     @Autowired
     private LoginUseCase loginUseCase;
 
@@ -95,10 +94,6 @@ class AuthFlowTest extends AbstractIntegrationTest {
         assertThat(attempts).allMatch(a -> !a.getSuccessful());
     }
 
-    // Épica 1 Fase 4: authProvider dejó de gatear login() — el gate real es tener
-    // password seteado o no. Una Person de alta Google que consiguió password (por
-    // ejemplo vía "olvidé mi contraseña") entra local igual, ver [[Spec técnica -
-    // Recuperar contraseña]].
     @Test
     void loginSobrePersonaGoogleSinPasswordRechaza() {
         persistPerson("googleuser", null, AuthProvider.GOOGLE);

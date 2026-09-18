@@ -37,11 +37,6 @@ public class PasswordResetToken {
     @Column(name = "attempts", nullable = false)
     private Integer attempts = 0;
 
-    // Se completan recién cuando el código de 6 dígitos se verificó correctamente
-    // (AuthService.verifyResetCode) — separan "probaste que el email es tuyo" de
-    // "ya cambiaste la contraseña", así la pantalla de contraseña nueva no necesita
-    // volver a pedir el código. exchangeTokenHash se pone en null al consumirse
-    // (AuthService.resetPassword), evitando que el mismo intercambio sirva dos veces.
     @Column(name = "exchange_token_hash")
     private String exchangeTokenHash;
 

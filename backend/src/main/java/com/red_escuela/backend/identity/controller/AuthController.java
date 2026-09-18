@@ -39,7 +39,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-
     private final RegisterUseCase registerUseCase;
     private final LoginUseCase loginUseCase;
     private final LoginWithGoogleUseCase loginWithGoogleUseCase;
@@ -125,7 +124,6 @@ public class AuthController {
         if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
             throw new TooManyRequestsException("Demasiadas solicitudes de recuperación, esperá un momento antes de reintentar");
         }
-        // Siempre 202, exista o no el email: no filtrar qué emails están registrados.
         requestPasswordResetUseCase.requestReset(request.email());
     }
 

@@ -6,16 +6,8 @@ import com.red_escuela.backend.exception.RoleNotFoundException;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import org.springframework.stereotype.Service;
 
-/**
- * Épica 7: quien se registra de forma independiente no tiene rol hasta su
- * primera aprobación (carrera) o inscripción (curso) — dos flujos distintos
- * (ProgramEnrollmentApplicationService, MeEnrollmentController) necesitan
- * exactamente el mismo "otorgar ALUMNO si todavía no lo tiene", se centraliza
- * acá en vez de duplicarlo.
- */
 @Service
 public class PersonRoleGranter {
-
     private static final String ROLE_ALUMNO = "ALUMNO";
 
     private final RoleRepository roleRepository;

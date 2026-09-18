@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class StudentControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -131,8 +130,6 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // Revisión de matriz de permisos: el Director tiene R sobre el legajo (matriz sección 3),
-    // a diferencia de Preceptor/Administrativo que además pueden dar de baja/resetear password.
     @Test
     void directorPuedeListarYVerLegajoPeroNoPuedeDarDeBaja() throws Exception {
         Institution institution = persistInstitution();
@@ -153,9 +150,6 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // Fase 6.6 (auditoría de QA): billing-overview consultaba los enrollment repositories
-    // directo, sin validar que el id de la URL fuera un Student real — un id inexistente daba
-    // 200 con lista vacía en vez de 404, mismo gap que tenía credit-notes (ver CreditNoteServiceTest).
     @Test
     void billingOverviewConStudentInexistenteDevuelve404() throws Exception {
         String token = tokenWithRole("administrativo.billing1", "ADMINISTRATIVO");
