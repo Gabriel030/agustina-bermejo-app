@@ -65,7 +65,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConPasswordCorrectaDevuelveTokensValidosYRegistraAttemptExitoso() {
+    void loginWithCorrectPasswordReturnsValidTokensAndRecordsSuccessfulAttempt() {
         persistPerson("docente1", "correcta123", AuthProvider.LOCAL);
 
         AuthTokens tokens = loginUseCase.login(new LoginCommand("docente1", "correcta123", "127.0.0.1"));
@@ -81,7 +81,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConPasswordIncorrectaLanzaLaMismaExcepcionQueUsuarioInexistente() {
+    void loginWithIncorrectPasswordThrowsTheSameExceptionAsNonExistentUser() {
         persistPerson("docente2", "correcta123", AuthProvider.LOCAL);
 
         assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("docente2", "incorrecta", "127.0.0.1")))
@@ -95,7 +95,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginSobrePersonaGoogleSinPasswordRechaza() {
+    void loginOnGooglePersonWithoutPasswordIsRejected() {
         persistPerson("googleuser", null, AuthProvider.GOOGLE);
 
         assertThatThrownBy(() -> loginUseCase.login(new LoginCommand("googleuser", "cualquiera", "127.0.0.1")))
@@ -103,7 +103,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginSobrePersonaGoogleConPasswordSeteadaFunciona() {
+    void loginOnGooglePersonWithPasswordSetWorks() {
         persistPerson("googleuser2", "correcta123", AuthProvider.GOOGLE);
 
         AuthTokens tokens = loginUseCase.login(new LoginCommand("googleuser2", "correcta123", "127.0.0.1"));
@@ -112,7 +112,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginRepetidoConPasswordIncorrectaBloqueaLaCuentaYUnaPasswordCorrectaTambienRechazaMientrasDureElBloqueo() {
+    void repeatedLoginWithIncorrectPasswordLocksTheAccountAndACorrectPasswordIsAlsoRejectedWhileTheLockLasts() {
         persistPerson("bloqueable", "correcta123", AuthProvider.LOCAL);
 
         for (int i = 0; i < lockoutMaxAttempts; i++) {
@@ -125,7 +125,7 @@ class AuthFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshConTokenValidoRotaYElTokenViejoDejaDeServir() {
+    void refreshWithValidTokenRotatesAndTheOldTokenStopsWorking() {
         persistPerson("refrescable", "correcta123", AuthProvider.LOCAL);
         AuthTokens original = loginUseCase.login(new LoginCommand("refrescable", "correcta123", "127.0.0.1"));
 

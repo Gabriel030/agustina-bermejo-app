@@ -9,7 +9,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     * def nombreTerm = 'Ciclo QA mis inscripciones ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -41,7 +41,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     When method post
     Then status 201
 
-    * def evaluationSchemeId = fixtures.crearEvaluationScheme()
+    * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: 'Comisión A', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
@@ -59,7 +59,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     # Alumno matriculado en la carrera (staff) — MeEnrollmentController opera sobre esa
     # matriculación, nunca la crea (eso lo hace ProgramEnrollmentApplicationController
     # o el staff directo)
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { programId: '#(programId)' }
@@ -85,7 +85,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     And match response.creditosAcumulados == 0
 
     # No puedo ver el progreso de una matriculación ajena — 404
-    * def otroAlumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def otroAlumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     Given path '/students', otroAlumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { programId: '#(programId)' }
@@ -145,7 +145,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     Then status 204
 
     # Un alumno no puede darse de baja de una inscripción ajena — 404
-    * def terceroAlumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def terceroAlumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     Given path '/students', terceroAlumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { programId: '#(programId)' }

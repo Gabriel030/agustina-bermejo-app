@@ -99,7 +99,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         return studentRepository.save(student);
     }
 
-    private Program persistPrograma() {
+    private Program persistProgram() {
         Program program = new Program();
         program.setName("Carrera de prueba " + System.nanoTime());
         program.setTotalYears(3);
@@ -130,7 +130,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     @Test
     void aStudentWithoutDebtCanEnrollWithoutProblems() {
         Student student = persistStudent("88010001");
-        Program program = persistPrograma();
+        Program program = persistProgram();
 
         var enrollment = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
@@ -140,9 +140,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     @Test
     void studentWithOverdueDebtInOneProgramCannotEnrollInADifferentProgram() {
         Student student = persistStudent("88010002");
-        Program programConDeuda = persistPrograma();
+        Program programConDeuda = persistProgram();
         persistOldWithdrawnCycle(student, programConDeuda, BigDecimal.valueOf(5000));
-        Program programNuevo = persistPrograma();
+        Program programNuevo = persistProgram();
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
                 .isInstanceOf(StudentInDebtException.class);
@@ -151,7 +151,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     @Test
     void aPendingInvoiceWithinTheGracePeriodDoesNotBlockANewEnrollment() {
         Student student = persistStudent("88010003");
-        Program programConCuotaPendiente = persistPrograma();
+        Program programConCuotaPendiente = persistProgram();
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
         enrollment.setProgram(programConCuotaPendiente);
@@ -167,7 +167,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         invoice.setStatus(InvoiceStatus.PENDING);
         invoiceRepository.save(invoice);
 
-        Program programNuevo = persistPrograma();
+        Program programNuevo = persistProgram();
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
 
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
@@ -177,7 +177,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void payingInFullEnablesReEnrollment() {
         Person admin = persistPerson("admin.debt1." + System.nanoTime());
         Student student = persistStudent("88010004");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
@@ -194,7 +194,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void partialPaymentStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
@@ -210,7 +210,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void waivingWithDirectorRoleReleasesTheDebtWithoutPaymentAndAllowsImmediateEnrollment() {
         Person director = persistPerson("director.debt3." + System.nanoTime());
         Student student = persistStudent("88010006");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
         studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
@@ -227,7 +227,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void theOldCyclesScholarshipDoesNotCarryOverAutomaticallyOnReenrollment() {
         Person director = persistPerson("director.debt6." + System.nanoTime());
         Student student = persistStudent("88010010");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
         com.red_escuela.backend.billing.entity.Scholarship scholarship = new com.red_escuela.backend.billing.entity.Scholarship();
@@ -249,7 +249,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void multipleOldCyclesWithDebtMustAllBeResolved() {
         Person director = persistPerson("director.debt4." + System.nanoTime());
         Student student = persistStudent("88010007");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramEnrollment ciclo1 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(3000));
         ProgramEnrollment ciclo2 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(4000));
 
@@ -270,9 +270,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     void payingOffDebtOnAnyEnrollmentUnblocksEnrollmentOnAnyOther() {
         Person admin = persistPerson("admin.debt5." + System.nanoTime());
         Student student = persistStudent("88010009");
-        Program programConDeudaVieja = persistPrograma();
+        Program programConDeudaVieja = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, programConDeudaVieja, BigDecimal.valueOf(5000));
-        Program programNuevo = persistPrograma();
+        Program programNuevo = persistProgram();
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
                 .isInstanceOf(StudentInDebtException.class);
@@ -289,7 +289,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     @Test
     void directBypassOfEnrollStillBlockedWithOldDebt() {
         Student student = persistStudent("88010008");
-        Program program = persistPrograma();
+        Program program = persistProgram();
         persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))

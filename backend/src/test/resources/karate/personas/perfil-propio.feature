@@ -3,7 +3,7 @@ Feature: Perfil propio (GET/PUT /me)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def alumnoToken = fixtures.tokenParaRol('ALUMNO')
+    * def alumnoToken = fixtures.tokenForRole('ALUMNO')
 
   Scenario: Ver el perfil propio — 200
     Given path '/me'

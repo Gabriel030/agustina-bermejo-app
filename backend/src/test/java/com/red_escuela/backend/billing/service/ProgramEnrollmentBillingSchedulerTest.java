@@ -95,7 +95,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         return personRepository.save(person);
     }
 
-    private ProgramEnrollment persistProgramEnrollmentConCohorteSegunda(String dni) {
+    private ProgramEnrollment persistProgramEnrollmentWithSecondCohort(String dni) {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba " + System.nanoTime());
         institution = institutionRepository.save(institution);
@@ -155,7 +155,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
 
     @Test
     void ifSomethingFailsAfterGeneratingTheEnrollmentFeeNoOrphanInvoiceIsLeft() {
-        ProgramEnrollment enrollment = persistProgramEnrollmentConCohorteSegunda("99000301");
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithSecondCohort("99000301");
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         try {

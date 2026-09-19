@@ -96,7 +96,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetConEmailExistenteGeneraUnCodigoValidoYLoManda() {
+    void requestPasswordResetWithExistingEmailGeneratesAValidCodeAndSendsIt() {
         Person person = persistPerson("resetuser1", "resetuser1@example.com", "correcta123", AuthProvider.LOCAL);
 
         requestPasswordResetUseCase.requestReset("resetuser1@example.com");
@@ -111,14 +111,14 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetConEmailInexistenteNoCreaNadaYNoFalla() {
+    void requestPasswordResetWithNonExistentEmailCreatesNothingAndDoesNotFail() {
         requestPasswordResetUseCase.requestReset("no-existe@example.com");
 
         assertThat(passwordResetTokenRepository.findAll()).isEmpty();
     }
 
     @Test
-    void flujoCompletoCodigoValidoLuegoResetPasswordCambiaLaPasswordYPermiteLoguearseConLaNueva() {
+    void fullFlowValidCodeThenResetPasswordChangesThePasswordAndAllowsLoggingInWithTheNewOne() {
         Person person = persistPerson("resetuser2", "resetuser2@example.com", "vieja123", AuthProvider.LOCAL);
         persistResetToken(person, "123456", LocalDateTime.now().plusMinutes(15), false);
 
@@ -132,7 +132,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void flujoCompletoDeUnaPersonaDeAltaGoogleSinPasswordLeDaAccesoLocalTambien() {
+    void fullFlowOfAGoogleRegisteredPersonWithoutPasswordAlsoGivesLocalAccess() {
         Person person = persistPerson("googleuser1", "googleuser1@example.com", null, AuthProvider.GOOGLE);
         persistResetToken(person, "654321", LocalDateTime.now().plusMinutes(15), false);
 
@@ -144,7 +144,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoYaUsadoFalla() {
+    void verifyResetCodeWithAlreadyUsedCodeFails() {
         Person person = persistPerson("resetuser3", "resetuser3@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "111111", LocalDateTime.now().plusMinutes(15), true);
 
@@ -153,7 +153,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoExpiradoFalla() {
+    void verifyResetCodeWithExpiredCodeFails() {
         Person person = persistPerson("resetuser4", "resetuser4@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "222222", LocalDateTime.now().minusMinutes(1), false);
 
@@ -162,7 +162,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoIncorrectoIncrementaIntentosYNoDevuelveToken() {
+    void verifyResetCodeWithIncorrectCodeIncrementsAttemptsAndReturnsNoToken() {
         Person person = persistPerson("resetuser8", "resetuser8@example.com", "correcta123", AuthProvider.LOCAL);
         PasswordResetToken token = persistResetToken(person, "333333", LocalDateTime.now().plusMinutes(15), false);
 
@@ -176,7 +176,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCincoIntentosIncorrectosInvalidaElCodigoAunSiElSextoEsCorrecto() {
+    void verifyResetCodeWithFiveIncorrectAttemptsInvalidatesTheCodeEvenIfTheSixthIsCorrect() {
         Person person = persistPerson("resetuser9", "resetuser9@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "444444", LocalDateTime.now().plusMinutes(15), false);
 
@@ -190,13 +190,13 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConTokenDeIntercambioInvalidoFalla() {
+    void resetPasswordWithInvalidExchangeTokenFails() {
         assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand("token-que-no-existe", "Nueva123")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
     @Test
-    void resetPasswordConElMismoTokenDeIntercambioDosVecesFallaLaSegunda() {
+    void resetPasswordWithTheSameExchangeTokenTwiceFailsTheSecond() {
         Person person = persistPerson("resetuser10", "resetuser10@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "888888", LocalDateTime.now().plusMinutes(15), false);
 
