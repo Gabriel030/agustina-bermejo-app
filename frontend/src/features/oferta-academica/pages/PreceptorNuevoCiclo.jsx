@@ -304,9 +304,10 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
 
 function Paso2Comisiones({ state, dispatch }) {
   const esProgramaCiclo = state.tipo === 'programa';
-  const { data: materias, isLoading } = esProgramaCiclo
-    ? useProgramaPlanDeEstudio(state.programaId)
-    : useCursoTemario(state.cursoId);
+  const { data: materiasPrograma, isLoading: loadingPrograma } = useProgramaPlanDeEstudio(esProgramaCiclo ? state.programaId : null);
+  const { data: materiasTemario, isLoading: loadingTemario } = useCursoTemario(!esProgramaCiclo ? state.cursoId : null);
+  const materias = esProgramaCiclo ? materiasPrograma : materiasTemario;
+  const isLoading = esProgramaCiclo ? loadingPrograma : loadingTemario;
 
   const seccionesPorMateria = {};
   for (const s of state.secciones) {

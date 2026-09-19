@@ -32,7 +32,7 @@ function formatHora(t) {
   return t?.slice(0, 5) ?? '—';
 }
 
-function FilaSeccion({ seccion, onVerCalendario }) {
+function FilaSeccion({ seccion }) {
   const cfg = SECCION_STATUS_CONFIG[seccion.status] ?? { label: seccion.status, tone: 'neutral' };
   const titular = seccion.instructors?.find((i) => i.role === 'LEAD');
   const slotsPrimero = seccion.slots?.[0];
@@ -71,7 +71,7 @@ function FilaSeccion({ seccion, onVerCalendario }) {
   );
 }
 
-function PanelCiclo({ ciclo, programaId }) {
+function PanelCiclo({ ciclo }) {
   const navigate = useNavigate();
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
   const { data: secciones, isLoading } = useCicloSecciones(ciclo.id);
@@ -188,7 +188,7 @@ export function PreceptorDetalleCarrera() {
         ) : (
           <div className="flex flex-col gap-4">
             {ciclosMostrados.map((ciclo) => (
-              <PanelCiclo key={ciclo.id} ciclo={ciclo} programaId={programaId} />
+              <PanelCiclo key={ciclo.id} ciclo={ciclo} />
             ))}
           </div>
         )}
