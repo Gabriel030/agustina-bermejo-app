@@ -1,6 +1,6 @@
 Feature: Catálogo — Instituciones
 
-  # InstitutionController solo expone GET (el alta es interna, ver KarateFixtures.crearInstitucion
+  # InstitutionController solo expone GET (el alta es interna, ver KarateFixtures.createInstitution
   # que la mayoría de los demás features usan como setup) — acá se cubre ese único endpoint real.
 
   Background:
@@ -8,8 +8,8 @@ Feature: Catálogo — Instituciones
 
   Scenario: Listar instituciones — requiere autenticación, incluye las creadas por fixture
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def institutionId = fixtures.createInstitution()
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     # Sin token — 200: es catálogo público (SecurityConfig, permitAll explícito para
     # GET /institutions), a propósito distinto del resto de la API que exige JWT —

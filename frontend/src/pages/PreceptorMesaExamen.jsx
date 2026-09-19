@@ -291,7 +291,7 @@ export function PreceptorMesaExamen() {
         <h1 className="font-heading text-2xl font-bold text-ink">Mesa de examen</h1>
         <div className="flex flex-wrap items-center gap-3">
           <Tabs value={tab} onValueChange={cambiarTab}>
-            <TabsList variant="line">
+            <TabsList variant="segmented">
               <TabsTrigger value="SCHEDULED">Agendadas</TabsTrigger>
               <TabsTrigger value="CLOSED">Cerradas</TabsTrigger>
             </TabsList>

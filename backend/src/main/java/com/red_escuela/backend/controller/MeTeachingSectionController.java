@@ -23,8 +23,8 @@ public class MeTeachingSectionController {
 
     @GetMapping("/me/teaching-sections")
     @PreAuthorize("hasRole('DOCENTE')")
-    public List<TeachingSectionResponse> misComisiones() {
+    public List<TeachingSectionResponse> mine() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        return teachingSectionService.listarPorInstructor(instructor.getId());
+        return teachingSectionService.listByInstructor(instructor.getId());
     }
 }

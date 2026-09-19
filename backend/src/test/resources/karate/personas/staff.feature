@@ -8,8 +8,8 @@ Feature: Alta y edición de personal (POST/PUT /staff)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
   Scenario: Administrativo da de alta un Docente — 201, y le crea el Instructor asociado
     * def dni = 'KARATE' + java.lang.System.nanoTime()
@@ -104,7 +104,7 @@ Feature: Alta y edición de personal (POST/PUT /staff)
     When method put
     Then status 200
 
-    * def alumnoToken = fixtures.tokenParaRol('ALUMNO')
+    * def alumnoToken = fixtures.tokenForRole('ALUMNO')
     Given path '/staff', staffId
     And header Authorization = 'Bearer ' + alumnoToken
     And request { telefono: '11-4444-4444' }

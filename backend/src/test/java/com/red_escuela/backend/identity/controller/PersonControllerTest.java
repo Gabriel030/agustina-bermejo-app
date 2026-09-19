@@ -72,7 +72,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void putMeActualizaSoloElPropioPersonYNuncaElDni() throws Exception {
+    void putMeUpdatesOnlyOwnPersonAndNeverTheDni() throws Exception {
         Person propio = persistPersonWithRole("propio1", "60111222", "ALUMNO");
         Person otro = persistPersonWithRole("otro1", "60333444", "ALUMNO");
         String token = jwtService.generateAccessToken(propio);
@@ -122,7 +122,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void putMeConDniYaExistenteDevuelve400() throws Exception {
+    void putMeWithExistingDniReturns400() throws Exception {
         persistPersonWithRole("propio4", "60111333", "ALUMNO");
         Person propio = persistPersonWithRole("propio5", "60222444", "ALUMNO");
         String token = jwtService.generateAccessToken(propio);
@@ -138,7 +138,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void getMeDevuelvePerfilPropioConRoles() throws Exception {
+    void getMeReturnsOwnProfileWithRoles() throws Exception {
         Person propio = persistPersonWithRole("propio2", "60555666", "PRECEPTOR");
         String token = jwtService.generateAccessToken(propio);
 
@@ -151,13 +151,13 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void getMeSinAuthDevuelve401OForbidden() throws Exception {
+    void getMeWithoutAuthReturns401OrForbidden() throws Exception {
         mockMvc.perform(get("/me"))
                 .andExpect(status().is4xxClientError());
     }
 
     @Test
-    void putMeSinAuthDevuelve401OForbidden() throws Exception {
+    void putMeWithoutAuthReturns401OrForbidden() throws Exception {
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
                 "x@example.com", null, null, null, null, null, null, null, null, null, null);
 

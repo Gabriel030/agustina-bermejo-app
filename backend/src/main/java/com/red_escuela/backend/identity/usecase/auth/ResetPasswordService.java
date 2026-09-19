@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 
 @UseCase
 public class ResetPasswordService implements ResetPasswordUseCase {
-
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PersonRepository personRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,8 +31,6 @@ public class ResetPasswordService implements ResetPasswordUseCase {
     @Override
     @Transactional
     public void reset(ResetPasswordCommand command) {
-        // Se valida la política ANTES de tocar el token: una contraseña inválida no
-        // debería consumir el intercambio (RF-AUTH-05).
         passwordPolicyValidator.validate(command.newPassword());
 
         String hash = TokenHashUtil.sha256Hex(command.exchangeToken());
@@ -45,8 +42,6 @@ public class ResetPasswordService implements ResetPasswordUseCase {
         person.setPassword(passwordEncoder.encode(command.newPassword()));
         personRepository.save(person);
 
-        // Se limpia el hash (no alcanza con un booleano "used", ya lo estaba desde
-        // verifyResetCode) para que este mismo intercambio no sirva una segunda vez.
         resetToken.setExchangeTokenHash(null);
         passwordResetTokenRepository.save(resetToken);
     }

@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
+import { Stagger } from '@/components/Stagger';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
@@ -123,29 +124,31 @@ export function AlumnoMisCarreras() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Materias aprobadas">
-          <div className="font-heading text-2xl font-bold text-ink">
-            {aprobadasCount}
-            {totalMateriasPlan != null && <span className="text-base font-semibold text-ink-faint"> / {totalMateriasPlan}</span>}
-          </div>
-        </StatCard>
-        <StatCard label="Créditos acumulados">
-          <div className="font-heading text-2xl font-bold text-ink">
-            {progreso?.creditosAcumulados ?? '—'}
-            {progreso?.creditosRequeridos != null && (
-              <span className="text-base font-semibold text-ink-faint"> / {progreso.creditosRequeridos}</span>
-            )}
-          </div>
-        </StatCard>
-        <StatCard label="Avance del plan">
-          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-bg">
-            <div className="h-full rounded-full bg-gradient-to-r from-brand to-accent-2" style={{ width: `${porcentajeAvance}%` }} />
-          </div>
-        </StatCard>
+        <Stagger>
+          <StatCard label="Materias aprobadas">
+            <div className="font-heading text-2xl font-bold text-ink">
+              {aprobadasCount}
+              {totalMateriasPlan != null && <span className="text-base font-semibold text-ink-faint"> / {totalMateriasPlan}</span>}
+            </div>
+          </StatCard>
+          <StatCard label="Créditos acumulados">
+            <div className="font-heading text-2xl font-bold text-ink">
+              {progreso?.creditosAcumulados ?? '—'}
+              {progreso?.creditosRequeridos != null && (
+                <span className="text-base font-semibold text-ink-faint"> / {progreso.creditosRequeridos}</span>
+              )}
+            </div>
+          </StatCard>
+          <StatCard label="Avance del plan">
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-bg">
+              <div className="h-full rounded-full bg-gradient-to-r from-brand to-accent-2" style={{ width: `${porcentajeAvance}%` }} />
+            </div>
+          </StatCard>
+        </Stagger>
       </div>
 
       <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="line">
+        <TabsList variant="segmented">
           <TabsTrigger value="materias">Materias</TabsTrigger>
           <TabsTrigger value="notas">Notas</TabsTrigger>
           <TabsTrigger value="mesas-de-examen">Mesas de examen</TabsTrigger>

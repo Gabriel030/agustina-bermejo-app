@@ -92,7 +92,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         return student;
     }
 
-    private Course persistCurso(int capacity) {
+    private Course persistCourse(int capacity) {
         Term term = new Term();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
@@ -125,7 +125,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     @Test
     void requestingWithPaymentDoesNotCreateTheCourseEnrollmentYet() {
         Student student = persistStudent("82000001");
-        Course course = persistCurso(20);
+        Course course = persistCourse(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
         persistPriceRevision(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
@@ -141,7 +141,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     @Test
     void approvingTheFirstInstallmentReceiptTriggersTheActualEnrollment() {
         Student student = persistStudent("82000002");
-        Course course = persistCurso(20);
+        Course course = persistCourse(20);
         Person director = persistPersonBase("DIR" + System.nanoTime());
         persistPriceRevision(course, BigDecimal.valueOf(15000), director);
         entityManager.flush();
@@ -172,7 +172,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     @Test
     void requestingWithPaymentWithoutConfiguredPriceRevisionFails() {
         Student student = persistStudent("82000003");
-        Course course = persistCurso(20);
+        Course course = persistCourse(20);
         entityManager.flush();
 
         assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(

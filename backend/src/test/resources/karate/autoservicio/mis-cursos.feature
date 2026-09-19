@@ -8,8 +8,8 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def institutionId = fixtures.createInstitution()
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     * def descripcionPeriodo = 'Karate - Periodo mis cursos ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -27,7 +27,7 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     Then status 201
     * def courseId = response.id
 
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
     Given path '/students', alumno.studentId, 'course-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { courseId: '#(courseId)' }
@@ -43,7 +43,7 @@ Feature: Caso de uso — Mis cursos (MeCourseEnrollmentController)
     * def propio = response.filter(function(x){ return x.id == courseEnrollmentId })[0]
     And match propio.courseId == courseId
 
-    * def otroAlumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def otroAlumno = fixtures.createConfirmedStudent(institutionId)
     Given path '/me/course-enrollments'
     And header Authorization = 'Bearer ' + otroAlumno.accessToken
     When method get

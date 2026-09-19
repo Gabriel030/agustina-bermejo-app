@@ -115,7 +115,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private Student persistProspecto(Long institutionId) {
+    private Student persistProspect(Long institutionId) {
         Address address = new Address();
         entityManager.persist(address);
 
@@ -140,7 +140,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void crearProspectoSinAuthDevuelve201ConStudentEnProspectoSinUsernameNiDni() throws Exception {
+    void creatingProspectWithoutAuthReturns201WithStudentAsProspectWithoutUsernameOrDni() throws Exception {
         Long institutionId = persistInstitution();
         CreateProspectRequest request = new CreateProspectRequest(
                 "Juan", "Pérez", "juan.perez@example.com", "1122334455", institutionId);
@@ -162,9 +162,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoConTipoNoSoportadoDevuelve400() throws Exception {
+    void addingDocumentWithUnsupportedTypeReturns400() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor2", "PRECEPTOR");
 
         MockMultipartFile file = new MockMultipartFile(
@@ -178,9 +178,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoValidoDevuelve201YQuedaElArchivoEnDisco() throws Exception {
+    void addingValidDocumentReturns201AndTheFileRemainsOnDisk() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor3", "PRECEPTOR");
 
         MockMultipartFile file = new MockMultipartFile(
@@ -201,7 +201,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     @Test
     void uploadingSecondDocumentOfSameTypeReplacesThePrevious() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor4", "PRECEPTOR");
 
         MockMultipartFile primero = new MockMultipartFile("file", "dni1.pdf", "application/pdf", "uno".getBytes());
@@ -221,7 +221,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     @Test
     void confirmTransitionsToConfirmedGrantsRoleAndGeneratesResetToken() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor5", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
@@ -255,9 +255,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmarAltaDosVecesDevuelve409() throws Exception {
+    void confirmingTwiceReturns409() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         String token = tokenWithRole("preceptor6", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
@@ -277,9 +277,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoSobreStudentYaConfirmadoDevuelve201() throws Exception {
+    void addingDocumentToAlreadyConfirmedStudentReturns201() throws Exception {
         Long institutionId = persistInstitution();
-        Student student = persistProspecto(institutionId);
+        Student student = persistProspect(institutionId);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         entityManager.merge(student);
         entityManager.flush();

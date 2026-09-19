@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class LoginWithGoogleService implements LoginWithGoogleUseCase {
-
     private final GoogleIdTokenService googleIdTokenService;
     private final PersonRepository personRepository;
     private final AuthTokenIssuer authTokenIssuer;
@@ -35,8 +34,6 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
         Person person = personRepository.findByEmail(profile.email())
                 .orElseThrow(() -> new GoogleAccountNotLinkedException(profile.email()));
 
-        // Auto-vinculación por email verificado (decisión de producto): no toca authProvider,
-        // así que el login local sigue funcionando igual para esta Person.
         person.setGoogleSubjectId(profile.subject());
         personRepository.save(person);
         return authTokenIssuer.issueTokens(person);

@@ -2,7 +2,7 @@ Feature: Login (POST /auth/login)
 
   Background:
     * url baseUrl
-    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').crearInstitucion()
+    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').createInstitution()
     * def emailUnico = 'karate.login.' + java.lang.System.nanoTime() + '@example.com'
     # Se registra un usuario propio en vez de depender de las cuentas demo
     # (LocalSeedRunner solo corre bajo @Profile("local"), no en "test") — el feature

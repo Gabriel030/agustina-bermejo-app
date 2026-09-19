@@ -17,21 +17,14 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
-/**
- * Responsabilidad única: generar y validar el access token JWT. No toca la base de datos.
- */
 @Service
 public class JwtService {
-
     private final SecretKey signingKey;
     private final long accessTokenExpirationMinutes;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes) {
-        // El secret configurado puede tener cualquier longitud; se deriva una clave de
-        // exactamente 256 bits vía SHA-256 para garantizar HMAC-SHA256 siempre, sin
-        // depender de cuántos caracteres tenga jwt.secret.
         this.signingKey = deriveSigningKey(secret);
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }

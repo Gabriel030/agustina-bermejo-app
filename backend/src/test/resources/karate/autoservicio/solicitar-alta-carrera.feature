@@ -11,10 +11,10 @@ Feature: Caso de uso — Solicitar alta en carrera
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def institutionId = fixtures.createInstitution()
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
     # Carrera de prueba (staff) — Fase 6.1: matrícula (enrollmentFeeAmount) es un
     # PriceRevision propio, separado de la cuota mensual (price).

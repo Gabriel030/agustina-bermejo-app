@@ -1,4 +1,5 @@
 import { GlassCard } from '@/components/GlassCard';
+import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table';
 
 // Contenido mockeado (objetivos/temario/cronograma) — no existe backend real
 // todavía para syllabus de una materia (decisión de producto, Épica 2 Fase 2:
@@ -76,16 +77,16 @@ export function MateriaContenidoMock({ subjectName }) {
 
       <GlassCard className="flex flex-col gap-3 p-5">
         <div className="font-heading text-[15px] font-semibold text-ink">Cronograma de parciales</div>
-        <table className="w-full border-collapse text-sm">
-          <tbody>
+        <Table>
+          <TableBody>
             {contenido.cronograma.map((fila) => (
-              <tr key={fila.evaluacion} className="border-b border-border last:border-b-0">
-                <td className="py-2 text-[13.5px] font-semibold text-ink">{fila.evaluacion}</td>
-                <td className="py-2 text-right text-[13.5px] text-ink-faint">{fila.fecha}</td>
-              </tr>
+              <TableRow key={fila.evaluacion}>
+                <TableCell className="pl-0 font-semibold text-ink">{fila.evaluacion}</TableCell>
+                <TableCell className="pr-0 text-right text-ink-faint">{fila.fecha}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </GlassCard>
     </>
   );

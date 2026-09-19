@@ -22,16 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * RF-AD-05/RF-DI-04 (hallazgo de la revisión de matriz de permisos): antes de este fix no
- * existía ningún camino para dar de alta un usuario ADMINISTRATIVO — el Director tiene que
- * poder hacerlo, y el Administrativo tiene que seguir limitado a Docente/Preceptor.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class StaffUseCaseTest extends AbstractIntegrationTest {
-
     @Autowired
     private CreateStaffUseCase createStaffUseCase;
 
@@ -45,11 +39,11 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
-    private void autenticarComoActor(String dni, String roleName) {
+    private void authenticateAsActor(String dni, String roleName) {
         Address address = new Address();
         entityManager.persist(address);
         Person actor = new Person();
@@ -76,8 +70,8 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void administrativoDaDeAltaUnDocenteFunciona() {
-        autenticarComoActor("B0000001", "ADMINISTRATIVO");
+    void administrativeCreatingATeacherWorks() {
+        authenticateAsActor("B0000001", "ADMINISTRATIVO");
 
         Person creado = createStaffUseCase.create(requestParaRol("B0000011", "DOCENTE")).person();
 
@@ -86,16 +80,16 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void administrativoIntentaDarDeAltaUnAdministrativoFalla() {
-        autenticarComoActor("B0000002", "ADMINISTRATIVO");
+    void administrativeCreatingAnAdministrativeFails() {
+        authenticateAsActor("B0000002", "ADMINISTRATIVO");
 
         assertThatThrownBy(() -> createStaffUseCase.create(requestParaRol("B0000012", "ADMINISTRATIVO")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
     @Test
-    void directorDaDeAltaUnAdministrativoFunciona() {
-        autenticarComoActor("B0000003", "DIRECTOR");
+    void directorCreatingAnAdministrativeWorks() {
+        authenticateAsActor("B0000003", "DIRECTOR");
 
         Person creado = createStaffUseCase.create(requestParaRol("B0000013", "ADMINISTRATIVO")).person();
 
@@ -104,24 +98,24 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void directorIntentaDarDeAltaUnDocenteFalla() {
-        autenticarComoActor("B0000004", "DIRECTOR");
+    void directorCreatingATeacherFails() {
+        authenticateAsActor("B0000004", "DIRECTOR");
 
         assertThatThrownBy(() -> createStaffUseCase.create(requestParaRol("B0000014", "DOCENTE")))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
     }
 
     @Test
-    void directorNoPuedeEditarUnDocenteYAdministrativoSiPuede() {
-        autenticarComoActor("B0000005", "ADMINISTRATIVO");
+    void directorCannotEditATeacherAndAdministrativeCan() {
+        authenticateAsActor("B0000005", "ADMINISTRATIVO");
         Person docente = createStaffUseCase.create(requestParaRol("B0000015", "DOCENTE")).person();
 
-        autenticarComoActor("B0000006", "DIRECTOR");
+        authenticateAsActor("B0000006", "DIRECTOR");
         UpdateStaffRequest edicion = new UpdateStaffRequest("nuevo@example.com", null, null, null, null, null, null, null, null);
         assertThatThrownBy(() -> updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)))
                 .isInstanceOf(RoleNotAssignableByActorException.class);
 
-        autenticarComoActor("B0000007", "ADMINISTRATIVO");
+        authenticateAsActor("B0000007", "ADMINISTRATIVO");
         Person editado = updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)).person();
         assertThat(editado.getEmail()).isEqualTo("nuevo@example.com");
     }

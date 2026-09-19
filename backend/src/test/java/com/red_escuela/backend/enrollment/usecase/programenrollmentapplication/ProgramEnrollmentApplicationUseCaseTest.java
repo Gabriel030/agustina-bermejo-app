@@ -95,7 +95,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         return student;
     }
 
-    private Program persistPrograma(String nombre) {
+    private Program persistProgram(String nombre) {
         Program program = new Program();
         program.setName(nombre);
         program.setTotalYears(3);
@@ -146,7 +146,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     void requestWithPaymentCreatesInvoicePaymentReceiptAndPendingRequest() {
         Student student = persistStudent("81000001");
-        Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
+        Program program = persistProgram("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
@@ -164,7 +164,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     void requestingWithPaymentTwiceWhileTheFirstIsStillPendingFails() {
         Student student = persistStudent("81000002");
-        Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
+        Program program = persistProgram("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
@@ -179,7 +179,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     void requestingWithPaymentWithoutConfiguredPriceRevisionFails() {
         Student student = persistStudent("81000003");
-        Program program = persistPrograma("Sin Precio " + System.nanoTime());
+        Program program = persistProgram("Sin Precio " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         entityManager.flush();
@@ -191,7 +191,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     void requestingWithPaymentOutsideTheAdmissionWindowFailsWithoutGeneratingInvoiceOrReceipt() {
         Student student = persistStudent("81000005");
-        Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
+        Program program = persistProgram("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, LocalDate.now().minusDays(30), LocalDate.now().minusDays(7), director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);
@@ -208,7 +208,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approvingTheRequestAlsoApprovesTheReceiptAndMarksTheInvoicePaid() {
         Student student = persistStudent("81000004");
-        Program program = persistPrograma("Diseño Gráfico " + System.nanoTime());
+        Program program = persistProgram("Diseño Gráfico " + System.nanoTime());
         Person director = persistPersonBase("DIR" + System.nanoTime());
         ProgramCohort cohort = persistCohort(program, null, null, director);
         persistPriceRevision(program, BigDecimal.valueOf(50000), director);

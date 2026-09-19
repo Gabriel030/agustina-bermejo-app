@@ -38,16 +38,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-/**
- * RF-AUTH-03: código de recuperación de 6 dígitos, universal para cualquier authProvider,
- * en dos pasos — verifyResetCode(email, code) da un token de intercambio de un solo uso,
- * y recién con ese token resetPassword(resetToken, newPassword) cambia la contraseña.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class PasswordResetTest extends AbstractIntegrationTest {
-
     @Autowired
     private LoginUseCase loginUseCase;
 
@@ -102,7 +96,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetConEmailExistenteGeneraUnCodigoValidoYLoManda() {
+    void requestPasswordResetWithExistingEmailGeneratesAValidCodeAndSendsIt() {
         Person person = persistPerson("resetuser1", "resetuser1@example.com", "correcta123", AuthProvider.LOCAL);
 
         requestPasswordResetUseCase.requestReset("resetuser1@example.com");
@@ -117,14 +111,14 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetConEmailInexistenteNoCreaNadaYNoFalla() {
+    void requestPasswordResetWithNonExistentEmailCreatesNothingAndDoesNotFail() {
         requestPasswordResetUseCase.requestReset("no-existe@example.com");
 
         assertThat(passwordResetTokenRepository.findAll()).isEmpty();
     }
 
     @Test
-    void flujoCompletoCodigoValidoLuegoResetPasswordCambiaLaPasswordYPermiteLoguearseConLaNueva() {
+    void fullFlowValidCodeThenResetPasswordChangesThePasswordAndAllowsLoggingInWithTheNewOne() {
         Person person = persistPerson("resetuser2", "resetuser2@example.com", "vieja123", AuthProvider.LOCAL);
         persistResetToken(person, "123456", LocalDateTime.now().plusMinutes(15), false);
 
@@ -138,7 +132,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void flujoCompletoDeUnaPersonaDeAltaGoogleSinPasswordLeDaAccesoLocalTambien() {
+    void fullFlowOfAGoogleRegisteredPersonWithoutPasswordAlsoGivesLocalAccess() {
         Person person = persistPerson("googleuser1", "googleuser1@example.com", null, AuthProvider.GOOGLE);
         persistResetToken(person, "654321", LocalDateTime.now().plusMinutes(15), false);
 
@@ -150,7 +144,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoYaUsadoFalla() {
+    void verifyResetCodeWithAlreadyUsedCodeFails() {
         Person person = persistPerson("resetuser3", "resetuser3@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "111111", LocalDateTime.now().plusMinutes(15), true);
 
@@ -159,7 +153,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoExpiradoFalla() {
+    void verifyResetCodeWithExpiredCodeFails() {
         Person person = persistPerson("resetuser4", "resetuser4@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "222222", LocalDateTime.now().minusMinutes(1), false);
 
@@ -168,7 +162,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCodigoIncorrectoIncrementaIntentosYNoDevuelveToken() {
+    void verifyResetCodeWithIncorrectCodeIncrementsAttemptsAndReturnsNoToken() {
         Person person = persistPerson("resetuser8", "resetuser8@example.com", "correcta123", AuthProvider.LOCAL);
         PasswordResetToken token = persistResetToken(person, "333333", LocalDateTime.now().plusMinutes(15), false);
 
@@ -182,7 +176,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConCincoIntentosIncorrectosInvalidaElCodigoAunSiElSextoEsCorrecto() {
+    void verifyResetCodeWithFiveIncorrectAttemptsInvalidatesTheCodeEvenIfTheSixthIsCorrect() {
         Person person = persistPerson("resetuser9", "resetuser9@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "444444", LocalDateTime.now().plusMinutes(15), false);
 
@@ -196,13 +190,13 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConTokenDeIntercambioInvalidoFalla() {
+    void resetPasswordWithInvalidExchangeTokenFails() {
         assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand("token-que-no-existe", "Nueva123")))
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
     @Test
-    void resetPasswordConElMismoTokenDeIntercambioDosVecesFallaLaSegunda() {
+    void resetPasswordWithTheSameExchangeTokenTwiceFailsTheSecond() {
         Person person = persistPerson("resetuser10", "resetuser10@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "888888", LocalDateTime.now().plusMinutes(15), false);
 
@@ -213,10 +207,8 @@ class PasswordResetTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvalidPasswordResetTokenException.class);
     }
 
-    // RF-AUTH-05: política mínima configurable (auth.password.min-length=8,
-    // auth.password.require-letter-and-digit=true en application.properties).
     @Test
-    void resetPasswordConContraseñaMuyCortaFalla() {
+    void resetPasswordWithTooShortPasswordFails() {
         Person person = persistPerson("resetuser5", "resetuser5@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "555555", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser5@example.com", "555555"));
@@ -226,7 +218,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConContraseñaSinDigitoFalla() {
+    void resetPasswordWithoutDigitFails() {
         Person person = persistPerson("resetuser6", "resetuser6@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "666666", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser6@example.com", "666666"));
@@ -236,7 +228,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConContraseñaInvalidaNoConsumeElTokenDeIntercambio() {
+    void resetPasswordWithInvalidPasswordDoesNotConsumeTheExchangeToken() {
         Person person = persistPerson("resetuser7", "resetuser7@example.com", "correcta123", AuthProvider.LOCAL);
         persistResetToken(person, "777777", LocalDateTime.now().plusMinutes(15), false);
         String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("resetuser7@example.com", "777777"));
@@ -244,8 +236,6 @@ class PasswordResetTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "corta")))
                 .isInstanceOf(InvalidPasswordPolicyException.class);
 
-        // El mismo token de intercambio, con una contraseña que sí cumple la política,
-        // tiene que seguir sirviendo.
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser7", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();

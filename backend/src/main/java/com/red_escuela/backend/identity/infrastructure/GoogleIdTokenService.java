@@ -12,15 +12,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
-/**
- * Épica 1 Fase 2 (Login con Google): valida el idToken que el frontend recibe de Google contra
- * las claves públicas rotativas de Google (GoogleIdTokenVerifier las refresca solo) — no se
- * hace verificación de JWT a mano, es la única parte de esta feature donde una librería vetada
- * es más segura que código propio.
- */
 @Service
 public class GoogleIdTokenService {
-
     private final GoogleIdTokenVerifier verifier;
 
     public GoogleIdTokenService(@Value("${google.oauth.client-id}") String clientId) {

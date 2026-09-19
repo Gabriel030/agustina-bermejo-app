@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
@@ -211,7 +212,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
               </div>
             </div>
 
-            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+            {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => onClose(false)} disabled={isPending}>
@@ -272,45 +273,41 @@ function EnrollmentCard({ enrollment }) {
       {expanded && (
         <div className="border-t border-border px-4 pb-4 pt-3">
           {successMsg && (
-            <p className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{successMsg}</p>
+            <p className="mb-3 rounded-lg bg-success-bg px-3 py-2 text-sm text-success">{successMsg}</p>
           )}
 
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-                    <th className="pb-2 pr-3">Concepto</th>
-                    <th className="pb-2 pr-3">Período</th>
-                    <th className="pb-2 pr-3">Vencimiento</th>
-                    <th className="pb-2 pr-3 text-right">Saldo</th>
-                    <th className="pb-2">Estado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {invoices.map((inv) => {
-                    const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-                    return (
-                      <tr key={inv.id}>
-                        <td className="py-2.5 pr-3 font-medium">
-                          {FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}
-                        </td>
-                        <td className="py-2.5 pr-3 text-ink-faint">{formatPeriod(inv.period)}</td>
-                        <td className="py-2.5 pr-3 text-ink-faint">{formatFecha(inv.dueDate)}</td>
-                        <td className="py-2.5 pr-3 text-right font-mono font-semibold tabular-nums">
-                          {formatMonto(inv.remainingBalance)}
-                        </td>
-                        <td className="py-2.5">
-                          <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Concepto</TableHead>
+                  <TableHead>Período</TableHead>
+                  <TableHead>Vencimiento</TableHead>
+                  <TableHead className="text-right">Saldo</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => {
+                  const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</TableCell>
+                      <TableCell className="text-ink-faint">{formatPeriod(inv.period)}</TableCell>
+                      <TableCell className="text-ink-faint">{formatFecha(inv.dueDate)}</TableCell>
+                      <TableCell className="text-right font-mono font-semibold tabular-nums">
+                        {formatMonto(inv.remainingBalance)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
 
           {hasPayable && (
@@ -474,13 +471,13 @@ function RechazarModal({ receipt, onClose }) {
             className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-3 text-sm text-danger">{error}</p>}
         <div className="flex gap-3">
           <Button variant="outline" className="flex-1" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 bg-red-600 text-white hover:bg-red-700"
+            className="flex-1 bg-danger text-white hover:bg-danger/90"
             onClick={handleSubmit}
             disabled={isPending}
           >
@@ -547,7 +544,7 @@ function TabComprobantes() {
             <div className="flex shrink-0 gap-2">
               <Button
                 variant="outline"
-                className="border-green-500 text-green-600 hover:bg-green-50"
+                className="border-success text-success hover:bg-success-bg"
                 onClick={() => {
                   setPendingApproveId(receipt.id);
                   aprobar(receipt.id, {
@@ -562,7 +559,7 @@ function TabComprobantes() {
               </Button>
               <Button
                 variant="outline"
-                className="border-red-400 text-red-600 hover:bg-red-50"
+                className="border-danger text-danger hover:bg-danger-bg"
                 onClick={() => setRechazarModal(receipt)}
               >
                 <XCircle size={14} className="mr-1" />
@@ -586,7 +583,7 @@ export function AdministrativoFacturacion() {
   return (
     <PageContainer>
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList variant="line" className="w-full">
+        <TabsList variant="segmented" className="w-full">
           <TabsTrigger value="facturacion" className="flex-1">
             Facturación
           </TabsTrigger>

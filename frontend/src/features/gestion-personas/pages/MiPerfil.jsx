@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Skeleton } from '@/components/Skeleton';
 import {
   usePerfilPropio,
@@ -463,49 +464,47 @@ function TabNotificaciones() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[400px] text-[13px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="pb-2 text-left font-medium text-ink-soft">Notificación</th>
-              {canales.map((canal) => (
-                <th key={canal} className="pb-2 text-center font-medium text-ink-soft">
-                  {ETIQUETAS_CANAL[canal]}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {eventos.map((evento) => (
-              <tr key={evento}>
-                <td className="py-3 pr-4 text-ink">{ETIQUETAS_EVENTO[evento]}</td>
-                {canales.map((canal) => {
-                  const activo = prefs[evento]?.[canal] ?? true;
-                  return (
-                    <td key={canal} className="py-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => togglePref(evento, canal)}
-                        disabled={actualizar.isPending}
-                        aria-label={`${ETIQUETAS_EVENTO[evento]} — ${ETIQUETAS_CANAL[canal]}: ${activo ? 'activado' : 'desactivado'}`}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                          activo ? 'bg-gradient-to-br from-primary to-brand' : 'bg-neutral-bg'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform ${
-                            activo ? 'translate-x-4' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
+      <Table className="min-w-[400px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Notificación</TableHead>
+            {canales.map((canal) => (
+              <TableHead key={canal} className="text-center">
+                {ETIQUETAS_CANAL[canal]}
+              </TableHead>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {eventos.map((evento) => (
+            <TableRow key={evento}>
+              <TableCell className="text-ink">{ETIQUETAS_EVENTO[evento]}</TableCell>
+              {canales.map((canal) => {
+                const activo = prefs[evento]?.[canal] ?? true;
+                return (
+                  <TableCell key={canal} className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => togglePref(evento, canal)}
+                      disabled={actualizar.isPending}
+                      aria-label={`${ETIQUETAS_EVENTO[evento]} — ${ETIQUETAS_CANAL[canal]}: ${activo ? 'activado' : 'desactivado'}`}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        activo ? 'bg-gradient-to-br from-primary to-brand' : 'bg-neutral-bg'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform ${
+                          activo ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
       {error && <p className="text-[13px] text-danger">{error}</p>}
       {haycambios && (
         <div className="flex items-center justify-end gap-2">
@@ -531,7 +530,7 @@ export function MiPerfil() {
 
       <GlassCard className="flex flex-col gap-6 p-5 sm:p-7">
         <Tabs defaultValue="datos">
-          <TabsList variant="line" className="mb-6">
+          <TabsList variant="segmented" className="mb-6">
             <TabsTrigger value="datos">Mis datos</TabsTrigger>
             <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
             <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>

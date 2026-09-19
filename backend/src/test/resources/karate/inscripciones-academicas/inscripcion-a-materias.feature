@@ -8,7 +8,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     * def nombreTerm = 'Ciclo QA materias ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -49,7 +49,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def sectionId = response.id
 
   Scenario: Ciclo completo — matricular en la carrera, inscribirse a una comisión, ver detalle, dar de baja y reinscribirse reactiva la fila
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -88,7 +88,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     And match response.status == 'ENROLLED'
 
   Scenario: Materia que no está en el plan de la carrera — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -119,7 +119,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 400
 
   Scenario: Correlatividad no cumplida — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreMateriaAvanzada = 'Materia avanzada ' + java.lang.System.nanoTime()
     Given path '/subjects'
@@ -163,7 +163,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 400
 
   Scenario: Ya inscripto en otra comisión de la misma materia — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -192,7 +192,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 409
 
   Scenario: Cambiar de comisión dentro del mismo ciclo — 200, y a una comisión de otra materia — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -247,8 +247,8 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 400
 
   Scenario: Cupo lleno — lista de espera, y la baja del titular promueve al siguiente
-    * def alumno1 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
-    * def alumno2 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno1 = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def alumno2 = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -300,7 +300,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     And match response[0].status == 'ENROLLED'
 
   Scenario: Ventana de inscripción del ciclo cerrada — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreTermCerrado = 'Ciclo QA ventana cerrada ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -338,7 +338,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 404
 
   Scenario: Sección inexistente al inscribirse — 404
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -354,7 +354,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 404
 
   Scenario: Dar de baja una inscripción a materia dos veces — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -381,7 +381,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     Then status 409
 
   Scenario: Ciclo de ProgramEnrollment — listar por alumno, ver detalle, ver progreso, dar de baja
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken

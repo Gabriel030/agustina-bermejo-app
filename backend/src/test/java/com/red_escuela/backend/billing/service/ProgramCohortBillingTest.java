@@ -116,7 +116,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private InvoiceGenerationService invoiceGenerationService;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -150,7 +150,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         return studentRepository.save(student);
     }
 
-    private Program persistPrograma(String nombre) {
+    private Program persistProgram(String nombre) {
         Program program = new Program();
         program.setName(nombre);
         program.setTotalYears(3);
@@ -214,7 +214,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR136" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera anticipada " + System.nanoTime());
+        Program program = persistProgram("Carrera anticipada " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -237,7 +237,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR137" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera segunda cohorte " + System.nanoTime());
+        Program program = persistProgram("Carrera segunda cohorte " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohortSecond = persistCohort(template, CohortIntake.SECOND,
@@ -261,7 +261,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     @Test
     void enrollingOutsideTheCohortsAdmissionWindowIsRejected() {
         Person director = persistPersonBase("DIR138" + System.nanoTime());
-        Program program = persistPrograma("Carrera ventana cerrada " + System.nanoTime());
+        Program program = persistProgram("Carrera ventana cerrada " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -276,7 +276,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR139" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera dos cohortes " + System.nanoTime());
+        Program program = persistProgram("Carrera dos cohortes " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort first = persistCohort(template, CohortIntake.FIRST,
@@ -308,7 +308,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR16" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera ajuste de precio " + System.nanoTime());
+        Program program = persistProgram("Carrera ajuste de precio " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -335,7 +335,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera scope mayor " + System.nanoTime());
+        Program program = persistProgram("Carrera scope mayor " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -360,7 +360,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR39" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera upfront luego mensual " + System.nanoTime());
+        Program program = persistProgram("Carrera upfront luego mensual " + System.nanoTime());
         YearMonth mesInicial = YearMonth.now();
         Term term = persistTerm(2026);
         term.setStartDate(mesInicial.atDay(1).atStartOfDay());
@@ -407,7 +407,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR40" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera mensual a upfront " + System.nanoTime());
+        Program program = persistProgram("Carrera mensual a upfront " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
@@ -443,7 +443,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Person director = persistPersonBase("DIR21" + System.nanoTime());
         authenticateAsPerson(director);
 
-        Program program = persistPrograma("Carrera simultánea " + System.nanoTime());
+        Program program = persistProgram("Carrera simultánea " + System.nanoTime());
         Term term = persistTerm(2026);
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,

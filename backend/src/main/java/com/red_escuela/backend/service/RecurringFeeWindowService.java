@@ -16,16 +16,8 @@ import org.springframework.stereotype.Service;
 import java.time.YearMonth;
 import java.util.List;
 
-// Orquestador fino (patrón táctico DDD, Domain Service): la INVARIANTE de negocio — "¿puedo
-// facturar esta cuota?" — vive en ProgramYearBillingTemplate.canGenerateInvoice y
-// Course.canGenerateInvoice (cada una se valida a sí misma dado un conteo). Este service
-// existe solo porque esa validación necesita datos que las entidades no pueden buscar por sí
-// solas (repositorios, y una instancia managed para evitar detached-entity lazy loading) —
-// PaymentPlanSelectionService e InvoiceGenerationService comparten esa orquestación, no la
-// regla en sí (decisión 2026-09-03).
 @Service
 public class RecurringFeeWindowService {
-
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
@@ -65,12 +57,6 @@ public class RecurringFeeWindowService {
         return course.remainingInvoices(generated);
     }
 
-    // La ProgramEnrollment/CourseEnrollment que recibe cada método público puede llegar
-    // detached (ej. leída por un caller en otra transacción, como hará el futuro cron mensual) —
-    // navegar currentBillingTemplate/programCohort/course sobre esa instancia directamente
-    // revienta con LazyInitializationException apenas se toca una relación @ManyToOne LAZY sin
-    // sesión activa. Se re-busca acá, siempre dentro de la transacción de ESTE servicio, para
-    // garantizar una instancia managed antes de navegar cualquier relación lazy.
     private ProgramYearBillingTemplate currentTemplate(ProgramEnrollment programEnrollment) {
         ProgramEnrollment managed = programEnrollmentRepository.findById(programEnrollment.getId())
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollment.getId()));
@@ -84,8 +70,6 @@ public class RecurringFeeWindowService {
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollment.getId()));
     }
 
-    // Filtrar por FeeType/período es una consulta, no una invariante de dominio — se apoya en
-    // Term.contains (la invariante real) para no reimplementar la misma comparación de fechas.
     private long recurringFeeInvoicesGeneratedInWindow(List<Invoice> invoices, Term term) {
         return invoices.stream()
                 .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)

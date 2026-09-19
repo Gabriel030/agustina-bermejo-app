@@ -4,9 +4,11 @@ import { TrendingDown, TrendingUp, Users, AlertCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
+import { Stagger } from '@/components/Stagger';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 function formatPesos(amount) {
   if (amount == null) return '—';
@@ -29,26 +31,28 @@ function KpiCards({ data, isLoading }) {
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <StatCard label="Alumnos en deuda">
-        <div className="flex items-end gap-1.5">
-          <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
-        </div>
-      </StatCard>
-      <StatCard label="Alumnos al día">
-        <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
-      </StatCard>
-      <StatCard label="Deuda total">
-        <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
-      </StatCard>
-      <StatCard label="Proyectado del mes">
-        <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
-      </StatCard>
-      <StatCard label="Cobrado del mes">
-        <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
-      </StatCard>
-      <StatCard label="Pendiente del mes">
-        <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
-      </StatCard>
+      <Stagger>
+        <StatCard label="Alumnos en deuda">
+          <div className="flex items-end gap-1.5">
+            <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
+          </div>
+        </StatCard>
+        <StatCard label="Alumnos al día">
+          <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
+        </StatCard>
+        <StatCard label="Deuda total">
+          <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
+        </StatCard>
+        <StatCard label="Proyectado del mes">
+          <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
+        </StatCard>
+        <StatCard label="Cobrado del mes">
+          <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
+        </StatCard>
+        <StatCard label="Pendiente del mes">
+          <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
+        </StatCard>
+      </Stagger>
     </div>
   );
 }
@@ -74,36 +78,30 @@ function DebtorsTable({ data, isLoading }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            <th className="py-2 pl-4 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">Alumno</th>
-            <th className="py-2 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">DNI</th>
-            <th className="py-2 text-left text-[11px] font-bold uppercase tracking-wide text-ink-faint">Inscripción</th>
-            <th className="py-2 text-right text-[11px] font-bold uppercase tracking-wide text-ink-faint">Deuda</th>
-            <th className="py-2 pr-4 text-right text-[11px] font-bold uppercase tracking-wide text-ink-faint">Vencida hace</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr
-              key={d.studentId}
-              className="cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-neutral-bg/40"
-              onClick={() => navigate(`/director/alumnos/${d.studentId}`)}
-            >
-              <td className="py-3 pl-4 font-medium text-ink">{d.fullName}</td>
-              <td className="py-3 text-ink-soft">{d.dni}</td>
-              <td className="py-3 text-ink-soft">{d.enrollmentName}</td>
-              <td className="py-3 text-right font-semibold text-danger">{formatPesos(d.totalDebt)}</td>
-              <td className="py-3 pr-4 text-right text-ink-soft">
-                {d.debtAgeDays === 0 ? 'Hoy' : `${d.debtAgeDays} día${d.debtAgeDays !== 1 ? 's' : ''}`}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="pl-4">Alumno</TableHead>
+          <TableHead>DNI</TableHead>
+          <TableHead>Inscripción</TableHead>
+          <TableHead className="text-right">Deuda</TableHead>
+          <TableHead className="pr-4 text-right">Vencida hace</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((d) => (
+          <TableRow key={d.studentId} className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
+            <TableCell className="pl-4 font-medium text-ink">{d.fullName}</TableCell>
+            <TableCell className="text-ink-soft">{d.dni}</TableCell>
+            <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>
+            <TableCell className="text-right font-semibold text-danger">{formatPesos(d.totalDebt)}</TableCell>
+            <TableCell className="pr-4 text-right text-ink-soft">
+              {d.debtAgeDays === 0 ? 'Hoy' : `${d.debtAgeDays} día${d.debtAgeDays !== 1 ? 's' : ''}`}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
