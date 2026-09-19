@@ -1,9 +1,12 @@
 package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
+import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
 import com.red_escuela.backend.identity.service.PersonFactory;
 
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
+import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
+import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -21,6 +24,8 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +45,7 @@ public class ProspectService {
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
+    private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 
     public ProspectService(
             StudentRepository studentRepository,
@@ -48,7 +54,8 @@ public class ProspectService {
             RoleRepository roleRepository,
             PersonFactory personFactory,
             FileStorageService fileStorageService,
-            RequestPasswordResetUseCase requestPasswordResetUseCase) {
+            RequestPasswordResetUseCase requestPasswordResetUseCase,
+            SendEmailVerificationUseCase sendEmailVerificationUseCase) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
@@ -56,6 +63,7 @@ public class ProspectService {
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
+        this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
     }
 
     @Transactional
@@ -71,7 +79,45 @@ public class ProspectService {
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
 
-        return studentRepository.save(student);
+        Student saved = studentRepository.save(student);
+
+        boolean isAnonymous = SecurityContextHolder.getContext().getAuthentication()
+                instanceof AnonymousAuthenticationToken;
+        if (isAnonymous) {
+            sendEmailVerificationUseCase.sendVerification(saved.getId());
+        }
+
+        return saved;
+    }
+
+    @Transactional
+    public void saveDraft(Long studentId, SaveProspectDraftRequest request) {
+        Student student = findStudentOrThrow(studentId);
+        Person person = student.getPerson();
+
+        if (request.dni() != null) {
+            person.setDni(request.dni());
+        }
+
+        Address address = person.getAddress();
+        if (request.street() != null) address.setStreet(request.street());
+        if (request.number() != null) address.setNumber(request.number());
+        if (request.floor() != null) address.setFloor(request.floor());
+        if (request.city() != null) address.setCity(request.city());
+        if (request.state() != null) address.setState(request.state());
+        if (request.postalCode() != null) address.setPostalCode(request.postalCode());
+        if (request.country() != null) address.setCountry(request.country());
+
+        try {
+            studentRepository.saveAndFlush(student);
+        } catch (DataIntegrityViolationException e) {
+            throw new DniAlreadyExistsException(request.dni());
+        }
+    }
+
+    public void sendVerification(Long studentId) {
+        findStudentOrThrow(studentId);
+        sendEmailVerificationUseCase.sendVerification(studentId);
     }
 
     @Transactional
