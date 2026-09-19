@@ -53,6 +53,12 @@ import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanExc
 import com.red_escuela.backend.billing.exception.ScholarshipNotFoundException;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
 import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
+import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
+import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
@@ -214,7 +220,8 @@ public class GlobalExceptionHandler {
             InvalidCreditNoteReasonException.class,
             InsufficientCreditBalanceException.class,
             InvalidAdHocFeeTypeException.class,
-            IllegalArgumentException.class
+            IllegalArgumentException.class,
+            CycleIncompleteException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -260,7 +267,9 @@ public class GlobalExceptionHandler {
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
             PromotionNotFoundException.class,
-            CreditNoteNotFoundException.class
+            CreditNoteNotFoundException.class,
+            ClassroomNotFoundException.class,
+            CycleNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -308,7 +317,10 @@ public class GlobalExceptionHandler {
             InvalidPaymentReceiptStateException.class,
             PaymentExceedsInvoiceBalanceException.class,
             StudentInDebtException.class,
-            PromotionAlreadyClosedException.class
+            PromotionAlreadyClosedException.class,
+            SectionScheduleConflictException.class,
+            CycleAlreadyInProgressException.class,
+            CycleNotPendingApprovalException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
