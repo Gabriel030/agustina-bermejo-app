@@ -89,7 +89,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     private CourseEnrollmentRepository courseEnrollmentRepository;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 

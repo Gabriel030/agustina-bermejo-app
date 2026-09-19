@@ -79,7 +79,7 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void agregarDocumentoConPdfExcedidoDevuelve400() {
+    void addingDocumentWithOversizedPdfReturns400() {
         institution = new Institution();
         institution.setName("Instituto de prueba");
         institution = institutionRepository.save(institution);

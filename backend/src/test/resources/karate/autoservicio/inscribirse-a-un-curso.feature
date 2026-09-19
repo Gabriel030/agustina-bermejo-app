@@ -10,9 +10,9 @@ Feature: Caso de uso — Inscribirse a un curso
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def institutionId = fixtures.createInstitution()
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
     # Periodo + curso de prueba (staff)
     * def descripcionPeriodo = 'Karate - Periodo ' + java.lang.System.nanoTime()

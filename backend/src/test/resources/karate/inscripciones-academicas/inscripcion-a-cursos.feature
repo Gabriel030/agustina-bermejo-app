@@ -9,7 +9,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     * def nombreTerm = 'Ciclo QA cursos ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -20,7 +20,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def termId = response.id
 
   Scenario: Ciclo completo — inscribirse a un curso de un solo módulo, ver progreso, dar de baja con cascada
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA simple ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -78,7 +78,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     And match response[0].status != 'ENROLLED'
 
   Scenario: Inscribirse dos veces al mismo curso — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA doble inscripcion ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -101,7 +101,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     Then status 409
 
   Scenario: Módulo sin ninguna comisión configurada — 409 (todo o nada)
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA sin comision ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -125,7 +125,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     Then status 409
 
   Scenario: Módulo con dos comisiones — ambigua sin override (400), resuelta con sectionOverrides (201)
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA dos comisiones ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -172,7 +172,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     Then status 201
 
   Scenario: Ventana de inscripción cerrada — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA ventana cerrada ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -201,7 +201,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     Then status 404
 
   Scenario: Dar de baja dos veces la misma inscripción a un curso — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA doble baja ' + java.lang.System.nanoTime()
     Given path '/courses'
@@ -229,7 +229,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     Then status 409
 
   Scenario: Baja puntual de un módulo vía CourseSectionEnrollmentController — 204, y de nuevo 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreCurso = 'Curso QA baja puntual ' + java.lang.System.nanoTime()
     Given path '/courses'

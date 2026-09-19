@@ -8,9 +8,9 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def institutionId = fixtures.createInstitution()
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
   Scenario: Ciclo completo — prospecto, documentos, confirmar, legajo, baja
     # 1. Alta de prospecto — público, sin sesión

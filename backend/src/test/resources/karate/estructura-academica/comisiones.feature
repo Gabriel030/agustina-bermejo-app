@@ -10,9 +10,9 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     * def alumnoToken = alumno.accessToken
 
     * def nombreTerm = 'Ciclo QA ' + java.lang.System.nanoTime()
@@ -115,7 +115,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 200
     And match response.capacity == 30
 
-    * def instructorId = fixtures.crearInstructor()
+    * def instructorId = fixtures.createInstructor()
     Given path '/course-sections', sectionId, 'instructors'
     And header Authorization = 'Bearer ' + preceptorToken
     And request { instructorId: '#(instructorId)', role: 'LEAD' }
@@ -182,7 +182,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 201
     * def sectionId = response.id
 
-    * def instructorId = fixtures.crearInstructor()
+    * def instructorId = fixtures.createInstructor()
     Given path '/course-sections', sectionId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(instructorId)', role: 'LEAD' }
@@ -218,7 +218,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 201
     * def sectionDId = response.id
 
-    * def instructorId = fixtures.crearInstructor()
+    * def instructorId = fixtures.createInstructor()
     Given path '/course-sections', sectionCId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(instructorId)', role: 'LEAD' }
@@ -291,7 +291,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 200
     And match response.capacity == 45
 
-    * def instructorId = fixtures.crearInstructor()
+    * def instructorId = fixtures.createInstructor()
     Given path '/program-sections', subjectSectionId, 'instructors'
     And header Authorization = 'Bearer ' + preceptorToken
     And request { instructorId: '#(instructorId)', role: 'LEAD' }
@@ -394,7 +394,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 201
     * def sectionFId = response.id
 
-    * def instructorId = fixtures.crearInstructor()
+    * def instructorId = fixtures.createInstructor()
     Given path '/program-sections', sectionEId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(instructorId)', role: 'LEAD' }

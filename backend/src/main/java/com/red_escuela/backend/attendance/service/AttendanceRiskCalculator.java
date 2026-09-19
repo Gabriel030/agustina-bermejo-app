@@ -37,7 +37,7 @@ public class AttendanceRiskCalculator {
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calcularRiesgo(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, ausentes, maxAbsencePercentage);
     }
 
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
@@ -50,10 +50,10 @@ public class AttendanceRiskCalculator {
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calcularRiesgo(total, ausentes, maxAbsencePercentage);
+        return calculateRisk(total, ausentes, maxAbsencePercentage);
     }
 
-    private AttendanceRiskResponse calcularRiesgo(long total, long ausentes, double maxAbsencePercentage) {
+    private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
         if (total == 0) {
             return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
         }

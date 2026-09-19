@@ -90,7 +90,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return institution.getId();
     }
 
-    private Program persistPrograma() {
+    private Program persistProgram() {
         Program program = new Program();
         program.setName("Diseño Gráfico " + System.nanoTime());
         program.setTotalYears(3);
@@ -132,7 +132,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return cohort;
     }
 
-    private Course persistCurso(int capacity) {
+    private Course persistCourse(int capacity) {
         Term term = new Term();
         term.setYear(2026);
         term.setStatus(StatusType.ACTIVE);
@@ -149,7 +149,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     @Autowired
     private com.red_escuela.backend.identity.infrastructure.JwtService jwtService;
 
-    private String tokenDePreceptor() {
+    private String preceptorToken() {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
@@ -164,7 +164,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private String tokenDeAdministrativo() {
+    private String administrativeToken() {
         Address address = new Address();
         entityManager.persist(address);
         Person person = new Person();
@@ -205,19 +205,19 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes());
     }
 
-    private RegisterRequest registroValido(String sufijo, Long institutionId) {
+    private RegisterRequest validRegistration(String sufijo, Long institutionId) {
         return new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.ramirez." + sufijo + "@example.com",
                 "sofia.ramirez." + sufijo, "Test1234", institutionId);
     }
 
     @Test
-    void registrarseDevuelveTokensYaUtilizablesInmediatamente() throws Exception {
+    void registeringReturnsImmediatelyUsableTokens() throws Exception {
         Long institutionId = persistInstitution();
 
         String response = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registroValido("ok", institutionId))))
+                        .content(objectMapper.writeValueAsString(validRegistration("ok", institutionId))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andReturn().getResponse().getContentAsString();
@@ -231,9 +231,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseConUsernameYaExistenteDevuelve409() throws Exception {
+    void registeringWithExistingUsernameReturns409() throws Exception {
         Long institutionId = persistInstitution();
-        RegisterRequest request = registroValido("dup", institutionId);
+        RegisterRequest request = validRegistration("dup", institutionId);
 
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -245,9 +245,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseConEmailYaExistenteYUsernameDistintoDevuelve409() throws Exception {
+    void registeringWithExistingEmailAndDifferentUsernameReturns409() throws Exception {
         Long institutionId = persistInstitution();
-        RegisterRequest primero = registroValido("email-dup-a", institutionId);
+        RegisterRequest primero = validRegistration("email-dup-a", institutionId);
         mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(primero)))
                 .andExpect(status().isCreated());
@@ -261,7 +261,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void registrarseConPasswordDebilDevuelve400() throws Exception {
+    void registeringWithWeakPasswordReturns400() throws Exception {
         Long institutionId = persistInstitution();
         RegisterRequest debil = new RegisterRequest(
                 "Sofía", "Ramírez", "sofia.debil@example.com", "sofia.debil", "abc", institutionId);
@@ -272,15 +272,15 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void flujoCompletoSolicitudDeCarreraAprobada() throws Exception {
+    void fullFlowApprovedProgramRequest() throws Exception {
         Long institutionId = persistInstitution();
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramCohort cohort = persistCohort(program);
         persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registroValido("carrera", institutionId))))
+                        .content(objectMapper.writeValueAsString(validRegistration("carrera", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
 
@@ -301,7 +301,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isConflict());
 
-        String tokenPreceptor = tokenDePreceptor();
+        String tokenPreceptor = preceptorToken();
         mockMvc.perform(post("/program-enrollment-applications/" + applicationId + "/approve")
                         .header("Authorization", "Bearer " + tokenPreceptor))
                 .andExpect(status().isOk())
@@ -325,15 +325,15 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rechazarSolicitudNoCreaMatriculaNiOtorgaRol() throws Exception {
+    void rejectingRequestCreatesNoEnrollmentAndGrantsNoRole() throws Exception {
         Long institutionId = persistInstitution();
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramCohort cohort = persistCohort(program);
         persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registroValido("rechazo", institutionId))))
+                        .content(objectMapper.writeValueAsString(validRegistration("rechazo", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
 
@@ -345,7 +345,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();
 
-        String tokenPreceptor = tokenDePreceptor();
+        String tokenPreceptor = preceptorToken();
         mockMvc.perform(post("/program-enrollment-applications/" + applicationId + "/reject")
                         .header("Authorization", "Bearer " + tokenPreceptor)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -367,15 +367,15 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void unAlumnoNoPuedeAprobarSuPropiaSolicitud() throws Exception {
+    void aStudentCannotApproveTheirOwnRequest() throws Exception {
         Long institutionId = persistInstitution();
-        Program program = persistPrograma();
+        Program program = persistProgram();
         ProgramCohort cohort = persistCohort(program);
         persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registroValido("selfapprove", institutionId))))
+                        .content(objectMapper.writeValueAsString(validRegistration("selfapprove", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
 
@@ -393,14 +393,14 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirmeAUnCursoQuedaEnRevisionYRecienOtorgaElRolAlAprobarElComprobante() throws Exception {
+    void enrollingInACourseStaysUnderReviewAndOnlyGrantsTheRoleOnApprovingTheReceipt() throws Exception {
         Long institutionId = persistInstitution();
-        Course course = persistCurso(20);
+        Course course = persistCourse(20);
         persistPriceRevision(null, course, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registroValido("curso", institutionId))))
+                        .content(objectMapper.writeValueAsString(validRegistration("curso", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
 
@@ -416,7 +416,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles").isEmpty());
 
-        String tokenAdministrativo = tokenDeAdministrativo();
+        String tokenAdministrativo = administrativeToken();
         String pendientesResponse = mockMvc.perform(get("/payment-receipts")
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())

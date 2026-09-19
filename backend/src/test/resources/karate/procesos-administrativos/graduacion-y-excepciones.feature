@@ -10,10 +10,10 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def institutionId = fixtures.createInstitution()
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
     # Carrera sin requisitos (totalCreditsRequired 0, sin ProgramSubject): elegibleParaCompletar
     # da true trivialmente — mismo criterio que persistProgramSinRequisitos en
@@ -33,7 +33,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     * def programConCreditosId = response.id
 
   Scenario: Ciclo completo de egreso — solicitar, verificar deuda, aprobar, matriculación queda COMPLETED
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
     * def alumnoToken = alumno.accessToken
 
     Given path '/students', alumno.studentId, 'program-enrollments'
@@ -83,7 +83,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     And match response.completionDate == '#notnull'
 
   Scenario: No elegible para egreso por créditos insuficientes — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -98,7 +98,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 400
 
   Scenario: Solicitar egreso dos veces sin que la primera se rechace — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -118,7 +118,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 409
 
   Scenario: Verificar deuda con factura pendiente — el trámite sigue en REQUESTED (decisión 10), 409
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -133,7 +133,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 201
     * def graduationRequestId = response.id
 
-    * fixtures.crearInvoicePendiente(programEnrollmentId, '2026-12-31')
+    * fixtures.createPendingInvoice(programEnrollmentId, '2026-12-31')
 
     Given path '/graduation-requests', graduationRequestId, 'verify-debt'
     And header Authorization = 'Bearer ' + adminToken
@@ -147,7 +147,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     And match response[0].status == 'REQUESTED'
 
   Scenario: Rechazar un trámite permite volver a solicitar
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -175,7 +175,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 201
 
   Scenario: Preceptor no puede aprobar un egreso — 403 (solo Director)
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -207,8 +207,8 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 404
 
   Scenario: Constancia de una matriculación ajena — 404, no 403 (mismo criterio que el resto de autoservicio)
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
-    * def otroAlumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
+    * def otroAlumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -223,7 +223,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 404
 
   Scenario: Ciclo completo de excepción del Director — solicitar, aprobar
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -260,7 +260,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     And match response[*].id !contains exceptionId
 
   Scenario: Alumno no puede solicitar una excepción del Director — 403
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -276,7 +276,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 403
 
   Scenario: Rechazar una excepción, y decidir de nuevo ya no es posible — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken

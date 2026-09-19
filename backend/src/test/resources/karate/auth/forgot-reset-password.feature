@@ -8,7 +8,7 @@ Feature: Recuperar contraseña (POST /auth/forgot-password, /auth/verify-reset-c
 
   Background:
     * url baseUrl
-    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').crearInstitucion()
+    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').createInstitution()
     * def emailUnico = 'karate.resetpw.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
     And request { nombre: 'QA', apellido: 'ResetPw', email: '#(emailUnico)', username: '#(emailUnico)', password: '#(passwordValida)', institutionId: '#(institutionId)' }

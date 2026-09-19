@@ -9,8 +9,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
 
   Scenario: Ciclo completo de una materia — alta, edición, baja y reactivación
     * def nombre = 'Análisis Matemático I ' + java.lang.System.nanoTime()

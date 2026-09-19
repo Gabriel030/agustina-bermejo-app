@@ -7,7 +7,7 @@ Feature: Registro independiente (POST /auth/register)
 
   Background:
     * url baseUrl
-    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').crearInstitucion()
+    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').createInstitution()
     * def emailUnico = 'karate.registro.' + java.lang.System.nanoTime() + '@example.com'
 
   Scenario: Happy path — registrarse deja tokens usables de inmediato, sin rol todavía

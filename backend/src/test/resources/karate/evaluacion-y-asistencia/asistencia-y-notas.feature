@@ -12,8 +12,8 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
 
     * def nombreTerm = 'Ciclo QA notas ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -45,7 +45,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     When method post
     Then status 201
 
-    * def evaluationSchemeId = fixtures.crearEvaluationScheme()
+    * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: 'Comisión QA notas', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
@@ -53,7 +53,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     Then status 201
     * def sectionId = response.id
 
-    * def docente = fixtures.crearDocenteConToken()
+    * def docente = fixtures.createTeacherWithToken()
     Given path '/program-sections', sectionId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(docente.instructorId)', role: 'LEAD' }
@@ -61,7 +61,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     Then status 201
 
   Scenario: Ciclo completo — asistencia, tres parciales aprobados llevan a REGULAR, final aprobado lleva a APPROVED
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -128,7 +128,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     And match response[0].status == 'APPROVED'
 
   Scenario: Promedio de parciales insuficiente — la cursada pasa a FAILED sin llegar al final
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -169,8 +169,8 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     And match response[0].status == 'FAILED'
 
   Scenario: Un Docente que no integra la comisión no puede cargar asistencia ni notas — 403
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
-    * def otroDocente = fixtures.crearDocenteConToken()
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def otroDocente = fixtures.createTeacherWithToken()
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -199,8 +199,8 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     Then status 403
 
   Scenario: Justificar una ausencia — 200, y listar asistencia/notas (Preceptor/Administrativo/Director)
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken

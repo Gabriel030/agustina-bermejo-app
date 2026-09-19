@@ -6,8 +6,8 @@ Feature: Catálogo — Cursos (CourseController)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
 
     * def descripcionPeriodo = 'Karate - Periodo catálogo curso ' + java.lang.System.nanoTime()
     Given path '/terms'

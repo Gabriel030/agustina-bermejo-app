@@ -11,7 +11,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
 
     * def nombreTerm = 'Ciclo QA mi cursada ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -43,7 +43,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     When method post
     Then status 201
 
-    * def evaluationSchemeId = fixtures.crearEvaluationScheme()
+    * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: 'Comisión mi cursada', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
@@ -51,7 +51,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     Then status 201
     * def sectionId = response.id
 
-    * def docente = fixtures.crearDocenteConToken()
+    * def docente = fixtures.createTeacherWithToken()
     Given path '/program-sections', sectionId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(docente.instructorId)', role: 'LEAD' }
@@ -59,7 +59,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     Then status 201
 
   Scenario: El alumno ve su propia asistencia y sus propias notas
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -116,8 +116,8 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     And match response[0].score == 8
 
   Scenario: Un alumno no puede ver la cursada de otro — 404, no 403
-    * def alumno1 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
-    * def alumno2 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno1 = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def alumno2 = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno1.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -144,7 +144,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     Then status 404
 
   Scenario: Cursada inexistente — 404
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/me/section-enrollments', 999999, 'attendance'
     And header Authorization = 'Bearer ' + alumno.accessToken

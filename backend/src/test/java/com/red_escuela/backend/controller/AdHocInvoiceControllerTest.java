@@ -112,7 +112,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaAdHocSoloDisponibleParaAdministrativo() throws Exception {
+    void adHocCreationOnlyAvailableToAdministrative() throws Exception {
         CourseEnrollment enrollment = persistCourseEnrollment();
         String tokenAlumno = tokenWithRole("alumno.adhoc.test", "ALUMNO");
         String tokenPreceptor = tokenWithRole("preceptor.adhoc.test", "PRECEPTOR");
@@ -135,7 +135,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaAdHocComoAdministrativoDevuelve201() throws Exception {
+    void adHocCreationAsAdministrativeReturns201() throws Exception {
         CourseEnrollment enrollment = persistCourseEnrollment();
         String tokenAdministrativo = tokenWithRole("administrativo.adhoc.test", "ADMINISTRATIVO");
 

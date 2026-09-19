@@ -14,7 +14,7 @@ class JwtServiceBootstrapTest {
             .withBean(JwtService.class);
 
     @Test
-    void elContextoFallaAlArrancarSiJwtSecretNoSeResuelve() {
+    void contextFailsToStartIfJwtSecretDoesNotResolve() {
         contextRunner
                 .withPropertyValues(
                         "jwt.secret=${THIS_ENV_VAR_IS_NEVER_SET_ANYWHERE_XYZ123}",
@@ -23,7 +23,7 @@ class JwtServiceBootstrapTest {
     }
 
     @Test
-    void elContextoArrancaOkSiJwtSecretEstaSeteada() {
+    void contextStartsOkIfJwtSecretIsSet() {
         contextRunner
                 .withPropertyValues(
                         "jwt.secret=un-secret-de-prueba",

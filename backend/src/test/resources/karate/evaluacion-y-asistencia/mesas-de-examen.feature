@@ -9,8 +9,8 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
 
     * def nombreTerm = 'Ciclo QA mesas ' + java.lang.System.nanoTime()
     Given path '/terms'
@@ -42,7 +42,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     When method post
     Then status 201
 
-    * def evaluationSchemeId = fixtures.crearEvaluationScheme()
+    * def evaluationSchemeId = fixtures.createEvaluationScheme()
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: 'Comisión QA mesas', termId: '#(termId)', capacity: 20, evaluationSchemeId: '#(evaluationSchemeId)' }
@@ -50,7 +50,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 201
     * def sectionId = response.id
 
-    * def docente = fixtures.crearDocenteConToken()
+    * def docente = fixtures.createTeacherWithToken()
     Given path '/program-sections', sectionId, 'instructors'
     And header Authorization = 'Bearer ' + adminToken
     And request { instructorId: '#(docente.instructorId)', role: 'LEAD' }
@@ -58,7 +58,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 201
 
   Scenario: Ciclo completo — crear mesa, asignar tribunal, inscribir alumno regular, dar de baja, reinscribirse, cerrar
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -147,7 +147,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 204
 
   Scenario: Inscribirse sin estar REGULAR — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -177,7 +177,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 400
 
   Scenario: La materia de la mesa no coincide con la cursada — 400
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -241,7 +241,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     When method post
     Then status 204
 
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { programId: '#(programId)' }
@@ -270,7 +270,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 201
     * def examBoardId = response.id
 
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
     And request { programId: '#(programId)' }
@@ -292,7 +292,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 400
 
   Scenario: Doble inscripción sin baja — 409, y dar de baja dos veces — 409
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -366,7 +366,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 404
 
   Scenario: Autoservicio — el alumno se inscribe y se da de baja por /me
-    * def alumno = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken
@@ -416,8 +416,8 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     Then status 204
 
   Scenario: Autoservicio — un alumno no puede dar de baja la inscripción de otro (404, no 403)
-    * def alumno1 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
-    * def alumno2 = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion())
+    * def alumno1 = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def alumno2 = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     Given path '/students', alumno1.studentId, 'program-enrollments'
     And header Authorization = 'Bearer ' + adminToken

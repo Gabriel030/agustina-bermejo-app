@@ -8,10 +8,10 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def institutionId = fixtures.crearInstitucion()
-    * def preceptorToken = fixtures.tokenParaRol('PRECEPTOR')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def directorToken = fixtures.tokenParaRol('DIRECTOR')
+    * def institutionId = fixtures.createInstitution()
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
     * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
     Given path '/programs'
@@ -49,7 +49,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
     # sobre el rate limiter compartido de /auth/register para algo que este feature no
     # está probando).
-    * def alumnoToken = fixtures.crearAlumnoConfirmado(institutionId).accessToken
+    * def alumnoToken = fixtures.createConfirmedStudent(institutionId).accessToken
 
     # Solicitar — multipart desde Épica 7 Fase 3, comprobante bloqueante.
     Given path '/me/program-enrollment-applications'
@@ -83,7 +83,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # alumno) — mismo criterio ya documentado como deuda técnica (entrada 6, rate
     # limiter compartido): usar el fixture de Java en vez del endpoint real cuando el
     # endpoint en sí no es lo que se está probando.
-    * def otroAlumno = fixtures.crearAlumnoConfirmado(institutionId)
+    * def otroAlumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/me/program-enrollment-applications', applicationId, 'documents'
     And header Authorization = 'Bearer ' + otroAlumno.accessToken

@@ -45,7 +45,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     private ProgramRepository programRepository;
 
     @AfterEach
-    void limpiarContexto() {
+    void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
@@ -63,7 +63,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(person.getId().toString(), null));
     }
 
-    private Program persistPrograma() {
+    private Program persistProgram() {
         Program program = new Program();
         program.setName("Carrera de prueba " + System.nanoTime());
         program.setTotalYears(3);
@@ -74,7 +74,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     @Test
     void upfrontEnabledWithoutDatesIsRejected() {
         authenticateAs(persistDirector("director.plan1." + System.nanoTime()));
-        Program program = persistPrograma();
+        Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, null, null);
 
@@ -85,7 +85,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     @Test
     void upfrontWithStartAfterEndIsRejected() {
         authenticateAs(persistDirector("director.plan2." + System.nanoTime()));
-        Program program = persistPrograma();
+        Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
 
@@ -96,7 +96,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     @Test
     void upfrontWithValidWindowIsCreatedCorrectly() {
         authenticateAs(persistDirector("director.plan3." + System.nanoTime()));
-        Program program = persistPrograma();
+        Program program = persistProgram();
         LocalDate start = LocalDate.now();
         LocalDate end = LocalDate.now().plusDays(30);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
@@ -112,7 +112,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
     @Test
     void monthlyWithoutWindowIsNotValidated() {
         authenticateAs(persistDirector("director.plan4." + System.nanoTime()));
-        Program program = persistPrograma();
+        Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
                 "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
 
