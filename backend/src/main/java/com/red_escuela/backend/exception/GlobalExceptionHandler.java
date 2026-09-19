@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
 import com.red_escuela.backend.identity.exception.InvalidCurrentPasswordException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.exception.InvalidStaffRoleException;
@@ -147,6 +148,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidPasswordResetTokenException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidPasswordResetToken() {
+    }
+
+    @ExceptionHandler(InvalidEmailVerificationTokenException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public void handleInvalidEmailVerificationToken() {
     }
 
     @ExceptionHandler(InvalidGoogleTokenException.class)

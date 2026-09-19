@@ -37,6 +37,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.evaluation.service.ExamBoardRegistrationService;
 
 @SpringBootTest
 @ActiveProfiles("test")
