@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 @RestController
 @RequestMapping("/students")
 public class StudentController {
-
     private final ListStudentsUseCase listStudentsUseCase;
     private final GetStudentRecordUseCase getStudentRecordUseCase;
     private final WithdrawStudentUseCase withdrawStudentUseCase;
@@ -115,9 +114,6 @@ public class StudentController {
         resetStudentPasswordUseCase.resetPassword(id);
     }
 
-    // Versión mínima de esta fase (Fase 6.3): billingStanding + invoices por cada enrollment del
-    // alumno. El detalle completo de "vista 360°" (deuda total, historial de pagos, etc.) es de
-    // Fase 6.11 (Reporting).
     @GetMapping("/{id}/billing-overview")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<EnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
@@ -152,8 +148,6 @@ public class StudentController {
         return listCreditNotesForStudentUseCase.list(id).stream().map(CreditNoteResponse::from).toList();
     }
 
-    // Solo ADMINISTRATIVE_CORRECTION/OTHER (CreateManualCreditNoteService lo valida) — las otras
-    // dos razones (EARLY_WITHDRAWAL_UPFRONT_UNUSED/RETROACTIVE_SCHOLARSHIP) las genera el sistema.
     @PostMapping("/{id}/credit-notes")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")

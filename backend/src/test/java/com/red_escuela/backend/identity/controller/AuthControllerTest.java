@@ -62,7 +62,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConCredencialesValidasDevuelve200ConTokens() throws Exception {
+    void loginWithValidCredentialsReturns200WithTokens() throws Exception {
         persistPerson("controller1", "correcta123");
 
         mockMvc.perform(post("/auth/login")
@@ -75,7 +75,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConCredencialesInvalidasDevuelve401() throws Exception {
+    void loginWithInvalidCredentialsReturns401() throws Exception {
         persistPerson("controller2", "correcta123");
 
         mockMvc.perform(post("/auth/login")
@@ -85,7 +85,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginConBodyInvalidoDevuelve400() throws Exception {
+    void loginWithInvalidBodyReturns400() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("", ""))))
@@ -93,7 +93,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void refreshRotaYElTokenViejoDevuelve401() throws Exception {
+    void refreshRotatesAndTheOldTokenReturns401() throws Exception {
         persistPerson("controller3", "correcta123");
 
         String loginBody = mockMvc.perform(post("/auth/login")
@@ -115,7 +115,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void logoutDevuelve204YElTokenDejaDeServir() throws Exception {
+    void logoutReturns204AndTheTokenStopsWorking() throws Exception {
         persistPerson("controller4", "correcta123");
 
         String loginBody = mockMvc.perform(post("/auth/login")
@@ -136,7 +136,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void forgotPasswordDevuelve202SeaCualSeaElEmail() throws Exception {
+    void forgotPasswordReturns202RegardlessOfTheEmail() throws Exception {
         persistPerson("controller5", "correcta123");
 
         mockMvc.perform(post("/auth/forgot-password")
@@ -151,7 +151,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyResetCodeConEmailInexistenteDevuelve401() throws Exception {
+    void verifyResetCodeWithNonExistentEmailReturns401() throws Exception {
         mockMvc.perform(post("/auth/verify-reset-code")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new VerifyResetCodeRequest("no-existe@example.com", "000000"))))
@@ -159,7 +159,7 @@ class AuthControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordConTokenDeIntercambioInvalidoDevuelve401() throws Exception {
+    void resetPasswordWithInvalidExchangeTokenReturns401() throws Exception {
         mockMvc.perform(post("/auth/reset-password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ResetPasswordRequest("token-que-no-existe", "Nueva123"))))

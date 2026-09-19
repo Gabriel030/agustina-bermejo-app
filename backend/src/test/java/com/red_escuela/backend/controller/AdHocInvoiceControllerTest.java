@@ -34,13 +34,11 @@ import java.time.LocalDateTime;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Fase 6.7: test 78 (altaAdHocSoloDisponibleParaAdministrativo).
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -114,7 +112,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaAdHocSoloDisponibleParaAdministrativo() throws Exception {
+    void adHocCreationOnlyAvailableToAdministrative() throws Exception {
         CourseEnrollment enrollment = persistCourseEnrollment();
         String tokenAlumno = tokenWithRole("alumno.adhoc.test", "ALUMNO");
         String tokenPreceptor = tokenWithRole("preceptor.adhoc.test", "PRECEPTOR");
@@ -137,7 +135,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaAdHocComoAdministrativoDevuelve201() throws Exception {
+    void adHocCreationAsAdministrativeReturns201() throws Exception {
         CourseEnrollment enrollment = persistCourseEnrollment();
         String tokenAdministrativo = tokenWithRole("administrativo.adhoc.test", "ADMINISTRATIVO");
 

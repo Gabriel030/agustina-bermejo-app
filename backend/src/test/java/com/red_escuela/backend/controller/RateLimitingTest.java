@@ -17,12 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Capacidad reducida vía @TestPropertySource (contexto de Spring propio, no comparte el
- * LoginRateLimiter singleton con AuthControllerTest ni con el resto de la suite — evita que
- * este test interfiera con los 5 logins/2 forgot-password que ya pega AuthControllerTest, y
- * viceversa) — así se puede probar el 429 real sin tocar la capacidad de producción.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -34,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "auth.rate-limit.forgot-password.refill-per-minute=2"
 })
 class RateLimitingTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -42,7 +35,7 @@ class RateLimitingTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void superarLaCapacidadDeLoginDevuelve429() throws Exception {
+    void exceedingLoginCapacityReturns429() throws Exception {
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -57,7 +50,7 @@ class RateLimitingTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void superarLaCapacidadDeForgotPasswordDevuelve429() throws Exception {
+    void exceedingForgotPasswordCapacityReturns429() throws Exception {
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(post("/auth/forgot-password")
                             .contentType(MediaType.APPLICATION_JSON)

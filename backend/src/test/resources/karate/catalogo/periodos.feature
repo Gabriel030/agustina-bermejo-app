@@ -10,8 +10,8 @@ Feature: Catálogo — Períodos lectivos (TermController)
   Background:
     * url baseUrl
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
-    * def adminToken = fixtures.tokenParaRol('ADMINISTRATIVO')
-    * def alumnoToken = fixtures.crearAlumnoConfirmado(fixtures.crearInstitucion()).accessToken
+    * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
+    * def alumnoToken = fixtures.createConfirmedStudent(fixtures.createInstitution()).accessToken
 
     * def descripcionPeriodo = 'Karate - Periodo catálogo ' + java.lang.System.nanoTime()
     Given path '/terms'

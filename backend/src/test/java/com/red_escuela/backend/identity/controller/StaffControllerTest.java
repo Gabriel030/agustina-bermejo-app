@@ -81,7 +81,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaDeDocenteCreaPersonEInstructorYAsignaRol() throws Exception {
+    void creatingTeacherCreatesPersonAndInstructorAndAssignsRole() throws Exception {
         String token = tokenWithRole("admin1", "ADMINISTRATIVO");
         CreateStaffRequest request = staffRequest("docente.nuevo@example.com", "50111222", "DOCENTE");
 
@@ -101,7 +101,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaDePreceptorNoCreaInstructor() throws Exception {
+    void creatingPreceptorDoesNotCreateInstructor() throws Exception {
         String token = tokenWithRole("admin2", "ADMINISTRATIVO");
         CreateStaffRequest request = staffRequest("preceptor.nuevo@example.com", "50333444", "PRECEPTOR");
 
@@ -118,7 +118,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void altaConRolInvalidoDevuelve400() throws Exception {
+    void creatingWithInvalidRoleReturns400() throws Exception {
         String token = tokenWithRole("admin3", "ADMINISTRATIVO");
         CreateStaffRequest request = staffRequest("rol.invalido@example.com", "50555666", "DIRECTOR");
 
@@ -130,7 +130,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void editarPersonalSinRolAdministrativoDevuelve403() throws Exception {
+    void updatingStaffWithoutAdministrativeRoleReturns403() throws Exception {
         String adminToken = tokenWithRole("admin4", "ADMINISTRATIVO");
         CreateStaffRequest createRequest = staffRequest("editable@example.com", "50777888", "DOCENTE");
         String body = mockMvc.perform(post("/staff")
@@ -152,7 +152,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void editarPersonalActualizaContactoYNuncaElDni() throws Exception {
+    void updatingStaffUpdatesContactAndNeverTheDni() throws Exception {
         String adminToken = tokenWithRole("admin5", "ADMINISTRATIVO");
         CreateStaffRequest createRequest = staffRequest("editable2@example.com", "50999000", "DOCENTE");
         String body = mockMvc.perform(post("/staff")

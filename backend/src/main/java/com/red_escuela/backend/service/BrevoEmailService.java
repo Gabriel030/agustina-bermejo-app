@@ -13,13 +13,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-// No activa en el perfil "test": la suite corre con @SpringBootTest de contexto completo
-// (ver docs/context/testing.md) y un intento de conexión SMTP real contra Brevo en cada
-// test que dispare un reset de password sería lento y dependiente de red — ver NoOpEmailService.
 @Service
 @Profile("!test")
 public class BrevoEmailService implements EmailService {
-
     private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
 
     private final JavaMailSender mailSender;

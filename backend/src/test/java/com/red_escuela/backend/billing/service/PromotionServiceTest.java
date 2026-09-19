@@ -139,7 +139,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
     @AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }
 

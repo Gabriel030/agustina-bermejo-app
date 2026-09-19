@@ -2,7 +2,7 @@ Feature: Refresh y Logout (POST /auth/refresh, POST /auth/logout)
 
   Background:
     * url baseUrl
-    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').crearInstitucion()
+    * def institutionId = Java.type('com.red_escuela.backend.karate.KarateFixtures').createInstitution()
     * def emailUnico = 'karate.refresh.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
     And request { nombre: 'QA', apellido: 'Refresh', email: '#(emailUnico)', username: '#(emailUnico)', password: '#(passwordValida)', institutionId: '#(institutionId)' }

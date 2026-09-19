@@ -24,26 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 
-/**
- * Puente Java para setup que no tiene sentido hacer vía HTTP desde un .feature de Karate
- * (crear un token de staff sin pasar por un flujo de alta completo, sembrar una
- * institución) — mismo criterio que RegistrationFlowTest.persistInstitution()/
- * tokenDePreceptor(), reusado acá porque Karate llama a métodos Java estáticos
- * directamente (Java.type(...) desde el .feature o karate-config.js).
- *
- * Usa los repositories (cada método de un JpaRepository es transaccional por sí solo,
- * SimpleJpaRepository lo anota @Transactional) en vez de EntityManager.persist() crudo
- * a propósito: KarateSuiteTest NO es @Transactional (si lo fuera, toda la corrida
- * compartiría una única transacción de test y enmascararía bugs reales de boundary
- * transaccional — exactamente el problema que encontramos con RegistrationFlowTest
- * y el bug del rol ALUMNO no otorgado). Sin @Transactional en el test, un
- * EntityManager.persist() suelto no tiene transacción activa donde flushear.
- *
- * KarateSpringContext.set(...) lo llama el runner (@BeforeEach) para dejar disponible el
- * ApplicationContext de la corrida — Karate no inyecta beans de Spring por sí solo.
- */
 public class KarateFixtures {
-
     private static ApplicationContext context() {
         ApplicationContext context = KarateSpringContext.get();
         if (context == null) {
@@ -54,16 +35,14 @@ public class KarateFixtures {
         return context;
     }
 
-    public static Long crearInstitucion() {
+    public static Long createInstitution() {
         InstitutionRepository institutionRepository = context().getBean(InstitutionRepository.class);
         Institution institution = new Institution();
         institution.setName("Karate - Institución de prueba " + System.nanoTime());
         return institutionRepository.save(institution).getId();
     }
 
-    // rol: "PRECEPTOR", "ADMINISTRATIVO", etc. — mismo criterio que
-    // RegistrationFlowTest.tokenDePreceptor(), generalizado a cualquier rol de staff.
-    public static String tokenParaRol(String rol) {
+    public static String tokenForRole(String rol) {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         RoleRepository roleRepository = context().getBean(RoleRepository.class);
@@ -85,10 +64,7 @@ public class KarateFixtures {
         return jwtService.generateAccessToken(person);
     }
 
-    // Alumno CONFIRMADO con studentId conocido, sin pasar por /auth/register (que no
-    // devuelve el studentId en la respuesta, solo tokens) — necesario para casos que
-    // arman datos vía staff (facturas, notas) contra un id de alumno concreto.
-    public static Map<String, Object> crearAlumnoConfirmado(Long institutionId) {
+    public static Map<String, Object> createConfirmedStudent(Long institutionId) {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         RoleRepository roleRepository = context().getBean(RoleRepository.class);
@@ -121,11 +97,7 @@ public class KarateFixtures {
         return result;
     }
 
-    // Instructor sin credenciales de login — solo hace falta el id para asignarlo a una
-    // comisión (CourseSectionController/SubjectSectionController). No pasa por /staff porque
-    // StaffResponse.id es el id de Person, no de Instructor (ver comentario en StaffResponse) y
-    // acá necesitamos el id de Instructor directo.
-    public static Long crearInstructor() {
+    public static Long createInstructor() {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         InstructorRepository instructorRepository = context().getBean(InstructorRepository.class);
@@ -147,10 +119,7 @@ public class KarateFixtures {
         return instructorRepository.save(instructor).getId();
     }
 
-    // A diferencia de crearInstructor(), acá el Docente SÍ necesita loguearse: carga
-    // asistencia/notas vía AttendanceController/GradeItemController, que resuelven el
-    // Instructor autenticado por JWT (CurrentInstructorService), no por un id de la URL.
-    public static Map<String, Object> crearDocenteConToken() {
+    public static Map<String, Object> createTeacherWithToken() {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         RoleRepository roleRepository = context().getBean(RoleRepository.class);
@@ -182,11 +151,7 @@ public class KarateFixtures {
         return result;
     }
 
-    // No hay ningún endpoint de alta para EvaluationScheme (se referencia por id, opcional,
-    // desde CreateSectionRequest/UpdateSectionRequest — ver "Deuda técnica y gaps de QA" en
-    // Obsidian) — sin uno, GradeItemService.cargarNota* rechaza con NoEvaluationSchemeException
-    // cualquier carga de nota sobre una comisión sin esquema asignado.
-    public static Long crearEvaluationScheme() {
+    public static Long createEvaluationScheme() {
         EvaluationSchemeTestRepository evaluationSchemeRepository =
                 context().getBean(EvaluationSchemeTestRepository.class);
 
@@ -202,12 +167,7 @@ public class KarateFixtures {
         return evaluationSchemeRepository.save(scheme).getId();
     }
 
-    // Fase 6.0: ya no hay POST /students/{id}/invoices (Fase 4, eliminado) — una Invoice
-    // real nace siempre de un plan de pagos (Fase 6.1), demasiada carga para un fixture de
-    // un solo escenario. Este atajo persiste una Invoice PENDING directo contra un
-    // ProgramEnrollment concreto, usado por graduacion-y-excepciones.feature para simular
-    // "tiene una cuota impaga" sin armar todo el plan de facturación.
-    public static Long crearInvoicePendiente(Long programEnrollmentId, String dueDate) {
+    public static Long createPendingInvoice(Long programEnrollmentId, String dueDate) {
         com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository programEnrollmentRepository =
                 context().getBean(com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository.class);
         com.red_escuela.backend.billing.repository.InvoiceRepository invoiceRepository =

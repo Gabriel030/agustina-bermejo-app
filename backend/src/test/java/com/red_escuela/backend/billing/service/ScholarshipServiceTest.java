@@ -174,7 +174,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @org.junit.jupiter.api.AfterEach
-    void limpiarContextoDeSeguridad() {
+    void clearSecurityContext() {
         org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
+import { Stagger } from '@/components/Stagger';
 import { Buscador } from '@/components/catalogo/Buscador';
 import { Paginador } from '@/components/catalogo/Paginador';
 import { useProgramas } from '@/hooks/useCatalogo';
@@ -37,24 +38,27 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
-        {pagina.map((programa) => (
-          <GlassCard
-            key={programa.id}
-            onClick={() => navigate(`/catalogo/carreras/${programa.id}`)}
-            className="flex cursor-pointer flex-col gap-3 p-6 hover:bg-neutral-bg"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-primary">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-            <div className="font-heading text-lg font-bold text-ink">{programa.name}</div>
-            {/* mt-auto: la grilla ya estira las cards de una misma fila a la
-                misma altura (default de CSS Grid), esto ancla la meta al pie
-                de CADA card en vez de quedar pegada al título — si el título
-                de al lado ocupa 2 líneas, sin esto la meta queda "flotando"
-                en alturas distintas entre cards de la misma fila. */}
-            <div className="mt-auto text-[13px] text-ink-faint">{programa.totalYears} años · Título oficial</div>
-          </GlassCard>
-        ))}
+        <Stagger>
+          {pagina.map((programa) => (
+            <GlassCard
+              key={programa.id}
+              interactive
+              onClick={() => navigate(`/catalogo/carreras/${programa.id}`)}
+              className="flex flex-col gap-3 p-6"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-primary">
+                <GraduationCap className="h-5 w-5" />
+              </div>
+              <div className="font-heading text-lg font-bold text-ink">{programa.name}</div>
+              {/* mt-auto: la grilla ya estira las cards de una misma fila a la
+                  misma altura (default de CSS Grid), esto ancla la meta al pie
+                  de CADA card en vez de quedar pegada al título — si el título
+                  de al lado ocupa 2 líneas, sin esto la meta queda "flotando"
+                  en alturas distintas entre cards de la misma fila. */}
+              <div className="mt-auto text-[13px] text-ink-faint">{programa.totalYears} años · Título oficial</div>
+            </GlassCard>
+          ))}
+        </Stagger>
       </div>
 
       <Paginador page={page} totalPages={totalPages} onChange={onPageChange} />

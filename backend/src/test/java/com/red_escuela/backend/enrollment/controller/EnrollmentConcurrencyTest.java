@@ -119,7 +119,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void dosAltasConcurrentesAUnaComisionConCupo1NuncaDejanADosAlumnosEnrolled() throws Exception {
+    void twoConcurrentEnrollmentsInASectionWithCapacity1NeverLeaveTwoStudentsEnrolled() throws Exception {
         Student estudiante1 = persistStudent("70000001");
         Student estudiante2 = persistStudent("70000002");
 

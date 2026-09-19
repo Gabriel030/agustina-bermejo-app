@@ -282,7 +282,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void matricularProspectoDevuelve400() throws Exception {
+    void enrollingProspectReturns400() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000001", StudentOnboardingStatus.PROSPECTO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Tecnicatura", 100);
@@ -297,7 +297,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void matricularDosVecesMismaCarreraDevuelve409() throws Exception {
+    void enrollingTwiceInTheSameProgramReturns409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000002", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Tecnicatura2", 100);
@@ -319,7 +319,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void matricularFueraDeVentanaAdmisionDevuelve409() throws Exception {
+    void enrollingOutsideAdmissionWindowReturns409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000003", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         java.time.LocalDate today = java.time.LocalDate.now();
@@ -336,7 +336,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirSinProgramEnrollmentEnrolledDevuelve400() throws Exception {
+    void enrollingWithoutEnrolledProgramEnrollmentReturns400() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000004", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Tecnicatura4", 100);
@@ -356,7 +356,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirSinCumplirCorrelatividadDevuelve400YCumplidaEnOtraCarreraSigueSiendo400() throws Exception {
+    void enrollingWithoutMeetingPrerequisiteReturns400AndMetInAnotherProgramIsStill400() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000005", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject compartida = persistSubject("Física I compartida");
@@ -398,7 +398,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void inscribirDosComisionesMismaMateriaDevuelve409YCambiarComisionDevuelve200MismoAttemptNumber() throws Exception {
+    void enrollingInTwoSectionsOfTheSameSubjectReturns409AndChangeSectionReturns200SameAttemptNumber() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000006", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia6");
@@ -520,7 +520,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void bajaConNotaFinalCargadaDevuelve409() throws Exception {
+    void withdrawalWithFinalGradeLoadedReturns409() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000009", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Subject subject = persistSubject("Materia9");
@@ -579,7 +579,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void matricularCourseConModuloSinComisionDevuelve409SinCourseEnrollmentCreado() throws Exception {
+    void enrollingCourseWithModuleWithoutSectionReturns409WithoutCreatingCourseEnrollment() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000011", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Term term = persistTerm(null, null);
@@ -599,7 +599,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void matricularCourseConModuloAmbiguoSinOverridesDevuelve400YConOverridesDevuelve201() throws Exception {
+    void enrollingCourseWithAmbiguousModuleWithoutOverridesReturns400AndWithOverridesReturns201() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000012", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Term term = persistTerm(null, null);
@@ -650,7 +650,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void meProgressConIdDeOtroAlumnoDevuelve404() throws Exception {
+    void meProgressWithAnotherStudentsIdReturns404() throws Exception {
         Institution institution = persistInstitution();
         Student duenio = persistStudent("50000014", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Student otro = persistStudent("50000015", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
@@ -666,7 +666,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void endpointsDeMatriculacionSinRolCorrectoDevuelven403YMeConCualquierRolFunciona() throws Exception {
+    void enrollmentEndpointsWithoutCorrectRoleReturn403AndMeWithAnyRoleWorks() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000016", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Carrera16", 100);

@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class StudentControllerTest extends AbstractIntegrationTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -124,17 +123,15 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSinRolPreceptorOAdministrativoDevuelve403() throws Exception {
+    void listingWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("alumno1", "ALUMNO");
 
         mockMvc.perform(get("/students").header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
     }
 
-    // Revisión de matriz de permisos: el Director tiene R sobre el legajo (matriz sección 3),
-    // a diferencia de Preceptor/Administrativo que además pueden dar de baja/resetear password.
     @Test
-    void directorPuedeListarYVerLegajoPeroNoPuedeDarDeBaja() throws Exception {
+    void directorCanListAndViewRecordButCannotWithdraw() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "42111222", "42111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -153,11 +150,8 @@ class StudentControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // Fase 6.6 (auditoría de QA): billing-overview consultaba los enrollment repositories
-    // directo, sin validar que el id de la URL fuera un Student real — un id inexistente daba
-    // 200 con lista vacía en vez de 404, mismo gap que tenía credit-notes (ver CreditNoteServiceTest).
     @Test
-    void billingOverviewConStudentInexistenteDevuelve404() throws Exception {
+    void billingOverviewWithNonExistentStudentReturns404() throws Exception {
         String token = tokenWithRole("administrativo.billing1", "ADMINISTRATIVO");
 
         mockMvc.perform(get("/students/{id}/billing-overview", 999999L).header("Authorization", "Bearer " + token))
@@ -165,7 +159,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarSinFiltroTraeSoloConfirmados() throws Exception {
+    void listingWithoutFilterReturnsOnlyConfirmed() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("40111222", "40111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudent("40333444", "prospecto-sin-username", "irrelevante", StudentOnboardingStatus.PROSPECTO, institution);
@@ -178,7 +172,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void listarConOnboardingStatusExplicitoTraeProspectos() throws Exception {
+    void listingWithExplicitOnboardingStatusReturnsProspects() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("40555666", "40555666", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudent("40777888", "prospecto2", "irrelevante", StudentOnboardingStatus.PROSPECTO, institution);
@@ -193,7 +187,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void withdrawMarcaStatusDeletedGuardaMotivoYBloqueaLoginPosterior() throws Exception {
+    void withdrawMarksStatusDeletedSavesReasonAndBlocksLaterLogin() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "40999000", "40999000", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -242,7 +236,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void buscarPorNombreFiltraCorrectamente() throws Exception {
+    void searchByNameFiltersCorrectly() throws Exception {
         Institution institution = persistInstitution();
         persistStudentWithName("41100001", "garcia.juan", "Juan", "Garcia", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudentWithName("41100002", "perez.maria", "Maria", "Perez", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -255,7 +249,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void buscarPorDniFiltraCorrectamente() throws Exception {
+    void searchByDniFiltersCorrectly() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("41200001", "alumno.dni1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
         persistStudent("41200002", "alumno.dni2", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
@@ -268,7 +262,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void legajoDevuelveDatosExtendidos() throws Exception {
+    void recordReturnsExtendedData() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("41300001", "alumno.record1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
         String token = tokenWithRole("preceptor.record1", "PRECEPTOR");
@@ -281,7 +275,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void documentosConStudentInexistenteDevuelve404() throws Exception {
+    void documentsWithNonExistentStudentReturns404() throws Exception {
         String token = tokenWithRole("preceptor.docs1", "PRECEPTOR");
 
         mockMvc.perform(get("/students/{id}/documents", 999888L).header("Authorization", "Bearer " + token))
@@ -289,7 +283,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void documentosConStudentSinDocumentosDevuelveListaVacia() throws Exception {
+    void documentsWithStudentWithoutDocumentsReturnsEmptyList() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent("41400001", "alumno.docs1", "pass", StudentOnboardingStatus.CONFIRMADO, institution);
         String token = tokenWithRole("preceptor.docs2", "PRECEPTOR");
@@ -300,7 +294,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPasswordGeneraTokenSinExponerLaPassword() throws Exception {
+    void resetPasswordGeneratesTokenWithoutExposingThePassword() throws Exception {
         Institution institution = persistInstitution();
         Student student = persistStudent(
                 "41000111", "41000111", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
