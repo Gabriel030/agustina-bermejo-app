@@ -35,6 +35,11 @@ import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
+import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
+import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
+import { PreceptorDetalleCurso } from '@/features/oferta-academica/pages/PreceptorDetalleCurso';
+import { PreceptorCalendario } from '@/features/oferta-academica/pages/PreceptorCalendario';
+import { PreceptorNuevoCiclo } from '@/features/oferta-academica/pages/PreceptorNuevoCiclo';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
 import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
 import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
@@ -73,7 +78,7 @@ const RUTAS_POR_ROL = {
   preceptor: {
     Layout: PreceptorLayout,
     paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen },
+    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen, 'oferta-academica': PreceptorOfertaAcademica },
   },
   administrativo: {
     Layout: AdministrativoLayout,
@@ -165,6 +170,18 @@ export function AppRouter() {
           )}
           {(rol === 'preceptor' || rol === 'administrativo') && (
             <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/cursos/:cursoId" element={<PreceptorDetalleCurso />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/calendario" element={<PreceptorCalendario />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/nuevo-ciclo" element={<PreceptorNuevoCiclo />} />
           )}
           {(rol === 'administrativo' || rol === 'director') && (
             <Route path="personal/:id" element={<LegajoPersonal />} />
