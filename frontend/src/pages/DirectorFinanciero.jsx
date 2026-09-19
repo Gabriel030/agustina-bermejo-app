@@ -4,6 +4,7 @@ import { TrendingDown, TrendingUp, Users, AlertCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
+import { Stagger } from '@/components/Stagger';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
@@ -30,26 +31,28 @@ function KpiCards({ data, isLoading }) {
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <StatCard label="Alumnos en deuda">
-        <div className="flex items-end gap-1.5">
-          <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
-        </div>
-      </StatCard>
-      <StatCard label="Alumnos al día">
-        <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
-      </StatCard>
-      <StatCard label="Deuda total">
-        <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
-      </StatCard>
-      <StatCard label="Proyectado del mes">
-        <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
-      </StatCard>
-      <StatCard label="Cobrado del mes">
-        <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
-      </StatCard>
-      <StatCard label="Pendiente del mes">
-        <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
-      </StatCard>
+      <Stagger>
+        <StatCard label="Alumnos en deuda">
+          <div className="flex items-end gap-1.5">
+            <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
+          </div>
+        </StatCard>
+        <StatCard label="Alumnos al día">
+          <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
+        </StatCard>
+        <StatCard label="Deuda total">
+          <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
+        </StatCard>
+        <StatCard label="Proyectado del mes">
+          <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
+        </StatCard>
+        <StatCard label="Cobrado del mes">
+          <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
+        </StatCard>
+        <StatCard label="Pendiente del mes">
+          <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
+        </StatCard>
+      </Stagger>
     </div>
   );
 }
