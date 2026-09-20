@@ -18,7 +18,8 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
 3. **Verificar variantes de componentes existentes** antes de extender — si el
    componente admite `variant=`, revisar cuáles existen antes de agregar estilos
    a mano. Ejemplo: `Button` tiene `default/outline/secondary/ghost/destructive/
-   gradient`; `TabsList` tiene `variant="line"` obligatorio en este proyecto.
+   gradient`; `TabsList` tiene `variant="segmented"` (pill deslizante VL2) como
+   estándar en este proyecto.
 4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
    hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
    `flex flex-col gap-1`. No usar `divide-y divide-border` — fue descartado a favor
@@ -27,6 +28,11 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    en vez de `<span>`. Mantiene consistencia visual con formularios editables.
 6. **Botón de acción primaria**: `variant="gradient"`. Acción secundaria/cancelar:
    `variant="outline"`. Destructivo: `variant="destructive"`.
+7. **Componentes compartidos clave**: `StatusPill` (tono semántico, nunca spans
+   con colores hardcodeados), `EmptyState` (estados vacíos consistentes),
+   `GlassCard` (superficie base; variante interactiva con hover/shimmer),
+   `StatCard` (KPI tiles en dashboards). Instalar nuevos via `npx shadcn add
+   <componente>`, no a mano.
 
 Este protocolo aplica tanto para implementación como para mockups.
 
@@ -107,12 +113,11 @@ necesite de verdad.
 
 - **Formularios chicos (1-3 campos, sin pasos): `useState` a mano**, como
   `Login.jsx`. No hace falta una librería para dos inputs.
-- **Formularios con validación no trivial o wizards multi-paso (ej. Alta de
-  ciclo, Épica 4): React Hook Form + Zod.** El schema de Zod es la fuente de
-  verdad de validación en el cliente y debería reflejar las mismas reglas que el
-  DTO + Bean Validation del backend (sin duplicar texto de error a mano en cada
-  campo). Todavía no está instalado — se agrega en la fase que lo necesite
-  (primer candidato: Épica 4 Fase 4, wizard de alta de ciclo).
+- **Formularios con validación no trivial o wizards multi-paso: React Hook Form +
+  Zod.** El schema de Zod es la fuente de verdad de validación en el cliente y
+  debería reflejar las mismas reglas que el DTO + Bean Validation del backend (sin
+  duplicar texto de error a mano en cada campo). Ya en uso desde Épica 4 (wizard
+  de alta de ciclo, NuevoAlumno, etc.).
 
 ## Manejo de errores
 
@@ -127,11 +132,10 @@ necesite de verdad.
 
 ## Naming
 
-- **Nombres de dominio (páginas, hooks de negocio, componentes de feature) en
-  español**, igual que el backend (`verPerfilPropio`, `AltaCicloPaso1`). Nombres
-  técnicos genéricos de infraestructura en inglés (`apiFetch`, `useAuth`,
-  `ProtectedRoute`) — mismo criterio que ya usa el backend
-  (`resolveAuthenticatedPerson` en inglés, `actualizarDatosPropios` en español).
+- **Todos los identificadores de código en inglés** — clases, funciones, variables,
+  hooks, props, nombres de archivo. El backend completó su migración completa
+  (PRs #66-#81); el frontend sigue el mismo criterio sin excepción. El texto
+  visible al usuario final sigue en castellano.
 - Archivos de componentes/páginas/layouts: `PascalCase.jsx`. Hooks, utils, clientes:
   `camelCase.js`. Un componente por archivo, nombre de archivo = nombre exportado.
 
@@ -152,9 +156,10 @@ agregan desde ahí, nunca al revés):
   `md:`+.
 - **Grillas de cards**: `grid-cols-1` mobile → `grid-cols-2` `md:` →
   `grid-cols-3` `lg:`. Nunca scroll horizontal de cards.
-- **Tablas densas**: patrón "card por fila" en mobile en vez de scroll
-  horizontal — se resuelve puntual por pantalla al implementarla, no hay una
-  solución genérica forzada para todas.
+- **Tablas densas**: envolver en `<div className="overflow-x-auto">` y darle a
+  la `<Table>` un `className="min-w-[Xpx]"` adecuado — permite scroll horizontal
+  contenido sin romper el layout general. El valor de `min-w` se ajusta al ancho
+  mínimo razonable de la tabla en cada pantalla (típico: 480-720px).
 
 Mockup de referencia del patrón "card centrada": ver `Login (mobile)` en
 [[Diseño UI - Vidrio Líquido]] (Obsidian) antes de implementar cualquier
@@ -163,19 +168,14 @@ pantalla de ese tipo.
 ## Tabs / navegación secundaria por pestañas
 
 **Siempre el componente `Tabs`/`TabsList`/`TabsTrigger` de shadcn
-(`components/ui/tabs.jsx`), con `<TabsList variant="line">`** (subrayado bajo la
-opción activa) — nunca un grupo de `<button>` hecho a mano, aunque sea "solo
-para filtrar una lista" y no para partir contenido en paneles separados. Antes
-de esta regla había tres implementaciones distintas conviviendo (botones
-píldora con gradiente en Catálogo/Mis carreras, botones píldora blancos en
-Director/Aprobaciones, y el `Tabs` de shadcn en Docente/Asistencia) — se
-probó también la variante píldora por defecto (`bg-muted`, sin `variant`) como
-estándar único, pero el estado activo no se distinguía lo suficiente del
-inactivo, así que se descartó a favor de `variant="line"`.
+(`components/ui/tabs.jsx`), con `<TabsList variant="segmented">`** (pill
+deslizante con gradiente, estándar VL2) — nunca un grupo de `<button>` hecho
+a mano, aunque sea "solo para filtrar una lista" y no para partir contenido en
+paneles separados.
 
 Aplica tanto si las pestañas separan paneles de contenido distintos (ej.
-Asistencia/Historial/Reporte en Docente) como si solo cambian el filtro de una
-misma lista (ej. Agendadas/Cerradas en Preceptor/Mesa de examen,
+TabAsistencia/TabMaterias en Mis carreras) como si solo cambian el filtro de una
+misma lista (ej. Para rendir/Mis inscripciones en Mesas de examen,
 Pendientes/Historial en Director/Aprobaciones) — visualmente son la misma
 interacción para el usuario y tienen que verse igual.
 

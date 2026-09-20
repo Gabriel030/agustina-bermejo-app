@@ -53,6 +53,7 @@ export function TabNotas({ carreraId }) {
             coincidencias hacía desaparecer la tabla ENTERA junto con los controles
             para poder cambiar el filtro, dejando al usuario sin forma de volver
             atrás sin recargar la página. Bug real reportado por el usuario. */}
+        <div className="overflow-x-auto">
         <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
@@ -151,6 +152,7 @@ export function TabNotas({ carreraId }) {
             )}
           </TableBody>
         </Table>
+        </div>
       </GlassCard>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />

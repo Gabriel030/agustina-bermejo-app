@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useMisInscripciones,
   useMesasDisponibles,
@@ -140,20 +141,13 @@ export function TabMesasDeExamen({ carreraId }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex w-fit gap-1 rounded-xl border border-border bg-surface p-1">
-        {SUB_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setSubTab(id)}
-            className={`rounded-lg px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-              subTab === id ? 'bg-gradient-to-br from-brand to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={subTab} onValueChange={setSubTab}>
+        <TabsList variant="segmented">
+          {SUB_TABS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {subTab === 'para-rendir' ? (
         cargandoInscripciones || cargandoMesas ? (

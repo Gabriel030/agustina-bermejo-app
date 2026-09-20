@@ -91,6 +91,7 @@ export function TabPlanDeEstudio({ carreraId }) {
       <GlassCard className="flex flex-col p-1">
         {/* El header (con los filtros de Año/Estado embebidos) se renderiza SIEMPRE —
             ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}
+        <div className="overflow-x-auto">
         <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow>
@@ -184,6 +185,7 @@ export function TabPlanDeEstudio({ carreraId }) {
             )}
           </TableBody>
         </Table>
+        </div>
       </GlassCard>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />

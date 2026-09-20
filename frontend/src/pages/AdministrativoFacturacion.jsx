@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { Search, X, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -121,23 +122,18 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-ink">Registrar pago</h2>
-            <p className="text-sm text-ink-faint">{enrollmentName}</p>
-          </div>
-          <button type="button" onClick={() => onClose(false)} className="text-ink-faint hover:text-ink">
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Registrar pago</DialogTitle>
+          <p className="text-sm text-ink-faint">{enrollmentName}</p>
+        </DialogHeader>
 
         {payableInvoices.length === 0 ? (
           <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas pendientes en esta inscripción.</p>
         ) : (
-          <>
-            <div className="mb-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {payableInvoices.map((inv) => {
                 const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
                 return (
@@ -165,12 +161,12 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
               })}
             </div>
 
-            <div className="mb-4 flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
+            <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
               <span className="text-sm font-medium text-ink">Total</span>
               <span className="font-mono font-semibold text-ink">{formatMonto(total)}</span>
             </div>
 
-            <div className="mb-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
                   Método de pago
@@ -212,20 +208,20 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
               </div>
             </div>
 
-            {error && <p className="mb-3 text-sm text-danger">{error}</p>}
-
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => onClose(false)} disabled={isPending}>
-                Cancelar
-              </Button>
-              <Button variant="gradient" className="flex-1" onClick={handleSubmit} disabled={isPending}>
-                {isPending ? 'Registrando…' : 'Confirmar pago'}
-              </Button>
-            </div>
-          </>
+            {error && <p className="text-sm text-danger">{error}</p>}
+          </div>
         )}
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button variant="gradient" onClick={handleSubmit} disabled={isPending}>
+            {isPending ? 'Registrando…' : 'Confirmar pago'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -445,47 +441,46 @@ function RechazarModal({ receipt, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold text-ink">Rechazar comprobante</h2>
-          <button type="button" onClick={() => onClose(false)} className="text-ink-faint hover:text-ink">
-            <X size={20} />
-          </button>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Rechazar comprobante</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          <div className="text-sm text-ink-faint">
+            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? `ID ${receipt.invoiceId}`}</span>
+          </div>
+          <div className="text-sm text-ink-faint">
+            Comprobante subido el {formatFecha(receipt.uploadedAt)}
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
+              Motivo del rechazo
+            </label>
+            <textarea
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Indicá por qué se rechaza el comprobante…"
+              className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+          {error && <p className="text-sm text-danger">{error}</p>}
         </div>
-        <div className="mb-1 text-sm text-ink-faint">
-          Alumno: <span className="font-medium text-ink">{receipt.studentName ?? `ID ${receipt.invoiceId}`}</span>
-        </div>
-        <div className="mb-4 text-sm text-ink-faint">
-          Comprobante subido el {formatFecha(receipt.uploadedAt)}
-        </div>
-        <div className="mb-4">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            Motivo del rechazo
-          </label>
-          <textarea
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Indicá por qué se rechaza el comprobante…"
-            className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
-          />
-        </div>
-        {error && <p className="mb-3 text-sm text-danger">{error}</p>}
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={() => onClose(false)} disabled={isPending}>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 bg-danger text-white hover:bg-danger/90"
+            className="bg-danger text-white hover:bg-danger/90"
             onClick={handleSubmit}
             disabled={isPending}
           >
             {isPending ? 'Rechazando…' : 'Rechazar'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

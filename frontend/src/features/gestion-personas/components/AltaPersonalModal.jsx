@@ -106,7 +106,7 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-medium text-ink">Piso</label>
               <Input value={form.floor} onChange={set('floor')} placeholder="2B" />

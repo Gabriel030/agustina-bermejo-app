@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
+import { Button } from '@/components/ui/button';
 
 const STATUS_CONFIG = {
   success: {
@@ -43,14 +44,10 @@ export function AlumnoPagoEstado() {
         </div>
 
         <div className="flex flex-col gap-3 w-full">
-          <button
-            type="button"
-            onClick={() => navigate('/alumno/pagos')}
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-          >
+          <Button variant="gradient" onClick={() => navigate('/alumno/pagos')} className="flex items-center gap-2">
             <ArrowLeft size={16} />
             Volver a Mis pagos
-          </button>
+          </Button>
 
           {status === 'failure' && invoiceId && (
             <button

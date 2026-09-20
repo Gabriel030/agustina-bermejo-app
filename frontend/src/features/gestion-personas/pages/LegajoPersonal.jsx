@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/Skeleton';
+import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoPersonal } from '@/features/gestion-personas/hooks/useLegajoPersonal';
 import { useWithdrawPersonal, useReactivarPersonal, useResetPersonalPassword, useEditarPersonal } from '@/features/gestion-personas/hooks/useAccionesPersonal';
@@ -20,8 +21,8 @@ const ETIQUETA_ROL = {
 };
 
 const ESTADO_BADGE = {
-  ACTIVE: { label: 'Activo', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  INACTIVE: { label: 'Inactivo', className: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800/60 dark:text-neutral-400' },
+  ACTIVE: { label: 'Activo', tone: 'success' },
+  INACTIVE: { label: 'Inactivo', tone: 'neutral' },
 };
 
 function Campo({ label, value }) {
@@ -78,9 +79,7 @@ export function LegajoPersonal() {
                     </p>
                   </div>
                   {badge && (
-                    <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold ${badge.className}`}>
-                      {badge.label}
-                    </span>
+                    <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
                   )}
                 </div>
                 {puedeAccionar && (

@@ -26,7 +26,7 @@ function Fila({ e, esHistorial }) {
         {esHistorial ? (
           <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
         ) : (
-          <span className="rounded-full bg-warning-bg px-2.5 py-1 text-[11px] font-bold text-warning">Pendiente de revisión</span>
+          <StatusPill tone="warning">Pendiente de revisión</StatusPill>
         )}
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>

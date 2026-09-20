@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, CreditCard, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
+import { Button } from '@/components/ui/button';
 import { useCrearPreferenciaMp } from '@/hooks/useBilling';
+
+const MP_BLUE = '#009ee3';
 
 export function AlumnoPagarOnline() {
   const { invoiceId } = useParams();
@@ -57,7 +60,8 @@ export function AlumnoPagarOnline() {
             </div>
             <a
               href={data.initPoint}
-              className="rounded-xl bg-[#009ee3] px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+              style={{ backgroundColor: MP_BLUE }}
+              className="rounded-xl px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
             >
               Ir a Mercado Pago
             </a>
@@ -68,13 +72,9 @@ export function AlumnoPagarOnline() {
           <>
             <p className="font-semibold text-danger">No pudimos iniciar el pago</p>
             <p className="text-sm text-ink-faint">{error.message}</p>
-            <button
-              type="button"
-              onClick={() => mutate(invoiceId)}
-              className="rounded-xl bg-gradient-to-r from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-            >
+            <Button variant="gradient" onClick={() => mutate(invoiceId)}>
               Reintentar
-            </button>
+            </Button>
           </>
         )}
       </GlassCard>
