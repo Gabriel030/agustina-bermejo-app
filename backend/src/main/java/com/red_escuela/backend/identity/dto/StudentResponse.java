@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 public record StudentResponse(
         Long id, Long personId, String nombre, String apellido, String dni,
         String username, String email, StudentOnboardingStatus onboardingStatus,
-        String status) {
+        String status, Boolean emailVerified) {
 
     public static StudentResponse from(Student student) {
         var person = student.getPerson();
@@ -19,6 +19,7 @@ public record StudentResponse(
                 person.getUsername(),
                 person.getEmail(),
                 student.getOnboardingStatus(),
-                person.getStatus() == null ? null : person.getStatus().name());
+                person.getStatus() == null ? null : person.getStatus().name(),
+                person.getEmailVerified());
     }
 }
