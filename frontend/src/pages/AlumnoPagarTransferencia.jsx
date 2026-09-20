@@ -5,6 +5,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Stepper } from '@/components/Stepper';
 import { Skeleton } from '@/components/Skeleton';
+import { Button } from '@/components/ui/button';
 import { usePaymentConfig, useSubirComprobante, useMisComprobantes } from '@/hooks/useBilling';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
@@ -71,13 +72,9 @@ function PasoDatos({ config, onNext }) {
         Realizá la transferencia por el monto exacto de la factura y luego subí el comprobante en el siguiente paso.
       </p>
 
-      <button
-        type="button"
-        onClick={onNext}
-        className="rounded-xl bg-gradient-to-r from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-      >
+      <Button variant="gradient" onClick={onNext}>
         Ya transferí — subir comprobante
-      </button>
+      </Button>
     </div>
   );
 }
@@ -128,14 +125,9 @@ function PasoComprobante({ invoiceId, onSuccess }) {
 
       {error && <p className="text-sm text-danger">{error.message}</p>}
 
-      <button
-        type="button"
-        disabled={!file || isPending}
-        onClick={handleSubmit}
-        className="rounded-xl bg-gradient-to-r from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
+      <Button variant="gradient" disabled={!file || isPending} onClick={handleSubmit}>
         {isPending ? 'Enviando…' : 'Enviar comprobante'}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -190,13 +182,9 @@ function PasoEstado({ invoiceId }) {
         </div>
       </GlassCard>
 
-      <button
-        type="button"
-        onClick={() => navigate('/alumno/pagos')}
-        className="rounded-xl bg-gradient-to-r from-brand to-accent-2 px-6 py-3 font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
-      >
+      <Button variant="gradient" onClick={() => navigate('/alumno/pagos')}>
         Volver a Mis pagos
-      </button>
+      </Button>
     </div>
   );
 }

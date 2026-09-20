@@ -40,7 +40,7 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
     <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
       <div className="flex items-center gap-3">
         {subido ? (
-          <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" />
+          <CheckCircle2 size={18} className="flex-shrink-0 text-success" />
         ) : (
           <FileText size={18} className="text-muted-foreground flex-shrink-0" />
         )}
@@ -50,7 +50,7 @@ function DocumentoRow({ label, subido, isUploading, onChange }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className="flex items-center gap-1.5 text-[12px] font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+        className="flex items-center gap-1.5 text-[12px] font-medium text-brand hover:text-accent-2 disabled:opacity-50"
       >
         <Upload size={13} />
         {subido ? 'Reemplazar' : 'Subir'}

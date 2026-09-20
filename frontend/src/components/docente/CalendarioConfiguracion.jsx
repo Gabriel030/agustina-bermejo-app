@@ -75,7 +75,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
               type="button"
               onClick={() => setPagina((p) => Math.max(0, p - 1))}
               disabled={paginaActual === 0}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-white/70 text-ink-faint disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface text-ink-faint disabled:opacity-40"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
@@ -86,7 +86,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
               type="button"
               onClick={() => setPagina((p) => Math.min(totalPaginas - 1, p + 1))}
               disabled={paginaActual === totalPaginas - 1}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-white/70 text-ink-faint disabled:opacity-40"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface text-ink-faint disabled:opacity-40"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -97,14 +97,14 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
         {mesesVisibles.map(({ anio, mes, clave }) => {
           const grilla = construirGrillaDeMes(anio, mes);
           return (
-            <div key={clave} className="rounded-2xl border border-border bg-white/50 p-2.5">
+            <div key={clave} className="rounded-2xl border border-border bg-surface p-2.5">
               <div className="mb-1.5 text-center text-[11px] font-bold text-ink">{grilla.nombre}</div>
-              <div className="grid grid-cols-7 gap-[3px] text-center text-[7.5px] font-bold text-ink-faint">
+              <div className="grid grid-cols-7 gap-0.5 text-center text-[7.5px] font-bold text-ink-faint">
                 {NOMBRES_DIA_SEMANA.map((d) => (
                   <div key={d}>{d}</div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-[3px]">
+              <div className="grid grid-cols-7 gap-0.5">
                 {grilla.celdas.map((dia, i) => (
                   <DiaCelda
                     key={i}

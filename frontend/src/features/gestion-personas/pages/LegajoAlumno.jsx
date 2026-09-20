@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
 import { useWithdrawStudent, useResetStudentPassword } from '@/features/gestion-personas/hooks/useAccionesLegajo';
+import { StatusPill } from '@/components/StatusPill';
 import { DarDeBajaModal } from '@/features/gestion-personas/components/DarDeBajaModal';
 import { ResetPasswordModal } from '@/features/gestion-personas/components/ResetPasswordModal';
 import { DatosPersonalesTab } from './tabs/DatosPersonalesTab';
@@ -15,8 +16,8 @@ import { EvaluacionTab } from './tabs/EvaluacionTab';
 import { FinancieroTab } from './tabs/FinancieroTab';
 
 const ESTADO_STATUS_BADGE = {
-  ACTIVE: { label: 'Activo', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  DELETED: { label: 'Dado de baja', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  ACTIVE: { label: 'Activo', tone: 'success' },
+  DELETED: { label: 'Dado de baja', tone: 'danger' },
 };
 
 export function LegajoAlumno() {
@@ -53,9 +54,7 @@ export function LegajoAlumno() {
                 <p className="text-[13px] text-ink-faint">DNI {legajo.dni}</p>
               </div>
               {badge && (
-                <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold ${badge.className}`}>
-                  {badge.label}
-                </span>
+                <StatusPill tone={badge.tone}>{badge.label}</StatusPill>
               )}
             </div>
           )}

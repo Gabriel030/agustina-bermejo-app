@@ -144,7 +144,7 @@ export function PreceptorOfertaAcademica() {
           </div>
 
           <Tabs value={tabActivo} onValueChange={handleTabChange}>
-            <TabsList variant="line" className="w-full">
+            <TabsList variant="segmented" className="w-full">
               {TABS.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id} className="flex-1">
                   {tab.label}

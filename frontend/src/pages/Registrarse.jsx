@@ -163,7 +163,8 @@ export function Registrarse() {
             <Button
               type="submit"
               disabled={enviando || !institutionId}
-              className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
+              variant="gradient"
+              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
             >
               {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
             </Button>

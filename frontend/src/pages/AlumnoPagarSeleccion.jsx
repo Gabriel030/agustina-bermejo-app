@@ -1,5 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Banknote, CreditCard, ChevronLeft } from 'lucide-react';
+
+const MP_BLUE = '#009ee3';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { usePaymentConfig } from '@/hooks/useBilling';
@@ -53,7 +55,7 @@ export function AlumnoPagarSeleccion() {
             className="text-left"
           >
             <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#009ee3] text-white">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: MP_BLUE }}>
                 <CreditCard size={20} />
               </div>
               <div>

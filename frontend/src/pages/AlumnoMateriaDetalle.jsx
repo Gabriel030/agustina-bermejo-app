@@ -119,6 +119,7 @@ export function AlumnoMateriaDetalle() {
           <Skeleton className="h-16" />
         ) : (
           <>
+            <div className="overflow-x-auto">
             <Table className="min-w-[480px]">
               <TableHeader>
                 <TableRow>
@@ -137,6 +138,7 @@ export function AlumnoMateriaDetalle() {
                 </TableRow>
               </TableBody>
             </Table>
+            </div>
             {extras.length > 0 && (
               <div className="mt-3 text-xs text-ink-faint">
                 Notas adicionales: {extras.map((g) => `${g.type} ${g.sequenceNumber ?? ''}: ${g.score ?? '—'}`).join(' · ')}

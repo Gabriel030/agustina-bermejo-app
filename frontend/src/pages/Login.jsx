@@ -135,8 +135,9 @@ export function Login() {
           <motion.div whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.98 }}>
             <Button
               type="submit"
+              variant="gradient"
               disabled={enviando}
-              className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
+              className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
             >
               {enviando ? 'Ingresando…' : 'Ingresar'}
             </Button>
@@ -165,7 +166,8 @@ export function Login() {
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 bg-gradient-to-br from-brand to-accent-2 text-white"
+                  variant="gradient"
+                  className="flex-1"
                   disabled={registrandoConGoogle || !institutionId}
                   onClick={handleRegistrarseConGoogle}
                 >

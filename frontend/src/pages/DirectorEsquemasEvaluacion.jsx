@@ -5,6 +5,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useEvaluationSchemes, useCrearEsquema } from '@/hooks/useDirector';
 
 const FORM_INICIAL = { name: '', examCountExpected: 2, hasFinal: true, minRegularGrade: 4, minApprovalGrade: 6, esPromocional: false, promotionMinGrade: '' };
@@ -16,10 +17,6 @@ function Campo({ label, children }) {
       {children}
     </div>
   );
-}
-
-function Input(props) {
-  return <input {...props} className="rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink" />;
 }
 
 function ChipSelector({ opciones, valor, onChange }) {
@@ -76,7 +73,7 @@ export function DirectorEsquemasEvaluacion() {
 
       <div className="flex flex-col gap-5 lg:flex-row">
         <GlassCard className="flex-[1.4] p-2">
-          <div className="grid grid-cols-5 gap-3 border-b border-border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-ink-faint">
+          <div className="grid grid-cols-2 gap-3 border-b border-border px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-wide text-ink-faint md:grid-cols-5">
             <div>Nombre</div>
             <div>Regular</div>
             <div>Aprobar</div>
@@ -92,7 +89,7 @@ export function DirectorEsquemasEvaluacion() {
             <EmptyState title="No hay esquemas todavía" description="Creá el primero con el formulario de al lado." className="p-6" />
           ) : (
             esquemas?.map((e) => (
-              <div key={e.id} className="grid grid-cols-5 items-center gap-3 border-b border-border px-4 py-3 last:border-b-0">
+              <div key={e.id} className="grid grid-cols-2 items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 md:grid-cols-5">
                 <div className="text-[13.5px] font-semibold text-ink">{e.name}</div>
                 <div className="text-[13px] font-semibold text-ink">{e.minRegularGrade}</div>
                 <div className="text-[13px] font-semibold text-ink">{e.minApprovalGrade}</div>
@@ -154,7 +151,7 @@ export function DirectorEsquemasEvaluacion() {
                   placeholder="Nota de corte"
                   value={form.promotionMinGrade}
                   onChange={(e) => setForm((f) => ({ ...f, promotionMinGrade: e.target.value }))}
-                  className="w-32 rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink"
+                  className="w-32"
                 />
               )}
             </div>
