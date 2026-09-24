@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
 
 @Service
@@ -40,17 +41,18 @@ public class CourseService {
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
-        Course course = new Course();
-        course.setName(request.name());
-        course.setTerm(term);
-        course.setSchedule(request.schedule());
-        course.setCapacity(request.capacity());
-        course.setPrice(request.price());
-        course.setDurationMonths(request.durationMonths());
-        course.setTeachingMode(request.teachingMode());
-        course.setRegistrationStart(request.registrationStart());
-        course.setRegistrationEnd(request.registrationEnd());
-        course.setIsActive(StatusType.ACTIVE);
+        Course course = Course.builder()
+                .name(request.name())
+                .term(term)
+                .schedule(request.schedule())
+                .capacity(request.capacity())
+                .price(request.price())
+                .durationMonths(request.durationMonths())
+                .teachingMode(request.teachingMode())
+                .registrationStart(request.registrationStart())
+                .registrationEnd(request.registrationEnd())
+                .isActive(StatusType.ACTIVE)
+                .build();
         course = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
@@ -62,32 +64,18 @@ public class CourseService {
     @Transactional
     public Course update(Long id, UpdateCourseRequest request) {
         Course course = findOrThrow(id);
-        if (request.name() != null) {
-            course.setName(request.name());
-        }
-        if (request.schedule() != null) {
-            course.setSchedule(request.schedule());
-        }
-        if (request.capacity() != null) {
-            course.setCapacity(request.capacity());
-        }
+        Optional.ofNullable(request.name()).ifPresent(course::setName);
+        Optional.ofNullable(request.schedule()).ifPresent(course::setSchedule);
+        Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         if (request.price() != null && request.price().compareTo(course.getPrice()) != 0) {
             course.setPrice(request.price());
             Person actor = currentPersonService.resolveCurrentPerson();
             priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
         }
-        if (request.durationMonths() != null) {
-            course.setDurationMonths(request.durationMonths());
-        }
-        if (request.teachingMode() != null) {
-            course.setTeachingMode(request.teachingMode());
-        }
-        if (request.registrationStart() != null) {
-            course.setRegistrationStart(request.registrationStart());
-        }
-        if (request.registrationEnd() != null) {
-            course.setRegistrationEnd(request.registrationEnd());
-        }
+        Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
+        Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
+        Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
+        Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
         return courseRepository.save(course);
     }
 
