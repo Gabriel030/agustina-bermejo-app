@@ -1,6 +1,8 @@
 # Frontend — convenciones y patrones (React)
 
-Leé esto antes de tocar `frontend/`. Es la propuesta de patrones para el proyecto —
+Leé esto antes de tocar `frontend/`. Los ejemplos de rutas/carpetas de abajo son
+ilustrativos (no todos existen aún); el inventario real de componentes vive en
+[components.md](components.md). Es la propuesta de patrones para el proyecto —
 lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que falta
 (Épica 2 en adelante) la toma como punto de partida obligatorio.
 
@@ -39,6 +41,25 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    rompen el modo oscuro.
 
 Este protocolo aplica tanto para implementación como para mockups.
+
+## Flujo de diseño (mockups, pantallas nuevas, cambios visuales)
+
+1. Correr el protocolo de arriba (catálogo, pantallas similares, variantes, tokens).
+2. Armar el diseño **siempre como Artifact interactivo** (claro/oscuro, responsive) con la
+   skill `vidrio-liquido-mockup`, para verlo dentro de Claude; nunca un `.html` suelto.
+3. **Pasarlo por el agente `ux-advisor`** (`~/.claude/agents/ux-advisor.md`) antes de
+   mostrarlo, y de nuevo tras cada iteración importante. Revisa: componentes
+   existentes, coherencia con pantallas hermanas y con los tokens, usabilidad y
+   experiencia, redundancias, sobrecarga de la pantalla, responsive e intuitividad.
+   Sus hallazgos se incorporan o se descartan explicando por qué.
+4. Presentar el diseño al usuario y esperar su aprobación explícita. Sin ella, no se
+   escribe código.
+5. Implementar reusando el catálogo; verificar en el navegador en modo claro, oscuro y
+   ancho móvil; `npm run lint`, `npm run build` y `npm run test` en verde antes del PR
+   (ver [workflow.md](workflow.md)).
+
+Criterio de diseño: intuitivo y funcional, una sola forma de hacer cada cosa,
+sin controles duplicados en un mismo nivel de navegación y sin sobrecargar la pantalla.
 
 ## Filosofía general
 
@@ -192,7 +213,10 @@ Nota para tests: `TabsTrigger` renderiza `role="tab"`, no `role="button"` — us
 ## Sistema visual Vidrio Líquido 2.0
 
 Diseñado y aprobado en el Artifact "Vidrio Líquido 2.0" antes de codificar; esto es
-lo que quedó implementado.
+lo que quedó implementado. La fuente de verdad de tokens y reglas de interacción de
+fondo es el Documento maestro de Obsidian (`Roadmap frontend/Documento maestro - Stack y
+sistema de diseño.md`, ubicación en [specs.md](specs.md)); si difiere de este archivo o
+de `src/theme/tokens.css`, gana el código y se corrige la doc.
 
 ### Tokens y modo oscuro
 - Única fuente de color: `src/theme/tokens.css` (oklch), mapeada a utilidades
@@ -208,7 +232,7 @@ lo que quedó implementado.
 - Los tests que renderizan árboles completos necesitan `<ThemeProvider>`; `matchMedia`
   está polyfilleado en `src/test/setup.js`.
 
-### Catálogo de componentes compartidos (revisar antes de crear uno nuevo)
+### Catálogo de componentes compartidos (resumen; inventario completo en [components.md](components.md))
 | Necesidad | Usar |
 |---|---|
 | Card / contenedor de vidrio | `GlassCard`; con `interactive` si es clickeable (elevación + borde de marca al hover) |

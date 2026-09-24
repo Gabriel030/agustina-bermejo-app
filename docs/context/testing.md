@@ -25,12 +25,13 @@ Spring, unit test puro; si lo toca, integración con `AbstractIntegrationTest`.
 como base — un test de controller verifica el contrato HTTP completo (status,
 JSON, headers) contra la app real levantada, no contra el service mockeado.
 
-**Convención de nombres de test**: describe el escenario + el resultado esperado
-en una sola palabra compuesta en español, ej.
-`putMeActualizaSoloElPropioPersonYNuncaElDni`,
-`getMeSinAuthDevuelve401OForbidden`. No `test1`, no `shouldReturnX` en inglés.
+**Convención de nombres de test**: en inglés, describe el escenario + el resultado
+esperado en un solo identificador camelCase, ej.
+`putMeUpdatesOnlyOwnPersonAndNeverDni`, `getMeWithoutAuthReturns401OrForbidden`.
+No `test1`. No se renombran retroactivamente tests viejos en castellano salvo
+pedido explícito.
 
-Correr todo: `./mvnw test` desde `backend/`. Necesita Docker corriendo (Testcontainers
+Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (Testcontainers
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
@@ -189,7 +190,12 @@ quede visible en el roadmap y no se pierda en el historial de PRs.
 
 ## Antes de dar una tarea por terminada
 
-Si tocaste backend: `./mvnw test` en verde. Si tocaste frontend: `npm run test`
+El CI de GitHub corre `./mvnw clean verify` (backend) y `npm run lint`, `npm run build`,
+`npm run test` (frontend). Esa misma verificación se corre en local **antes de abrir el
+PR**, ver [workflow.md](workflow.md), sección "CI local".
+
+
+Si tocaste backend: `./mvnw clean verify` en verde. Si tocaste frontend: `npm run test`
 en verde + `npm run build` sin errores (ver [docs/context/frontend.md](frontend.md)
 para dónde va cada tipo de componente/hook nuevo, así el test queda en el lugar
 correcto). Si el cambio toca un flujo de la lista de integration tests críticos
@@ -218,7 +224,7 @@ Antes de pedir el merge de un PR que cierra una fase del roadmap:
    explícito si es mayor) queda con: causa raíz, fix, y un caso de prueba
    nuevo (Bruno y/o JUnit/Vitest) que lo hubiera atrapado — explicando por
    qué la cobertura existente no lo atrapaba.
-5. **`./mvnw test` completo** (no solo los tests del área tocada) — un fix
+5. **`./mvnw clean verify` completo** (no solo los tests del área tocada) — un fix
    de alcance amplio (ej. un `@ExceptionHandler` nuevo) puede tener efectos
    secundarios en código no relacionado; correr toda la suite es la única
    forma de confirmarlo, no asumirlo.
