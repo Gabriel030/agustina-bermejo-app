@@ -41,9 +41,9 @@ class SetProgramCatalogVisibilityServiceTest extends AbstractIntegrationTest {
         assertThat(program.isVisibleInCatalog()).isFalse();
 
         var response = setCatalogVisibility.execute(program.getId(), true);
-        assertThat(response.visibleInCatalog()).isTrue();
+        assertThat(response.isVisibleInCatalog()).isTrue();
 
         response = setCatalogVisibility.execute(program.getId(), false);
-        assertThat(response.visibleInCatalog()).isFalse();
+        assertThat(response.isVisibleInCatalog()).isFalse();
     }
 }

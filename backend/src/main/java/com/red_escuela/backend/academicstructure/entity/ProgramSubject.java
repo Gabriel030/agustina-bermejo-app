@@ -53,7 +53,7 @@ public class ProgramSubject {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
-    private ProgramSubjectCategory category;
+    private ProgramSubjectCategory category = ProgramSubjectCategory.MANDATORY;
 
     @OneToMany(mappedBy = "programSubject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubjectPrerequisite> prerequisites;
