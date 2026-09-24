@@ -57,6 +57,13 @@ public class Course {
     @Column(name = "waitlist_deadline_offset_days")
     private Integer waitlistDeadlineOffsetDays;
 
+    @Column(name = "visible_in_catalog", nullable = false)
+    private boolean visibleInCatalog = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "teaching_mode")
+    private TeachingMode teachingMode;
+
     public boolean hasCapacityFor(long occupiedCount) {
         return capacity == null || occupiedCount < capacity;
     }

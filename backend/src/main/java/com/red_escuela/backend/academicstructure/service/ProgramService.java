@@ -37,6 +37,11 @@ public class ProgramService {
         program.setPrice(request.price());
         program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
         program.setTotalCreditsRequired(request.totalCreditsRequired());
+        program.setTotalHoursRequired(request.totalHoursRequired());
+        program.setTeachingMode(request.teachingMode());
+        program.setLevel(request.level());
+        program.setGraduationProfile(request.graduationProfile());
+        program.setAdmissionRequirements(request.admissionRequirements());
         program.setStatus(StatusType.ACTIVE);
         program = programRepository.save(program);
         registerInitialPriceRevisions(program);
@@ -63,6 +68,21 @@ public class ProgramService {
         }
         if (request.totalCreditsRequired() != null) {
             program.setTotalCreditsRequired(request.totalCreditsRequired());
+        }
+        if (request.totalHoursRequired() != null) {
+            program.setTotalHoursRequired(request.totalHoursRequired());
+        }
+        if (request.teachingMode() != null) {
+            program.setTeachingMode(request.teachingMode());
+        }
+        if (request.level() != null) {
+            program.setLevel(request.level());
+        }
+        if (request.graduationProfile() != null) {
+            program.setGraduationProfile(request.graduationProfile());
+        }
+        if (request.admissionRequirements() != null) {
+            program.setAdmissionRequirements(request.admissionRequirements());
         }
         return programRepository.save(program);
     }

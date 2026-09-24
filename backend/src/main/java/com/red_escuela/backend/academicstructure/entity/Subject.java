@@ -29,4 +29,14 @@ public class Subject {
 
     @Column(name = "max_final_exam_attempts")
     private Integer maxFinalExamAttempts;
+
+    @Column(name = "weekly_hours")
+    private Integer weeklyHours;
+
+    @Column(name = "weekly_hours_lab")
+    private Integer weeklyHoursLab;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grade_mode")
+    private GradeMode gradeMode;
 }

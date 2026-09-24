@@ -25,18 +25,17 @@ public class SubjectService {
     public Subject create(CreateSubjectRequest request) {
         Subject subject = new Subject();
         subject.setName(request.name());
+        subject.setCode(request.code());
         subject.setDescription(request.description());
-        subject.setCode(generateNextCode());
+        subject.setWeeklyHours(request.weeklyHours());
+        subject.setWeeklyHoursLab(request.weeklyHoursLab());
+        subject.setGradeMode(request.gradeMode());
+        subject.setMaxFinalExamAttempts(request.maxFinalExamAttempts());
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
             throw new SubjectAlreadyExistsException(request.name());
         }
-    }
-
-    private String generateNextCode() {
-        int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
-        return String.format("%04d", ultimo + 1);
     }
 
     @Transactional
@@ -47,6 +46,18 @@ public class SubjectService {
         }
         if (request.description() != null) {
             subject.setDescription(request.description());
+        }
+        if (request.weeklyHours() != null) {
+            subject.setWeeklyHours(request.weeklyHours());
+        }
+        if (request.weeklyHoursLab() != null) {
+            subject.setWeeklyHoursLab(request.weeklyHoursLab());
+        }
+        if (request.gradeMode() != null) {
+            subject.setGradeMode(request.gradeMode());
+        }
+        if (request.maxFinalExamAttempts() != null) {
+            subject.setMaxFinalExamAttempts(request.maxFinalExamAttempts());
         }
         return subjectRepository.save(subject);
     }

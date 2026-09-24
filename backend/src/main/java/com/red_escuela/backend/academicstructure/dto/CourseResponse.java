@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record CourseResponse(
         Long id, String name, Long termId, String schedule, Integer capacity,
         BigDecimal price, Integer durationMonths, String status,
+        boolean visibleInCatalog, String teachingMode,
         LocalDateTime registrationStart, LocalDateTime registrationEnd) {
 
     public static CourseResponse from(Course course) {
@@ -15,6 +16,8 @@ public record CourseResponse(
                 course.getId(), course.getName(), course.getTerm().getId(), course.getSchedule(),
                 course.getCapacity(), course.getPrice(), course.getDurationMonths(),
                 course.getIsActive() == null ? null : course.getIsActive().name(),
+                course.isVisibleInCatalog(),
+                course.getTeachingMode() == null ? null : course.getTeachingMode().name(),
                 course.getRegistrationStart(), course.getRegistrationEnd());
     }
 }

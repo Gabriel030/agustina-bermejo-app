@@ -47,6 +47,7 @@ public class CourseService {
         course.setCapacity(request.capacity());
         course.setPrice(request.price());
         course.setDurationMonths(request.durationMonths());
+        course.setTeachingMode(request.teachingMode());
         course.setRegistrationStart(request.registrationStart());
         course.setRegistrationEnd(request.registrationEnd());
         course.setIsActive(StatusType.ACTIVE);
@@ -77,6 +78,9 @@ public class CourseService {
         }
         if (request.durationMonths() != null) {
             course.setDurationMonths(request.durationMonths());
+        }
+        if (request.teachingMode() != null) {
+            course.setTeachingMode(request.teachingMode());
         }
         if (request.registrationStart() != null) {
             course.setRegistrationStart(request.registrationStart());

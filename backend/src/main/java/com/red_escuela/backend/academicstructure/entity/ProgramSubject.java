@@ -51,6 +51,10 @@ public class ProgramSubject {
     @Column(name = "subject_recurrence")
     private SubjectRecurrence subjectRecurrence;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false)
+    private ProgramSubjectCategory category;
+
     @OneToMany(mappedBy = "programSubject", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubjectPrerequisite> prerequisites;
 

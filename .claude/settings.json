@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Validando CI local antes de abrir el PR...",
+            "timeout": 300,
+            "command": "input=$(cat); command=$(echo \"$input\" | jq -r '.tool_input.command // empty'); echo \"$command\" | grep -q 'gh pr create' || exit 0; (cd frontend && npm run lint 2>&1); lint_exit=$?; (cd backend && ./mvnw compile -q 2>&1); compile_exit=$?; if [ $lint_exit -ne 0 ] || [ $compile_exit -ne 0 ]; then echo '{\"continue\":false,\"stopReason\":\"CI local fallido — corregí errores de lint o compile antes de crear el PR.\"}'; exit 1; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
