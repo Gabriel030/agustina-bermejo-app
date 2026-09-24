@@ -127,7 +127,7 @@ intermedio: `InstitutionController`, `InstructorController`,
 `academicstructure/usecase/term/` — el viejo `TermController`/`TermService`
 sí mezclaba dos capacidades no relacionadas: CRUD de período (crear/editar/
 activar/desactivar/listar/detalle) y gestión de la ventana de inscripción
-(`abrirInscripcion`/`cerrarInscripcion`/`quitarOverride`, sobre
+(abrir/cerrar inscripción y quitar override, sobre
 `TermEnrollmentOverride`) — un actor y motivo distinto del CRUD del período
 en sí. Se descompuso en 9 use cases (`CreateTermUseCase`,
 `UpdateTermUseCase`, `ListTermsUseCase`, `GetTermUseCase`,
@@ -351,8 +351,10 @@ decisión tomada, no un olvido.
 ## Migraciones (Flyway)
 
 `src/main/resources/db/migration/V{N}__descripcion_en_snake_case.sql`, `N`
-correlativo (mirá el último `V*.sql` existente antes de crear uno nuevo — no asumas
-el número). `spring.jpa.hibernate.ddl-auto=validate`: el schema SIEMPRE se define en
+correlativo: `git fetch` y mirá el último `V*.sql` en `origin/develop` **y** en
+`origin/master` (y PRs abiertos) antes de crear uno — ya hubo colisiones que rompieron el
+CI. Una migración ya aplicada en `master` nunca se renumera. Ver
+[workflow.md](workflow.md), sección "Migraciones". `spring.jpa.hibernate.ddl-auto=validate`: el schema SIEMPRE se define en
 la migración, nunca se deja que Hibernate lo genere. Constraints de integridad
 (NOT NULL, unique, índices parciales de Postgres para reglas tipo "solo un X activo
 por Y") van en la migración SQL, no solo a nivel de validación Java.
