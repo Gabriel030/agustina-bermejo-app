@@ -11,8 +11,9 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
     * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
     * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
-  Scenario: Ciclo completo de una materia — alta, edición, baja y reactivación
+  Scenario: Ciclo completo de una materia — alta, aprobación, edición, baja y reactivación
     * def nombre = 'Análisis Matemático I ' + java.lang.System.nanoTime()
     * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
@@ -20,7 +21,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal' }
     When method post
     Then status 201
-    And match response.status == 'ACTIVE'
+    And match response.status == 'DRAFT'
     * def subjectId = response.id
 
     Given path '/subjects', subjectId
@@ -34,6 +35,18 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method put
     Then status 200
     And match response.name == 'Análisis Matemático I (editada)'
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+    And match response.status == 'PENDING_APPROVAL'
+
+    Given path '/subjects', subjectId, 'approve'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 200
+    And match response.status == 'ACTIVE'
 
     Given path '/subjects', subjectId, 'deactivate'
     And header Authorization = 'Bearer ' + adminToken

@@ -34,12 +34,15 @@ import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEval
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
+import { AdministrativoSubjects } from '@/features/gestion-academica/pages/AdministrativoSubjects';
+import { AdministrativoSubjectWizard } from '@/features/gestion-academica/pages/AdministrativoSubjectWizard';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
 import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
 import { PreceptorDetalleCurso } from '@/features/oferta-academica/pages/PreceptorDetalleCurso';
 import { PreceptorCalendario } from '@/features/oferta-academica/pages/PreceptorCalendario';
 import { PreceptorNuevoCiclo } from '@/features/oferta-academica/pages/PreceptorNuevoCiclo';
+import { DirectorSubjectReview } from '@/features/gestion-academica/pages/DirectorSubjectReview';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
 import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
 import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
@@ -82,13 +85,13 @@ const RUTAS_POR_ROL = {
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia, 'gestion-academica': AdministrativoSubjects },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion', 'financiero'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'financiero'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'gestion-academica': DirectorSubjectReview, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
   },
 };
 
@@ -170,6 +173,12 @@ export function AppRouter() {
           )}
           {(rol === 'preceptor' || rol === 'administrativo') && (
             <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/nueva" element={<AdministrativoSubjectWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/:id" element={<AdministrativoSubjectWizard />} />
           )}
           {rol === 'preceptor' && (
             <Route path="oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
