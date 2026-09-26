@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SubjectService {
@@ -23,10 +24,15 @@ public class SubjectService {
 
     @Transactional
     public Subject create(CreateSubjectRequest request) {
-        Subject subject = new Subject();
-        subject.setName(request.name());
-        subject.setDescription(request.description());
-        subject.setCode(generateNextCode());
+        Subject subject = Subject.builder()
+                .name(request.name())
+                .code(request.code())
+                .description(request.description())
+                .weeklyHours(request.weeklyHours())
+                .weeklyHoursLab(request.weeklyHoursLab())
+                .gradeMode(request.gradeMode())
+                .maxFinalExamAttempts(request.maxFinalExamAttempts())
+                .build();
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
@@ -34,20 +40,15 @@ public class SubjectService {
         }
     }
 
-    private String generateNextCode() {
-        int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
-        return String.format("%04d", ultimo + 1);
-    }
-
     @Transactional
     public Subject update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
-        if (request.name() != null) {
-            subject.setName(request.name());
-        }
-        if (request.description() != null) {
-            subject.setDescription(request.description());
-        }
+        Optional.ofNullable(request.name()).ifPresent(subject::setName);
+        Optional.ofNullable(request.description()).ifPresent(subject::setDescription);
+        Optional.ofNullable(request.weeklyHours()).ifPresent(subject::setWeeklyHours);
+        Optional.ofNullable(request.weeklyHoursLab()).ifPresent(subject::setWeeklyHoursLab);
+        Optional.ofNullable(request.gradeMode()).ifPresent(subject::setGradeMode);
+        Optional.ofNullable(request.maxFinalExamAttempts()).ifPresent(subject::setMaxFinalExamAttempts);
         return subjectRepository.save(subject);
     }
 

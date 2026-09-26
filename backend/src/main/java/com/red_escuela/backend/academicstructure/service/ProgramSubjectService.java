@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ElectiveGroup;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -14,6 +15,7 @@ import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteE
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
@@ -79,9 +81,12 @@ public class ProgramSubjectService {
                     .orElseThrow(() -> new ElectiveGroupNotAssignedException(programId, request.electiveGroupId()));
         }
 
+        validateCategoryInvariants(request.category(), request.curricularYear(), request.curricularTerm(), request.electiveGroupId());
+
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
         programSubject.setSubject(subject);
+        programSubject.setCategory(request.category());
         programSubject.setCurricularYear(request.curricularYear());
         programSubject.setCurricularTerm(request.curricularTerm());
         programSubject.setCredits(request.credits());
@@ -238,6 +243,30 @@ public class ProgramSubjectService {
         ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)
                 .orElseThrow(() -> new PrerequisiteNotFoundException(prerequisiteId));
         prerequisiteRepository.delete(prerequisite);
+    }
+
+    private void validateCategoryInvariants(ProgramSubjectCategory category,
+            Integer curricularYear, CurricularTerm curricularTerm, Long electiveGroupId) {
+        switch (category) {
+            case MANDATORY -> {
+                if (curricularYear == null || curricularTerm == null) {
+                    throw new InvalidProgramSubjectCategoryException(
+                            "MANDATORY requires curricularYear and curricularTerm");
+                }
+            }
+            case ELECTIVE -> {
+                if (electiveGroupId == null) {
+                    throw new InvalidProgramSubjectCategoryException(
+                            "ELECTIVE requires electiveGroupId");
+                }
+            }
+            case ADDITIONAL_MANDATORY -> {
+                if (curricularYear != null || curricularTerm != null) {
+                    throw new InvalidProgramSubjectCategoryException(
+                            "ADDITIONAL_MANDATORY must not have curricularYear or curricularTerm");
+                }
+            }
+        }
     }
 
     private ProgramSubject findOrThrow(Long id) {

@@ -1,12 +1,18 @@
 package com.red_escuela.backend.academicstructure.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.red_escuela.backend.entity.StatusType;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "subject")
 public class Subject {
@@ -23,10 +29,21 @@ public class Subject {
     @Column(name = "description")
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private StatusType status = StatusType.ACTIVE;
 
     @Column(name = "max_final_exam_attempts")
     private Integer maxFinalExamAttempts;
+
+    @Column(name = "weekly_hours")
+    private Integer weeklyHours;
+
+    @Column(name = "weekly_hours_lab")
+    private Integer weeklyHoursLab;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "grade_mode")
+    private GradeMode gradeMode;
 }

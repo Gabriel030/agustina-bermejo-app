@@ -250,13 +250,13 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
 
-        Invoice monthlyInvoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusDays(5), InvoiceStatus.PENDING);
+        Invoice monthlyInvoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), YearMonth.now().atDay(15), YearMonth.now(), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
 
         monthlyInvoice.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(monthlyInvoice);
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusMonths(1).plusDays(5), InvoiceStatus.PENDING);
+        persistInvoice(enrollment, BigDecimal.valueOf(1000), YearMonth.now().plusMonths(1).atDay(15), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now().plusMonths(1));
         assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
     }

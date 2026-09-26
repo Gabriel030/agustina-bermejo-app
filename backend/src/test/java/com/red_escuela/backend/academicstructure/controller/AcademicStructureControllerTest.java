@@ -15,6 +15,7 @@ import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.entity.StatusType;
@@ -36,6 +37,7 @@ import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,7 +83,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSubjectWithAdministrativeRoleReturns201() throws Exception {
         String token = tokenWithRole("admin-academico1", "ADMINISTRATIVO");
-        CreateSubjectRequest request = new CreateSubjectRequest("Química General", null);
+        CreateSubjectRequest request = new CreateSubjectRequest("Química General", "QUIM", null, null, null, null, null);
 
         mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,7 +96,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSubjectWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-academico1", "PRECEPTOR");
-        CreateSubjectRequest request = new CreateSubjectRequest("Biología", null);
+        CreateSubjectRequest request = new CreateSubjectRequest("Biología", "BIO", null, null, null, null, null);
 
         mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +108,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSubjectWithDuplicateNameReturns409() throws Exception {
         String token = tokenWithRole("admin-academico2", "ADMINISTRATIVO");
-        CreateSubjectRequest request = new CreateSubjectRequest("Historia", null);
+        CreateSubjectRequest request = new CreateSubjectRequest("Historia", "HIST", null, null, null, null, null);
 
         mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -125,7 +127,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingProgramWithCreditsPersistsAllFields() throws Exception {
         String token = tokenWithRole("admin-academico3", "ADMINISTRATIVO");
         CreateProgramRequest request = new CreateProgramRequest(
-                "Tecnicatura en Sistemas", 3, null, null, 240);
+                "Tecnicatura en Sistemas", 3, null, null, 240, null, null, null, null, null);
 
         mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -158,7 +160,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         Long groupId = objectMapper.readTree(groupBody).get("id").asLong();
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura con Electivas", 4, null, null, 200);
+                "Tecnicatura con Electivas", 4, null, null, 200, null, null, null, null, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -193,7 +195,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Optativas"));
 
         CreateProgramRequest programRequest = new CreateProgramRequest(
-                "Tecnicatura Optativas", 4, null, null, 100);
+                "Tecnicatura Optativas", 4, null, null, 100, null, null, null, null, null);
         String programBody = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -264,7 +266,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingProgramWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-baja1", "ADMINISTRATIVO");
-        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, null, 100);
+        CreateProgramRequest request = new CreateProgramRequest("Tecnicatura Baja", 3, null, null, 100, null, null, null, null, null);
         String body = mockMvc.perform(post("/programs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -294,7 +296,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + adminToken)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, null, 100))))
+                                new CreateProgramRequest("Tecnicatura Baja 2", 3, null, null, 100, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).get("id").asLong();
 
@@ -316,7 +318,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso Baja", term.getId(), null, 20, null, null, null, null);
+                "Curso Baja", term.getId(), null, 20, null, null, null, null, null);
         String body = mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -339,7 +341,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithNonExistentTermReturns404() throws Exception {
         String token = tokenWithRole("admin-curso2", "ADMINISTRATIVO");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin term", 999999L, null, 10, null, null, null, null);
+                "Curso sin term", 999999L, null, 10, null, null, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -352,7 +354,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-curso1", "PRECEPTOR");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin permiso", 1L, null, 10, null, null, null, null);
+                "Curso sin permiso", 1L, null, 10, null, null, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -400,7 +402,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-subject-baja1", "ADMINISTRATIVO");
-        CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", null);
+        CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", "MBAJ", null, null, null, null, null);
         String body = mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -423,7 +425,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void addingSubjectWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-programsubject1", "PRECEPTOR");
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                1L, 1, CurricularTerm.FIRST, 5, null, null, null);
+                1L, ProgramSubjectCategory.MANDATORY, 1, CurricularTerm.FIRST, 5, null, null, null);
 
         mockMvc.perform(post("/programs/{id}/subjects", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -447,7 +449,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                subject.getId(), 1, CurricularTerm.FIRST, 5, null, null, null);
+                subject.getId(), ProgramSubjectCategory.MANDATORY, 1, CurricularTerm.FIRST, 5, null, null, null);
         String body = mockMvc.perform(post("/programs/{id}/subjects", program.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -490,7 +492,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulos", term.getId(), null, 15, null, null, null, null))))
+                                "Curso con módulos", term.getId(), null, 15, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -533,7 +535,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulo baja", term.getId(), null, 15, null, null, null, null))))
+                                "Curso con módulo baja", term.getId(), null, 15, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -593,7 +595,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(
-                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, null, 50))))
+                                new CreateProgramRequest("Tecnicatura quitar grupo", 3, null, null, 50, null, null, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long programId = objectMapper.readTree(programBody).get("id").asLong();
 
@@ -643,12 +645,89 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateProgramSubjectRequest(
-                                subject.getId(), 1, CurricularTerm.FIRST, 5, null, null, groupId))))
+                                subject.getId(), ProgramSubjectCategory.ELECTIVE, null, null, 5, null, null, groupId))))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/programs/{id}/elective-groups/{groupId}", program.getId(), groupId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void settingCatalogVisibilityWithoutAdminRoleReturns403() throws Exception {
+        String token = tokenWithRole("preceptor-visibility1", "PRECEPTOR");
+
+        mockMvc.perform(put("/programs/{id}/catalog-visibility", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"visible\":true}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void settingCatalogVisibilityWithAdminRoleUpdatesAndReturns200() throws Exception {
+        String token = tokenWithRole("admin-visibility1", "ADMINISTRATIVO");
+
+        Program program = new Program();
+        program.setName("Carrera Visibilidad Catalog");
+        program.setTotalYears(2);
+        entityManager.persist(program);
+        entityManager.flush();
+
+        mockMvc.perform(put("/programs/{id}/catalog-visibility", program.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"visible\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.visibleInCatalog").value(true));
+    }
+
+    @Test
+    void addingMandatorySubjectWithoutCurricularYearReturns400() throws Exception {
+        String token = tokenWithRole("admin-cat-mandatory1", "ADMINISTRATIVO");
+
+        Program program = new Program();
+        program.setName("Carrera Category Mandatory");
+        program.setTotalYears(2);
+        entityManager.persist(program);
+        Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setName("Materia Cat Mandatory");
+        entityManager.persist(subject);
+        entityManager.flush();
+
+        var request = new CreateProgramSubjectRequest(
+                subject.getId(), ProgramSubjectCategory.MANDATORY, null, null, 5, null, null, null);
+
+        mockMvc.perform(post("/programs/{id}/subjects", program.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addingElectiveSubjectWithoutElectiveGroupIdReturns400() throws Exception {
+        String token = tokenWithRole("admin-cat-elective1", "ADMINISTRATIVO");
+
+        Program program = new Program();
+        program.setName("Carrera Category Elective");
+        program.setTotalYears(2);
+        entityManager.persist(program);
+        Subject subject = new Subject();
+        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setName("Materia Cat Elective");
+        entityManager.persist(subject);
+        entityManager.flush();
+
+        var request = new CreateProgramSubjectRequest(
+                subject.getId(), ProgramSubjectCategory.ELECTIVE, null, null, 5, null, null, null);
+
+        mockMvc.perform(post("/programs/{id}/subjects", program.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }
