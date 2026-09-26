@@ -31,7 +31,7 @@ class TimeZoneConfigTest {
     }
 
     @Test
-    void applyAsJvmDefaultOverridesAnUtcHostTimeZone() {
+    void applicationTimeZoneOverridesAnUtcHostTimeZone() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
         ApplicationTimeZone.applyAsJvmDefault();
@@ -40,44 +40,43 @@ class TimeZoneConfigTest {
     }
 
     @Test
-    void applyAsJvmDefaultMakesLocalDateTimeNowUseTheConfiguredZone() {
+    void theBeanAlsoAppliesTheZoneSoTestsDoNotDependOnMain() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
-        ApplicationTimeZone.applyAsJvmDefault();
+        new TimeZoneConfig(ARGENTINA).applyAsJvmDefault();
+
+        assertThat(TimeZone.getDefault().toZoneId()).isEqualTo(ZoneId.of(ARGENTINA));
+    }
+
+    @Test
+    void applyingTheZoneMakesLocalDateTimeNowUseIt() {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
+        new TimeZoneConfig(ARGENTINA).applyAsJvmDefault();
 
         assertThat(LocalDateTime.now())
                 .isCloseTo(LocalDateTime.now(ZoneId.of(ARGENTINA)), within(5, SECONDS));
     }
 
     @Test
-    void applyAsJvmDefaultMovesTheClockAwayFromUtc() {
+    void applyingTheZoneMovesTheClockAwayFromUtc() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         LocalDateTime utcNow = LocalDateTime.now(ZoneId.of("UTC"));
 
-        ApplicationTimeZone.applyAsJvmDefault();
+        new TimeZoneConfig(ARGENTINA).applyAsJvmDefault();
 
         assertThat(SECONDS.between(LocalDateTime.now(), utcNow)).isGreaterThan(3 * 3600 - 60);
     }
 
     @Test
-    void verifyJvmDefaultMatchesConfigurationPassesWhenBothAgree() {
-        ApplicationTimeZone.applyAsJvmDefault();
-
-        TimeZoneConfig config = new TimeZoneConfig(ARGENTINA);
-
-        assertThat(config.getConfiguredZoneId()).isEqualTo(ZoneId.of(ARGENTINA));
-        config.verifyJvmDefaultMatchesConfiguration();
-    }
-
-    @Test
-    void verifyJvmDefaultMatchesConfigurationFailsFastWhenTheyDiverge() {
+    void applyingTheZoneTwiceIsIdempotent() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-
         TimeZoneConfig config = new TimeZoneConfig(ARGENTINA);
 
-        assertThatThrownBy(config::verifyJvmDefaultMatchesConfiguration)
-                .isInstanceOf(MisconfiguredTimeZoneException.class)
-                .hasMessageContaining("APP_TIMEZONE");
+        config.applyAsJvmDefault();
+        config.applyAsJvmDefault();
+
+        assertThat(TimeZone.getDefault().toZoneId()).isEqualTo(ZoneId.of(ARGENTINA));
     }
 
     @Test

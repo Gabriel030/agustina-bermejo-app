@@ -26,10 +26,11 @@ public class TimeZoneConfig {
     }
 
     @PostConstruct
-    public void verifyJvmDefaultMatchesConfiguration() {
-        ZoneId jvmDefault = TimeZone.getDefault().toZoneId();
-        if (!jvmDefault.equals(configuredZoneId)) {
-            throw new MisconfiguredTimeZoneException(configuredZoneId, jvmDefault);
+    public void applyAsJvmDefault() {
+        ZoneId previous = TimeZone.getDefault().toZoneId();
+        TimeZone.setDefault(TimeZone.getTimeZone(configuredZoneId));
+        if (!previous.equals(configuredZoneId)) {
+            log.info("Zona horaria de la JVM corregida de {} a {}", previous, configuredZoneId);
         }
         log.info("Zona horaria de la aplicación: {} (offset actual {})",
                 configuredZoneId, ZonedDateTime.now(configuredZoneId).getOffset());
