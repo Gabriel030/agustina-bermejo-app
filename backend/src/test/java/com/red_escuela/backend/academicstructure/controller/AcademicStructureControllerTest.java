@@ -402,6 +402,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-subject-baja1", "ADMINISTRATIVO");
+        String directorToken = tokenWithRole("director-subject-baja1", "DIRECTOR");
         CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", "MBAJ", null, null, null, null, null);
         String body = mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -409,6 +410,11 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).get("id").asLong();
+
+        mockMvc.perform(post("/subjects/{id}/submit-for-approval", id).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/subjects/{id}/approve", id).header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk());
 
         mockMvc.perform(post("/subjects/{id}/deactivate", id).header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());

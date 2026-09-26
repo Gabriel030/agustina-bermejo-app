@@ -76,6 +76,7 @@ import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundExc
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
@@ -326,7 +327,8 @@ public class GlobalExceptionHandler {
             PromotionAlreadyClosedException.class,
             SectionScheduleConflictException.class,
             CycleAlreadyInProgressException.class,
-            CycleNotPendingApprovalException.class
+            CycleNotPendingApprovalException.class,
+            SubjectInvalidTransitionException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {

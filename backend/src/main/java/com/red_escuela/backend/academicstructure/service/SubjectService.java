@@ -2,9 +2,10 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
-import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -52,7 +53,37 @@ public class SubjectService {
         return subjectRepository.save(subject);
     }
 
-    public List<Subject> list(StatusType status) {
+    @Transactional
+    public Subject submitForApproval(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.DRAFT && subject.getStatus() != SubjectStatus.REJECTED) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "enviar a aprobación");
+        }
+        subject.setStatus(SubjectStatus.PENDING_APPROVAL);
+        return subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public Subject approve(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "aprobar");
+        }
+        subject.setStatus(SubjectStatus.ACTIVE);
+        return subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public Subject reject(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "rechazar");
+        }
+        subject.setStatus(SubjectStatus.REJECTED);
+        return subjectRepository.save(subject);
+    }
+
+    public List<Subject> list(SubjectStatus status) {
         return status == null ? subjectRepository.findAll() : subjectRepository.findByStatus(status);
     }
 
@@ -63,14 +94,20 @@ public class SubjectService {
     @Transactional
     public void deactivate(Long id) {
         Subject subject = findOrThrow(id);
-        subject.setStatus(StatusType.INACTIVE);
+        if (subject.getStatus() != SubjectStatus.ACTIVE) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "desactivar");
+        }
+        subject.setStatus(SubjectStatus.INACTIVE);
         subjectRepository.save(subject);
     }
 
     @Transactional
     public void reactivate(Long id) {
         Subject subject = findOrThrow(id);
-        subject.setStatus(StatusType.ACTIVE);
+        if (subject.getStatus() != SubjectStatus.INACTIVE) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "reactivar");
+        }
+        subject.setStatus(SubjectStatus.ACTIVE);
         subjectRepository.save(subject);
     }
 

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.red_escuela.backend.entity.StatusType;
 
 @Getter
 @Setter
@@ -32,7 +31,7 @@ public class Subject {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private StatusType status = StatusType.ACTIVE;
+    private SubjectStatus status = SubjectStatus.DRAFT;
 
     @Column(name = "max_final_exam_attempts")
     private Integer maxFinalExamAttempts;
