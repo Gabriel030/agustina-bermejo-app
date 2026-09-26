@@ -14,9 +14,10 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Ciclo completo de una materia — alta, edición, baja y reactivación
     * def nombre = 'Análisis Matemático I ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombre)', description: 'Materia troncal' }
+    And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -52,15 +53,16 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Materia con nombre duplicado — 409
     * def nombre = 'Historia ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombre)' }
+    And request { name: '#(nombre)', code: '#(codigo)' }
     When method post
     Then status 201
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombre)' }
+    And request { name: '#(nombre)', code: '#(codigo)' }
     When method post
     Then status 409
 
@@ -80,7 +82,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombre = 'Intento no autorizado ' + java.lang.System.nanoTime()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { name: '#(nombre)' }
+    And request { name: '#(nombre)', code: 'TEST' }
     When method post
     Then status 403
 
@@ -88,6 +90,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Profesorado QA ' + java.lang.System.nanoTime()
     * def nombreA = 'Materia A ' + java.lang.System.nanoTime()
     * def nombreB = 'Materia B ' + java.lang.System.nanoTime()
+    * def codigoA = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoB = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -98,14 +102,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreA)' }
+    And request { name: '#(nombreA)', code: '#(codigoA)' }
     When method post
     Then status 201
     * def subjectAId = response.id
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreB)' }
+    And request { name: '#(nombreB)', code: '#(codigoB)' }
     When method post
     Then status 201
     * def subjectBId = response.id
@@ -166,6 +170,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Agregar la misma materia dos veces a la carrera — 409
     * def nombrePrograma = 'Carrera QA duplicado ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia duplicable ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -176,7 +181,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateria)' }
+    And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id
@@ -218,6 +223,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Prerequisito de sí misma — 400
     * def nombrePrograma = 'Carrera QA prereq sí misma ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia autorreferencial ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -228,7 +234,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateria)' }
+    And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id
@@ -250,6 +256,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Carrera QA correlatividades ' + java.lang.System.nanoTime()
     * def nombreC = 'Materia C ' + java.lang.System.nanoTime()
     * def nombreD = 'Materia D ' + java.lang.System.nanoTime()
+    * def codigoC = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoD = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -260,14 +268,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreC)' }
+    And request { name: '#(nombreC)', code: '#(codigoC)' }
     When method post
     Then status 201
     * def subjectCId = response.id
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreD)' }
+    And request { name: '#(nombreD)', code: '#(codigoD)' }
     When method post
     Then status 201
     * def subjectDId = response.id
@@ -315,6 +323,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma2 = 'Carrera QA 2 ' + java.lang.System.nanoTime()
     * def nombreSubject1 = 'Materia carrera 1 ' + java.lang.System.nanoTime()
     * def nombreSubject2 = 'Materia carrera 2 ' + java.lang.System.nanoTime()
+    * def codigo1 = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo2 = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -332,14 +342,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreSubject1)' }
+    And request { name: '#(nombreSubject1)', code: '#(codigo1)' }
     When method post
     Then status 201
     * def subject1Id = response.id
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreSubject2)' }
+    And request { name: '#(nombreSubject2)', code: '#(codigo2)' }
     When method post
     Then status 201
     * def subject2Id = response.id
@@ -374,6 +384,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombreGrupo = 'Optativas de Idioma ' + java.lang.System.nanoTime()
     * def nombrePrograma = 'Carrera QA electivas ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Electiva de Idioma ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
 
     Given path '/elective-groups'
     And header Authorization = 'Bearer ' + adminToken
@@ -391,7 +402,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateria)' }
+    And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id

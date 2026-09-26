@@ -27,9 +27,10 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA inscripciones ' + java.lang.System.nanoTime()
+    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateria)' }
+    And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
@@ -98,9 +99,10 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def programEnrollmentId = response.id
 
     * def nombreMateriaAjena = 'Materia ajena al plan ' + java.lang.System.nanoTime()
+    * def codigoAjena = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateriaAjena)' }
+    And request { name: '#(nombreMateriaAjena)', code: '#(codigoAjena)' }
     When method post
     Then status 201
     * def subjectAjenoId = response.id
@@ -122,9 +124,10 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreMateriaAvanzada = 'Materia avanzada ' + java.lang.System.nanoTime()
+    * def codigoAvanzada = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateriaAvanzada)' }
+    And request { name: '#(nombreMateriaAvanzada)', code: '#(codigoAvanzada)' }
     When method post
     Then status 201
     * def subjectAvanzadaId = response.id
@@ -202,9 +205,10 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def sectionCId = response.id
 
     * def nombreMateriaOtra = 'Materia otra para cambio ' + java.lang.System.nanoTime()
+    * def codigoOtra = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateriaOtra)' }
+    And request { name: '#(nombreMateriaOtra)', code: '#(codigoOtra)' }
     When method post
     Then status 201
     * def subjectOtraId = response.id
