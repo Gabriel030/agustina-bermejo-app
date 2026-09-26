@@ -36,7 +36,7 @@ public class SectionEvaluationConfigReminderJob {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
     @Transactional(readOnly = true)
     public void sendReminders() {
         LocalDate today = LocalDate.now();

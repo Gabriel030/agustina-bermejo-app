@@ -50,7 +50,7 @@ public class EnrollmentBillingComplianceSweepService {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(cron = "0 1 3 * * *")
+    @Scheduled(cron = "0 1 3 * * *", zone = "${app.timezone}")
     public void run() {
         run(LocalDate.now());
     }

@@ -43,7 +43,7 @@ public class InvoiceOverdueSweepService {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "${app.timezone}")
     public void run() {
         run(LocalDate.now());
     }
