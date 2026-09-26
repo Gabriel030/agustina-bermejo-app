@@ -120,14 +120,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     # la requiere, no puede compartir cuatrimestre con ella).
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectAId)', curricularYear: 1, curricularTerm: 'SECOND', credits: 8 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectAId)', curricularYear: 1, curricularTerm: 'SECOND', credits: 8 }
     When method post
     Then status 201
     * def programSubjectAId = response.id
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectBId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 6 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectBId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 6 }
     When method post
     Then status 201
     * def programSubjectBId = response.id
@@ -188,13 +188,13 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 409
 
@@ -203,7 +203,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', 999999, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: 1, curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: 1, curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 404
 
@@ -216,7 +216,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: 999999, curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: 999999, curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 404
 
@@ -241,7 +241,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectId = response.id
@@ -285,14 +285,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     # ProgramSubjectService.agregarCorrelatividad).
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectCId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectCId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectCId = response.id
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectDId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectDId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectDId = response.id
@@ -356,14 +356,14 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', program1Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subject1Id)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subject1Id)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubject1Id = response.id
 
     Given path '/programs', program2Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subject2Id)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subject2Id)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubject2Id = response.id
@@ -410,7 +410,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     # Decisión 8: no se puede tagear con un grupo que la carrera no asignó todavía
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5, electiveGroupId: '#(groupId)' }
+    And request { category: 'ELECTIVE', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5, electiveGroupId: '#(groupId)' }
     When method post
     Then status 400
 
@@ -422,7 +422,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5, electiveGroupId: '#(groupId)' }
+    And request { category: 'ELECTIVE', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5, electiveGroupId: '#(groupId)' }
     When method post
     Then status 201
     * def programSubjectElectivaId = response.id

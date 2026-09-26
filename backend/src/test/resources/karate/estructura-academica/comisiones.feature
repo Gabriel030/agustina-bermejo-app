@@ -350,13 +350,13 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/programs', program1Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
 
     Given path '/programs', program2Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
 

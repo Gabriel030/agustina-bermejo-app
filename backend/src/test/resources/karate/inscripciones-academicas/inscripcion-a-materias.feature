@@ -37,7 +37,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectId = response.id
@@ -134,7 +134,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectAvanzadaId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
+    And request { category: 'MANDATORY', subjectId: '#(subjectAvanzadaId)', curricularYear: 2, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
     * def programSubjectAvanzadaId = response.id
