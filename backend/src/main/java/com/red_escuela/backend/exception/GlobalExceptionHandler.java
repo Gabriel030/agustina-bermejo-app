@@ -1,4 +1,6 @@
 package com.red_escuela.backend.exception;
+import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
@@ -276,7 +278,8 @@ public class GlobalExceptionHandler {
             PromotionNotFoundException.class,
             CreditNoteNotFoundException.class,
             ClassroomNotFoundException.class,
-            CycleNotFoundException.class
+            CycleNotFoundException.class,
+            AnnouncementNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -339,7 +342,8 @@ public class GlobalExceptionHandler {
             NotOwnEnrollmentException.class,
             RoleNotAssignableByActorException.class,
             NotSectionLeadInstructorException.class,
-            NotOwnNotificationException.class
+            NotOwnNotificationException.class,
+            NotSectionInstructorException.class
     })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {
