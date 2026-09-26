@@ -36,6 +36,9 @@ import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
 import { AdministrativoSubjects } from '@/features/gestion-academica/pages/AdministrativoSubjects';
 import { AdministrativoSubjectWizard } from '@/features/gestion-academica/pages/AdministrativoSubjectWizard';
+import { CarreraWizard } from '@/features/gestion-academica/pages/CarreraWizard';
+import { CarreraDetalle } from '@/features/gestion-academica/pages/CarreraDetalle';
+import { CarreraEditarDatos } from '@/features/gestion-academica/pages/CarreraEditarDatos';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
 import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
@@ -179,6 +182,15 @@ export function AppRouter() {
           )}
           {rol === 'administrativo' && (
             <Route path="gestion-academica/:id" element={<AdministrativoSubjectWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/nueva" element={<CarreraWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/:id" element={<CarreraDetalle />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/:id/editar" element={<CarreraEditarDatos />} />
           )}
           {rol === 'preceptor' && (
             <Route path="oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
