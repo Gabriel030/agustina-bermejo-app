@@ -75,6 +75,11 @@ class KarateSuiteTest {
     }
 
     @Karate.Test
+    Karate testAvisos() {
+        return Karate.run("classpath:karate/avisos");
+    }
+
+    @Karate.Test
     Karate testCatalogo() {
         return Karate.run("classpath:karate/catalogo");
     }
