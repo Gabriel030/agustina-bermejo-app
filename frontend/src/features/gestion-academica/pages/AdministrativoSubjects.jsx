@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useSubjects } from '@/features/gestion-academica/hooks/useSubjects';
 import { usePrograms } from '@/features/gestion-academica/hooks/usePrograms';
+import { useCourses } from '@/features/gestion-academica/hooks/useCourses';
 
 const SUBJECT_TABS = [
   { id: 'ACTIVE', label: 'Activas' },
@@ -48,6 +49,11 @@ const TEACHING_MODE_LABELS = {
   IN_PERSON: 'Presencial',
   ONLINE: 'Virtual',
   HYBRID: 'Híbrido',
+};
+
+const COURSE_STATUS_CONFIG = {
+  ACTIVE: { label: 'Activo', tone: 'success' },
+  INACTIVE: { label: 'Inactivo', tone: 'neutral' },
 };
 
 function SubjectRow({ subject, navigate }) {
@@ -130,6 +136,69 @@ function ProgramRow({ program, navigate }) {
   );
 }
 
+function CourseRow({ course, navigate }) {
+  const cfg = COURSE_STATUS_CONFIG[course.status] ?? { label: course.status, tone: 'neutral' };
+  const meta = [
+    course.teachingMode ? TEACHING_MODE_LABELS[course.teachingMode] : null,
+    course.durationMonths ? `${course.durationMonths} meses` : null,
+    course.capacity ? `${course.capacity} cupos` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/administrativo/gestion-academica/cursos/${course.id}`)}
+      className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left transition-colors hover:bg-neutral-bg/60"
+    >
+      <div className="min-w-0">
+        <span className="block truncate text-[14px] font-medium text-ink">{course.name}</span>
+        {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
+        <ChevronRight className="h-4 w-4 text-ink-faint" />
+      </div>
+    </button>
+  );
+}
+
+function CourseList({ search, navigate }) {
+  const { data, isLoading, isError } = useCourses();
+
+  const filtered = (data ?? []).filter((c) => {
+    if (!search) return true;
+    return c.name.toLowerCase().includes(search.toLowerCase());
+  });
+
+  if (isLoading) return <Skeleton rows={4} />;
+  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (!filtered.length)
+    return (
+      <EmptyState
+        title="Sin cursos"
+        description={search ? 'Ningún curso coincide con la búsqueda.' : 'Todavía no hay cursos registrados.'}
+        action={
+          !search && (
+            <Button variant="outline" size="sm" onClick={() => navigate('/administrativo/gestion-academica/cursos/nueva')}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Nuevo curso
+            </Button>
+          )
+        }
+      />
+    );
+
+  return (
+    <div className="divide-y divide-neutral-bg">
+      {filtered.map((c) => (
+        <CourseRow key={c.id} course={c} navigate={navigate} />
+      ))}
+    </div>
+  );
+}
+
 function ProgramList({ search, navigate }) {
   const { data, isLoading, isError } = usePrograms();
 
@@ -189,6 +258,11 @@ export function AdministrativoSubjects() {
         <Plus className="mr-2 h-4 w-4" />
         Nueva carrera
       </Button>
+    ) : section === 'cursos' ? (
+      <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/cursos/nueva')}>
+        <Plus className="mr-2 h-4 w-4" />
+        Nuevo curso
+      </Button>
     ) : (
       <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/nueva')}>
         <Plus className="mr-2 h-4 w-4" />
@@ -204,6 +278,7 @@ export function AdministrativoSubjects() {
             <TabsList variant="segmented">
               <TabsTrigger value="materias">Banco de materias</TabsTrigger>
               <TabsTrigger value="carreras">Carreras</TabsTrigger>
+              <TabsTrigger value="cursos">Cursos</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="relative">
@@ -217,7 +292,9 @@ export function AdministrativoSubjects() {
           </div>
         </div>
 
-        {section === 'carreras' ? (
+        {section === 'cursos' ? (
+          <CourseList search={search} navigate={navigate} />
+        ) : section === 'carreras' ? (
           <ProgramList search={search} navigate={navigate} />
         ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange}>
