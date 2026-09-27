@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, Pencil, Power, PowerOff, GripVertical } from 'lucide-react';
+import { ChevronLeft, Plus, Globe, GlobeOff, Pencil, Power, PowerOff, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -13,6 +13,7 @@ import {
   useCourseSubjects,
   useDeactivateCourse,
   useActivateCourse,
+  useSetCourseCatalogVisibility,
 } from '@/features/gestion-academica/hooks/useCourses';
 import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
 import { PanelModulo } from './PanelModulo';
@@ -62,10 +63,25 @@ export function CursoDetalle() {
   const { data: terminos } = useTerminos();
   const deactivateCourse = useDeactivateCourse();
   const activateCourse = useActivateCourse();
+  const setCatalogVisibility = useSetCourseCatalogVisibility();
 
   const [panelOpen, setPanelOpen] = useState(false);
 
   const term = (terminos ?? []).find((t) => String(t.id) === String(course?.termId));
+
+  async function handleToggleCatalog() {
+    const visible = !course?.visibleInCatalog;
+    try {
+      await setCatalogVisibility.mutateAsync({ id, visible });
+      toast.success(
+        visible
+          ? 'El curso ahora aparece en el catálogo de inscripciones'
+          : 'El curso fue retirado del catálogo. Los alumnos actuales no se ven afectados.'
+      );
+    } catch {
+      toast.error('No se pudo cambiar la visibilidad en el catálogo.');
+    }
+  }
 
   async function handleToggleStatus() {
     const isActive = course?.status === 'ACTIVE';
@@ -165,6 +181,36 @@ export function CursoDetalle() {
             </div>
           </div>
         </div>
+
+        <GlassCard className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
+              <StatusPill tone={course.visibleInCatalog ? 'success' : 'neutral'}>
+                {course.visibleInCatalog ? 'En catálogo' : 'No publicado'}
+              </StatusPill>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleCatalog}
+              loading={setCatalogVisibility.isPending}
+              className={course.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
+            >
+              {course.visibleInCatalog ? (
+                <>
+                  <GlobeOff className="mr-1.5 h-3.5 w-3.5" />
+                  Retirar del catálogo
+                </>
+              ) : (
+                <>
+                  <Globe className="mr-1.5 h-3.5 w-3.5" />
+                  Publicar en catálogo
+                </>
+              )}
+            </Button>
+          </div>
+        </GlassCard>
 
         {course.schedule && (
           <GlassCard className="p-4">
