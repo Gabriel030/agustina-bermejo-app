@@ -39,6 +39,9 @@ import { AdministrativoSubjectWizard } from '@/features/gestion-academica/pages/
 import { CarreraWizard } from '@/features/gestion-academica/pages/CarreraWizard';
 import { CarreraDetalle } from '@/features/gestion-academica/pages/CarreraDetalle';
 import { CarreraEditarDatos } from '@/features/gestion-academica/pages/CarreraEditarDatos';
+import { CursoWizard } from '@/features/gestion-academica/pages/CursoWizard';
+import { CursoDetalle } from '@/features/gestion-academica/pages/CursoDetalle';
+import { CursoEditarDatos } from '@/features/gestion-academica/pages/CursoEditarDatos';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
 import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
 import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
@@ -191,6 +194,15 @@ export function AppRouter() {
           )}
           {rol === 'administrativo' && (
             <Route path="gestion-academica/carreras/:id/editar" element={<CarreraEditarDatos />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/nueva" element={<CursoWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/:id" element={<CursoDetalle />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/:id/editar" element={<CursoEditarDatos />} />
           )}
           {rol === 'preceptor' && (
             <Route path="oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
