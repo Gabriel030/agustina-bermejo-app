@@ -3,7 +3,7 @@ package com.red_escuela.backend.academicstructure.controller;
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.SubjectResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.service.SubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,22 +43,40 @@ public class SubjectController {
         return SubjectResponse.from(subjectService.update(id, request));
     }
 
+    @PostMapping("/{id}/submit-for-approval")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public SubjectResponse submitForApproval(@PathVariable Long id) {
+        return SubjectResponse.from(subjectService.submitForApproval(id));
+    }
+
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public SubjectResponse approve(@PathVariable Long id) {
+        return SubjectResponse.from(subjectService.approve(id));
+    }
+
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public SubjectResponse reject(@PathVariable Long id) {
+        return SubjectResponse.from(subjectService.reject(id));
+    }
+
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void deactivate(@PathVariable Long id) {
         subjectService.deactivate(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void reactivate(@PathVariable Long id) {
         subjectService.reactivate(id);
     }
 
     @GetMapping
-    public List<SubjectResponse> list(@RequestParam(required = false) StatusType status) {
+    public List<SubjectResponse> list(@RequestParam(required = false) SubjectStatus status) {
         return subjectService.list(status).stream().map(SubjectResponse::from).toList();
     }
 

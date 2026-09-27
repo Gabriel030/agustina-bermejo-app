@@ -189,7 +189,7 @@ export function NuevoAlumno() {
               <Button type="button" variant="ghost" onClick={retroceder} disabled={isMutating}>
                 {currentStep === 0 ? 'Cancelar' : 'Atrás'}
               </Button>
-              <Button type="button" onClick={avanzar} disabled={isMutating}>
+              <Button type="button" variant="gradient" onClick={avanzar} disabled={isMutating}>
                 {currentStep === 2 ? 'Confirmar alta' : 'Siguiente'}
               </Button>
             </>

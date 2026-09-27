@@ -125,7 +125,8 @@ export function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={enviando}
-                className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
+                variant="gradient"
+                className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
               >
                 {enviando ? 'Enviando…' : 'Enviar código de recuperación'}
               </Button>
@@ -163,7 +164,8 @@ export function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={enviando}
-                className="w-full rounded-2xl bg-gradient-to-br from-brand to-accent-2 py-6 text-[14.5px] font-bold text-white"
+                variant="gradient"
+                className="w-full rounded-2xl py-6 text-[14.5px] font-bold"
               >
                 {enviando ? 'Verificando…' : 'Continuar'}
               </Button>

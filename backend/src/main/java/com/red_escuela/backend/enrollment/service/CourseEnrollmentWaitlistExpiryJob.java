@@ -28,7 +28,7 @@ public class CourseEnrollmentWaitlistExpiryJob {
         this.eventPublisher = eventPublisher;
     }
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
     @Transactional
     public void expireWaitlists() {
         LocalDate today = LocalDate.now();

@@ -26,28 +26,28 @@ export function ResumenStep({ alumno, esAnonimo }) {
       )}
 
       {esAnonimo ? (
-        <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4 flex gap-3">
-          <Mail size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
+        <div className="flex gap-3 rounded-lg border border-accent-soft bg-accent-soft p-4">
+          <Mail size={18} className="mt-0.5 flex-shrink-0 text-brand" />
           <div>
-            <p className="text-[13px] font-medium text-blue-800 dark:text-blue-200">Verificación de email pendiente</p>
-            <p className="text-[12px] text-blue-700 dark:text-blue-300 mt-0.5">
+            <p className="text-[13px] font-medium text-primary">Verificación de email pendiente</p>
+            <p className="mt-0.5 text-[12px] text-ink-soft">
               Se envió un correo a <strong>{email}</strong> para confirmar tu inscripción.
             </p>
           </div>
         </div>
       ) : (
-        <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4 flex gap-3">
-          <Clock size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="flex gap-3 rounded-lg border border-warning-bg bg-warning-bg p-4">
+          <Clock size={18} className="mt-0.5 flex-shrink-0 text-warning" />
           <div>
-            <p className="text-[13px] font-medium text-amber-800 dark:text-amber-200">Alta en proceso</p>
-            <p className="text-[12px] text-amber-700 dark:text-amber-300 mt-0.5">
+            <p className="text-[13px] font-medium text-warning">Alta en proceso</p>
+            <p className="mt-0.5 text-[12px] text-warning">
               El alumno queda como prospecto hasta que el email sea verificado. Podés reenviar la verificación desde el padrón.
             </p>
           </div>
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-green-600">
+      <div className="flex items-center gap-2 text-success">
         <CheckCircle2 size={18} />
         <p className="text-[13px] font-medium">Alta registrada correctamente</p>
       </div>

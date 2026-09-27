@@ -56,4 +56,11 @@ public class CourseSubjectSection {
 
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CourseSubjectSectionInstructor> instructors;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_offering_cycle_id")
+    private AcademicOfferingCycle academicOfferingCycle;
+
+    @Column(name = "pending_approval", nullable = false)
+    private boolean pendingApproval = false;
 }

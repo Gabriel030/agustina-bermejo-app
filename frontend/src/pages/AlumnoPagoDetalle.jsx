@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, X, Receipt, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useFacturasDeCurso, useFacturasDeMatricula } from '@/hooks/useBilling';
 
@@ -59,15 +61,11 @@ function formatFecha(date) {
 
 function PaymentDetailModal({ invoice, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-bold text-ink">Detalle del pago</h2>
-          <button type="button" onClick={onClose} className="text-ink-faint hover:text-ink">
-            <X size={20} />
-          </button>
-        </div>
-
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Detalle del pago</DialogTitle>
+        </DialogHeader>
         <div className="flex flex-col gap-3 text-sm">
           <div className="flex justify-between">
             <span className="text-ink-faint">Concepto</span>
@@ -93,16 +91,11 @@ function PaymentDetailModal({ invoice, onClose }) {
             </span>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-brand hover:text-brand"
-        >
-          Cerrar
-        </button>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -110,12 +103,7 @@ function InvoiceTable({ invoices, onDetalle }) {
   const navigate = useNavigate();
 
   if (!invoices?.length) {
-    return (
-      <div className="flex flex-col items-center gap-2 py-12 text-center">
-        <Receipt size={28} className="text-ink-faint" />
-        <p className="text-sm text-ink-faint">No hay cuotas para esta inscripción.</p>
-      </div>
-    );
+    return <EmptyState title="No hay cuotas para esta inscripción." className="py-12" />;
   }
 
   return (

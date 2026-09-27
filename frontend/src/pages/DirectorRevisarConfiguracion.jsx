@@ -5,6 +5,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { CalendarioConfiguracion } from '@/components/docente/CalendarioConfiguracion';
 import { useConfiguracionComisionStaff, useAprobarConfig, useRechazarConfig } from '@/hooks/useDirector';
 import { useHolidays } from '@/hooks/useDocente';
@@ -14,7 +15,7 @@ function ValorFecha({ label, valor }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-semibold text-ink-soft">{label}</label>
-      <div className="rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink">{formatearFecha(valor) ?? '—'}</div>
+      <Input value={formatearFecha(valor) ?? '—'} readOnly className="cursor-default text-[13.5px]" />
     </div>
   );
 }
@@ -187,7 +188,7 @@ export function DirectorRevisarConfiguracion() {
                 onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Ej: faltan fechas de TP2 y TP3..."
                 rows={2}
-                className="rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink"
+                className="rounded-lg border border-border bg-white/70 px-3 py-2 text-[13.5px] text-ink dark:bg-white/10"
               />
             </div>
             {error && <div className="text-sm font-semibold text-danger">{error}</div>}
@@ -201,7 +202,7 @@ export function DirectorRevisarConfiguracion() {
                 Rechazar
               </Button>
               <Button
-                className="bg-gradient-to-br from-success to-success/80"
+                className="bg-success text-white hover:bg-success/90"
                 onClick={aprobarComision}
                 disabled={aprobar.isPending}
               >

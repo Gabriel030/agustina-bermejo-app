@@ -464,6 +464,7 @@ function TabNotificaciones() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="overflow-x-auto">
       <Table className="min-w-[400px]">
         <TableHeader>
           <TableRow>
@@ -505,6 +506,7 @@ function TabNotificaciones() {
           ))}
         </TableBody>
       </Table>
+      </div>
       {error && <p className="text-[13px] text-danger">{error}</p>}
       {haycambios && (
         <div className="flex items-center justify-end gap-2">

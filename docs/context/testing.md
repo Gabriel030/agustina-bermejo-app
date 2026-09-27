@@ -25,12 +25,13 @@ Spring, unit test puro; si lo toca, integración con `AbstractIntegrationTest`.
 como base — un test de controller verifica el contrato HTTP completo (status,
 JSON, headers) contra la app real levantada, no contra el service mockeado.
 
-**Convención de nombres de test**: describe el escenario + el resultado esperado
-en una sola palabra compuesta en español, ej.
-`putMeActualizaSoloElPropioPersonYNuncaElDni`,
-`getMeSinAuthDevuelve401OForbidden`. No `test1`, no `shouldReturnX` en inglés.
+**Convención de nombres de test**: en inglés, describe el escenario + el resultado
+esperado en un solo identificador camelCase, ej.
+`putMeUpdatesOnlyOwnPersonAndNeverDni`, `getMeWithoutAuthReturns401OrForbidden`.
+No `test1`. No se renombran retroactivamente tests viejos en castellano salvo
+pedido explícito.
 
-Correr todo: `./mvnw test` desde `backend/`. Necesita Docker corriendo (Testcontainers
+Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (Testcontainers
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
@@ -83,6 +84,44 @@ paraguas de una transacción de test. Encontramos esto de forma muy concreta en
 Épica 7 Fase 2: un test JUnit `@Transactional` a nivel de clase daba falso
 positivo en una aserción de rol otorgado, porque toda la prueba corría en una
 única transacción — nunca hubo un commit real de por medio.
+
+### Qué capa cubre qué — regla para no testear lo mismo dos veces
+
+Tres capas pueden pegarle al mismo endpoint: el `*ServiceTest` de integración, un
+test de controller con MockMvc, y un `Scenario` de Karate. **Cada caso va en una
+sola.** La pregunta que decide no es "¿qué herramienta uso?", es "¿qué estoy
+verificando?":
+
+| Lo que quiero verificar | Dónde va |
+|---|---|
+| Que la **regla de negocio** sea correcta (invariantes, cálculos, transiciones de estado, qué pasa con un dato borde) | `*ServiceTest` — integración con Postgres real |
+| Que el **contrato HTTP** sea correcto: status code exacto, forma del JSON, público vs. protegido, autorización por rol, y flujos de varios pasos encadenando respuestas reales | **Karate** |
+| Lo que Karate **no puede expresar bien**: concurrencia, rate limiting, control fino del reloj, multipart, o cualquier cosa que necesite manipular el entorno desde Java | **MockMvc** |
+
+**El default del contrato HTTP es Karate, no un test de controller.** MockMvc es la
+excepción, y el test tiene que dejar claro por qué no podía ser un `Scenario`.
+
+Los dos MockMvc que hoy **no** están duplicados en Karate son exactamente
+`RateLimitingTest` y `EnrollmentConcurrencyTest` — esa es la línea natural: ahí hacía
+falta control del reloj y de los hilos que Gherkin no da.
+
+**Por qué existe esta regla.** Se escribió después de medirlo: `AuthControllerTest`
+tiene 8 tests con MockMvc y `karate/auth/` tiene 21 escenarios, y el solapamiento es
+casi total — login happy path, credenciales inválidas 401, body inválido 400, refresh,
+logout, forgot-password, verify-reset-code y reset-password están **en las dos**, sobre
+la misma app levantada con el mismo Testcontainers. Se paga dos veces por la misma
+cobertura. No pasó por descuido: hasta ahora este documento distinguía Karate de Bruno
+pero nunca dijo nada sobre MockMvc, así que no había con qué decidir.
+
+Al mismo tiempo, Karate **no** es redundante en general: es la única cobertura de
+contrato HTTP de `inscripciones-academicas` (23 escenarios), `evaluacion-y-asistencia`
+(13), `procesos-administrativos` (12), `autoservicio` (7) y `catalogo` (4). Solo 16 de
+63 archivos de test Java usan MockMvc, y se concentran en `identity`, `enrollment` y
+`academicstructure`.
+
+**No se limpia retroactivamente**: los duplicados que ya existen se dejan salvo pedido
+explícito, mismo criterio que el resto de las convenciones de este proyecto. La regla
+aplica a lo que se escriba de acá en adelante.
 
 Se usan **dos herramientas, cada una para lo que sirve mejor** — no son
 redundantes, hay que mantener las dos actualizadas cuando se agrega o cambia
@@ -189,7 +228,20 @@ quede visible en el roadmap y no se pierda en el historial de PRs.
 
 ## Antes de dar una tarea por terminada
 
-Si tocaste backend: `./mvnw test` en verde. Si tocaste frontend: `npm run test`
+El CI de GitHub corre `./mvnw clean verify` (backend) y `npm run lint`, `npm run build`,
+`npm run test` (frontend). Esa misma verificación se corre en local **antes de abrir el
+PR**, ver [workflow.md](workflow.md), sección "CI local".
+
+
+**Si el comportamiento depende de una variable de entorno que el runner setea
+distinto que tu máquina, corré la suite local con esa variable forzada al valor del
+runner.** Correr "los mismos comandos" no es correr el mismo entorno. Caso real: la
+Fase 5.0 (zona horaria) pasó en local y falló en CI porque la máquina de desarrollo
+está en horario de Argentina y el runner en `Etc/UTC` — la verificación correcta era
+`TZ=UTC ./mvnw clean verify`. Lo mismo aplicaría a locale o a cualquier default de la
+JVM que dependa del host.
+
+Si tocaste backend: `./mvnw clean verify` en verde. Si tocaste frontend: `npm run test`
 en verde + `npm run build` sin errores (ver [docs/context/frontend.md](frontend.md)
 para dónde va cada tipo de componente/hook nuevo, así el test queda en el lugar
 correcto). Si el cambio toca un flujo de la lista de integration tests críticos
@@ -218,7 +270,7 @@ Antes de pedir el merge de un PR que cierra una fase del roadmap:
    explícito si es mayor) queda con: causa raíz, fix, y un caso de prueba
    nuevo (Bruno y/o JUnit/Vitest) que lo hubiera atrapado — explicando por
    qué la cobertura existente no lo atrapaba.
-5. **`./mvnw test` completo** (no solo los tests del área tocada) — un fix
+5. **`./mvnw clean verify` completo** (no solo los tests del área tocada) — un fix
    de alcance amplio (ej. un `@ExceptionHandler` nuevo) puede tener efectos
    secundarios en código no relacionado; correr toda la suite es la única
    forma de confirmarlo, no asumirlo.

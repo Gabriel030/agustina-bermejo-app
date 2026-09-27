@@ -2,9 +2,11 @@ package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
+import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
+import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,9 +27,12 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
 
-    public CourseController(CourseService courseService) {
+    public CourseController(CourseService courseService,
+            SetCourseCatalogVisibilityUseCase setCatalogVisibility) {
         this.courseService = courseService;
+        this.setCatalogVisibility = setCatalogVisibility;
     }
 
     @PostMapping
@@ -60,6 +65,13 @@ public class CourseController {
     @GetMapping
     public List<CourseResponse> list(@RequestParam(required = false) StatusType status) {
         return courseService.list(status).stream().map(CourseResponse::from).toList();
+    }
+
+    @PutMapping("/{id}/catalog-visibility")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public CourseResponse setCatalogVisibility(@PathVariable Long id,
+            @Valid @RequestBody SetCatalogVisibilityRequest request) {
+        return setCatalogVisibility.execute(id, request.visible());
     }
 
     @GetMapping("/{id}")

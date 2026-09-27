@@ -7,6 +7,8 @@ export const TIPO_NOTIFICACION_LABEL = {
   GRADUATION_REQUEST_REJECTED: 'Egreso rechazado',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'Excepción aprobada',
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'Excepción rechazada',
+  ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
+  ANNOUNCEMENT_UPDATED: 'Aviso actualizado',
 };
 
 export const TONO_NOTIFICACION = {
@@ -18,6 +20,8 @@ export const TONO_NOTIFICACION = {
   GRADUATION_REQUEST_REJECTED: 'danger',
   DIRECTOR_APPROVAL_REQUEST_APPROVED: 'success',
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'danger',
+  ANNOUNCEMENT_PUBLISHED: 'accent2',
+  ANNOUNCEMENT_UPDATED: 'accent2',
 };
 
 export function tiempoRelativo(fechaIso) {
