@@ -3,7 +3,9 @@ package com.red_escuela.backend.announcement.usecase.announcement;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.announcement.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.AnnouncementSectionNames;
 import com.red_escuela.backend.announcement.service.SectionMembership;
@@ -25,15 +27,18 @@ public class UpdateAnnouncementService implements UpdateAnnouncementUseCase {
     private static final Logger log = LoggerFactory.getLogger(UpdateAnnouncementService.class);
 
     private final AnnouncementRepository announcementRepository;
+    private final AnnouncementRecipientRepository recipientRepository;
     private final SectionMembership sectionMembership;
     private final CurrentInstructorService currentInstructorService;
     private final ApplicationEventPublisher eventPublisher;
 
     public UpdateAnnouncementService(AnnouncementRepository announcementRepository,
+                                     AnnouncementRecipientRepository recipientRepository,
                                      SectionMembership sectionMembership,
                                      CurrentInstructorService currentInstructorService,
                                      ApplicationEventPublisher eventPublisher) {
         this.announcementRepository = announcementRepository;
+        this.recipientRepository = recipientRepository;
         this.sectionMembership = sectionMembership;
         this.currentInstructorService = currentInstructorService;
         this.eventPublisher = eventPublisher;
@@ -56,12 +61,14 @@ public class UpdateAnnouncementService implements UpdateAnnouncementUseCase {
         announcement.setUpdatedAt(LocalDateTime.now());
 
         Announcement saved = announcementRepository.save(announcement);
-        List<Student> students = sectionMembership.studentsOf(saved.getSectionType(), saved.getSectionId());
+        List<Student> students = recipientRepository.findByAnnouncementId(saved.getId()).stream()
+                .map(AnnouncementRecipient::getStudent)
+                .toList();
         String sectionName = saved.getSubjectSection() != null
                 ? AnnouncementSectionNames.of(saved.getSubjectSection())
                 : AnnouncementSectionNames.of(saved.getCourseSubjectSection());
 
-        log.info("Aviso actualizado: id={}, destinatarios renotificados={}", saved.getId(), students.size());
+        log.info("Aviso actualizado: id={}, se renotifica a los mismos {} destinatarios congelados", saved.getId(), students.size());
 
         eventPublisher.publishEvent(new AnnouncementUpdatedEvent(
                 saved, sectionName, students.stream().map(Student::getPerson).toList()));

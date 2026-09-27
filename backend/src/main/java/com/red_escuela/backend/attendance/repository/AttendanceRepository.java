@@ -3,6 +3,8 @@ package com.red_escuela.backend.attendance.repository;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -13,6 +15,26 @@ import java.util.Optional;
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
+
+    @Query("""
+            select a.programSubjectSectionEnrollment.id, count(a),
+                   sum(case when a.status = :absent then 1 else 0 end)
+            from Attendance a
+            where a.programSubjectSectionEnrollment.id in :enrollmentIds
+            group by a.programSubjectSectionEnrollment.id
+            """)
+    List<Object[]> countsByProgramEnrollment(@Param("enrollmentIds") List<Long> enrollmentIds,
+                                             @Param("absent") AttendanceStatus absent);
+
+    @Query("""
+            select a.courseSubjectSectionEnrollment.id, count(a),
+                   sum(case when a.status = :absent then 1 else 0 end)
+            from Attendance a
+            where a.courseSubjectSectionEnrollment.id in :enrollmentIds
+            group by a.courseSubjectSectionEnrollment.id
+            """)
+    List<Object[]> countsByCourseEnrollment(@Param("enrollmentIds") List<Long> enrollmentIds,
+                                            @Param("absent") AttendanceStatus absent);
 
     List<Attendance> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);
 
