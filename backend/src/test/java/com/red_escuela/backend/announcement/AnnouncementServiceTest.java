@@ -10,17 +10,23 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSegmentKey;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
 import com.red_escuela.backend.announcement.entity.SectionType;
+import com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException;
+import com.red_escuela.backend.announcement.exception.CannotChangeAudienceOfSentAnnouncementException;
 import com.red_escuela.backend.announcement.exception.EmptyAudienceException;
+import com.red_escuela.backend.announcement.exception.ScheduledDateInThePastException;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListMyAnnouncementsUseCase;
+import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
+import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.StatusType;
@@ -63,6 +69,9 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ListMyAnnouncementsUseCase listMyAnnouncements;
+
+    @Autowired
+    private UpdateAnnouncementUseCase updateAnnouncement;
 
     @Autowired
     private AnnouncementRecipientRepository recipientRepository;
@@ -218,6 +227,104 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
         assertThat(listMyAnnouncements.listForCurrentStudent()).isEmpty();
     }
 
+    @Test
+    void markingASentAnnouncementAsSentAgainFails() {
+        Announcement sent = Announcement.builder()
+                .title("t").body("b").category(AnnouncementCategory.REMINDER)
+                .audienceLabel("Toda la comisión").createdAt(LocalDateTime.now())
+                .status(AnnouncementStatus.SENT).sentAt(LocalDateTime.now())
+                .build();
+
+        assertThatThrownBy(() -> sent.markAsSent(LocalDateTime.now()))
+                .isInstanceOf(AnnouncementAlreadySentException.class);
+    }
+
+    @Test
+    void aScheduledAnnouncementFreezesNobodyAndNotifiesNobody() {
+        Fixture fixture = aSectionWithStudents(2);
+        authenticateAs(fixture.instructor.getPerson());
+
+        Announcement announcement = createAnnouncement.create(
+                aCommand(fixture.section.getId(), null, null, LocalDateTime.now().plusDays(1)));
+        entityManager.flush();
+
+        assertThat(announcement.getStatus()).isEqualTo(AnnouncementStatus.SCHEDULED);
+        assertThat(announcement.getSentAt()).isNull();
+        assertThat(recipientRepository.findByAnnouncementId(announcement.getId())).isEmpty();
+        assertThat(notificationsFor(announcement.getId())).isEmpty();
+    }
+
+    @Test
+    void theStudentFeedExcludesScheduledAnnouncements() {
+        Fixture fixture = aSectionWithStudents(1);
+        authenticateAs(fixture.instructor.getPerson());
+        createAnnouncement.create(aCommand(fixture.section.getId(), null, null, LocalDateTime.now().plusHours(2)));
+        entityManager.flush();
+
+        authenticateAs(fixture.students.getFirst().getPerson());
+        assertThat(listMyAnnouncements.listForCurrentStudent()).isEmpty();
+    }
+
+    @Test
+    void schedulingForAMomentAlreadyPastIsRejected() {
+        Fixture fixture = aSectionWithStudents(1);
+        authenticateAs(fixture.instructor.getPerson());
+
+        CreateAnnouncementCommand command =
+                aCommand(fixture.section.getId(), null, null, LocalDateTime.now().minusMinutes(1));
+
+        assertThatThrownBy(() -> createAnnouncement.create(command))
+                .isInstanceOf(ScheduledDateInThePastException.class);
+    }
+
+    @Test
+    void aScheduledSegmentThatReachesNobodyTodayIsStillAccepted() {
+        Fixture fixture = aSectionWithStudents(2);
+        authenticateAs(fixture.instructor.getPerson());
+
+        Announcement announcement = createAnnouncement.create(
+                aCommand(fixture.section.getId(), null,
+                        new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null),
+                        LocalDateTime.now().plusDays(1)));
+
+        assertThat(announcement.getStatus()).isEqualTo(AnnouncementStatus.SCHEDULED);
+    }
+
+    @Test
+    void theAudienceOfASentAnnouncementCannotBeChanged() {
+        Fixture fixture = aSectionWithStudents(2);
+        authenticateAs(fixture.instructor.getPerson());
+        Announcement sent = createAnnouncement.create(aCommand(fixture.section.getId(), null));
+        entityManager.flush();
+
+        UpdateAnnouncementCommand command = new UpdateAnnouncementCommand(sent.getId(), "Otro título",
+                "Otro cuerpo", AnnouncementCategory.REMINDER, false, null, null,
+                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null));
+
+        assertThatThrownBy(() -> updateAnnouncement.update(command))
+                .isInstanceOf(CannotChangeAudienceOfSentAnnouncementException.class);
+    }
+
+    @Test
+    void theAudienceOfAScheduledAnnouncementCanBeChangedAndNobodyIsNotified() {
+        Fixture fixture = aSectionWithStudents(2);
+        authenticateAs(fixture.instructor.getPerson());
+        markAsRegular(fixture.students.getFirst());
+        entityManager.flush();
+        Announcement scheduled = createAnnouncement.create(
+                aCommand(fixture.section.getId(), null, null, LocalDateTime.now().plusDays(1)));
+        entityManager.flush();
+
+        Announcement updated = updateAnnouncement.update(new UpdateAnnouncementCommand(scheduled.getId(),
+                "Otro título", "Otro cuerpo", AnnouncementCategory.REMINDER, false, null, null,
+                new AudienceSpec(AudienceSegmentKey.MUST_TAKE_FINAL, null, null, null)));
+        entityManager.flush();
+
+        assertThat(updated.getAudienceLabel()).isEqualTo("Tienen que rendir el final");
+        assertThat(updated.getStatus()).isEqualTo(AnnouncementStatus.SCHEDULED);
+        assertThat(notificationsFor(updated.getId())).isEmpty();
+    }
+
     private void markAsRegular(Student student) {
         entityManager.createQuery(
                         "update SubjectSectionEnrollment e set e.status = :status where e.student.id = :studentId")
@@ -258,10 +365,15 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
     }
 
     private CreateAnnouncementCommand aCommand(Long sectionId, LocalDate expiresAt, AudienceSpec audienceSpec) {
+        return aCommand(sectionId, expiresAt, audienceSpec, null);
+    }
+
+    private CreateAnnouncementCommand aCommand(Long sectionId, LocalDate expiresAt, AudienceSpec audienceSpec,
+                                               LocalDateTime scheduledFor) {
         return new CreateAnnouncementCommand(SectionType.PROGRAM, sectionId,
                 "Cambio de aula del jueves",
                 "La clase del jueves se dicta en el Aula 204, no en la 112.",
-                AnnouncementCategory.SCHEDULING, false, expiresAt, audienceSpec);
+                AnnouncementCategory.SCHEDULING, false, expiresAt, scheduledFor, audienceSpec);
     }
 
     private List<Notification> notificationsFor(Long announcementId) {
