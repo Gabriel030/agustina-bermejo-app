@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface SubjectSectionRepository extends JpaRepository<SubjectSection, Long> {
     List<SubjectSection> findBySubjectId(Long subjectId);
 
+    List<SubjectSection> findByAcademicOfferingCycleId(Long cycleId);
+
     List<SubjectSection> findBySubjectIdAndStatus(Long subjectId, StatusType status);
 
     List<SubjectSection> findByTermId(Long termId);

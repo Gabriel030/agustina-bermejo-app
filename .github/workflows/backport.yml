@@ -1,0 +1,55 @@
+name: Backport
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  backport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Abrir PR Backport hacia develop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          head=$(gh api "repos/${{ github.repository }}/commits/$SHA/pulls" --jq '.[0].head.ref // ""')
+          case "$head" in
+            release/*)
+              echo "Merge de una rama release ($head): su contenido ya viene de develop, no hay backport"
+              exit 0
+              ;;
+          esac
+          open=$(gh pr list --base develop --state open --json headRefName --jq 'map(select(.headRefName | startswith("backport/"))) | length')
+          if [ "$open" -gt 0 ]; then
+            echo "Ya hay un PR de Backport abierto"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="backport/$(git rev-parse --short "$SHA")"
+          git checkout -b "$branch" origin/develop
+          parents=$(git rev-list --parents -n 1 "$SHA" | wc -w)
+          if [ "$parents" -gt 2 ]; then flag="-m 1"; else flag=""; fi
+          if ! git cherry-pick $flag "$SHA"; then
+            if [ -z "$(git status --porcelain | grep '^U')" ] && git diff --quiet HEAD; then
+              git cherry-pick --abort || true
+              echo "El cambio ya está en develop, no hay backport"
+              exit 0
+            fi
+            git cherry-pick --abort || true
+            echo "::error::Conflicto al aplicar $SHA sobre develop. Hacer el backport a mano desde una rama backport/*."
+            exit 1
+          fi
+          git push origin "$branch"
+          gh pr create --base develop --head "$branch" \
+            --title "Backport: master → develop" \
+            --body "Backport automático del commit $SHA de master (rama origen: ${head:-desconocida}). Trae a develop cambios que solo existen en master, típicamente un hotfix. Mergear con el CI en verde."

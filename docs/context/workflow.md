@@ -1,52 +1,76 @@
-# Workflow — git, commits, PRs
+# Workflow — git, CI local, commits, PRs
 
-## Regla no negociable #1: nunca commitear/pushear directo a `develop` ni `master`
+Reglas generales del usuario: `~/.claude/instructions/workflow-git.md`. Acá el detalle operativo de este repo.
 
-**Todo cambio, sin importar cuán chico, va en su propia rama.** Nunca `git
-commit` estando parado en `develop` o `master` — ni con aprobación del
-usuario de por medio. Antes de tocar código: `git checkout develop && git
-merge --ff-only origin/develop` (no asumir que el `develop` local está al
-día) y recién ahí `git checkout -b feature/<slug-descriptivo>` (o
-`refactor/<slug>` si es específicamente una refactorización sin feature
-nueva). El commit y el push van sobre esa rama, nunca sobre `develop`/
-`master` directo — así queda evidencia trazable y se puede revisar/revertir
-sin tocar la rama de integración.
+## 1. Ramas
 
-**Corrección real de esta sesión (2026-08-27)**: dos commits se hicieron
-directo contra `develop` por apuro — el usuario lo marcó como error
-explícito y pidió esta regla. No repetirlo aunque el cambio sea "chico" o
-"solo documentación".
+Todo cambio va en su propia rama, nunca commit ni push directo a `develop` ni `master` (ni "solo docs", ni una línea).
 
-## Regla no negociable #2: aprobación antes de commit y antes de push
+```bash
+git fetch origin
+git checkout -b feature/<slug> origin/develop
+```
 
-**Nunca correr `git commit` sin mostrar antes qué se va a commitear y recibir un
-"sí" explícito del usuario para ese commit puntual.** Lo mismo para `git push` —
-es una aprobación aparte de la del commit, aunque sea la misma conversación y el
-mismo cambio. Que el usuario haya aprobado la tarea en general ("dale, empecemos",
-"segui") no cuenta como aprobación del commit — hay que preguntar de nuevo cuando
-el trabajo está listo para commitear.
+Prefijos: `feature/`, `fix/`, `refactor/`, `docs/` (siempre desde `origin/develop`), `release/<version>` (desde `develop`, PR contra `master`) y `hotfix/<slug>` (desde `origin/master`, PR contra `master`). Nunca trabajar parado en `develop`/`master`.
 
-Flujo esperado:
-1. `git checkout develop && git merge --ff-only origin/develop` y
-   `git checkout -b feature/<slug>` — nunca trabajar parado en `develop`.
-2. Terminar la unidad de trabajo (una fase, un fix) y verificarla (tests, build,
-   navegador si es frontend — ver [docs/context/testing.md](testing.md)).
-3. Mostrar un resumen de los archivos tocados y el mensaje de commit propuesto.
-4. Esperar aprobación explícita.
-5. Commitear sobre la rama. Preguntar de nuevo, separado, antes de pushear.
+**Sesiones concurrentes:** puede haber otras sesiones de Claude en worktrees (`.claude/worktrees/`). Antes de tocar una rama o commitear: `git worktree list`, `git status`, `git log origin/<rama>..`. Si otra sesión ya pusheó lo mismo, verificar y no rehacer. Nunca `git stash` sin etiqueta única (el stash es compartido).
 
-## Commits
+## 2. Aprobaciones
 
-Mensaje en español, describe el "por qué" no solo el "qué" (ver
-`~/.claude/CLAUDE.md` del usuario — regla general de todos sus proyectos, no
-específica de este repo). Un commit por unidad de trabajo coherente, no un commit
-gigante por fase completa si la fase tuvo sub-pasos claramente separables (ej. el
-fix de backend de un gap encontrado a mitad de una feature de frontend puede ir
-en su propio commit si tiene sentido revisarlo aparte).
+- Mostrar archivos tocados + mensaje de commit propuesto y esperar un "sí" explícito **antes de cada commit**.
+- Aprobación **aparte antes de cada push**. También para fixes urgentes de CI.
+- No abrir PR sin que el usuario lo haya pedido/aprobado. El merge lo hace el usuario.
+- Mensajes de commit en español, explicando el "por qué"; un commit por unidad coherente.
 
-## Pull Requests
+## 3. CI local ANTES de abrir el PR (obligatorio)
 
-Se abren contra `develop`. Título corto, cuerpo con qué cambia y plan de
-verificación (mismo formato que usa `gh pr create` por default en este entorno).
-Nunca se abre un PR sin que el usuario lo haya pedido explícitamente — mismo
-principio que el commit/push de arriba, un nivel más arriba en la cadena.
+GitHub Actions cobra minutos: no se abre un PR sin haber corrido en local lo mismo que corre `.github/workflows/ci.yml` y haberlo visto pasar.
+
+| Área tocada | Comandos (desde la raíz) |
+|---|---|
+| Backend | `cd backend && ./mvnw clean verify` (Java 21; necesita Docker por Testcontainers) |
+| Frontend | `cd frontend && npm ci && npm run lint && npm run build && npm run test` (Node 22, como el CI) |
+| Solo docs/`.md` | Ninguno, pero verificar que los links y comandos citados existan |
+
+Reglas:
+- Tocás backend **o** frontend: corré esa área completa. Tocás migraciones, config, `application.properties`, seguridad, dependencias o el contexto de Spring: corré backend completo aunque el cambio parezca de otra área.
+- Verificar con datos reales: `./mvnw -q` no imprime nada si todo pasa, así que confirmar el exit code y contar los `target/surefire-reports/*.txt` (fecha de ahora, 0 failures, 0 errors). Los `ERROR ... duplicate key` en los logs de tests son esperados (tests de constraints), no fallas.
+- Antes de abrir el PR: `git fetch` y traer `origin/develop` a la rama; si entró algo nuevo, volver a correr la verificación. Dos ramas pueden pasar solas y romper juntas.
+- Un PR abierto con el CI en rojo es un error de proceso: cada re-push gasta minutos. Si falla en GitHub y pasó en local, entender la diferencia de entorno antes de re-pushear.
+
+## 4. Migraciones Flyway (fuente de colisiones)
+
+Ya chocaron dos veces (V59, V60) y una rompió el CI de todo `develop`. Antes de crear o renombrar una migración:
+
+```bash
+git fetch origin
+git ls-tree --name-only origin/develop backend/src/main/resources/db/migration/ | sort -V | tail -5
+git ls-tree --name-only origin/master  backend/src/main/resources/db/migration/ | sort -V | tail -5
+```
+
+Revisar también los PRs abiertos que agreguen migraciones (`gh pr list --state open --json number,files --jq '.[] | select(.files[].path | test("db/migration")) | .number'`). Usar el siguiente número libre considerando ambas ramas y esos PRs. Una migración ya aplicada en `master` **no se renumera**: se renumera la nueva.
+
+## 5. Pull Requests
+
+- Siempre `gh pr create --base develop` explícito. Título corto; cuerpo con Summary y Test plan (marcar lo verificado en local).
+- Tras abrirlo, monitorear con `gh pr checks <n> --watch` hasta que termine, y avisar verde o rojo. No pedir merge con checks pendientes o en rojo.
+- Al cerrar una fase: reporte de QA en Obsidian, linkeado desde el PR (ver [testing.md](testing.md)).
+- Verificar al cierre de cada fase que toda rama pusheada tenga su PR abierto o mergeado.
+
+## 6. Releases, hotfixes y Backport
+
+Solo el usuario abre PRs contra `master`. Hay dos caminos:
+- **Release (develop → master):** rama `release/<version>` cortada desde `origin/develop`, PR contra `master`. No hay PR automático develop → master.
+- **Hotfix (urgente, solo master):** rama `hotfix/<slug>` cortada desde `origin/master`, PR contra `master` (con CI local previo, como cualquier PR).
+
+**Backport automático master → develop:** `.github/workflows/backport.yml` se dispara en cada push a `master` y decide por el **nombre de la rama del PR mergeado** (los merges a `master` son squash, así que comparar historias no sirve):
+- Rama `release/*` → **no hace nada**: su contenido ya viene de `develop`.
+- Cualquier otra (típicamente `hotfix/*`) → crea la rama `backport/<sha>` desde `origin/develop`, le aplica el commit de `master` (cherry-pick) y abre el PR **"Backport: master → develop"** contra `develop`, si no hay ya uno abierto. Se mergea siempre, con el CI en verde.
+- Si el cherry-pick tiene conflictos, el workflow falla (rojo, con aviso): se resuelve a mano en una rama `backport/*` desde local. Si el cambio ya estaba en `develop`, termina sin PR.
+- Por eso los merges a `master` deben venir siempre de una rama `release/*` o `hotfix/*`.
+- Requiere activar *Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"*. Los PRs creados con el token de Actions no disparan el CI por sí solos: corre al pushear a `develop` tras el merge.
+- Antes de un release, `git diff origin/master origin/develop` para detectar features perdidas en refactors masivos (la verificación de email desapareció así de `develop`).
+
+## 7. CI de GitHub (costo)
+
+`ci.yml` corre en PRs y en push a `develop`/`master`, cancela corridas viejas del mismo PR y **no corre si el cambio es solo `.md` o `docs/`**. Si se activan checks requeridos en la protección de rama, revisar que el filtro de paths no deje el check "omitido" y bloquee el merge de PRs de docs.

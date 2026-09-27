@@ -1,11 +1,13 @@
 package com.red_escuela.backend.exception;
+import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidGoogleTokenException;
 import com.red_escuela.backend.identity.exception.InvalidCurrentPasswordException;
-import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.exception.InvalidStaffRoleException;
@@ -54,6 +56,12 @@ import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanExc
 import com.red_escuela.backend.billing.exception.ScholarshipNotFoundException;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
 import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
+import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
+import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
@@ -70,6 +78,7 @@ import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundExc
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
@@ -135,7 +144,6 @@ import com.red_escuela.backend.notification.exception.NotificationNotFoundExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidCredentials() {
@@ -171,16 +179,6 @@ public class GlobalExceptionHandler {
     public void handleValidation() {
     }
 
-    // Excepciones propias de Spring MVC (no de nuestro dominio) pero perfectamente
-    // alcanzables desde input de cliente real — JSON malformado o un path variable con
-    // el tipo incorrecto (ej. /students/abc en vez de /students/1). Sin esto caían en
-    // el manejo por default de Spring (response.sendError(400) vía
-    // DefaultHandlerExceptionResolver), que dispara un redirect interno a /error — y
-    // aunque /error ya es permitAll (ver SecurityConfig), Spring Boot expone ahí un
-    // body JSON de error por default (timestamp/status/error/message/path), rompiendo
-    // la convención del proyecto de nunca mandar body en errores. Encontrado probando
-    // con qa/bruno (un JSON con `+` de concatenación JS sin evaluar, típico error de
-    // escribir un test a mano, terminaba dando 403 antes del fix de /error).
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleMalformedBody() {
@@ -231,11 +229,8 @@ public class GlobalExceptionHandler {
             InvalidCreditNoteReasonException.class,
             InsufficientCreditBalanceException.class,
             InvalidAdHocFeeTypeException.class,
-            // MonetaryAdjustmentValue rejects an invalid/mixed/empty fixedAmount+percentage
-            // combination by throwing IllegalArgumentException from its own constructors — mapped
-            // here rather than wrapped in a domain exception, since the Value Object itself is the
-            // single source of truth for that validation (Fase 6.1).
-            IllegalArgumentException.class
+            IllegalArgumentException.class,
+            CycleIncompleteException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -281,7 +276,10 @@ public class GlobalExceptionHandler {
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
             PromotionNotFoundException.class,
-            CreditNoteNotFoundException.class
+            CreditNoteNotFoundException.class,
+            ClassroomNotFoundException.class,
+            CycleNotFoundException.class,
+            AnnouncementNotFoundException.class
     })
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public void handleNotFound() {
@@ -329,7 +327,11 @@ public class GlobalExceptionHandler {
             InvalidPaymentReceiptStateException.class,
             PaymentExceedsInvoiceBalanceException.class,
             StudentInDebtException.class,
-            PromotionAlreadyClosedException.class
+            PromotionAlreadyClosedException.class,
+            SectionScheduleConflictException.class,
+            CycleAlreadyInProgressException.class,
+            CycleNotPendingApprovalException.class,
+            SubjectInvalidTransitionException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
@@ -340,7 +342,8 @@ public class GlobalExceptionHandler {
             NotOwnEnrollmentException.class,
             RoleNotAssignableByActorException.class,
             NotSectionLeadInstructorException.class,
-            NotOwnNotificationException.class
+            NotOwnNotificationException.class,
+            NotSectionInstructorException.class
     })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {
@@ -351,25 +354,6 @@ public class GlobalExceptionHandler {
     public void handleTooManyRequests() {
     }
 
-    // DataIntegrityViolationException sin capturar en el service (ej. un constraint
-    // único violado que el código no anticipó explícitamente, como pasó en
-    // RegistrationService con uk_person_email — ver su historial) mapea a 409, no a
-    // 500: semánticamente es lo correcto para cualquier violación de unicidad a nivel
-    // DB, y evita que la excepción escape sin manejar hasta el servlet container
-    // (que redirige a /error, el cual cae en anyRequest().authenticated() de
-    // SecurityConfig y devuelve un 403 vacío y engañoso — parece un problema de
-    // permisos cuando es un error de datos). Encontrado probando con qa/bruno.
-    //
-    // A propósito NO se agrega acá un catch-all de Exception.class: un
-    // @RestControllerAdvice corre dentro del dispatch de Spring MVC, así que
-    // capturaría también AccessDeniedException (lanzada por @PreAuthorize) y
-    // convertiría 403 reales en 500 — probado y confirmado con
-    // unAlumnoNoPuedeAprobarSuPropiaSolicitud, que empezó a fallar apenas se agregó
-    // un catch-all así. Cualquier excepción realmente inesperada (ni acá ni en la
-    // lista de arriba) ahora sí llega a /error con su status real (permitAll en
-    // SecurityConfig) — ya no queda enmascarada como 403, mismo criterio que el resto
-    // de esta clase de todas formas: no manejar lo que no se conoce todavía, dejar
-    // que Spring Boot muestre su error default en vez de inventar un mapeo a ciegas.
     @ExceptionHandler(MercadoPagoGatewayException.class)
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public void handleMercadoPagoGateway() {
@@ -380,11 +364,6 @@ public class GlobalExceptionHandler {
     public void handleDataIntegrityViolation() {
     }
 
-    // @Version (optimistic locking) sin capturar en el service: dos transacciones que leyeron la
-    // misma fila y la mutan de forma mutuamente excluyente (ej. aprobar/rechazar el mismo
-    // PaymentReceipt en paralelo) — la que commitea segunda pierde acá, 409 semánticamente
-    // correcto para "alguien más ya cambió esto debajo tuyo", mismo criterio que el resto de esta
-    // clase para conflictos de concurrencia.
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleOptimisticLockingFailure() {

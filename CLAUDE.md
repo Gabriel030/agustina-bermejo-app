@@ -10,7 +10,7 @@ Tailwind v4 + shadcn/ui, `frontend/`. Roadmap y specs de producto: Obsidian, ver
 
 ## Reglas de código que NO se pueden pasar por alto
 
-Estas dos aplican a **todo código nuevo**, backend y frontend, sin excepción — se
+Estas tres aplican a **todo código nuevo**, backend y frontend, sin excepción — se
 pidieron explícitamente y de forma repetida, así que van acá arriba de todo para
 no perderlas en medio de una tarea larga:
 
@@ -27,11 +27,25 @@ no perderlas en medio de una tarea larga:
    explicar un razonamiento, va en la conversación, no en el código. Aplica a
    Java y a JS/JSX por igual. No se hace limpieza retroactiva de comentarios ya
    existentes salvo pedido explícito.
+3. **Nombres de tests también en inglés** (`validTokenMarksEmailAsVerified`, no
+   `tokenValidoMarcaEmail...`).
 
-Detalle completo y contexto de por qué en la memoria de la sesión
-(`feedback_nombres_de_metodos_en_ingles` y
-`feedback_sin_comentarios_y_traducir_estados`) — esto de acá es el resumen que no
-se puede perder.
+Reglas de proceso igual de no negociables (detalle en `docs/context/workflow.md`
+y `~/.claude/instructions/workflow-git.md`):
+
+- **CI local antes de abrir cualquier PR**: correr lo mismo que corre el CI y verlo
+  pasar. No se abre un PR que pueda romper el CI (GitHub Actions cobra minutos).
+- **PRs siempre contra `develop`** (`--base develop` explícito); rama propia por cambio;
+  aprobación explícita antes de cada commit y de cada push; el merge lo hace el usuario.
+- **Migraciones Flyway**: mirar el último número en `origin/develop` y `origin/master`
+  antes de crear una.
+- **Todo diseño o mockup pasa por el agente `ux-advisor`** antes de mostrarse, y no se
+  codifica sin aprobación del diseño. Ver `docs/context/frontend.md`.
+- **Releases y hotfixes**: solo el usuario abre PRs contra `master` (`release/*` desde
+  develop, `hotfix/*` desde master). Un push a `master` que no venga de `release/*`
+  dispara un PR automático "Backport" (rama `backport/*`, cherry-pick) hacia `develop`, salvo que venga de una rama `release/*`. No existe un PR
+  automático develop → master.
+- **Mockups: siempre como Artifact** (skill `vidrio-liquido-mockup`), nunca un `.html` suelto.
 
 ## Qué leer según la tarea
 
@@ -41,7 +55,10 @@ se puede perder.
 | Programar una feature de **frontend** (componente, pantalla, hook, ruteo) | [docs/context/frontend.md](docs/context/frontend.md) |
 | Escribir o revisar **tests** (unitarios, integración, frontend) | [docs/context/testing.md](docs/context/testing.md) |
 | **Debuggear** algo que no arranca o falla localmente | [docs/context/debugging.md](docs/context/debugging.md) |
-| **Git / commits / PRs / ramas** | [docs/context/workflow.md](docs/context/workflow.md) |
+| **Git / commits / PRs / ramas / CI local / migraciones / Backport** | [docs/context/workflow.md](docs/context/workflow.md) |
+| Elegir **qué componente usar** / listar componentes en una spec | [docs/context/components.md](docs/context/components.md) |
+| **Usuarios de prueba** y qué usuario usar para probar cada flujo | [docs/context/test-users.md](docs/context/test-users.md) |
+| **Diseñar o mockear** una pantalla (flujo con `ux-advisor`) | [docs/context/frontend.md](docs/context/frontend.md), sección "Flujo de diseño" |
 | Escribir una **spec técnica/funcional nueva** antes de implementar | Skill `spec-writing` — no leas un doc, disparala directamente |
 | Elegir un **patrón de diseño** (GoF o táctico DDD) para una feature o refactor | Skill `design-patterns` |
 
@@ -53,3 +70,6 @@ cubre lo recurrente, no reemplaza pensar.
 Estos docs describen **convenciones y patrones**, no el estado actual del código ni
 del roadmap — para eso siempre el código real y Obsidian (`docs/context/specs.md`)
 ganan por sobre lo que diga cualquier doc de esta carpeta si llegan a discrepar.
+
+Regla de mantenimiento: lo que lleve mucho contenido va en su archivo de
+`docs/context/` y acá solo se referencia; este archivo se mantiene corto.

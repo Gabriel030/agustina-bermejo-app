@@ -2,9 +2,10 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
-import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SubjectService {
@@ -23,10 +25,15 @@ public class SubjectService {
 
     @Transactional
     public Subject create(CreateSubjectRequest request) {
-        Subject subject = new Subject();
-        subject.setName(request.name());
-        subject.setDescription(request.description());
-        subject.setCode(generateNextCode());
+        Subject subject = Subject.builder()
+                .name(request.name())
+                .code(request.code())
+                .description(request.description())
+                .weeklyHours(request.weeklyHours())
+                .weeklyHoursLab(request.weeklyHoursLab())
+                .gradeMode(request.gradeMode())
+                .maxFinalExamAttempts(request.maxFinalExamAttempts())
+                .build();
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
@@ -34,24 +41,49 @@ public class SubjectService {
         }
     }
 
-    private String generateNextCode() {
-        int ultimo = subjectRepository.findTopByOrderByCodeDesc().map(s -> Integer.parseInt(s.getCode())).orElse(1000);
-        return String.format("%04d", ultimo + 1);
-    }
-
     @Transactional
     public Subject update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
-        if (request.name() != null) {
-            subject.setName(request.name());
-        }
-        if (request.description() != null) {
-            subject.setDescription(request.description());
-        }
+        Optional.ofNullable(request.name()).ifPresent(subject::setName);
+        Optional.ofNullable(request.description()).ifPresent(subject::setDescription);
+        Optional.ofNullable(request.weeklyHours()).ifPresent(subject::setWeeklyHours);
+        Optional.ofNullable(request.weeklyHoursLab()).ifPresent(subject::setWeeklyHoursLab);
+        Optional.ofNullable(request.gradeMode()).ifPresent(subject::setGradeMode);
+        Optional.ofNullable(request.maxFinalExamAttempts()).ifPresent(subject::setMaxFinalExamAttempts);
         return subjectRepository.save(subject);
     }
 
-    public List<Subject> list(StatusType status) {
+    @Transactional
+    public Subject submitForApproval(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.DRAFT && subject.getStatus() != SubjectStatus.REJECTED) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "enviar a aprobación");
+        }
+        subject.setStatus(SubjectStatus.PENDING_APPROVAL);
+        return subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public Subject approve(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "aprobar");
+        }
+        subject.setStatus(SubjectStatus.ACTIVE);
+        return subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public Subject reject(Long id) {
+        Subject subject = findOrThrow(id);
+        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "rechazar");
+        }
+        subject.setStatus(SubjectStatus.REJECTED);
+        return subjectRepository.save(subject);
+    }
+
+    public List<Subject> list(SubjectStatus status) {
         return status == null ? subjectRepository.findAll() : subjectRepository.findByStatus(status);
     }
 
@@ -62,14 +94,20 @@ public class SubjectService {
     @Transactional
     public void deactivate(Long id) {
         Subject subject = findOrThrow(id);
-        subject.setStatus(StatusType.INACTIVE);
+        if (subject.getStatus() != SubjectStatus.ACTIVE) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "desactivar");
+        }
+        subject.setStatus(SubjectStatus.INACTIVE);
         subjectRepository.save(subject);
     }
 
     @Transactional
     public void reactivate(Long id) {
         Subject subject = findOrThrow(id);
-        subject.setStatus(StatusType.ACTIVE);
+        if (subject.getStatus() != SubjectStatus.INACTIVE) {
+            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "reactivar");
+        }
+        subject.setStatus(SubjectStatus.ACTIVE);
         subjectRepository.save(subject);
     }
 

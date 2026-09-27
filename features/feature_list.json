@@ -1,0 +1,76 @@
+[
+  {
+    "id": "10",
+    "title": "Épica 10 — Gestión académica",
+    "type": "epic",
+    "status": "in_progress",
+    "parent": null,
+    "path": "epica-10-gestion-academica"
+  },
+  {
+    "id": "10.0",
+    "title": "Fase 10.0 — Frontend: Dashboard de gestión académica",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.0-dashboard",
+    "depends_on": [],
+    "notes": "Independiente, puede ir en paralelo con todo"
+  },
+  {
+    "id": "10.1",
+    "title": "Fase 10.1 — Backend: dominio y gaps",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.1-backend-dominio-gaps",
+    "depends_on": [],
+    "notes": "Va primero. Agrega weeklyHours, totalHoursRequired, ProgramSubjectCategory, visibleInCatalog"
+  },
+  {
+    "id": "10.2",
+    "title": "Fase 10.2 — Frontend: Banco de materias",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.2-banco-materias",
+    "depends_on": ["10.1"]
+  },
+  {
+    "id": "10.3",
+    "title": "Fase 10.3 — Frontend: Gestión de carreras",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.3-gestion-carreras",
+    "depends_on": ["10.1"]
+  },
+  {
+    "id": "10.4",
+    "title": "Fase 10.4 — Frontend: Oferta académica",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.4-oferta-academica",
+    "depends_on": ["10.1", "10.3", "10.5"]
+  },
+  {
+    "id": "10.5",
+    "title": "Fase 10.5 — Frontend: Gestión de cursos",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.5-gestion-cursos",
+    "depends_on": ["10.1"]
+  },
+  {
+    "id": "10.6",
+    "title": "Fase 10.6 — Frontend: Cohortes de ingreso",
+    "type": "feature",
+    "status": "pending",
+    "parent": "10",
+    "path": "epica-10-gestion-academica/fase-10.6-cohortes-ingreso",
+    "depends_on": ["10.3"],
+    "notes": "Puede ir en paralelo con 10.4"
+  }
+]

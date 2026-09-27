@@ -2,8 +2,10 @@ package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
+import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
+import com.red_escuela.backend.academicstructure.usecase.SetProgramCatalogVisibilityUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,9 +28,12 @@ import java.util.List;
 public class ProgramController {
 
     private final ProgramService programService;
+    private final SetProgramCatalogVisibilityUseCase setCatalogVisibility;
 
-    public ProgramController(ProgramService programService) {
+    public ProgramController(ProgramService programService,
+            SetProgramCatalogVisibilityUseCase setCatalogVisibility) {
         this.programService = programService;
+        this.setCatalogVisibility = setCatalogVisibility;
     }
 
     @PostMapping
@@ -61,6 +66,13 @@ public class ProgramController {
     @GetMapping
     public List<ProgramResponse> list(@RequestParam(required = false) StatusType status) {
         return programService.list(status).stream().map(ProgramResponse::from).toList();
+    }
+
+    @PutMapping("/{id}/catalog-visibility")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public ProgramResponse setCatalogVisibility(@PathVariable Long id,
+            @Valid @RequestBody SetCatalogVisibilityRequest request) {
+        return setCatalogVisibility.execute(id, request.visible());
     }
 
     @GetMapping("/{id}")

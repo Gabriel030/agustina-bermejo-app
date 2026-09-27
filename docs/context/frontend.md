@@ -1,6 +1,8 @@
 # Frontend — convenciones y patrones (React)
 
-Leé esto antes de tocar `frontend/`. Es la propuesta de patrones para el proyecto —
+Leé esto antes de tocar `frontend/`. Los ejemplos de rutas/carpetas de abajo son
+ilustrativos (no todos existen aún); el inventario real de componentes vive en
+[components.md](components.md). Es la propuesta de patrones para el proyecto —
 lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que falta
 (Épica 2 en adelante) la toma como punto de partida obligatorio.
 
@@ -18,7 +20,8 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
 3. **Verificar variantes de componentes existentes** antes de extender — si el
    componente admite `variant=`, revisar cuáles existen antes de agregar estilos
    a mano. Ejemplo: `Button` tiene `default/outline/secondary/ghost/destructive/
-   gradient`; `TabsList` tiene `variant="line"` obligatorio en este proyecto.
+   gradient` (+ prop `loading`); `TabsList` usa `variant="segmented"` (pill deslizante VL2)
+   como estándar en este proyecto.
 4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
    hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
    `flex flex-col gap-1`. No usar `divide-y divide-border` — fue descartado a favor
@@ -27,8 +30,36 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    en vez de `<span>`. Mantiene consistencia visual con formularios editables.
 6. **Botón de acción primaria**: `variant="gradient"`. Acción secundaria/cancelar:
    `variant="outline"`. Destructivo: `variant="destructive"`.
+7. **Componentes compartidos clave**: `StatusPill` (tono semántico, nunca spans
+   con colores hardcodeados), `EmptyState` (estados vacíos consistentes),
+   `GlassCard` (superficie base; variante interactiva con hover/shimmer),
+   `StatCard` (KPI tiles en dashboards). Instalar nuevos via `npx shadcn add
+   <componente>`, no a mano.
+
+7. **Colores solo por tokens** (ver "Sistema visual Vidrio Líquido 2.0" abajo). Nunca
+   literales de Tailwind (`text-red-600`, `bg-green-50`) ni `oklch(...)`/hex a mano:
+   rompen el modo oscuro.
 
 Este protocolo aplica tanto para implementación como para mockups.
+
+## Flujo de diseño (mockups, pantallas nuevas, cambios visuales)
+
+1. Correr el protocolo de arriba (catálogo, pantallas similares, variantes, tokens).
+2. Armar el diseño **siempre como Artifact interactivo** (claro/oscuro, responsive) con la
+   skill `vidrio-liquido-mockup`, para verlo dentro de Claude; nunca un `.html` suelto.
+3. **Pasarlo por el agente `ux-advisor`** (`~/.claude/agents/ux-advisor.md`) antes de
+   mostrarlo, y de nuevo tras cada iteración importante. Revisa: componentes
+   existentes, coherencia con pantallas hermanas y con los tokens, usabilidad y
+   experiencia, redundancias, sobrecarga de la pantalla, responsive e intuitividad.
+   Sus hallazgos se incorporan o se descartan explicando por qué.
+4. Presentar el diseño al usuario y esperar su aprobación explícita. Sin ella, no se
+   escribe código.
+5. Implementar reusando el catálogo; verificar en el navegador en modo claro, oscuro y
+   ancho móvil; `npm run lint`, `npm run build` y `npm run test` en verde antes del PR
+   (ver [workflow.md](workflow.md)).
+
+Criterio de diseño: intuitivo y funcional, una sola forma de hacer cada cosa,
+sin controles duplicados en un mismo nivel de navegación y sin sobrecargar la pantalla.
 
 ## Filosofía general
 
@@ -87,10 +118,12 @@ necesite de verdad.
 
 ## Componentes y composición
 
-- **Componentes de shadcn/ui (`components/ui/`) nunca se editan a mano** salvo para
-  aplicar los tokens de Vidrio Líquido — son generados, si hace falta una variante
-  nueva se agrega vía `npx shadcn add` o se envuelve (`GlassCard` envuelve el
-  patrón `.card`, no lo reimplementa).
+- **Componentes de shadcn/ui (`components/ui/`)**: los componentes nuevos se agregan
+  con `npx shadcn add` (y se revisa el resultado, ver "Reglas prácticas"). Los ya
+  adaptados (`button`, `tabs`, `table`, `sonner`) se editan solo para aplicar tokens
+  de Vidrio Líquido o sumar una variante/prop del sistema (`gradient`, `loading`,
+  `segmented`); no se les mete lógica de una pantalla puntual. Para algo específico,
+  se envuelve (`GlassCard` envuelve el patrón `.card`, no lo reimplementa).
 - **Composición sobre herencia / props gigantes**: para piezas con varios estados
   visuales relacionados (ej. un modal de confirmación con variantes), preferir el
   patrón de compound components de Radix (`<Dialog><DialogTrigger/><DialogContent/>`)
@@ -107,12 +140,11 @@ necesite de verdad.
 
 - **Formularios chicos (1-3 campos, sin pasos): `useState` a mano**, como
   `Login.jsx`. No hace falta una librería para dos inputs.
-- **Formularios con validación no trivial o wizards multi-paso (ej. Alta de
-  ciclo, Épica 4): React Hook Form + Zod.** El schema de Zod es la fuente de
-  verdad de validación en el cliente y debería reflejar las mismas reglas que el
-  DTO + Bean Validation del backend (sin duplicar texto de error a mano en cada
-  campo). Todavía no está instalado — se agrega en la fase que lo necesite
-  (primer candidato: Épica 4 Fase 4, wizard de alta de ciclo).
+- **Formularios con validación no trivial o wizards multi-paso: React Hook Form +
+  Zod.** El schema de Zod es la fuente de verdad de validación en el cliente y
+  debería reflejar las mismas reglas que el DTO + Bean Validation del backend (sin
+  duplicar texto de error a mano en cada campo). Ya instalado y en uso desde Épica 4
+  (wizard de alta de ciclo, `NuevoAlumno.jsx`, etc.); copiar ese patrón.
 
 ## Manejo de errores
 
@@ -127,11 +159,13 @@ necesite de verdad.
 
 ## Naming
 
-- **Nombres de dominio (páginas, hooks de negocio, componentes de feature) en
-  español**, igual que el backend (`verPerfilPropio`, `AltaCicloPaso1`). Nombres
-  técnicos genéricos de infraestructura en inglés (`apiFetch`, `useAuth`,
-  `ProtectedRoute`) — mismo criterio que ya usa el backend
-  (`resolveAuthenticatedPerson` en inglés, `actualizarDatosPropios` en español).
+- **Todos los identificadores de código en inglés** — clases, funciones, variables,
+  hooks, props, nombres de archivo. El backend completó su migración completa
+  (PRs #66-#81); el frontend sigue el mismo criterio sin excepción. Lo que ya
+  existe en castellano no se renombra de forma retroactiva salvo pedido explícito.
+  El texto visible al usuario final sigue siempre en castellano, y los enums se
+  muestran traducidos.
+- **Cero comentarios ni JSDoc en código nuevo** (misma regla de `CLAUDE.md`).
 - Archivos de componentes/páginas/layouts: `PascalCase.jsx`. Hooks, utils, clientes:
   `camelCase.js`. Un componente por archivo, nombre de archivo = nombre exportado.
 
@@ -152,9 +186,10 @@ agregan desde ahí, nunca al revés):
   `md:`+.
 - **Grillas de cards**: `grid-cols-1` mobile → `grid-cols-2` `md:` →
   `grid-cols-3` `lg:`. Nunca scroll horizontal de cards.
-- **Tablas densas**: patrón "card por fila" en mobile en vez de scroll
-  horizontal — se resuelve puntual por pantalla al implementarla, no hay una
-  solución genérica forzada para todas.
+- **Tablas densas**: envolver en `<div className="overflow-x-auto">` y darle a
+  la `<Table>` un `className="min-w-[Xpx]"` adecuado — permite scroll horizontal
+  contenido sin romper el layout general. El valor de `min-w` se ajusta al ancho
+  mínimo razonable de la tabla en cada pantalla (típico: 480-720px).
 
 Mockup de referencia del patrón "card centrada": ver `Login (mobile)` en
 [[Diseño UI - Vidrio Líquido]] (Obsidian) antes de implementar cualquier
@@ -163,32 +198,79 @@ pantalla de ese tipo.
 ## Tabs / navegación secundaria por pestañas
 
 **Siempre el componente `Tabs`/`TabsList`/`TabsTrigger` de shadcn
-(`components/ui/tabs.jsx`), con `<TabsList variant="line">`** (subrayado bajo la
-opción activa) — nunca un grupo de `<button>` hecho a mano, aunque sea "solo
-para filtrar una lista" y no para partir contenido en paneles separados. Antes
-de esta regla había tres implementaciones distintas conviviendo (botones
-píldora con gradiente en Catálogo/Mis carreras, botones píldora blancos en
-Director/Aprobaciones, y el `Tabs` de shadcn en Docente/Asistencia) — se
-probó también la variante píldora por defecto (`bg-muted`, sin `variant`) como
-estándar único, pero el estado activo no se distinguía lo suficiente del
-inactivo, así que se descartó a favor de `variant="line"`.
+(`components/ui/tabs.jsx`), con `<TabsList variant="segmented">`** — cinta con un
+fondo en gradiente que se desliza detrás de la pestaña activa (hook
+`useSlidingIndicator`). Nunca un grupo de `<button>` hecho a mano, aunque sea "solo
+para filtrar una lista". `variant="line"` (subrayado) fue reemplazado por
+`segmented` (PR #80 + #89); no usarlo en pantallas nuevas.
 
-Aplica tanto si las pestañas separan paneles de contenido distintos (ej.
-Asistencia/Historial/Reporte en Docente) como si solo cambian el filtro de una
-misma lista (ej. Agendadas/Cerradas en Preceptor/Mesa de examen,
-Pendientes/Historial en Director/Aprobaciones) — visualmente son la misma
-interacción para el usuario y tienen que verse igual.
+Aplica tanto si las pestañas separan paneles distintos como si solo cambian el
+filtro de una misma lista — visualmente es la misma interacción.
 
-Nota para tests: `TabsTrigger` renderiza `role="tab"` (semántica ARIA real de
-Radix), no `role="button"` — los tests que interactúan con una tab usan
-`screen.getByRole('tab', { name: '...' })`, no `'button'`.
+Nota para tests: `TabsTrigger` renderiza `role="tab"`, no `role="button"` — usar
+`screen.getByRole('tab', { name: '...' })`.
+
+## Sistema visual Vidrio Líquido 2.0
+
+Diseñado y aprobado en el Artifact "Vidrio Líquido 2.0" antes de codificar; esto es
+lo que quedó implementado. La fuente de verdad de tokens y reglas de interacción de
+fondo es el Documento maestro de Obsidian (`Roadmap frontend/Documento maestro - Stack y
+sistema de diseño.md`, ubicación en [specs.md](specs.md)); si difiere de este archivo o
+de `src/theme/tokens.css`, gana el código y se corrige la doc.
+
+### Tokens y modo oscuro
+- Única fuente de color: `src/theme/tokens.css` (oklch), mapeada a utilidades
+  Tailwind en `index.css` (`@theme inline`): `bg-surface`, `text-ink`,
+  `text-ink-soft`, `text-ink-faint`, `border-border`, `bg-neutral-bg`, `text-danger`,
+  `bg-danger-bg`, `text-success`, `bg-success-bg`, `text-warning`, `bg-accent-soft`,
+  `text-brand`, etc. Ver ese archivo para la lista completa.
+- Modo oscuro real: atributo `data-theme` en `<html>` + fallback a
+  `prefers-color-scheme`. Lo maneja `context/ThemeContext.jsx` (`useTheme()` →
+  `{ tema, alternarTema }`, persiste en `localStorage`); `index.html` tiene un script
+  inline que evita el flash del tema equivocado; el switch es `ThemeToggle.jsx`.
+  Los tokens oscuros se definen dos veces a propósito (media query + `[data-theme]`).
+- Los tests que renderizan árboles completos necesitan `<ThemeProvider>`; `matchMedia`
+  está polyfilleado en `src/test/setup.js`.
+
+### Catálogo de componentes compartidos (resumen; inventario completo en [components.md](components.md))
+| Necesidad | Usar |
+|---|---|
+| Card / contenedor de vidrio | `GlassCard`; con `interactive` si es clickeable (elevación + borde de marca al hover) |
+| Entrada escalonada de listas/grillas de cards | `<Stagger>` envolviendo los hijos (`delayStep` en ms) |
+| KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
+| Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
+| Encabezado ordenable | `alumno/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
+| Pestañas | `Tabs` con `variant="segmented"` |
+| Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo con gradiente y pulso; pasos visitados clickeables). No hay otro Stepper |
+| Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |
+| Botón con acción en curso | `<Button loading={mutation.isPending}>` (no combinar `loading` con `asChild`) |
+| Carga | `Skeleton` (usa `skeleton-shimmer`); `EmptyState` para vacíos |
+| Badges de estado | `StatusPill` / `EstadoSolicitudBadge` / `ui/badge` |
+| Menú lateral / drawer mobile | `Sidebar` y `MobileMenu`: ambos con fondo deslizante sobre el ítem activo (`useSlidingIndicator`, marcador `nav-item-activo`); el drawer lleva iconos y el ítem activo con gradiente completo |
+
+### Reglas prácticas
+- **`components/ui/` generado por CLI**: usar `npx shadcn add <x>` y revisar el
+  resultado — dos veces generó imports rotos (`next-themes`, un paquete `cn` falso en
+  vez de `@/lib/utils`) y variables CSS que no existen (`--popover`, `--radius`; las
+  reales son `--surface`, `--radius-lg`).
+- Estados de color semánticos siempre por token (`text-danger`, `bg-success-bg`,
+  `border-success`), nunca literales.
+- Fondos "de vidrio" fijos: `bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6]`,
+  no un `oklch(...)` hardcodeado (no se adapta al modo oscuro).
+- Scroll con desvanecido en los bordes: utilidad `.scroll-fade-y`.
+- Un `MutationObserver` mide el ítem activo en `useSlidingIndicator(selector)`; para
+  una lista nueva con indicador deslizante, reusar el hook, no reimplementarlo.
 
 ## Motion / animación
 
-Solo las transiciones ya definidas en el sistema de diseño (spring
-`cubic-bezier(0.22,1,0.36,1)`, hover `translateY(-2px) scale(1.01)` en botones
-primarios, `translateX(3px)` en filas de nav). No agregar animación nueva "porque
-se puede" — cada pantalla del mockup ya especifica qué se anima.
+Base: spring `cubic-bezier(0.22,1,0.36,1)`, hover `-translate-y-0.5` (2px) en el
+botón `gradient`, `translateX(3px)` en filas de nav. Con Vidrio Líquido 2.0 se
+sumaron, y solo estas: `skeleton-shimmer`, `stagger-in` (vía `<Stagger>`), `tab-in`
+(pestaña `segmented`), `pop-in` (tilde del Stepper), `pulse-ring` (paso activo) y
+`badge-pulse` (campana) — keyframes en `index.css` — más la hamburguesa animada
+(transforms en `MobileMenu.jsx`) y el stagger de ítems del drawer (`tw-animate-css`).
+`index.css` tiene una regla global `prefers-reduced-motion` que las desactiva. No
+agregar animación nueva "porque se puede".
 
 ## Ver también
 

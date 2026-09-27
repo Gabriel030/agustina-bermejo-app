@@ -34,7 +34,21 @@ import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEval
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
+import { AdministrativoSubjects } from '@/features/gestion-academica/pages/AdministrativoSubjects';
+import { AdministrativoSubjectWizard } from '@/features/gestion-academica/pages/AdministrativoSubjectWizard';
+import { CarreraWizard } from '@/features/gestion-academica/pages/CarreraWizard';
+import { CarreraDetalle } from '@/features/gestion-academica/pages/CarreraDetalle';
+import { CarreraEditarDatos } from '@/features/gestion-academica/pages/CarreraEditarDatos';
+import { CursoWizard } from '@/features/gestion-academica/pages/CursoWizard';
+import { CursoDetalle } from '@/features/gestion-academica/pages/CursoDetalle';
+import { CursoEditarDatos } from '@/features/gestion-academica/pages/CursoEditarDatos';
 import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
+import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
+import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
+import { PreceptorDetalleCurso } from '@/features/oferta-academica/pages/PreceptorDetalleCurso';
+import { PreceptorCalendario } from '@/features/oferta-academica/pages/PreceptorCalendario';
+import { PreceptorNuevoCiclo } from '@/features/oferta-academica/pages/PreceptorNuevoCiclo';
+import { DirectorSubjectReview } from '@/features/gestion-academica/pages/DirectorSubjectReview';
 import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
 import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
 import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
@@ -73,17 +87,17 @@ const RUTAS_POR_ROL = {
   preceptor: {
     Layout: PreceptorLayout,
     paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen },
+    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen, 'oferta-academica': PreceptorOfertaAcademica },
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
+    paginas: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, facturacion: AdministrativoFacturacion, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia, 'gestion-academica': AdministrativoSubjects },
   },
   director: {
     Layout: DirectorLayout,
-    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'esquemas-evaluacion', 'financiero'],
-    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
+    paginas: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'financiero'],
+    paginasReales: { alumnos: PadronAlumnos, personal: GestionPersonal, aprobaciones: DirectorAprobaciones, 'gestion-academica': DirectorSubjectReview, 'esquemas-evaluacion': DirectorEsquemasEvaluacion, financiero: DirectorFinanciero },
   },
 };
 
@@ -165,6 +179,42 @@ export function AppRouter() {
           )}
           {(rol === 'preceptor' || rol === 'administrativo') && (
             <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/nueva" element={<AdministrativoSubjectWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/:id" element={<AdministrativoSubjectWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/nueva" element={<CarreraWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/:id" element={<CarreraDetalle />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/carreras/:id/editar" element={<CarreraEditarDatos />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/nueva" element={<CursoWizard />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/:id" element={<CursoDetalle />} />
+          )}
+          {rol === 'administrativo' && (
+            <Route path="gestion-academica/cursos/:id/editar" element={<CursoEditarDatos />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/carreras/:programaId" element={<PreceptorDetalleCarrera />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/cursos/:cursoId" element={<PreceptorDetalleCurso />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/calendario" element={<PreceptorCalendario />} />
+          )}
+          {rol === 'preceptor' && (
+            <Route path="oferta-academica/nuevo-ciclo" element={<PreceptorNuevoCiclo />} />
           )}
           {(rol === 'administrativo' || rol === 'director') && (
             <Route path="personal/:id" element={<LegajoPersonal />} />

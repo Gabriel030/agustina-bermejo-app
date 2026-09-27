@@ -28,7 +28,7 @@ function CampoFecha({ label, value, onChange, disabled }) {
           onChange={(e) => onChange(e.target.value || null)}
           disabled={disabled}
           className={`w-full rounded-lg border px-3 py-2 pr-8 text-[13.5px] text-ink disabled:bg-neutral-bg disabled:text-ink-faint ${
-            completo && !disabled ? 'border-success bg-success-bg/30' : 'border-border bg-white/70'
+            completo && !disabled ? 'border-success bg-success-bg/30' : 'border-border bg-white/70 dark:bg-white/10'
           }`}
         />
         {completo && !disabled && <Check className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
@@ -271,7 +271,7 @@ export function DocenteConfiguracionEvaluacion() {
             <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending}>
               Guardar borrador
             </Button>
-            <Button onClick={enviar} disabled={!formularioCompleto || guardarBorrador.isPending || enviarAAprobacion.isPending}>
+            <Button variant="gradient" onClick={enviar} disabled={!formularioCompleto || guardarBorrador.isPending || enviarAAprobacion.isPending}>
               Enviar a aprobación
             </Button>
           </div>

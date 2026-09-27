@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ElectiveGroup;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -58,13 +59,13 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
 
     private ProgramSubject addSubject(Program program, Subject subject, int year) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                subject.getId(), year, CurricularTerm.FIRST, 10, null, null, null);
+                subject.getId(), ProgramSubjectCategory.MANDATORY, year, CurricularTerm.FIRST, 10, null, null, null);
         return programSubjectService.addSubject(program.getId(), request);
     }
 
     private ProgramSubject addSubjectWithoutYear(Program program, Subject subject) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                subject.getId(), null, null, 10, null, null, null);
+                subject.getId(), ProgramSubjectCategory.ADDITIONAL_MANDATORY, null, null, 10, null, null, null);
         return programSubjectService.addSubject(program.getId(), request);
     }
 
@@ -105,7 +106,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                subject.getId(), 1, CurricularTerm.FIRST, 5, null, null, group.getId());
+                subject.getId(), ProgramSubjectCategory.ELECTIVE, null, null, 5, null, null, group.getId());
 
         assertThatThrownBy(() -> programSubjectService.addSubject(program.getId(), request))
                 .isInstanceOf(ElectiveGroupNotAssignedException.class);
@@ -194,7 +195,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
 
     private ProgramSubject addSubject(Program program, Subject subject, int year, CurricularTerm term) {
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
-                subject.getId(), year, term, 10, null, null, null);
+                subject.getId(), ProgramSubjectCategory.MANDATORY, year, term, 10, null, null, null);
         return programSubjectService.addSubject(program.getId(), request);
     }
 

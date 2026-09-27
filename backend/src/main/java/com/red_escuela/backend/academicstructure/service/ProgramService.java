@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
 
 @Service
@@ -31,13 +32,19 @@ public class ProgramService {
 
     @Transactional
     public Program create(CreateProgramRequest request) {
-        Program program = new Program();
-        program.setName(request.name());
-        program.setTotalYears(request.totalYears());
-        program.setPrice(request.price());
-        program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
-        program.setTotalCreditsRequired(request.totalCreditsRequired());
-        program.setStatus(StatusType.ACTIVE);
+        Program program = Program.builder()
+                .name(request.name())
+                .totalYears(request.totalYears())
+                .price(request.price())
+                .enrollmentFeeAmount(request.enrollmentFeeAmount())
+                .totalCreditsRequired(request.totalCreditsRequired())
+                .totalHoursRequired(request.totalHoursRequired())
+                .teachingMode(request.teachingMode())
+                .level(request.level())
+                .graduationProfile(request.graduationProfile())
+                .admissionRequirements(request.admissionRequirements())
+                .status(StatusType.ACTIVE)
+                .build();
         program = programRepository.save(program);
         registerInitialPriceRevisions(program);
         return program;
@@ -47,12 +54,8 @@ public class ProgramService {
     public Program update(Long id, UpdateProgramRequest request) {
         Program program = findOrThrow(id);
         Person actor = currentPersonService.resolveCurrentPerson();
-        if (request.name() != null) {
-            program.setName(request.name());
-        }
-        if (request.totalYears() != null) {
-            program.setTotalYears(request.totalYears());
-        }
+        Optional.ofNullable(request.name()).ifPresent(program::setName);
+        Optional.ofNullable(request.totalYears()).ifPresent(program::setTotalYears);
         if (request.price() != null && request.price().compareTo(program.getPrice()) != 0) {
             program.setPrice(request.price());
             priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
@@ -61,9 +64,12 @@ public class ProgramService {
             program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
             priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.enrollmentFeeAmount(), "Ajuste de matrícula", actor);
         }
-        if (request.totalCreditsRequired() != null) {
-            program.setTotalCreditsRequired(request.totalCreditsRequired());
-        }
+        Optional.ofNullable(request.totalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
+        Optional.ofNullable(request.totalHoursRequired()).ifPresent(program::setTotalHoursRequired);
+        Optional.ofNullable(request.teachingMode()).ifPresent(program::setTeachingMode);
+        Optional.ofNullable(request.level()).ifPresent(program::setLevel);
+        Optional.ofNullable(request.graduationProfile()).ifPresent(program::setGraduationProfile);
+        Optional.ofNullable(request.admissionRequirements()).ifPresent(program::setAdmissionRequirements);
         return programRepository.save(program);
     }
 

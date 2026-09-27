@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMisInscripciones } from '@/hooks/useAlumno';
 import { ESTADOS_EN_CURSO } from '@/lib/notas';
 import { SeccionAsistencia } from '@/components/alumno/SeccionAsistencia';
@@ -58,20 +59,13 @@ export function TabAsistencia({ carreraId }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex w-fit gap-1 rounded-xl border border-border bg-surface p-1">
-        {SUB_TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => cambiarSubTab(id)}
-            className={`rounded-lg px-4 py-1.5 text-[13px] font-semibold transition-colors ${
-              subTab === id ? 'bg-gradient-to-br from-brand to-accent-2 text-white' : 'text-ink-soft hover:bg-neutral-bg'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={subTab} onValueChange={cambiarSubTab}>
+        <TabsList variant="segmented">
+          {SUB_TABS.map(({ id, label }) => (
+            <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {isLoading ? (
         <div className="flex flex-col gap-2">

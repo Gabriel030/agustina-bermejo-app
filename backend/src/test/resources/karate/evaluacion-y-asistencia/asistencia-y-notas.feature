@@ -32,16 +32,17 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA notas ' + java.lang.System.nanoTime()
+    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreMateria)' }
+    And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    And request { subjectId: '#(subjectId)', category: 'MANDATORY', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
     When method post
     Then status 201
 

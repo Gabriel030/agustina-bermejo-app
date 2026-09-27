@@ -1,6 +1,9 @@
 package com.red_escuela.backend.academicstructure.entity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
@@ -14,6 +17,9 @@ import com.red_escuela.backend.entity.StatusType;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "course")
 public class Course {
@@ -56,6 +62,13 @@ public class Course {
 
     @Column(name = "waitlist_deadline_offset_days")
     private Integer waitlistDeadlineOffsetDays;
+
+    @Column(name = "visible_in_catalog", nullable = false)
+    private boolean visibleInCatalog = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "teaching_mode")
+    private TeachingMode teachingMode;
 
     public boolean hasCapacityFor(long occupiedCount) {
         return capacity == null || occupiedCount < capacity;

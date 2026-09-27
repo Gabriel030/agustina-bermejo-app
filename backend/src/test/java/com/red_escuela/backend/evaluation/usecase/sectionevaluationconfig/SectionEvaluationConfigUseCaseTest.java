@@ -155,7 +155,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     private UpdateSectionEvaluationConfigRequest validRequest(LocalDate exam1, LocalDate exam2, LocalDate finalCall) {
-        return new UpdateSectionEvaluationConfigRequest(2, exam1.plusDays(20), null, null, exam1, exam2, null, null, finalCall, null);
+        LocalDate tp1DueDate = exam1.plusDays(20);
+        while (holidayRepository.existsByDate(tp1DueDate)) {
+            tp1DueDate = tp1DueDate.plusDays(1);
+        }
+        return new UpdateSectionEvaluationConfigRequest(2, tp1DueDate, null, null, exam1, exam2, null, null, finalCall, null);
     }
 
     @Test
