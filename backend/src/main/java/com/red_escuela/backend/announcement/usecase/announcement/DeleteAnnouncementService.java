@@ -3,6 +3,7 @@ package com.red_escuela.backend.announcement.usecase.announcement;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.repository.AnnouncementRecipientRepository;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
@@ -19,15 +20,18 @@ public class DeleteAnnouncementService implements DeleteAnnouncementUseCase {
     private static final String RELATED_ENTITY_TYPE = "Announcement";
 
     private final AnnouncementRepository announcementRepository;
+    private final AnnouncementRecipientRepository recipientRepository;
     private final NotificationRepository notificationRepository;
     private final SectionMembership sectionMembership;
     private final CurrentInstructorService currentInstructorService;
 
     public DeleteAnnouncementService(AnnouncementRepository announcementRepository,
+                                     AnnouncementRecipientRepository recipientRepository,
                                      NotificationRepository notificationRepository,
                                      SectionMembership sectionMembership,
                                      CurrentInstructorService currentInstructorService) {
         this.announcementRepository = announcementRepository;
+        this.recipientRepository = recipientRepository;
         this.notificationRepository = notificationRepository;
         this.sectionMembership = sectionMembership;
         this.currentInstructorService = currentInstructorService;
@@ -43,6 +47,7 @@ public class DeleteAnnouncementService implements DeleteAnnouncementUseCase {
         sectionMembership.requireInstructorOf(announcement.getSectionType(), announcement.getSectionId(), instructor.getId());
 
         int removed = notificationRepository.deleteUnreadByRelatedEntity(RELATED_ENTITY_TYPE, announcementId);
+        recipientRepository.deleteByAnnouncementId(announcementId);
         announcementRepository.delete(announcement);
 
         log.info("Aviso eliminado: id={}, punteros no leídos borrados={}", announcementId, removed);

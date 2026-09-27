@@ -12,5 +12,6 @@ public record CreateAnnouncementRequest(
         @NotBlank @Size(max = 1000) String body,
         @NotNull AnnouncementCategory category,
         boolean urgent,
-        LocalDate expiresAt) {
+        LocalDate expiresAt,
+        AudienceSpecRequest audience) {
 }

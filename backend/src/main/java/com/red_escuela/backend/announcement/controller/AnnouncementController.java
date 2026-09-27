@@ -1,6 +1,9 @@
 package com.red_escuela.backend.announcement.controller;
 
 import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
+import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
+import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
+import com.red_escuela.backend.announcement.dto.AudienceSpecRequest;
 import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
 import com.red_escuela.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.red_escuela.backend.announcement.entity.SectionType;
@@ -10,6 +13,9 @@ import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncem
 import com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementUseCase;
+import com.red_escuela.backend.announcement.usecase.audience.ListAudienceSegmentsUseCase;
+import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceCommand;
+import com.red_escuela.backend.announcement.usecase.audience.PreviewAudienceUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,15 +38,21 @@ public class AnnouncementController {
     private final UpdateAnnouncementUseCase updateAnnouncement;
     private final DeleteAnnouncementUseCase deleteAnnouncement;
     private final ListSectionAnnouncementsUseCase listSectionAnnouncements;
+    private final ListAudienceSegmentsUseCase listAudienceSegments;
+    private final PreviewAudienceUseCase previewAudience;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
                                   UpdateAnnouncementUseCase updateAnnouncement,
                                   DeleteAnnouncementUseCase deleteAnnouncement,
-                                  ListSectionAnnouncementsUseCase listSectionAnnouncements) {
+                                  ListSectionAnnouncementsUseCase listSectionAnnouncements,
+                                  ListAudienceSegmentsUseCase listAudienceSegments,
+                                  PreviewAudienceUseCase previewAudience) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
         this.listSectionAnnouncements = listSectionAnnouncements;
+        this.listAudienceSegments = listAudienceSegments;
+        this.previewAudience = previewAudience;
     }
 
     @PostMapping("/subject-sections/{sectionId}/announcements")
@@ -69,6 +81,28 @@ public class AnnouncementController {
                 .map(AnnouncementResponse::from).toList();
     }
 
+    @GetMapping("/subject-sections/{sectionId}/audience-segments")
+    public List<AudienceSegmentResponse> segmentsForSubjectSection(@PathVariable Long sectionId) {
+        return listAudienceSegments.list(SectionType.PROGRAM, sectionId);
+    }
+
+    @GetMapping("/course-sections/{sectionId}/audience-segments")
+    public List<AudienceSegmentResponse> segmentsForCourseSection(@PathVariable Long sectionId) {
+        return listAudienceSegments.list(SectionType.COURSE, sectionId);
+    }
+
+    @PostMapping("/subject-sections/{sectionId}/audience-preview")
+    public AudiencePreviewResponse previewForSubjectSection(@PathVariable Long sectionId,
+                                                            @Valid @RequestBody AudienceSpecRequest request) {
+        return previewAudience.preview(new PreviewAudienceCommand(SectionType.PROGRAM, sectionId, request.toSpec()));
+    }
+
+    @PostMapping("/course-sections/{sectionId}/audience-preview")
+    public AudiencePreviewResponse previewForCourseSection(@PathVariable Long sectionId,
+                                                           @Valid @RequestBody AudienceSpecRequest request) {
+        return previewAudience.preview(new PreviewAudienceCommand(SectionType.COURSE, sectionId, request.toSpec()));
+    }
+
     @PutMapping("/announcements/{id}")
     public AnnouncementResponse update(@PathVariable Long id, @Valid @RequestBody UpdateAnnouncementRequest request) {
         return AnnouncementResponse.from(updateAnnouncement.update(new UpdateAnnouncementCommand(
@@ -83,6 +117,7 @@ public class AnnouncementController {
 
     private CreateAnnouncementCommand toCommand(SectionType type, Long sectionId, CreateAnnouncementRequest request) {
         return new CreateAnnouncementCommand(type, sectionId, request.title(), request.body(),
-                request.category(), request.urgent(), request.expiresAt());
+                request.category(), request.urgent(), request.expiresAt(),
+                request.audience() == null ? null : request.audience().toSpec());
     }
 }

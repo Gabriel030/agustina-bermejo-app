@@ -1,5 +1,8 @@
 package com.red_escuela.backend.exception;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.exception.EmptyAudienceException;
+import com.red_escuela.backend.announcement.exception.SegmentNotAvailableForSectionException;
+import com.red_escuela.backend.announcement.exception.UnknownAudienceSegmentException;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
@@ -230,7 +233,10 @@ public class GlobalExceptionHandler {
             InsufficientCreditBalanceException.class,
             InvalidAdHocFeeTypeException.class,
             IllegalArgumentException.class,
-            CycleIncompleteException.class
+            CycleIncompleteException.class,
+            EmptyAudienceException.class,
+            SegmentNotAvailableForSectionException.class,
+            UnknownAudienceSegmentException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
