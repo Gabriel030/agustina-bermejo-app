@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -73,6 +74,9 @@ public class Announcement {
 
     @Column(name = "expires_at")
     private LocalDate expiresAt;
+
+    @Embedded
+    private AudienceSpec audienceSpec;
 
     @Column(name = "audience_label", nullable = false)
     private String audienceLabel;

@@ -15,21 +15,11 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     List<Announcement> findByCourseSubjectSectionIdOrderByCreatedAtDesc(Long sectionId);
 
     @Query("""
-            select a from Announcement a
-            where (a.expiresAt is null or a.expiresAt >= :today)
-              and (
-                a.subjectSection.id in (
-                    select e.subjectSection.id from SubjectSectionEnrollment e
-                    where e.student.id = :studentId and e.status in :statuses
-                )
-                or a.courseSubjectSection.id in (
-                    select c.courseSubjectSection.id from CourseSubjectSectionEnrollment c
-                    where c.student.id = :studentId and c.status in :statuses
-                )
-              )
-            order by a.createdAt desc
+            select r.announcement from AnnouncementRecipient r
+            where r.student.id = :studentId
+              and (r.announcement.expiresAt is null or r.announcement.expiresAt >= :today)
+            order by r.announcement.createdAt desc
             """)
     List<Announcement> findFeedForStudent(@Param("studentId") Long studentId,
-                                          @Param("statuses") List<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses,
                                           @Param("today") LocalDate today);
 }
