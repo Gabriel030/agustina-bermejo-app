@@ -44,6 +44,18 @@ export function useDeactivateProgram() {
   });
 }
 
+export function useSetProgramCatalogVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, visible }) =>
+      apiFetch(`/programs/${id}/catalog-visibility`, { method: 'PUT', body: JSON.stringify({ visible }) }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', id] });
+    },
+  });
+}
+
 export function useActivateProgram() {
   const queryClient = useQueryClient();
   return useMutation({

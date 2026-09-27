@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, GitBranch, Pencil, Power, PowerOff } from 'lucide-react';
+import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -13,6 +13,7 @@ import {
   useProgramSubjects,
   useDeactivateProgram,
   useActivateProgram,
+  useSetProgramCatalogVisibility,
 } from '@/features/gestion-academica/hooks/usePrograms';
 import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
@@ -117,6 +118,7 @@ export function CarreraDetalle() {
   const { data: subjects, isLoading: loadingSubjects } = useProgramSubjects(id);
   const deactivateProgram = useDeactivateProgram();
   const activateProgram = useActivateProgram();
+  const setCatalogVisibility = useSetProgramCatalogVisibility();
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelYear, setPanelYear] = useState(null);
@@ -131,6 +133,20 @@ export function CarreraDetalle() {
   function handleCorrelativas(ps) {
     setCorrelativaPs(ps);
     setCorrelativasOpen(true);
+  }
+
+  async function handleToggleCatalog() {
+    const visible = !program?.visibleInCatalog;
+    try {
+      await setCatalogVisibility.mutateAsync({ id, visible });
+      toast.success(
+        visible
+          ? 'La carrera ahora aparece en el catálogo de inscripciones'
+          : 'La carrera fue retirada del catálogo. Los alumnos actuales no se ven afectados.'
+      );
+    } catch {
+      toast.error('No se pudo cambiar la visibilidad en el catálogo.');
+    }
   }
 
   async function handleToggleStatus() {
@@ -242,6 +258,36 @@ export function CarreraDetalle() {
             </div>
           </div>
         </div>
+
+        <GlassCard className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
+              <StatusPill tone={program.visibleInCatalog ? 'success' : 'neutral'}>
+                {program.visibleInCatalog ? 'En catálogo' : 'No publicada'}
+              </StatusPill>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleCatalog}
+              loading={setCatalogVisibility.isPending}
+              className={program.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
+            >
+              {program.visibleInCatalog ? (
+                <>
+                  <GlobeOff className="mr-1.5 h-3.5 w-3.5" />
+                  Retirar del catálogo
+                </>
+              ) : (
+                <>
+                  <Globe className="mr-1.5 h-3.5 w-3.5" />
+                  Publicar en catálogo
+                </>
+              )}
+            </Button>
+          </div>
+        </GlassCard>
 
         {program.graduationProfile && (
           <GlassCard className="p-4">
