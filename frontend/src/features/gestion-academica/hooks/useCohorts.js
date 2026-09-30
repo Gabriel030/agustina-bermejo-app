@@ -25,7 +25,7 @@ export function useCreateCohort() {
         method: 'POST',
         body: JSON.stringify(body),
       }),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
       queryClient.invalidateQueries({ queryKey: ['program-billing-templates'] });
     },
