@@ -40,6 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,6 +68,10 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    private static LocalDateTime clockAt(long minutesFromNow) {
+        return LocalDateTime.now().plusMinutes(minutesFromNow).truncatedTo(ChronoUnit.MICROS);
+    }
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
@@ -80,7 +85,7 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
         Long due = scheduled(fixture.sectionId, LocalDateTime.now().plusMinutes(10), null);
         Long future = scheduled(fixture.sectionId, LocalDateTime.now().plusDays(2), null);
 
-        job.dispatchDue(LocalDateTime.now().plusMinutes(11));
+        job.dispatchDue(clockAt(11));
 
         assertThat(statusOf(due)).isEqualTo(AnnouncementStatus.SENT);
         assertThat(sentAtOf(due)).isNotNull();
@@ -96,12 +101,14 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
         authenticateAs(fixture.instructorPersonId);
         Long due = scheduled(fixture.sectionId, LocalDateTime.now().plusMinutes(5), null);
 
-        LocalDateTime firstRun = LocalDateTime.now().plusMinutes(6);
+        LocalDateTime firstRun = clockAt(6);
         job.dispatchDue(firstRun);
+        LocalDateTime afterFirstRun = sentAtOf(due);
         job.dispatchDue(firstRun.plusMinutes(5));
 
         assertThat(recipientRepository.findByAnnouncementId(due)).hasSize(2);
-        assertThat(sentAtOf(due)).isEqualTo(firstRun);
+        assertThat(afterFirstRun).isEqualTo(firstRun);
+        assertThat(sentAtOf(due)).isEqualTo(afterFirstRun);
     }
 
     @Test
@@ -113,7 +120,7 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
                 new AudienceSpec(AudienceSegmentKey.ABSENCES, null, null, 3));
         Long healthy = scheduled(fixture.sectionId, LocalDateTime.now().plusMinutes(5), null);
 
-        job.dispatchDue(LocalDateTime.now().plusMinutes(6));
+        job.dispatchDue(clockAt(6));
 
         assertThat(statusOf(broken)).isEqualTo(AnnouncementStatus.SCHEDULED);
         assertThat(statusOf(healthy)).isEqualTo(AnnouncementStatus.SENT);
@@ -130,7 +137,7 @@ class ScheduledAnnouncementDispatchJobTest extends AbstractIntegrationTest {
         assertThat(recipientRepository.findByAnnouncementId(due)).isEmpty();
 
         markAsRegular(fixture.studentIds.getFirst());
-        job.dispatchDue(LocalDateTime.now().plusMinutes(6));
+        job.dispatchDue(clockAt(6));
 
         List<Long> reached = recipientRepository.findByAnnouncementId(due).stream()
                 .map(recipient -> recipient.getStudent().getId())
