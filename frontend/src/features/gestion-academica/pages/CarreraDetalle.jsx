@@ -8,6 +8,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   useProgram,
   useProgramSubjects,
@@ -17,6 +18,7 @@ import {
 } from '@/features/gestion-academica/hooks/usePrograms';
 import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
+import { CohortesSection } from '@/features/gestion-academica/components/CohortesSection';
 
 const CATEGORY_LABELS = {
   MANDATORY: 'Obligatoria',
@@ -298,37 +300,54 @@ export function CarreraDetalle() {
           </GlassCard>
         )}
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
-          <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Agregar materia
-          </Button>
-        </div>
+        <Tabs defaultValue="plan">
+          <TabsList variant="segmented">
+            <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
+            <TabsTrigger value="cohortes">Cohortes</TabsTrigger>
+          </TabsList>
 
-        {loadingSubjects ? (
-          <Skeleton rows={4} />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {yearBlocks.map((y) => (
-              <YearBlock
-                key={y}
-                year={y}
-                subjects={subjectsByYear[y] ?? []}
-                onAgregar={handleAgregar}
-                onCorrelativas={handleCorrelativas}
-              />
-            ))}
-            {yearBlocks.length === 0 && (
-              <GlassCard className="p-6">
-                <EmptyState
-                  title="Plan de estudios vacío"
-                  description="Agregá materias para construir el plan."
-                />
-              </GlassCard>
-            )}
-          </div>
-        )}
+          <TabsContent value="plan">
+            <div className="flex flex-col gap-4 pt-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
+                <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Agregar materia
+                </Button>
+              </div>
+
+              {loadingSubjects ? (
+                <Skeleton rows={4} />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {yearBlocks.map((y) => (
+                    <YearBlock
+                      key={y}
+                      year={y}
+                      subjects={subjectsByYear[y] ?? []}
+                      onAgregar={handleAgregar}
+                      onCorrelativas={handleCorrelativas}
+                    />
+                  ))}
+                  {yearBlocks.length === 0 && (
+                    <GlassCard className="p-6">
+                      <EmptyState
+                        title="Plan de estudios vacío"
+                        description="Agregá materias para construir el plan."
+                      />
+                    </GlassCard>
+                  )}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cohortes">
+            <div className="pt-2">
+              <CohortesSection programId={id} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <PanelAgregarMateria
