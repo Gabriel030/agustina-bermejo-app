@@ -41,6 +41,10 @@ export function agruparComisionesPorFase(comisiones) {
   return { bandejaDeAprobacion, enCurso, cerradas };
 }
 
+export function comisionCerrada(termEndDate) {
+  return !!termEndDate && hoy() > new Date(termEndDate);
+}
+
 export function diasHastaVencimientoMasProximo(comisiones) {
   const ahora = hoy();
   const pendientes = comisiones.filter((c) => c.status === 'DRAFT' || c.status === 'REJECTED');

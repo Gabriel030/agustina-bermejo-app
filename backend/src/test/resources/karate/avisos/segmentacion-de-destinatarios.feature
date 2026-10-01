@@ -150,3 +150,32 @@ Feature: Segmentación de destinatarios (audience-segments, audience-preview)
     And header Authorization = 'Bearer ' + otroDocente.accessToken
     When method get
     Then status 403
+
+  Scenario: Los destinatarios congelados de un aviso enviado se pueden consultar después
+    Given path '/subject-sections', sectionId, 'announcements'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { title: 'Aviso con destinatarios', body: 'Para ver después a quiénes les llegó.', category: 'ADMIN', urgent: false }
+    When method post
+    Then status 201
+    * def avisoId = response.id
+
+    Given path '/announcements', avisoId, 'recipients'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    When method get
+    Then status 200
+    And match response == '#[1]'
+    And match each response contains { studentId: '#number', name: '#string' }
+
+  Scenario: Un docente que no dicta la comisión no puede ver los destinatarios — 403
+    Given path '/subject-sections', sectionId, 'announcements'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    And request { title: 'Aviso con destinatarios', body: 'Para ver después a quiénes les llegó.', category: 'ADMIN', urgent: false }
+    When method post
+    Then status 201
+    * def avisoId = response.id
+
+    * def ajeno = fixtures.createTeacherWithToken()
+    Given path '/announcements', avisoId, 'recipients'
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 403

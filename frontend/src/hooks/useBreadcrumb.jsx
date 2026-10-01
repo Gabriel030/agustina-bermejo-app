@@ -1,10 +1,14 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
-import { useConfiguracionComision } from '@/hooks/useDocente';
+import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
 import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
 import { useLegajoAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
 import { useLegajoPersonal } from '@/features/gestion-personas/hooks/useLegajoPersonal';
 import { Skeleton } from '@/components/Skeleton';
+
+const ETIQUETA_TAB_COMISION = {
+  avisos: 'Avisos',
+};
 
 const ETIQUETA_TAB = {
   'plan-de-estudio': 'Plan de estudio',
@@ -40,7 +44,9 @@ export function useBreadcrumb() {
   const { data: legajoPersonal } = useLegajoPersonal(params.id, enLegajoPersonal);
 
   const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname);
-  const { data: comision } = useConfiguracionComision(enDetalleComision ? params.sectionId : undefined);
+  const esCursoSuelto = searchParams.get('type') === 'COURSE';
+  const { data: comision } = useConfiguracionComision(enDetalleComision && !esCursoSuelto ? params.sectionId : undefined);
+  const { data: dictadas } = useComisionesDictadas(enDetalleComision && esCursoSuelto);
 
   const enRevisarConfiguracion = /^\/director\/revisar-configuracion\/[^/]+$/.test(location.pathname);
   const { data: configRevisar } = useConfiguracionComisionStaff(enRevisarConfiguracion ? params.sectionId : undefined);
@@ -91,10 +97,22 @@ export function useBreadcrumb() {
   }
 
   if (enDetalleComision) {
-    return [
+    const tabComision = esCursoSuelto ? 'avisos' : (searchParams.get('tab') ?? 'evaluacion');
+    const curso = esCursoSuelto
+      ? (dictadas ?? []).find((s) => s.type === 'COURSE' && String(s.id) === params.sectionId)
+      : null;
+    const seccion = esCursoSuelto ? curso : comision;
+    const items = [
       { label: 'Mis comisiones', to: '/docente/mis-comisiones' },
-      { label: comision ? `${comision.subjectName} · ${comision.sectionName}` : <Skeleton className="h-4 w-24" /> },
+      { label: seccion ? `${seccion.subjectName} · ${seccion.sectionName}` : <Skeleton className="h-4 w-24" /> },
     ];
+    if (ETIQUETA_TAB_COMISION[tabComision]) {
+      if (!esCursoSuelto) {
+        items[1] = { ...items[1], to: `/docente/mis-comisiones/${params.sectionId}` };
+      }
+      items.push({ label: ETIQUETA_TAB_COMISION[tabComision] });
+    }
+    return items;
   }
 
   if (enRevisarConfiguracion) {
