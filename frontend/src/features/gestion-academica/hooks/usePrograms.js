@@ -44,6 +44,18 @@ export function useDeactivateProgram() {
   });
 }
 
+export function useSetProgramCatalogVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, visible }) =>
+      apiFetch(`/programs/${id}/catalog-visibility`, { method: 'PUT', body: JSON.stringify({ visible }) }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['programs', id] });
+    },
+  });
+}
+
 export function useActivateProgram() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -121,6 +133,34 @@ export function useRemovePrerequisite() {
   return useMutation({
     mutationFn: (id) => apiFetch(`/program-subjects/prerequisites/${id}`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['prerequisites'] }),
+  });
+}
+
+export function useCorequisites(programSubjectId) {
+  return useQuery({
+    queryKey: ['corequisites', programSubjectId],
+    queryFn: () => apiFetch(`/program-subjects/${programSubjectId}/corequisites`),
+    enabled: !!programSubjectId,
+  });
+}
+
+export function useAddCorequisite(programSubjectId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body) =>
+      apiFetch(`/program-subjects/${programSubjectId}/corequisites`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['corequisites', programSubjectId] }),
+  });
+}
+
+export function useRemoveCorequisite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => apiFetch(`/program-subjects/corequisites/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['corequisites'] }),
   });
 }
 

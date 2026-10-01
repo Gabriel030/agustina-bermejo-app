@@ -30,7 +30,7 @@ import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
 import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
 import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
-import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
+import { DocenteComisionDetalle } from '@/features/avisos/pages/DocenteComisionDetalle';
 import { DocenteTomarAsistencia } from '@/pages/DocenteTomarAsistencia';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolicitudesAsistencia';
@@ -173,7 +173,7 @@ export function AppRouter() {
           {rol === 'alumno' && <Route path="pagos/:invoiceId/seleccion" element={<AlumnoPagarSeleccion />} />}
           {rol === 'alumno' && <Route path="pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />}
           {rol === 'alumno' && <Route path="pagos/:invoiceId/online" element={<AlumnoPagarOnline />} />}
-          {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteConfiguracionEvaluacion />} />}
+          {rol === 'docente' && <Route path="mis-comisiones/:sectionId" element={<DocenteComisionDetalle />} />}
           {(rol === 'preceptor' || rol === 'administrativo' || rol === 'director') && (
             <Route path="alumnos/:id" element={<LegajoAlumno />} />
           )}

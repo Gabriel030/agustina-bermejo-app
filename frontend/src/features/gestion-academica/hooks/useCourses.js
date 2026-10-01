@@ -58,6 +58,18 @@ export function useActivateCourse() {
   });
 }
 
+export function useSetCourseCatalogVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, visible }) =>
+      apiFetch(`/courses/${id}/catalog-visibility`, { method: 'PUT', body: JSON.stringify({ visible }) }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-courses'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-course', String(id)] });
+    },
+  });
+}
+
 export function useCourseSubjects(courseId) {
   return useQuery({
     queryKey: ['course-subjects', courseId],

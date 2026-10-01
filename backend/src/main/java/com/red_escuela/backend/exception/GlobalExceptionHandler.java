@@ -1,5 +1,11 @@
 package com.red_escuela.backend.exception;
+import com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.exception.CannotChangeAudienceOfSentAnnouncementException;
+import com.red_escuela.backend.announcement.exception.ScheduledDateInThePastException;
+import com.red_escuela.backend.announcement.exception.EmptyAudienceException;
+import com.red_escuela.backend.announcement.exception.SegmentNotAvailableForSectionException;
+import com.red_escuela.backend.announcement.exception.UnknownAudienceSegmentException;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
@@ -63,6 +69,7 @@ import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgres
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InvalidElectiveRangeException;
@@ -76,12 +83,14 @@ import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFound
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
 import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
@@ -195,6 +204,7 @@ public class GlobalExceptionHandler {
             DniAlreadyExistsException.class,
             InvalidStaffRoleException.class,
             InvalidPrerequisiteException.class,
+            InvalidCorequisiteException.class,
             CircularPrerequisiteException.class,
             ElectiveGroupNotAssignedException.class,
             InvalidElectiveRangeException.class,
@@ -230,7 +240,11 @@ public class GlobalExceptionHandler {
             InsufficientCreditBalanceException.class,
             InvalidAdHocFeeTypeException.class,
             IllegalArgumentException.class,
-            CycleIncompleteException.class
+            CycleIncompleteException.class,
+            EmptyAudienceException.class,
+            ScheduledDateInThePastException.class,
+            SegmentNotAvailableForSectionException.class,
+            UnknownAudienceSegmentException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public void handleBadRequest() {
@@ -252,6 +266,7 @@ public class GlobalExceptionHandler {
             InstructorNotFoundException.class,
             EvaluationSchemeNotFoundException.class,
             PrerequisiteNotFoundException.class,
+            CorequisiteNotFoundException.class,
             SectionInstructorNotFoundException.class,
             ProgramEnrollmentNotFoundException.class,
             ProgramEnrollmentApplicationNotFoundException.class,
@@ -291,6 +306,7 @@ public class GlobalExceptionHandler {
             ProgramSubjectAlreadyExistsException.class,
             ElectiveGroupAlreadyExistsException.class,
             PrerequisiteAlreadyExistsException.class,
+            CorequisiteAlreadyExistsException.class,
             InstructorAlreadyAssignedException.class,
             ElectiveGroupInUseException.class,
             AlreadyEnrolledInProgramException.class,
@@ -331,7 +347,9 @@ public class GlobalExceptionHandler {
             SectionScheduleConflictException.class,
             CycleAlreadyInProgressException.class,
             CycleNotPendingApprovalException.class,
-            SubjectInvalidTransitionException.class
+            SubjectInvalidTransitionException.class,
+            AnnouncementAlreadySentException.class,
+            CannotChangeAudienceOfSentAnnouncementException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {

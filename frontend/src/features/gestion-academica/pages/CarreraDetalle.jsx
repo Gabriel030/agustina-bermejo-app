@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, GitBranch, Pencil, Power, PowerOff } from 'lucide-react';
+import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -8,14 +8,17 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   useProgram,
   useProgramSubjects,
   useDeactivateProgram,
   useActivateProgram,
+  useSetProgramCatalogVisibility,
 } from '@/features/gestion-academica/hooks/usePrograms';
 import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
+import { CohortesSection } from '@/features/gestion-academica/components/CohortesSection';
 
 const CATEGORY_LABELS = {
   MANDATORY: 'Obligatoria',
@@ -117,6 +120,7 @@ export function CarreraDetalle() {
   const { data: subjects, isLoading: loadingSubjects } = useProgramSubjects(id);
   const deactivateProgram = useDeactivateProgram();
   const activateProgram = useActivateProgram();
+  const setCatalogVisibility = useSetProgramCatalogVisibility();
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelYear, setPanelYear] = useState(null);
@@ -131,6 +135,20 @@ export function CarreraDetalle() {
   function handleCorrelativas(ps) {
     setCorrelativaPs(ps);
     setCorrelativasOpen(true);
+  }
+
+  async function handleToggleCatalog() {
+    const visible = !program?.visibleInCatalog;
+    try {
+      await setCatalogVisibility.mutateAsync({ id, visible });
+      toast.success(
+        visible
+          ? 'La carrera ahora aparece en el catálogo de inscripciones'
+          : 'La carrera fue retirada del catálogo. Los alumnos actuales no se ven afectados.'
+      );
+    } catch {
+      toast.error('No se pudo cambiar la visibilidad en el catálogo.');
+    }
   }
 
   async function handleToggleStatus() {
@@ -243,6 +261,36 @@ export function CarreraDetalle() {
           </div>
         </div>
 
+        <GlassCard className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-medium uppercase tracking-widest text-ink-faint">Catálogo</span>
+              <StatusPill tone={program.visibleInCatalog ? 'success' : 'neutral'}>
+                {program.visibleInCatalog ? 'En catálogo' : 'No publicada'}
+              </StatusPill>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleCatalog}
+              loading={setCatalogVisibility.isPending}
+              className={program.visibleInCatalog ? 'text-danger hover:border-danger/50 hover:text-danger' : ''}
+            >
+              {program.visibleInCatalog ? (
+                <>
+                  <GlobeOff className="mr-1.5 h-3.5 w-3.5" />
+                  Retirar del catálogo
+                </>
+              ) : (
+                <>
+                  <Globe className="mr-1.5 h-3.5 w-3.5" />
+                  Publicar en catálogo
+                </>
+              )}
+            </Button>
+          </div>
+        </GlassCard>
+
         {program.graduationProfile && (
           <GlassCard className="p-4">
             <h2 className="mb-1 text-[11px] font-bold uppercase tracking-widest text-ink-faint">
@@ -252,37 +300,54 @@ export function CarreraDetalle() {
           </GlassCard>
         )}
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
-          <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Agregar materia
-          </Button>
-        </div>
+        <Tabs defaultValue="plan">
+          <TabsList variant="segmented">
+            <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
+            <TabsTrigger value="cohortes">Cohortes</TabsTrigger>
+          </TabsList>
 
-        {loadingSubjects ? (
-          <Skeleton rows={4} />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {yearBlocks.map((y) => (
-              <YearBlock
-                key={y}
-                year={y}
-                subjects={subjectsByYear[y] ?? []}
-                onAgregar={handleAgregar}
-                onCorrelativas={handleCorrelativas}
-              />
-            ))}
-            {yearBlocks.length === 0 && (
-              <GlassCard className="p-6">
-                <EmptyState
-                  title="Plan de estudios vacío"
-                  description="Agregá materias para construir el plan."
-                />
-              </GlassCard>
-            )}
-          </div>
-        )}
+          <TabsContent value="plan">
+            <div className="flex flex-col gap-4 pt-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Plan de estudios</h2>
+                <Button variant="gradient" size="sm" onClick={() => handleAgregar(1)}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Agregar materia
+                </Button>
+              </div>
+
+              {loadingSubjects ? (
+                <Skeleton rows={4} />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {yearBlocks.map((y) => (
+                    <YearBlock
+                      key={y}
+                      year={y}
+                      subjects={subjectsByYear[y] ?? []}
+                      onAgregar={handleAgregar}
+                      onCorrelativas={handleCorrelativas}
+                    />
+                  ))}
+                  {yearBlocks.length === 0 && (
+                    <GlassCard className="p-6">
+                      <EmptyState
+                        title="Plan de estudios vacío"
+                        description="Agregá materias para construir el plan."
+                      />
+                    </GlassCard>
+                  )}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cohortes">
+            <div className="pt-2">
+              <CohortesSection programId={id} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <PanelAgregarMateria

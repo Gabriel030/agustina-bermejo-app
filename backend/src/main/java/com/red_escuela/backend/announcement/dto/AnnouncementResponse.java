@@ -2,6 +2,7 @@ package com.red_escuela.backend.announcement.dto;
 
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.SectionType;
 
 import java.time.LocalDate;
@@ -17,6 +18,9 @@ public record AnnouncementResponse(
         boolean urgent,
         LocalDate expiresAt,
         String audienceLabel,
+        AnnouncementStatus status,
+        LocalDateTime scheduledFor,
+        LocalDateTime sentAt,
         String createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {
@@ -32,6 +36,9 @@ public record AnnouncementResponse(
                 announcement.isUrgent(),
                 announcement.getExpiresAt(),
                 announcement.getAudienceLabel(),
+                announcement.getStatus(),
+                announcement.getScheduledFor(),
+                announcement.getSentAt(),
                 announcement.getCreatedBy().getName() + " " + announcement.getCreatedBy().getLastname(),
                 announcement.getCreatedAt(),
                 announcement.getUpdatedAt());

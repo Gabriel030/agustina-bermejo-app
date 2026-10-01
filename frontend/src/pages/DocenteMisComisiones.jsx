@@ -6,16 +6,20 @@ import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
-import { useMisComisiones } from '@/hooks/useDocente';
+import { useComisionesDictadas, useMisComisiones } from '@/hooks/useDocente';
 import { agruparComisionesPorFase, diasHastaVencimientoMasProximo, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
 
 function FilaComision({ comision }) {
-  const pill = ESTADO_CONFIG_LABEL[comision.status] ?? { label: comision.status, tone: 'neutral' };
+  const esCurso = comision.type === 'COURSE';
+  const pill = esCurso ? null : (ESTADO_CONFIG_LABEL[comision.status] ?? { label: comision.status, tone: 'neutral' });
   const coDictantes = comision.instructors?.filter((i) => i.role !== 'LEAD') ?? [];
+  const destino = esCurso
+    ? `/docente/mis-comisiones/${comision.sectionId}?type=COURSE`
+    : `/docente/mis-comisiones/${comision.sectionId}`;
 
   return (
     <Link
-      to={`/docente/mis-comisiones/${comision.subjectSectionId}`}
+      to={destino}
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
       <div className="min-w-0">
@@ -27,8 +31,9 @@ function FilaComision({ comision }) {
         )}
       </div>
       <div className="flex shrink-0 items-center gap-4">
+        <StatusPill tone="neutral">{esCurso ? 'Curso' : 'Carrera'}</StatusPill>
         <span className="text-[12px] text-ink-faint">{formatearFecha(comision.termStartDate) ?? '—'}</span>
-        <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
+        {pill && <StatusPill tone={pill.tone}>{pill.label}</StatusPill>}
         <ChevronRight className="h-4 w-4 text-ink-faint" />
       </div>
     </Link>
@@ -51,10 +56,33 @@ function SeccionComisiones({ titulo, comisiones, vacio }) {
   );
 }
 
-export function DocenteMisComisiones() {
-  const { data: comisiones, isLoading } = useMisComisiones();
+// `/me/section-evaluation-configs` solo trae materias de carrera y es el único que
+// sabe el estado de la configuración y los co-dictantes; `/me/teaching-sections` trae
+// además los cursos sueltos pero sin esos datos. Se mergean por sección para que un
+// docente que solo dicta cursos deje de ver la pantalla vacía, sin perder el estado ni
+// las métricas de las materias de carrera.
+function unificarComisiones(configs, dictadas) {
+  const porSeccion = new Map();
+  for (const config of configs) {
+    porSeccion.set(`PROGRAM-${config.subjectSectionId}`, {
+      ...config,
+      type: 'PROGRAM',
+      sectionId: config.subjectSectionId,
+    });
+  }
+  for (const dictada of dictadas) {
+    const clave = `${dictada.type}-${dictada.id}`;
+    if (porSeccion.has(clave)) continue;
+    porSeccion.set(clave, { ...dictada, sectionId: dictada.id, id: clave });
+  }
+  return [...porSeccion.values()];
+}
 
-  if (isLoading) {
+export function DocenteMisComisiones() {
+  const { data: configs, isLoading } = useMisComisiones();
+  const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
+
+  if (isLoading || cargandoDictadas) {
     return (
       <PageContainer>
         <div className="flex flex-col gap-2">
@@ -66,7 +94,7 @@ export function DocenteMisComisiones() {
     );
   }
 
-  const lista = comisiones ?? [];
+  const lista = unificarComisiones(configs ?? [], dictadas ?? []);
   const { bandejaDeAprobacion, enCurso, cerradas } = agruparComisionesPorFase(lista);
   const diasVencimiento = diasHastaVencimientoMasProximo(lista);
 
@@ -74,11 +102,11 @@ export function DocenteMisComisiones() {
     <PageContainer>
       <div>
         <h1 className="font-heading text-2xl font-bold text-ink">Mis comisiones</h1>
-        <p className="mt-0.5 text-sm text-ink-soft">Configuración de evaluación y mesas</p>
+        <p className="mt-0.5 text-sm text-ink-soft">Evaluación, mesas y avisos de tus comisiones</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Comisiones este período">
+        <StatCard label="Comisiones y cursos este período">
           <div className="font-heading text-2xl font-bold text-ink">{lista.length}</div>
         </StatCard>
         <StatCard label="Pendientes de completar/aprobar">

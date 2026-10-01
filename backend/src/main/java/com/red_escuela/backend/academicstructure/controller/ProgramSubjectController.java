@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
+import com.red_escuela.backend.academicstructure.dto.CorequisiteResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.PrerequisiteResponse;
 import com.red_escuela.backend.academicstructure.dto.ProgramSubjectResponse;
@@ -85,5 +87,24 @@ public class ProgramSubjectController {
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public void removePrerequisite(@PathVariable Long id) {
         programSubjectService.removePrerequisite(id);
+    }
+
+    @PostMapping("/program-subjects/{id}/corequisites")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public CorequisiteResponse addCorequisite(@PathVariable Long id, @Valid @RequestBody AddCorequisiteRequest request) {
+        return CorequisiteResponse.from(programSubjectService.addCorequisite(id, request));
+    }
+
+    @GetMapping("/program-subjects/{id}/corequisites")
+    public List<CorequisiteResponse> listCorequisites(@PathVariable Long id) {
+        return programSubjectService.listCorequisites(id).stream().map(CorequisiteResponse::from).toList();
+    }
+
+    @DeleteMapping("/program-subjects/corequisites/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
+    public void removeCorequisite(@PathVariable Long id) {
+        programSubjectService.removeCorequisite(id);
     }
 }

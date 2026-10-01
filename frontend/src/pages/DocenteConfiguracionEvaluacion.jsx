@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { PageContainer } from '@/components/PageContainer';
-import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { CalendarioConfiguracion } from '@/components/docente/CalendarioConfiguracion';
 import { useConfiguracionComision, useGuardarBorradorComision, useEnviarComisionAAprobacion, useHolidays } from '@/hooks/useDocente';
-import { ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL, formatearFecha } from '@/lib/comisiones';
+import { formatearFecha } from '@/lib/comisiones';
 
 function campoFecha(valor) {
   return valor ?? '';
@@ -66,15 +64,13 @@ export function DocenteConfiguracionEvaluacion() {
 
   if (isLoading || !form) {
     return (
-      <PageContainer>
-        <Skeleton className="h-10" />
+      <>
         <Skeleton className="h-40" />
         <Skeleton className="h-80" />
-      </PageContainer>
+      </>
     );
   }
 
-  const pill = ESTADO_CONFIG_LABEL[config.status] ?? { label: config.status, tone: 'neutral' };
   const cantidadParciales = config.examCountExpected ?? 2;
   const camposParcial = Array.from({ length: cantidadParciales }, (_, i) => i + 1);
   const soloLectura = !config.canEdit;
@@ -105,28 +101,10 @@ export function DocenteConfiguracionEvaluacion() {
   }
 
   return (
-    <PageContainer>
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-2xl font-bold text-ink">
-            {config.subjectName} · {config.sectionName}
-          </h1>
-          <StatusPill tone={pill.tone}>{pill.label}</StatusPill>
-        </div>
-        {config.rejectionReason && (
-          <div className="mt-1.5 text-sm font-semibold text-danger">Rechazada: &ldquo;{config.rejectionReason}&rdquo;</div>
-        )}
-        {config.instructors?.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-[11.5px] font-semibold text-ink-faint">Instructores:</span>
-            {config.instructors.map((i) => (
-              <span key={i.name} className="rounded-full bg-accent-soft px-2.5 py-1 text-[11.5px] font-bold text-primary">
-                {i.name} <span className="font-semibold opacity-75">· {ROL_INSTRUCTOR_LABEL[i.role] ?? i.role}</span>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+    <>
+      {config.rejectionReason && (
+        <div className="text-sm font-semibold text-danger">Rechazada: &ldquo;{config.rejectionReason}&rdquo;</div>
+      )}
 
       <GlassCard className="flex flex-wrap items-center gap-7 p-4">
         <div>
@@ -277,6 +255,6 @@ export function DocenteConfiguracionEvaluacion() {
           </div>
         )}
       </GlassCard>
-    </PageContainer>
+    </>
   );
 }

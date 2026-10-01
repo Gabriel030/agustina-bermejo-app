@@ -74,6 +74,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `useSlidingIndicator` (hook) | Fondo deslizante sobre el ítem activo (Sidebar, MobileMenu, Tabs) — reusar, no reimplementar |
 | `BannerCarousel` [shared] | Carrusel de banners (autoplay con pausa) |
 | Clases de `index.css` | `skeleton-shimmer`, `scroll-fade-y`, keyframes `stagger-in` `tab-in` `pop-in` `pulse-ring` `badge-pulse` |
+| Clases de `index.css` (no-motion) | `card-avisos`, `tabla-avisos`, `nota-fila` — composición opaca de la columna fija de la tabla de avisos (`features/avisos`). No se puede expresar con utilidades: apila `--surface` sobre `--bg1` y mete el tinte de fila como una capa aparte vía `--capa-fila`, porque el shorthand `background` destruiría esa composición |
 
 ## 7. Componentes de dominio (no reusar fuera de su dominio)
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`.

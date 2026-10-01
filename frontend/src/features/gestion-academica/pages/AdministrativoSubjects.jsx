@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronRight, Globe, GlobeOff } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -10,8 +10,8 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useSubjects } from '@/features/gestion-academica/hooks/useSubjects';
-import { usePrograms } from '@/features/gestion-academica/hooks/usePrograms';
-import { useCourses } from '@/features/gestion-academica/hooks/useCourses';
+import { usePrograms, useSetProgramCatalogVisibility } from '@/features/gestion-academica/hooks/usePrograms';
+import { useCourses, useSetCourseCatalogVisibility } from '@/features/gestion-academica/hooks/useCourses';
 
 const SUBJECT_TABS = [
   { id: 'ACTIVE', label: 'Activas' },
@@ -164,6 +164,140 @@ function CourseRow({ course, navigate }) {
   );
 }
 
+function PublishedProgramRow({ program, onRetire, isRetiring }) {
+  const cfg = PROGRAM_STATUS_CONFIG[program.status] ?? { label: program.status, tone: 'neutral' };
+  return (
+    <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-[14px] font-medium text-ink">{program.name}</span>
+        <div className="flex items-center gap-2 mt-0.5">
+          <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onRetire(program.id)}
+        loading={isRetiring}
+        className="shrink-0 text-danger hover:border-danger/50 hover:text-danger"
+      >
+        <GlobeOff className="mr-1.5 h-3.5 w-3.5" />
+        Retirar del catálogo
+      </Button>
+    </div>
+  );
+}
+
+function PublishedProgramList({ navigate }) {
+  const { data, isLoading, isError } = usePrograms();
+  const retireProgram = useSetProgramCatalogVisibility();
+
+  const published = (data ?? []).filter((p) => p.visibleInCatalog);
+
+  async function handleRetire(id) {
+    try {
+      await retireProgram.mutateAsync({ id, visible: false });
+    } catch {
+      /* toast shown globally */
+    }
+  }
+
+  if (isLoading) return <Skeleton rows={4} />;
+  if (isError) return <EmptyState title="Error al cargar carreras" description="Intentá de nuevo en unos momentos." />;
+  if (!published.length)
+    return (
+      <EmptyState
+        title="Sin carreras publicadas"
+        description="No hay carreras publicadas en el catálogo."
+        action={
+          <Button variant="outline" size="sm" onClick={() => navigate('?section=carreras')}>
+            Ir al listado de carreras
+          </Button>
+        }
+      />
+    );
+
+  return (
+    <div className="divide-y divide-neutral-bg">
+      {published.map((p) => (
+        <PublishedProgramRow
+          key={p.id}
+          program={p}
+          onRetire={handleRetire}
+          isRetiring={retireProgram.isPending && retireProgram.variables?.id === p.id}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PublishedCourseRow({ course, onRetire, isRetiring }) {
+  const cfg = COURSE_STATUS_CONFIG[course.status] ?? { label: course.status, tone: 'neutral' };
+  return (
+    <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60">
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-[14px] font-medium text-ink">{course.name}</span>
+        <div className="flex items-center gap-2 mt-0.5">
+          <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onRetire(course.id)}
+        loading={isRetiring}
+        className="shrink-0 text-danger hover:border-danger/50 hover:text-danger"
+      >
+        <GlobeOff className="mr-1.5 h-3.5 w-3.5" />
+        Retirar del catálogo
+      </Button>
+    </div>
+  );
+}
+
+function PublishedCourseList({ navigate }) {
+  const { data, isLoading, isError } = useCourses();
+  const retireCourse = useSetCourseCatalogVisibility();
+
+  const published = (data ?? []).filter((c) => c.visibleInCatalog);
+
+  async function handleRetire(id) {
+    try {
+      await retireCourse.mutateAsync({ id, visible: false });
+    } catch {
+      /* toast shown globally */
+    }
+  }
+
+  if (isLoading) return <Skeleton rows={4} />;
+  if (isError) return <EmptyState title="Error al cargar cursos" description="Intentá de nuevo en unos momentos." />;
+  if (!published.length)
+    return (
+      <EmptyState
+        title="Sin cursos publicados"
+        description="No hay cursos publicados en el catálogo."
+        action={
+          <Button variant="outline" size="sm" onClick={() => navigate('?section=cursos')}>
+            Ir al listado de cursos
+          </Button>
+        }
+      />
+    );
+
+  return (
+    <div className="divide-y divide-neutral-bg">
+      {published.map((c) => (
+        <PublishedCourseRow
+          key={c.id}
+          course={c}
+          onRetire={handleRetire}
+          isRetiring={retireCourse.isPending && retireCourse.variables?.id === c.id}
+        />
+      ))}
+    </div>
+  );
+}
+
 function CourseList({ search, navigate }) {
   const { data, isLoading, isError } = useCourses();
 
@@ -234,6 +368,25 @@ function ProgramList({ search, navigate }) {
   );
 }
 
+function OfertaAcademica({ navigate }) {
+  const [ofertaTab, setOfertaTab] = useState('carreras');
+  return (
+    <div className="flex flex-col gap-4">
+      <Tabs value={ofertaTab} onValueChange={setOfertaTab}>
+        <TabsList variant="segmented">
+          <TabsTrigger value="carreras">Carreras publicadas</TabsTrigger>
+          <TabsTrigger value="cursos">Cursos publicados</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {ofertaTab === 'carreras' ? (
+        <PublishedProgramList navigate={navigate} />
+      ) : (
+        <PublishedCourseList navigate={navigate} />
+      )}
+    </div>
+  );
+}
+
 export function AdministrativoSubjects() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -263,7 +416,7 @@ export function AdministrativoSubjects() {
         <Plus className="mr-2 h-4 w-4" />
         Nuevo curso
       </Button>
-    ) : (
+    ) : section === 'oferta' ? null : (
       <Button variant="gradient" onClick={() => navigate('/administrativo/gestion-academica/nueva')}>
         <Plus className="mr-2 h-4 w-4" />
         Nueva materia
@@ -279,20 +432,25 @@ export function AdministrativoSubjects() {
               <TabsTrigger value="materias">Banco de materias</TabsTrigger>
               <TabsTrigger value="carreras">Carreras</TabsTrigger>
               <TabsTrigger value="cursos">Cursos</TabsTrigger>
+              <TabsTrigger value="oferta">Oferta académica</TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-            <Input
-              placeholder={section === 'carreras' ? 'Buscar por nombre…' : 'Buscar por nombre o código…'}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          {section !== 'oferta' && (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+              <Input
+                placeholder={section === 'carreras' ? 'Buscar por nombre…' : 'Buscar por nombre o código…'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
         </div>
 
-        {section === 'cursos' ? (
+        {section === 'oferta' ? (
+          <OfertaAcademica navigate={navigate} />
+        ) : section === 'cursos' ? (
           <CourseList search={search} navigate={navigate} />
         ) : section === 'carreras' ? (
           <ProgramList search={search} navigate={navigate} />
