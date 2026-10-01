@@ -7,7 +7,7 @@ export function useSegmentosDeAudiencia(sectionId, tipo) {
   return useQuery({
     queryKey: [base, sectionId, 'audience-segments'],
     queryFn: () => apiFetch(`/${base}/${sectionId}/audience-segments`),
-    enabled: !!sectionId,
+    enabled: !!sectionId && tipo !== 'COURSE',
     staleTime: 5 * 60 * 1000,
   });
 }

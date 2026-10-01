@@ -6,11 +6,11 @@ export function useEditarAviso(sectionId, tipo, announcementId) {
   const queryClient = useQueryClient();
   const base = rutaDeSeccion(tipo);
   return useMutation({
-    mutationFn: (data) =>
-      apiFetch(`/announcements/${announcementId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [base, sectionId, 'announcements'] }),
+    mutationFn: (payload) =>
+      apiFetch(`/announcements/${announcementId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [base, sectionId, 'announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements', announcementId, 'recipients'] });
+    },
   });
 }

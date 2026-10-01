@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
@@ -8,13 +7,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
 import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
 import { comisionCerrada, ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL } from '@/lib/comisiones';
-import { AvisoDialog } from '../components/AvisoDialog';
 import { TablaAvisos } from '../components/TablaAvisos';
 import { useAvisos } from '../hooks/useAvisos';
 import { useEliminarAviso } from '../hooks/useEliminarAviso';
 
 export function DocenteComisionDetalle() {
   const { sectionId } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tipo = searchParams.get('type') === 'COURSE' ? 'COURSE' : 'PROGRAM';
   const esCurso = tipo === 'COURSE';
@@ -24,19 +23,6 @@ export function DocenteComisionDetalle() {
   const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
   const avisos = useAvisos(sectionId, tipo);
   const eliminarAviso = useEliminarAviso(sectionId, tipo);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [avisoSeleccionado, setAvisoSeleccionado] = useState(null);
-
-  function abrirNuevoAviso() {
-    setAvisoSeleccionado(null);
-    setDialogOpen(true);
-  }
-
-  function abrirEditarAviso(aviso) {
-    setAvisoSeleccionado(aviso);
-    setDialogOpen(true);
-  }
 
   const curso = esCurso ? (dictadas ?? []).find((s) => s.type === 'COURSE' && String(s.id) === sectionId) : null;
   const cargandoEncabezado = esCurso ? cargandoDictadas : cargandoConfig;
@@ -55,6 +41,16 @@ export function DocenteComisionDetalle() {
     : `${config.subjectName} · ${config.sectionName}`;
   const pill = esCurso ? null : (ESTADO_CONFIG_LABEL[config.status] ?? { label: config.status, tone: 'neutral' });
   const cerrada = esCurso ? false : comisionCerrada(config.termEndDate);
+
+  const sufijoTipo = esCurso ? '?type=COURSE' : '';
+
+  function irANuevoAviso() {
+    navigate(`/docente/mis-comisiones/${sectionId}/avisos/nuevo${sufijoTipo}`);
+  }
+
+  function irAEditar(aviso) {
+    navigate(`/docente/mis-comisiones/${sectionId}/avisos/${aviso.id}/editar${sufijoTipo}`);
+  }
 
   function cambiarTab(nuevoTab) {
     searchParams.set('tab', nuevoTab);
@@ -81,7 +77,7 @@ export function DocenteComisionDetalle() {
           )}
         </div>
         {tab === 'avisos' && !cerrada && (
-          <Button variant="gradient" onClick={abrirNuevoAviso}>
+          <Button variant="gradient" onClick={irANuevoAviso}>
             Nuevo aviso
           </Button>
         )}
@@ -114,19 +110,13 @@ export function DocenteComisionDetalle() {
             isError={avisos.isError}
             onReintentar={avisos.refetch}
             soloLectura={cerrada}
-            onEditar={abrirEditarAviso}
+            onNuevoAviso={irANuevoAviso}
+            onEditar={irAEditar}
             onEliminar={(aviso) => eliminarAviso.mutateAsync(aviso.id)}
             eliminando={eliminarAviso.isPending}
           />
         </>
       )}
-      <AvisoDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        sectionId={sectionId}
-        tipo={tipo}
-        aviso={avisoSeleccionado}
-      />
     </PageContainer>
   );
 }
