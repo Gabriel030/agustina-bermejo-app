@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { FilaAviso } from './FilaAviso';
 import { RosterSegmento } from './RosterSegmento';
+import { useDestinatariosDeAviso } from '../hooks/useAvisos';
 
 const COLUMNAS = ['Aviso', 'Categoría', 'Audiencia', 'Estado', 'Creado', 'Envío', 'Vence'];
 
@@ -112,7 +113,7 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
         </div>
       </GlassCard>
 
-      <RosterSegmento aviso={verDestinatariosDe} onClose={() => setVerDestinatariosDe(null)} />
+      <RosterDeAvisoEnviado aviso={verDestinatariosDe} onClose={() => setVerDestinatariosDe(null)} />
 
       <Dialog open={!!aEliminar} onOpenChange={(abierto) => !abierto && setAEliminar(null)}>
         <DialogContent>
@@ -135,5 +136,26 @@ export function TablaAvisos({ avisos, isLoading, isError, onReintentar, soloLect
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function RosterDeAvisoEnviado({ aviso, onClose }) {
+  const { data: destinatarios, isLoading, isError } = useDestinatariosDeAviso(aviso?.id);
+  const programado = aviso?.status === 'SCHEDULED';
+
+  return (
+    <RosterSegmento
+      abierto={!!aviso}
+      titulo={aviso?.audienceLabel ?? ''}
+      descripcion={
+        programado
+          ? 'Todavía no se envió, así que no hay destinatarios: el grupo se calcula en el momento del envío.'
+          : `Les llegó a ${destinatarios?.length ?? '—'} alumnos cuando se envió el aviso.`
+      }
+      destinatarios={destinatarios}
+      isLoading={isLoading}
+      isError={isError}
+      onClose={onClose}
+    />
   );
 }
