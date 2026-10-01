@@ -1,3 +1,18 @@
+export function instanciaLabel(segmentKey, index) {
+  if (segmentKey.startsWith('EXAM')) return `${index}° parcial`;
+  if (segmentKey.startsWith('TP')) return `TP ${index}`;
+  if (segmentKey.startsWith('FINAL')) {
+    const ordinals = ['1er', '2do', '3er', '4to'];
+    return `${ordinals[index - 1] ?? index + '°'} llamado`;
+  }
+  return `Instancia ${index}`;
+}
+
+export const CUANTIFICADOR_LABEL = {
+  ANY: 'alguno de los seleccionados',
+  ALL: 'todos los seleccionados',
+};
+
 export const CATEGORIA_AVISO_LABEL = {
   EVALUATION: 'Evaluación',
   REMINDER: 'Recordatorio',

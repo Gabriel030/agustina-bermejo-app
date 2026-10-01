@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -7,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
 import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
 import { comisionCerrada, ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL } from '@/lib/comisiones';
+import { AvisoDialog } from '../components/AvisoDialog';
 import { TablaAvisos } from '../components/TablaAvisos';
 import { useAvisos } from '../hooks/useAvisos';
 import { useEliminarAviso } from '../hooks/useEliminarAviso';
@@ -22,6 +24,19 @@ export function DocenteComisionDetalle() {
   const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
   const avisos = useAvisos(sectionId, tipo);
   const eliminarAviso = useEliminarAviso(sectionId, tipo);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [avisoSeleccionado, setAvisoSeleccionado] = useState(null);
+
+  function abrirNuevoAviso() {
+    setAvisoSeleccionado(null);
+    setDialogOpen(true);
+  }
+
+  function abrirEditarAviso(aviso) {
+    setAvisoSeleccionado(aviso);
+    setDialogOpen(true);
+  }
 
   const curso = esCurso ? (dictadas ?? []).find((s) => s.type === 'COURSE' && String(s.id) === sectionId) : null;
   const cargandoEncabezado = esCurso ? cargandoDictadas : cargandoConfig;
@@ -66,7 +81,7 @@ export function DocenteComisionDetalle() {
           )}
         </div>
         {tab === 'avisos' && !cerrada && (
-          <Button variant="gradient" disabled>
+          <Button variant="gradient" onClick={abrirNuevoAviso}>
             Nuevo aviso
           </Button>
         )}
@@ -99,12 +114,19 @@ export function DocenteComisionDetalle() {
             isError={avisos.isError}
             onReintentar={avisos.refetch}
             soloLectura={cerrada}
-            onEditar={() => {}}
+            onEditar={abrirEditarAviso}
             onEliminar={(aviso) => eliminarAviso.mutateAsync(aviso.id)}
             eliminando={eliminarAviso.isPending}
           />
         </>
       )}
+      <AvisoDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        sectionId={sectionId}
+        tipo={tipo}
+        aviso={avisoSeleccionado}
+      />
     </PageContainer>
   );
 }

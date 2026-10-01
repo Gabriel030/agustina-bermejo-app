@@ -44,6 +44,9 @@
   --neutral-bg: oklch(87% 0.014 260);
   --neutral-ink: oklch(40% 0.01 260);
 
+  /* Superficie sólida para dialogs (bg-popover = --surface con alpha → ilegible en dark) */
+  --dialog-bg: oklch(97% 0.004 245);
+
   /* Barrido de brillo del Skeleton (shimmer) — ver components/Skeleton.jsx */
   --shimmer-hi: oklch(99% 0.01 240 / 0.9);
 }
@@ -74,6 +77,7 @@
     --neutral-bg: oklch(30% 0.012 260);
     --neutral-ink: oklch(78% 0.01 260);
     --shimmer-hi: oklch(50% 0.02 260 / 0.9);
+    --dialog-bg: oklch(24% 0.022 260);
   }
 }
 :root[data-theme='dark'] {
@@ -97,4 +101,5 @@
   --neutral-bg: oklch(30% 0.012 260);
   --neutral-ink: oklch(78% 0.01 260);
   --shimmer-hi: oklch(50% 0.02 260 / 0.9);
+  --dialog-bg: oklch(24% 0.022 260);
 }
