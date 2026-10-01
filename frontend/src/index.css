@@ -164,3 +164,58 @@
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
   mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
 }
+
+/* Tabla de avisos del docente (features/avisos). La columna del título queda
+   fija porque con siete columnas siempre hay scroll horizontal, y una celda
+   sticky necesita fondo opaco: se compone --surface sobre --bg1 (mismos tokens
+   que la card, así el modo oscuro sale solo y no hay borde entre las dos) y el
+   tinte de hover o de fila abierta se apila como una capa más vía --capa-fila.
+   El shorthand `background` destruiría esa composición, por eso las reglas de
+   tinte excluyen la columna fija. No se puede expresar con utilidades. */
+.card-avisos {
+  background-color: var(--bg1);
+  background-image: linear-gradient(var(--surface), var(--surface));
+}
+.tabla-avisos .col-aviso,
+.tabla-avisos thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: var(--bg1);
+  background-image: var(--capa-fila, linear-gradient(transparent, transparent)),
+                    linear-gradient(var(--surface), var(--surface));
+  border-right: 1px solid color-mix(in oklch, var(--border) 50%, transparent);
+}
+.tabla-avisos tr.fila-aviso:hover > td:not(.col-aviso) {
+  background: var(--accent-soft);
+}
+.tabla-avisos tr.fila-aviso:hover > td.col-aviso {
+  --capa-fila: linear-gradient(var(--accent-soft), var(--accent-soft));
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true'] > td:not(.col-aviso),
+.tabla-avisos tr.detalle-aviso > td {
+  background: color-mix(in oklch, var(--neutral-bg) 42%, transparent);
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true'] > td.col-aviso {
+  --capa-fila: linear-gradient(color-mix(in oklch, var(--neutral-bg) 42%, transparent),
+                               color-mix(in oklch, var(--neutral-bg) 42%, transparent));
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true']:hover > td:not(.col-aviso) {
+  background: color-mix(in oklch, var(--neutral-bg) 55%, transparent);
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true']:hover > td.col-aviso {
+  --capa-fila: linear-gradient(color-mix(in oklch, var(--neutral-bg) 55%, transparent),
+                               color-mix(in oklch, var(--neutral-bg) 55%, transparent));
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true'] > td {
+  border-bottom-color: transparent;
+}
+.tabla-avisos tr.fila-aviso[data-abierto='true'] > td:first-child,
+.tabla-avisos tr.detalle-aviso > td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+/* Nota dentro de una fila expandida: sin relleno propio, para no apilar otro
+   fondo sobre el tinte de la fila. Solo una regla lateral y texto. */
+.nota-fila {
+  border-left: 3px solid var(--accent-2);
+}

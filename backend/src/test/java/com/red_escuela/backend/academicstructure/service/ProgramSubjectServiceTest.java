@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
@@ -12,7 +13,10 @@ import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
+import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
@@ -289,5 +293,112 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> programSubjectService.addPrerequisite(entradaA.getId(),
                 new AddPrerequisiteRequest(entradaB.getId(), RequirementType.APPROVED, null, null)))
                 .isInstanceOf(InvalidPrerequisiteException.class);
+    }
+
+    @Test
+    void addCorequisite_success() {
+        Program program = persistProgram("Tecnicatura coreq 1");
+        Subject subjectA = persistSubject("Química I");
+        Subject subjectB = persistSubject("Lab de Química");
+        entityManager.flush();
+
+        ProgramSubject entradaA = addSubject(program, subjectA, 1);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1);
+
+        var link = programSubjectService.addCorequisite(entradaA.getId(),
+                new AddCorequisiteRequest(entradaB.getId()));
+
+        assertThat(link.getId()).isNotNull();
+        assertThat(link.getCorequisiteProgramSubject().getId()).isEqualTo(entradaB.getId());
+    }
+
+    @Test
+    void addCorequisite_duplicateLinkThrows409() {
+        Program program = persistProgram("Tecnicatura coreq 2");
+        Subject subjectA = persistSubject("Física II");
+        Subject subjectB = persistSubject("Lab de Física");
+        entityManager.flush();
+
+        ProgramSubject entradaA = addSubject(program, subjectA, 1);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1);
+
+        programSubjectService.addCorequisite(entradaA.getId(), new AddCorequisiteRequest(entradaB.getId()));
+
+        assertThatThrownBy(() -> programSubjectService.addCorequisite(entradaA.getId(),
+                new AddCorequisiteRequest(entradaB.getId())))
+                .isInstanceOf(CorequisiteAlreadyExistsException.class);
+    }
+
+    @Test
+    void addCorequisite_selfLinkThrows400() {
+        Program program = persistProgram("Tecnicatura coreq 3");
+        Subject subject = persistSubject("Álgebra II");
+        entityManager.flush();
+
+        ProgramSubject entrada = addSubject(program, subject, 1);
+
+        assertThatThrownBy(() -> programSubjectService.addCorequisite(entrada.getId(),
+                new AddCorequisiteRequest(entrada.getId())))
+                .isInstanceOf(InvalidCorequisiteException.class);
+    }
+
+    @Test
+    void addCorequisite_differentProgramThrows400() {
+        Program carreraA = persistProgram("Tecnicatura coreq 4A");
+        Program carreraB = persistProgram("Tecnicatura coreq 4B");
+        Subject subjectA = persistSubject("Economía I");
+        Subject subjectB = persistSubject("Economía II");
+        entityManager.flush();
+
+        ProgramSubject entradaA = addSubject(carreraA, subjectA, 1);
+        ProgramSubject entradaB = addSubject(carreraB, subjectB, 1);
+
+        assertThatThrownBy(() -> programSubjectService.addCorequisite(entradaA.getId(),
+                new AddCorequisiteRequest(entradaB.getId())))
+                .isInstanceOf(InvalidCorequisiteException.class);
+    }
+
+    @Test
+    void listCorequisites_returnsAll() {
+        Program program = persistProgram("Tecnicatura coreq 5");
+        Subject subjectA = persistSubject("Biología I");
+        Subject subjectB = persistSubject("Lab Bio I");
+        Subject subjectC = persistSubject("Lab Bio II");
+        entityManager.flush();
+
+        ProgramSubject entradaA = addSubject(program, subjectA, 1);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1);
+        ProgramSubject entradaC = addSubject(program, subjectC, 1);
+
+        programSubjectService.addCorequisite(entradaA.getId(), new AddCorequisiteRequest(entradaB.getId()));
+        programSubjectService.addCorequisite(entradaA.getId(), new AddCorequisiteRequest(entradaC.getId()));
+
+        var lista = programSubjectService.listCorequisites(entradaA.getId());
+
+        assertThat(lista).hasSize(2);
+    }
+
+    @Test
+    void removeCorequisite_success() {
+        Program program = persistProgram("Tecnicatura coreq 6");
+        Subject subjectA = persistSubject("Estadística I");
+        Subject subjectB = persistSubject("Lab Estadística");
+        entityManager.flush();
+
+        ProgramSubject entradaA = addSubject(program, subjectA, 1);
+        ProgramSubject entradaB = addSubject(program, subjectB, 1);
+
+        var link = programSubjectService.addCorequisite(entradaA.getId(),
+                new AddCorequisiteRequest(entradaB.getId()));
+
+        programSubjectService.removeCorequisite(link.getId());
+
+        assertThat(programSubjectService.listCorequisites(entradaA.getId())).isEmpty();
+    }
+
+    @Test
+    void removeCorequisite_notFoundThrows404() {
+        assertThatThrownBy(() -> programSubjectService.removeCorequisite(999999L))
+                .isInstanceOf(CorequisiteNotFoundException.class);
     }
 }

@@ -28,11 +28,12 @@ public final class StudentSpecifications {
         return (root, query, cb) -> {
             if (q == null || q.isBlank()) return cb.conjunction();
             var person = root.join("person", jakarta.persistence.criteria.JoinType.INNER);
-            var pattern = "%" + q.toLowerCase() + "%";
+            var pattern = cb.function("unaccent", String.class,
+                    cb.literal("%" + q.toLowerCase() + "%"));
             return cb.or(
-                    cb.like(cb.lower(person.get("name")), pattern),
-                    cb.like(cb.lower(person.get("lastname")), pattern),
-                    cb.like(cb.lower(person.get("dni")), pattern)
+                    cb.like(cb.function("unaccent", String.class, cb.lower(person.get("name"))), pattern),
+                    cb.like(cb.function("unaccent", String.class, cb.lower(person.get("lastname"))), pattern),
+                    cb.like(cb.lower(person.get("dni")), cb.literal("%" + q.toLowerCase() + "%"))
             );
         };
     }

@@ -2,8 +2,10 @@ package com.red_escuela.backend.announcement.entity;
 
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -74,8 +76,21 @@ public class Announcement {
     @Column(name = "expires_at")
     private LocalDate expiresAt;
 
+    @Embedded
+    private AudienceSpec audienceSpec;
+
     @Column(name = "audience_label", nullable = false)
     private String audienceLabel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 16)
+    private AnnouncementStatus status;
+
+    @Column(name = "scheduled_for")
+    private LocalDateTime scheduledFor;
+
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -85,6 +100,11 @@ public class Announcement {
 
     @PrePersist
     @PreUpdate
+    private void validateInvariants() {
+        validateSingleSectionTarget();
+        validateStatusMatchesSentAt();
+    }
+
     private void validateSingleSectionTarget() {
         boolean hasProgram = this.subjectSection != null;
         boolean hasCourse = this.courseSubjectSection != null;
@@ -93,12 +113,40 @@ public class Announcement {
         }
     }
 
+    private void validateStatusMatchesSentAt() {
+        if (this.status == AnnouncementStatus.SENT && this.sentAt == null) {
+            throw new IllegalStateException("A sent announcement must have sentAt.");
+        }
+        if (this.status == AnnouncementStatus.SCHEDULED && this.sentAt != null) {
+            throw new IllegalStateException("A scheduled announcement cannot have sentAt.");
+        }
+        if (this.status == AnnouncementStatus.SCHEDULED && this.scheduledFor == null) {
+            throw new IllegalStateException("A scheduled announcement must have scheduledFor.");
+        }
+    }
+
+    public void markAsSent(LocalDateTime when) {
+        if (this.status == AnnouncementStatus.SENT) {
+            throw new AnnouncementAlreadySentException(this.id);
+        }
+        this.status = AnnouncementStatus.SENT;
+        this.sentAt = when;
+    }
+
+    public boolean isScheduled() {
+        return this.status == AnnouncementStatus.SCHEDULED;
+    }
+
     public SectionType getSectionType() {
         return subjectSection != null ? SectionType.PROGRAM : SectionType.COURSE;
     }
 
     public Long getSectionId() {
         return subjectSection != null ? subjectSection.getId() : courseSubjectSection.getId();
+    }
+
+    public LocalDateTime getFeedDate() {
+        return sentAt != null ? sentAt : createdAt;
     }
 
     public boolean isExpiredOn(LocalDate date) {

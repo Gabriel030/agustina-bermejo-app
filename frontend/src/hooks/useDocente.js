@@ -7,6 +7,14 @@ export function useMisComisiones() {
   return useQuery({ queryKey: ['me', 'section-evaluation-configs'], queryFn: () => apiFetch('/me/section-evaluation-configs') });
 }
 
+export function useComisionesDictadas(habilitado = true) {
+  return useQuery({
+    queryKey: ['me', 'teaching-sections'],
+    queryFn: () => apiFetch('/me/teaching-sections'),
+    enabled: habilitado,
+  });
+}
+
 export function useConfiguracionComision(sectionId) {
   return useQuery({
     queryKey: ['me', 'section-evaluation-configs', sectionId],

@@ -6,6 +6,8 @@ import com.red_escuela.backend.billing.dto.ProgramCohortResponse;
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateUseCase;
+import com.red_escuela.backend.billing.usecase.cohort.ListProgramBillingTemplatesUseCase;
+import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForProgramUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.ListProgramCohortsForTemplateUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,13 +26,19 @@ public class ProgramYearBillingTemplateController {
     private final CreateProgramYearBillingTemplateUseCase createTemplateUseCase;
     private final CreateProgramCohortUseCase createCohortUseCase;
     private final ListProgramCohortsForTemplateUseCase listCohortsForTemplateUseCase;
+    private final ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase;
+    private final ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase;
 
     public ProgramYearBillingTemplateController(CreateProgramYearBillingTemplateUseCase createTemplateUseCase,
                                                   CreateProgramCohortUseCase createCohortUseCase,
-                                                  ListProgramCohortsForTemplateUseCase listCohortsForTemplateUseCase) {
+                                                  ListProgramCohortsForTemplateUseCase listCohortsForTemplateUseCase,
+                                                  ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase,
+                                                  ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase) {
         this.createTemplateUseCase = createTemplateUseCase;
         this.createCohortUseCase = createCohortUseCase;
         this.listCohortsForTemplateUseCase = listCohortsForTemplateUseCase;
+        this.listCohortsForProgramUseCase = listCohortsForProgramUseCase;
+        this.listBillingTemplatesUseCase = listBillingTemplatesUseCase;
     }
 
     @PostMapping("/programs/{id}/year-billing-templates")
@@ -42,7 +50,7 @@ public class ProgramYearBillingTemplateController {
 
     @PostMapping("/year-billing-templates/{id}/cohorts")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public ProgramCohortResponse createCohort(@PathVariable Long id, @Valid @RequestBody CreateProgramCohortRequest request) {
         return ProgramCohortResponse.from(createCohortUseCase.create(id, request));
     }
@@ -51,5 +59,17 @@ public class ProgramYearBillingTemplateController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR', 'ALUMNO')")
     public List<ProgramCohortResponse> listCohorts(@PathVariable Long id) {
         return listCohortsForTemplateUseCase.list(id).stream().map(ProgramCohortResponse::from).toList();
+    }
+
+    @GetMapping("/programs/{id}/year-billing-templates")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public List<ProgramYearBillingTemplateResponse> listBillingTemplates(@PathVariable Long id) {
+        return listBillingTemplatesUseCase.list(id).stream().map(ProgramYearBillingTemplateResponse::from).toList();
+    }
+
+    @GetMapping("/programs/{id}/cohorts")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public List<ProgramCohortResponse> listProgramCohorts(@PathVariable Long id) {
+        return listCohortsForProgramUseCase.list(id).stream().map(ProgramCohortResponse::from).toList();
     }
 }

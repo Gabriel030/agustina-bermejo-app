@@ -2,7 +2,6 @@ package com.red_escuela.backend.announcement.usecase.announcement;
 
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
-import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -35,8 +34,7 @@ public class ListMyAnnouncementsService implements ListMyAnnouncementsUseCase {
         Person person = currentPersonService.resolveCurrentPerson();
         Optional<Student> student = studentRepository.findByPerson_Id(person.getId());
         return student
-                .map(s -> announcementRepository.findFeedForStudent(
-                        s.getId(), SectionMembership.ENROLLED_STATUSES, LocalDate.now()))
+                .map(s -> announcementRepository.findFeedForStudent(s.getId(), LocalDate.now()))
                 .orElseGet(List::of);
     }
 }

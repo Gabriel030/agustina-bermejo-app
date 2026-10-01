@@ -1,11 +1,14 @@
 package com.red_escuela.backend.announcement.repository;
 
 import com.red_escuela.backend.announcement.entity.Announcement;
+import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
@@ -15,21 +18,15 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     List<Announcement> findByCourseSubjectSectionIdOrderByCreatedAtDesc(Long sectionId);
 
     @Query("""
-            select a from Announcement a
-            where (a.expiresAt is null or a.expiresAt >= :today)
-              and (
-                a.subjectSection.id in (
-                    select e.subjectSection.id from SubjectSectionEnrollment e
-                    where e.student.id = :studentId and e.status in :statuses
-                )
-                or a.courseSubjectSection.id in (
-                    select c.courseSubjectSection.id from CourseSubjectSectionEnrollment c
-                    where c.student.id = :studentId and c.status in :statuses
-                )
-              )
-            order by a.createdAt desc
+            select r.announcement from AnnouncementRecipient r
+            where r.student.id = :studentId
+              and r.announcement.status = com.red_escuela.backend.announcement.entity.AnnouncementStatus.SENT
+              and (r.announcement.expiresAt is null or r.announcement.expiresAt >= :today)
+            order by r.announcement.sentAt desc
             """)
     List<Announcement> findFeedForStudent(@Param("studentId") Long studentId,
-                                          @Param("statuses") List<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses,
                                           @Param("today") LocalDate today);
+
+    List<Announcement> findByStatusAndScheduledForLessThanEqualAndIdGreaterThanOrderByIdAsc(
+            AnnouncementStatus status, LocalDateTime now, Long lastId, Pageable pageable);
 }
