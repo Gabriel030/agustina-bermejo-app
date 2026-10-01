@@ -62,18 +62,32 @@ otro perfil), el seeder no corre — nunca se activa en `test` ni en
 prod/staging por accidente, no tiene ninguna referencia en
 `application.properties`.
 
-**Para un usuario de prueba que no sea una de estas 5 cuentas fijas** (ej.
-probar el flujo real de alta+primer-ingreso), seguís pudiendo usar el flujo
-real de reset a mano:
+**Para un usuario de prueba que no sea una de estas 5 cuentas fijas** (ej. un
+Docente con `Instructor`, que el seeder no crea): el flujo de recuperación
+**ya no sirve** para esto. Manda un código por email —que en local falla— y en
+`password_reset_token` guarda solo el hash, así que el código no se puede
+recuperar ni del log ni de la base.
+
+La vía que funciona es crear la persona por API y después copiarle a mano un
+hash de password conocido:
 
 ```bash
-curl -X POST http://localhost:8080/auth/forgot-password \
-  -H "Content-Type: application/json" -d '{"email":"<email de una person existente>"}'
-# el log imprime: "Token de recuperación de password generado para person N: <token>"
-curl -X POST http://localhost:8080/auth/reset-password \
-  -H "Content-Type: application/json" \
-  -d '{"token":"<token>","newPassword":"Test1234"}'
+# 1. crear la persona con su rol (como administrativo.demo)
+curl -X POST http://localhost:8080/staff -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN" \
+  -d '{"nombre":"Ana","apellido":"Docente","email":"ana@example.com","dni":"90001","role":"DOCENTE"}'
+# el username que queda es el DNI
+
+# 2. darle la misma password que las cuentas demo (Test1234)
+docker compose exec -T postgres psql -U postgres -d agustina_bermejo -c \
+  "update person set password = (select password from person where username='docente.demo'),
+   status='ACTIVE' where username='90001';"
 ```
+
+Para asignar ese docente a una comisión hace falta el id de `Instructor`, que
+**ningún endpoint expone** (ver `Deuda técnica y gaps de QA` en Obsidian):
+`select i.id from instructor i join person p on p.id = i.person_id where
+p.username = '90001';`.
 
 ## Duplicados " 2.ext" sueltos en el árbol de archivos
 
