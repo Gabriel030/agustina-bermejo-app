@@ -136,6 +136,34 @@ export function useRemovePrerequisite() {
   });
 }
 
+export function useCorequisites(programSubjectId) {
+  return useQuery({
+    queryKey: ['corequisites', programSubjectId],
+    queryFn: () => apiFetch(`/program-subjects/${programSubjectId}/corequisites`),
+    enabled: !!programSubjectId,
+  });
+}
+
+export function useAddCorequisite(programSubjectId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body) =>
+      apiFetch(`/program-subjects/${programSubjectId}/corequisites`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['corequisites', programSubjectId] }),
+  });
+}
+
+export function useRemoveCorequisite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => apiFetch(`/program-subjects/corequisites/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['corequisites'] }),
+  });
+}
+
 export function useElectiveGroups() {
   return useQuery({
     queryKey: ['elective-groups'],

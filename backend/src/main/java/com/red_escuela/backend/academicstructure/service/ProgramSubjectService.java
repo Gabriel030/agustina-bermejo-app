@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramSubjectRequest;
@@ -8,12 +9,16 @@ import com.red_escuela.backend.academicstructure.entity.ElectiveGroup;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCorequisite;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.CorequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
@@ -25,6 +30,7 @@ import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundExcept
 import com.red_escuela.backend.academicstructure.repository.ElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramSubjectCorequisiteRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
@@ -46,6 +52,7 @@ public class ProgramSubjectService {
     private final ElectiveGroupRepository electiveGroupRepository;
     private final ProgramElectiveGroupRepository programElectiveGroupRepository;
     private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
+    private final ProgramSubjectCorequisiteRepository corequisiteRepository;
 
     public ProgramSubjectService(
             ProgramSubjectRepository programSubjectRepository,
@@ -53,13 +60,15 @@ public class ProgramSubjectService {
             SubjectRepository subjectRepository,
             ElectiveGroupRepository electiveGroupRepository,
             ProgramElectiveGroupRepository programElectiveGroupRepository,
-            ProgramSubjectPrerequisiteRepository prerequisiteRepository) {
+            ProgramSubjectPrerequisiteRepository prerequisiteRepository,
+            ProgramSubjectCorequisiteRepository corequisiteRepository) {
         this.programSubjectRepository = programSubjectRepository;
         this.programRepository = programRepository;
         this.subjectRepository = subjectRepository;
         this.electiveGroupRepository = electiveGroupRepository;
         this.programElectiveGroupRepository = programElectiveGroupRepository;
         this.prerequisiteRepository = prerequisiteRepository;
+        this.corequisiteRepository = corequisiteRepository;
     }
 
     @Transactional
@@ -267,6 +276,45 @@ public class ProgramSubjectService {
                 }
             }
         }
+    }
+
+    @Transactional
+    public ProgramSubjectCorequisite addCorequisite(Long programSubjectId, AddCorequisiteRequest request) {
+        ProgramSubject subject = findOrThrow(programSubjectId);
+        ProgramSubject corequisite = findOrThrow(request.corequisiteProgramSubjectId());
+
+        if (subject.getId().equals(corequisite.getId())) {
+            throw new InvalidCorequisiteException("Una materia no puede ser co-requisito de sí misma");
+        }
+        if (!subject.getProgram().getId().equals(corequisite.getProgram().getId())) {
+            throw new InvalidCorequisiteException(
+                    "Los co-requisitos solo pueden darse entre materias de la misma carrera");
+        }
+        if (corequisiteRepository.existsByProgramSubjectIdAndCorequisiteProgramSubjectId(
+                subject.getId(), corequisite.getId())) {
+            throw new CorequisiteAlreadyExistsException(subject.getId(), corequisite.getId());
+        }
+
+        ProgramSubjectCorequisite link = new ProgramSubjectCorequisite();
+        link.setProgramSubject(subject);
+        link.setCorequisiteProgramSubject(corequisite);
+
+        try {
+            return corequisiteRepository.saveAndFlush(link);
+        } catch (DataIntegrityViolationException e) {
+            throw new CorequisiteAlreadyExistsException(subject.getId(), corequisite.getId());
+        }
+    }
+
+    public List<ProgramSubjectCorequisite> listCorequisites(Long programSubjectId) {
+        return corequisiteRepository.findByProgramSubjectId(programSubjectId);
+    }
+
+    @Transactional
+    public void removeCorequisite(Long corequisiteId) {
+        ProgramSubjectCorequisite link = corequisiteRepository.findById(corequisiteId)
+                .orElseThrow(() -> new CorequisiteNotFoundException(corequisiteId));
+        corequisiteRepository.delete(link);
     }
 
     private ProgramSubject findOrThrow(Long id) {

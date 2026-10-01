@@ -5,7 +5,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
-import { usePrerequisites, useAddPrerequisite, useRemovePrerequisite } from '@/features/gestion-academica/hooks/usePrograms';
+import {
+  usePrerequisites,
+  useAddPrerequisite,
+  useRemovePrerequisite,
+  useCorequisites,
+  useAddCorequisite,
+  useRemoveCorequisite,
+} from '@/features/gestion-academica/hooks/usePrograms';
 
 const REQUIREMENT_TYPE_OPTIONS = [
   { value: 'APPROVED', label: 'Aprobada' },
@@ -116,10 +123,65 @@ function FormAgregarCorrelativa({ programSubjectId, onCancel }) {
   );
 }
 
+function FormAgregarCorequisito({ programSubjectId, onCancel }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const [error, setError] = useState(null);
+  const addCorequisite = useAddCorequisite(programSubjectId);
+
+  async function handleAgregar() {
+    if (!selectedId) {
+      setError('Ingresá el ID de la materia co-requisito.');
+      return;
+    }
+    setError(null);
+    try {
+      await addCorequisite.mutateAsync({ corequisiteProgramSubjectId: selectedId });
+      toast.success('Co-requisito agregado');
+      onCancel();
+    } catch {
+      setError('No se pudo agregar el co-requisito. Verificá el ID o que no exista ya.');
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-neutral-bg/30 p-3">
+      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Nuevo co-requisito</p>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+          ID de materia en plan *
+        </label>
+        <Input
+          type="number"
+          value={selectedId ?? ''}
+          onChange={(e) => setSelectedId(e.target.value ? parseInt(e.target.value) : null)}
+          placeholder="ID de la relación (program-subject)"
+        />
+        <p className="text-[11px] text-ink-faint">
+          El vínculo no es simétrico: si querés bloqueo mutuo, agregalo desde la otra materia también.
+        </p>
+      </div>
+
+      {error && <p className="text-[13px] text-danger">{error}</p>}
+
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button variant="gradient" size="sm" loading={addCorequisite.isPending} onClick={handleAgregar}>
+          Agregar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName }) {
   const { data: prerequisites, isLoading } = usePrerequisites(programSubjectId);
+  const { data: corequisites, isLoading: loadingCorequisites } = useCorequisites(programSubjectId);
   const removePrerequisite = useRemovePrerequisite();
+  const removeCorequisite = useRemoveCorequisite();
   const [showForm, setShowForm] = useState(false);
+  const [showCoreqForm, setShowCoreqForm] = useState(false);
 
   async function handleRemove(id) {
     try {
@@ -130,8 +192,18 @@ export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName
     }
   }
 
+  async function handleRemoveCorequisite(id) {
+    try {
+      await removeCorequisite.mutateAsync(id);
+      toast.success('Co-requisito eliminado');
+    } catch {
+      toast.error('No se pudo eliminar el co-requisito.');
+    }
+  }
+
   function handleClose() {
     setShowForm(false);
+    setShowCoreqForm(false);
     onClose();
   }
 
@@ -139,14 +211,19 @@ export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName
     <Sheet open={open} onOpenChange={(v) => !v && handleClose()}>
       <SheetContent className="flex flex-col gap-4 overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Correlativas</SheetTitle>
+          <SheetTitle>Correlativas y co-requisitos</SheetTitle>
         </SheetHeader>
 
         {subjectName && (
           <p className="text-[13px] text-ink-faint">
-            Correlativas para <span className="font-medium text-ink">{subjectName}</span>
+            Para <span className="font-medium text-ink">{subjectName}</span>
           </p>
         )}
+
+        <div className="flex flex-col gap-1">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Correlativas</p>
+          <p className="text-[11px] text-ink-faint">Condición previa para cursar esta materia.</p>
+        </div>
 
         {isLoading && <Skeleton rows={3} />}
 
@@ -188,6 +265,55 @@ export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName
         ) : (
           <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="self-start">
             + Agregar correlativa
+          </Button>
+        )}
+
+        <div className="my-1 border-t border-neutral-bg" />
+
+        <div className="flex flex-col gap-1">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">Co-requisitos</p>
+          <p className="text-[11px] text-ink-faint">Materia que debe cursarse simultáneamente.</p>
+        </div>
+
+        {loadingCorequisites && <Skeleton rows={2} />}
+
+        {!loadingCorequisites && (corequisites ?? []).length === 0 && !showCoreqForm && (
+          <p className="text-[13px] text-ink-faint">Sin co-requisitos definidos.</p>
+        )}
+
+        {!loadingCorequisites && (corequisites ?? []).length > 0 && (
+          <div className="flex flex-col divide-y divide-neutral-bg">
+            {corequisites.map((c) => (
+              <div key={c.id} className="flex items-center justify-between gap-3 py-2">
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+                    {c.corequisiteSubjectCode}
+                  </span>
+                  <span className="block truncate text-[13.5px] font-medium text-ink">
+                    {c.corequisiteSubjectName}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCorequisite(c.id)}
+                  disabled={removeCorequisite.isPending}
+                  className="shrink-0 rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-danger/10 hover:text-danger"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showCoreqForm ? (
+          <FormAgregarCorequisito
+            programSubjectId={programSubjectId}
+            onCancel={() => setShowCoreqForm(false)}
+          />
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => setShowCoreqForm(true)} className="self-start">
+            + Agregar co-requisito
           </Button>
         )}
       </SheetContent>
