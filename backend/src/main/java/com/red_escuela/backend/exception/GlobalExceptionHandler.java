@@ -1,5 +1,8 @@
 package com.red_escuela.backend.exception;
+import com.red_escuela.backend.announcement.exception.AnnouncementAlreadySentException;
 import com.red_escuela.backend.announcement.exception.AnnouncementNotFoundException;
+import com.red_escuela.backend.announcement.exception.CannotChangeAudienceOfSentAnnouncementException;
+import com.red_escuela.backend.announcement.exception.ScheduledDateInThePastException;
 import com.red_escuela.backend.announcement.exception.EmptyAudienceException;
 import com.red_escuela.backend.announcement.exception.SegmentNotAvailableForSectionException;
 import com.red_escuela.backend.announcement.exception.UnknownAudienceSegmentException;
@@ -239,6 +242,7 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class,
             CycleIncompleteException.class,
             EmptyAudienceException.class,
+            ScheduledDateInThePastException.class,
             SegmentNotAvailableForSectionException.class,
             UnknownAudienceSegmentException.class
     })
@@ -343,7 +347,9 @@ public class GlobalExceptionHandler {
             SectionScheduleConflictException.class,
             CycleAlreadyInProgressException.class,
             CycleNotPendingApprovalException.class,
-            SubjectInvalidTransitionException.class
+            SubjectInvalidTransitionException.class,
+            AnnouncementAlreadySentException.class,
+            CannotChangeAudienceOfSentAnnouncementException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
     public void handleConflict() {
