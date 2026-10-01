@@ -145,7 +145,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
 
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(String.valueOf(Math.abs(System.nanoTime()) % 900000000L + 100000000L));
         subject.setName("MateriaExcepcion" + System.nanoTime());
         entityManager.persist(subject);
         Term term = new Term();
