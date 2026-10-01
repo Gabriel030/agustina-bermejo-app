@@ -106,7 +106,8 @@ public class AnnouncementController {
     @PutMapping("/announcements/{id}")
     public AnnouncementResponse update(@PathVariable Long id, @Valid @RequestBody UpdateAnnouncementRequest request) {
         return AnnouncementResponse.from(updateAnnouncement.update(new UpdateAnnouncementCommand(
-                id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt())));
+                id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt(),
+                request.scheduledFor(), request.audience() == null ? null : request.audience().toSpec())));
     }
 
     @DeleteMapping("/announcements/{id}")
@@ -117,7 +118,7 @@ public class AnnouncementController {
 
     private CreateAnnouncementCommand toCommand(SectionType type, Long sectionId, CreateAnnouncementRequest request) {
         return new CreateAnnouncementCommand(type, sectionId, request.title(), request.body(),
-                request.category(), request.urgent(), request.expiresAt(),
+                request.category(), request.urgent(), request.expiresAt(), request.scheduledFor(),
                 request.audience() == null ? null : request.audience().toSpec());
     }
 }
