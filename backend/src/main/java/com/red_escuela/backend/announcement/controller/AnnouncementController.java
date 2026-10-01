@@ -2,6 +2,7 @@ package com.red_escuela.backend.announcement.controller;
 
 import com.red_escuela.backend.announcement.dto.AnnouncementResponse;
 import com.red_escuela.backend.announcement.dto.AudiencePreviewResponse;
+import com.red_escuela.backend.announcement.dto.AnnouncementRecipientResponse;
 import com.red_escuela.backend.announcement.dto.AudienceSegmentResponse;
 import com.red_escuela.backend.announcement.dto.AudienceSpecRequest;
 import com.red_escuela.backend.announcement.dto.CreateAnnouncementRequest;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.DeleteAnnouncementUseCase;
+import com.red_escuela.backend.announcement.usecase.announcement.ListAnnouncementRecipientsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.ListSectionAnnouncementsUseCase;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.UpdateAnnouncementUseCase;
@@ -40,19 +42,22 @@ public class AnnouncementController {
     private final ListSectionAnnouncementsUseCase listSectionAnnouncements;
     private final ListAudienceSegmentsUseCase listAudienceSegments;
     private final PreviewAudienceUseCase previewAudience;
+    private final ListAnnouncementRecipientsUseCase listAnnouncementRecipients;
 
     public AnnouncementController(CreateAnnouncementUseCase createAnnouncement,
                                   UpdateAnnouncementUseCase updateAnnouncement,
                                   DeleteAnnouncementUseCase deleteAnnouncement,
                                   ListSectionAnnouncementsUseCase listSectionAnnouncements,
                                   ListAudienceSegmentsUseCase listAudienceSegments,
-                                  PreviewAudienceUseCase previewAudience) {
+                                  PreviewAudienceUseCase previewAudience,
+                                  ListAnnouncementRecipientsUseCase listAnnouncementRecipients) {
         this.createAnnouncement = createAnnouncement;
         this.updateAnnouncement = updateAnnouncement;
         this.deleteAnnouncement = deleteAnnouncement;
         this.listSectionAnnouncements = listSectionAnnouncements;
         this.listAudienceSegments = listAudienceSegments;
         this.previewAudience = previewAudience;
+        this.listAnnouncementRecipients = listAnnouncementRecipients;
     }
 
     @PostMapping("/subject-sections/{sectionId}/announcements")
@@ -108,6 +113,11 @@ public class AnnouncementController {
         return AnnouncementResponse.from(updateAnnouncement.update(new UpdateAnnouncementCommand(
                 id, request.title(), request.body(), request.category(), request.urgent(), request.expiresAt(),
                 request.scheduledFor(), request.audience() == null ? null : request.audience().toSpec())));
+    }
+
+    @GetMapping("/announcements/{id}/recipients")
+    public List<AnnouncementRecipientResponse> recipients(@PathVariable Long id) {
+        return listAnnouncementRecipients.list(id);
     }
 
     @DeleteMapping("/announcements/{id}")
