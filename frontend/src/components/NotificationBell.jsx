@@ -1,8 +1,12 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmptyState } from '@/components/EmptyState';
 import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/hooks/useNotifications';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, tiempoRelativo } from '@/lib/notificaciones';
+
+const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);
 
 const BORDE_TONO = {
   warning: 'border-l-warning',
@@ -19,14 +23,25 @@ const TEXTO_TONO = {
 };
 
 export function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { data: notificaciones } = useMisNotificaciones();
   const marcarLeida = useMarcarNotificacionLeida();
 
   const lista = notificaciones ?? [];
   const noLeidas = lista.filter((n) => !n.read).length;
 
+  function handleClick(n) {
+    if (!n.read) marcarLeida.mutate(n.id);
+    if (ANNOUNCEMENT_TYPES.has(n.type) && n.relatedEntityId) {
+      setOpen(false);
+      navigate(`/alumno/inicio?aviso=${n.relatedEntityId}`);
+      return;
+    }
+  }
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -56,7 +71,7 @@ export function NotificationBell() {
               return (
                 <button
                   key={n.id}
-                  onClick={() => !n.read && marcarLeida.mutate(n.id)}
+                  onClick={() => handleClick(n)}
                   className={`flex flex-col gap-0.5 border-b border-border border-l-4 px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-neutral-bg/60 ${
                     BORDE_TONO[tono]
                   } ${!n.read ? 'bg-accent-soft/30' : ''}`}
