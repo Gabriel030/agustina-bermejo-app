@@ -157,6 +157,8 @@ import com.red_escuela.backend.graduation.exception.CertificateNotEligibleExcept
 import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
 import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
@@ -236,6 +238,7 @@ public class GlobalExceptionHandler {
             MaxExamAttemptsExceededException.class,
             ExamBoardSubjectMismatchException.class,
             NotEligibleForGraduationException.class,
+            DirectorApprovalSubjectRequiredException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
             InvalidCurrentPasswordException.class,
@@ -342,6 +345,7 @@ public class GlobalExceptionHandler {
             GraduationRequestAlreadyActiveException.class,
             DirectorApprovalRequestAlreadyActiveException.class,
             InvalidGraduationRequestStateException.class,
+            GraduationRequirementsNotMetException.class,
             InvalidDirectorApprovalRequestStateException.class,
             InvalidProgramEnrollmentApplicationStateException.class,
             AlreadyHasPendingApplicationException.class,

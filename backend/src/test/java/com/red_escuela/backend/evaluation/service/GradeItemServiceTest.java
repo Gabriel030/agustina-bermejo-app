@@ -26,6 +26,12 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.graduation.entity.GraduationRequest;
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import jakarta.persistence.EntityManagerFactory;
+import org.springframework.orm.jpa.EntityManagerHolder;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +54,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
 
     private Institution persistInstitution() {
         Institution institution = new Institution();
@@ -326,6 +335,39 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(enrollment.getFinalScore()).isEqualTo(8.0);
+    }
+
+    @Test
+    void approvingASubjectForAStudentWithAnActiveGraduationRequestSavesTheGradeWithoutRollingBack() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000099", institution);
+        Instructor instructor = persistInstructor("71000098");
+        Subject subject = persistSubject("MateriaConEgresoActivo");
+        Term term = persistTerm();
+        EvaluationScheme scheme = persistScheme(0, 0, true);
+        SubjectSection section = persistSection(subject, term, scheme);
+        assignInstructor(section, instructor);
+        Program program = persistProgram("CarreraConEgresoActivo");
+        program.setTotalCreditsRequired(0);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        GraduationRequest activeRequest = new GraduationRequest();
+        activeRequest.setProgramEnrollment(programEnrollment);
+        activeRequest.setStatus(GraduationRequestStatus.REQUESTED);
+        activeRequest.setRequestedAt(LocalDateTime.of(2026, 9, 1, 10, 0));
+        entityManager.persist(activeRequest);
+        entityManager.flush();
+
+        GradeItem saved = gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+
+        EntityManagerHolder sharedTransaction = (EntityManagerHolder) TransactionSynchronizationManager.getResource(entityManagerFactory);
+        assertThat(sharedTransaction.getEntityManager().getTransaction().getRollbackOnly()).isFalse();
+        assertThat(saved.getId()).isNotNull();
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
     }
 
     @Test
