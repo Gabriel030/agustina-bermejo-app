@@ -68,6 +68,8 @@ import com.red_escuela.backend.academicstructure.exception.CycleNotFoundExceptio
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
+import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
@@ -94,6 +96,7 @@ import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExi
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
 import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
+import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
@@ -212,6 +215,7 @@ public class GlobalExceptionHandler {
             StudentNotConfirmedException.class,
             StudentNotActiveException.class,
             AdmissionWindowClosedException.class,
+            ClassOnHolidayException.class,
             EnrollmentWindowClosedException.class,
             ProgramEnrollmentRequiredException.class,
             EnrollmentFeeNotPaidException.class,
@@ -242,6 +246,7 @@ public class GlobalExceptionHandler {
             InvalidAdHocFeeTypeException.class,
             IllegalArgumentException.class,
             CycleIncompleteException.class,
+            SectionCapacityExceedsClassroomException.class,
             EmptyAudienceException.class,
             ScheduledDateInThePastException.class,
             SegmentNotAvailableForSectionException.class,
@@ -350,6 +355,7 @@ public class GlobalExceptionHandler {
             SectionScheduleConflictException.class,
             CycleAlreadyInProgressException.class,
             CycleNotPendingApprovalException.class,
+            CycleNotEditableException.class,
             SubjectInvalidTransitionException.class,
             AnnouncementAlreadySentException.class,
             CannotChangeAudienceOfSentAnnouncementException.class

@@ -28,7 +28,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA mis inscripciones ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }

@@ -192,7 +192,7 @@ public class ProgramEnrollmentService {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
                     var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-                    Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
+                    Double asistencia = riesgo.porcentajeAusentismo() == null ? null : 100 - riesgo.porcentajeAusentismo();
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
                 })

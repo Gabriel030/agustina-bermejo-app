@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.academicstructure.dto.CreateCycleSectionRequest;
+import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.*;
 import com.red_escuela.backend.academicstructure.exception.*;
 import com.red_escuela.backend.academicstructure.repository.*;
@@ -48,6 +49,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     public Long createSection(Long cycleId, CreateCycleSectionRequest request) {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
+        cycle.ensureEditable();
         if (cycle.getProgram() != null) {
             return createSubjectSection(cycle, request);
         } else {
@@ -87,12 +89,18 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
         return saved.getId();
     }
 
+    private Classroom availableClassroom(Term term, ScheduleSlotRequest slotReq, Integer capacity) {
+        var classroom = classroomRepository.findById(slotReq.classroomId())
+                .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
+        classroom.ensureCanHost(capacity);
+        conflictChecker.checkClassroomAvailability(term, slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+        return classroom;
+    }
+
     private void saveSubjectSlots(SubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
-            var classroom = classroomRepository.findById(slotReq.classroomId())
-                    .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
-            conflictChecker.checkClassroomAvailability(slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+            var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setSubjectSection(section);
             slot.setClassroom(classroom);
@@ -106,9 +114,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private void saveCourseSlots(CourseSubjectSection section, CreateCycleSectionRequest request) {
         if (request.slots() == null) return;
         for (var slotReq : request.slots()) {
-            var classroom = classroomRepository.findById(slotReq.classroomId())
-                    .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
-            conflictChecker.checkClassroomAvailability(slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+            var classroom = availableClassroom(section.getTerm(), slotReq, request.capacity());
             var slot = new SectionScheduleSlot();
             slot.setCourseSection(section);
             slot.setClassroom(classroom);

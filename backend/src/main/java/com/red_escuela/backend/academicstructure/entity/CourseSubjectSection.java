@@ -63,4 +63,8 @@ public class CourseSubjectSection {
 
     @Column(name = "pending_approval", nullable = false)
     private boolean pendingApproval = false;
+
+    public boolean isOfferingApproved() {
+        return academicOfferingCycle == null || academicOfferingCycle.wasApproved();
+    }
 }
