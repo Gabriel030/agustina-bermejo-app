@@ -11,6 +11,7 @@ import com.red_escuela.backend.academicstructure.usecase.cycle.ApproveCycleUseCa
 import com.red_escuela.backend.academicstructure.usecase.cycle.ApproveSectionModificationUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.CreateAcademicOfferingCycleUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionUseCase;
+import com.red_escuela.backend.academicstructure.usecase.cycle.GetAcademicOfferingCycleUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.GetCycleSectionsUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.ListAcademicOfferingCyclesUseCase;
 import com.red_escuela.backend.academicstructure.usecase.cycle.RejectCycleUseCase;
@@ -43,6 +44,7 @@ public class AcademicOfferingCycleController {
     private final RequestSectionModificationUseCase requestModification;
     private final ApproveSectionModificationUseCase approveModification;
     private final RejectSectionModificationUseCase rejectModification;
+    private final GetAcademicOfferingCycleUseCase getCycle;
 
     public AcademicOfferingCycleController(
             CreateAcademicOfferingCycleUseCase createCycle,
@@ -54,7 +56,8 @@ public class AcademicOfferingCycleController {
             GetCycleSectionsUseCase getCycleSections,
             RequestSectionModificationUseCase requestModification,
             ApproveSectionModificationUseCase approveModification,
-            RejectSectionModificationUseCase rejectModification
+            RejectSectionModificationUseCase rejectModification,
+            GetAcademicOfferingCycleUseCase getCycle
     ) {
         this.createCycle = createCycle;
         this.listCycles = listCycles;
@@ -66,6 +69,7 @@ public class AcademicOfferingCycleController {
         this.requestModification = requestModification;
         this.approveModification = approveModification;
         this.rejectModification = rejectModification;
+        this.getCycle = getCycle;
     }
 
     @PostMapping("/academic-offering-cycles")
@@ -83,6 +87,12 @@ public class AcademicOfferingCycleController {
             @RequestParam(required = false) AcademicOfferingCycleStatus status
     ) {
         return listCycles.list(programId, courseId, status);
+    }
+
+    @GetMapping("/academic-offering-cycles/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public AcademicOfferingCycleResponse get(@PathVariable Long id) {
+        return getCycle.get(id);
     }
 
     @PostMapping("/academic-offering-cycles/{id}/sections")

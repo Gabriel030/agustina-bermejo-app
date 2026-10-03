@@ -89,8 +89,8 @@ const RUTAS_POR_ROL = {
   },
   preceptor: {
     Layout: PreceptorLayout,
-    paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'periodos'],
-    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen, 'oferta-academica': PreceptorOfertaAcademica },
+    paginas: ['inicio', 'alumnos', 'oferta-academica', 'mesas-de-examen', 'solicitudes-de-asistencia', 'periodos'],
+    paginasReales: { alumnos: PadronAlumnos, 'mesas-de-examen': PreceptorMesaExamen, 'oferta-academica': PreceptorOfertaAcademica, 'solicitudes-de-asistencia': AdministrativoSolicitudesAsistencia },
   },
   administrativo: {
     Layout: AdministrativoLayout,

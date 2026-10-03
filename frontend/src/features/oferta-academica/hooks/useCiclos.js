@@ -14,6 +14,14 @@ export function useCiclos({ programId, courseId, status } = {}) {
   });
 }
 
+export function useCycle(cycleId) {
+  return useQuery({
+    queryKey: ['ciclo', cycleId],
+    queryFn: () => apiFetch(`/academic-offering-cycles/${cycleId}`),
+    enabled: !!cycleId,
+  });
+}
+
 export function useCicloSecciones(cycleId) {
   return useQuery({
     queryKey: ['ciclo-secciones', cycleId],
@@ -44,6 +52,7 @@ export function useAddSeccion(cycleId) {
 }
 
 export function useAsignarInstructorSeccion(tipoCiclo) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ sectionId, instructorId }) => {
       const path = tipoCiclo === 'programa' ? 'program-sections' : 'course-sections';
@@ -52,6 +61,7 @@ export function useAsignarInstructorSeccion(tipoCiclo) {
         body: JSON.stringify({ instructorId, role: 'LEAD' }),
       });
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ciclo-secciones'] }),
   });
 }
 
@@ -60,6 +70,9 @@ export function useSubmitCiclo() {
   return useMutation({
     mutationFn: (cycleId) =>
       apiFetch(`/academic-offering-cycles/${cycleId}/submit`, { method: 'POST' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ciclos'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ciclos'] });
+      queryClient.invalidateQueries({ queryKey: ['ciclo'] });
+    },
   });
 }

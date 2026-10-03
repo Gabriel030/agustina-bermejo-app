@@ -3,6 +3,11 @@ package com.red_escuela.backend.attendance.usecase.attendance;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.entity.Holiday;
+import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
+import com.red_escuela.backend.exception.AttendanceAlreadyRecordedException;
+import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
+import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
@@ -48,9 +53,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @Transactional
 class AttendanceUseCaseTest extends AbstractIntegrationTest {
+    private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
+
 
     @Autowired
     private LoadProgramSectionAttendanceUseCase loadProgramSectionAttendanceUseCase;
+
+    @Autowired
+    private ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
     private ListProgramEnrollmentAttendanceUseCase listProgramEnrollmentAttendanceUseCase;
@@ -192,14 +202,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SubjectSection section = persistSection(subject, term, null);
         entityManager.flush();
 
-        CargarAsistenciaRequest request = new CargarAsistenciaRequest(LocalDate.now(), List.of(), null, null);
+        CargarAsistenciaRequest request = new CargarAsistenciaRequest(CLASS_DAY, List.of(), null, null);
 
         assertThatThrownBy(() -> loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructorAjeno.getId(), request)))
                 .isInstanceOf(NotOwnSectionException.class);
     }
 
     @Test
-    void loadingAttendanceTwiceOnSameDayUpdatesExistingRowInsteadOfDuplicating() {
+    void loadingTheSameAttendanceTwiceOnSameDayDoesNotDuplicateTheRow() {
         Institution institution = persistInstitution();
         Student student = persistStudent("80000002", institution);
         Instructor instructor = persistInstructor("80000003");
@@ -212,15 +222,15 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        LocalDate classDate = LocalDate.now();
+        LocalDate classDate = CLASS_DAY;
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+                new CargarAsistenciaRequest(classDate, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
 
         List<Attendance> asistencias = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId());
         assertThat(asistencias).hasSize(1);
-        assertThat(asistencias.get(0).getStatus()).isEqualTo(AttendanceStatus.PRESENT);
+        assertThat(asistencias.get(0).getStatus()).isEqualTo(AttendanceStatus.ABSENT);
     }
 
     @Test
@@ -237,7 +247,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        CargarAsistenciaRequest request = new CargarAsistenciaRequest(LocalDate.now(), List.of(
+        CargarAsistenciaRequest request = new CargarAsistenciaRequest(CLASS_DAY, List.of(
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT),
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null);
 
@@ -263,7 +273,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000008");
@@ -289,7 +299,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000011");
@@ -308,7 +318,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Student student = persistStudent("80000012", institution);
         Subject subject = persistSubject("MateriaSinClases");
         Term term = persistTerm();
-        SubjectSection section = persistSection(subject, term, 0.25);
+        SubjectSection section = persistSection(subject, term, 25.0);
         Program program = persistProgram("CarreraSinClases");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
@@ -317,7 +327,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isFalse();
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.0);
+        assertThat(riesgo.porcentajeAusentismo()).isNull();
     }
 
     @Test
@@ -327,14 +337,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("80000014");
         Subject subject = persistSubject("MateriaLibrePorInasistencias");
         Term term = persistTerm();
-        SubjectSection section = persistSection(subject, term, 0.25);
+        SubjectSection section = persistSection(subject, term, 25.0);
         assignInstructor(section, instructor);
         Program program = persistProgram("CarreraLibrePorInasistencias");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        LocalDate d = LocalDate.now();
+        LocalDate d = CLASS_DAY;
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
@@ -347,7 +357,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isTrue();
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.5);
+        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(50.0);
     }
 
     @Test
@@ -365,7 +375,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         Attendance pendiente = submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(attendance.getId(), "motivo médico", "students/1/comprobante.pdf"));
@@ -388,7 +398,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(attendance.getId(), "motivo médico", "students/1/comprobante.pdf"));
 
@@ -416,7 +426,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(attendance.getId(), "motivo médico", "students/1/comprobante.pdf"));
 
@@ -439,7 +449,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(LocalDate.now(), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(CLASS_DAY, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
 
         Person preceptor = persistPersonBase("80000024");
@@ -457,14 +467,14 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Instructor instructor = persistInstructor("80000026");
         Subject subject = persistSubject("MateriaPendienteCuentaComoAusente");
         Term term = persistTerm();
-        SubjectSection section = persistSection(subject, term, 0.25);
+        SubjectSection section = persistSection(subject, term, 25.0);
         assignInstructor(section, instructor);
         Program program = persistProgram("CarreraPendienteCuentaComoAusente");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
         entityManager.flush();
 
-        LocalDate d = LocalDate.now();
+        LocalDate d = CLASS_DAY;
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
@@ -478,6 +488,103 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(ausente.getId(), "motivo médico", "students/1/comprobante.pdf"));
 
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(0.25);
+        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(25.0);
+    }
+
+    @Test
+    void studentWithAbsencesBelowTheMaxIsNotAtRisk() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("80000027", institution);
+        Instructor instructor = persistInstructor("80000028");
+        Term term = persistTerm();
+        SubjectSection section = persistSection(persistSubject("MateriaDentroDelLimite"), term, 25.0);
+        assignInstructor(section, instructor);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraDentroDelLimite"));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+
+        LocalDate d = CLASS_DAY;
+        loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
+                new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+        for (int i = 0; i < 3; i++) {
+            loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
+                    new CargarAsistenciaRequest(d.minusDays(i), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+        }
+
+        AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
+        assertThat(riesgo.libre()).isFalse();
+        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(25.0);
+    }
+
+    @Test
+    void attendanceSummaryShowsTheAttendancePercentageOfEachSubjectAndNothingWithoutClasses() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("80000029", institution);
+        Instructor instructor = persistInstructor("80000030");
+        Term term = persistTerm();
+        SubjectSection conClases = persistSection(persistSubject("MateriaConClases"), term, 25.0);
+        SubjectSection sinClases = persistSection(persistSubject("MateriaSinRegistros"), term, 25.0);
+        assignInstructor(conClases, instructor);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraResumen"));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, conClases);
+        persistEnrollment(student, programEnrollment, sinClases);
+        entityManager.flush();
+
+        LocalDate d = CLASS_DAY;
+        loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(conClases.getId(), instructor.getId(),
+                new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+        loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(conClases.getId(), instructor.getId(),
+                new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+
+        List<SubjectAttendanceSummaryResponse> summary = programEnrollmentService.attendanceSummaryBySubject(programEnrollment.getId());
+        assertThat(summary).extracting(SubjectAttendanceSummaryResponse::subjectName, SubjectAttendanceSummaryResponse::attendancePercentage)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("MateriaConClases", 50.0),
+                        org.assertj.core.groups.Tuple.tuple("MateriaSinRegistros", null));
+    }
+
+    private SubjectSectionEnrollment enrollInNewSection(String dni, String instructorDni, String name, Instructor[] instructorHolder) {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(dni, institution);
+        Instructor instructor = persistInstructor(instructorDni);
+        SubjectSection section = persistSection(persistSubject(name), persistTerm(), 25.0);
+        assignInstructor(section, instructor);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("Carrera" + name));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+        instructorHolder[0] = instructor;
+        return enrollment;
+    }
+
+    private void load(SubjectSectionEnrollment enrollment, Instructor instructor, LocalDate date, AttendanceStatus status) {
+        loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(enrollment.getSubjectSection().getId(), instructor.getId(),
+                new CargarAsistenciaRequest(date, List.of(new AttendanceEntry(enrollment.getId(), status)), null, null)));
+    }
+
+    @Test
+    void takingAttendanceOnAHolidayIsRejected() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000031", "80000032", "MateriaFeriado", instructor);
+        Holiday holiday = new Holiday();
+        holiday.setDate(CLASS_DAY);
+        holiday.setDescription("Feriado de prueba");
+        entityManager.persist(holiday);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.PRESENT))
+                .isInstanceOf(ClassOnHolidayException.class);
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId())).isEmpty();
+    }
+
+    @Test
+    void changingAnAlreadyRecordedAttendanceIsRejected() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000033", "80000034", "MateriaSobrescritura", instructor);
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.LATE);
+
+        assertThatThrownBy(() -> load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT))
+                .isInstanceOf(AttendanceAlreadyRecordedException.class);
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
+                .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.LATE);
     }
 }
