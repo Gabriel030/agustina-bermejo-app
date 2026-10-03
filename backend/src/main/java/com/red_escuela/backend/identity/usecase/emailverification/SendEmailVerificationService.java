@@ -6,7 +6,8 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.service.EmailService;
+import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.util.TokenHashUtil;
 import org.slf4j.Logger;
@@ -26,18 +27,18 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
 
     private final StudentRepository studentRepository;
     private final EmailVerificationTokenRepository tokenRepository;
-    private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
     private final String frontendBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public SendEmailVerificationService(
             StudentRepository studentRepository,
             EmailVerificationTokenRepository tokenRepository,
-            EmailService emailService,
+            ApplicationEventPublisher eventPublisher,
             @Value("${app.frontend.base-url}") String frontendBaseUrl) {
         this.studentRepository = studentRepository;
         this.tokenRepository = tokenRepository;
-        this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -61,7 +62,7 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
         tokenRepository.save(token);
 
         String link = frontendBaseUrl + "/verificar-email?token=" + clearToken;
-        emailService.sendEmailVerification(person, link);
+        eventPublisher.publishEvent(new EmailVerificationIssuedEvent(person, link));
         log.info("Email de verificación enviado para student {}, person {}", studentId, person.getId());
     }
 }

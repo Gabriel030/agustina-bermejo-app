@@ -4,7 +4,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.service.EmailService;
+import com.red_escuela.backend.identity.service.PasswordResetCodeIssuedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.util.TokenHashUtil;
 import org.slf4j.Logger;
@@ -22,16 +23,16 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
 
     private final PersonRepository personRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
     private final long passwordResetCodeExpirationMinutes;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public RequestPasswordResetService(PersonRepository personRepository, PasswordResetTokenRepository passwordResetTokenRepository,
-                                        EmailService emailService,
+                                        ApplicationEventPublisher eventPublisher,
                                         @Value("${auth.password-reset-code-expiration-minutes}") long passwordResetCodeExpirationMinutes) {
         this.personRepository = personRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
         this.passwordResetCodeExpirationMinutes = passwordResetCodeExpirationMinutes;
     }
 
@@ -55,7 +56,7 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
         resetToken.setCreatedAt(LocalDateTime.now());
         passwordResetTokenRepository.save(resetToken);
 
-        emailService.sendPasswordResetCode(person, code);
+        eventPublisher.publishEvent(new PasswordResetCodeIssuedEvent(person, code));
         log.info("Código de recuperación de password generado para person {}", person.getId());
     }
 

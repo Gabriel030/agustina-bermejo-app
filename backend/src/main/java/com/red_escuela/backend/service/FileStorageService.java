@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -36,7 +37,7 @@ public class FileStorageService {
         Path studentDirectory = uploadsDirectory.resolve("students").resolve(studentId.toString());
         try {
             Files.createDirectories(studentDirectory);
-            String fileName = carpeta + "_" + System.currentTimeMillis() + "." + extension;
+            String fileName = carpeta + "_" + UUID.randomUUID() + "." + extension;
             Path destination = studentDirectory.resolve(fileName);
             file.transferTo(destination);
             return uploadsDirectory.relativize(destination).toString();
@@ -54,7 +55,7 @@ public class FileStorageService {
         Path dir = uploadsDirectory.resolve("avatars");
         try (InputStream content = file.getInputStream()) {
             Files.createDirectories(dir);
-            Path dest = dir.resolve(personId + "." + extension);
+            Path dest = dir.resolve(personId + "_" + UUID.randomUUID() + "." + extension);
             Files.copy(content, dest, StandardCopyOption.REPLACE_EXISTING);
             return uploadsDirectory.relativize(dest).toString();
         } catch (IOException e) {
@@ -83,7 +84,7 @@ public class FileStorageService {
         Path dir = uploadsDirectory.resolve("payment-gateway");
         try {
             Files.createDirectories(dir);
-            Path dest = dir.resolve("qr." + extension);
+            Path dest = dir.resolve("qr_" + UUID.randomUUID() + "." + extension);
             file.transferTo(dest);
             return uploadsDirectory.relativize(dest).toString();
         } catch (IOException e) {
