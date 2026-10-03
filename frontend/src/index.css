@@ -59,6 +59,7 @@
   --color-danger-bg: var(--danger-bg);
   --color-neutral-bg: var(--neutral-bg);
   --color-neutral-ink: var(--neutral-ink);
+  --color-dialog-bg: var(--dialog-bg);
 
   --radius-sm: 0.75rem;
   --radius-md: 1rem;

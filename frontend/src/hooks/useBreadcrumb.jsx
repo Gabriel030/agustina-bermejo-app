@@ -43,7 +43,9 @@ export function useBreadcrumb() {
   const enLegajoPersonal = /^\/(administrativo|director)\/personal\/[^/]+$/.test(location.pathname);
   const { data: legajoPersonal } = useLegajoPersonal(params.id, enLegajoPersonal);
 
-  const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname);
+  const enNuevoAviso = /^\/docente\/mis-comisiones\/[^/]+\/avisos\/nuevo$/.test(location.pathname);
+  const enEditarAviso = /^\/docente\/mis-comisiones\/[^/]+\/avisos\/[^/]+\/editar$/.test(location.pathname);
+  const enDetalleComision = /^\/docente\/mis-comisiones\/[^/]+$/.test(location.pathname) || enNuevoAviso || enEditarAviso;
   const esCursoSuelto = searchParams.get('type') === 'COURSE';
   const { data: comision } = useConfiguracionComision(enDetalleComision && !esCursoSuelto ? params.sectionId : undefined);
   const { data: dictadas } = useComisionesDictadas(enDetalleComision && esCursoSuelto);
@@ -97,7 +99,8 @@ export function useBreadcrumb() {
   }
 
   if (enDetalleComision) {
-    const tabComision = esCursoSuelto ? 'avisos' : (searchParams.get('tab') ?? 'evaluacion');
+    const enFormulario = enNuevoAviso || enEditarAviso;
+    const tabComision = esCursoSuelto || enFormulario ? 'avisos' : (searchParams.get('tab') ?? 'evaluacion');
     const curso = esCursoSuelto
       ? (dictadas ?? []).find((s) => s.type === 'COURSE' && String(s.id) === params.sectionId)
       : null;
@@ -110,7 +113,15 @@ export function useBreadcrumb() {
       if (!esCursoSuelto) {
         items[1] = { ...items[1], to: `/docente/mis-comisiones/${params.sectionId}` };
       }
-      items.push({ label: ETIQUETA_TAB_COMISION[tabComision] });
+      const sufijo = esCursoSuelto ? '&type=COURSE' : '';
+      items.push(
+        enFormulario
+          ? { label: 'Avisos', to: `/docente/mis-comisiones/${params.sectionId}?tab=avisos${sufijo}` }
+          : { label: ETIQUETA_TAB_COMISION[tabComision] },
+      );
+      if (enFormulario) {
+        items.push({ label: enNuevoAviso ? 'Nuevo aviso' : 'Editar aviso' });
+      }
     }
     return items;
   }
