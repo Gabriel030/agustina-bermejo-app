@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
 import { Camera, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { SEX_LABEL } from '@/lib/person';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -33,6 +36,15 @@ const ETIQUETAS_EVENTO = {
 const ETIQUETAS_CANAL = {
   APP: 'En la app',
   EMAIL: 'Por email',
+};
+
+const AVATAR_TYPES = ['image/jpeg', 'image/png'];
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const AVATAR_RULE_MESSAGE = 'La foto tiene que ser JPG o PNG de hasta 5 MB.';
+
+const PASSWORD_ERROR_MESSAGES = {
+  INVALID_CURRENT_PASSWORD: 'La contraseña actual no es correcta.',
+  INVALID_PASSWORD_POLICY: 'La nueva contraseña tiene que tener al menos 8 caracteres, una mayúscula y un número.',
 };
 
 function CampoFormulario({ label, children }) {
@@ -81,9 +93,21 @@ function AvatarUpload() {
 
   async function onFileChange(e) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    await subir.mutateAsync(file);
     e.target.value = '';
+    if (!file) return;
+    if (!AVATAR_TYPES.includes(file.type) || file.size > AVATAR_MAX_BYTES) {
+      toast.error(AVATAR_RULE_MESSAGE);
+      return;
+    }
+    try {
+      await subir.mutateAsync(file);
+    } catch (err) {
+      toast.error(
+        err.code === 'UNSUPPORTED_FILE_TYPE' || err.code === 'MAX_UPLOAD_SIZE_EXCEEDED'
+          ? AVATAR_RULE_MESSAGE
+          : 'No pudimos subir la foto. Probá de nuevo.',
+      );
+    }
   }
 
   return (
@@ -202,9 +226,11 @@ function TabDatosPropios() {
               <SelectValue placeholder="Seleccioná" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="M">Masculino</SelectItem>
-              <SelectItem value="F">Femenino</SelectItem>
-              <SelectItem value="X">No binario / otro</SelectItem>
+              {Object.entries(SEX_LABEL).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </CampoFormulario>
@@ -298,28 +324,28 @@ function TabSeguridad() {
   const { data: sesiones, isLoading: cargandoSesiones } = useSesionesActivas();
   const revocar = useRevocarTodasLasSesiones();
   const cambiarContrasena = useCambiarContrasena();
+  const { logout } = useAuth();
 
   const [pass, setPass] = useState({ actual: '', nueva: '', confirmar: '' });
   const [errorPass, setErrorPass] = useState('');
-  const [passGuardada, setPassGuardada] = useState(false);
   const [errorSesiones, setErrorSesiones] = useState('');
   const [sesionesRevocadas, setSesionesRevocadas] = useState(false);
 
   async function guardarContrasena(e) {
     e.preventDefault();
     setErrorPass('');
-    setPassGuardada(false);
     if (pass.nueva !== pass.confirmar) {
       setErrorPass('Las contraseñas nuevas no coinciden.');
       return;
     }
     try {
       await cambiarContrasena.mutateAsync({ currentPassword: pass.actual, newPassword: pass.nueva });
-      setPass({ actual: '', nueva: '', confirmar: '' });
-      setPassGuardada(true);
     } catch (err) {
-      setErrorPass(err.message ?? 'No se pudo cambiar la contraseña.');
+      setErrorPass(PASSWORD_ERROR_MESSAGES[err.code] ?? err.message ?? 'No se pudo cambiar la contraseña.');
+      return;
     }
+    toast.success('Contraseña actualizada. Por seguridad cerramos todas tus sesiones: ingresá de nuevo con tu nueva contraseña.');
+    await logout();
   }
 
   async function cerrarTodasLasSesiones() {
@@ -353,6 +379,7 @@ function TabSeguridad() {
                 onChange={(e) => setPass((p) => ({ ...p, nueva: e.target.value }))}
                 required
               />
+              <span className="text-[11.5px] text-ink-faint">Mínimo 8 caracteres, con una mayúscula y un número.</span>
             </CampoFormulario>
             <CampoFormulario label="Confirmar nueva contraseña">
               <InputContrasena
@@ -363,7 +390,6 @@ function TabSeguridad() {
             </CampoFormulario>
           </div>
           {errorPass && <p className="text-[13px] text-danger">{errorPass}</p>}
-          {passGuardada && <p className="text-[13px] text-success">Contraseña actualizada.</p>}
           <div className="flex justify-end">
             <Button type="submit" disabled={cambiarContrasena.isPending}>
               {cambiarContrasena.isPending ? 'Guardando...' : 'Cambiar contraseña'}

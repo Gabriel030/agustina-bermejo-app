@@ -233,7 +233,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
                 key={op.value}
                 type="button"
                 onClick={() => { dispatch({ type: 'SET', campo: 'tipo', valor: op.value }); dispatch({ type: 'SET', campo: 'programaId', valor: '' }); dispatch({ type: 'SET', campo: 'cursoId', valor: '' }); }}
-                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
+                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
               >
                 {op.label}
               </button>
@@ -336,7 +336,7 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-accent hover:bg-accent-soft/50 transition-colors"
+        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-brand hover:bg-accent-soft/50 transition-colors"
       >
         <Plus className="h-3.5 w-3.5" />
         Agregar comisión para {subjectName}
@@ -379,7 +379,7 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
               key={d.id}
               type="button"
               onClick={() => setDia(d.id)}
-              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
+              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
             >
               {d.label}
             </button>

@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TabCarreras } from '@/components/catalogo/TabCarreras';
 import { TabCursos } from '@/components/catalogo/TabCursos';
 import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
+import { CATALOG_TABS } from '@/lib/catalog';
 
 // Épica 7 Fase 3: reemplaza el Catálogo de acción-directa de la Fase 2 por un
 // shell de 3 tabs (Strategy, ver spec técnica) — Carreras/Cursos ahora llevan a
@@ -13,7 +14,8 @@ import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
 // recargable/compartible sin perder el estado.
 export function Catalogo() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') ?? 'carreras';
+  const requestedTab = searchParams.get('tab');
+  const tab = CATALOG_TABS.includes(requestedTab) ? requestedTab : 'carreras';
   const search = searchParams.get('search') ?? '';
   const page = Number(searchParams.get('page') ?? '1');
 

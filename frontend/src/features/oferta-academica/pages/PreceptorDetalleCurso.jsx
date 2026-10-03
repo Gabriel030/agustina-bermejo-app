@@ -95,7 +95,7 @@ function SeccionDetalle({ ciclo }) {
           )}
           {seccion.pendingApproval && (
             <div className="col-span-2">
-              <span className="rounded-full bg-accent-soft px-3 py-1 text-[12px] font-medium text-accent">
+              <span className="rounded-full bg-accent-soft px-3 py-1 text-[12px] font-medium text-brand">
                 Modificación pendiente de aprobación
               </span>
             </div>

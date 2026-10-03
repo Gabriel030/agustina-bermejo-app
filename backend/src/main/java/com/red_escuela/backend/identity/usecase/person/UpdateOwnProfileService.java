@@ -35,7 +35,7 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
             person.setSex(request.sexo());
         }
         if (request.dni() != null) {
-            person.setDni(request.dni());
+            person.changeDni(request.dni());
         }
 
         var address = person.getAddress();

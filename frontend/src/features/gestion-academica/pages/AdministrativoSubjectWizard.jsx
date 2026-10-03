@@ -358,8 +358,8 @@ function WizardForm({ isEdit, existingSubject, subjectId }) {
 
   return (
     <PageContainer
-      titulo={isEdit ? 'Editar materia' : 'Nueva materia'}
-      accion={
+      title={isEdit ? 'Editar materia' : 'Nueva materia'}
+      action={
         <Button variant="outline" onClick={() => navigate('/administrativo/gestion-academica')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver al banco
@@ -428,7 +428,7 @@ export function AdministrativoSubjectWizard() {
 
   if (isEdit && isLoading) {
     return (
-      <PageContainer titulo="Editar materia">
+      <PageContainer title="Editar materia">
         <GlassCard className="p-6">
           <Skeleton rows={6} />
         </GlassCard>

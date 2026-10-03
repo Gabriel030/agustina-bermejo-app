@@ -29,9 +29,10 @@ public final class PersonSpecifications {
         return (root, query, cb) -> {
             if (q == null || q.isBlank()) return cb.conjunction();
             var pattern = "%" + q.toLowerCase() + "%";
+            var unaccentedPattern = cb.function("unaccent", String.class, cb.literal(pattern));
             return cb.or(
-                    cb.like(cb.lower(root.get("name")), pattern),
-                    cb.like(cb.lower(root.get("lastname")), pattern),
+                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("name"))), unaccentedPattern),
+                    cb.like(cb.function("unaccent", String.class, cb.lower(root.get("lastname"))), unaccentedPattern),
                     cb.like(cb.lower(root.get("dni")), pattern)
             );
         };

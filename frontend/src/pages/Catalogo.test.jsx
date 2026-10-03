@@ -93,4 +93,85 @@ describe('Catalogo', () => {
     expect(screen.getByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.queryByText('Administración de Empresas')).not.toBeInTheDocument();
   });
+
+  it('only lists the programs and courses published in the catalog', async () => {
+    const programs = [
+      { id: 1, name: 'Carrera publicada', totalYears: 3, visibleInCatalog: true },
+      { id: 2, name: 'Carrera oculta', totalYears: 3, visibleInCatalog: false },
+    ];
+    const courses = [
+      { id: 1, name: 'Curso publicado', durationMonths: 3, visibleInCatalog: true },
+      { id: 2, name: 'Curso oculto', durationMonths: 3, visibleInCatalog: false },
+    ];
+    const onlyPublished = (items, request) =>
+      new URL(request.url).searchParams.get('visibleInCatalog') === 'true' ? items.filter((item) => item.visibleInCatalog) : items;
+    server.use(
+      http.get(`${API}/programs`, ({ request }) => HttpResponse.json(onlyPublished(programs, request))),
+      http.get(`${API}/courses`, ({ request }) => HttpResponse.json(onlyPublished(courses, request))),
+    );
+    const user = userEvent.setup();
+    renderCatalogo();
+
+    expect(await screen.findByText('Carrera publicada')).toBeInTheDocument();
+    expect(screen.queryByText('Carrera oculta')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Cursos' }));
+
+    expect(await screen.findByText('Curso publicado')).toBeInTheDocument();
+    expect(screen.queryByText('Curso oculto')).not.toBeInTheDocument();
+  });
+
+  it('search ignores accents and case', async () => {
+    server.use(
+      http.get(`${API}/programs`, () =>
+        HttpResponse.json([
+          { id: 1, name: 'Profesorado de Educación Inicial', totalYears: 4 },
+          { id: 2, name: 'Tecnicatura en Enfermería', totalYears: 3 },
+        ]),
+      ),
+    );
+    renderCatalogo('/catalogo?tab=carreras&search=EDUCACION');
+
+    expect(await screen.findByText('Profesorado de Educación Inicial')).toBeInTheDocument();
+    expect(screen.queryByText('Tecnicatura en Enfermería')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the last page when the page in the URL is out of range', async () => {
+    server.use(
+      http.get(`${API}/programs`, () =>
+        HttpResponse.json(Array.from({ length: 8 }, (_, i) => ({ id: i + 1, name: `Carrera ${i + 1}`, totalYears: 3 }))),
+      ),
+    );
+    renderCatalogo('/catalogo?tab=carreras&page=99');
+
+    expect(await screen.findByText('Carrera 7')).toBeInTheDocument();
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument();
+  });
+
+  it('falls back to the Carreras tab when the tab in the URL is unknown', async () => {
+    server.use(http.get(`${API}/programs`, () => HttpResponse.json([{ id: 1, name: 'Diseño Gráfico', totalYears: 3 }])));
+    renderCatalogo('/catalogo?tab=xxx');
+
+    expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Carreras' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('shows the teaching mode on each course card', async () => {
+    server.use(
+      http.get(`${API}/courses`, () =>
+        HttpResponse.json([{ id: 1, name: 'Primeros Auxilios', durationMonths: 3, teachingMode: 'IN_PERSON' }]),
+      ),
+    );
+    renderCatalogo('/catalogo?tab=cursos');
+
+    expect(await screen.findByText('3 meses · Presencial')).toBeInTheDocument();
+  });
+
+  it('does not claim an official title on program cards', async () => {
+    server.use(http.get(`${API}/programs`, () => HttpResponse.json([{ id: 1, name: 'Diseño Gráfico', totalYears: 3 }])));
+    renderCatalogo();
+
+    expect(await screen.findByText('3 años')).toBeInTheDocument();
+    expect(screen.queryByText(/Título oficial/)).not.toBeInTheDocument();
+  });
 });

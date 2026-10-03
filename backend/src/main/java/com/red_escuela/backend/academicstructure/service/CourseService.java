@@ -12,6 +12,7 @@ import com.red_escuela.backend.academicstructure.exception.CourseNotFoundExcepti
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,8 +80,11 @@ public class CourseService {
         return courseRepository.save(course);
     }
 
-    public List<Course> list(StatusType status) {
-        return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
+    public List<Course> list(StatusType status, Boolean visibleInCatalog) {
+        return courseRepository.findAll(Sort.by("name", "id")).stream()
+                .filter(course -> status == null || course.getIsActive() == status)
+                .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
+                .toList();
     }
 
     public Course get(Long id) {
