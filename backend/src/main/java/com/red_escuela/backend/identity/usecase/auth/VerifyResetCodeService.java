@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
@@ -35,7 +36,7 @@ public class VerifyResetCodeService implements VerifyResetCodeUseCase {
     @Override
     @Transactional(noRollbackFor = InvalidPasswordResetTokenException.class)
     public String verify(VerifyResetCodeCommand command) {
-        Person person = personRepository.findByEmail(command.email())
+        Person person = personRepository.findByEmail(EmailAddress.of(command.email()))
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
         PasswordResetToken resetToken = passwordResetTokenRepository

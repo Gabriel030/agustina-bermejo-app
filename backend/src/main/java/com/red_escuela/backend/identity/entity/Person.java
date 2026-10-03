@@ -2,6 +2,8 @@ package com.red_escuela.backend.identity.entity;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.entity.StatusType;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.persistence.EmailAddressConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,7 +35,8 @@ public class Person {
     private String sex;
 
     @Column(name = "email", unique = true)
-    private String email;
+    @Convert(converter = EmailAddressConverter.class)
+    private EmailAddress email;
 
     @Column(name = "dni", unique = true)
     private String dni;
@@ -87,6 +90,18 @@ public class Person {
 
     @Column(name = "email_verified")
     private Boolean emailVerified;
+
+    public void setEmail(EmailAddress email) {
+        this.email = email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : EmailAddress.of(email);
+    }
+
+    public String emailValue() {
+        return email == null ? null : email.value();
+    }
 
     public void changeDni(String newDni) {
         this.dni = newDni == null || newDni.isBlank() ? null : newDni.trim();

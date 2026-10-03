@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
@@ -75,7 +76,7 @@ class LoginWithGoogleServiceTest {
         person.setStatus(StatusType.INACTIVE);
         when(googleIdTokenService.verify(ID_TOKEN)).thenReturn(PROFILE);
         when(personRepository.findByGoogleSubjectId(PROFILE.subject())).thenReturn(Optional.empty());
-        when(personRepository.findByEmail(PROFILE.email())).thenReturn(Optional.of(person));
+        when(personRepository.findByEmail(EmailAddress.of(PROFILE.email()))).thenReturn(Optional.of(person));
 
         assertThatThrownBy(() -> service.login(ID_TOKEN)).isInstanceOf(InvalidCredentialsException.class);
         assertThat(person.getGoogleSubjectId()).isNull();

@@ -117,6 +117,6 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
 
         authenticateAsActor("B0000007", "ADMINISTRATIVO");
         Person editado = updateStaffUseCase.update(new UpdateStaffCommand(docente.getId(), edicion)).person();
-        assertThat(editado.getEmail()).isEqualTo("nuevo@example.com");
+        assertThat(editado.emailValue()).isEqualTo("nuevo@example.com");
     }
 }

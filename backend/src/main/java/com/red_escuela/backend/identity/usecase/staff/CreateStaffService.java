@@ -76,7 +76,7 @@ public class CreateStaffService implements CreateStaffUseCase {
             instructorRepository.save(instructor);
         }
 
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
 
         return new StaffUseCaseResult(person, requestedRole);
     }

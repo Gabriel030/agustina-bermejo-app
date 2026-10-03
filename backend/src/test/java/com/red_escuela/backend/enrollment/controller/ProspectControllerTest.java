@@ -154,7 +154,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.dni").doesNotExist());
 
         Student student = studentRepository.findAll().stream()
-                .filter(s -> "juan.perez@example.com".equals(s.getPerson().getEmail()))
+                .filter(s -> "juan.perez@example.com".equals(s.getPerson().emailValue()))
                 .findFirst().orElseThrow();
         assertThat(student.getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
         assertThat(student.getPerson().getUsername()).isNull();
@@ -248,7 +248,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         entityManager.merge(existing);
         entityManager.flush();
 
-        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(confirmado.getPerson().getEmail(), rawPasswordResetCode));
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(confirmado.getPerson().emailValue(), rawPasswordResetCode));
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "nuevaPassword123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("30111222", "nuevaPassword123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();

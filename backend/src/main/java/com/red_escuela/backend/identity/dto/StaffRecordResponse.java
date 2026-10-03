@@ -21,7 +21,7 @@ public record StaffRecordResponse(
                 person.getLastname(),
                 person.getDni(),
                 person.getUsername(),
-                person.getEmail(),
+                person.emailValue(),
                 person.getPhoneNumber(),
                 role,
                 person.getStatus() == null ? null : person.getStatus().name(),
