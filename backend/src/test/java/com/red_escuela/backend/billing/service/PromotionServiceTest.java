@@ -226,7 +226,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         Program program = new Program();
         program.setName("Carrera de prueba " + System.nanoTime());
         program.setTotalYears(3);
-        program.setTotalCreditsRequired(1);
+        program.setTotalCreditsRequired(0);
         program = programRepository.save(program);
 
         Term term = new Term();

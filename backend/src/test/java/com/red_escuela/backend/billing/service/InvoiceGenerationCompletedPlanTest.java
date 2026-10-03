@@ -273,6 +273,24 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void programWithAnEmptyStudyPlanKeepsReceivingMonthlyInstallments() {
+        ProgramEnrollment enrollment = transactionTemplate.execute(status -> {
+            Person director = persistPerson("93000007");
+            Student student = persistStudent("93000008");
+            Program program = new Program();
+            program.setName("Carrera sin plan cargado " + System.nanoTime());
+            program.setTotalYears(1);
+            program.setTotalCreditsRequired(0);
+            entityManager.persist(program);
+            return persistMonthlyBilledEnrollment(student, program, persistTerm(), director);
+        });
+
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, FIRST_MONTH);
+
+        assertThat(recurringInvoices(enrollment)).extracting(Invoice::getPeriod).containsExactly(FIRST_MONTH);
+    }
+
+    @Test
     void completedPlanStopsBillingButTheUnpaidInstallmentBlocksGraduationUntilItIsPaid() {
         BilledStudent billed = setUpMonthlyBilledStudent("93000005", "93000006");
         invoiceGenerationService.generateNextInstallmentForProgram(billed.enrollment(), FIRST_MONTH);

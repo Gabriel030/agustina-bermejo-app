@@ -45,6 +45,19 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
 
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#("Materia QA plan completo " + java.lang.System.nanoTime())', code: '#(subjectCodes.next())' }
+    When method post
+    Then status 201
+    * def planSubjectId = response.id
+
+    Given path '/programs', programSinRequisitosId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(planSubjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 0 }
+    When method post
+    Then status 201
+
   Scenario: Ciclo completo de egreso — solicitar, verificar deuda, aprobar, matriculación queda COMPLETED
     * def alumno = fixtures.createConfirmedStudent(institutionId)
     * def alumnoToken = alumno.accessToken
@@ -55,6 +68,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumnoToken
@@ -119,6 +133,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -139,6 +154,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -169,6 +185,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -193,6 +210,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -232,6 +250,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -262,6 +281,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -284,6 +304,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken
@@ -312,6 +333,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def programEnrollmentId = response.id
+    * fixtures.completeStudyPlan(programEnrollmentId)
 
     Given path '/me/program-enrollments', programEnrollmentId, 'graduation-request'
     And header Authorization = 'Bearer ' + alumno.accessToken

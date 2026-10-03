@@ -141,7 +141,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         Program program = new Program();
         program.setName(nombre);
         program.setTotalYears(3);
-        program.setTotalCreditsRequired(1);
+        program.setTotalCreditsRequired(0);
         return programRepository.save(program);
     }
 

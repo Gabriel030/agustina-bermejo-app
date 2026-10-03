@@ -172,7 +172,9 @@ public class ProgramEnrollmentService {
                 })
                 .toList();
 
-        boolean elegibleParaCompletar = obligatoriasPendientes.isEmpty()
+        boolean studyPlanLoaded = !entradas.isEmpty();
+        boolean elegibleParaCompletar = studyPlanLoaded
+                && obligatoriasPendientes.isEmpty()
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 

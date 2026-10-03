@@ -20,6 +20,10 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
@@ -98,13 +102,48 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         return student;
     }
 
-    private Program persistProgramWithoutRequirements(String name) {
+    private ProgramEnrollment persistEnrollmentWithCompletedPlan(Student student, String name) {
         Program program = new Program();
         program.setName(name);
         program.setTotalYears(1);
         program.setTotalCreditsRequired(0);
         entityManager.persist(program);
-        return program;
+
+        Subject subject = new Subject();
+        subject.setCode(TestSubjectCodes.next());
+        subject.setName("Materia aprobada " + name);
+        entityManager.persist(subject);
+        ProgramSubject programSubject = new ProgramSubject();
+        programSubject.setProgram(program);
+        programSubject.setSubject(subject);
+        programSubject.setCredits(0);
+        programSubject.setCurricularYear(1);
+        programSubject.setCurricularTerm(CurricularTerm.FIRST);
+        programSubject.setStatus(StatusType.ACTIVE);
+        entityManager.persist(programSubject);
+
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        Term term = new Term();
+        term.setYear(2026);
+        term.setDescription("2026-1C");
+        term.setStatus(StatusType.ACTIVE);
+        entityManager.persist(term);
+        SubjectSection section = new SubjectSection();
+        section.setName("Com A");
+        section.setSubject(subject);
+        section.setTerm(term);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        SubjectSectionEnrollment approved = new SubjectSectionEnrollment();
+        approved.setStudent(student);
+        approved.setProgramEnrollment(enrollment);
+        approved.setSubjectSection(section);
+        approved.setStatus(EnrollmentStatus.APPROVED);
+        approved.setFinalScore(8.0);
+        approved.setEnrolledAt(LocalDateTime.of(2026, 3, 1, 10, 0));
+        approved.setAttemptNumber(1);
+        entityManager.persist(approved);
+        return enrollment;
     }
 
     private Program persistProgramWithPendingSubject(String name) {
@@ -180,10 +219,24 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void requestForAProgramWithAnEmptyStudyPlanFails() {
+        Student student = persistStudent("80000011");
+        Program program = new Program();
+        program.setName("CarreraSinPlanCargado");
+        program.setTotalYears(1);
+        program.setTotalCreditsRequired(0);
+        entityManager.persist(program);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> requestGraduationUseCase.request(enrollment.getId()))
+                .isInstanceOf(NotEligibleForGraduationException.class);
+    }
+
+    @Test
     void requestTwiceWithoutTheFirstOneBeingRejectedFails() {
         Student student = persistStudent("80000002");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos1");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos1");
         entityManager.flush();
 
         requestGraduationUseCase.request(enrollment.getId());
@@ -195,8 +248,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void verifyDebtWithAnOverdueInstallmentFailsAndTheRequestStaysRequested() {
         Student student = persistStudent("80000003");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos2");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos2");
         entityManager.flush();
 
         GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
@@ -213,8 +265,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void verifyDebtWithANotYetDueUnpaidInstallmentFails() {
         Student student = persistStudent("80000006");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos5");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos5");
         entityManager.flush();
 
         GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
@@ -230,8 +281,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approveFailsWhenTheStudentHasANotYetDueUnpaidInstallment() {
         Student student = persistStudent("80000010");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos9");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos9");
         entityManager.flush();
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000010");
 
@@ -248,12 +298,11 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approveFailsWhenTheStudentNoLongerMeetsTheGraduationRequirements() {
         Student student = persistStudent("80000007");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos6");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos6");
         entityManager.flush();
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000007");
 
-        persistMandatorySubject(program, "CarreraSinRequisitos6");
+        persistMandatorySubject(enrollment.getProgram(), "CarreraSinRequisitos6");
         entityManager.flush();
         authenticateAsPerson("DIRECTOR80000007");
 
@@ -268,8 +317,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approveFailsWhenTheProgramEnrollmentWasWithdrawn() {
         Student student = persistStudent("80000009");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos8");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos8");
         entityManager.flush();
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000009");
 
@@ -288,8 +336,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approveFailsWhenTheStudentHasOverdueDebt() {
         Student student = persistStudent("80000008");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos7");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos7");
         entityManager.flush();
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000008");
 
@@ -306,8 +353,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void approveGraduationCompletesTheProgramEnrollmentInTheSameTransaction() {
         Student student = persistStudent("80000004");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos3");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos3");
         entityManager.flush();
 
         GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
@@ -326,8 +372,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Test
     void rejectingARequestedRequestAllowsRequestingAgain() {
         Student student = persistStudent("80000005");
-        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos4");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos4");
         entityManager.flush();
 
         GraduationRequest first = requestGraduationUseCase.request(enrollment.getId());
