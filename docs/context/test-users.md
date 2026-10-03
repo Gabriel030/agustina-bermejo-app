@@ -28,7 +28,7 @@ Arranque local: `JWT_SECRET="dev-secret-local-solo-para-pruebas" SPRING_PROFILES
 - Las 5 cuentas del seeder son **solo `Person` + rol**: sin `Student`/`Instructor` ni datos académicos. Login, layout y ruteo por rol funcionan; las pantallas que dependen de datos propios (mis carreras, pagos, comisiones del docente) salen vacías con `alumno.demo` y `docente.demo`.
 - **Alumnos con datos más completos** (existen en la base local del usuario, contraseñas desconocidas): `agustin.torres`, `camila.rodriguez`, `mateo.lopez`, `sofia.herrera`, `nicolas.fernandez`. No hace falta loguearse con ellos: se ven desde el padrón como `preceptor.demo`/`administrativo.demo`/`director.demo`.
 - **Alumno nuevo con flujo real:** `/registrarse` crea una persona con `Student` confirmado, sin rol hasta la primera inscripción (sirve para probar catálogo e inscripción). Alta de prospecto: `alumno/nuevo` como Preceptor o Administrativo, y verificación de email en `GET /verify-email`.
-- **Brecha conocida:** no hay un alumno o docente demo con datos académicos y contraseña conocida. Recomendado: extender `LocalSeedRunner` (es el lugar acordado en `debugging.md`) antes de la siguiente épica de UI que necesite datos.
+- **Con datos académicos completos:** usar el entorno demo (perfil `local,demo`, base separada en el puerto 5433, rama `demo/seed-data`): mismas cuentas `.demo` pero con carreras, notas, asistencia y facturación cargadas. Ver [demo.md](demo.md).
 
 ## 3. Casos de uso y con qué usuario probarlos
 

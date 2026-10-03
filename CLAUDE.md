@@ -58,6 +58,7 @@ y `~/.claude/instructions/workflow-git.md`):
 | **Git / commits / PRs / ramas / CI local / migraciones / Backport** | [docs/context/workflow.md](docs/context/workflow.md) |
 | Elegir **qué componente usar** / listar componentes en una spec | [docs/context/components.md](docs/context/components.md) |
 | **Usuarios de prueba** y qué usuario usar para probar cada flujo | [docs/context/test-users.md](docs/context/test-users.md) |
+| Levantar la **demo con datos realistas** (base separada, perfil `demo`, rama `demo/seed-data`) | [docs/context/demo.md](docs/context/demo.md) |
 | **Diseñar o mockear** una pantalla (flujo con `ux-advisor`) | [docs/context/frontend.md](docs/context/frontend.md), sección "Flujo de diseño" |
 | Escribir una **spec técnica/funcional nueva** antes de implementar | Skill `spec-writing` — no leas un doc, disparala directamente |
 | Elegir un **patrón de diseño** (GoF o táctico DDD) para una feature o refactor | Skill `design-patterns` |

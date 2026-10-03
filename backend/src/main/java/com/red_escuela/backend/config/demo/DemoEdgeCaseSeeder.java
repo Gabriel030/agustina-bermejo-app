@@ -132,7 +132,6 @@ public class DemoEdgeCaseSeeder {
         createGraduatedStudent(dataset);
         createEmptyProgram();
         createFullSection(dataset);
-        createClosedExamBoard(dataset);
         createPartialPayment(dataset);
         createAppliedCreditNote(dataset);
         createLongNamedStudent(dataset);
@@ -270,41 +269,6 @@ public class DemoEdgeCaseSeeder {
                 .count();
         section.setCapacity((int) Math.max(inscriptos, 1));
         subjectSectionRepository.save(section);
-    }
-
-    private void createClosedExamBoard(DemoDataset dataset) {
-        ExamBoard board = new ExamBoard();
-        board.setSubject(dataset.subject("Didáctica General"));
-        board.setTerm(dataset.term(2026));
-        board.setExamDate(TODAY.minusDays(30).atTime(18, 0));
-        board.setClassroom("Aula 2");
-        board.setRegistrationStart(TODAY.minusDays(50).atStartOfDay());
-        board.setRegistrationEnd(TODAY.minusDays(35).atTime(23, 59));
-        board.setStatus(ExamBoardStatus.CLOSED);
-        ExamBoard saved = examBoardRepository.save(board);
-
-        dataset.getSectionEnrollments().stream()
-                .filter(e -> e.getSubjectSection().getSubject().getId().equals(saved.getSubject().getId()))
-                .filter(e -> e.getFinalScore() != null)
-                .limit(4)
-                .forEach(enrollment -> {
-                    ExamBoardRegistration registration = new ExamBoardRegistration();
-                    registration.setExamBoard(saved);
-                    registration.setProgramSubjectSectionEnrollment(enrollment);
-                    registration.setStatus(ExamBoardRegistrationStatus.GRADED);
-                    registration.setRegisteredAt(TODAY.minusDays(40).atTime(11, 0));
-                    examBoardRegistrationRepository.save(registration);
-
-                    GradeItem item = new GradeItem();
-                    item.setProgramSubjectSectionEnrollment(enrollment);
-                    item.setType(GradeItemType.FINAL);
-                    item.setSequenceNumber(2);
-                    item.setDate(saved.getExamDate());
-                    item.setScore(enrollment.getFinalScore());
-                    item.setMaxScore(10.0);
-                    item.setExamBoard(saved);
-                    gradeItemRepository.save(item);
-                });
     }
 
     private void createPartialPayment(DemoDataset dataset) {

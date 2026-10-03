@@ -56,7 +56,7 @@ import java.util.List;
 @Profile("local & demo")
 public class DemoAcademicOfferSeeder {
 
-    private static final List<Integer> HISTORY_YEARS = List.of(2024, 2025, 2026);
+    private static final List<Integer> HISTORY_YEARS = List.of(2023, 2024, 2025, 2026);
     private static final List<String> SCHEDULES = List.of(
             "Lunes y miércoles de 18:00 a 20:00 — Aula 12",
             "Martes y jueves de 18:00 a 20:00 — Aula 7",
@@ -148,7 +148,7 @@ public class DemoAcademicOfferSeeder {
             subject.setCode(String.format("S%03d", subjectCodeSequence++));
             subject.setStatus(SubjectStatus.valueOf(proposal[1]));
             subject.setDescription("Propuesta de materia nueva para el plan de estudios.");
-            subject.setMaxFinalExamAttempts(3);
+            subject.setMaxFinalExamAttempts(1);
             subject.setWeeklyHours(4);
             subject.setWeeklyHoursLab(0);
             subject.setGradeMode(GradeMode.NUMERIC);
@@ -201,6 +201,7 @@ public class DemoAcademicOfferSeeder {
     }
 
     private void createTerms(DemoDataset dataset) {
+        dataset.getTerms().put(2023, saveTerm(2023, "2023-03-06", "2023-12-15", "2023-01-09", "2023-03-31"));
         dataset.getTerms().put(2024, saveTerm(2024, "2024-03-04", "2024-12-13", "2024-01-08", "2024-03-29"));
         dataset.getTerms().put(2025, saveTerm(2025, "2025-03-03", "2025-12-12", "2025-01-06", "2025-03-28"));
         dataset.getTerms().put(2026, saveTerm(2026, "2026-03-02", "2026-12-11", "2026-01-05", "2026-03-31"));
@@ -228,7 +229,7 @@ public class DemoAcademicOfferSeeder {
                 saveScheme(SCHEME_FINAL, 2, 2, true, 0.4, GradeAggregationMethod.WEIGHTED_AVERAGE, 4.0, 4.0, null,
                         "Regulariza con 4 o más y rinde final en mesa."));
         dataset.getEvaluationSchemes().put(SCHEME_PRACTICE,
-                saveScheme(SCHEME_PRACTICE, 1, 4, true, 0.3, GradeAggregationMethod.SIMPLE_AVERAGE, 6.0, 6.0, null,
+                saveScheme(SCHEME_PRACTICE, 1, 3, true, 0.3, GradeAggregationMethod.SIMPLE_AVERAGE, 6.0, 6.0, null,
                         "Requiere 80% de asistencia a la práctica y coloquio final."));
     }
 
@@ -301,7 +302,7 @@ public class DemoAcademicOfferSeeder {
         subject.setName(name);
         subject.setCode(String.format("S%03d", subjectCodeSequence++));
         subject.setStatus(SubjectStatus.ACTIVE);
-        subject.setMaxFinalExamAttempts(3);
+        subject.setMaxFinalExamAttempts(1);
         subject.setWeeklyHours(4);
         subject.setWeeklyHoursLab(name.startsWith("Práctica") ? 4 : 0);
         subject.setGradeMode(name.startsWith("Práctica") ? GradeMode.PASS_FAIL : GradeMode.NUMERIC);
@@ -314,7 +315,7 @@ public class DemoAcademicOfferSeeder {
         for (ProgramSpec spec : DemoCatalog.PROGRAMS) {
             for (List<String> yearSubjects : spec.subjectsByYear()) {
                 for (String subjectName : yearSubjects) {
-                    String requiredName = previousLevelOf(subjectName);
+                    String requiredName = DemoCatalog.prerequisiteOf(subjectName);
                     if (requiredName == null) {
                         continue;
                     }
@@ -332,20 +333,6 @@ public class DemoAcademicOfferSeeder {
                 }
             }
         }
-    }
-
-    private String previousLevelOf(String subjectName) {
-        String explicit = DemoCatalog.EXTRA_PREREQUISITES.get(subjectName);
-        if (explicit != null) {
-            return explicit;
-        }
-        if (subjectName.endsWith(" III")) {
-            return subjectName.substring(0, subjectName.length() - 4) + " II";
-        }
-        if (subjectName.endsWith(" II")) {
-            return subjectName.substring(0, subjectName.length() - 3) + " I";
-        }
-        return null;
     }
 
     private void createProgramSections(DemoDataset dataset) {
@@ -369,7 +356,7 @@ public class DemoAcademicOfferSeeder {
         section.setName(shortProgramCode(spec.name()) + " " + subjectName + " — Comisión A");
         section.setSubject(dataset.subject(subjectName));
         section.setTerm(term);
-        section.setEvaluationScheme(dataset.getEvaluationSchemes().get(schemeNameFor(subjectName)));
+        section.setEvaluationScheme(dataset.getEvaluationSchemes().get(schemeNameFor(spec, subjectName)));
         section.setSchedule(SCHEDULES.get(instructorRotation % SCHEDULES.size()));
         section.setCapacity(35);
         section.setStatus(StatusType.ACTIVE);
@@ -410,11 +397,16 @@ public class DemoAcademicOfferSeeder {
         scheduleSlotRepository.save(slot);
     }
 
-    private String schemeNameFor(String subjectName) {
+    private String schemeNameFor(ProgramSpec spec, String subjectName) {
         if (subjectName.startsWith("Práctica") || subjectName.startsWith("Taller")) {
             return SCHEME_PRACTICE;
         }
-        return subjectName.hashCode() % 2 == 0 ? SCHEME_PROMOTIONAL : SCHEME_FINAL;
+        int position = spec.subjectsByYear().stream()
+                .filter(subjects -> subjects.contains(subjectName))
+                .mapToInt(subjects -> subjects.indexOf(subjectName))
+                .findFirst()
+                .orElse(0);
+        return position % 2 == 0 ? SCHEME_PROMOTIONAL : SCHEME_FINAL;
     }
 
     private String shortProgramCode(String programName) {
@@ -463,7 +455,7 @@ public class DemoAcademicOfferSeeder {
                 courseSubject.setWeeklyWorkload(4);
                 courseSubject.setStatus(StatusType.ACTIVE);
                 courseSubject.setQualificationType("NUMERICA");
-                courseSubject.setMaxFinalExamAttempts(2);
+                courseSubject.setMaxFinalExamAttempts(1);
                 CourseSubject savedSubject = courseSubjectRepository.save(courseSubject);
                 dataset.getCourseSubjects().put(spec.name() + "|" + subjectName, savedSubject);
 

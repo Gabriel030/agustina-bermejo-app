@@ -297,8 +297,11 @@ public class DemoBillingSeeder {
             if (enrollment.getStatus() == ProgramEnrollmentStatus.WITHDRAWN) {
                 continue;
             }
+            int lastBilledYear = lastBilledYear(enrollment);
+            boolean planFinished = lastBilledYear < 2026;
             BillingProfile profile = enrollment.getStudent().getId().equals(dataset.getDemoStudent().getId())
                     ? BillingProfile.ONE_OVERDUE
+                    : planFinished ? BillingProfile.UP_TO_DATE
                     : BillingProfile.values()[i % BillingProfile.values().length];
             Program program = enrollment.getProgram();
             BigDecimal monthly = program.getPrice();
@@ -310,7 +313,8 @@ public class DemoBillingSeeder {
                     ? createScholarship(dataset, enrollment)
                     : null;
 
-            for (int year = startYear; year <= 2026; year++) {
+            List<Invoice> billed = new ArrayList<>();
+            for (int year = startYear; year <= lastBilledYear; year++) {
                 boolean closedYear = year < 2026;
                 Invoice fee = buildInvoice(enrollment, null, FeeType.ENROLLMENT_FEE, YearMonth.of(year, 2),
                         LocalDate.of(year, 2, 28), enrollmentFee, "Matrícula " + year);
@@ -326,6 +330,7 @@ public class DemoBillingSeeder {
                     Invoice invoice = buildInvoice(enrollment, null, FeeType.RECURRING_FEE, period,
                             LocalDate.of(year, month, 10), monthly,
                             "Cuota " + String.format("%02d/%d", month, year));
+                    billed.add(invoice);
                     if (scholarship != null) {
                         invoice.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP,
                                 new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.50")),
@@ -335,7 +340,7 @@ public class DemoBillingSeeder {
                     applyCurrentYearProfile(dataset, invoice, profile, closedYear, period);
                 }
             }
-            updateStanding(enrollment, profile);
+            updateStanding(enrollment, standingFrom(profile, billed));
         }
     }
 
@@ -388,24 +393,23 @@ public class DemoBillingSeeder {
                 }
             }
             case RECEIPT_PENDING -> {
-                if (period.getMonthValue() <= 8) {
+                if (!isCurrentPeriod) {
                     settle(dataset, invoice, PaymentMethod.TRANSFER, invoice.getDueDate().minusDays(2));
-                } else if (period.getMonthValue() == 9) {
+                } else {
                     Invoice saved = invoiceRepository.save(invoice);
                     createReceipt(dataset, saved, PaymentReceiptStatus.PENDING_REVIEW, null);
-                } else {
-                    invoiceRepository.save(invoice);
                 }
             }
             case RECEIPT_REJECTED -> {
                 if (period.getMonthValue() <= 7) {
                     settle(dataset, invoice, PaymentMethod.TRANSFER, invoice.getDueDate().minusDays(2));
                 } else if (period.getMonthValue() == 8) {
+                    invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(SURCHARGE), "Recargo por mora");
                     Invoice saved = invoiceRepository.save(invoice);
                     createReceipt(dataset, saved, PaymentReceiptStatus.REJECTED,
                             "El comprobante corresponde a otro período");
                 } else {
-                    invoiceRepository.save(invoice);
+                    saveUnpaid(invoice);
                 }
             }
             case MERCADO_PAGO -> {
@@ -418,6 +422,23 @@ public class DemoBillingSeeder {
         }
     }
 
+    private int lastBilledYear(ProgramEnrollment enrollment) {
+        int startYear = enrollment.getEnrollmentDate().getYear();
+        int totalYears = DemoCatalog.PROGRAMS.stream()
+                .filter(spec -> spec.name().equals(enrollment.getProgram().getName()))
+                .mapToInt(DemoCatalog.ProgramSpec::totalYears)
+                .findFirst()
+                .orElse(3);
+        return Math.min(2026, startYear + totalYears - 1);
+    }
+
+    private void saveUnpaid(Invoice invoice) {
+        if (invoice.getDueDate().isBefore(TODAY)) {
+            invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(SURCHARGE), "Recargo por mora");
+        }
+        invoiceRepository.save(invoice);
+    }
+
     private void billCourseEnrollments(DemoDataset dataset) {
         List<CourseEnrollment> enrollments = dataset.getCourseEnrollments();
         for (int i = 0; i < enrollments.size(); i++) {
@@ -427,6 +448,7 @@ public class DemoBillingSeeder {
                     .divide(BigDecimal.valueOf(course.getDurationMonths()), 2, java.math.RoundingMode.HALF_UP);
             BillingProfile profile = BillingProfile.values()[(i + 3) % BillingProfile.values().length];
             selectPlan(dataset, null, enrollment, profile);
+            List<Invoice> billed = new ArrayList<>();
             int lastMonth = Math.min(2 + course.getDurationMonths(), 10);
             for (int month = 3; month <= lastMonth; month++) {
                 YearMonth period = YearMonth.of(2026, month);
@@ -434,8 +456,9 @@ public class DemoBillingSeeder {
                         LocalDate.of(2026, month, 10), monthly,
                         course.getName() + " — cuota " + String.format("%02d/2026", month));
                 applyCurrentYearProfile(dataset, invoice, profile, false, period);
+                billed.add(invoice);
             }
-            updateCourseStanding(enrollment, profile);
+            updateCourseStanding(enrollment, standingFrom(profile, billed));
         }
     }
 
@@ -530,24 +553,24 @@ public class DemoBillingSeeder {
         paymentReceiptRepository.save(receipt);
     }
 
-    private void updateStanding(ProgramEnrollment enrollment, BillingProfile profile) {
-        enrollment.setBillingStanding(standingFor(profile));
+    private void updateStanding(ProgramEnrollment enrollment, EnrollmentBillingStanding standing) {
+        enrollment.setBillingStanding(standing);
         enrollment.setBillingStandingUpdatedAt(TODAY.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
     }
 
-    private void updateCourseStanding(CourseEnrollment enrollment, BillingProfile profile) {
-        enrollment.setBillingStanding(standingFor(profile));
+    private void updateCourseStanding(CourseEnrollment enrollment, EnrollmentBillingStanding standing) {
+        enrollment.setBillingStanding(standing);
         enrollment.setBillingStandingUpdatedAt(TODAY.atStartOfDay());
         courseEnrollmentRepository.save(enrollment);
     }
 
-    private EnrollmentBillingStanding standingFor(BillingProfile profile) {
-        return switch (profile) {
-            case ONE_OVERDUE, RECEIPT_REJECTED -> EnrollmentBillingStanding.OVERDUE;
-            case SUSPENDED -> EnrollmentBillingStanding.SUSPENDED;
-            default -> EnrollmentBillingStanding.UP_TO_DATE;
-        };
+    private EnrollmentBillingStanding standingFrom(BillingProfile profile, List<Invoice> billed) {
+        boolean overdue = billed.stream().anyMatch(invoice -> invoice.getStatus() == InvoiceStatus.OVERDUE);
+        if (!overdue) {
+            return EnrollmentBillingStanding.UP_TO_DATE;
+        }
+        return profile == BillingProfile.SUSPENDED ? EnrollmentBillingStanding.SUSPENDED : EnrollmentBillingStanding.OVERDUE;
     }
 
     private void createCreditNotes(DemoDataset dataset) {

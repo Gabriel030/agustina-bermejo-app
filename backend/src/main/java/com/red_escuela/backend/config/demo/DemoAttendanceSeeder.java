@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 @Profile("local & demo")
 public class DemoAttendanceSeeder {
 
-    private static final LocalDate TERM_START = LocalDate.of(2026, 3, 2);
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 2);
     private static final LocalTime START_TIME = LocalTime.of(18, 0);
     private static final LocalTime END_TIME = LocalTime.of(20, 0);
@@ -71,13 +70,11 @@ public class DemoAttendanceSeeder {
 
     private void seedProgramSections(DemoDataset dataset, List<Attendance> demoTeacherRecords) {
         Map<Long, List<SubjectSectionEnrollment>> bySection = dataset.getSectionEnrollments().stream()
-                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.IN_PROGRESS)
+                .filter(enrollment -> dataset.getOutcomes().containsKey(enrollment.getId()))
                 .collect(Collectors.groupingBy(
                         enrollment -> enrollment.getSubjectSection().getId(),
                         LinkedHashMap::new,
                         Collectors.toList()));
-
-        Set<Long> riskyEnrollments = pickRiskyEnrollments(dataset);
 
         for (Map.Entry<Long, List<SubjectSectionEnrollment>> entry : bySection.entrySet()) {
             SubjectSection section = entry.getValue().get(0).getSubjectSection();
@@ -85,8 +82,12 @@ public class DemoAttendanceSeeder {
             if (instructor == null) {
                 continue;
             }
-            boolean isDemoTeacher = instructor.equals(dataset.getDemoInstructor());
-            for (LocalDate date : sessionDates(section.getId())) {
+            LocalDate termStart = section.getTerm().getStartDate().toLocalDate();
+            LocalDate termEnd = section.getTerm().getEndDate().toLocalDate();
+            List<LocalDate> dates = sessionDates(section.getId(), termStart, termEnd.isBefore(TODAY) ? termEnd : TODAY);
+            boolean currentYear = termStart.getYear() == TODAY.getYear();
+            boolean isDemoTeacher = currentYear && instructor.equals(dataset.getDemoInstructor());
+            for (LocalDate date : dates) {
                 ClassSession session = new ClassSession();
                 session.setSubjectSection(section);
                 session.setClassDate(date);
@@ -98,12 +99,15 @@ public class DemoAttendanceSeeder {
                 session.setCreatedBy(instructor);
                 session.setCreatedAt(date.atTime(START_TIME));
                 classSessionRepository.save(session);
-
-                for (SubjectSectionEnrollment enrollment : entry.getValue()) {
+            }
+            for (SubjectSectionEnrollment enrollment : entry.getValue()) {
+                DemoOutcome outcome = dataset.getOutcomes().get(enrollment.getId());
+                List<AttendanceStatus> statuses = statusesFor(outcome, dates.size());
+                for (int i = 0; i < dates.size(); i++) {
                     Attendance attendance = new Attendance();
                     attendance.setProgramSubjectSectionEnrollment(enrollment);
-                    attendance.setClassDate(date);
-                    attendance.setStatus(statusFor(riskyEnrollments.contains(enrollment.getId())));
+                    attendance.setClassDate(dates.get(i));
+                    attendance.setStatus(statuses.get(i));
                     attendance.setRecordedBy(instructor);
                     Attendance saved = attendanceRepository.save(attendance);
                     if (isDemoTeacher && demoTeacherRecords.size() < 12) {
@@ -114,19 +118,9 @@ public class DemoAttendanceSeeder {
         }
     }
 
-    private Set<Long> pickRiskyEnrollments(DemoDataset dataset) {
-        Set<Long> risky = new HashSet<>();
-        List<SubjectSectionEnrollment> running = dataset.getSectionEnrollments().stream()
-                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.IN_PROGRESS)
-                .toList();
-        for (int i = 0; i < running.size(); i += 17) {
-            risky.add(running.get(i).getId());
-        }
-        return risky;
-    }
-
     private void seedCourseSections(DemoDataset dataset) {
         Map<Long, List<CourseSubjectSectionEnrollment>> bySection = dataset.getCourseSectionEnrollments().stream()
+                .filter(enrollment -> dataset.getCourseOutcomes().containsKey(enrollment.getId()))
                 .collect(Collectors.groupingBy(
                         enrollment -> enrollment.getCourseSubjectSection().getId(),
                         LinkedHashMap::new,
@@ -138,7 +132,13 @@ public class DemoAttendanceSeeder {
             if (instructor == null) {
                 continue;
             }
-            for (LocalDate date : sessionDates(section.getId())) {
+            DemoCatalog.CourseSpec spec = DemoCatalog.COURSES.stream()
+                    .filter(c -> c.name().equals(section.getCourseSubject().getCourse().getName()))
+                    .findFirst()
+                    .orElseThrow();
+            LocalDate end = DemoEnrollmentSeeder.courseEnd(spec);
+            List<LocalDate> dates = sessionDates(section.getId(), DemoEnrollmentSeeder.courseStart(), end.isBefore(TODAY) ? end : TODAY);
+            for (LocalDate date : dates) {
                 ClassSession session = new ClassSession();
                 session.setCourseSubjectSection(section);
                 session.setClassDate(date);
@@ -150,12 +150,14 @@ public class DemoAttendanceSeeder {
                 session.setCreatedBy(instructor);
                 session.setCreatedAt(date.atTime(START_TIME));
                 classSessionRepository.save(session);
-
-                for (CourseSubjectSectionEnrollment enrollment : entry.getValue()) {
+            }
+            for (CourseSubjectSectionEnrollment enrollment : entry.getValue()) {
+                List<AttendanceStatus> statuses = statusesFor(dataset.getCourseOutcomes().get(enrollment.getId()), dates.size());
+                for (int i = 0; i < dates.size(); i++) {
                     Attendance attendance = new Attendance();
                     attendance.setCourseSubjectSectionEnrollment(enrollment);
-                    attendance.setClassDate(date);
-                    attendance.setStatus(statusFor(false));
+                    attendance.setClassDate(dates.get(i));
+                    attendance.setStatus(statuses.get(i));
                     attendance.setRecordedBy(instructor);
                     attendanceRepository.save(attendance);
                 }
@@ -163,15 +165,16 @@ public class DemoAttendanceSeeder {
         }
     }
 
-    private List<LocalDate> sessionDates(long sectionId) {
+    private List<LocalDate> sessionDates(long sectionId, LocalDate from, LocalDate to) {
         DayOfWeek day = DayOfWeek.of(1 + (int) (sectionId % 5));
         List<LocalDate> dates = new ArrayList<>();
-        LocalDate cursor = TERM_START;
+        LocalDate cursor = from;
         while (cursor.getDayOfWeek() != day) {
             cursor = cursor.plusDays(1);
         }
-        while (!cursor.isAfter(TODAY)) {
-            if (!holidays.contains(cursor)) {
+        while (!cursor.isAfter(to)) {
+            boolean winterBreak = cursor.getMonthValue() == 7 && cursor.getDayOfMonth() >= 13 && cursor.getDayOfMonth() <= 24;
+            if (!holidays.contains(cursor) && !winterBreak) {
                 dates.add(cursor);
             }
             cursor = cursor.plusWeeks(1);
@@ -179,18 +182,26 @@ public class DemoAttendanceSeeder {
         return dates;
     }
 
-    private AttendanceStatus statusFor(boolean risky) {
-        int roll = random.nextInt(100);
-        if (risky) {
-            if (roll < 40) return AttendanceStatus.ABSENT;
-            if (roll < 48) return AttendanceStatus.JUSTIFIED;
-            return AttendanceStatus.PRESENT;
-        }
-        if (roll < 8) return AttendanceStatus.ABSENT;
-        if (roll < 12) return AttendanceStatus.LATE;
-        if (roll < 14) return AttendanceStatus.JUSTIFICATION_PENDING;
-        if (roll < 16) return AttendanceStatus.JUSTIFIED;
-        return AttendanceStatus.PRESENT;
+    private List<AttendanceStatus> statusesFor(DemoOutcome outcome, int classes) {
+        double absenceRate = switch (outcome) {
+            case PROMOTION, ON_TRACK -> 0.03 + random.nextInt(6) / 100.0;
+            case FINAL_PASSED, FINAL_FAILED, REGULAR_PENDING -> 0.06 + random.nextInt(9) / 100.0;
+            case FAILED_COURSEWORK, STRUGGLING -> 0.10 + random.nextInt(9) / 100.0;
+            case AT_RISK -> 0.58 + random.nextInt(8) / 100.0;
+        };
+        int absences = (int) Math.round(classes * absenceRate);
+        int pendingJustifications = absences > 2 ? 1 : 0;
+        int justified = random.nextInt(3) == 0 ? 1 : 0;
+        int late = Math.max(0, (int) Math.round(classes * 0.04));
+        List<AttendanceStatus> statuses = new ArrayList<>();
+        for (int i = 0; i < absences - pendingJustifications; i++) statuses.add(AttendanceStatus.ABSENT);
+        for (int i = 0; i < pendingJustifications; i++) statuses.add(AttendanceStatus.JUSTIFICATION_PENDING);
+        for (int i = 0; i < justified; i++) statuses.add(AttendanceStatus.JUSTIFIED);
+        for (int i = 0; i < late; i++) statuses.add(AttendanceStatus.LATE);
+        while (statuses.size() < classes) statuses.add(AttendanceStatus.PRESENT);
+        List<AttendanceStatus> trimmed = new ArrayList<>(statuses.subList(0, classes));
+        java.util.Collections.shuffle(trimmed, random);
+        return trimmed;
     }
 
     private void createChangeRequests(DemoDataset dataset, List<Attendance> records) {

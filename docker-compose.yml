@@ -10,5 +10,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  postgres-demo:
+    image: postgres:16-alpine
+    profiles: ["demo"]
+    environment:
+      POSTGRES_DB: agustina_bermejo_demo
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_demo_data:/var/lib/postgresql/data
+
 volumes:
   postgres_data:
+  postgres_demo_data:

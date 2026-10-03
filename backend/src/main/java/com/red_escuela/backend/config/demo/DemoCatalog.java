@@ -125,5 +125,19 @@ public final class DemoCatalog {
             "Metodología de la Investigación II", "Metodología de la Investigación I",
             "Business English II", "Business English I");
 
+    public static String prerequisiteOf(String subjectName) {
+        String explicit = EXTRA_PREREQUISITES.get(subjectName);
+        if (explicit != null) {
+            return explicit;
+        }
+        if (subjectName.endsWith(" III")) {
+            return subjectName.substring(0, subjectName.length() - 4) + " II";
+        }
+        if (subjectName.endsWith(" II")) {
+            return subjectName.substring(0, subjectName.length() - 3) + " I";
+        }
+        return null;
+    }
+
     private DemoCatalog() {}
 }

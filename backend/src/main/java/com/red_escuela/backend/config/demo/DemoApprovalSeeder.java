@@ -1,5 +1,7 @@
 package com.red_escuela.backend.config.demo;
 
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -19,6 +21,9 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 @Component
 @Profile("local & demo")
@@ -45,28 +50,73 @@ public class DemoApprovalSeeder {
         createNotifications(dataset);
     }
 
+    private record ExceptionTarget(ProgramEnrollment enrollment, String subjectName, String detail) {}
+
     private void createDirectorApprovalRequests(DemoDataset dataset) {
-        List<ProgramEnrollment> active = dataset.getProgramEnrollments().stream()
-                .filter(enrollment -> enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED)
-                .toList();
-        if (active.size() < 8) {
-            return;
+        List<ExceptionTarget> waivers = new ArrayList<>();
+        List<ExceptionTarget> lateExams = new ArrayList<>();
+        for (ProgramEnrollment enrollment : dataset.getProgramEnrollments()) {
+            if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
+                continue;
+            }
+            List<SubjectSectionEnrollment> history = dataset.getSectionEnrollments().stream()
+                    .filter(e -> e.getProgramEnrollment().getId().equals(enrollment.getId()))
+                    .toList();
+            Set<String> approved = new HashSet<>();
+            Set<String> taken = new HashSet<>();
+            for (SubjectSectionEnrollment e : history) {
+                String name = e.getSubjectSection().getSubject().getName();
+                taken.add(name);
+                DemoOutcome outcome = dataset.getOutcomes().get(e.getId());
+                if (outcome != null && outcome.approves()) {
+                    approved.add(name);
+                }
+                if (outcome == DemoOutcome.REGULAR_PENDING) {
+                    lateExams.add(new ExceptionTarget(enrollment, name, null));
+                }
+            }
+            DemoCatalog.PROGRAMS.stream()
+                    .filter(spec -> spec.name().equals(enrollment.getProgram().getName()))
+                    .flatMap(spec -> spec.subjectsByYear().stream())
+                    .flatMap(List::stream)
+                    .filter(name -> !taken.contains(name))
+                    .forEach(name -> {
+                        String prerequisite = DemoCatalog.prerequisiteOf(name);
+                        if (prerequisite != null && taken.contains(prerequisite) && !approved.contains(prerequisite)) {
+                            waivers.add(new ExceptionTarget(enrollment, name, prerequisite));
+                        }
+                    });
         }
-        saveRequest(dataset, active.get(0), ExceptionType.PREREQUISITE_WAIVER, "Didáctica del Nivel Inicial",
-                "Adeuda el final de Pedagogía pero ya cursó y aprobó la práctica. Pide cursar con la correlativa pendiente.",
-                DirectorApprovalRequestStatus.REQUESTED, 4);
-        saveRequest(dataset, active.get(2), ExceptionType.LATE_EXAM, "Programación I",
-                "Faltó a la mesa de julio por internación. Presenta certificado médico y solicita mesa extraordinaria.",
-                DirectorApprovalRequestStatus.REQUESTED, 2);
-        saveRequest(dataset, active.get(4), ExceptionType.PREREQUISITE_WAIVER, "Bases de Datos",
-                "Viene de otra institución con materias equivalentes sin homologar todavía.",
-                DirectorApprovalRequestStatus.REQUESTED, 1);
-        saveRequest(dataset, active.get(5), ExceptionType.LATE_EXAM, "Didáctica General",
-                "Superposición con mesa de otra carrera en la que también está inscripta.",
-                DirectorApprovalRequestStatus.APPROVED, 25);
-        saveRequest(dataset, active.get(6), ExceptionType.PREREQUISITE_WAIVER, "Práctica Docente II",
-                "Solicita cursar la práctica sin tener aprobada Psicología Educacional.",
-                DirectorApprovalRequestStatus.REJECTED, 40);
+        if (!waivers.isEmpty()) {
+            ExceptionTarget t = waivers.get(0);
+            saveRequest(dataset, t.enrollment(), ExceptionType.PREREQUISITE_WAIVER, t.subjectName(),
+                    "Adeuda " + t.detail() + " y pide cursar " + t.subjectName() + " este ciclo con la correlativa pendiente.",
+                    DirectorApprovalRequestStatus.REQUESTED, 4);
+        }
+        if (!lateExams.isEmpty()) {
+            ExceptionTarget t = lateExams.get(0);
+            saveRequest(dataset, t.enrollment(), ExceptionType.LATE_EXAM, t.subjectName(),
+                    "Viaja por trabajo la semana de la mesa de noviembre y pide rendir el final de " + t.subjectName() + " fuera de término.",
+                    DirectorApprovalRequestStatus.REQUESTED, 2);
+        }
+        if (waivers.size() > 1) {
+            ExceptionTarget t = waivers.get(waivers.size() - 1);
+            saveRequest(dataset, t.enrollment(), ExceptionType.PREREQUISITE_WAIVER, t.subjectName(),
+                    "Viene de otra institución con " + t.detail() + " aprobada y la equivalencia todavía no está homologada.",
+                    DirectorApprovalRequestStatus.REQUESTED, 1);
+        }
+        if (lateExams.size() > 1) {
+            ExceptionTarget t = lateExams.get(1);
+            saveRequest(dataset, t.enrollment(), ExceptionType.LATE_EXAM, t.subjectName(),
+                    "La mesa de " + t.subjectName() + " se superpone con una mesa de otra carrera en la que también está inscripto.",
+                    DirectorApprovalRequestStatus.APPROVED, 25);
+        }
+        if (waivers.size() > 2) {
+            ExceptionTarget t = waivers.get(1);
+            saveRequest(dataset, t.enrollment(), ExceptionType.PREREQUISITE_WAIVER, t.subjectName(),
+                    "Solicita cursar " + t.subjectName() + " sin tener aprobada " + t.detail() + ".",
+                    DirectorApprovalRequestStatus.REJECTED, 40);
+        }
     }
 
     private void saveRequest(
@@ -92,28 +142,24 @@ public class DemoApprovalSeeder {
     }
 
     private void createGraduationRequests(DemoDataset dataset) {
-        List<ProgramEnrollment> finished = dataset.getProgramEnrollments().stream()
-                .filter(enrollment -> enrollment.getStatus() == ProgramEnrollmentStatus.COMPLETED)
-                .toList();
-        List<ProgramEnrollment> advanced = dataset.getProgramEnrollments().stream()
+        List<ProgramEnrollment> planComplete = dataset.getProgramEnrollments().stream()
                 .filter(enrollment -> enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED)
-                .filter(enrollment -> enrollment.getEnrollmentDate().getYear() == 2024)
+                .filter(enrollment -> enrollment.getEnrollmentDate().getYear() == 2023)
                 .toList();
-
-        if (!finished.isEmpty()) {
-            saveGraduation(dataset, finished.get(0), GraduationRequestStatus.ADMIN_VERIFIED, 12);
-        }
-        if (advanced.size() >= 4) {
-            saveGraduation(dataset, advanced.get(0), GraduationRequestStatus.REQUESTED, 6);
-            saveGraduation(dataset, advanced.get(1), GraduationRequestStatus.ADMIN_VERIFIED, 18);
-            saveGraduation(dataset, advanced.get(2), GraduationRequestStatus.APPROVED, 60);
-            saveGraduation(dataset, advanced.get(3), GraduationRequestStatus.REJECTED, 75);
+        GraduationRequestStatus[] statuses = {
+                GraduationRequestStatus.REQUESTED, GraduationRequestStatus.ADMIN_VERIFIED, GraduationRequestStatus.REJECTED};
+        int[] daysAgo = {6, 18, 75};
+        for (int i = 0; i < planComplete.size() && i < statuses.length; i++) {
+            saveGraduation(dataset, planComplete.get(i), statuses[i], daysAgo[i]);
         }
     }
 
     private void saveGraduation(
             DemoDataset dataset, ProgramEnrollment enrollment, GraduationRequestStatus status, int daysAgo) {
-        GraduationRequest request = new GraduationRequest();
+        GraduationRequest request = graduationRequestRepository.findAll().stream()
+                .filter(existing -> existing.getProgramEnrollment().getId().equals(enrollment.getId()))
+                .findFirst()
+                .orElseGet(GraduationRequest::new);
         request.setProgramEnrollment(enrollment);
         request.setStatus(status);
         LocalDateTime requestedAt = TODAY.minusDays(daysAgo).atTime(11, 10);
@@ -126,7 +172,7 @@ public class DemoApprovalSeeder {
             request.setDecidedBy(dataset.getDirector());
             request.setDecidedAt(requestedAt.plusDays(5));
             if (status == GraduationRequestStatus.REJECTED) {
-                request.setRejectionReason("Adeuda el final de Investigación Educativa y dos cuotas del ciclo 2026");
+                request.setRejectionReason("Falta presentar el analítico del secundario legalizado. Puede volver a solicitar el egreso cuando lo entregue en secretaría.");
             }
         }
         graduationRequestRepository.save(request);
