@@ -1,3 +1,4 @@
+import { StablePageHeight } from '@/components/StablePageHeight';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
@@ -31,13 +32,14 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <Buscador value={search} onChange={onSearchChange} placeholder="Buscar carrera…" />
 
       {!isLoading && filtradas.length === 0 && (
         <div className="text-sm text-ink-faint">No hay carreras que coincidan con la búsqueda.</div>
       )}
 
+      <StablePageHeight resetKey={search}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
         <Stagger>
@@ -62,6 +64,7 @@ export function TabCarreras({ search, onSearchChange, page, onPageChange }) {
           ))}
         </Stagger>
       </div>
+      </StablePageHeight>
 
       <Paginador page={currentPage} totalPages={totalPages} onChange={onPageChange} />
     </div>
