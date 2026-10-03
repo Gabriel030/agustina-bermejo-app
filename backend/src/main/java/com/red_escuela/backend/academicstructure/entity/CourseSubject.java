@@ -56,6 +56,10 @@ public class CourseSubject {
     @OneToMany(mappedBy = "prerequisiteCourseSubject", fetch = FetchType.LAZY)
     private List<CourseSubjectPrerequisite> requiredBy;
 
-    @Column(name = "max_final_exam_attempts")
-    private Integer maxFinalExamAttempts;
+    @Column(name = "max_final_exam_attempts", nullable = false)
+    private Integer maxFinalExamAttempts = Subject.DEFAULT_MAX_FINAL_EXAM_ATTEMPTS;
+
+    public void setMaxFinalExamAttempts(Integer maxFinalExamAttempts) {
+        this.maxFinalExamAttempts = maxFinalExamAttempts == null ? Subject.DEFAULT_MAX_FINAL_EXAM_ATTEMPTS : maxFinalExamAttempts;
+    }
 }

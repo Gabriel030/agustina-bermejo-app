@@ -18,6 +18,8 @@ import lombok.Setter;
 @Entity
 @Table(name = "subject")
 public class Subject {
+    public static final int DEFAULT_MAX_FINAL_EXAM_ATTEMPTS = 1;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,8 +38,9 @@ public class Subject {
     @Column(name = "status", nullable = false)
     private SubjectStatus status = SubjectStatus.DRAFT;
 
-    @Column(name = "max_final_exam_attempts")
-    private Integer maxFinalExamAttempts;
+    @Builder.Default
+    @Column(name = "max_final_exam_attempts", nullable = false)
+    private Integer maxFinalExamAttempts = DEFAULT_MAX_FINAL_EXAM_ATTEMPTS;
 
     @Column(name = "weekly_hours")
     private Integer weeklyHours;
@@ -125,5 +128,9 @@ public class Subject {
         if (status != SubjectStatus.PENDING_APPROVAL) {
             throw new SubjectInvalidTransitionException(id, status, action);
         }
+    }
+
+    public void setMaxFinalExamAttempts(Integer maxFinalExamAttempts) {
+        this.maxFinalExamAttempts = maxFinalExamAttempts == null ? DEFAULT_MAX_FINAL_EXAM_ATTEMPTS : maxFinalExamAttempts;
     }
 }

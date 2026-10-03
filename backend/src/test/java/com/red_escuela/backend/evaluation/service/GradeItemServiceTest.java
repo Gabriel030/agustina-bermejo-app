@@ -357,6 +357,48 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aRegularStudentWhoFailsTheOnlyRegularFinalFailsTheSubject() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000121", institution);
+        Instructor instructor = persistInstructor("71000122");
+        Subject subject = persistSubject("MateriaFinalUnico");
+        SubjectSection section = persistSection(subject, persistTerm(), persistScheme(0, 0, true));
+        assignInstructor(section, instructor);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, persistProgramEnrollment(student, persistProgram("CarreraFinalUnico")), section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(subject.getMaxFinalExamAttempts()).isEqualTo(1);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+    }
+
+    @Test
+    void aRegularStudentWhoPassesTheRegularFinalApprovesWithAFinalExam() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000123", institution);
+        Instructor instructor = persistInstructor("71000124");
+        Subject subject = persistSubject("MateriaFinalUnicoAprobado");
+        SubjectSection section = persistSection(subject, persistTerm(), persistScheme(0, 0, true));
+        assignInstructor(section, instructor);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, persistProgramEnrollment(student, persistProgram("CarreraFinalUnicoOk")), section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.FINAL_EXAM);
+    }
+
+    @Test
     void approvingASubjectForAStudentWithAnActiveGraduationRequestSavesTheGradeWithoutRollingBack() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000099", institution);

@@ -51,6 +51,16 @@ describe('AdministrativoSubjectWizard', () => {
     toastMock.error.mockClear();
   });
 
+  it('a new subject starts with a single regular final attempt', async () => {
+    const user = userEvent.setup();
+    mount('/administrativo/gestion-academica/nueva');
+
+    await goToTeachingStep(user);
+
+    expect(screen.getByRole('spinbutton')).toHaveValue(1);
+    expect(screen.getByText('Si lo dejás vacío, el final regular tiene un solo intento.')).toBeInTheDocument();
+  });
+
   it('keeps an active subject active after saving changes instead of offering to send it for approval', async () => {
     server.use(
       http.get(`${API}/subjects/5`, () => HttpResponse.json(subject())),

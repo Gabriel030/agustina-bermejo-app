@@ -31,8 +31,8 @@ public class SubjectService {
                 .weeklyHours(request.weeklyHours())
                 .weeklyHoursLab(request.weeklyHoursLab())
                 .gradeMode(request.gradeMode())
-                .maxFinalExamAttempts(request.maxFinalExamAttempts())
                 .build();
+        subject.setMaxFinalExamAttempts(request.maxFinalExamAttempts());
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
