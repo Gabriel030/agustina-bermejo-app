@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.billing.dto.CoursePricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
@@ -77,5 +78,11 @@ public class CourseController {
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
         return CourseResponse.from(courseService.get(id));
+    }
+
+    @GetMapping("/{id}/pricing")
+    public CoursePricingResponse getPricing(@PathVariable Long id) {
+        var course = courseService.get(id);
+        return new CoursePricingResponse(id, course.getPrice());
     }
 }

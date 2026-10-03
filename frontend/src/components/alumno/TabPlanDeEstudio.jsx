@@ -155,7 +155,7 @@ export function TabPlanDeEstudio({ carreraId }) {
                     {nuevoGrupo && <AnioGroupHeaderRow anio={fila.curricularYear} colSpan={8} />}
                     <TableRow className={fila.estado === 'bloqueada' ? 'opacity-60' : ''}>
                       <TableCell className="font-semibold text-ink-faint">{fila.subjectCode ?? '—'}</TableCell>
-                      <TableCell className="font-semibold text-ink">{fila.subjectName}</TableCell>
+                      <TableCell className="font-semibold text-ink"><div className="max-w-[180px] truncate">{fila.subjectName}</div></TableCell>
                       <TableCell className="text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}°` : '—'}</TableCell>
                       <TableCell className="text-ink-faint">{horasSemanalesMock(fila.credits) ?? '—'}</TableCell>
                       <TableCell className="text-ink-faint">{fila.credits ?? '—'}</TableCell>

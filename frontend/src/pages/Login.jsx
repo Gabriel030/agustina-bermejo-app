@@ -96,9 +96,9 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <MeshBackground />
-      <GlassCard className="w-[436px] p-10 pb-9">
+      <GlassCard className="w-full max-w-[436px] p-10 pb-9">
         <div className="mb-7">
           <InstitutionBrand subtitulo="Ingresá a tu cuenta" />
         </div>
