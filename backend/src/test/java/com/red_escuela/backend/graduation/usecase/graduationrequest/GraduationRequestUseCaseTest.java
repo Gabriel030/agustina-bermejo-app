@@ -1,5 +1,7 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -139,7 +141,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         approved.setProgramEnrollment(enrollment);
         approved.setSubjectSection(section);
         approved.setStatus(EnrollmentStatus.APPROVED);
-        approved.setFinalScore(8.0);
+        approved.setFinalScore(Grade.of(BigDecimal.valueOf(8.0)));
         approved.setEnrolledAt(LocalDateTime.of(2026, 3, 1, 10, 0));
         approved.setAttemptNumber(1);
         entityManager.persist(approved);

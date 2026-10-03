@@ -22,6 +22,6 @@ public record SectionSnapshot(List<StudentSnapshot> students, EvaluationScheme e
 
     public double minApprovalGrade() {
         return evaluationScheme == null || evaluationScheme.getMinApprovalGrade() == null
-                ? 4.0 : evaluationScheme.getMinApprovalGrade();
+                ? 4.0 : evaluationScheme.getMinApprovalGrade().value().doubleValue();
     }
 }

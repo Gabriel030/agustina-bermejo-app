@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
@@ -56,8 +57,8 @@ public class EvaluationSchemeService {
 
     private void applyRequest(EvaluationScheme scheme, CreateEvaluationSchemeRequest request) {
         scheme.define(request.name(), request.examCountExpected(), request.hasFinal(), request.finalWeight(),
-                request.aggregationMethod(), request.minRegularGrade(), request.minApprovalGrade(),
-                request.promotionMinGrade(), request.notes());
+                request.aggregationMethod(), Grade.of(request.minRegularGrade()), Grade.of(request.minApprovalGrade()),
+                Grade.ofNullable(request.promotionMinGrade()), request.notes());
     }
 
     private EvaluationScheme findOrThrow(Long id) {
