@@ -55,15 +55,9 @@ public class EvaluationSchemeService {
     }
 
     private void applyRequest(EvaluationScheme scheme, CreateEvaluationSchemeRequest request) {
-        scheme.setName(request.name());
-        scheme.setExamCountExpected(request.examCountExpected());
-        scheme.setHasFinal(request.hasFinal());
-        scheme.setFinalWeight(request.finalWeight());
-        scheme.setAggregationMethod(request.aggregationMethod());
-        scheme.setMinRegularGrade(request.minRegularGrade());
-        scheme.setMinApprovalGrade(request.minApprovalGrade());
-        scheme.setPromotionMinGrade(request.promotionMinGrade());
-        scheme.setNotes(request.notes());
+        scheme.define(request.name(), request.examCountExpected(), request.hasFinal(), request.finalWeight(),
+                request.aggregationMethod(), request.minRegularGrade(), request.minApprovalGrade(),
+                request.promotionMinGrade(), request.notes());
     }
 
     private EvaluationScheme findOrThrow(Long id) {

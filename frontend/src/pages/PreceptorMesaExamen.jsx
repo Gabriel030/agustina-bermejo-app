@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronsUpDownIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatCard } from '@/components/StatCard';
@@ -16,7 +17,15 @@ import { formatearFecha } from '@/lib/comisiones';
 import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion } from '@/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = { SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' } };
-const ESTADO_INSCRIPCION = { REGISTERED: { label: 'Anotado', tone: 'accent' }, WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' } };
+const ESTADO_INSCRIPCION = {
+  REGISTERED: { label: 'Anotado', tone: 'accent' },
+  GRADED: { label: 'Rindió', tone: 'success' },
+  WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
+};
+
+const MENSAJES_ERROR_MESA = {
+  EXAM_BOARD_NOT_YET_TAKEN: 'Todavía no se tomó el examen: el acta se cierra después de la fecha de la mesa.',
+};
 
 function iniciales(nombre) {
   return nombre.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
@@ -89,16 +98,17 @@ function TablaAnotados({ anotados, soloLectura, onDarDeBaja, dandoDeBaja }) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-[2fr_1.4fr_0.6fr_1fr_100px] gap-2 border-b border-border px-3 pb-2 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
-        <div>Alumno</div><div>Carrera</div><div>Intento</div><div>Estado</div><div />
+      <div className="grid grid-cols-[2fr_1.4fr_0.6fr_0.6fr_1fr_100px] gap-2 border-b border-border px-3 pb-2 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+        <div>Alumno</div><div>Carrera</div><div>Intento</div><div>Nota</div><div>Estado</div><div />
       </div>
       {anotados.map((a) => {
         const config = ESTADO_INSCRIPCION[a.status] ?? { label: a.status, tone: 'neutral' };
         return (
-          <div key={a.id} className="grid grid-cols-[2fr_1.4fr_0.6fr_1fr_100px] items-center gap-2 rounded-xl px-3 py-2.5 hover:bg-neutral-bg/40">
+          <div key={a.id} className="grid grid-cols-[2fr_1.4fr_0.6fr_0.6fr_1fr_100px] items-center gap-2 rounded-xl px-3 py-2.5 hover:bg-neutral-bg/40">
             <div className="text-[13.5px] font-semibold text-ink">{a.studentName}</div>
             <div className="text-[13px] text-ink-soft">{a.carrera}</div>
             <div className="text-[13px] text-ink-soft">{a.attemptNumber ?? '-'}°</div>
+            <div className="text-[13px] font-semibold text-ink">{a.finalScore ?? '—'}</div>
             <div><StatusPill tone={config.tone}>{config.label}</StatusPill></div>
             <div>
               {a.status === 'REGISTERED' && !soloLectura && (
@@ -141,8 +151,9 @@ function DetalleMesa({ mesaId }) {
 
   const soloLectura = mesa.status === 'CLOSED';
   const materia = mesa.subjectName ?? mesa.courseSubjectName ?? 'Materia';
-  const inscriptos = (anotados ?? []).filter((a) => a.status === 'REGISTERED').length;
+  const inscriptos = (anotados ?? []).filter((a) => a.status !== 'WITHDRAWN').length;
   const ahora = new Date();
+  const examenPendiente = ahora < new Date(mesa.examDate);
   const ventanaAbierta = soloLectura
     ? false
     : mesa.registrationStart && mesa.registrationEnd
@@ -153,6 +164,8 @@ function DetalleMesa({ mesaId }) {
     setCerrando(true);
     try {
       await cerrarActa.mutateAsync();
+    } catch (e) {
+      toast.error(MENSAJES_ERROR_MESA[e.code] ?? e.message);
     } finally {
       setConfirmarCierre(false);
       setCerrando(false);
@@ -190,11 +203,14 @@ function DetalleMesa({ mesaId }) {
             <Button variant="outline" size="sm" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
               Asignar tribunal
             </Button>
-            <Button variant="gradient" size="sm" disabled={soloLectura || cerrando} onClick={() => setConfirmarCierre(true)}>
+            <Button variant="gradient" size="sm" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
               Cerrar acta
             </Button>
           </div>
         </div>
+        {!soloLectura && examenPendiente && (
+          <div className="text-[12px] text-ink-faint">El acta se cierra después del examen, cuando ya se pueden cargar las notas.</div>
+        )}
         <TablaAnotados
           anotados={anotados ?? []}
           soloLectura={soloLectura}

@@ -14,4 +14,14 @@ public interface BillableEnrollment {
     LocalDateTime getBillingStandingUpdatedAt();
 
     void setBillingStandingUpdatedAt(LocalDateTime updatedAt);
+
+    default boolean settleArrears() {
+        EnrollmentBillingStanding standing = getBillingStanding();
+        if (standing != EnrollmentBillingStanding.OVERDUE && standing != EnrollmentBillingStanding.SUSPENDED) {
+            return false;
+        }
+        setBillingStanding(EnrollmentBillingStanding.UP_TO_DATE);
+        setBillingStandingUpdatedAt(LocalDateTime.now());
+        return true;
+    }
 }

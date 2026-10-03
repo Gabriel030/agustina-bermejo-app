@@ -5,7 +5,7 @@ import { useOrdenamiento } from '@/hooks/useOrdenamiento';
 import { aniosDisponibles, ORDEN_ESTADO } from '@/lib/notas';
 import { construirComparador } from '@/lib/ordenamiento';
 
-const ESTADO_A_FILTRO = { aprobadas: 'aprobada', 'en-curso': 'en-curso', regulares: 'regular', bloqueadas: 'bloqueada' };
+const ESTADO_A_FILTRO = { aprobadas: 'aprobada', 'en-curso': 'en-curso', regulares: 'regular', desaprobadas: 'desaprobada', bloqueadas: 'bloqueada' };
 const POR_PAGINA = 10;
 
 // Campos ordenables comunes a las 4 pestañas de materia (Materias/Notas/

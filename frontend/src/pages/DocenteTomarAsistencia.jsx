@@ -28,10 +28,13 @@ const ESTADOS = [
   { value: 'PRESENT', label: 'Presente', filaClass: 'bg-success-bg', chipActivo: 'bg-success text-white' },
   { value: 'LATE', label: 'Tarde', filaClass: 'bg-warning-bg', chipActivo: 'bg-warning text-white' },
   { value: 'ABSENT', label: 'Ausente', filaClass: 'bg-danger-bg', chipActivo: 'bg-danger text-white' },
+];
+const ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION = [
   { value: 'JUSTIFIED', label: 'Justificada', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-white' },
+  { value: 'JUSTIFICATION_PENDING', label: 'Justificación pendiente', filaClass: 'bg-accent-soft', chipActivo: 'bg-brand text-white' },
 ];
 const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
-const ESTADO_POR_VALOR = Object.fromEntries(ESTADOS.map((e) => [e.value, e]));
+const ESTADO_POR_VALOR = Object.fromEntries([...ESTADOS, ...ESTADOS_DEL_CIRCUITO_DE_JUSTIFICACION].map((e) => [e.value, e]));
 
 const SAVE_ERROR_MESSAGES = {
   CLASS_ON_HOLIDAY: 'Esa fecha es feriado: no se puede tomar asistencia.',
@@ -54,7 +57,7 @@ function agruparFechasPorMes(fechas) {
   }));
 }
 
-const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFIED'];
+const ESTADOS_QUE_CUENTAN_COMO_AUSENCIA = ['ABSENT', 'JUSTIFICATION_PENDING'];
 
 function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
   const config = estado ? ESTADO_POR_VALOR[estado] : null;
@@ -598,8 +601,8 @@ function DistribucionDeAsistencia({ type, sectionId }) {
   const segmentos = [
     { key: 'PRESENT', label: 'Presente', colorVar: '--success', valor: conteos.PRESENT },
     { key: 'LATE', label: 'Tarde', colorVar: '--warning', valor: conteos.LATE },
-    { key: 'ABSENT', label: 'Ausente', colorVar: '--danger', valor: conteos.ABSENT },
-    { key: 'JUSTIFIED', label: 'Justificada', colorVar: '--accent', valor: conteos.JUSTIFIED + conteos.JUSTIFICATION_PENDING },
+    { key: 'ABSENT', label: 'Ausente', colorVar: '--danger', valor: conteos.ABSENT + conteos.JUSTIFICATION_PENDING },
+    { key: 'JUSTIFIED', label: 'Justificada', colorVar: '--accent', valor: conteos.JUSTIFIED },
   ].filter((s) => s.valor > 0);
 
   return (

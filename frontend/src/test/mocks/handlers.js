@@ -72,5 +72,10 @@ export const handlers = [
     HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
   ),
   http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/documents`, () => HttpResponse.json([])),
+  http.get(`${API}/me/payment-receipts`, () => HttpResponse.json([])),
+  http.get(`${API}/payment-config`, () =>
+    HttpResponse.json({ bankAlias: null, bankCbu: null, accountHolder: null, qrImageUrl: null, mpEnabled: false }),
+  ),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
 ];

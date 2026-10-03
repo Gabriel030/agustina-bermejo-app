@@ -53,6 +53,12 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase;
 
     @Autowired
+    private RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
+
+    @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
     @Autowired
@@ -239,5 +245,49 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
         assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
+    }
+
+    private ProgramEnrollmentApplication requestApplication(String dni) {
+        Student student = persistStudent(dni);
+        Program program = persistProgram("Diseño Gráfico " + System.nanoTime());
+        Person director = persistPersonBase("DIR" + System.nanoTime());
+        ProgramCohort cohort = persistCohort(program, null, null, director);
+        persistPriceRevision(program, BigDecimal.valueOf(50000), director);
+        entityManager.flush();
+        return requestProgramEnrollmentApplicationUseCase.request(
+                new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId(), receiptFile()));
+    }
+
+    @Test
+    void rejectingTheRequestAlsoRejectsItsReceiptAndCancelsTheEnrollmentFeeInvoice() {
+        ProgramEnrollmentApplication application = requestApplication("81000006");
+        Person preceptor = persistPersonBase("PREC" + System.nanoTime());
+
+        rejectProgramEnrollmentApplicationUseCase.reject(
+                new RejectProgramEnrollmentApplicationCommand(application.getId(), preceptor, "Documentación ilegible"));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        ProgramEnrollmentApplication rechazada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
+        assertThat(rechazada.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
+        assertThat(rechazada.getPaymentReceipt().getRejectionReason()).isEqualTo("Documentación ilegible");
+        assertThat(rechazada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
+    }
+
+    @Test
+    void approvingTheRequestWhenAdministrationAlreadyApprovedItsReceiptStillEnrollsTheStudent() {
+        ProgramEnrollmentApplication application = requestApplication("81000007");
+        Person preceptor = persistPersonBase("PREC" + System.nanoTime());
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), preceptor);
+
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        ProgramEnrollmentApplication aprobada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
+        assertThat(aprobada.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
+        assertThat(aprobada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
     }
 }

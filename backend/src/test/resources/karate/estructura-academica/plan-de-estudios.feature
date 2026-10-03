@@ -524,7 +524,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Rechazar una materia exige motivo, lo guarda para el administrativo y se limpia al reenviarla
     * def nombre = 'Materia a rechazar ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 4, gradeMode: 'NUMERIC' }
@@ -568,7 +568,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Una materia sin horas o sin modalidad de calificación se guarda como borrador pero no se puede enviar a aprobación
     * def nombre = 'Materia incompleta ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)' }
@@ -609,8 +609,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: El código se corrige en borrador y queda fijo una vez aprobada la materia
     * def nombre = 'Materia con código a corregir ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigoCorregido = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoCorregido = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 3, gradeMode: 'NUMERIC' }
@@ -644,7 +644,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario Outline: Materia con horas negativas o intentos de final en cero — 400
     * def nombre = 'Materia inválida ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     * def body = { name: '#(nombre)', code: '#(codigo)', gradeMode: 'NUMERIC' }
     * body.weeklyHours = <weeklyHours>
     * body.weeklyHoursLab = <weeklyHoursLab>
@@ -663,7 +663,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Una materia pendiente de aprobación no se puede editar ni agregar a un plan — 409
     * def nombre = 'Materia pendiente ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     * def nombrePrograma = 'Carrera QA pendiente ' + java.lang.System.nanoTime()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -700,7 +700,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Agregar al plan con año fuera de la duración o sin los datos de su categoría — 400 con código
     * def nombrePrograma = 'Carrera QA años ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia años ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken

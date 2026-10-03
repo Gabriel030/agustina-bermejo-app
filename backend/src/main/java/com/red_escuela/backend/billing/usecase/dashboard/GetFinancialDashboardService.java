@@ -1,27 +1,35 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @UseCase
 public class GetFinancialDashboardService implements GetFinancialDashboardUseCase {
+    private static final List<EnrollmentStatus> ACTIVE_COURSE_STATUSES = List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
+    private static final List<ProgramEnrollmentStatus> ACTIVE_PROGRAM_STATUSES = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
 
     private final InvoiceRepository invoiceRepository;
-    private final StudentRepository studentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
 
-    public GetFinancialDashboardService(InvoiceRepository invoiceRepository, StudentRepository studentRepository) {
+    public GetFinancialDashboardService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+                                        ProgramEnrollmentRepository programEnrollmentRepository) {
         this.invoiceRepository = invoiceRepository;
-        this.studentRepository = studentRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.programEnrollmentRepository = programEnrollmentRepository;
     }
 
     @Override
@@ -31,32 +39,16 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
         debtorIds.addAll(invoiceRepository.findProgramStudentIdsByStatus(InvoiceStatus.OVERDUE));
         int studentsInDebt = debtorIds.size();
 
-        long totalStudents = studentRepository.count();
-        int studentsUpToDate = (int) Math.max(0, totalStudents - studentsInDebt);
+        Set<Long> activeStudentIds = new HashSet<>(courseEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_COURSE_STATUSES));
+        activeStudentIds.addAll(programEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_PROGRAM_STATUSES));
+        activeStudentIds.removeAll(debtorIds);
+        int studentsUpToDate = activeStudentIds.size();
 
-        List<InvoiceStatus> debtStatuses = List.of(InvoiceStatus.OVERDUE);
-        List<Invoice> debtInvoices = invoiceRepository.findByStatusInWithAdjustments(debtStatuses);
-
-        Map<Long, BigDecimal> allocatedByInvoice;
-        if (debtInvoices.isEmpty()) {
-            allocatedByInvoice = Map.of();
-        } else {
-            List<Long> invoiceIds = debtInvoices.stream().map(Invoice::getId).toList();
-            allocatedByInvoice = invoiceRepository.sumAllocatedByInvoiceIds(invoiceIds).stream()
-                    .collect(Collectors.toMap(row -> (Long) row[0], row -> (BigDecimal) row[1]));
-        }
-
-        Map<Long, BigDecimal> allocated = allocatedByInvoice;
-        BigDecimal totalDebt = debtInvoices.stream()
-                .map(inv -> inv.getAmountDue()
-                        .subtract(allocated.getOrDefault(inv.getId(), BigDecimal.ZERO))
-                        .max(BigDecimal.ZERO))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalDebt = invoiceRepository.sumOutstandingBalanceByStatus(InvoiceStatus.OVERDUE.name());
 
         YearMonth currentPeriod = YearMonth.now();
-        BigDecimal monthlyProjected = invoiceRepository.sumBaseAmountByPeriod(currentPeriod);
-        BigDecimal monthlyCollected = invoiceRepository.sumBaseAmountByPeriodAndStatusIn(
-                currentPeriod, List.of(InvoiceStatus.PAID, InvoiceStatus.WAIVED));
+        BigDecimal monthlyProjected = invoiceRepository.sumAmountDueByPeriod(currentPeriod.atDay(1));
+        BigDecimal monthlyCollected = invoiceRepository.sumAllocatedByPeriod(currentPeriod);
         BigDecimal monthlyDebt = monthlyProjected.subtract(monthlyCollected).max(BigDecimal.ZERO);
 
         return new FinancialDashboardResponse(

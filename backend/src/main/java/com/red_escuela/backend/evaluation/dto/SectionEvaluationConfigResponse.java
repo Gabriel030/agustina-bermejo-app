@@ -17,13 +17,14 @@ public record SectionEvaluationConfigResponse(
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
         Double minRegularGrade, Double minApprovalGrade, Double promotionMinGrade,
-        List<SectionInstructorSummary> instructors, boolean canEdit) {
+        List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false);
+        return from(config, instructors, false, false);
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors, boolean canEdit) {
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
+                                                       boolean canEdit, boolean canSubmit) {
         var section = config.getSubjectSection();
         var term = section.getTerm();
         var scheme = section.getEvaluationScheme();
@@ -44,6 +45,6 @@ public record SectionEvaluationConfigResponse(
                 scheme == null ? null : scheme.getMinRegularGrade(),
                 scheme == null ? null : scheme.getMinApprovalGrade(),
                 scheme == null ? null : scheme.getPromotionMinGrade(),
-                instructors, canEdit);
+                instructors, canEdit, canSubmit);
     }
 }

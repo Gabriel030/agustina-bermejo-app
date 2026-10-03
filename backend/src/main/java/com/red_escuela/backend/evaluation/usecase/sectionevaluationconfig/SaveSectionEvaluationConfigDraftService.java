@@ -4,8 +4,8 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.EvaluationDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.EvaluationDateOutsideTermException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
@@ -38,8 +38,7 @@ public class SaveSectionEvaluationConfigDraftService implements SaveSectionEvalu
     public SectionEvaluationConfig save(SaveSectionEvaluationConfigDraftCommand command) {
         instructorAccess.requireLeadInstructor(command.sectionId(), command.instructorId());
         SectionEvaluationConfig config = configFinder.findOrThrow(command.sectionId());
-        if (config.getStatus() != SectionEvaluationConfigStatus.DRAFT
-                && config.getStatus() != SectionEvaluationConfigStatus.REJECTED) {
+        if (!config.isEditable()) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "editar");
         }
         UpdateSectionEvaluationConfigRequest request = command.request();
@@ -64,10 +63,6 @@ public class SaveSectionEvaluationConfigDraftService implements SaveSectionEvalu
         config.setExam4Date(request.exam4Date());
         config.setFinalCall1Date(request.finalCall1Date());
         config.setFinalCall2Date(request.finalCall2Date());
-        if (config.getStatus() == SectionEvaluationConfigStatus.REJECTED) {
-            config.setStatus(SectionEvaluationConfigStatus.DRAFT);
-            config.setRejectionReason(null);
-        }
         return configRepository.save(config);
     }
 
@@ -78,10 +73,10 @@ public class SaveSectionEvaluationConfigDraftService implements SaveSectionEvalu
         LocalDate start = term.getStartDate() != null ? term.getStartDate().toLocalDate() : null;
         LocalDate end = term.getEndDate() != null ? term.getEndDate().toLocalDate() : null;
         if ((start != null && date.isBefore(start)) || (end != null && date.isAfter(end))) {
-            throw new InvalidEvaluationDateException(date, "fuera del rango del cuatrimestre");
+            throw new EvaluationDateOutsideTermException(date);
         }
         if (holidayRepository.existsByDate(date)) {
-            throw new InvalidEvaluationDateException(date, "coincide con un feriado");
+            throw new EvaluationDateOnHolidayException(date);
         }
     }
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { GlassCard } from '@/components/GlassCard';
+import { EmptyState } from '@/components/EmptyState';
 import { PageContainer } from '@/components/PageContainer';
 import { Stepper } from '@/components/Stepper';
 import { StatusPill } from '@/components/StatusPill';
@@ -37,7 +38,7 @@ export function AvisoWizard() {
   const [rosterAbierto, setRosterAbierto] = useState(false);
   const [confirmarSalida, setConfirmarSalida] = useState(false);
 
-  const { data: segmentos, isLoading: cargandoSegmentos } = useSegmentosDeAudiencia(sectionId, tipo);
+  const { data: segmentos, isLoading: cargandoSegmentos, isError: sinAcceso } = useSegmentosDeAudiencia(sectionId, tipo);
   const { data: preview, recalculando } = usePreviewDeAudiencia(sectionId, tipo, spec);
   const crearAviso = useCrearAviso(sectionId, tipo);
 
@@ -75,6 +76,26 @@ export function AvisoWizard() {
     } catch (error) {
       toast.error(error.message ?? 'No pudimos publicar el aviso. Probá de nuevo.');
     }
+  }
+
+  if (sinAcceso) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Nuevo aviso</h1>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="🔒"
+            title="No podés publicar avisos en esta comisión"
+            description="Solo los docentes asignados a la comisión pueden escribirles a sus alumnos."
+            action={
+              <Button variant="outline" asChild>
+                <Link to="/docente/mis-comisiones">Volver a Mis comisiones</Link>
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
   }
 
   return (

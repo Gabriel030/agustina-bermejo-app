@@ -19,6 +19,7 @@ const ESTADO_PILL = {
   'en-curso': { label: 'En curso', tone: 'accent' },
   regular: { label: 'Regular · falta final', tone: 'warning' },
   aprobada: { label: 'Aprobada', tone: 'success' },
+  desaprobada: { label: 'Desaprobada · a recursar', tone: 'danger' },
   disponible: { label: 'Disponible', tone: 'accent' },
   bloqueada: { label: 'Bloqueada', tone: 'neutral' },
 };

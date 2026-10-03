@@ -43,7 +43,7 @@ export function AvisoEditar() {
     programado ? sectionId : undefined,
     tipo,
   );
-  const { data: preview, recalculando } = usePreviewDeAudiencia(programado ? sectionId : undefined, tipo, spec);
+  const { data: preview, recalculando } = usePreviewDeAudiencia(sectionId, tipo, programado ? spec : SPEC_INICIAL);
   const destinatarios = useDestinatariosDeAviso(programado ? undefined : avisoId);
   const editarAviso = useEditarAviso(sectionId, tipo, avisoId);
 
@@ -124,7 +124,7 @@ export function AvisoEditar() {
         />
         <TiraDeConsecuencias
           alcanzados={programado ? preview?.count ?? 0 : destinatarios.data?.length ?? 0}
-          total={programado ? preview?.totalInSection ?? 0 : destinatarios.data?.length ?? 0}
+          total={preview?.totalInSection ?? destinatarios.data?.length ?? 0}
           sinCorregir={!!preview?.hasUngradedInstances}
           scheduledFor={valores.cuando === 'programar' ? valores.scheduledFor : null}
           reNotifica={!programado}
