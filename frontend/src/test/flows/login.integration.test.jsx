@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/mocks/server';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -63,6 +65,25 @@ describe('flujo de login end-to-end', () => {
 
     // ProtectedRoute redirige antes de renderizar el layout de Director.
     expect(await screen.findByText('No autorizado')).toBeInTheDocument();
+  });
+
+  it('después de cerrar sesión, el siguiente usuario no hereda la página del anterior', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await login();
+    expect(await screen.findAllByText('Preceptor')).toHaveLength(3);
+
+    server.use(
+      http.get('http://localhost:8080/me', () =>
+        HttpResponse.json({ id: 2, nombre: 'Otra', apellido: 'Persona', email: 'otra@example.com', roles: ['DIRECTOR'] }),
+      ),
+    );
+    await user.click(screen.getAllByRole('button', { name: 'Cerrar sesión' })[0]);
+    await screen.findByPlaceholderText('DNI o email');
+    await login();
+
+    expect(await screen.findAllByText('Otra Persona')).toHaveLength(2);
+    expect(screen.queryByText('No autorizado')).not.toBeInTheDocument();
   });
 
   it('recargar con un refreshToken guardado restaura la sesión sin pasar por /login', async () => {

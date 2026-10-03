@@ -55,7 +55,7 @@ public class RegisterService implements RegisterUseCase {
 
         try {
             Person person = personFactory.createPersonWithCredentials(
-                    request.nombre(), request.apellido(), request.email(),
+                    request.nombre(), request.apellido(), request.email().trim().toLowerCase(),
                     request.username(), passwordEncoder.encode(request.password()));
 
             Student student = new Student();
