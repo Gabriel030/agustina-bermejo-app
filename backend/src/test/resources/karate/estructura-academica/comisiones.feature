@@ -264,7 +264,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
   Scenario: Ciclo completo de una comisión de materia del plan de carrera — crear, editar, docente, baja/alta
     * def nombreMateria = 'Materia con comisión ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
@@ -325,7 +325,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreMateria = 'Materia compartida ' + java.lang.System.nanoTime()
     * def nombrePrograma1 = 'Carrera QA comparte 1 ' + java.lang.System.nanoTime()
     * def nombrePrograma2 = 'Carrera QA comparte 2 ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -375,7 +375,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
   Scenario: Quitar una asignación de docente de una comisión de materia que no le corresponde — 404
     * def nombreMateria = 'Materia dos comisiones ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
@@ -418,7 +418,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 404
 
     * def nombreMateria = 'Materia term inexistente ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
