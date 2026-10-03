@@ -834,7 +834,7 @@ export function DocenteTomarAsistencia() {
           <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una comisión" /></SelectTrigger>
           <SelectContent>
             {lista.map((c) => (
-              <SelectItem key={`${c.type}-${c.id}`} value={String(c.id)}>{c.subjectName} · {c.sectionName}</SelectItem>
+              <SelectItem key={`${c.type}-${c.id}`} value={String(c.id)}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
             ))}
           </SelectContent>
         </Select>

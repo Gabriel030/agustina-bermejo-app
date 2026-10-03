@@ -48,10 +48,10 @@ const INVOICE_STATUS_CONFIG = {
 };
 
 const BILLING_STANDING_CONFIG = {
-  CURRENT: { label: 'Al día', tone: 'success' },
+  UP_TO_DATE: { label: 'Al día', tone: 'success' },
   OVERDUE: { label: 'En mora', tone: 'danger' },
   SUSPENDED: { label: 'Suspendido', tone: 'danger' },
-  WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
+  WITHDRAWN_FOR_NONPAYMENT: { label: 'Dado de baja', tone: 'neutral' },
 };
 
 const PAYMENT_METHODS = [
