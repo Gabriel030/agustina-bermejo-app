@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
@@ -124,7 +126,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
         Student estudiante2 = persistStudent("70000002");
 
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("MateriaConcurrencia-" + System.nanoTime());
         subject = subjectRepository.save(subject);
 
