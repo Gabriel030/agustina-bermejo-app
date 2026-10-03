@@ -47,7 +47,6 @@ Feature: Login (POST /auth/login)
     Then status 400
 
   Scenario: Account lockout — correct password rejected after 5 failed attempts
-    # 5 failed attempts → locked → correct password also returns 401
     Given path '/auth/login'
     And request { username: '#(emailUnico)', password: 'contraseña-incorrecta-1' }
     When method post
