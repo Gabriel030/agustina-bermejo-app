@@ -101,6 +101,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def propiaAprobada = response.filter(function(x){ return x.courseId == courseId })[0]
     And match propiaAprobada.paymentStatus == 'APPROVED'
     And match propiaAprobada.courseEnrollmentId != null
+    And match propiaAprobada.courseEnrollmentStatus == 'ENROLLED'
 
     # Inscribirme de nuevo al mismo curso (ya matriculado) — 409
     Given path '/me/course-enrollments'
@@ -109,6 +110,7 @@ Feature: Caso de uso — Inscribirse a un curso
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante2.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
+    And match response.code == 'ALREADY_ENROLLED_IN_COURSE'
 
   Scenario: Inscribirme a un curso inexistente — 404
     Given path '/me/course-enrollments'

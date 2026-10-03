@@ -12,6 +12,7 @@ const ESTADOS = {
   PENDING_REVIEW: { label: 'En revisión', tone: 'warning' },
   APPROVED: { label: 'Aprobada', tone: 'success' },
   REJECTED: { label: 'Rechazada', tone: 'danger' },
+  WAITLISTED: { label: 'En lista de espera', tone: 'neutral' },
 };
 
 export function EstadoSolicitudBadge({ status }) {

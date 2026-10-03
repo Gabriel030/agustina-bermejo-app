@@ -130,7 +130,8 @@ public class CourseEnrollmentService {
         }
 
         List<CourseEnrollment> activas = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(
-                student.getId(), course.getId(), List.of(EnrollmentStatus.ENROLLED));
+                student.getId(), course.getId(),
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.WAITLISTED));
         if (!activas.isEmpty()) {
             throw new AlreadyEnrolledInCourseException(student.getId(), course.getId());
         }
@@ -186,7 +187,7 @@ public class CourseEnrollmentService {
         courseRepository.findByIdForUpdate(course.getId())
                 .orElseThrow(() -> new CourseNotFoundException(course.getId()));
         long occupied = courseEnrollmentRepository
-                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED))
+                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))
                 .size();
         return course.hasCapacityFor(occupied) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
     }

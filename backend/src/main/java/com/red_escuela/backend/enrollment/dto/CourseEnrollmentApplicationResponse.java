@@ -9,7 +9,8 @@ public record CourseEnrollmentApplicationResponse(
         String courseName,
         String paymentStatus,
         String rejectionReason,
-        Long courseEnrollmentId) {
+        Long courseEnrollmentId,
+        String courseEnrollmentStatus) {
     public static CourseEnrollmentApplicationResponse from(CourseEnrollmentApplication application) {
         return new CourseEnrollmentApplicationResponse(
                 application.getId(),
@@ -18,6 +19,7 @@ public record CourseEnrollmentApplicationResponse(
                 application.getCourse().getName(),
                 application.getPaymentReceipt().getStatus().name(),
                 application.getPaymentReceipt().getRejectionReason(),
-                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getId());
+                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getId(),
+                application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getStatus().name());
     }
 }

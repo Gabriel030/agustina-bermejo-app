@@ -111,6 +111,7 @@ import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestNotFo
 import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
+import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupException;
@@ -247,7 +248,8 @@ public class GlobalExceptionHandler {
             UnknownAudienceSegmentException.class
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public void handleBadRequest() {
+    public ErrorCodeResponse handleBadRequest(Exception exception) {
+        return ErrorCodeResponse.of(exception);
     }
 
     @ExceptionHandler({
@@ -311,6 +313,7 @@ public class GlobalExceptionHandler {
             ElectiveGroupInUseException.class,
             AlreadyEnrolledInProgramException.class,
             AlreadyEnrolledInCourseException.class,
+            PendingCourseEnrollmentApplicationException.class,
             AlreadyEnrolledInSubjectException.class,
             CannotWithdrawException.class,
             IncompleteSectionSetupException.class,
@@ -352,7 +355,8 @@ public class GlobalExceptionHandler {
             CannotChangeAudienceOfSentAnnouncementException.class
     })
     @ResponseStatus(HttpStatus.CONFLICT)
-    public void handleConflict() {
+    public ErrorCodeResponse handleConflict(Exception exception) {
+        return ErrorCodeResponse.of(exception);
     }
 
     @ExceptionHandler({

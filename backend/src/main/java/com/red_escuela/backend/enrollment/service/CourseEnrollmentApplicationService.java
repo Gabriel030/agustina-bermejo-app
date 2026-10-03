@@ -8,6 +8,8 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
@@ -58,6 +60,10 @@ public class CourseEnrollmentApplicationService {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         courseEnrollmentService.validateCanEnroll(student, course);
+        if (courseEnrollmentApplicationRepository.existsByStudentIdAndCourseIdAndPaymentReceiptStatus(
+                studentId, course.getId(), PaymentReceiptStatus.PENDING_REVIEW)) {
+            throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());
+        }
 
         Invoice invoice = invoiceFactory.createAdHocForCourse(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
