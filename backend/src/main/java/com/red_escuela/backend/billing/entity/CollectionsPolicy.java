@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,5 +54,12 @@ public class CollectionsPolicy {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
+    }
+
+    public void setSurchargePercentage(BigDecimal surchargePercentage) {
+        if (surchargePercentage == null || surchargePercentage.signum() < 0 || surchargePercentage.compareTo(BigDecimal.ONE) > 0) {
+            throw new InvalidSurchargePercentageException(surchargePercentage);
+        }
+        this.surchargePercentage = surchargePercentage;
     }
 }

@@ -11,6 +11,8 @@ export const TIPO_NOTIFICACION_LABEL = {
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'Excepción rechazada',
   COURSE_WAITLIST_EXPIRED: 'Lista de espera vencida',
   SUSPENSION_LIFTED: 'Suspensión levantada',
+  PAYMENT_RECEIPT_APPROVED: 'Pago acreditado',
+  PAYMENT_RECEIPT_REJECTED: 'Comprobante rechazado',
   ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
   ANNOUNCEMENT_UPDATED: 'Aviso actualizado',
 };
@@ -28,6 +30,8 @@ export const TONO_NOTIFICACION = {
   DIRECTOR_APPROVAL_REQUEST_REJECTED: 'danger',
   COURSE_WAITLIST_EXPIRED: 'warning',
   SUSPENSION_LIFTED: 'success',
+  PAYMENT_RECEIPT_APPROVED: 'success',
+  PAYMENT_RECEIPT_REJECTED: 'danger',
   ANNOUNCEMENT_PUBLISHED: 'accent2',
   ANNOUNCEMENT_UPDATED: 'accent2',
 };

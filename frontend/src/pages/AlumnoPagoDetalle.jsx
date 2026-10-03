@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useMatch, useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -9,7 +9,9 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { useFacturasDeCurso, useFacturasDeMatricula } from '@/hooks/useBilling';
+import { AmountBreakdown } from '@/components/alumno/AmountBreakdown';
+import { useFacturasDeCurso, useFacturasDeMatricula, useMisComprobantes } from '@/hooks/useBilling';
+import { ADJUSTMENT_TYPE_LABELS, signedAdjustmentAmount } from '@/lib/billing';
 
 const PAGE_SIZE = 10;
 
@@ -59,7 +61,22 @@ function formatFecha(date) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+const PAYABLE_STATUSES = ['PENDING', 'OVERDUE', 'PARTIALLY_PAID'];
+
+function latestReceiptByInvoice(receipts) {
+  const latest = new Map();
+  for (const receipt of receipts ?? []) {
+    const current = latest.get(receipt.invoiceId);
+    if (!current || receipt.uploadedAt > current.uploadedAt) {
+      latest.set(receipt.invoiceId, receipt);
+    }
+  }
+  return latest;
+}
+
 function PaymentDetailModal({ invoice, onClose }) {
+  const paid = invoice.status === 'PAID';
+  const adjustments = invoice.adjustments ?? [];
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-md">
@@ -75,21 +92,37 @@ function PaymentDetailModal({ invoice, onClose }) {
             <span className="text-ink-faint">Período</span>
             <span className="font-medium text-ink">{formatPeriod(invoice.period)}</span>
           </div>
+          {adjustments.length > 0 && (
+            <>
+              <div className="my-1 border-t border-border" />
+              <AmountBreakdown
+                baseAmount={invoice.baseAmount}
+                lines={adjustments.map((adjustment) => ({
+                  label: ADJUSTMENT_TYPE_LABELS[adjustment.type] ?? adjustment.type,
+                  amount: signedAdjustmentAmount(adjustment),
+                }))}
+              />
+            </>
+          )}
           <div className="flex justify-between">
-            <span className="text-ink-faint">Importe pagado</span>
+            <span className="text-ink-faint">{paid ? 'Importe pagado' : 'Importe total'}</span>
             <span className="font-mono font-semibold text-ink">{formatMonto(invoice.amountDue)}</span>
           </div>
-          <div className="my-1 border-t border-border" />
-          <div className="flex justify-between">
-            <span className="text-ink-faint">Fecha de pago</span>
-            <span className="font-medium text-ink">{invoice.paymentDate ? formatFecha(invoice.paymentDate) : '-'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-ink-faint">Método</span>
-            <span className="font-medium text-ink">
-              {invoice.paymentMethod ? (PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod) : '-'}
-            </span>
-          </div>
+          {paid && (
+            <>
+              <div className="my-1 border-t border-border" />
+              <div className="flex justify-between">
+                <span className="text-ink-faint">Fecha de pago</span>
+                <span className="font-medium text-ink">{invoice.paymentDate ? formatFecha(invoice.paymentDate) : '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-faint">Método</span>
+                <span className="font-medium text-ink">
+                  {invoice.paymentMethod ? (PAYMENT_METHOD_LABELS[invoice.paymentMethod] ?? invoice.paymentMethod) : '-'}
+                </span>
+              </div>
+            </>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cerrar</Button>
@@ -99,7 +132,7 @@ function PaymentDetailModal({ invoice, onClose }) {
   );
 }
 
-function InvoiceTable({ invoices, onDetalle }) {
+function InvoiceTable({ invoices, receiptsByInvoice, onDetalle }) {
   const navigate = useNavigate();
 
   if (!invoices?.length) {
@@ -121,9 +154,14 @@ function InvoiceTable({ invoices, onDetalle }) {
       </TableHeader>
       <TableBody>
         {invoices.map((inv) => {
-          const statusInfo = STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-          const pagable = inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID';
-          const paid = inv.status === 'PAID';
+          const receipt = receiptsByInvoice.get(inv.id);
+          const unpaid = PAYABLE_STATUSES.includes(inv.status);
+          const underReview = unpaid && receipt?.status === 'PENDING_REVIEW';
+          const rejectedReceipt = unpaid && receipt?.status === 'REJECTED' ? receipt : null;
+          const statusInfo = underReview
+            ? STATUS_CONFIG.PENDING_REVIEW
+            : STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
+          const pagable = unpaid && !underReview;
           return (
             <TableRow key={inv.id}>
               <TableCell className="font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</TableCell>
@@ -137,18 +175,28 @@ function InvoiceTable({ invoices, onDetalle }) {
               </TableCell>
               <TableCell>
                 <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                {rejectedReceipt && (
+                  <p className="mt-1 max-w-56 text-xs text-danger">
+                    Comprobante rechazado: {rejectedReceipt.rejectionReason}
+                  </p>
+                )}
               </TableCell>
               <TableCell>
-                {pagable && (
-                  <Button size="sm" variant="gradient" onClick={() => navigate(`/alumno/pagos/${inv.id}/seleccion`)}>
-                    Pagar
-                  </Button>
-                )}
-                {paid && (
+                <div className="flex gap-2">
+                  {pagable && (
+                    <Button size="sm" variant="gradient" onClick={() => navigate(`/alumno/pagos/${inv.id}/seleccion`)}>
+                      Pagar
+                    </Button>
+                  )}
+                  {underReview && (
+                    <Button size="sm" variant="outline" onClick={() => navigate(`/alumno/pagos/${inv.id}/transferencia`)}>
+                      Ver estado
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => onDetalle(inv)}>
                     Detalle
                   </Button>
-                )}
+                </div>
               </TableCell>
             </TableRow>
           );
@@ -159,19 +207,21 @@ function InvoiceTable({ invoices, onDetalle }) {
 }
 
 export function AlumnoPagoDetalle() {
-  const { type, enrollmentId } = useParams();
+  const { enrollmentId } = useParams();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-  const isCurso = type === 'curso';
+  const isCurso = useMatch('/alumno/pagos/curso/:enrollmentId') != null;
 
   const cursoQuery = useFacturasDeCurso(isCurso ? enrollmentId : null);
   const carreraQuery = useFacturasDeMatricula(!isCurso ? enrollmentId : null);
-  const { data, isLoading } = isCurso ? cursoQuery : carreraQuery;
+  const { data, isLoading, isError } = isCurso ? cursoQuery : carreraQuery;
+  const { data: receipts } = useMisComprobantes();
+  const receiptsByInvoice = latestReceiptByInvoice(receipts);
 
   const enrollmentLabel = isCurso ? 'Curso' : 'Carrera';
-  const enrollmentName = data?.enrollmentName ?? data?.name ?? null;
+  const enrollmentName = data?.productName ?? null;
 
   const sorted = [...(data?.invoices ?? [])].sort((a, b) => {
     if (!a.period) return 1;
@@ -203,10 +253,20 @@ export function AlumnoPagoDetalle() {
 
       {isLoading && <Skeleton className="h-40 w-full rounded-2xl" />}
 
-      {!isLoading && (
+      {isError && (
+        <GlassCard className="p-5">
+          <EmptyState
+            title="No pudimos cargar las cuotas de esta inscripción."
+            description="Volvé a Mis pagos y probá de nuevo."
+          />
+        </GlassCard>
+      )}
+
+      {!isLoading && !isError && (
         <GlassCard className="p-5">
           <InvoiceTable
             invoices={paginated}
+            receiptsByInvoice={receiptsByInvoice}
             onDetalle={(inv) => setSelectedInvoice(inv)}
           />
 

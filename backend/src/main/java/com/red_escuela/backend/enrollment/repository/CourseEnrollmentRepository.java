@@ -5,8 +5,11 @@ import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,4 +34,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusAndBillingStanding(
             Long studentId, Long courseId, EnrollmentStatus status, EnrollmentBillingStanding billingStanding);
+
+    @Query("select distinct e.student.id from CourseEnrollment e where e.status in :statuses")
+    List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<EnrollmentStatus> statuses);
 }

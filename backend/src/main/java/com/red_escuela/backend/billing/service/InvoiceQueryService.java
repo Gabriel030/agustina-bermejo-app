@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustment;
@@ -50,12 +49,12 @@ public class InvoiceQueryService {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId);
     }
 
-    public BillableEnrollment courseBillable(Long courseEnrollmentId) {
+    public CourseEnrollment courseBillable(Long courseEnrollmentId) {
         return courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
     }
 
-    public BillableEnrollment programBillable(Long programEnrollmentId) {
+    public ProgramEnrollment programBillable(Long programEnrollmentId) {
         return programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
     }

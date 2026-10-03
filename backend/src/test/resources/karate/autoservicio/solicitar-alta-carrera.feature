@@ -124,3 +124,17 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method get
     Then status 200
     And match response.roles contains 'ALUMNO'
+
+    # El detalle de cuotas de la carrera dice de qué carrera es
+    Given path '/me/billing-standing'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def matricula = response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' })[0]
+
+    Given path '/me/program-enrollments', matricula.enrollmentId, 'invoices'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    And match response.enrollmentType == 'PROGRAM'
+    And match response.productName == nombreCarrera

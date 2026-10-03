@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.identity.entity.Person;
 
 @Getter
@@ -53,6 +55,49 @@ public class PaymentReceipt {
     void onCreate() {
         if (this.uploadedAt == null) {
             this.uploadedAt = LocalDateTime.now();
+        }
+    }
+
+    public Person payer() {
+        if (uploadedBy != null) {
+            return uploadedBy;
+        }
+        if (invoice.getCourseEnrollment() != null) {
+            return invoice.getCourseEnrollment().getStudent().getPerson();
+        }
+        if (invoice.getProgramEnrollment() != null) {
+            return invoice.getProgramEnrollment().getStudent().getPerson();
+        }
+        return null;
+    }
+
+    public boolean isPendingReview() {
+        return status == PaymentReceiptStatus.PENDING_REVIEW;
+    }
+
+    public void approve(Person reviewer) {
+        requirePendingReview();
+        if (!invoice.isPayable()) {
+            throw new InvoiceNotPayableException(invoice.getId(), invoice.getStatus().name());
+        }
+        markReviewed(PaymentReceiptStatus.APPROVED, reviewer);
+    }
+
+    public void reject(Person reviewer, String reason) {
+        requirePendingReview();
+        this.rejectionReason = reason;
+        markReviewed(PaymentReceiptStatus.REJECTED, reviewer);
+    }
+
+    private void markReviewed(PaymentReceiptStatus newStatus, Person reviewer) {
+        this.status = newStatus;
+        this.reviewedBy = reviewer;
+        this.reviewedAt = LocalDateTime.now();
+    }
+
+    private void requirePendingReview() {
+        if (!isPendingReview()) {
+            throw new InvalidPaymentReceiptStateException(id, status.name());
         }
     }
 }

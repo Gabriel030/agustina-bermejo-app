@@ -31,6 +31,14 @@ export function useMisComprobantes() {
   });
 }
 
+export function usePriceBreakdown(invoiceId) {
+  return useQuery({
+    queryKey: ['me', 'invoices', invoiceId, 'price-breakdown'],
+    queryFn: () => apiFetch(`/me/invoices/${invoiceId}/price-breakdown`),
+    enabled: !!invoiceId,
+  });
+}
+
 export function useSubirComprobante() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -88,7 +96,10 @@ export function useAprobarComprobante() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => apiFetch(`/payment-receipts/${id}/approve`, { method: 'POST' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
   });
 }
 

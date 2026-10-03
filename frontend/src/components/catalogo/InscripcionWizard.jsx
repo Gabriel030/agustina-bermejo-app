@@ -14,6 +14,7 @@ import {
   useActualizarPerfilPropio,
   useAgregarDocumentoSolicitudCarrera,
 } from '@/hooks/useCatalogo';
+import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
 import { formatMonto, cn } from '@/lib/utils';
 
 // Tipos de documento requeridos para carrera (Épica 7 Fase 3, UX del wizard) —
@@ -423,6 +424,8 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               </div>
             </div>
           </div>
+
+          <BankAccountDetails />
 
           {state.error && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{state.error}</div>}
 

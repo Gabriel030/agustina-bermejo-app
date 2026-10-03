@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -97,5 +97,35 @@ describe('DetalleSolicitud', () => {
     );
     expect(new URL(url).searchParams.get('type')).toBe('DNI_FRENTE');
     expect(opts.body.get('file').name).toBe('dni-frente.pdf');
+  });
+  it('does not ask an approved application to upload documents', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 7, programName: 'Profesorado de Educación Primaria', status: 'APPROVED', requestedAt: '2026-03-02T10:00:00' }]),
+      ),
+    );
+    renderDetalle('7');
+
+    expect(await screen.findByText(/Solicitud aprobada/)).toBeInTheDocument();
+    expect(screen.queryByText(/Subí los 3 documentos/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Subir archivo' })).not.toBeInTheDocument();
+  });
+
+  it('shows the documents the student already uploaded in a previous visit', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 10, programName: 'Diseño Gráfico', status: 'PENDING', requestedAt: '2026-03-02T10:00:00' }]),
+      ),
+      http.get(`${API}/me/documents`, () =>
+        HttpResponse.json([{ id: 1, type: 'DNI_FRENTE', uploadedAt: '2026-03-02T10:05:00' }]),
+      ),
+    );
+    renderDetalle('10');
+
+    const dniFrenteRow = (await screen.findByText('DNI — frente')).closest('.border-b');
+    expect(await within(dniFrenteRow).findByText(/Subido el 2 (de )?mar (de )?2026/)).toBeInTheDocument();
+    expect(within(dniFrenteRow).getByRole('button', { name: 'Reemplazar' })).toBeInTheDocument();
+    const dniDorsoRow = screen.getByText('DNI — dorso').closest('.border-b');
+    expect(within(dniDorsoRow).getByText('Sin subir todavía')).toBeInTheDocument();
   });
 });

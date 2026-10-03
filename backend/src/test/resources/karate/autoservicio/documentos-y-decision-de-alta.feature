@@ -49,7 +49,8 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
     # sobre el rate limiter compartido de /auth/register para algo que este feature no
     # está probando).
-    * def alumnoToken = fixtures.createConfirmedStudent(institutionId).accessToken
+    * def alumnoDni = '' + (40000000 + java.lang.System.nanoTime() % 50000000)
+    * def alumnoToken = fixtures.createConfirmedStudentWithIdentity(institutionId, 'Ana', 'Karate', alumnoDni).accessToken
 
     # Solicitar — multipart desde Épica 7 Fase 3, comprobante bloqueante.
     Given path '/me/program-enrollment-applications'
@@ -136,3 +137,75 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Then status 200
     * def propiaRechazada = response.filter(function(x){ return x.id == applicationId })[0]
     And match propiaRechazada.status == 'REJECTED'
+
+  Scenario: El comprobante de la solicitud llega a la bandeja con nombre y DNI, y administración puede abrirlo
+    Given path '/payment-receipts'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    * def comprobante = response.filter(function(x){ return x.studentDni == alumnoDni })[0]
+    And match comprobante.studentName == 'Ana Karate'
+    * def receiptId = comprobante.id
+
+    Given path '/payment-receipts', receiptId, 'file'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match header Content-Type contains 'application/pdf'
+    * def contenido = new java.lang.String(responseBytes)
+    And match contenido == 'contenido de prueba'
+
+    Given path '/payment-receipts', receiptId, 'file'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 403
+
+    Given path '/payment-receipts', 999999999, 'file'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 404
+
+  Scenario: Rechazar la solicitud saca su comprobante de la bandeja de administración
+    Given path '/payment-receipts'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    * def receiptId = response.filter(function(x){ return x.studentDni == alumnoDni })[0].id
+
+    Given path '/program-enrollment-applications', applicationId, 'reject'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { reason: 'Documentación ilegible' }
+    When method post
+    Then status 200
+
+    Given path '/payment-receipts'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    * def sigueEnBandeja = response.filter(function(x){ return x.id == receiptId })
+    And match sigueEnBandeja == '#[0]'
+
+  Scenario: El alumno ve los documentos que ya subió, y solo los propios
+    Given path '/me/documents'
+    When method get
+    Then status 403
+
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And param type = 'DNI_FRENTE'
+    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 201
+
+    Given path '/me/documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    And match response[*].type contains 'DNI_FRENTE'
+
+    * def otroAlumno = fixtures.createConfirmedStudent(institutionId)
+    Given path '/me/documents'
+    And header Authorization = 'Bearer ' + otroAlumno.accessToken
+    When method get
+    Then status 200
+    And match response == '#[0]'

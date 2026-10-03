@@ -154,6 +154,8 @@ describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
     'DIRECTOR_APPROVAL_REQUEST_REJECTED',
     'COURSE_WAITLIST_EXPIRED',
     'SUSPENSION_LIFTED',
+    'PAYMENT_RECEIPT_APPROVED',
+    'PAYMENT_RECEIPT_REJECTED',
     'ANNOUNCEMENT_PUBLISHED',
     'ANNOUNCEMENT_UPDATED',
   ];
