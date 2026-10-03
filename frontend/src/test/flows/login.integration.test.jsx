@@ -86,6 +86,14 @@ describe('flujo de login end-to-end', () => {
     expect(screen.queryByText('No autorizado')).not.toBeInTheDocument();
   });
 
+  it('un Preceptor puede abrir las solicitudes de cambio de asistencia', async () => {
+    server.use(http.get('http://localhost:8080/attendance/change-requests', () => HttpResponse.json([])));
+    renderApp('/preceptor/solicitudes-de-asistencia');
+    await login();
+
+    expect(await screen.findByRole('heading', { name: 'Solicitudes de asistencia' })).toBeInTheDocument();
+  });
+
   it('recargar con un refreshToken guardado restaura la sesión sin pasar por /login', async () => {
     localStorage.setItem('refreshToken', 'refresh-1');
     renderApp('/preceptor/inicio');
