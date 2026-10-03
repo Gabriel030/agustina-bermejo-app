@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.exception;
 
-public class InstructorNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class InstructorNotFoundException extends NotFoundException {
     public InstructorNotFoundException(Long id) {
         super("Docente no encontrado: " + id);
     }

@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class PrerequisiteNotMetException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class PrerequisiteNotMetException extends BadRequestException {
     public PrerequisiteNotMetException(String message) {
         super(message);
     }

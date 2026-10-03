@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.exception;
 
-public class ProgramNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class ProgramNotFoundException extends NotFoundException {
     public ProgramNotFoundException(Long id) {
         super("Program no encontrado: " + id);
     }

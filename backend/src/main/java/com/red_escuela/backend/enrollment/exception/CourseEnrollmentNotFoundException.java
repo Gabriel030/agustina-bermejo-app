@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class CourseEnrollmentNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class CourseEnrollmentNotFoundException extends NotFoundException {
     public CourseEnrollmentNotFoundException(Long id) {
         super("Matriculación a curso no encontrada: " + id);
     }

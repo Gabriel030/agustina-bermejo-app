@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class InvalidSectionOverridesException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class InvalidSectionOverridesException extends BadRequestException {
     public InvalidSectionOverridesException(String sectionOverrides, Throwable cause) {
         super("sectionOverrides inválido: " + sectionOverrides, cause);
     }
