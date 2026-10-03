@@ -111,6 +111,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         person.setAuthProvider(AuthProvider.LOCAL);
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
+        grantStudentRoleIfConfirmed(person, onboardingStatus);
         entityManager.persist(person);
 
         Student student = new Student();
@@ -120,6 +121,12 @@ class StudentControllerTest extends AbstractIntegrationTest {
         entityManager.persist(student);
         entityManager.flush();
         return student;
+    }
+
+    private void grantStudentRoleIfConfirmed(Person person, StudentOnboardingStatus onboardingStatus) {
+        if (onboardingStatus == StudentOnboardingStatus.CONFIRMADO) {
+            person.getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+        }
     }
 
     @Test
@@ -225,6 +232,7 @@ class StudentControllerTest extends AbstractIntegrationTest {
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
+        grantStudentRoleIfConfirmed(person, onboardingStatus);
         entityManager.persist(person);
         Student student = new Student();
         student.setPerson(person);

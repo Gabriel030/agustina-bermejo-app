@@ -98,6 +98,53 @@ Feature: Catálogo — Carreras (ProgramController)
     When method get
     Then status 404
 
+  Scenario: Editar cuota y matrícula de una carrera creada sin precio — 200
+    * def nombreSinPrecio = 'Karate - Carrera sin precio ' + java.lang.System.nanoTime()
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombreSinPrecio)', totalYears: 3, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def sinPrecioId = response.id
+
+    Given path '/programs', sinPrecioId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { price: 45000, enrollmentFeeAmount: 30000 }
+    When method put
+    Then status 200
+    And match response.price == 45000
+    And match response.enrollmentFeeAmount == 30000
+
+  Scenario: Mandar en null un campo opcional de la carrera lo borra; omitirlo lo conserva
+    Given path '/programs', programId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { teachingMode: 'HYBRID', level: 'UNDERGRADUATE', totalHoursRequired: 900, graduationProfile: 'Perfil', admissionRequirements: 'Secundario completo' }
+    When method put
+    Then status 200
+    And match response.graduationProfile == 'Perfil'
+
+    Given path '/programs', programId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { totalYears: 4 }
+    When method put
+    Then status 200
+    And match response.teachingMode == 'HYBRID'
+    And match response.level == 'UNDERGRADUATE'
+    And match response.totalHoursRequired == 900
+    And match response.graduationProfile == 'Perfil'
+    And match response.admissionRequirements == 'Secundario completo'
+
+    Given path '/programs', programId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { teachingMode: null, level: null, totalHoursRequired: null, graduationProfile: null, admissionRequirements: null }
+    When method put
+    Then status 200
+    And match response.teachingMode == null
+    And match response.level == null
+    And match response.totalHoursRequired == null
+    And match response.graduationProfile == null
+    And match response.admissionRequirements == null
+
   Scenario: El catálogo público solo lista las carreras publicadas, ordenadas por nombre
     * def alumnoToken = fixtures.tokenForRole('ALUMNO')
     * def sufijo = '' + java.lang.System.nanoTime()

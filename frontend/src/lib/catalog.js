@@ -1,3 +1,4 @@
+import { formatCourseDuration } from '@/lib/courseDuration';
 export const CATALOG_TABS = ['carreras', 'cursos', 'mis-solicitudes'];
 
 export const TEACHING_MODE_LABEL = {
@@ -25,7 +26,7 @@ export function programSummary(program) {
 
 export function courseSummary(course) {
   return [
-    course.durationMonths ? `${course.durationMonths} meses` : null,
+    formatCourseDuration(course.durationMonths),
     TEACHING_MODE_LABEL[course.teachingMode],
     course.schedule,
   ]

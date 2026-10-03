@@ -88,7 +88,7 @@ export function DetalleCurso() {
         </div>
         <div>
           <div className="text-xs text-ink-faint">Duración</div>
-          <div className="text-[15px] font-bold text-ink">{curso.durationMonths} cuotas mensuales</div>
+          <div className="text-[15px] font-bold text-ink">{curso.durationMonths > 0 ? `${curso.durationMonths} cuotas mensuales` : 'A definir'}</div>
         </div>
       </GlassCard>
 

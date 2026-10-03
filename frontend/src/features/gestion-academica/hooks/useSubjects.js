@@ -25,14 +25,11 @@ export function useCreateSubject() {
   });
 }
 
-export function useUpdateSubject(id) {
+export function useUpdateSubject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body) => apiFetch(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      queryClient.invalidateQueries({ queryKey: ['subjects', id] });
-    },
+    mutationFn: ({ id, ...body }) => apiFetch(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subjects'] }),
   });
 }
 
@@ -55,7 +52,7 @@ export function useApproveSubject() {
 export function useRejectSubject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }) => apiFetch(`/subjects/${id}/reject`, { method: 'POST', body: reason ? JSON.stringify({ reason }) : undefined }),
+    mutationFn: ({ id, reason }) => apiFetch(`/subjects/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['subjects'] }),
   });
 }

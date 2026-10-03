@@ -13,6 +13,8 @@ import java.util.List;
 @UseCase
 public class ListStudentsService implements ListStudentsUseCase {
 
+    private static final String STUDENT_ROLE = "ALUMNO";
+
     private final StudentRepository studentRepository;
 
     public ListStudentsService(StudentRepository studentRepository) {
@@ -29,6 +31,9 @@ public class ListStudentsService implements ListStudentsUseCase {
                 .where(StudentSpecifications.withPersonStatus(command.status()))
                 .and(StudentSpecifications.withOnboardingStatus(effectiveOnboarding))
                 .and(StudentSpecifications.withSearch(command.search()));
+        if (effectiveOnboarding == StudentOnboardingStatus.CONFIRMADO) {
+            spec = spec.and(StudentSpecifications.withRole(STUDENT_ROLE));
+        }
 
         return studentRepository.findAll(spec, Sort.by("person.lastname", "person.name"));
     }

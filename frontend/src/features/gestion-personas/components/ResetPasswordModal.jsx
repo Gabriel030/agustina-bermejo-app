@@ -11,7 +11,11 @@ export function ResetPasswordModal({ open, onClose, email, onConfirmar, isPendin
   }
 
   async function handleConfirmar() {
-    await onConfirmar();
+    try {
+      await onConfirmar();
+    } catch {
+      return;
+    }
     setEnviado(true);
     setTimeout(handleClose, 2000);
   }
