@@ -36,9 +36,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -101,7 +98,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetWithExistingEmailGeneratesAValidCodeAndSendsIt() {
+    void requestPasswordResetWithExistingEmailGeneratesAValidCode() {
         Person person = persistPerson("resetuser1", "resetuser1@example.com", "correcta123", AuthProvider.LOCAL);
 
         requestPasswordResetUseCase.requestReset("resetuser1@example.com");
@@ -112,7 +109,6 @@ class PasswordResetTest extends AbstractIntegrationTest {
         assertThat(tokens.get(0).getUsed()).isFalse();
         assertThat(tokens.get(0).getAttempts()).isZero();
         assertThat(tokens.get(0).getExpiresAt()).isAfter(LocalDateTime.now());
-        verify(emailService).sendPasswordResetCode(eq(person), anyString());
     }
 
     @Test

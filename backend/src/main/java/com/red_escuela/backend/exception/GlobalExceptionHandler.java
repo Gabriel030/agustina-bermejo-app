@@ -174,6 +174,8 @@ import com.red_escuela.backend.notification.exception.NotificationNotFoundExcept
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidCredentials() {
@@ -425,13 +427,22 @@ public class GlobalExceptionHandler {
     public void handleMercadoPagoGateway() {
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorCodeResponse handleIllegalState(IllegalStateException exception) {
+        log.warn("Conflicto de estado: {}", exception.getMessage(), exception);
+        return ErrorCodeResponse.of(exception);
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public void handleDataIntegrityViolation() {
+    public void handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException exception) {
+        log.warn("Violación de integridad de datos: {}", exception.getMostSpecificCause().getMessage(), exception);
     }
 
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public void handleOptimisticLockingFailure() {
+    public void handleOptimisticLockingFailure(org.springframework.orm.ObjectOptimisticLockingFailureException exception) {
+        log.warn("Conflicto de concurrencia (optimistic lock): {}", exception.getMessage(), exception);
     }
 }
