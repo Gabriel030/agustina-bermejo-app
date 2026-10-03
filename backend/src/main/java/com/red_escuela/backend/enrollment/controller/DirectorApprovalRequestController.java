@@ -68,7 +68,7 @@ public class DirectorApprovalRequestController {
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse approve(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse approve(@PathVariable Long id, @Valid @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request == null ? null : request.notas();
         return DirectorApprovalRequestResponse.from(
                 approveDirectorApprovalRequestUseCase.approve(new DecideDirectorApprovalRequestCommand(id, notas)));
@@ -76,7 +76,7 @@ public class DirectorApprovalRequestController {
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public DirectorApprovalRequestResponse reject(@PathVariable Long id, @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
+    public DirectorApprovalRequestResponse reject(@PathVariable Long id, @Valid @RequestBody(required = false) DecideDirectorApprovalRequestRequest request) {
         String notas = request == null ? null : request.notas();
         return DirectorApprovalRequestResponse.from(
                 rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(id, notas)));

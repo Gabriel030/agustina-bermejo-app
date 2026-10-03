@@ -67,6 +67,15 @@ public class ProgramEnrollment implements BillableEnrollment {
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<SubjectSectionEnrollment> sectionEnrollments;
 
+    public boolean isActive() {
+        return status == ProgramEnrollmentStatus.ENROLLED || status == ProgramEnrollmentStatus.PAUSED;
+    }
+
+    public void complete(LocalDateTime completedAt) {
+        status = ProgramEnrollmentStatus.COMPLETED;
+        completionDate = completedAt;
+    }
+
     public boolean canEnrollInSubjects(Invoice enrollmentFeeInvoice) {
         if (programCohort == null) {
             return true;

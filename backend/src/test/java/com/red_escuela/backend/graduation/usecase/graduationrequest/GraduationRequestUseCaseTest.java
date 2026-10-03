@@ -21,6 +21,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
+import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
@@ -111,7 +112,11 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         program.setTotalYears(1);
         program.setTotalCreditsRequired(10);
         entityManager.persist(program);
+        persistMandatorySubject(program, name);
+        return program;
+    }
 
+    private void persistMandatorySubject(Program program, String name) {
         Subject subject = new Subject();
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia pendiente " + name);
@@ -125,7 +130,13 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         ps.setCurricularTerm(CurricularTerm.FIRST);
         ps.setStatus(StatusType.ACTIVE);
         entityManager.persist(ps);
-        return program;
+    }
+
+    private GraduationRequest requestAndVerify(ProgramEnrollment enrollment, String adminDni) {
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        authenticateAsPerson(adminDni);
+        verifyGraduationRequestDebtUseCase.verify(request.getId());
+        return request;
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student, Program program) {
@@ -181,14 +192,14 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyDebtWithPendingInvoicesFailsAndTheRequestStaysRequested() {
+    void verifyDebtWithAnOverdueInstallmentFailsAndTheRequestStaysRequested() {
         Student student = persistStudent("80000003");
         Program program = persistProgramWithoutRequirements("CarreraSinRequisitos2");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
         entityManager.flush();
 
         GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
-        persistInvoice(enrollment, LocalDate.now().plusDays(30));
+        persistInvoice(enrollment, LocalDate.of(2026, 1, 10));
         entityManager.flush();
 
         assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId()))
@@ -196,6 +207,60 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
         GraduationRequest reloaded = entityManager.find(GraduationRequest.class, request.getId());
         assertThat(reloaded.getStatus()).isEqualTo(GraduationRequestStatus.REQUESTED);
+    }
+
+    @Test
+    void verifyDebtWithOnlyNotYetDueInstallmentsSucceeds() {
+        Student student = persistStudent("80000006");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos5");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+
+        GraduationRequest request = requestGraduationUseCase.request(enrollment.getId());
+        persistInvoice(enrollment, LocalDate.now().plusDays(7));
+        authenticateAsPerson("ADMIN80000006");
+
+        GraduationRequest verified = verifyGraduationRequestDebtUseCase.verify(request.getId());
+
+        assertThat(verified.getStatus()).isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+    }
+
+    @Test
+    void approveFailsWhenTheStudentNoLongerMeetsTheGraduationRequirements() {
+        Student student = persistStudent("80000007");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos6");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000007");
+
+        persistMandatorySubject(program, "CarreraSinRequisitos6");
+        entityManager.flush();
+        authenticateAsPerson("DIRECTOR80000007");
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId()))
+                .isInstanceOf(GraduationRequirementsNotMetException.class);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
+                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void approveFailsWhenTheStudentHasOverdueDebt() {
+        Student student = persistStudent("80000008");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos7");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000008");
+
+        persistInvoice(enrollment, LocalDate.of(2026, 1, 10));
+        entityManager.flush();
+        authenticateAsPerson("DIRECTOR80000008");
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId()))
+                .isInstanceOf(PendingDebtException.class);
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     @Test

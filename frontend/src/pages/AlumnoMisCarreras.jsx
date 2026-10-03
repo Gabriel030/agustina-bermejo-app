@@ -29,9 +29,12 @@ export function AlumnoMisCarreras() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: matriculaciones, isLoading: cargandoMatriculaciones } = useMisMatriculaciones();
 
-  const activas = (matriculaciones ?? []).filter((m) => m.status !== 'WITHDRAWN' && m.status !== 'COMPLETED');
+  const activas = (matriculaciones ?? [])
+    .filter((m) => m.status !== 'WITHDRAWN')
+    .sort((a, b) => Number(a.status === 'COMPLETED') - Number(b.status === 'COMPLETED'));
   const carreraParam = searchParams.get('carrera');
   const matricula = activas.find((m) => m.id === Number(carreraParam)) ?? activas[0];
+  const graduated = matricula?.status === 'COMPLETED';
   const tab = searchParams.get('tab') ?? 'materias';
 
   const { data: progreso } = useMiProgreso(matricula?.id);
@@ -98,7 +101,8 @@ export function AlumnoMisCarreras() {
         <div>
           <div className="flex items-center gap-2.5">
             <div className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</div>
-            {progreso && (
+            {graduated && <StatusPill tone="success">Carrera finalizada</StatusPill>}
+            {progreso && !graduated && (
               <StatusPill tone={progreso.esRegular ? 'success' : 'neutral'}>
                 {progreso.esRegular ? 'Alumno regular' : 'No estás cursando'}
               </StatusPill>
@@ -116,7 +120,7 @@ export function AlumnoMisCarreras() {
           <SelectContent>
             {activas.map((m) => (
               <SelectItem key={m.id} value={String(m.id)}>
-                {m.programName}
+                {m.status === 'COMPLETED' ? `${m.programName} (finalizada)` : m.programName}
               </SelectItem>
             ))}
           </SelectContent>

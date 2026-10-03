@@ -2,11 +2,10 @@ package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.identity.entity.Person;
 
 import java.util.List;
 
-public record DirectorApprovalRequestRejectedEvent(DirectorApprovalRequest request, Person requestedBy) implements DomainNotificationEvent {
+public record DirectorApprovalRequestRejectedEvent(DirectorApprovalRequest request) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.DIRECTOR_APPROVAL_REQUEST_REJECTED;
@@ -14,12 +13,13 @@ public record DirectorApprovalRequestRejectedEvent(DirectorApprovalRequest reque
 
     @Override
     public String message() {
-        return "Se rechazó la excepción que solicitaste: " + request.getJustification();
+        String message = "Dirección rechazó el pedido de " + request.describe() + ".";
+        return request.hasDecisionNotes() ? message + " Motivo: " + request.getDecisionNotes() : message;
     }
 
     @Override
     public List<NotificationRecipient> recipients() {
-        return List.of(new PersonRecipient(requestedBy));
+        return DirectorApprovalRequestRecipients.of(request);
     }
 
     @Override

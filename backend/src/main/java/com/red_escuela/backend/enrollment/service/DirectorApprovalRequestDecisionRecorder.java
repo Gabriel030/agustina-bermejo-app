@@ -38,9 +38,9 @@ public class DirectorApprovalRequestDecisionRecorder {
         DirectorApprovalRequest saved = directorApprovalRequestRepository.save(entity);
 
         if (nuevoStatus == DirectorApprovalRequestStatus.APPROVED) {
-            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved, saved.getRequestedBy()));
+            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved));
         } else {
-            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved, saved.getRequestedBy()));
+            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved));
         }
         return saved;
     }

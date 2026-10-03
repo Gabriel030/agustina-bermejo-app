@@ -149,20 +149,6 @@ public class InvoiceQueryService {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId);
     }
 
-    public boolean hasDebt(Long studentId) {
-        for (CourseEnrollment enrollment : courseEnrollmentRepository.findByStudentId(studentId)) {
-            if (hasAnyUnpaidInstallment(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()))) {
-                return true;
-            }
-        }
-        for (ProgramEnrollment enrollment : programEnrollmentRepository.findByStudentId(studentId)) {
-            if (hasAnyUnpaidInstallment(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean hasOverdueDebt(Long studentId) {
         LocalDate today = LocalDate.now();
         for (CourseEnrollment enrollment : courseEnrollmentRepository.findByStudentId(studentId)) {
@@ -176,10 +162,6 @@ public class InvoiceQueryService {
             }
         }
         return false;
-    }
-
-    private boolean hasAnyUnpaidInstallment(List<Invoice> invoices) {
-        return invoices.stream().anyMatch(i -> i.getStatus() == InvoiceStatus.PENDING || i.getStatus() == InvoiceStatus.OVERDUE);
     }
 
     private boolean isOverdue(Invoice invoice, LocalDate today) {
