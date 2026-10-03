@@ -66,7 +66,7 @@ public class LoginRateLimiter {
         return consume(registerBuckets, ip, () -> newBucket(registerCapacity, registerRefillPerMinute));
     }
 
-    @Scheduled(fixedDelayString = "PT10M")
+    @Scheduled(cron = "0 */10 * * * *", zone = "${app.timezone}")
     public void evictIdleClients() {
         Instant threshold = clock.instant().minus(IDLE_EVICTION_WINDOW);
         for (ConcurrentHashMap<String, TrackedBucket> buckets : allBuckets()) {
