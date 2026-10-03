@@ -68,6 +68,8 @@ import com.red_escuela.backend.academicstructure.exception.CycleNotFoundExceptio
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
+import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
@@ -244,6 +246,7 @@ public class GlobalExceptionHandler {
             InvalidAdHocFeeTypeException.class,
             IllegalArgumentException.class,
             CycleIncompleteException.class,
+            SectionCapacityExceedsClassroomException.class,
             EmptyAudienceException.class,
             ScheduledDateInThePastException.class,
             SegmentNotAvailableForSectionException.class,
@@ -352,6 +355,7 @@ public class GlobalExceptionHandler {
             SectionScheduleConflictException.class,
             CycleAlreadyInProgressException.class,
             CycleNotPendingApprovalException.class,
+            CycleNotEditableException.class,
             SubjectInvalidTransitionException.class,
             AnnouncementAlreadySentException.class,
             CannotChangeAudienceOfSentAnnouncementException.class

@@ -44,7 +44,8 @@ public class RequestSectionModificationService implements RequestSectionModifica
             for (var slotReq : request.slots()) {
                 var classroom = classroomRepository.findById(slotReq.classroomId())
                         .orElseThrow(() -> new ClassroomNotFoundException(slotReq.classroomId()));
-                conflictChecker.checkClassroomAvailability(slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+                classroom.ensureCanHost(section.getCapacity());
+                conflictChecker.checkClassroomAvailability(section.getTerm(), slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
                 var slot = new SectionScheduleSlot();
                 slot.setSubjectSection(section);
                 slot.setClassroom(classroom);
