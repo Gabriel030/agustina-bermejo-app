@@ -158,6 +158,25 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void totalDebtAddsLateFeesSubtractsDiscountsAndPartialPaymentsOfOverdueInstallments() {
+        Person admin = persistPerson("admin.dashboard3." + System.nanoTime());
+        CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("dashboard.total." + System.nanoTime()));
+        FinancialDashboardResponse before = getFinancialDashboardUseCase.execute();
+
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(2));
+        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT,
+                new MonetaryAdjustmentValue.FixedAmount(BigDecimal.valueOf(500)), "Descuento", admin);
+        invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.10")), "Recargo por mora");
+        invoice = invoiceRepository.save(invoice);
+        pay(invoice, BigDecimal.valueOf(2000), admin);
+        persistInvoice(enrollment, BigDecimal.valueOf(7000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(1));
+
+        FinancialDashboardResponse after = getFinancialDashboardUseCase.execute();
+
+        assertThat(after.totalDebt().subtract(before.totalDebt())).isEqualByComparingTo("8450");
+    }
+
+    @Test
     void monthlyProjectedAndCollectedUseTheNetAmountAndTheMoneyActuallyApplied() {
         Person admin = persistPerson("admin.dashboard2." + System.nanoTime());
         Student student = persistStudent("dashboard.month1." + System.nanoTime());

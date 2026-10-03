@@ -40,6 +40,8 @@ import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonExceptio
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
+import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
@@ -163,6 +165,11 @@ public class GlobalExceptionHandler {
     public void handleInvalidCredentials() {
     }
 
+    @ExceptionHandler(InvalidMpWebhookSignatureException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public void handleInvalidMpWebhookSignature() {
+    }
+
     @ExceptionHandler(InvalidRefreshTokenException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidRefreshToken() {
@@ -206,6 +213,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             UnsupportedFileTypeException.class,
             MaxUploadSizeExceededException.class,
+            InvalidSurchargePercentageException.class,
             DniAlreadyExistsException.class,
             InvalidStaffRoleException.class,
             InvalidPrerequisiteException.class,

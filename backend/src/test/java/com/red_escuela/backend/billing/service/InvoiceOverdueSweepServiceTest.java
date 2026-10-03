@@ -31,6 +31,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -47,6 +48,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceOverdueSweepService sweepService;
+
+    @Autowired
+    private InvoiceOverdueRowProcessor rowProcessor;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -179,7 +186,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Test
     void sweepCrashMidRowDoesNotLeaveInconsistentState() {
         Person director = persistPerson("director.sweep3." + System.nanoTime());
-        CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(1.5));
+        CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
+        jdbcTemplate.update("update collections_policy set surcharge_percentage = 1.5 where id = ?", policy.getId());
         CourseEnrollment enrollment = persistCourseEnrollment("99000003");
         Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(11));
 
@@ -233,5 +241,34 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         var surcharge = adjustments.stream().filter(a -> a.getType() == InvoiceAdjustmentType.SURCHARGE).findFirst().orElseThrow();
         assertThat(surcharge.getResolvedBase()).isEqualByComparingTo(BigDecimal.valueOf(100));
         assertThat(surcharge.signedAmount()).isEqualByComparingTo(BigDecimal.valueOf(10.00).setScale(2));
+    }
+
+    @Test
+    void processingTheSameOverdueInstallmentTwiceAppliesTheSurchargeOnlyOnce() {
+        Person director = persistPerson("director.sweep.twice." + System.nanoTime());
+        CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
+        CourseEnrollment enrollment = persistCourseEnrollment("99000901");
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(15));
+
+        rowProcessor.process(invoice.getId(), policy);
+        rowProcessor.process(invoice.getId(), policy);
+
+        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
+        assertThat(reloaded.getAdjustments()).hasSize(1);
+        assertThat(reloaded.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(1100));
+    }
+
+    @Test
+    void runningTheDailyJobTwiceTheSameDayAppliesTheSurchargeOnlyOnce() {
+        Person director = persistPerson("director.sweep.rerun." + System.nanoTime());
+        persistPolicy(director, 10, BigDecimal.valueOf(0.10));
+        CourseEnrollment enrollment = persistCourseEnrollment("99000902");
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(15));
+
+        sweepService.run(LocalDate.now());
+        sweepService.run(LocalDate.now());
+
+        assertThat(invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow().getAdjustments()).hasSize(1);
     }
 }

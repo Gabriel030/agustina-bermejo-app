@@ -136,9 +136,13 @@ public class Invoice {
         return allocation;
     }
 
-    public void markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+    public boolean markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+        if (status != InvoiceStatus.PENDING) {
+            return false;
+        }
         status = InvoiceStatus.OVERDUE;
         applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
+        return true;
     }
 
     public void cancel(Person cancelledBy, String reason) {

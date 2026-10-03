@@ -20,7 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -87,5 +90,18 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
 
         assertThat(current.getId()).isEqualTo(mostRecent.getId());
         assertThat(current.getGracePeriodDays()).isEqualTo(7);
+    }
+
+    @Test
+    void aSurchargePercentageOutsideZeroToOneIsRejectedWhenCreatingThePolicy() {
+        Person director = persistPerson("director.policy3." + System.nanoTime());
+        authenticateAs(director);
+
+        assertThatThrownBy(() -> createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
+                10, BigDecimal.valueOf(10), 30, 2, 60, 3, LocalDate.now())))
+                .isInstanceOf(InvalidSurchargePercentageException.class);
+        assertThatThrownBy(() -> createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
+                10, BigDecimal.valueOf(-0.10), 30, 2, 60, 3, LocalDate.now())))
+                .isInstanceOf(InvalidSurchargePercentageException.class);
     }
 }
