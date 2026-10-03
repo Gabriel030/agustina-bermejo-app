@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.exception;
 
-public class InvalidPrerequisiteException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class InvalidPrerequisiteException extends BadRequestException {
     public InvalidPrerequisiteException(String message) {
         super(message);
     }

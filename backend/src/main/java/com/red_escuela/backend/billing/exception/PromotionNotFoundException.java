@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.exception;
 
-public class PromotionNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class PromotionNotFoundException extends NotFoundException {
     public PromotionNotFoundException(Long id) {
         super("Promotion " + id + " not found");
     }

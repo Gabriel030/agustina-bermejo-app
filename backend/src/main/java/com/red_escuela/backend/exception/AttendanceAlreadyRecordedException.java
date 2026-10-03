@@ -1,6 +1,8 @@
 package com.red_escuela.backend.exception;
 
-public class AttendanceAlreadyRecordedException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.ConflictException;
+
+public class AttendanceAlreadyRecordedException extends ConflictException {
     public AttendanceAlreadyRecordedException(Long enrollmentId, String classDate) {
         super("Ya existe asistencia cargada para la inscripción " + enrollmentId + " en la fecha " + classDate);
     }

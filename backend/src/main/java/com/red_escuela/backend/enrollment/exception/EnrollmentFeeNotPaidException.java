@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class EnrollmentFeeNotPaidException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class EnrollmentFeeNotPaidException extends BadRequestException {
     public EnrollmentFeeNotPaidException(Long programEnrollmentId) {
         super("Program enrollment " + programEnrollmentId + " cannot enroll in subjects until its enrollment fee is paid");
     }

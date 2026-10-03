@@ -99,8 +99,7 @@ public class ExamBoardRegistrationService {
         Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
         if (maxAttempts != null) {
             long previousAttempts = examBoardRegistrationRepository
-                    .countByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatusNot(
-                            enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.WITHDRAWN);
+                    .countByProgramSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
             if (previousAttempts >= maxAttempts) {
                 throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
             }
@@ -159,8 +158,7 @@ public class ExamBoardRegistrationService {
         Integer maxAttempts = examBoard.getCourseSubject().getMaxFinalExamAttempts();
         if (maxAttempts != null) {
             long previousAttempts = examBoardRegistrationRepository
-                    .countByCourseSubjectSectionEnrollment_CourseEnrollment_IdAndCourseSubjectSectionEnrollment_CourseSubjectSection_CourseSubject_IdAndStatusNot(
-                            enrollment.getCourseEnrollment().getId(), courseSubjectId, ExamBoardRegistrationStatus.WITHDRAWN);
+                    .countByCourseSubjectSectionEnrollmentIdAndStatusNot(enrollmentId, ExamBoardRegistrationStatus.WITHDRAWN);
             if (previousAttempts >= maxAttempts) {
                 throw new MaxExamAttemptsExceededException(courseSubjectId, maxAttempts);
             }

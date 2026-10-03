@@ -338,15 +338,37 @@ que nunca migraron a un paquete propio.
 
 Una excepción de dominio por caso, con nombre descriptivo del problema
 (`InvalidPasswordPolicyException`, `RoleNotAssignableByActorException`, nunca un
-`BusinessException` genérico con un string). Todas se registran en
-`exception/GlobalExceptionHandler.java`, agrupadas por status HTTP
-(`handleBadRequest`, `handleNotFound`, `handleConflict`, `handleForbidden`, etc.).
+`BusinessException` genérico con un string). Cada una extiende una de las siete
+bases abstractas de `com.red_escuela.backend.shared.exception`, que definen el
+status HTTP:
 
-**Los handlers no devuelven body — solo fijan el status.** No hay un DTO de error
-con `message` en el JSON de respuesta; el cliente (frontend) arma el mensaje al
-usuario a partir del código HTTP, no de un body. No agregues un body de error sin
-antes confirmar con el usuario que se quiere ese cambio de contrato — es una
-decisión tomada, no un olvido.
+| Base | Status | Body |
+|---|---|---|
+| `BadRequestException` | 400 | `{ "code": "..." }` |
+| `UnauthorizedException` | 401 | vacío |
+| `ForbiddenException` | 403 | vacío |
+| `NotFoundException` | 404 | vacío |
+| `ConflictException` | 409 | `{ "code": "..." }` |
+| `TooManyRequestsException` | 429 | vacío |
+| `ExternalServiceException` | 502 | vacío |
+
+`exception/GlobalExceptionHandler.java` tiene un `@ExceptionHandler` por base:
+una excepción nueva se agrega extendiendo la base que corresponda, **sin tocar el
+handler**. Ninguna excepción de dominio extiende `RuntimeException` directo; la
+única con handler propio es `InvalidEmailVerificationTokenException` (400 sin
+body, a diferencia del resto de los 400).
+
+**Body de error**: desde #123 los 400 y 409 devuelven `{ "code": "..." }`
+(`ErrorCodeResponse`), derivado del nombre de la clase concreta
+(`InvalidTermDatesException` -> `INVALID_TERM_DATES`). Los 401, 403, 404, 429 y 502
+no devuelven body. El frontend arma el mensaje al usuario a partir del status y,
+cuando existe, del `code`. No cambies un `code` ni agregues body a otros status sin
+confirmar con el usuario: es contrato HTTP.
+
+**Logs**: los 409 (incluidos `IllegalStateException`, `DataIntegrityViolationException`
+y `ObjectOptimisticLockingFailureException`) y los `IllegalArgumentException`
+loguean en `warn`, los 502 en `error`, con el `code` y el `requestId`/`userId` del MDC.
+Los 400, 401, 403, 404 y 429 no loguean. `IllegalStateException` responde 409.
 
 ## Migraciones (Flyway)
 

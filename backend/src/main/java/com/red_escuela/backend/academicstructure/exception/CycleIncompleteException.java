@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.exception;
 
-public class CycleIncompleteException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class CycleIncompleteException extends BadRequestException {
     public CycleIncompleteException(String reason) {
         super("Ciclo incompleto: " + reason);
     }

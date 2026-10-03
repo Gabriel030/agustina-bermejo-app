@@ -1,4 +1,6 @@
 package com.red_escuela.backend.identity.exception;
 
-public class InvalidPasswordResetTokenException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.UnauthorizedException;
+
+public class InvalidPasswordResetTokenException extends UnauthorizedException {
 }
