@@ -1,6 +1,8 @@
 package com.red_escuela.backend.exception;
 
-public class InstitutionNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class InstitutionNotFoundException extends NotFoundException {
     public InstitutionNotFoundException(Long id) {
         super("Institution no encontrada: " + id);
     }

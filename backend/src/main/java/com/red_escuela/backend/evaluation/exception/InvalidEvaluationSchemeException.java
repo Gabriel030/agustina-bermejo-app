@@ -1,6 +1,8 @@
 package com.red_escuela.backend.evaluation.exception;
 
-public class InvalidEvaluationSchemeException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class InvalidEvaluationSchemeException extends BadRequestException {
     public InvalidEvaluationSchemeException(String reason) {
         super("Esquema de evaluación inválido: " + reason);
     }

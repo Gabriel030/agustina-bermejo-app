@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class InvalidSectionChangeException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class InvalidSectionChangeException extends BadRequestException {
     public InvalidSectionChangeException(String message) {
         super(message);
     }

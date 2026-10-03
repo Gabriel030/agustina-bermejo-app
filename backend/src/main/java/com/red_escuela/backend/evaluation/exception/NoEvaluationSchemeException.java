@@ -1,6 +1,8 @@
 package com.red_escuela.backend.evaluation.exception;
 
-public class NoEvaluationSchemeException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.BadRequestException;
+
+public class NoEvaluationSchemeException extends BadRequestException {
     public NoEvaluationSchemeException(Long sectionId) {
         super("La comisión " + sectionId + " no tiene EvaluationScheme asignado");
     }

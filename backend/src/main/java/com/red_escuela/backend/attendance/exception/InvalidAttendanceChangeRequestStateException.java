@@ -1,6 +1,8 @@
 package com.red_escuela.backend.attendance.exception;
 
-public class InvalidAttendanceChangeRequestStateException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.ConflictException;
+
+public class InvalidAttendanceChangeRequestStateException extends ConflictException {
     public InvalidAttendanceChangeRequestStateException(Long id) {
         super("La solicitud de modificación de asistencia " + id + " ya fue resuelta");
     }
