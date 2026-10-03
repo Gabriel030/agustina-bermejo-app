@@ -18,6 +18,8 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchExce
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
+import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.entity.ExceptionType;
@@ -39,18 +41,21 @@ public class ExamBoardRegistrationService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
+    private final AttendanceRiskCalculator attendanceRiskCalculator;
 
     public ExamBoardRegistrationService(
             ExamBoardRegistrationRepository examBoardRegistrationRepository,
             ExamBoardRepository examBoardRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            DirectorApprovalRequestRepository directorApprovalRequestRepository) {
+            DirectorApprovalRequestRepository directorApprovalRequestRepository,
+            AttendanceRiskCalculator attendanceRiskCalculator) {
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
+        this.attendanceRiskCalculator = attendanceRiskCalculator;
     }
 
     @Transactional
@@ -66,6 +71,9 @@ public class ExamBoardRegistrationService {
         }
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
+        }
+        if (attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre()) {
+            throw new StudentFreeByAbsencesException(enrollmentId);
         }
         Long subjectId = enrollment.getSubjectSection().getSubject().getId();
         if (examBoard.getSubject() == null || !examBoard.getSubject().getId().equals(subjectId)) {
@@ -125,6 +133,9 @@ public class ExamBoardRegistrationService {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
+        }
+        if (attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre()) {
+            throw new StudentFreeByAbsencesException(enrollmentId);
         }
         Long courseSubjectId = enrollment.getCourseSubjectSection().getCourseSubject().getId();
         if (examBoard.getCourseSubject() == null || !examBoard.getCourseSubject().getId().equals(courseSubjectId)) {
