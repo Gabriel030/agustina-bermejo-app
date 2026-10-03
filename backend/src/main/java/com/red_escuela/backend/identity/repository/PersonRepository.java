@@ -15,6 +15,8 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByEmail(String email);
 
+    Optional<Person> findByDni(String dni);
+
     Optional<Person> findByGoogleSubjectId(String googleSubjectId);
 
     List<Person> findByRolesName(String roleName);
