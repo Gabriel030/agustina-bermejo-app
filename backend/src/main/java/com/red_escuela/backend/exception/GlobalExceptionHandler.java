@@ -70,6 +70,12 @@ import com.red_escuela.backend.academicstructure.exception.SectionScheduleConfli
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
+import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
+import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
+import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
+import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
+import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
 import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
@@ -154,6 +160,8 @@ import com.red_escuela.backend.graduation.exception.CertificateNotEligibleExcept
 import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
 import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
@@ -239,6 +247,7 @@ public class GlobalExceptionHandler {
             MaxExamAttemptsExceededException.class,
             ExamBoardSubjectMismatchException.class,
             NotEligibleForGraduationException.class,
+            DirectorApprovalSubjectRequiredException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
             InvalidCurrentPasswordException.class,
@@ -256,6 +265,11 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class,
             CycleIncompleteException.class,
             SectionCapacityExceedsClassroomException.class,
+            IncompleteSubjectException.class,
+            CurricularYearOutOfRangeException.class,
+            InvalidRegistrationWindowException.class,
+            InvalidProgramSubjectCategoryException.class,
+            InvalidTermDatesException.class,
             EmptyAudienceException.class,
             ScheduledDateInThePastException.class,
             SegmentNotAvailableForSectionException.class,
@@ -341,6 +355,7 @@ public class GlobalExceptionHandler {
             GraduationRequestAlreadyActiveException.class,
             DirectorApprovalRequestAlreadyActiveException.class,
             InvalidGraduationRequestStateException.class,
+            GraduationRequirementsNotMetException.class,
             InvalidDirectorApprovalRequestStateException.class,
             InvalidProgramEnrollmentApplicationStateException.class,
             AlreadyHasPendingApplicationException.class,
@@ -367,6 +382,7 @@ public class GlobalExceptionHandler {
             CycleNotPendingApprovalException.class,
             CycleNotEditableException.class,
             SubjectInvalidTransitionException.class,
+            SubjectNotAssignableToPlanException.class,
             AnnouncementAlreadySentException.class,
             CannotChangeAudienceOfSentAnnouncementException.class
     })

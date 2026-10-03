@@ -87,17 +87,21 @@ export function CarreraEditarDatos() {
       await updateProgram.mutateAsync({
         name: name.trim(),
         totalYears: parseInt(totalYears),
-        ...(level && { level }),
-        ...(teachingMode && { teachingMode }),
+        level: level || null,
+        teachingMode: teachingMode || null,
         ...(totalCreditsRequired && { totalCreditsRequired: parseInt(totalCreditsRequired) }),
-        ...(totalHoursRequired && { totalHoursRequired: parseInt(totalHoursRequired) }),
+        totalHoursRequired: totalHoursRequired ? parseInt(totalHoursRequired) : null,
         graduationProfile: graduationProfile.trim() || null,
         admissionRequirements: admissionRequirements.trim() || null,
       });
       toast.success('Datos actualizados');
       navigate(`/administrativo/gestion-academica/carreras/${id}`);
-    } catch {
-      setError('No se pudo guardar los cambios. Intentá de nuevo.');
+    } catch (err) {
+      setError(
+        err?.status === 400
+          ? 'Revisá los datos: la duración tiene que ser al menos 1 año y los créditos no pueden ser negativos.'
+          : 'No se pudieron guardar los cambios. Intentá de nuevo.',
+      );
     }
   }
 

@@ -26,12 +26,7 @@ public class UpdateTermService implements UpdateTermUseCase {
         if (request.description() != null) {
             term.setDescription(request.description());
         }
-        if (request.startDate() != null) {
-            term.setStartDate(request.startDate());
-        }
-        if (request.endDate() != null) {
-            term.setEndDate(request.endDate());
-        }
+        term.reschedule(request.startDate(), request.endDate());
         if (request.enrollmentStart() != null) {
             term.setEnrollmentStart(request.enrollmentStart());
         }

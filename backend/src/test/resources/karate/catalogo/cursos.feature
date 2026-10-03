@@ -83,6 +83,67 @@ Feature: Catálogo — Cursos (CourseController)
     When method get
     Then status 404
 
+  Scenario: Editar el precio de un curso creado sin precio — 200
+    * def nombreSinPrecio = 'Karate - Curso sin precio ' + java.lang.System.nanoTime()
+    Given path '/courses'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombreSinPrecio)', termId: '#(termId)', capacity: 10, durationMonths: 3 }
+    When method post
+    Then status 201
+    * def sinPrecioId = response.id
+
+    Given path '/courses', sinPrecioId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { price: 18000 }
+    When method put
+    Then status 200
+    And match response.price == 18000
+
+  Scenario Outline: Alta de curso con duración faltante o inválida, o con fechas de inscripción invertidas — 400
+    * def nombreInvalido = 'Karate - Curso inválido ' + java.lang.System.nanoTime()
+    * def body = { name: '#(nombreInvalido)', termId: '#(termId)', capacity: 10 }
+    * if (<duration> != null) body.durationMonths = <duration>
+    * if (<start> != null) body.registrationStart = <start>
+    * if (<end> != null) body.registrationEnd = <end>
+    Given path '/courses'
+    And header Authorization = 'Bearer ' + adminToken
+    And request body
+    When method post
+    Then status 400
+
+    Examples:
+      | duration | start                 | end                   |
+      | null     | null                  | null                  |
+      | -3       | null                  | null                  |
+      | 0        | null                  | null                  |
+      | 3        | '2027-03-01T00:00:00' | '2027-01-01T00:00:00' |
+
+  Scenario: Editar un curso dejando las fechas de inscripción invertidas o la duración negativa — 400
+    Given path '/courses', courseId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { registrationStart: '2027-02-10T00:00:00', registrationEnd: '2027-01-10T00:00:00' }
+    When method put
+    Then status 400
+    And match response.code == 'INVALID_REGISTRATION_WINDOW'
+
+    Given path '/courses', courseId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { registrationEnd: '2025-01-01T00:00:00' }
+    When method put
+    Then status 200
+
+    Given path '/courses', courseId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { registrationStart: '2025-06-01T00:00:00' }
+    When method put
+    Then status 400
+
+    Given path '/courses', courseId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { durationMonths: -1 }
+    When method put
+    Then status 400
+
   Scenario: El catálogo público solo lista los cursos publicados, ordenados por nombre
     * def alumnoToken = fixtures.tokenForRole('ALUMNO')
     * def sufijo = '' + java.lang.System.nanoTime()
@@ -128,7 +189,7 @@ Feature: Catálogo — Cursos (CourseController)
   Scenario: El detalle del curso informa si la inscripción está abierta
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#("Karate curso cerrado " + java.lang.System.nanoTime())', termId: '#(termId)', capacity: 10, registrationStart: '2020-01-01T00:00:00', registrationEnd: '2020-02-01T00:00:00' }
+    And request { name: '#("Karate curso cerrado " + java.lang.System.nanoTime())', termId: '#(termId)', capacity: 10, durationMonths: 2, registrationStart: '2020-01-01T00:00:00', registrationEnd: '2020-02-01T00:00:00' }
     When method post
     Then status 201
     * def closedCourseId = response.id
@@ -150,7 +211,7 @@ Feature: Catálogo — Cursos (CourseController)
 
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#("Karate curso cupo uno " + java.lang.System.nanoTime())', termId: '#(termId)', capacity: 1 }
+    And request { name: '#("Karate curso cupo uno " + java.lang.System.nanoTime())', termId: '#(termId)', capacity: 1, durationMonths: 2 }
     When method post
     Then status 201
     * def fullCourseId = response.id

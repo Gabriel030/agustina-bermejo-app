@@ -11,7 +11,9 @@ import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
+import com.red_escuela.backend.entity.ExceptionType;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -55,6 +57,7 @@ public class SubjectSectionEnrollmentService {
     private final ProgramSubjectRepository programSubjectRepository;
     private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
     private final InvoiceRepository invoiceRepository;
+    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
 
     public SubjectSectionEnrollmentService(
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -62,13 +65,15 @@ public class SubjectSectionEnrollmentService {
             SubjectSectionRepository subjectSectionRepository,
             ProgramSubjectRepository programSubjectRepository,
             ProgramSubjectPrerequisiteRepository prerequisiteRepository,
-            InvoiceRepository invoiceRepository) {
+            InvoiceRepository invoiceRepository,
+            DirectorApprovalRequestRepository directorApprovalRequestRepository) {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.programSubjectRepository = programSubjectRepository;
         this.prerequisiteRepository = prerequisiteRepository;
         this.invoiceRepository = invoiceRepository;
+        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
     }
 
     @Transactional
@@ -249,6 +254,10 @@ public class SubjectSectionEnrollmentService {
                 .findByProgramIdAndSubjectId(programEnrollment.getProgram().getId(), section.getSubject().getId())
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(
                         section.getSubject().getId(), programEnrollment.getProgram().getId()));
+        if (directorApprovalRequestRepository.hasApproved(
+                programEnrollment.getId(), section.getSubject().getId(), ExceptionType.PREREQUISITE_WAIVER)) {
+            return;
+        }
 
         for (ProgramSubjectPrerequisite prereq : prerequisiteRepository.findByProgramSubjectId(programSubject.getId())) {
             List<EnrollmentStatus> estadosQueSirven = prereq.getRequirementType() == RequirementType.APPROVED

@@ -38,6 +38,18 @@ function estadoInicial() {
   };
 }
 
+const REGISTRATION_WINDOW_ERROR = 'El cierre de inscripción no puede ser anterior a la apertura.';
+
+function courseDetailError(state) {
+  if (!state.durationMonths || parseInt(state.durationMonths) < 1) {
+    return 'La duración en meses es obligatoria y tiene que ser al menos 1.';
+  }
+  if (state.registrationStart && state.registrationEnd && state.registrationEnd < state.registrationStart) {
+    return REGISTRATION_WINDOW_ERROR;
+  }
+  return null;
+}
+
 function visitado(state, paso) {
   return state.pasosVisitados.includes(paso) ? state.pasosVisitados : [...state.pasosVisitados, paso];
 }
@@ -177,6 +189,11 @@ function Paso2Detalle({ state, dispatch }) {
   const navigate = useNavigate();
 
   async function handleCrear() {
+    const validationError = courseDetailError(state);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setError(null);
     try {
       const body = {
@@ -193,8 +210,12 @@ function Paso2Detalle({ state, dispatch }) {
       const result = await createCourse.mutateAsync(body);
       toast.success('Curso creado');
       navigate(`/administrativo/gestion-academica/cursos/${result.id}`);
-    } catch {
-      setError('No se pudo crear el curso. Intentá de nuevo.');
+    } catch (err) {
+      setError(
+        err?.code === 'INVALID_REGISTRATION_WINDOW'
+          ? REGISTRATION_WINDOW_ERROR
+          : 'No se pudo crear el curso. Revisá los datos e intentá de nuevo.',
+      );
     }
   }
 
@@ -211,7 +232,7 @@ function Paso2Detalle({ state, dispatch }) {
 
       <div className="flex flex-col gap-1.5">
         <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          Duración (meses)
+          Duración (meses) <span className="text-danger">*</span>
         </label>
         <Input
           type="number"
@@ -262,8 +283,6 @@ function Paso2Detalle({ state, dispatch }) {
 export function CursoWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
 
-  const pasoActual = PASOS.findIndex((p) => p.key === state.paso);
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
@@ -280,16 +299,9 @@ export function CursoWizard() {
 
         <Stepper
           pasos={PASOS}
-          pasoActual={pasoActual}
-          pasosVisitados={state.pasosVisitados
-            .map((k) => PASOS.findIndex((p) => p.key === k))
-            .filter((i) => i >= 0)}
-          onStepClick={(idx) => {
-            const paso = PASOS[idx];
-            if (state.pasosVisitados.includes(paso.key)) {
-              dispatch({ type: 'IR_A_PASO', paso: paso.key });
-            }
-          }}
+          pasoActual={state.paso}
+          pasosVisitados={state.pasosVisitados}
+          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}

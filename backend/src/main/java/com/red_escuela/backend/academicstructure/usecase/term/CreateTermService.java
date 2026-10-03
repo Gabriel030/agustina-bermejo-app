@@ -23,8 +23,7 @@ public class CreateTermService implements CreateTermUseCase {
         term.setYear(request.year());
         term.setDescription(request.description());
         term.setType(request.type());
-        term.setStartDate(request.startDate());
-        term.setEndDate(request.endDate());
+        term.reschedule(request.startDate(), request.endDate());
         term.setEnrollmentStart(request.enrollmentStart());
         term.setEnrollmentEnd(request.enrollmentEnd());
         term.setStatus(StatusType.ACTIVE);

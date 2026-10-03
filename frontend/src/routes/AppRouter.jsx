@@ -186,6 +186,7 @@ export function AppRouter() {
           {(rol === 'preceptor' || rol === 'administrativo') && (
             <Route path="alumnos/nuevo" element={<NuevoAlumno />} />
           )}
+          {rol === 'director' && <Route path="alumnos/nuevo" element={<Navigate to="/no-autorizado" replace />} />}
           {rol === 'administrativo' && (
             <Route path="gestion-academica/nueva" element={<AdministrativoSubjectWizard />} />
           )}

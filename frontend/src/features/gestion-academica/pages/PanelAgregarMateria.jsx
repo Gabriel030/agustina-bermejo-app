@@ -4,7 +4,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useSubjects } from '@/features/gestion-academica/hooks/useSubjects';
-import { useAddProgramSubject, useElectiveGroups } from '@/features/gestion-academica/hooks/usePrograms';
+import {
+  useAddProgramSubject,
+  useElectiveGroups,
+  useProgramElectiveGroups,
+} from '@/features/gestion-academica/hooks/usePrograms';
 
 const CATEGORY_OPTIONS = [
   { value: 'MANDATORY', label: 'Obligatoria' },
@@ -19,11 +23,20 @@ const TERM_OPTIONS = [
   { value: 'ANNUAL', label: 'Anual' },
 ];
 
-function CampoSelect({ label, value, onChange, options, required }) {
+const ADD_ERROR_MESSAGES = {
+  CURRICULAR_YEAR_OUT_OF_RANGE: 'El año tiene que estar entre 1 y la duración de la carrera.',
+  INVALID_PROGRAM_SUBJECT_CATEGORY: 'Faltan datos que exige la categoría elegida.',
+  ELECTIVE_GROUP_NOT_ASSIGNED: 'El grupo electivo no está asignado a esta carrera.',
+  PROGRAM_SUBJECT_ALREADY_EXISTS: 'Esa materia ya forma parte del plan de esta carrera.',
+  SUBJECT_NOT_ASSIGNABLE_TO_PLAN: 'La materia todavía no está aprobada y no se puede agregar al plan.',
+};
+
+function CampoSelect({ id, label, value, onChange, options, required }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
@@ -39,9 +52,34 @@ function CampoSelect({ label, value, onChange, options, required }) {
   );
 }
 
-export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
+function validationError({ selectedSubjectId, category, curricularYear, curricularTerm, credits, electiveGroupId, totalYears }) {
+  if (!selectedSubjectId) return 'Seleccioná una materia.';
+  if (category !== 'ADDITIONAL_MANDATORY' && curricularYear) {
+    const year = parseInt(curricularYear);
+    if (year < 1 || (totalYears && year > totalYears)) {
+      return `El año tiene que estar entre 1 y ${totalYears ?? 'la duración de la carrera'}.`;
+    }
+  }
+  if (category === 'MANDATORY' && !curricularYear) return 'Indicá el año de la materia obligatoria.';
+  if (category === 'MANDATORY' && !curricularTerm) return 'Elegí el cuatrimestre de la materia obligatoria.';
+  if (category === 'ELECTIVE' && !electiveGroupId) return 'Elegí el grupo electivo.';
+  if (!credits || parseInt(credits) < 0) return 'Ingresá los créditos.';
+  return null;
+}
+
+function buildBody({ selectedSubjectId, category, curricularYear, curricularTerm, credits, electiveGroupId }) {
+  const body = { subjectId: selectedSubjectId, category, credits: parseInt(credits) };
+  if (category === 'ADDITIONAL_MANDATORY') return body;
+  if (curricularYear) body.curricularYear = parseInt(curricularYear);
+  if (curricularTerm) body.curricularTerm = curricularTerm;
+  if (category === 'ELECTIVE') body.electiveGroupId = parseInt(electiveGroupId);
+  return body;
+}
+
+export function PanelAgregarMateria({ open, onClose, programId, defaultYear, totalYears }) {
   const { data: subjects } = useSubjects('ACTIVE');
   const { data: electiveGroups } = useElectiveGroups();
+  const { data: programElectiveGroups } = useProgramElectiveGroups(programId);
   const addProgramSubject = useAddProgramSubject(programId);
 
   const [search, setSearch] = useState('');
@@ -60,42 +98,32 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
   });
 
   const selectedSubject = (subjects ?? []).find((s) => s.id === selectedSubjectId);
+  const groupNames = new Map((electiveGroups ?? []).map((g) => [g.id, g.name]));
+  const assignedGroups = (programElectiveGroups ?? []).map((g) => ({
+    value: String(g.electiveGroupId),
+    label: groupNames.get(g.electiveGroupId) ?? `Grupo ${g.electiveGroupId}`,
+  }));
+  const electiveWithoutGroups = category === 'ELECTIVE' && assignedGroups.length === 0;
 
   function handleClose() {
-    setSearch('');
-    setSelectedSubjectId(null);
-    setCategory('MANDATORY');
-    setCurricularYear(defaultYear?.toString() ?? '');
-    setCurricularTerm('');
-    setCredits('');
-    setElectiveGroupId('');
     setError(null);
     onClose();
   }
 
   async function handleAgregar() {
-    if (!selectedSubjectId) {
-      setError('Seleccioná una materia.');
-      return;
-    }
-    if (!credits || parseInt(credits) < 0) {
-      setError('Ingresá los créditos.');
+    const form = { selectedSubjectId, category, curricularYear, curricularTerm, credits, electiveGroupId, totalYears };
+    const invalid = validationError(form);
+    if (invalid) {
+      setError(invalid);
       return;
     }
     setError(null);
     try {
-      await addProgramSubject.mutateAsync({
-        subjectId: selectedSubjectId,
-        category,
-        credits: parseInt(credits),
-        ...(curricularYear && { curricularYear: parseInt(curricularYear) }),
-        ...(curricularTerm && { curricularTerm }),
-        ...(electiveGroupId && category === 'ELECTIVE' && { electiveGroupId: parseInt(electiveGroupId) }),
-      });
+      await addProgramSubject.mutateAsync(buildBody(form));
       toast.success('Materia agregada al plan');
       handleClose();
-    } catch {
-      setError('No se pudo agregar la materia. Intentá de nuevo.');
+    } catch (err) {
+      setError(ADD_ERROR_MESSAGES[err?.code] ?? 'No se pudo agregar la materia. Revisá los datos e intentá de nuevo.');
     }
   }
 
@@ -149,6 +177,7 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
             </div>
 
             <CampoSelect
+              id="program-subject-category"
               label="Categoría *"
               value={category}
               onChange={setCategory}
@@ -156,31 +185,44 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
               required
             />
 
-            <div className="flex gap-3">
-              <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Año curricular</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={curricularYear}
-                  onChange={(e) => setCurricularYear(e.target.value)}
-                  placeholder="Ej. 1"
-                />
+            {category === 'ADDITIONAL_MANDATORY' ? (
+              <p className="text-[12px] text-ink-faint">
+                Las obligatorias adicionales no tienen año ni cuatrimestre: se cursan en cualquier momento de la carrera.
+              </p>
+            ) : (
+              <div className="flex gap-3">
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <label htmlFor="program-subject-year" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+                    Año curricular
+                  </label>
+                  <Input
+                    id="program-subject-year"
+                    type="number"
+                    min={1}
+                    max={totalYears ?? 10}
+                    value={curricularYear}
+                    onChange={(e) => setCurricularYear(e.target.value)}
+                    placeholder="Ej. 1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <CampoSelect
+                    id="program-subject-term"
+                    label="Cuatrimestre"
+                    value={curricularTerm}
+                    onChange={setCurricularTerm}
+                    options={TERM_OPTIONS}
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <CampoSelect
-                  label="Cuatrimestre"
-                  value={curricularTerm}
-                  onChange={setCurricularTerm}
-                  options={TERM_OPTIONS}
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Créditos *</label>
+              <label htmlFor="program-subject-credits" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+                Créditos *
+              </label>
               <Input
+                id="program-subject-credits"
                 type="number"
                 min={0}
                 value={credits}
@@ -189,17 +231,20 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
               />
             </div>
 
-            {category === 'ELECTIVE' && (electiveGroups ?? []).length > 0 && (
-              <CampoSelect
-                label="Grupo electivo"
-                value={electiveGroupId}
-                onChange={setElectiveGroupId}
-                options={[
-                  { value: '', label: 'Sin grupo' },
-                  ...(electiveGroups ?? []).map((g) => ({ value: g.id.toString(), label: g.name })),
-                ]}
-              />
-            )}
+            {category === 'ELECTIVE' &&
+              (electiveWithoutGroups ? (
+                <p className="text-[13px] text-danger">
+                  Esta carrera no tiene grupos electivos asignados, así que todavía no se le pueden agregar electivas.
+                </p>
+              ) : (
+                <CampoSelect
+                  id="program-subject-elective-group"
+                  label="Grupo electivo *"
+                  value={electiveGroupId}
+                  onChange={setElectiveGroupId}
+                  options={[{ value: '', label: 'Elegí un grupo' }, ...assignedGroups]}
+                />
+              ))}
 
             {error && <p className="text-[13px] text-danger">{error}</p>}
 
@@ -207,7 +252,12 @@ export function PanelAgregarMateria({ open, onClose, programId, defaultYear }) {
               <Button variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
-              <Button variant="gradient" loading={addProgramSubject.isPending} onClick={handleAgregar}>
+              <Button
+                variant="gradient"
+                loading={addProgramSubject.isPending}
+                disabled={electiveWithoutGroups}
+                onClick={handleAgregar}
+              >
                 Agregar
               </Button>
             </div>
