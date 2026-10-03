@@ -9,12 +9,14 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
 
 @Service
@@ -54,27 +56,38 @@ public class ProgramService {
     public Program update(Long id, UpdateProgramRequest request) {
         Program program = findOrThrow(id);
         Person actor = currentPersonService.resolveCurrentPerson();
-        Optional.ofNullable(request.name()).ifPresent(program::setName);
-        Optional.ofNullable(request.totalYears()).ifPresent(program::setTotalYears);
-        if (request.price() != null && request.price().compareTo(program.getPrice()) != 0) {
-            program.setPrice(request.price());
-            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
+        Optional.ofNullable(request.getName()).ifPresent(program::setName);
+        Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
+        if (program.changeRecurringFee(request.getPrice())) {
+            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.getPrice(), "Ajuste de precio", actor);
         }
-        if (request.enrollmentFeeAmount() != null && request.enrollmentFeeAmount().compareTo(program.getEnrollmentFeeAmount()) != 0) {
-            program.setEnrollmentFeeAmount(request.enrollmentFeeAmount());
-            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.enrollmentFeeAmount(), "Ajuste de matrícula", actor);
+        if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
+            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), "Ajuste de matrícula", actor);
         }
-        Optional.ofNullable(request.totalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
-        Optional.ofNullable(request.totalHoursRequired()).ifPresent(program::setTotalHoursRequired);
-        Optional.ofNullable(request.teachingMode()).ifPresent(program::setTeachingMode);
-        Optional.ofNullable(request.level()).ifPresent(program::setLevel);
-        Optional.ofNullable(request.graduationProfile()).ifPresent(program::setGraduationProfile);
-        Optional.ofNullable(request.admissionRequirements()).ifPresent(program::setAdmissionRequirements);
+        Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
+        applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
+        applyClearable(request.getTeachingMode(), program::setTeachingMode);
+        applyClearable(request.getLevel(), program::setLevel);
+        applyClearable(blankAsEmpty(request.getGraduationProfile()), program::setGraduationProfile);
+        applyClearable(blankAsEmpty(request.getAdmissionRequirements()), program::setAdmissionRequirements);
         return programRepository.save(program);
     }
 
-    public List<Program> list(StatusType status) {
-        return status == null ? programRepository.findAll() : programRepository.findByStatus(status);
+    private static <T> void applyClearable(Optional<T> requested, Consumer<T> setter) {
+        if (requested != null) {
+            setter.accept(requested.orElse(null));
+        }
+    }
+
+    private static Optional<String> blankAsEmpty(Optional<String> requested) {
+        return requested == null ? null : requested.map(String::trim).filter(text -> !text.isEmpty());
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog) {
+        return programRepository.findAll(Sort.by("name", "id")).stream()
+                .filter(program -> status == null || program.getStatus() == status)
+                .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
+                .toList();
     }
 
     public Program get(Long id) {

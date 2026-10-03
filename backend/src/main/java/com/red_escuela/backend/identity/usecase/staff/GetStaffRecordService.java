@@ -7,23 +7,28 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.shared.UseCase;
 
+import java.util.Set;
+
 @UseCase
 public class GetStaffRecordService implements GetStaffRecordUseCase {
 
     private final PersonRepository personRepository;
+    private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
 
-    public GetStaffRecordService(PersonRepository personRepository) {
+    public GetStaffRecordService(PersonRepository personRepository, StaffRoleAssignmentPolicy staffRoleAssignmentPolicy) {
         this.personRepository = personRepository;
+        this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
     }
 
     @Override
     public Person getRecord(Long personId) {
         Person person = personRepository.findById(personId)
                 .orElseThrow(() -> new PersonNotFoundException(personId));
-        boolean isStaff = person.getRoles().stream()
+        Set<String> visibleRoles = staffRoleAssignmentPolicy.visibleRolesForCurrentActor();
+        boolean isVisibleStaff = person.getRoles().stream()
                 .map(Role::getName)
-                .anyMatch(StaffRoleAssignmentPolicy.STAFF_ROLES::contains);
-        if (!isStaff) {
+                .anyMatch(visibleRoles::contains);
+        if (!isVisibleStaff) {
             throw new PersonNotFoundException(personId);
         }
         return person;

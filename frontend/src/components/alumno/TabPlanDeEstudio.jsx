@@ -1,3 +1,4 @@
+import { StablePageHeight } from '@/components/StablePageHeight';
 import { Fragment } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Lock } from 'lucide-react';
@@ -19,6 +20,7 @@ const ESTADO_PILL = {
   'en-curso': { label: 'En curso', tone: 'accent' },
   regular: { label: 'Regular · falta final', tone: 'warning' },
   aprobada: { label: 'Aprobada', tone: 'success' },
+  desaprobada: { label: 'Desaprobada · a recursar', tone: 'danger' },
   disponible: { label: 'Disponible', tone: 'accent' },
   bloqueada: { label: 'Bloqueada', tone: 'neutral' },
 };
@@ -87,7 +89,8 @@ export function TabPlanDeEstudio({ carreraId }) {
   let anioAnterior;
 
   return (
-    <div className="flex min-h-full flex-1 flex-col gap-5">
+    <div className="flex flex-1 flex-col gap-5">
+      <StablePageHeight resetKey={`${estado}-${anio}`}>
       <GlassCard className="flex flex-col p-1">
         {/* El header (con los filtros de Año/Estado embebidos) se renderiza SIEMPRE —
             ver comentario del mismo patrón en TabMaterias.jsx/TabNotas.jsx/TabAsistencia.jsx. */}
@@ -187,6 +190,7 @@ export function TabPlanDeEstudio({ carreraId }) {
         </Table>
         </div>
       </GlassCard>
+      </StablePageHeight>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />
     </div>

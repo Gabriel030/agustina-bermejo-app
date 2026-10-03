@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
+import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,11 +30,14 @@ public class CourseController {
 
     private final CourseService courseService;
     private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
+    private final CourseEnrollmentService courseEnrollmentService;
 
     public CourseController(CourseService courseService,
-            SetCourseCatalogVisibilityUseCase setCatalogVisibility) {
+            SetCourseCatalogVisibilityUseCase setCatalogVisibility,
+            CourseEnrollmentService courseEnrollmentService) {
         this.courseService = courseService;
         this.setCatalogVisibility = setCatalogVisibility;
+        this.courseEnrollmentService = courseEnrollmentService;
     }
 
     @PostMapping
@@ -45,7 +49,7 @@ public class CourseController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseResponse update(@PathVariable Long id, @RequestBody UpdateCourseRequest request) {
+    public CourseResponse update(@PathVariable Long id, @Valid @RequestBody UpdateCourseRequest request) {
         return CourseResponse.from(courseService.update(id, request));
     }
 
@@ -64,8 +68,9 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<CourseResponse> list(@RequestParam(required = false) StatusType status) {
-        return courseService.list(status).stream().map(CourseResponse::from).toList();
+    public List<CourseResponse> list(@RequestParam(required = false) StatusType status,
+            @RequestParam(required = false) Boolean visibleInCatalog) {
+        return courseService.list(status, visibleInCatalog).stream().map(CourseResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -77,7 +82,7 @@ public class CourseController {
 
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
-        return CourseResponse.from(courseService.get(id));
+        return CourseResponse.from(courseService.get(id), courseEnrollmentService.countOccupiedSeats(id));
     }
 
     @GetMapping("/{id}/pricing")

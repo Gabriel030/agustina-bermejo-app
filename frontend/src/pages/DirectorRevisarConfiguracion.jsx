@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
+import { EmptyState } from '@/components/EmptyState';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
@@ -25,12 +26,31 @@ const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:gr
 export function DirectorRevisarConfiguracion() {
   const { sectionId } = useParams();
   const navigate = useNavigate();
-  const { data: config, isLoading } = useConfiguracionComisionStaff(sectionId);
+  const { data: config, isLoading, isError } = useConfiguracionComisionStaff(sectionId);
   const { data: feriados } = useHolidays();
   const aprobar = useAprobarConfig(sectionId);
   const rechazar = useRechazarConfig(sectionId);
   const [motivo, setMotivo] = useState('');
   const [error, setError] = useState(null);
+
+  if (isError) {
+    return (
+      <PageContainer>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="🔎"
+            title="No encontramos esta configuración"
+            description="Puede que la comisión no exista o que el enlace esté mal."
+            action={
+              <Button variant="outline" asChild>
+                <Link to="/director/aprobaciones/configuracion-evaluacion">Volver a la bandeja</Link>
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
+  }
 
   if (isLoading || !config) {
     return (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -22,6 +23,13 @@ const ETIQUETA_ROL = {
   PRECEPTOR: 'Preceptor',
   ADMINISTRATIVO: 'Administrativo',
 };
+
+function createStaffErrorMessage(err) {
+  if (err?.code === 'DNI_ALREADY_EXISTS') return 'Ya existe una persona con ese DNI o ese email.';
+  if (err?.status === 403) return 'No tenés permiso para dar de alta personal con ese rol.';
+  if (err?.status === 400) return 'Revisá los datos: completá los campos obligatorios y usá un email válido.';
+  return 'No se pudo dar de alta al personal. Intentá de nuevo.';
+}
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value);
@@ -102,6 +110,7 @@ export function GestionPersonal() {
   const [searchInput, setSearchInput] = useState('');
   const searchDebounced = useDebounce(searchInput, 300);
   const [altaOpen, setAltaOpen] = useState(false);
+  const [altaSession, setAltaSession] = useState(0);
 
   function handleTabChange(tab) {
     setTabActivo(tab);
@@ -117,7 +126,15 @@ export function GestionPersonal() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="font-heading text-xl font-bold text-ink">Gestión de personal</h1>
-          <Button variant="gradient" onClick={() => setAltaOpen(true)}>Nuevo personal</Button>
+          <Button
+            variant="gradient"
+            onClick={() => {
+              setAltaSession((n) => n + 1);
+              setAltaOpen(true);
+            }}
+          >
+            Nuevo personal
+          </Button>
         </div>
 
         <GlassCard className="flex flex-col gap-3 p-4">
@@ -156,10 +173,19 @@ export function GestionPersonal() {
       </div>
 
       <AltaPersonalModal
+        key={altaSession}
         open={altaOpen}
         onClose={() => setAltaOpen(false)}
         onConfirmar={(data) =>
-          crearMutation.mutate(data, { onSuccess: () => setAltaOpen(false) })
+          crearMutation.mutate(data, {
+            onSuccess: (created) => {
+              setAltaOpen(false);
+              toast.success(
+                `${created?.apellido ?? data.apellido}, ${created?.nombre ?? data.nombre} quedó dado de alta. Le enviamos un email para que elija su contraseña.`,
+              );
+            },
+            onError: (err) => toast.error(createStaffErrorMessage(err)),
+          })
         }
         isPending={crearMutation.isPending}
       />

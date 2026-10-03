@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useProgramas, useCursos } from '@/hooks/useCatalogo';
 import { useCiclos } from '@/features/oferta-academica/hooks/useCiclos';
+import { formatCourseDuration } from '@/lib/courseDuration';
 
 const TABS = [
   { id: 'carreras', label: 'Carreras' },
@@ -73,7 +74,7 @@ function FilaCurso({ curso, navigate }) {
     >
       <div className="min-w-0">
         <span className="block truncate text-[14px] font-medium text-ink">{curso.name}</span>
-        <span className="text-[12px] text-ink-faint">{curso.durationMonths} meses</span>
+        <span className="text-[12px] text-ink-faint">{formatCourseDuration(curso.durationMonths)}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <BadgeCiclo ciclo={cicloActivo} />

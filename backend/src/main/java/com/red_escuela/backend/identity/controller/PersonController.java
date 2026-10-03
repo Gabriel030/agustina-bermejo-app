@@ -133,7 +133,7 @@ public class PersonController {
     @GetMapping("/avatar")
     public ResponseEntity<byte[]> getAvatar() {
         Person person = currentPersonService.resolveCurrentPerson();
-        if (person.getAvatarPath() == null) {
+        if (person.getAvatarPath() == null || !fileStorageService.exists(person.getAvatarPath())) {
             return ResponseEntity.notFound().build();
         }
         byte[] bytes = fileStorageService.readBytes(person.getAvatarPath());

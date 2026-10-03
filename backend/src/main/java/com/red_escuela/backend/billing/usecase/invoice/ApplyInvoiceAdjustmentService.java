@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.usecase.invoice;
 
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -24,7 +23,7 @@ public class ApplyInvoiceAdjustmentService implements ApplyInvoiceAdjustmentUseC
     public Invoice apply(ApplyInvoiceAdjustmentCommand command) {
         Invoice invoice = invoiceRepository.findByIdForUpdate(command.invoiceId())
                 .orElseThrow(() -> new InvoiceNotFoundException(command.invoiceId()));
-        if (invoice.getStatus() == InvoiceStatus.CANCELLED || invoice.getStatus() == InvoiceStatus.WAIVED) {
+        if (!invoice.isPayable()) {
             throw new InvoiceNotPayableException(command.invoiceId(), invoice.getStatus().name());
         }
         var request = command.request();

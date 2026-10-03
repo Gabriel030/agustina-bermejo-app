@@ -66,7 +66,7 @@ public class ListDebtorsService implements ListDebtorsUseCase {
         }
 
         void add(String enrollmentName, Invoice invoice) {
-            totalDebt = totalDebt.add(invoice.getBaseAmount());
+            totalDebt = totalDebt.add(invoice.getRemainingBalance().max(BigDecimal.ZERO));
             if (oldestDueDate == null || invoice.getDueDate().isBefore(oldestDueDate)) {
                 oldestDueDate = invoice.getDueDate();
                 primaryEnrollmentName = enrollmentName;

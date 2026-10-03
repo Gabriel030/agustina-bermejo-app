@@ -45,7 +45,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
             application.getPaymentReceipt().getInvoice().setProgramEnrollment(enrollment);
         }
 
-        if (application.getPaymentReceipt() != null) {
+        if (application.getPaymentReceipt() != null && application.getPaymentReceipt().isPendingReview()) {
             approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), command.decidedBy());
         }
 

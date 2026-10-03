@@ -162,4 +162,15 @@ describe('AvisoWizard', () => {
     expect(within(dialogo).getByText('Salir sin publicar')).toBeInTheDocument();
     expect(within(dialogo).getByRole('button', { name: 'Seguir escribiendo' })).toHaveFocus();
   });
+
+  it('en una comisión ajena bloquea el asistente en vez de mostrarlo vacío', async () => {
+    server.use(
+      http.get(`${API}/subject-sections/${SECTION_ID}/audience-segments`, () => new HttpResponse(null, { status: 403 })),
+      http.post(`${API}/subject-sections/${SECTION_ID}/audience-preview`, () => new HttpResponse(null, { status: 403 })),
+    );
+    montar();
+
+    expect(await screen.findByText('No podés publicar avisos en esta comisión')).toBeInTheDocument();
+    expect(screen.queryByText('Destinatarios')).not.toBeInTheDocument();
+  });
 });

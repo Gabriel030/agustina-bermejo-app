@@ -27,10 +27,10 @@ export function useCrearEsquema() {
   });
 }
 
-export function useEditarEsquema(id) {
+export function useEditarEsquema() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => apiFetch(`/evaluation-schemes/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    mutationFn: ({ id, payload }) => apiFetch(`/evaluation-schemes/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluation-schemes'] }),
   });
 }
@@ -55,7 +55,7 @@ export function useHistorialAprobaciones() {
   const historial = [...(aprobadas.data ?? []), ...(rechazadas.data ?? [])].sort(
     (a, b) => new Date(b.reviewedAt ?? 0) - new Date(a.reviewedAt ?? 0),
   );
-  return { data: historial, isLoading: cargando };
+  return { data: historial, isLoading: cargando, isError: aprobadas.isError || rechazadas.isError };
 }
 
 export function useEgresosPendientes() {
@@ -78,7 +78,7 @@ export function useHistorialEgresos() {
   const historial = [...(aprobados.data ?? []), ...(rechazados.data ?? [])].sort(
     (a, b) => new Date(b.decidedAt ?? 0) - new Date(a.decidedAt ?? 0),
   );
-  return { data: historial, isLoading: cargando };
+  return { data: historial, isLoading: cargando, isError: aprobados.isError || rechazados.isError };
 }
 
 export function useEgreso(id) {
@@ -93,7 +93,7 @@ export function useAprobarEgreso(id) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch(`/graduation-requests/${id}/approve`, { method: 'POST' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
   });
 }
 
@@ -101,7 +101,7 @@ export function useRechazarEgreso(id) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (motivo) => apiFetch(`/graduation-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ motivo }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['graduation-requests'] }),
   });
 }
 
@@ -125,7 +125,7 @@ export function useHistorialExcepciones() {
   const historial = [...(aprobadas.data ?? []), ...(rechazadas.data ?? [])].sort(
     (a, b) => new Date(b.decidedAt ?? 0) - new Date(a.decidedAt ?? 0),
   );
-  return { data: historial, isLoading: cargando };
+  return { data: historial, isLoading: cargando, isError: aprobadas.isError || rechazadas.isError };
 }
 
 export function useExcepcion(id) {
@@ -140,7 +140,7 @@ export function useAprobarExcepcion(id) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notas) => apiFetch(`/director-approval-requests/${id}/approve`, { method: 'POST', body: JSON.stringify({ notas }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
   });
 }
 
@@ -148,7 +148,7 @@ export function useRechazarExcepcion(id) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (notas) => apiFetch(`/director-approval-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ notas }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['director-approval-requests'] }),
   });
 }
 

@@ -17,4 +17,12 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
 
     List<DirectorApprovalRequest> findByProgramEnrollmentIdAndTypeAndStatus(
             Long programEnrollmentId, ExceptionType type, DirectorApprovalRequestStatus status);
+
+    boolean existsByProgramEnrollmentIdAndSubjectIdAndTypeAndStatus(
+            Long programEnrollmentId, Long subjectId, ExceptionType type, DirectorApprovalRequestStatus status);
+
+    default boolean hasApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
+        return existsByProgramEnrollmentIdAndSubjectIdAndTypeAndStatus(
+                programEnrollmentId, subjectId, type, DirectorApprovalRequestStatus.APPROVED);
+    }
 }

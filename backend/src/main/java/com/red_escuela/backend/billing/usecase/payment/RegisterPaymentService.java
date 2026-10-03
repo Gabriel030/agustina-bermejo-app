@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.usecase.payment;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -14,13 +15,17 @@ import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceExc
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.service.CreditNoteService;
+import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
 
@@ -30,13 +35,16 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final InvoiceRepository invoiceRepository;
     private final CurrentStudentService currentStudentService;
     private final CreditNoteService creditNoteService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
-                                   CurrentStudentService currentStudentService, CreditNoteService creditNoteService) {
+                                   CurrentStudentService currentStudentService, CreditNoteService creditNoteService,
+                                   ApplicationEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.currentStudentService = currentStudentService;
         this.creditNoteService = creditNoteService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -105,7 +113,31 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             }
         }
 
+        lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
+
         return payment;
+    }
+
+    private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {
+        if (invoice.getCourseEnrollment() != null) {
+            restoreStanding(invoice.getCourseEnrollment(),
+                    invoiceRepository.countByCourseEnrollmentIdAndStatus(invoice.getCourseEnrollment().getId(), InvoiceStatus.OVERDUE));
+        } else if (invoice.getProgramEnrollment() != null) {
+            restoreStanding(invoice.getProgramEnrollment(),
+                    invoiceRepository.countByProgramEnrollmentIdAndStatus(invoice.getProgramEnrollment().getId(), InvoiceStatus.OVERDUE));
+        }
+    }
+
+    private void restoreStanding(BillableEnrollment enrollment, long overdueInvoices) {
+        if (overdueInvoices > 0) {
+            return;
+        }
+        boolean wasSuspended = enrollment.getBillingStanding() == EnrollmentBillingStanding.SUSPENDED;
+        LocalDateTime suspendedAt = enrollment.getBillingStandingUpdatedAt();
+        if (enrollment.settleArrears() && wasSuspended) {
+            YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now();
+            eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now()));
+        }
     }
 
     private void validateOwnershipIfStudent(Invoice invoice) {

@@ -14,8 +14,7 @@ public record AttendanceChangeRequestRejectedEvent(AttendanceChangeRequest reque
 
     @Override
     public String message() {
-        return "Tu solicitud de modificación de asistencia fue rechazada: "
-                + request.getPreviousStatus() + " → " + request.getRequestedStatus();
+        return AttendanceChangeRequestMessage.of(request, "rechazada");
     }
 
     @Override

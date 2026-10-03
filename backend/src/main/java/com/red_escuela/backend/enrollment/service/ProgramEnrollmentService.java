@@ -172,7 +172,9 @@ public class ProgramEnrollmentService {
                 })
                 .toList();
 
-        boolean elegibleParaCompletar = obligatoriasPendientes.isEmpty()
+        boolean studyPlanLoaded = !entradas.isEmpty();
+        boolean elegibleParaCompletar = studyPlanLoaded
+                && obligatoriasPendientes.isEmpty()
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
@@ -226,8 +228,7 @@ public class ProgramEnrollmentService {
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
-        LocalDate today = LocalDate.now();
-        if (today.isBefore(cohort.getAdmissionStart()) || today.isAfter(cohort.getAdmissionEnd())) {
+        if (!cohort.isAdmissionOpenOn(LocalDate.now())) {
             throw new CohortAdmissionWindowClosedException(cohort.getId());
         }
     }

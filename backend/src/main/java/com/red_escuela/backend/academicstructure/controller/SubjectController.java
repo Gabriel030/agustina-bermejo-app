@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
+import com.red_escuela.backend.academicstructure.dto.RejectSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.SubjectResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
@@ -39,7 +40,7 @@ public class SubjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public SubjectResponse update(@PathVariable Long id, @RequestBody UpdateSubjectRequest request) {
+    public SubjectResponse update(@PathVariable Long id, @Valid @RequestBody UpdateSubjectRequest request) {
         return SubjectResponse.from(subjectService.update(id, request));
     }
 
@@ -57,8 +58,8 @@ public class SubjectController {
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DIRECTOR')")
-    public SubjectResponse reject(@PathVariable Long id) {
-        return SubjectResponse.from(subjectService.reject(id));
+    public SubjectResponse reject(@PathVariable Long id, @Valid @RequestBody RejectSubjectRequest request) {
+        return SubjectResponse.from(subjectService.reject(id, request.reason()));
     }
 
     @PostMapping("/{id}/deactivate")

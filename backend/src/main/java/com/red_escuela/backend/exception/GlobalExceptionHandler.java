@@ -40,6 +40,8 @@ import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonExceptio
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
+import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
@@ -49,6 +51,7 @@ import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchExcept
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionNotFoundException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
+import com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
@@ -67,6 +70,12 @@ import com.red_escuela.backend.academicstructure.exception.SectionScheduleConfli
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
+import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
+import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
+import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
+import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
+import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
 import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
@@ -114,6 +123,7 @@ import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestNotFo
 import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
+import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -128,6 +138,12 @@ import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
+import com.red_escuela.backend.attendance.exception.AttendanceStatusNotRecordableException;
+import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
@@ -151,15 +167,24 @@ import com.red_escuela.backend.graduation.exception.CertificateNotEligibleExcept
 import com.red_escuela.backend.graduation.exception.GraduationRequestNotFoundException;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
+import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.notification.exception.NotOwnNotificationException;
 import com.red_escuela.backend.notification.exception.NotificationNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidCredentials() {
+    }
+
+    @ExceptionHandler(InvalidMpWebhookSignatureException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public void handleInvalidMpWebhookSignature() {
     }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
@@ -205,6 +230,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             UnsupportedFileTypeException.class,
             MaxUploadSizeExceededException.class,
+            InvalidSurchargePercentageException.class,
             DniAlreadyExistsException.class,
             InvalidStaffRoleException.class,
             InvalidPrerequisiteException.class,
@@ -230,11 +256,16 @@ public class GlobalExceptionHandler {
             MaxExamAttemptsExceededException.class,
             ExamBoardSubjectMismatchException.class,
             NotEligibleForGraduationException.class,
+            DirectorApprovalSubjectRequiredException.class,
             CertificateNotEligibleException.class,
             InvalidPasswordPolicyException.class,
             InvalidCurrentPasswordException.class,
             InvalidSectionOverridesException.class,
             InvalidEvaluationDateException.class,
+            ExamDateOnHolidayException.class,
+            InvalidEvaluationSchemeException.class,
+            InvalidGradeScoreException.class,
+            AttendanceStatusNotRecordableException.class,
             SubmissionWindowClosedException.class,
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
@@ -247,6 +278,11 @@ public class GlobalExceptionHandler {
             IllegalArgumentException.class,
             CycleIncompleteException.class,
             SectionCapacityExceedsClassroomException.class,
+            IncompleteSubjectException.class,
+            CurricularYearOutOfRangeException.class,
+            InvalidRegistrationWindowException.class,
+            InvalidProgramSubjectCategoryException.class,
+            InvalidTermDatesException.class,
             EmptyAudienceException.class,
             ScheduledDateInThePastException.class,
             SegmentNotAvailableForSectionException.class,
@@ -295,6 +331,7 @@ public class GlobalExceptionHandler {
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
             PaymentReceiptNotFoundException.class,
+            PaymentReceiptFileNotFoundException.class,
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
             PromotionNotFoundException.class,
@@ -318,6 +355,7 @@ public class GlobalExceptionHandler {
             ElectiveGroupInUseException.class,
             AlreadyEnrolledInProgramException.class,
             AlreadyEnrolledInCourseException.class,
+            StudentFreeByAbsencesException.class,
             PendingCourseEnrollmentApplicationException.class,
             AlreadyEnrolledInSubjectException.class,
             CannotWithdrawException.class,
@@ -331,12 +369,14 @@ public class GlobalExceptionHandler {
             GraduationRequestAlreadyActiveException.class,
             DirectorApprovalRequestAlreadyActiveException.class,
             InvalidGraduationRequestStateException.class,
+            GraduationRequirementsNotMetException.class,
             InvalidDirectorApprovalRequestStateException.class,
             InvalidProgramEnrollmentApplicationStateException.class,
             AlreadyHasPendingApplicationException.class,
             UsernameAlreadyExistsException.class,
             TermEnrollmentOverrideClosedException.class,
             EvaluationSchemeInUseException.class,
+            ExamBoardNotYetTakenException.class,
             ClassSessionAlreadyCanceledException.class,
             InvalidAttendanceChangeRequestStateException.class,
             CoursePaymentPlanAlreadySetException.class,
@@ -357,6 +397,7 @@ public class GlobalExceptionHandler {
             CycleNotPendingApprovalException.class,
             CycleNotEditableException.class,
             SubjectInvalidTransitionException.class,
+            SubjectNotAssignableToPlanException.class,
             AnnouncementAlreadySentException.class,
             CannotChangeAudienceOfSentAnnouncementException.class
     })
@@ -371,7 +412,8 @@ public class GlobalExceptionHandler {
             RoleNotAssignableByActorException.class,
             NotSectionLeadInstructorException.class,
             NotOwnNotificationException.class,
-            NotSectionInstructorException.class
+            NotSectionInstructorException.class,
+            NotExamBoardTribunalMemberException.class
     })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {
@@ -387,13 +429,22 @@ public class GlobalExceptionHandler {
     public void handleMercadoPagoGateway() {
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorCodeResponse handleIllegalState(IllegalStateException exception) {
+        log.warn("Conflicto de estado: {}", exception.getMessage(), exception);
+        return ErrorCodeResponse.of(exception);
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public void handleDataIntegrityViolation() {
+    public void handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException exception) {
+        log.warn("Violación de integridad de datos: {}", exception.getMostSpecificCause().getMessage(), exception);
     }
 
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public void handleOptimisticLockingFailure() {
+    public void handleOptimisticLockingFailure(org.springframework.orm.ObjectOptimisticLockingFailureException exception) {
+        log.warn("Conflicto de concurrencia (optimistic lock): {}", exception.getMessage(), exception);
     }
 }

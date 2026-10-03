@@ -10,6 +10,7 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
+import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,40 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
         EvaluationScheme updated = evaluationSchemeService.update(scheme.getId(), validRequest("Reglamento corregido"));
 
         assertThat(updated.getName()).isEqualTo("Reglamento corregido");
+    }
+
+    @Test
+    void creatingASchemeWithGradesOutsideTheZeroToTenScaleFails() {
+        assertThatThrownBy(() -> evaluationSchemeService.create(
+                new CreateEvaluationSchemeRequest("Notas fuera de escala", 2, true, null, null, -2.0, 6.0, null, null)))
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
+        assertThatThrownBy(() -> evaluationSchemeService.create(
+                new CreateEvaluationSchemeRequest("Final sobre 15", 2, true, null, null, 4.0, 15.0, null, null)))
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
+    }
+
+    @Test
+    void creatingASchemeWhosePromotionCutIsBelowTheApprovalGradeFails() {
+        assertThatThrownBy(() -> evaluationSchemeService.create(
+                new CreateEvaluationSchemeRequest("Promoción con 3", 2, true, null, null, 4.0, 6.0, 3.0, null)))
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
+    }
+
+    @Test
+    void creatingASchemeWithMoreThanFourExamsFails() {
+        assertThatThrownBy(() -> evaluationSchemeService.create(
+                new CreateEvaluationSchemeRequest("Cinco parciales", 5, true, null, null, 4.0, 6.0, null, null)))
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
+    }
+
+    @Test
+    void updatingASchemeWithIncoherentGradesFailsAndKeepsThePreviousValues() {
+        EvaluationScheme scheme = evaluationSchemeService.create(validRequest("Reglamento a corregir"));
+
+        assertThatThrownBy(() -> evaluationSchemeService.update(scheme.getId(),
+                new CreateEvaluationSchemeRequest("Reglamento a corregir", 2, true, null, null, 4.0, 11.0, null, null)))
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
+        assertThat(scheme.getMinApprovalGrade()).isEqualTo(6.0);
     }
 
     @Test

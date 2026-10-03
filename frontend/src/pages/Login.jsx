@@ -45,7 +45,10 @@ export function Login() {
     // Un alumno recién registrado (local o vía Google) no tiene rol todavía —
     // hasta su primera aprobación (ver RegistrationService) — mismo fallback
     // que ya usa Registrarse.jsx, acá faltaba y armaba "/undefined/inicio".
-    const destino = location.state?.from?.pathname ?? (usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo');
+    const from = location.state?.from;
+    const destino = from?.pathname
+      ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
+      : usuario.roles.length ? `/${usuario.roles[0].toLowerCase()}/inicio` : '/catalogo';
     navigate(destino, { replace: true });
   }, [usuario, location.state, navigate]);
 

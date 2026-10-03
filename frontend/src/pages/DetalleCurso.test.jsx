@@ -121,6 +121,77 @@ describe('DetalleCurso', () => {
 
     expect(await screen.findByText('La inscripción a este curso está cerrada.')).toBeInTheDocument();
   });
+
+  it('disables Inscribirme and explains why when the registration window is closed', async () => {
+    server.use(
+      http.get(`${API}/courses/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Curso cerrado', durationMonths: 3, registrationOpen: false, full: false }),
+      ),
+    );
+    renderDetalle();
+
+    expect(await screen.findByRole('button', { name: 'Inscribirme' })).toBeDisabled();
+    expect(screen.getByText('La inscripción a este curso está cerrada.')).toBeInTheDocument();
+  });
+
+  it('warns that you will be waitlisted when the course is full', async () => {
+    server.use(
+      http.get(`${API}/courses/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Curso lleno', durationMonths: 3, registrationOpen: true, full: true }),
+      ),
+    );
+    renderDetalle();
+
+    expect(await screen.findByRole('button', { name: 'Inscribirme' })).toBeEnabled();
+    expect(screen.getByText('El cupo está completo: si te inscribís, quedás en lista de espera.')).toBeInTheDocument();
+  });
+
+  it('shows the teaching mode of the course', async () => {
+    server.use(
+      http.get(`${API}/courses/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Inglés', durationMonths: 10, teachingMode: 'ONLINE', registrationOpen: true, full: false }),
+      ),
+    );
+    renderDetalle();
+
+    expect(await screen.findByText('10 meses · Virtual')).toBeInTheDocument();
+  });
+
+  it('says the course does not exist and offers a way back when the API answers 404', async () => {
+    server.use(http.get(`${API}/courses/9999`, () => new HttpResponse(null, { status: 404 })));
+    renderDetalle('9999');
+
+    expect(await screen.findByText('Este curso no existe o ya no está disponible.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Catálogo' })).toBeInTheDocument();
+  });
+
+  it('the payment step shows the bank account the applicant has to transfer to', async () => {
+    server.use(
+      http.get(`${API}/payment-config`, () =>
+        HttpResponse.json({
+          bankAlias: 'isab.pagos.cba',
+          bankCbu: '0070123430004567890123',
+          accountHolder: 'Instituto Superior Agustina Bermejo',
+          mpEnabled: false,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderConWizard();
+
+    await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
+    await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
+    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
+    await user.type(calleInput, 'Calle Falsa');
+    await user.type(numeroInput, '123');
+    await user.type(ciudadInput, 'Ciudad');
+    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
+
+    expect(await screen.findByText('0070123430004567890123')).toBeInTheDocument();
+    expect(screen.getByText('isab.pagos.cba')).toBeInTheDocument();
+    expect(screen.getByText('Instituto Superior Agustina Bermejo')).toBeInTheDocument();
+  });
 });
 
 async function waitForFileInput() {

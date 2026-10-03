@@ -417,6 +417,54 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     When method post
     Then status 204
 
+  Scenario: Un Docente solo ve las mesas en las que integra el tribunal — 403 en las ajenas
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { subjectId: '#(subjectId)', termId: '#(termId)', examDate: '2026-07-01T00:00:00' }
+    When method post
+    Then status 201
+    * def examBoardId = response.id
+
+    Given path '/exam-boards', examBoardId, 'tribunal'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { instructorId: '#(docente.instructorId)' }
+    When method post
+    Then status 204
+
+    * def ajeno = fixtures.createTeacherWithToken()
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 403
+
+    Given path '/exam-boards', examBoardId
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 403
+
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + ajeno.accessToken
+    When method get
+    Then status 200
+    And match response[*].id !contains examBoardId
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    When method get
+    Then status 200
+
+    Given path '/exam-boards'
+    And header Authorization = 'Bearer ' + docente.accessToken
+    When method get
+    Then status 200
+    And match response[*].id contains examBoardId
+
+    Given path '/exam-boards', examBoardId, 'registrations'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method get
+    Then status 200
+
   Scenario: Autoservicio — un alumno no puede dar de baja la inscripción de otro (404, no 403)
     * def alumno1 = fixtures.createConfirmedStudent(fixtures.createInstitution())
     * def alumno2 = fixtures.createConfirmedStudent(fixtures.createInstitution())

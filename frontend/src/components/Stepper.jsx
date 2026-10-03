@@ -50,6 +50,7 @@ export function Stepper({
             <button
               type="button"
               disabled={!navegable}
+              aria-current={i === indiceActual ? 'step' : undefined}
               onClick={() => navegable && onStepClick(paso.key)}
               className={cn('flex flex-col items-center gap-1.5', navegable ? 'cursor-pointer' : 'cursor-default')}
             >

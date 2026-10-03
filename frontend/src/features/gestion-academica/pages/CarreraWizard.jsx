@@ -251,8 +251,6 @@ function Paso2Contenido({ state, dispatch }) {
 export function CarreraWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
 
-  const pasoActual = PASOS.findIndex((p) => p.key === state.paso);
-
   return (
     <PageContainer>
       <div className="flex flex-col gap-4">
@@ -269,14 +267,9 @@ export function CarreraWizard() {
 
         <Stepper
           pasos={PASOS}
-          pasoActual={pasoActual}
-          pasosVisitados={state.pasosVisitados.map((k) => PASOS.findIndex((p) => p.key === k)).filter((i) => i >= 0)}
-          onStepClick={(idx) => {
-            const paso = PASOS[idx];
-            if (state.pasosVisitados.includes(paso.key)) {
-              dispatch({ type: 'IR_A_PASO', paso: paso.key });
-            }
-          }}
+          pasoActual={state.paso}
+          pasosVisitados={state.pasosVisitados}
+          onStepClick={(key) => dispatch({ type: 'IR_A_PASO', paso: key })}
         />
 
         {state.paso === 'datos' && <Paso1Datos state={state} dispatch={dispatch} />}

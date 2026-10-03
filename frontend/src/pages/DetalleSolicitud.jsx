@@ -33,6 +33,7 @@ export function DetalleSolicitud() {
   const [noEncontrada, setNoEncontrada] = useState(false);
   const [errorCarga, setErrorCarga] = useState(false);
   const [subidosEnSesion, setSubidosEnSesion] = useState({});
+  const [previousDocuments, setPreviousDocuments] = useState({});
   const [subiendo, setSubiendo] = useState(null);
   const [errorSubida, setErrorSubida] = useState(null);
   const fileInputRefs = useRef({});
@@ -48,6 +49,11 @@ export function DetalleSolicitud() {
         setSolicitud(propia);
       })
       .catch(() => setErrorCarga(true));
+    apiFetch('/me/documents')
+      .then((documents) =>
+        setPreviousDocuments(Object.fromEntries((documents ?? []).map((studentDocument) => [studentDocument.type, studentDocument.uploadedAt]))),
+      )
+      .catch(() => setPreviousDocuments({}));
   }, [id]);
 
   function elegirArchivo(type) {
@@ -116,11 +122,19 @@ export function DetalleSolicitud() {
         <EstadoSolicitudBadge status={solicitud.status} />
       </div>
 
-      {solicitud.status === 'REJECTED' ? (
+      {solicitud.status === 'REJECTED' && (
         <GlassCard className="bg-danger-bg p-5 text-[13px] text-danger">
           <span className="font-bold">Solicitud rechazada.</span> {solicitud.rejectionReason}
         </GlassCard>
-      ) : (
+      )}
+
+      {solicitud.status === 'APPROVED' && (
+        <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
+          <span className="font-bold">Solicitud aprobada.</span> Tu inscripción a la carrera ya está confirmada; no tenés que subir nada más.
+        </GlassCard>
+      )}
+
+      {solicitud.status !== 'REJECTED' && solicitud.status !== 'APPROVED' && (
         <>
           <GlassCard className="p-5 text-[13px] text-ink-soft">
             Subí los 3 documentos para que Preceptoría revise tu solicitud. Podés volver más tarde a completar los que falten.
@@ -133,18 +147,24 @@ export function DetalleSolicitud() {
           <GlassCard className="flex flex-col p-1">
             {TIPOS_DOCUMENTO.map(({ type, label }) => {
               const nombreArchivo = subidosEnSesion[type];
+              const previousUploadDate = previousDocuments[type];
+              const uploaded = Boolean(nombreArchivo || previousUploadDate);
               return (
                 <div key={type} className="flex items-center justify-between border-b border-border px-4 py-4 last:border-b-0">
                   <div className="flex items-center gap-3.5">
                     <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${nombreArchivo ? 'bg-success-bg' : 'bg-neutral-bg'}`}
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${uploaded ? 'bg-success-bg' : 'bg-neutral-bg'}`}
                     >
-                      {nombreArchivo ? '✓' : '＋'}
+                      {uploaded ? '✓' : '＋'}
                     </div>
                     <div>
                       <div className="text-[13.5px] font-bold text-ink">{label}</div>
-                      <div className={`text-xs ${nombreArchivo ? 'text-success' : 'text-ink-faint'}`}>
-                        {nombreArchivo ? `${nombreArchivo} · subido` : 'Sin subir todavía'}
+                      <div className={`text-xs ${uploaded ? 'text-success' : 'text-ink-faint'}`}>
+                        {nombreArchivo
+                          ? `${nombreArchivo} · subido`
+                          : previousUploadDate
+                            ? `Subido el ${formatFecha(previousUploadDate)}`
+                            : 'Sin subir todavía'}
                       </div>
                     </div>
                   </div>
@@ -160,7 +180,7 @@ export function DetalleSolicitud() {
                     onClick={() => elegirArchivo(type)}
                     className="rounded-xl border border-border bg-surface px-4 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
                   >
-                    {subiendo === type ? 'Subiendo…' : nombreArchivo ? 'Reemplazar' : 'Subir archivo'}
+                    {subiendo === type ? 'Subiendo…' : uploaded ? 'Reemplazar' : 'Subir archivo'}
                   </button>
                 </div>
               );

@@ -10,6 +10,7 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.notification.AttendanceChangeRequestApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -42,8 +43,9 @@ public class ApproveAttendanceChangeRequestService implements ApproveAttendanceC
         finder.requirePending(request);
 
         Attendance attendance = request.getAttendance();
-        attendance.setStatus(request.getRequestedStatus());
+        attendance.applyApprovedChange(request.getRequestedStatus());
         attendanceRepository.save(attendance);
+        eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(attendance));
 
         request.setStatus(AttendanceChangeRequestStatus.APPROVED);
         request.setApprovedBy(currentPersonService.resolveCurrentPerson());

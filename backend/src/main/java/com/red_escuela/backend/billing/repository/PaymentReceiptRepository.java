@@ -20,7 +20,7 @@ public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, 
             left join fetch pe.student pes
             left join fetch pes.person pep
             where r.status = :status
-            order by r.uploadedAt asc
+            order by r.uploadedAt asc, r.id asc
             """)
     List<PaymentReceipt> findByStatusWithStudentDetails(@Param("status") PaymentReceiptStatus status);
 

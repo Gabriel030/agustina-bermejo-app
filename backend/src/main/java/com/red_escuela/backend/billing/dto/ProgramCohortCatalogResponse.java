@@ -7,7 +7,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-public record ProgramCohortCatalogResponse(Long id, Long programId, String label, Integer ordenEnAnio, LocalDate cursadaStart) {
+public record ProgramCohortCatalogResponse(Long id, Long programId, String label, Integer ordenEnAnio, LocalDate cursadaStart,
+                                           LocalDate admissionStart, LocalDate admissionEnd, boolean admissionOpen) {
 
     private static final DateTimeFormatter LABEL_FMT = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "AR"));
 
@@ -22,6 +23,9 @@ public record ProgramCohortCatalogResponse(Long id, Long programId, String label
                 programId,
                 label,
                 orden,
-                cohort.getCursadaStart());
+                cohort.getCursadaStart(),
+                cohort.getAdmissionStart(),
+                cohort.getAdmissionEnd(),
+                cohort.isAdmissionOpenOn(LocalDate.now()));
     }
 }

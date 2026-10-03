@@ -120,6 +120,10 @@ public class Invoice {
         return getAmountDue().subtract(applied);
     }
 
+    public boolean isPayable() {
+        return status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE;
+    }
+
     public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
         PaymentAllocation allocation = new PaymentAllocation();
         allocation.setInvoice(this);
@@ -132,9 +136,13 @@ public class Invoice {
         return allocation;
     }
 
-    public void markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+    public boolean markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+        if (status != InvoiceStatus.PENDING) {
+            return false;
+        }
         status = InvoiceStatus.OVERDUE;
         applyAdjustment(InvoiceAdjustmentType.SURCHARGE, surchargeValue, reason, null);
+        return true;
     }
 
     public void cancel(Person cancelledBy, String reason) {

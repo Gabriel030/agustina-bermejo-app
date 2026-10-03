@@ -4,7 +4,6 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigUseCase;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -86,9 +86,8 @@ public class MeSectionEvaluationConfigController {
     private SectionEvaluationConfigResponse toResponse(SectionEvaluationConfig config, Long instructorId) {
         Long sectionId = config.getSubjectSection().getId();
         boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
-        boolean isEditableStatus = config.getStatus() == SectionEvaluationConfigStatus.DRAFT
-                || config.getStatus() == SectionEvaluationConfigStatus.REJECTED;
         return SectionEvaluationConfigResponse.from(
-                config, instructorAccess.listInstructors(sectionId), isLead && isEditableStatus);
+                config, instructorAccess.listInstructors(sectionId),
+                isLead && config.isEditable(), isLead && config.canBeSubmitted(LocalDateTime.now()));
     }
 }

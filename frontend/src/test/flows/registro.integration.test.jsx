@@ -84,7 +84,7 @@ describe('flujo de registro end-to-end', () => {
         HttpResponse.json({ programId: 1, matriculaCohorte1: 50000, matriculaCohorte2: 25000, cuotaMensual: 15000 }),
       ),
       http.get(`${API}/programs/1/cohorts`, () =>
-        HttpResponse.json([{ id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' }]),
+        HttpResponse.json([{ id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true }]),
       ),
       http.get(`${API}/programs/1/subjects`, () => HttpResponse.json([])),
       http.put(`${API}/me`, () =>

@@ -14,8 +14,7 @@ public record AttendanceChangeRequestApprovedEvent(AttendanceChangeRequest reque
 
     @Override
     public String message() {
-        return "Tu solicitud de modificación de asistencia fue aprobada: "
-                + request.getPreviousStatus() + " → " + request.getRequestedStatus();
+        return AttendanceChangeRequestMessage.of(request, "aprobada");
     }
 
     @Override

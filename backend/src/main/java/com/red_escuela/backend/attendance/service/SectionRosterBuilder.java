@@ -21,7 +21,7 @@ public class SectionRosterBuilder {
     private static final List<EnrollmentStatus> ACTIVE_ENROLLMENT_STATUSES =
             List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
     private static final List<AttendanceStatus> ABSENCE_STATUSES_FOR_COUNT =
-            List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING, AttendanceStatus.JUSTIFIED);
+            List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING);
     private static final Set<AttendanceStatus> PRESENT_LIKE_STATUSES =
             Set.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.JUSTIFIED);
     private static final List<AttendanceStatus> PRESENT_LIKE_STATUSES_LIST = List.copyOf(PRESENT_LIKE_STATUSES);

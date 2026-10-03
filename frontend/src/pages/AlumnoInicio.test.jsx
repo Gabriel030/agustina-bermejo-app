@@ -140,6 +140,17 @@ describe('AlumnoInicio — Novedades', () => {
   });
 });
 
+describe('AlumnoInicio — cursos', () => {
+  it('un alumno solo en lista de espera no ve cursos en curso sino su lugar en la espera', async () => {
+    mockearBase([]);
+    server.use(http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([{ id: 1, status: 'WAITLISTED' }])));
+    montar();
+
+    expect(await screen.findByText('Estás en lista de espera de 1 curso')).toBeInTheDocument();
+    expect(screen.queryByText(/en curso/)).not.toBeInTheDocument();
+  });
+});
+
 describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
   const TIPOS_BACKEND = [
     'SECTION_EVAL_CONFIG_PROPOSED',
@@ -154,6 +165,8 @@ describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
     'DIRECTOR_APPROVAL_REQUEST_REJECTED',
     'COURSE_WAITLIST_EXPIRED',
     'SUSPENSION_LIFTED',
+    'PAYMENT_RECEIPT_APPROVED',
+    'PAYMENT_RECEIPT_REJECTED',
     'ANNOUNCEMENT_PUBLISHED',
     'ANNOUNCEMENT_UPDATED',
   ];

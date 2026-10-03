@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff } from 'lucide-react';
+import { ChevronLeft, Plus, GitBranch, Globe, GlobeOff, Pencil, Power, PowerOff, Trash2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -9,12 +9,15 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useProgram,
   useProgramSubjects,
   useDeactivateProgram,
   useActivateProgram,
   useSetProgramCatalogVisibility,
+  useDeactivateProgramSubject,
+  useActivateProgramSubject,
 } from '@/features/gestion-academica/hooks/usePrograms';
 import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
@@ -55,7 +58,7 @@ const PS_STATUS_CONFIG = {
   INACTIVE: { label: 'Inactiva', tone: 'neutral' },
 };
 
-function SubjectRow({ ps, onCorrelativas }) {
+function SubjectRow({ ps, onCorrelativas, onRemove, onRestore, isRestoring }) {
   const cfg = PS_STATUS_CONFIG[ps.status] ?? { label: ps.status, tone: 'neutral' };
   const meta = [
     ps.curricularTerm ? TERM_LABELS[ps.curricularTerm] : null,
@@ -75,37 +78,82 @@ function SubjectRow({ ps, onCorrelativas }) {
         <span className="block truncate text-[14px] font-medium text-ink">{ps.subjectName}</span>
         {meta && <span className="text-[12px] text-ink-faint">{meta}</span>}
       </div>
-      <button
-        type="button"
-        onClick={() => onCorrelativas(ps)}
-        className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[12px] text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink"
-        title="Correlativas"
-      >
-        <GitBranch className="h-3.5 w-3.5" />
-        Correlativas
-      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onCorrelativas(ps)}
+          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink"
+          title="Correlativas"
+        >
+          <GitBranch className="h-3.5 w-3.5" />
+          Correlativas
+        </button>
+        {ps.status === 'INACTIVE' ? (
+          <button
+            type="button"
+            onClick={() => onRestore(ps)}
+            disabled={isRestoring}
+            aria-label={`Volver a agregar ${ps.subjectName} al plan`}
+            title="Volver a agregar al plan"
+            className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-neutral-bg hover:text-ink"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onRemove(ps)}
+            aria-label={`Quitar ${ps.subjectName} del plan`}
+            title="Quitar del plan"
+            className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-danger/10 hover:text-danger"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function YearBlock({ year, subjects, onAgregar, onCorrelativas }) {
+function yearBlockTitle(year, totalYears) {
+  if (year === 0) return 'Sin año asignado';
+  if (year > totalYears) return `${year}.° año (fuera de la duración de la carrera)`;
+  return `${year}.° año`;
+}
+
+function YearBlock({ year, totalYears, subjects, onAgregar, onCorrelativas, onRemove, onRestore, isRestoring }) {
+  const outOfRange = year > totalYears;
   return (
-    <GlassCard className="p-4">
+    <GlassCard className="p-4" data-year-block={year}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
-          {year === 0 ? 'Sin año asignado' : `${year}.° año`}
+        <h3 className={`text-[11px] font-bold uppercase tracking-widest ${outOfRange ? 'text-danger' : 'text-ink-faint'}`}>
+          {yearBlockTitle(year, totalYears)}
         </h3>
-        <Button variant="outline" size="xs" onClick={() => onAgregar(year)}>
-          <Plus className="mr-1 h-3 w-3" />
-          Agregar materia
-        </Button>
+        {!outOfRange && (
+          <Button variant="outline" size="xs" onClick={() => onAgregar(year)}>
+            <Plus className="mr-1 h-3 w-3" />
+            Agregar materia
+          </Button>
+        )}
       </div>
+      {outOfRange && (
+        <p className="mb-2 text-[12px] text-ink-faint">
+          Estas materias quedaron en un año mayor a la duración de la carrera. Quitalas del plan y volvé a agregarlas en el año correcto.
+        </p>
+      )}
       {subjects.length === 0 ? (
         <p className="py-2 text-[13px] text-ink-faint">Sin materias en este año.</p>
       ) : (
         <div className="divide-y divide-neutral-bg">
           {subjects.map((ps) => (
-            <SubjectRow key={ps.id} ps={ps} onCorrelativas={onCorrelativas} />
+            <SubjectRow
+              key={ps.id}
+              ps={ps}
+              onCorrelativas={onCorrelativas}
+              onRemove={onRemove}
+              onRestore={onRestore}
+              isRestoring={isRestoring}
+            />
           ))}
         </div>
       )}
@@ -121,15 +169,39 @@ export function CarreraDetalle() {
   const deactivateProgram = useDeactivateProgram();
   const activateProgram = useActivateProgram();
   const setCatalogVisibility = useSetProgramCatalogVisibility();
+  const deactivateProgramSubject = useDeactivateProgramSubject();
+  const activateProgramSubject = useActivateProgramSubject();
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelYear, setPanelYear] = useState(null);
+  const [panelSession, setPanelSession] = useState(0);
+  const [subjectToRemove, setSubjectToRemove] = useState(null);
   const [correlativasOpen, setCorrelativasOpen] = useState(false);
   const [correlativaPs, setCorrelativaPs] = useState(null);
 
   function handleAgregar(year) {
     setPanelYear(year === 0 ? null : year);
+    setPanelSession((n) => n + 1);
     setPanelOpen(true);
+  }
+
+  async function handleConfirmRemove() {
+    try {
+      await deactivateProgramSubject.mutateAsync(subjectToRemove.id);
+      toast.success(`${subjectToRemove.subjectName} se quitó del plan`);
+      setSubjectToRemove(null);
+    } catch {
+      toast.error('No se pudo quitar la materia del plan.');
+    }
+  }
+
+  async function handleRestore(ps) {
+    try {
+      await activateProgramSubject.mutateAsync(ps.id);
+      toast.success(`${ps.subjectName} volvió al plan`);
+    } catch {
+      toast.error('No se pudo volver a agregar la materia al plan.');
+    }
   }
 
   function handleCorrelativas(ps) {
@@ -206,6 +278,11 @@ export function CarreraDetalle() {
   for (let y = 1; y <= totalYears; y++) {
     yearBlocks.push(y);
   }
+  Object.keys(subjectsByYear)
+    .map(Number)
+    .filter((y) => y > totalYears)
+    .sort((a, b) => a - b)
+    .forEach((y) => yearBlocks.push(y));
   if (subjectsByYear[0]) yearBlocks.push(0);
 
   return (
@@ -324,9 +401,13 @@ export function CarreraDetalle() {
                     <YearBlock
                       key={y}
                       year={y}
+                      totalYears={totalYears}
                       subjects={subjectsByYear[y] ?? []}
                       onAgregar={handleAgregar}
                       onCorrelativas={handleCorrelativas}
+                      onRemove={setSubjectToRemove}
+                      onRestore={handleRestore}
+                      isRestoring={activateProgramSubject.isPending}
                     />
                   ))}
                   {yearBlocks.length === 0 && (
@@ -351,18 +432,40 @@ export function CarreraDetalle() {
       </div>
 
       <PanelAgregarMateria
+        key={panelSession}
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         programId={id}
         defaultYear={panelYear}
+        totalYears={program.totalYears}
       />
 
       <PanelCorrelativas
         open={correlativasOpen}
         onClose={() => setCorrelativasOpen(false)}
+        programId={id}
         programSubjectId={correlativaPs?.id}
         subjectName={correlativaPs?.subjectName}
       />
+
+      <Dialog open={subjectToRemove !== null} onOpenChange={(o) => !o && setSubjectToRemove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quitar materia del plan</DialogTitle>
+            <DialogDescription>
+              {subjectToRemove?.subjectName} va a quedar inactiva en el plan de estudios. Podés volver a agregarla más adelante.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubjectToRemove(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" loading={deactivateProgramSubject.isPending} onClick={handleConfirmRemove}>
+              Quitar del plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

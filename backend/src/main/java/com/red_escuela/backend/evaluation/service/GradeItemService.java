@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
+import java.util.function.BooleanSupplier;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -43,6 +45,7 @@ public class GradeItemService {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
+    private final AttendanceRiskCalculator attendanceRiskCalculator;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -52,7 +55,8 @@ public class GradeItemService {
             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestAutoRequester graduationRequestAutoRequester) {
+            GraduationRequestAutoRequester graduationRequestAutoRequester,
+            AttendanceRiskCalculator attendanceRiskCalculator) {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -61,6 +65,7 @@ public class GradeItemService {
         this.examBoardRepository = examBoardRepository;
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
+        this.attendanceRiskCalculator = attendanceRiskCalculator;
     }
 
     @Transactional
@@ -84,10 +89,31 @@ public class GradeItemService {
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
+        applyProgramEnrollmentCondition(enrollment);
+        return gradeItem;
+    }
 
+    @Transactional
+    public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
+        subjectSectionEnrollmentRepository.findById(enrollmentId)
+                .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
+                .ifPresent(this::applyProgramEnrollmentCondition);
+    }
+
+    @Transactional
+    public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
+        courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
+                .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
+                .ifPresent(this::applyCourseEnrollmentCondition);
+    }
+
+    private void applyProgramEnrollmentCondition(SubjectSectionEnrollment enrollment) {
+        Long enrollmentId = enrollment.getId();
+        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts),
+                enrollment.getStatus(), () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -99,7 +125,6 @@ public class GradeItemService {
                 graduationRequestAutoRequester.createIfEligible(enrollment.getProgramEnrollment().getId());
             }
         }
-        return gradeItem;
     }
 
     @Transactional
@@ -123,10 +148,17 @@ public class GradeItemService {
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
+        applyCourseEnrollmentCondition(enrollment);
+        return gradeItem;
+    }
 
+    private void applyCourseEnrollmentCondition(CourseSubjectSectionEnrollment enrollment) {
+        Long enrollmentId = enrollment.getId();
+        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts),
+                enrollment.getStatus(), () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -135,7 +167,13 @@ public class GradeItemService {
             }
             courseSubjectSectionEnrollmentRepository.save(enrollment);
         }
-        return gradeItem;
+    }
+
+    private CourseworkResult holdWhileFree(CourseworkResult result, EnrollmentStatus currentStatus, BooleanSupplier isFree) {
+        if (result == null || !result.passesCoursework() || currentStatus == EnrollmentStatus.REGULAR) {
+            return result;
+        }
+        return isFree.getAsBoolean() ? null : result;
     }
 
     public List<GradeItem> listByProgramEnrollment(Long enrollmentId) {
@@ -179,17 +217,20 @@ public class GradeItemService {
     }
 
     private void applyData(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {
+        gradeItem.recordScore(request.score(), request.maxScore());
         gradeItem.setType(request.type());
         gradeItem.setSequenceNumber(request.sequenceNumber());
         gradeItem.setWeight(request.weight());
         gradeItem.setDate(request.date());
-        gradeItem.setScore(request.score());
-        gradeItem.setMaxScore(request.maxScore());
         gradeItem.setComments(request.comments());
         gradeItem.setExamBoard(examBoard);
     }
 
     private record CourseworkResult(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
+        boolean passesCoursework() {
+            return status == EnrollmentStatus.REGULAR
+                    || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
+        }
     }
 
     private CourseworkResult calculateResult(

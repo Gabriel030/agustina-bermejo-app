@@ -12,6 +12,7 @@ import {
   useCorequisites,
   useAddCorequisite,
   useRemoveCorequisite,
+  useProgramSubjects,
 } from '@/features/gestion-academica/hooks/usePrograms';
 
 const REQUIREMENT_TYPE_OPTIONS = [
@@ -23,6 +24,68 @@ const REQUIREMENT_TYPE_LABELS = {
   APPROVED: 'Aprobada',
   PASSED_COURSEWORK: 'Regularizada',
 };
+
+const PREREQUISITE_ERROR_MESSAGES = {
+  INVALID_PREREQUISITE: 'La correlativa tiene que ser una materia anterior del mismo plan.',
+  CIRCULAR_PREREQUISITE: 'Esa correlativa armaría un ciclo con otra que ya existe.',
+  PREREQUISITE_ALREADY_EXISTS: 'Esa correlativa ya está cargada.',
+};
+
+const COREQUISITE_ERROR_MESSAGES = {
+  INVALID_COREQUISITE: 'El co-requisito tiene que ser otra materia del mismo plan.',
+  COREQUISITE_ALREADY_EXISTS: 'Ese co-requisito ya está cargado.',
+};
+
+function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
+  const { data: planSubjects, isLoading } = useProgramSubjects(programId, 'ACTIVE');
+  const [search, setSearch] = useState('');
+
+  if (selected) {
+    return (
+      <div className="flex items-start justify-between rounded-xl bg-neutral-bg/60 px-3 py-2">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{selected.subjectCode}</span>
+          <p className="text-[13.5px] font-medium text-ink">{selected.subjectName}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          className="text-[12px] text-ink-faint underline hover:text-ink"
+        >
+          Cambiar
+        </button>
+      </div>
+    );
+  }
+
+  const q = search.toLowerCase();
+  const candidates = (planSubjects ?? [])
+    .filter((ps) => ps.id !== excludeId)
+    .filter((ps) => !q || ps.subjectName.toLowerCase().includes(q) || ps.subjectCode.toLowerCase().includes(q));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Input placeholder="Buscar materia del plan…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      {isLoading && <Skeleton rows={2} />}
+      <div className="flex max-h-56 flex-col divide-y divide-neutral-bg overflow-y-auto">
+        {candidates.map((ps) => (
+          <button
+            key={ps.id}
+            type="button"
+            onClick={() => onSelect(ps)}
+            className="flex flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-neutral-bg/60"
+          >
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
+            <span className="text-[13.5px] font-medium text-ink">{ps.subjectName}</span>
+          </button>
+        ))}
+        {!isLoading && candidates.length === 0 && (
+          <p className="py-3 text-center text-[13px] text-ink-faint">No hay otras materias en el plan que coincidan.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function CampoSelect({ label, value, onChange, options }) {
   return (
@@ -43,29 +106,29 @@ function CampoSelect({ label, value, onChange, options }) {
   );
 }
 
-function FormAgregarCorrelativa({ programSubjectId, onCancel }) {
-  const [selectedId, setSelectedId] = useState(null);
+function FormAgregarCorrelativa({ programId, programSubjectId, onCancel }) {
+  const [selected, setSelected] = useState(null);
   const [requirementType, setRequirementType] = useState('APPROVED');
   const [minGrade, setMinGrade] = useState('');
   const [error, setError] = useState(null);
   const addPrerequisite = useAddPrerequisite(programSubjectId);
 
   async function handleAgregar() {
-    if (!selectedId) {
+    if (!selected) {
       setError('Seleccioná una correlativa.');
       return;
     }
     setError(null);
     try {
       await addPrerequisite.mutateAsync({
-        prerequisiteProgramSubjectId: selectedId,
+        prerequisiteProgramSubjectId: selected.id,
         requirementType,
         ...(minGrade && { minGrade: parseFloat(minGrade) }),
       });
       toast.success('Correlativa agregada');
       onCancel();
-    } catch {
-      setError('No se pudo agregar la correlativa. Intentá de nuevo.');
+    } catch (err) {
+      setError(PREREQUISITE_ERROR_MESSAGES[err?.code] ?? 'No se pudo agregar la correlativa. Intentá de nuevo.');
     }
   }
 
@@ -73,18 +136,13 @@ function FormAgregarCorrelativa({ programSubjectId, onCancel }) {
     <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-neutral-bg/30 p-3">
       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Nueva correlativa</p>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          ID de materia en plan *
-        </label>
-        <Input
-          type="number"
-          value={selectedId ?? ''}
-          onChange={(e) => setSelectedId(e.target.value ? parseInt(e.target.value) : null)}
-          placeholder="ID de la relación (program-subject)"
+        <span className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Materia correlativa *</span>
+        <PlanSubjectPicker
+          programId={programId}
+          excludeId={programSubjectId}
+          selected={selected}
+          onSelect={setSelected}
         />
-        <p className="text-[11px] text-ink-faint">
-          Ingresá el ID de la materia del plan (program-subject) que es correlativa.
-        </p>
       </div>
 
       <CampoSelect
@@ -123,23 +181,23 @@ function FormAgregarCorrelativa({ programSubjectId, onCancel }) {
   );
 }
 
-function FormAgregarCorequisito({ programSubjectId, onCancel }) {
-  const [selectedId, setSelectedId] = useState(null);
+function FormAgregarCorequisito({ programId, programSubjectId, onCancel }) {
+  const [selected, setSelected] = useState(null);
   const [error, setError] = useState(null);
   const addCorequisite = useAddCorequisite(programSubjectId);
 
   async function handleAgregar() {
-    if (!selectedId) {
-      setError('Ingresá el ID de la materia co-requisito.');
+    if (!selected) {
+      setError('Seleccioná la materia co-requisito.');
       return;
     }
     setError(null);
     try {
-      await addCorequisite.mutateAsync({ corequisiteProgramSubjectId: selectedId });
+      await addCorequisite.mutateAsync({ corequisiteProgramSubjectId: selected.id });
       toast.success('Co-requisito agregado');
       onCancel();
-    } catch {
-      setError('No se pudo agregar el co-requisito. Verificá el ID o que no exista ya.');
+    } catch (err) {
+      setError(COREQUISITE_ERROR_MESSAGES[err?.code] ?? 'No se pudo agregar el co-requisito. Intentá de nuevo.');
     }
   }
 
@@ -147,14 +205,12 @@ function FormAgregarCorequisito({ programSubjectId, onCancel }) {
     <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-neutral-bg/30 p-3">
       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-faint">Nuevo co-requisito</p>
       <div className="flex flex-col gap-1.5">
-        <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-          ID de materia en plan *
-        </label>
-        <Input
-          type="number"
-          value={selectedId ?? ''}
-          onChange={(e) => setSelectedId(e.target.value ? parseInt(e.target.value) : null)}
-          placeholder="ID de la relación (program-subject)"
+        <span className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">Materia co-requisito *</span>
+        <PlanSubjectPicker
+          programId={programId}
+          excludeId={programSubjectId}
+          selected={selected}
+          onSelect={setSelected}
         />
         <p className="text-[11px] text-ink-faint">
           El vínculo no es simétrico: si querés bloqueo mutuo, agregalo desde la otra materia también.
@@ -175,7 +231,7 @@ function FormAgregarCorequisito({ programSubjectId, onCancel }) {
   );
 }
 
-export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName }) {
+export function PanelCorrelativas({ open, onClose, programId, programSubjectId, subjectName }) {
   const { data: prerequisites, isLoading } = usePrerequisites(programSubjectId);
   const { data: corequisites, isLoading: loadingCorequisites } = useCorequisites(programSubjectId);
   const removePrerequisite = useRemovePrerequisite();
@@ -261,7 +317,11 @@ export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName
         )}
 
         {showForm ? (
-          <FormAgregarCorrelativa programSubjectId={programSubjectId} onCancel={() => setShowForm(false)} />
+          <FormAgregarCorrelativa
+            programId={programId}
+            programSubjectId={programSubjectId}
+            onCancel={() => setShowForm(false)}
+          />
         ) : (
           <Button variant="outline" size="sm" onClick={() => setShowForm(true)} className="self-start">
             + Agregar correlativa
@@ -308,6 +368,7 @@ export function PanelCorrelativas({ open, onClose, programSubjectId, subjectName
 
         {showCoreqForm ? (
           <FormAgregarCorequisito
+            programId={programId}
             programSubjectId={programSubjectId}
             onCancel={() => setShowCoreqForm(false)}
           />
