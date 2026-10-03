@@ -81,6 +81,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 - **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`.
 - **director:** `BandejaTramites`.
 - **docente:** `CalendarioConfiguracion`.
+- **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 
 ## 8. Contextos y hooks transversales

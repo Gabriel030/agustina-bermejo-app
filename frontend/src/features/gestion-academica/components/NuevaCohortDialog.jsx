@@ -22,7 +22,8 @@ const INTAKE_OPTIONS = [
 ];
 
 export function NuevaCohortDialog({ open, onClose, programId }) {
-  const { data: templates } = useProgramBillingTemplates(programId);
+  const { data: templates, isSuccess: templatesLoaded } = useProgramBillingTemplates(programId);
+  const missingTemplates = templatesLoaded && templates.length === 0;
   const { data: terminos } = useTerminos();
   const createCohort = useCreateCohort();
 
@@ -83,6 +84,13 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {missingTemplates && (
+            <p className="rounded-xl bg-warning-bg px-3 py-2 text-[13px] text-ink">
+              Esta carrera todavía no tiene una plantilla de aranceles, que define cuántas cuotas se facturan en el año.
+              Dirección tiene que cargarla antes de abrir una cohorte.
+            </p>
+          )}
+
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
               Plantilla de aranceles
@@ -162,7 +170,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="gradient" loading={createCohort.isPending}>
+            <Button type="submit" variant="gradient" loading={createCohort.isPending} disabled={missingTemplates}>
               Crear cohorte
             </Button>
           </DialogFooter>

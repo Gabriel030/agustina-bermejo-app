@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useCurso } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/oferta-academica/hooks/useCiclos';
+import { ResumeCycleButton } from '@/features/oferta-academica/components/ResumeCycleButton';
+import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
 
 const CICLO_STATUS_CONFIG = {
   DRAFT: { label: 'En construcción', tone: 'neutral' },
@@ -44,7 +46,10 @@ function SeccionDetalle({ ciclo }) {
           </div>
           <div className="mt-0.5 text-[12px] text-ink-faint">Creado por {ciclo.createdByName}</div>
         </div>
+        <ResumeCycleButton cycle={ciclo} />
       </div>
+
+      <RejectionReasonNotice cycle={ciclo} />
 
       {!seccion ? (
         <EmptyState title="Este ciclo aún no tiene comisión cargada." className="py-4" />
@@ -118,7 +123,7 @@ export function PreceptorDetalleCurso() {
 
   const cicloActivo = (ciclos ?? []).find(
     (c) => c.status === 'DRAFT' || c.status === 'PENDING_APPROVAL' || c.status === 'APPROVED'
-  );
+  ) ?? (ciclos ?? []).find((c) => c.status === 'REJECTED');
 
   if (loadingCurso) {
     return (
