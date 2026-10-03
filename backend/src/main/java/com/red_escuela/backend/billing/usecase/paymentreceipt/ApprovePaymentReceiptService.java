@@ -21,6 +21,8 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplication
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ import java.util.Map;
 
 @UseCase
 public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCase {
+    private static final Logger log = LoggerFactory.getLogger(ApprovePaymentReceiptService.class);
     private final PaymentReceiptRepository paymentReceiptRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
@@ -69,6 +72,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
 
         PaymentReceipt saved = paymentReceiptRepository.save(receipt);
         eventPublisher.publishEvent(new PaymentReceiptApprovedEvent(saved));
+        log.info("Comprobante de pago aprobado: comprobante={}, factura={}", id, invoice.getId());
         return saved;
     }
 
