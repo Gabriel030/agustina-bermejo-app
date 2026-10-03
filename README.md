@@ -80,6 +80,26 @@ A continuación se muestra el diagrama entidad-relación del sistema:
    npm run dev
    ```
 
+## 📊 Observabilidad (opcional)
+
+El backend expone métricas en `/actuator/prometheus` (protegido con Basic) y
+logs estructurados en JSON cuando corre con el perfil `prod`.
+
+Para ver las métricas en un Grafana local, con un año de retención:
+
+```bash
+cp ops/prometheus/scrape_password.example ops/prometheus/scrape_password
+# editar ese archivo con el valor de ACTUATOR_PASSWORD
+
+GRAFANA_ADMIN_PASSWORD=<elegí-una> docker compose -f docker-compose.observability.yml up -d
+```
+
+Prometheus queda en `localhost:9090` y Grafana en `localhost:3000`, con el
+datasource ya configurado. Va aparte del `docker-compose.yml` principal a
+propósito: no hace falta levantar el monitoreo cada vez que se trabaja en la
+app. Requiere el backend corriendo en el host con `ACTUATOR_USER` y
+`ACTUATOR_PASSWORD` seteadas.
+
 ## 📝 Licencia
 
 Este proyecto está bajo la Licencia MIT.
