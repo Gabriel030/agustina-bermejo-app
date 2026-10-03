@@ -89,6 +89,7 @@ public class EnrollmentBillingComplianceRowProcessor {
             if (daysOverdue > policy.getWithdrawalAfterDays() || overdueInvoiceCount >= policy.getWithdrawalAfterInvoiceCount()) {
                 meterRegistry.counter("billing_withdrawal_attempt_total").increment();
                 next = EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
+                billable.setBillingStanding(next);
                 withdraw.run();
                 meterRegistry.counter("billing_withdrawal_success_total").increment();
             } else if (previous == EnrollmentBillingStanding.SUSPENDED

@@ -38,6 +38,9 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -199,5 +202,20 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .contains("Webhook de Mercado Pago rechazado por firma inválida")
                 .doesNotContain(secret)
                 .doesNotContain("deadbeefdeadbeef");
+    }
+
+    @Test
+    void theWebhookRegistersThePaymentUnderTheAnonymousAuthenticationOfAPublicEndpoint() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(10000));
+        SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken(
+                "anonymous", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+        try {
+            transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", String.valueOf(System.nanoTime())));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
     }
 }

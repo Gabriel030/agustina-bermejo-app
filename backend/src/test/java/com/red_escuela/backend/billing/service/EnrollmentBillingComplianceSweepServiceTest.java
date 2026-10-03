@@ -24,6 +24,7 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -157,6 +158,24 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         ProgramEnrollment reloaded = reload(enrollment.getId());
         assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+    }
+
+    @Test
+    void theNightlyWithdrawalForNonPaymentWorksWithoutALoggedUserWhenFutureInstallmentsArePending() {
+        Person director = persistPerson("director.compliance9." + System.nanoTime());
+        persistPolicy(director, 30, 2, 60, 3);
+        ProgramEnrollment enrollment = persistProgramEnrollment("99000120");
+        persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(61), InvoiceStatus.OVERDUE);
+        Invoice future = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().plusDays(20),
+                YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
+        SecurityContextHolder.clearContext();
+
+        sweepService.run(LocalDate.now());
+
+        ProgramEnrollment reloaded = reload(enrollment.getId());
+        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+        assertThat(invoiceRepository.findById(future.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
     }
 
     @Test
