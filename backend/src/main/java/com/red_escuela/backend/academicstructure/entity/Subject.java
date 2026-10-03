@@ -1,5 +1,8 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
+import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,4 +48,82 @@ public class Subject {
     @Enumerated(EnumType.STRING)
     @Column(name = "grade_mode")
     private GradeMode gradeMode;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    public void requireEditable() {
+        if (status == SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, status, "editar");
+        }
+    }
+
+    public void changeCode(String newCode) {
+        if (newCode.equals(code)) {
+            return;
+        }
+        if (status != SubjectStatus.DRAFT && status != SubjectStatus.REJECTED) {
+            throw new SubjectInvalidTransitionException(id, status, "cambiar el código de");
+        }
+        code = newCode;
+    }
+
+    public void submitForApproval() {
+        if (status != SubjectStatus.DRAFT && status != SubjectStatus.REJECTED) {
+            throw new SubjectInvalidTransitionException(id, status, "enviar a aprobación");
+        }
+        if (!hasWeeklyHours()) {
+            throw new IncompleteSubjectException(id, "al menos un tipo de horas semanales es obligatorio");
+        }
+        if (gradeMode == null) {
+            throw new IncompleteSubjectException(id, "la modalidad de calificación es obligatoria");
+        }
+        status = SubjectStatus.PENDING_APPROVAL;
+        rejectionReason = null;
+    }
+
+    public void approve() {
+        requirePendingApproval("aprobar");
+        status = SubjectStatus.ACTIVE;
+    }
+
+    public void reject(String reason) {
+        requirePendingApproval("rechazar");
+        status = SubjectStatus.REJECTED;
+        rejectionReason = reason;
+    }
+
+    public void deactivate() {
+        if (status != SubjectStatus.ACTIVE) {
+            throw new SubjectInvalidTransitionException(id, status, "desactivar");
+        }
+        status = SubjectStatus.INACTIVE;
+    }
+
+    public void reactivate() {
+        if (status != SubjectStatus.INACTIVE) {
+            throw new SubjectInvalidTransitionException(id, status, "reactivar");
+        }
+        status = SubjectStatus.ACTIVE;
+    }
+
+    public void requireAssignableToPlan() {
+        if (status == SubjectStatus.PENDING_APPROVAL || status == SubjectStatus.REJECTED) {
+            throw new SubjectNotAssignableToPlanException(id, status);
+        }
+    }
+
+    private boolean hasWeeklyHours() {
+        return positive(weeklyHours) || positive(weeklyHoursLab);
+    }
+
+    private static boolean positive(Integer value) {
+        return value != null && value > 0;
+    }
+
+    private void requirePendingApproval(String action) {
+        if (status != SubjectStatus.PENDING_APPROVAL) {
+            throw new SubjectInvalidTransitionException(id, status, action);
+        }
+    }
 }

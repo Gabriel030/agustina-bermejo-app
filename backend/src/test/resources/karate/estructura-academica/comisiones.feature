@@ -26,7 +26,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreCurso = 'Curso QA ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -177,7 +177,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -206,14 +206,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionCId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión D', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión D', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionDId = response.id
@@ -258,7 +258,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { name: 'Comisión no autorizada', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión no autorizada', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 403
 
@@ -385,14 +385,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión E', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión E', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionEId = response.id
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión F', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión F', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionFId = response.id

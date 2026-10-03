@@ -4,18 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
-
-const ROLES_POR_ACTOR = {
-  administrativo: [
-    { value: 'DOCENTE', label: 'Docente' },
-    { value: 'PRECEPTOR', label: 'Preceptor' },
-  ],
-  director: [
-    { value: 'DOCENTE', label: 'Docente' },
-    { value: 'PRECEPTOR', label: 'Preceptor' },
-    { value: 'ADMINISTRATIVO', label: 'Administrativo' },
-  ],
-};
+import { STAFF_ROLE_LABELS, manageableStaffRoles } from '@/features/gestion-personas/staffRoles';
 
 const EMPTY = {
   nombre: '', apellido: '', email: '', dni: '', role: '',
@@ -24,8 +13,7 @@ const EMPTY = {
 
 export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
   const { usuario } = useAuth();
-  const rolActor = usuario?.roles[0]?.toLowerCase();
-  const rolesDisponibles = ROLES_POR_ACTOR[rolActor] ?? [];
+  const rolesDisponibles = manageableStaffRoles(usuario?.roles).map((value) => ({ value, label: STAFF_ROLE_LABELS[value] }));
 
   const [form, setForm] = useState(EMPTY);
 

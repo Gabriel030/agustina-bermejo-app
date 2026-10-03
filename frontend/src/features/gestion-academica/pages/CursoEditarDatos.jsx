@@ -78,6 +78,14 @@ export function CursoEditarDatos() {
       setError('El cupo debe ser al menos 1.');
       return;
     }
+    if (!durationMonths || parseInt(durationMonths) < 1) {
+      setError('La duración en meses es obligatoria y tiene que ser al menos 1.');
+      return;
+    }
+    if (registrationStart && registrationEnd && registrationEnd < registrationStart) {
+      setError('El cierre de inscripción no puede ser anterior a la apertura.');
+      return;
+    }
     setError(null);
     try {
       await updateCourse.mutateAsync({
@@ -86,7 +94,7 @@ export function CursoEditarDatos() {
         ...(price && { price: parseFloat(price) }),
         ...(teachingMode && { teachingMode }),
         schedule: schedule.trim() || null,
-        ...(durationMonths && { durationMonths: parseInt(durationMonths) }),
+        durationMonths: parseInt(durationMonths),
         registrationStart: registrationStart || null,
         registrationEnd: registrationEnd || null,
       });

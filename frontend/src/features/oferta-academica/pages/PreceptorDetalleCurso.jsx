@@ -10,6 +10,7 @@ import { useCurso } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/oferta-academica/hooks/useCiclos';
 import { ResumeCycleButton } from '@/features/oferta-academica/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
+import { formatCourseDuration } from '@/lib/courseDuration';
 
 const CICLO_STATUS_CONFIG = {
   DRAFT: { label: 'En construcción', tone: 'neutral' },
@@ -150,7 +151,7 @@ export function PreceptorDetalleCurso() {
               Iniciar alta de ciclo
             </Button>
           </div>
-          <div className="mt-0.5 text-[13px] text-ink-faint">{curso?.durationMonths} meses</div>
+          <div className="mt-0.5 text-[13px] text-ink-faint">{formatCourseDuration(curso?.durationMonths)}</div>
         </div>
 
         {loadingCiclos ? (
