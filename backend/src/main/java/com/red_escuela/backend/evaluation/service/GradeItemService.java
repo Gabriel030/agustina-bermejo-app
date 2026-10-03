@@ -30,6 +30,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
+import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
+import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester;
 
 @Service
@@ -43,6 +46,7 @@ public class GradeItemService {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
+    private final AttendanceRiskCalculator attendanceRiskCalculator;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -52,7 +56,9 @@ public class GradeItemService {
             CourseSubjectSectionInstructorRepository courseSubjectSectionInstructorRepository,
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
-            GraduationRequestAutoRequester graduationRequestAutoRequester) {
+            GraduationRequestAutoRequester graduationRequestAutoRequester,
+            AttendanceRiskCalculator attendanceRiskCalculator) {
+        this.attendanceRiskCalculator = attendanceRiskCalculator;
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -87,7 +93,9 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        CourseworkResult result = considerAttendance(
+                calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts), enrollment.getStatus(),
+                () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId));
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -126,7 +134,9 @@ public class GradeItemService {
 
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts);
+        CourseworkResult result = considerAttendance(
+                calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts), enrollment.getStatus(),
+                () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId));
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -179,17 +189,28 @@ public class GradeItemService {
     }
 
     private void applyData(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {
+        gradeItem.recordScore(request.score(), request.maxScore());
         gradeItem.setType(request.type());
         gradeItem.setSequenceNumber(request.sequenceNumber());
         gradeItem.setWeight(request.weight());
         gradeItem.setDate(request.date());
-        gradeItem.setScore(request.score());
-        gradeItem.setMaxScore(request.maxScore());
         gradeItem.setComments(request.comments());
         gradeItem.setExamBoard(examBoard);
     }
 
+    private CourseworkResult considerAttendance(CourseworkResult result, EnrollmentStatus estadoActual,
+                                                Supplier<AttendanceRiskResponse> attendanceRisk) {
+        if (result == null || !result.passesCoursework() || estadoActual == EnrollmentStatus.REGULAR) {
+            return result;
+        }
+        return attendanceRisk.get().libre() ? new CourseworkResult(EnrollmentStatus.FAILED, null, null) : result;
+    }
+
     private record CourseworkResult(EnrollmentStatus status, Double finalScore, FinalGradeType finalGradeType) {
+        boolean passesCoursework() {
+            return status == EnrollmentStatus.REGULAR
+                    || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
+        }
     }
 
     private CourseworkResult calculateResult(

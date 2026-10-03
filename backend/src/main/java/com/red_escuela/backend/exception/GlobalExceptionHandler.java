@@ -125,6 +125,10 @@ import com.red_escuela.backend.evaluation.exception.NoEvaluationSchemeException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
@@ -231,6 +235,9 @@ public class GlobalExceptionHandler {
             InvalidCurrentPasswordException.class,
             InvalidSectionOverridesException.class,
             InvalidEvaluationDateException.class,
+            ExamDateOnHolidayException.class,
+            InvalidEvaluationSchemeException.class,
+            InvalidGradeScoreException.class,
             SubmissionWindowClosedException.class,
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
@@ -332,6 +339,7 @@ public class GlobalExceptionHandler {
             UsernameAlreadyExistsException.class,
             TermEnrollmentOverrideClosedException.class,
             EvaluationSchemeInUseException.class,
+            ExamBoardNotYetTakenException.class,
             ClassSessionAlreadyCanceledException.class,
             InvalidAttendanceChangeRequestStateException.class,
             CoursePaymentPlanAlreadySetException.class,
