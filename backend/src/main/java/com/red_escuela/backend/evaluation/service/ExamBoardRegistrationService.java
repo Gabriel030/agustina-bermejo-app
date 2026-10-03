@@ -19,6 +19,8 @@ import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededExcep
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotRegularException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
+import com.red_escuela.backend.entity.ExceptionType;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
@@ -36,25 +38,32 @@ public class ExamBoardRegistrationService {
     private final ExamBoardRepository examBoardRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
+    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
 
     public ExamBoardRegistrationService(
             ExamBoardRegistrationRepository examBoardRegistrationRepository,
             ExamBoardRepository examBoardRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository) {
+            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+            DirectorApprovalRequestRepository directorApprovalRequestRepository) {
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
+        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
     }
 
     @Transactional
     public ExamBoardRegistration registerProgramEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
-        requireOpenExamBoard(examBoard);
+        requireScheduledExamBoard(examBoard);
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        if (!directorApprovalRequestRepository.hasApproved(
+                enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId(), ExceptionType.LATE_EXAM)) {
+            requireOpenRegistrationWindow(examBoard);
+        }
         if (enrollment.getStatus() != EnrollmentStatus.REGULAR) {
             throw new StudentNotRegularException(enrollmentId);
         }
@@ -190,9 +199,17 @@ public class ExamBoardRegistrationService {
     }
 
     private void requireOpenExamBoard(ExamBoard examBoard) {
+        requireScheduledExamBoard(examBoard);
+        requireOpenRegistrationWindow(examBoard);
+    }
+
+    private void requireScheduledExamBoard(ExamBoard examBoard) {
         if (examBoard.getStatus() != ExamBoardStatus.SCHEDULED) {
             throw new ExamBoardClosedException(examBoard.getId());
         }
+    }
+
+    private void requireOpenRegistrationWindow(ExamBoard examBoard) {
         LocalDateTime now = LocalDateTime.now();
         if (examBoard.getRegistrationStart() != null && now.isBefore(examBoard.getRegistrationStart())) {
             throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());

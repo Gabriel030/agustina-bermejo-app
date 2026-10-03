@@ -15,7 +15,21 @@ import { TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 
 const PREVIEW = 3;
 
-function SeccionPreview({ titulo, ruta, cargando, items, tituloVacio, renderItem }) {
+function pendingLinkLabel(total, failed) {
+  if (failed || total === 0) {
+    return 'Ver todo';
+  }
+  return total === 1 ? 'Ver el pendiente' : `Ver los ${total} pendientes`;
+}
+
+function PendingCounter({ query }) {
+  if (query.isLoading) {
+    return <Skeleton className="h-8 w-12" />;
+  }
+  return <div className="font-heading text-2xl font-bold text-ink">{query.isError ? '—' : (query.data ?? []).length}</div>;
+}
+
+function SeccionPreview({ titulo, ruta, cargando, fallo, items, tituloVacio, renderItem }) {
   const navigate = useNavigate();
   const total = items.length;
 
@@ -27,7 +41,7 @@ function SeccionPreview({ titulo, ruta, cargando, items, tituloVacio, renderItem
       <div className="flex items-center justify-between px-2 pb-2">
         <div className="font-heading text-[14.5px] font-semibold text-ink">{titulo}</div>
         <div className="flex items-center gap-1 text-[12.5px] font-semibold text-primary">
-          {total === 0 ? 'Ver todo' : `Ver los ${total} pendientes`}
+          {pendingLinkLabel(total, fallo)}
           <ChevronRight className="h-4 w-4" />
         </div>
       </div>
@@ -35,6 +49,8 @@ function SeccionPreview({ titulo, ruta, cargando, items, tituloVacio, renderItem
         <div className="flex flex-col gap-2 p-2">
           <Skeleton className="h-12" />
         </div>
+      ) : fallo ? (
+        <EmptyState title="No pudimos cargar esta bandeja" description="Probá recargar la página en un momento." className="py-6" />
       ) : total === 0 ? (
         <EmptyState title={tituloVacio} className="py-6" />
       ) : (
@@ -45,13 +61,13 @@ function SeccionPreview({ titulo, ruta, cargando, items, tituloVacio, renderItem
 }
 
 export function DirectorAprobaciones() {
-  const { data: pendientes, isLoading: cargandoPendientes } = useConfigsPendientes();
-  const { data: egresosPendientes, isLoading: cargandoEgresos } = useEgresosPendientes();
-  const { data: excepcionesPendientes, isLoading: cargandoExcepciones } = useExcepcionesPendientes();
+  const configsQuery = useConfigsPendientes();
+  const graduationsQuery = useEgresosPendientes();
+  const exceptionsQuery = useExcepcionesPendientes();
 
-  const listaPendientes = pendientes ?? [];
-  const listaEgresosPendientes = egresosPendientes ?? [];
-  const listaExcepcionesPendientes = excepcionesPendientes ?? [];
+  const listaPendientes = configsQuery.data ?? [];
+  const listaEgresosPendientes = graduationsQuery.data ?? [];
+  const listaExcepcionesPendientes = exceptionsQuery.data ?? [];
 
   return (
     <PageContainer>
@@ -62,20 +78,21 @@ export function DirectorAprobaciones() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Egresos por aprobar">
-          <div className="font-heading text-2xl font-bold text-ink">{listaEgresosPendientes.length}</div>
+          <PendingCounter query={graduationsQuery} />
         </StatCard>
         <StatCard label="Excepciones por decidir">
-          <div className="font-heading text-2xl font-bold text-ink">{listaExcepcionesPendientes.length}</div>
+          <PendingCounter query={exceptionsQuery} />
         </StatCard>
         <StatCard label="Config. de evaluación pendientes">
-          <div className="font-heading text-2xl font-bold text-ink">{listaPendientes.length}</div>
+          <PendingCounter query={configsQuery} />
         </StatCard>
       </div>
 
       <SeccionPreview
         titulo="Configuración de evaluación pendiente"
         ruta="/director/aprobaciones/configuracion-evaluacion"
-        cargando={cargandoPendientes}
+        cargando={configsQuery.isLoading}
+        fallo={configsQuery.isError}
         items={listaPendientes}
         tituloVacio="Nada pendiente"
         renderItem={(c) => (
@@ -89,7 +106,8 @@ export function DirectorAprobaciones() {
       <SeccionPreview
         titulo="Egresos por aprobar"
         ruta="/director/aprobaciones/egresos"
-        cargando={cargandoEgresos}
+        cargando={graduationsQuery.isLoading}
+        fallo={graduationsQuery.isError}
         items={listaEgresosPendientes}
         tituloVacio="Ningún egreso esperando tu decisión"
         renderItem={(g) => (
@@ -103,7 +121,8 @@ export function DirectorAprobaciones() {
       <SeccionPreview
         titulo="Excepciones por decidir"
         ruta="/director/aprobaciones/excepciones"
-        cargando={cargandoExcepciones}
+        cargando={exceptionsQuery.isLoading}
+        fallo={exceptionsQuery.isError}
         items={listaExcepcionesPendientes}
         tituloVacio="Ninguna excepción pendiente"
         renderItem={(e) => (

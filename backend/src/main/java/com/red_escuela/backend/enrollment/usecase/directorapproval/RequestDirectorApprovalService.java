@@ -1,11 +1,13 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlreadyActiveException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -24,15 +26,18 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final SubjectRepository subjectRepository;
+    private final ProgramSubjectRepository programSubjectRepository;
     private final CurrentPersonService currentPersonService;
 
     public RequestDirectorApprovalService(DirectorApprovalRequestRepository directorApprovalRequestRepository,
                                            ProgramEnrollmentRepository programEnrollmentRepository,
                                            SubjectRepository subjectRepository,
+                                           ProgramSubjectRepository programSubjectRepository,
                                            CurrentPersonService currentPersonService) {
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectRepository = subjectRepository;
+        this.programSubjectRepository = programSubjectRepository;
         this.currentPersonService = currentPersonService;
     }
 
@@ -45,26 +50,29 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
         if (request.subjectId() != null) {
             subject = subjectRepository.findById(request.subjectId())
                     .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
+            requireSubjectInProgramPlan(programEnrollment, subject);
         }
 
-        boolean yaActiva = directorApprovalRequestRepository
+        DirectorApprovalRequest entity = DirectorApprovalRequest.open(
+                request.type(), programEnrollment, subject, request.justification(),
+                currentPersonService.resolveCurrentPerson(), LocalDateTime.now());
+
+        boolean alreadyActive = directorApprovalRequestRepository
                 .findByProgramEnrollmentIdAndTypeAndStatus(
                         request.programEnrollmentId(), request.type(), DirectorApprovalRequestStatus.REQUESTED)
                 .stream()
                 .anyMatch(existing -> Objects.equals(
                         existing.getSubject() != null ? existing.getSubject().getId() : null, request.subjectId()));
-        if (yaActiva) {
+        if (alreadyActive) {
             throw new DirectorApprovalRequestAlreadyActiveException(request.programEnrollmentId());
         }
-
-        DirectorApprovalRequest entity = new DirectorApprovalRequest();
-        entity.setType(request.type());
-        entity.setProgramEnrollment(programEnrollment);
-        entity.setSubject(subject);
-        entity.setJustification(request.justification());
-        entity.setStatus(DirectorApprovalRequestStatus.REQUESTED);
-        entity.setRequestedBy(currentPersonService.resolveCurrentPerson());
-        entity.setRequestedAt(LocalDateTime.now());
         return directorApprovalRequestRepository.save(entity);
+    }
+
+    private void requireSubjectInProgramPlan(ProgramEnrollment programEnrollment, Subject subject) {
+        Long programId = programEnrollment.getProgram().getId();
+        if (programSubjectRepository.findByProgramIdAndSubjectId(programId, subject.getId()).isEmpty()) {
+            throw new SubjectNotInProgramPlanException(subject.getId(), programId);
+        }
     }
 }

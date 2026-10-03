@@ -34,10 +34,11 @@ export function BandejaTramites({
   const [hasta, setHasta] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data: pendientes, isLoading: cargandoPendientes } = useListaPendientes();
-  const { data: historial, isLoading: cargandoHistorial } = useListaHistorial();
+  const { data: pendientes, isLoading: cargandoPendientes, isError: pendingFailed } = useListaPendientes();
+  const { data: historial, isLoading: cargandoHistorial, isError: historyFailed } = useListaHistorial();
 
   const cargando = tab === 'pendientes' ? cargandoPendientes : cargandoHistorial;
+  const failed = tab === 'pendientes' ? pendingFailed : historyFailed;
   const lista = useMemo(
     () => (tab === 'pendientes' ? (pendientes ?? []) : (historial ?? [])),
     [tab, pendientes, historial],
@@ -48,7 +49,7 @@ export function BandejaTramites({
     if (desde) {
       resultado = resultado.filter((item) => {
         const fecha = extraerFecha(item, tab);
-        return fecha && fecha >= new Date(desde);
+        return fecha && fecha >= new Date(`${desde}T00:00:00`);
       });
     }
     if (hasta) {
@@ -106,21 +107,25 @@ export function BandejaTramites({
             <SelectItem value="antiguos">Más antiguos primero</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-2 text-[12.5px] text-ink-faint">
-          Desde
-          <input
-            type="date"
-            value={desde}
-            onChange={(e) => { setDesde(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
-          />
-          Hasta
-          <input
-            type="date"
-            value={hasta}
-            onChange={(e) => { setHasta(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
-          />
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-[12.5px] text-ink-faint">
+          <label className="flex items-center gap-2">
+            Desde
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => { setDesde(e.target.value); setPage(1); }}
+              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            Hasta
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => { setHasta(e.target.value); setPage(1); }}
+              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+            />
+          </label>
         </div>
       </div>
 
@@ -130,6 +135,8 @@ export function BandejaTramites({
             <Skeleton className="h-12" />
             <Skeleton className="h-12" />
           </div>
+        ) : failed ? (
+          <EmptyState title="No pudimos cargar los trámites" description="Probá recargar la página en un momento." className="py-6" />
         ) : filtrada.length === 0 ? (
           <EmptyState
             title={lista.length === 0 ? (tab === 'pendientes' ? tituloVacioPendientes : tituloVacioHistorial) : 'Nada coincide con la búsqueda'}

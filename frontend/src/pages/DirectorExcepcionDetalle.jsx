@@ -1,22 +1,30 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { ModalMotivo } from '@/components/director/ModalMotivo';
+import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
 import { useExcepcion, useAprobarExcepcion, useRechazarExcepcion } from '@/hooks/useDirector';
 import { formatearFecha } from '@/lib/comisiones';
-import { ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
+import { ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL, decisionErrorMessage, isAlreadyDecided } from '@/lib/aprobaciones';
+
+const EXCEPTIONS_TRAY = '/director/aprobaciones/excepciones';
 
 export function DirectorExcepcionDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: excepcion, isLoading } = useExcepcion(id);
+  const { data: excepcion, isLoading, isError, error } = useExcepcion(id);
   const aprobar = useAprobarExcepcion(id);
   const rechazar = useRechazarExcepcion(id);
   const [modalRechazo, setModalRechazo] = useState(false);
+
+  if (isError) {
+    return <UnavailableRequestState error={error} backTo={EXCEPTIONS_TRAY} backLabel="Excepciones" />;
+  }
 
   if (isLoading || !excepcion) {
     return (
@@ -29,23 +37,43 @@ export function DirectorExcepcionDetalle() {
 
   const soloLectura = excepcion.status === 'APPROVED' || excepcion.status === 'REJECTED';
   const pill = ESTADO_TRAMITE_LABEL[excepcion.status] ?? { label: excepcion.status, tone: 'warning' };
+  const deciding = aprobar.isPending || rechazar.isPending;
+
+  function handleDecisionError(decisionError) {
+    toast.error(decisionErrorMessage(decisionError));
+    if (isAlreadyDecided(decisionError)) {
+      setModalRechazo(false);
+    }
+  }
 
   async function confirmarAprobar() {
-    await aprobar.mutateAsync(undefined);
-    navigate('/director/aprobaciones/excepciones');
+    try {
+      await aprobar.mutateAsync(undefined);
+      toast.success('Excepción aprobada');
+      navigate(EXCEPTIONS_TRAY);
+    } catch (decisionError) {
+      handleDecisionError(decisionError);
+    }
   }
 
   async function confirmarRechazar(notas) {
-    await rechazar.mutateAsync(notas);
-    setModalRechazo(false);
-    navigate('/director/aprobaciones/excepciones');
+    try {
+      await rechazar.mutateAsync(notas);
+      setModalRechazo(false);
+      toast.success('Excepción rechazada');
+      navigate(EXCEPTIONS_TRAY);
+      return true;
+    } catch (decisionError) {
+      handleDecisionError(decisionError);
+      return false;
+    }
   }
 
   return (
     <PageContainer>
       <button
         type="button"
-        onClick={() => navigate('/director/aprobaciones/excepciones')}
+        onClick={() => navigate(EXCEPTIONS_TRAY)}
         className="flex w-fit items-center gap-1.5 text-[13px] font-semibold text-ink-soft hover:text-ink"
       >
         ← Excepciones
@@ -70,15 +98,19 @@ export function DirectorExcepcionDetalle() {
         {soloLectura && (
           <div className="text-[12px] text-ink-faint">Decidido {formatearFecha(excepcion.decidedAt) ?? '—'}</div>
         )}
-        {excepcion.status === 'REJECTED' && excepcion.decisionNotes && (
-          <div className="text-[12px] font-semibold text-danger">Notas: &ldquo;{excepcion.decisionNotes}&rdquo;</div>
+        {soloLectura && excepcion.decisionNotes && (
+          <div className={`text-[12px] font-semibold ${excepcion.status === 'REJECTED' ? 'text-danger' : 'text-ink-soft'}`}>
+            Notas: &ldquo;{excepcion.decisionNotes}&rdquo;
+          </div>
         )}
       </GlassCard>
 
       {!soloLectura && (
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setModalRechazo(true)}>Rechazar</Button>
-          <Button variant="gradient" disabled={aprobar.isPending} onClick={confirmarAprobar}>Aprobar excepción</Button>
+          <Button variant="outline" disabled={deciding} onClick={() => setModalRechazo(true)}>Rechazar</Button>
+          <Button variant="gradient" loading={aprobar.isPending} disabled={deciding} onClick={confirmarAprobar}>
+            Aprobar excepción
+          </Button>
         </div>
       )}
 

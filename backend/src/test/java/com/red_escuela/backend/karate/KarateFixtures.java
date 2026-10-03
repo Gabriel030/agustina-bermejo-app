@@ -167,6 +167,37 @@ public class KarateFixtures {
         return evaluationSchemeRepository.save(scheme).getId();
     }
 
+    public static void completeStudyPlan(Long programEnrollmentId) {
+        context().getBean(org.springframework.transaction.support.TransactionTemplate.class).executeWithoutResult(status -> {
+            var enrollment = context().getBean(ProgramEnrollmentRepository.class).findById(programEnrollmentId)
+                    .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
+            var term = new com.red_escuela.backend.academicstructure.entity.Term();
+            term.setYear(2026);
+            term.setDescription("Karate plan completo");
+            term.setStatus(StatusType.ACTIVE);
+            context().getBean(com.red_escuela.backend.academicstructure.repository.TermRepository.class).save(term);
+            var programSubjects = context().getBean(com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository.class)
+                    .findByProgramId(enrollment.getProgram().getId());
+            for (var programSubject : programSubjects) {
+                var section = new com.red_escuela.backend.academicstructure.entity.SubjectSection();
+                section.setName("Karate " + System.nanoTime());
+                section.setSubject(programSubject.getSubject());
+                section.setTerm(term);
+                section.setStatus(StatusType.ACTIVE);
+                context().getBean(com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository.class).save(section);
+                var approved = new com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment();
+                approved.setStudent(enrollment.getStudent());
+                approved.setProgramEnrollment(enrollment);
+                approved.setSubjectSection(section);
+                approved.setStatus(com.red_escuela.backend.enrollment.entity.EnrollmentStatus.APPROVED);
+                approved.setFinalScore(8.0);
+                approved.setEnrolledAt(java.time.LocalDateTime.of(2026, 3, 1, 10, 0));
+                approved.setAttemptNumber(1);
+                context().getBean(com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository.class).save(approved);
+            }
+        });
+    }
+
     public static Long createPendingInvoice(Long programEnrollmentId, String dueDate) {
         com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository programEnrollmentRepository =
                 context().getBean(com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository.class);

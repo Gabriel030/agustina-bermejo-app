@@ -2,7 +2,6 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
-import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.notification.DirectorApprovalRequestApprovedEvent;
@@ -28,19 +27,13 @@ public class DirectorApprovalRequestDecisionRecorder {
     }
 
     public DirectorApprovalRequest record(DirectorApprovalRequest entity, DirectorApprovalRequestStatus nuevoStatus, String notas) {
-        if (entity.getStatus() != DirectorApprovalRequestStatus.REQUESTED) {
-            throw new InvalidDirectorApprovalRequestStateException(entity.getId());
-        }
-        entity.setStatus(nuevoStatus);
-        entity.setDecidedBy(currentPersonService.resolveCurrentPerson());
-        entity.setDecidedAt(LocalDateTime.now());
-        entity.setDecisionNotes(notas);
+        entity.decide(nuevoStatus, currentPersonService.resolveCurrentPerson(), notas, LocalDateTime.now());
         DirectorApprovalRequest saved = directorApprovalRequestRepository.save(entity);
 
         if (nuevoStatus == DirectorApprovalRequestStatus.APPROVED) {
-            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved, saved.getRequestedBy()));
+            eventPublisher.publishEvent(new DirectorApprovalRequestApprovedEvent(saved));
         } else {
-            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved, saved.getRequestedBy()));
+            eventPublisher.publishEvent(new DirectorApprovalRequestRejectedEvent(saved));
         }
         return saved;
     }
