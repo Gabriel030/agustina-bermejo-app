@@ -2,11 +2,11 @@ package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.entity.CreditNote;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 import java.time.LocalDateTime;
 
 public record CreditNoteResponse(
-        Long id, Long studentId, BigDecimal amount, BigDecimal remainingAmount, String reasonType, String reason,
+        Long id, Long studentId, Money amount, Money remainingAmount, String reasonType, String reason,
         String status, String createdByName, LocalDateTime createdAt) {
 
     public static CreditNoteResponse from(CreditNote creditNote) {

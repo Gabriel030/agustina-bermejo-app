@@ -20,12 +20,13 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
+import com.red_escuela.backend.shared.domain.Money;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Comparator;
@@ -53,9 +54,10 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     @Override
     @Transactional
     public Payment register(RegisterPaymentRequest request, Person registeredBy) {
-        BigDecimal total = request.allocations().stream()
+        Money total = request.allocations().stream()
                 .map(PaymentAllocationRequest::amountApplied)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(Money::plus)
+                .orElseThrow(() -> new IllegalArgumentException("allocations must not be empty"));
 
         if (request.rejected()) {
             Payment rejected = new Payment();
@@ -68,7 +70,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             rejected.setCardInstallments(request.cardInstallments());
             rejected.setNotes(request.notes());
             Payment savedRejected = paymentRepository.save(rejected);
-            log.warn("Pago rechazado registrado: pago={}, metodo={}, monto={}", savedRejected.getId(), request.method(), total);
+            log.warn("Pago rechazado registrado: pago={}, metodo={}, monto={}", savedRejected.getId(), request.method(), total.amount());
             return savedRejected;
         }
 
@@ -83,15 +85,18 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
-            BigDecimal amountApplied = ordered.get(i).amountApplied();
-            if (amountApplied.signum() <= 0) {
+            Money amountApplied = ordered.get(i).amountApplied();
+            if (amountApplied.isNegative() || amountApplied.isZero()) {
                 throw new IllegalArgumentException("amountApplied debe ser mayor a cero (invoice " + invoice.getId() + ")");
             }
             validateOwnershipIfStudent(invoice);
             if (invoice.getStatus() == InvoiceStatus.CANCELLED || invoice.getStatus() == InvoiceStatus.WAIVED) {
                 throw new InvoiceNotPayableException(invoice.getId(), invoice.getStatus().name());
             }
-            if (amountApplied.compareTo(invoice.getRemainingBalance()) > 0) {
+            if (amountApplied.currency() != invoice.currency()) {
+                throw new CurrencyMismatchException(invoice.currency(), amountApplied.currency());
+            }
+            if (amountApplied.isGreaterThan(invoice.getRemainingBalance())) {
                 throw new PaymentExceedsInvoiceBalanceException(invoice.getId(), amountApplied, invoice.getRemainingBalance());
             }
         }
@@ -109,7 +114,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
-            BigDecimal amountApplied = ordered.get(i).amountApplied();
+            Money amountApplied = ordered.get(i).amountApplied();
 
             PaymentAllocation allocation = invoice.registerPayment(amountApplied, payment);
             payment.getAllocations().add(allocation);
@@ -120,7 +125,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
         lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
         log.info("Pago registrado: pago={}, metodo={}, monto={}, facturas={}",
-                payment.getId(), request.method(), total, ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
+                payment.getId(), request.method(), total.amount(), ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
 
         return payment;
     }

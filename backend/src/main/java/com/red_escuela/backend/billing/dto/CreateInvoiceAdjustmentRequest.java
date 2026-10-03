@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateInvoiceAdjustmentRequest(
         @NotNull InvoiceAdjustmentType type,
-        @NotNull MonetaryAdjustmentValueRequest value,
+        @NotNull MonetaryAdjustmentRequest value,
         @NotBlank String reason) {
 }

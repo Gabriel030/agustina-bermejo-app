@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class InvoiceOverdueRowProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(Long invoiceId, CollectionsPolicy policy) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-        if (invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(policy.getSurchargePercentage()), "Mora automática")) {
+        if (invoice.markOverdue(new MonetaryAdjustment.Proportional(policy.getSurchargeRate()), "Mora automática")) {
             invoiceRepository.save(invoice);
         }
     }

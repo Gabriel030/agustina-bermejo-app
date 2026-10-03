@@ -41,6 +41,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -150,7 +151,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     void administrativeChargesExamFeeWithoutAffectingTheAnnualTemplate() {
         ProgramEnrollment enrollment = persistProgramEnrollment("99200001." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, BigDecimal.valueOf(1500), LocalDate.now(), "Derecho de examen final", null, null);
+                FeeType.EXAM_RIGHT, ars(1500), LocalDate.now(), "Derecho de examen final", null, null);
 
         Invoice created = createAdHocInvoiceForProgramEnrollmentUseCase.create(enrollment.getId(), request);
 
@@ -169,9 +170,9 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("99200002." + System.nanoTime());
         LocalDate dueDate = LocalDate.now();
         CreateAdHocInvoiceRequest primero = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, BigDecimal.valueOf(1000), dueDate, "Derecho de examen — Matemática", null, null);
+                FeeType.EXAM_RIGHT, ars(1000), dueDate, "Derecho de examen — Matemática", null, null);
         CreateAdHocInvoiceRequest segundo = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, BigDecimal.valueOf(1000), dueDate, "Derecho de examen — Física", null, null);
+                FeeType.EXAM_RIGHT, ars(1000), dueDate, "Derecho de examen — Física", null, null);
 
         Invoice invoiceUno = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), primero);
         Invoice invoiceDos = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), segundo);
@@ -185,7 +186,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     void recurringFeeTypeIsRejectedForAdHocCreation() {
         CourseEnrollment enrollment = persistCourseEnrollment("99200003." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.RECURRING_FEE, BigDecimal.valueOf(500), LocalDate.now(), "Intento inválido", null, null);
+                FeeType.RECURRING_FEE, ars(500), LocalDate.now(), "Intento inválido", null, null);
 
         assertThatThrownBy(() -> createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request))
                 .isInstanceOf(InvalidAdHocFeeTypeException.class);
@@ -195,7 +196,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
     void adHocCreationSavesSubjectAndDescription() {
         CourseEnrollment enrollment = persistCourseEnrollment("99200004." + System.nanoTime());
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.RETAKEN_SUBJECT_FEE, BigDecimal.valueOf(800), LocalDate.now(), "Recursada informal", null, null);
+                FeeType.RETAKEN_SUBJECT_FEE, ars(800), LocalDate.now(), "Recursada informal", null, null);
 
         Invoice created = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request);
 

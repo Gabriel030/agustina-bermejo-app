@@ -1,3 +1,5 @@
+import { formatMoney as formatMoneyOrEmpty, moneyValue } from '@/lib/utils';
+
 export const FEE_TYPE_LABELS = {
   RECURRING_FEE: 'Cuota mensual',
   ENROLLMENT_FEE: 'Matrícula',
@@ -24,14 +26,14 @@ export function formatPeriod(period) {
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
 }
 
-export function formatMoney(amount) {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
+export function formatMoney(money) {
+  return formatMoneyOrEmpty(money) || '-';
 }
 
-export function formatSignedMoney(amount) {
-  const sign = amount < 0 ? '−' : '+';
-  return `${sign} ${formatMoney(Math.abs(amount))}`;
+export function formatSignedMoney(money) {
+  const value = moneyValue(money);
+  const sign = value < 0 ? '−' : '+';
+  return `${sign} ${formatMoney({ amount: Math.abs(value).toFixed(2), currency: money.currency })}`;
 }
 
 export function invoiceConcept(feeType, period) {
@@ -40,7 +42,9 @@ export function invoiceConcept(feeType, period) {
 }
 
 export function signedAdjustmentAmount(adjustment) {
-  return adjustment.type === 'SURCHARGE' ? adjustment.resolvedAmount : -adjustment.resolvedAmount;
+  const value = moneyValue(adjustment.resolvedAmount);
+  const signed = adjustment.type === 'SURCHARGE' ? value : -value;
+  return { amount: signed.toFixed(2), currency: adjustment.resolvedAmount.currency };
 }
 
 export const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;

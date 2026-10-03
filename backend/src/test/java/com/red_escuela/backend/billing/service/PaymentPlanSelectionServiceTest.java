@@ -42,6 +42,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -141,7 +142,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         revision.setCourse(course);
         revision.setFeeType(FeeType.RECURRING_FEE);
         revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(price);
+        revision.setMonthlyAmount(ars(price));
         revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
         revision.setCreatedBy(director);
         priceRevisionRepository.save(revision);
@@ -416,7 +417,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         revision.setCourse(course);
         revision.setFeeType(FeeType.RECURRING_FEE);
         revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(BigDecimal.valueOf(12000));
+        revision.setMonthlyAmount(ars(12000));
         revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
         revision.setCreatedBy(director);
         priceRevisionRepository.save(revision);

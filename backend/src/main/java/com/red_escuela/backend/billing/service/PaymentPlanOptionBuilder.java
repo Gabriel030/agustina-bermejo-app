@@ -21,7 +21,7 @@ public class PaymentPlanOptionBuilder {
         PaymentPlanOption option = new PaymentPlanOption();
         option.setDescription(request.description());
         option.setCadence(request.cadence());
-        option.setUpfrontDiscount(request.upfrontDiscount() == null ? null : request.upfrontDiscount().toValue());
+        option.setUpfrontDiscount(request.upfrontDiscount() == null ? null : request.upfrontDiscount().toAdjustment());
         option.setUpfrontWindowEnabled(request.upfrontWindowEnabled());
         option.setUpfrontWindowStart(request.upfrontWindowStart());
         option.setUpfrontWindowEnd(request.upfrontWindowEnd());

@@ -1,5 +1,5 @@
 package com.red_escuela.backend.billing.dto;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 
-public record CoursePricingResponse(Long courseId, BigDecimal cuotaMensual) {}
+public record CoursePricingResponse(Long courseId, Money cuotaMensual) {}

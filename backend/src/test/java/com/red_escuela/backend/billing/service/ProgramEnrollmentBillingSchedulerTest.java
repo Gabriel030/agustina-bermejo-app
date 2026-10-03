@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -139,7 +140,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         priceRevision.setProgram(program);
         priceRevision.setFeeType(FeeType.ENROLLMENT_FEE);
         priceRevision.setDescription("Matrícula de prueba");
-        priceRevision.setMonthlyAmount(java.math.BigDecimal.valueOf(10000));
+        priceRevision.setMonthlyAmount(ars(10000));
         priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
         priceRevision.setCreatedBy(template.getCreatedBy());
         priceRevisionRepository.save(priceRevision);

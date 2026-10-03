@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -41,6 +43,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -160,7 +163,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         priceRevision.setCourse(course);
         priceRevision.setFeeType(FeeType.RECURRING_FEE);
         priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(precio);
+        priceRevision.setMonthlyAmount(ars(precio));
         priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
         priceRevision.setCreatedBy(director);
         priceRevisionRepository.save(priceRevision);
@@ -195,14 +198,14 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(null, BigDecimal.ONE), "Beca completa", 3));
+                new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.ONE)), "Beca completa", 3));
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
         assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(invoice.getAmountDue()).isEqualTo(ars(0));
     }
 
     @Test
@@ -213,14 +216,14 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.30)), "Beca 30%", 3));
+                new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.30))), "Beca 30%", 3));
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
         assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(7000));
+        assertThat(invoice.getAmountDue()).isEqualTo(ars(7000));
     }
 
     @Test
@@ -231,13 +234,13 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(5000), null), "Beca fija $5.000", 3));
+                new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.NOMINAL, ars(5000), null), "Beca fija $5.000", 3));
 
         PriceRevision aumento = new PriceRevision();
         aumento.setCourse(course);
         aumento.setFeeType(FeeType.RECURRING_FEE);
         aumento.setDescription("Ajuste inflacionario");
-        aumento.setMonthlyAmount(BigDecimal.valueOf(20000));
+        aumento.setMonthlyAmount(ars(20000));
         aumento.setEffectiveFrom(YearMonth.now().atDay(1));
         aumento.setCreatedBy(director);
         priceRevisionRepository.save(aumento);
@@ -246,8 +249,8 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
-        assertThat(invoice.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(20000));
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(15000));
+        assertThat(invoice.getBaseAmount()).isEqualTo(ars(20000));
+        assertThat(invoice.getAmountDue()).isEqualTo(ars(15000));
     }
 
     @Test
@@ -260,12 +263,12 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(BigDecimal.valueOf(5000));
+        invoice.setBaseAmount(ars(5000));
         invoice.setStatus(InvoiceStatus.PENDING);
         invoice = invoiceRepository.save(invoice);
 
         invoice.applyAdjustment(com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.DISCOUNT,
-                new com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue.PercentageAmount(BigDecimal.ONE), "Condonación total", director);
+                new MonetaryAdjustment.Proportional(Percentage.ofFraction(BigDecimal.ONE)), "Condonación total", director);
         invoiceRepository.save(invoice);
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
@@ -280,7 +283,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         CollectionsPolicy policy = new CollectionsPolicy();
         policy.setGracePeriodDays(10);
-        policy.setSurchargePercentage(BigDecimal.valueOf(0.10));
+        policy.setSurchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)));
         policy.setSuspensionAfterDays(30);
         policy.setSuspensionAfterInvoiceCount(2);
         policy.setWithdrawalAfterDays(60);
@@ -294,7 +297,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now().minusMonths(1));
         invoice.setDueDate(LocalDate.now().minusDays(20));
-        invoice.setBaseAmount(BigDecimal.valueOf(5000));
+        invoice.setBaseAmount(ars(5000));
         invoice.setStatus(InvoiceStatus.WAIVED);
         invoice = invoiceRepository.save(invoice);
 
@@ -313,7 +316,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> grantScholarshipForCourseUseCase.grant(enrollment.getId(),
-                        new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 5)))
+                        new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), "Beca 20%", 5)))
                 .isInstanceOf(com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException.class);
     }
 
@@ -325,10 +328,10 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         grantScholarshipForCourseUseCase.grant(enrollment.getId(),
-                new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
+                new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), "Beca 10%", 3));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> grantScholarshipForCourseUseCase.grant(enrollment.getId(),
-                        new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20%", 2)))
+                        new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), "Beca 20%", 2)))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
@@ -340,7 +343,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         seleccionarPlanMensual(enrollment, director);
 
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(),
-                new CreateScholarshipRequest(new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), "Beca 10%", 3));
+                new CreateScholarshipRequest(new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), "Beca 10%", 3));
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         courseEnrollmentService.withdraw(enrollment.getId());
@@ -368,11 +371,11 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         invoiceRepository.save(cuotaDelMes);
 
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
-                new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), "Beca 20% tardía", 3));
+                new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), "Beca 20% tardía", 3));
 
         var creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
         assertThat(creditNote.getReasonType()).isEqualTo(com.red_escuela.backend.billing.entity.CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP);
-        assertThat(creditNote.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(2000));
+        assertThat(creditNote.getAmount()).isEqualTo(ars(2000));
 
         var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
         assertThat(reloaded.getInstallments())

@@ -49,8 +49,8 @@ describe('DetalleCarrera', () => {
     renderDetalle();
 
     expect(await screen.findByText('Carrera de prueba')).toBeInTheDocument();
-    expect(screen.getByText('$ 50.000')).toBeInTheDocument();
-    expect(screen.getByText('$ 25.000')).toBeInTheDocument();
+    expect(screen.getByText('$ 50.000,00')).toBeInTheDocument();
+    expect(screen.getByText('$ 25.000,00')).toBeInTheDocument();
     expect(screen.getByText('Álgebra')).toBeInTheDocument();
   });
 
@@ -162,7 +162,7 @@ describe('DetalleCarrera', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar →' }));
 
     // Paso pago
-    expect(await screen.findByText('$ 50.000')).toBeInTheDocument();
+    expect(await screen.findByText('$ 50.000,00')).toBeInTheDocument();
     const confirmarAntesDeSubir = screen.getByRole('button', { name: 'Confirmar solicitud' });
     expect(confirmarAntesDeSubir).toBeDisabled();
 

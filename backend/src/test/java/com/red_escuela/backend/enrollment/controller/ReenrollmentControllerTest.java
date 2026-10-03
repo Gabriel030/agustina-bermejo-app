@@ -44,6 +44,7 @@ import java.time.YearMonth;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -147,7 +148,7 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now().minusMonths(3));
         invoice.setDueDate(LocalDate.now().minusMonths(3));
-        invoice.setBaseAmount(BigDecimal.valueOf(5000));
+        invoice.setBaseAmount(ars(5000));
         invoice.setStatus(InvoiceStatus.OVERDUE);
         invoiceRepository.save(invoice);
     }

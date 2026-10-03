@@ -21,6 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
+import com.red_escuela.backend.shared.domain.Currency;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -65,7 +68,10 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
             throw new InvoiceNotPayableException(invoiceId, invoice.getStatus().name());
         }
 
-        BigDecimal amount = invoice.getRemainingBalance();
+        if (invoice.currency() != Currency.ARS) {
+            throw new GatewayCurrencyNotSupportedException(invoiceId, invoice.currency());
+        }
+        BigDecimal amount = invoice.getRemainingBalance().amount();
         String title = invoice.getFeeType().name() + " " + invoice.getPeriod();
 
         PreferenceRequest request = PreferenceRequest.builder()

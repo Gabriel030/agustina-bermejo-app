@@ -27,11 +27,11 @@ const baseBreakdown = {
   invoiceId: 61,
   feeType: 'RECURRING_FEE',
   period: '2026-09',
-  baseAmount: 48000,
-  adjustments: [{ type: 'SCHOLARSHIP', amount: -24000, humanLabel: 'Beca 50%' }],
-  amountDue: 24000,
+  baseAmount: { amount: '48000.00', currency: 'ARS' },
+  adjustments: [{ type: 'SCHOLARSHIP', amount: { amount: '-24000.00', currency: 'ARS' }, humanLabel: 'Beca 50%' }],
+  amountDue: { amount: '24000.00', currency: 'ARS' },
   paymentsApplied: [],
-  remainingBalance: 24000,
+  remainingBalance: { amount: '24000.00', currency: 'ARS' },
   status: 'PENDING',
 };
 
@@ -41,12 +41,12 @@ describe('AlumnoPagarSeleccion', () => {
 
     expect(await screen.findByText('Cuota mensual · sep 2026')).toBeInTheDocument();
     expect(screen.getByText('Beca')).toBeInTheDocument();
-    expect(screen.getByText('− $ 24.000')).toBeInTheDocument();
+    expect(screen.getByText('− $ 24.000,00')).toBeInTheDocument();
     expect(screen.getByText('Transferencia bancaria')).toBeInTheDocument();
   });
 
   it('does not offer payment methods for an installment that is already paid', async () => {
-    renderSelection({ ...baseBreakdown, status: 'PAID', remainingBalance: 0 });
+    renderSelection({ ...baseBreakdown, status: 'PAID', remainingBalance: { amount: '0.00', currency: 'ARS' } });
 
     expect(await screen.findByText('Esta cuota ya está saldada. No tenés que pagar nada más.')).toBeInTheDocument();
     expect(screen.queryByText('Transferencia bancaria')).not.toBeInTheDocument();

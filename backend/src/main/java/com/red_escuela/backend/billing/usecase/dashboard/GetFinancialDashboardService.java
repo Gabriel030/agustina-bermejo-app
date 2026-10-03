@@ -8,9 +8,13 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
@@ -44,16 +48,33 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
         activeStudentIds.removeAll(debtorIds);
         int studentsUpToDate = activeStudentIds.size();
 
-        BigDecimal totalDebt = invoiceRepository.sumOutstandingBalanceByStatus(InvoiceStatus.OVERDUE.name());
-
         YearMonth currentPeriod = YearMonth.now();
-        BigDecimal monthlyProjected = invoiceRepository.sumAmountDueByPeriod(currentPeriod.atDay(1));
-        BigDecimal monthlyCollected = invoiceRepository.sumAllocatedByPeriod(currentPeriod);
-        BigDecimal monthlyDebt = monthlyProjected.subtract(monthlyCollected).max(BigDecimal.ZERO);
+        Map<Currency, Money> totalDebt = byCurrency(invoiceRepository.sumOutstandingBalanceByStatus(InvoiceStatus.OVERDUE.name()));
+        Map<Currency, Money> monthlyProjected = byCurrency(invoiceRepository.sumAmountDueByPeriod(currentPeriod.atDay(1)));
+        Map<Currency, Money> monthlyCollected = byCurrency(invoiceRepository.sumAllocatedByPeriod(currentPeriod.atDay(1)));
 
-        return new FinancialDashboardResponse(
-                studentsInDebt, studentsUpToDate, totalDebt,
-                monthlyProjected, monthlyCollected, monthlyDebt
-        );
+        List<FinancialDashboardResponse.CurrencyTotals> totals = Arrays.stream(Currency.values())
+                .filter(currency -> currency == Currency.ARS || totalDebt.containsKey(currency)
+                        || monthlyProjected.containsKey(currency) || monthlyCollected.containsKey(currency))
+                .map(currency -> {
+                    Money projected = monthlyProjected.getOrDefault(currency, Money.zero(currency));
+                    Money collected = monthlyCollected.getOrDefault(currency, Money.zero(currency));
+                    Money debt = projected.minus(collected);
+                    return new FinancialDashboardResponse.CurrencyTotals(
+                            totalDebt.getOrDefault(currency, Money.zero(currency)), projected, collected,
+                            debt.isNegative() ? Money.zero(currency) : debt);
+                })
+                .toList();
+
+        return new FinancialDashboardResponse(studentsInDebt, studentsUpToDate, totals);
+    }
+
+    private static Map<Currency, Money> byCurrency(List<InvoiceRepository.CurrencyTotal> rows) {
+        Map<Currency, Money> result = new EnumMap<>(Currency.class);
+        for (InvoiceRepository.CurrencyTotal row : rows) {
+            Currency currency = Currency.valueOf(row.getCurrency());
+            result.put(currency, Money.of(row.getTotal(), currency));
+        }
+        return result;
     }
 }

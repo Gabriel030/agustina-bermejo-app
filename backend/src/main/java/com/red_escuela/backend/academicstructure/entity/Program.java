@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
@@ -35,6 +37,11 @@ public class Program {
 
     @Column(name = "enrollment_fee_amount")
     private BigDecimal enrollmentFeeAmount;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", nullable = false)
+    private Currency currency = Currency.ARS;
 
     @Column(name = "total_years")
     private Integer totalYears;
@@ -73,6 +80,14 @@ public class Program {
         if (curricularYear < 1 || (totalYears != null && curricularYear > totalYears)) {
             throw new CurricularYearOutOfRangeException(curricularYear, totalYears);
         }
+    }
+
+    public Money priceAsMoney() {
+        return price == null ? null : Money.of(price, currency);
+    }
+
+    public Money enrollmentFeeAsMoney() {
+        return enrollmentFeeAmount == null ? null : Money.of(enrollmentFeeAmount, currency);
     }
 
     public boolean changeRecurringFee(BigDecimal newPrice) {

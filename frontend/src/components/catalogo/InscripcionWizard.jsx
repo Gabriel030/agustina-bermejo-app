@@ -15,7 +15,7 @@ import {
   useAgregarDocumentoSolicitudCarrera,
 } from '@/hooks/useCatalogo';
 import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
-import { formatMonto, cn } from '@/lib/utils';
+import { formatMoney, cn } from '@/lib/utils';
 
 // Tipos de documento requeridos para carrera (Épica 7 Fase 3, UX del wizard) —
 // los cursos no piden documentación (ver TabMisSolicitudes.jsx). El input de
@@ -262,7 +262,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               <span className="text-[13.5px] font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
               <span className="text-xs text-ink-faint">Inicio de cursada: {cohort.cursadaStart}</span>
               <span className="mt-1 text-xs font-semibold text-ink">
-                Matrícula: {formatMonto(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
+                Matrícula: {formatMoney(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
               </span>
             </button>
           ))}
@@ -405,7 +405,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
         <GlassCard className="flex flex-col gap-4 p-5">
           <div className="rounded-xl bg-neutral-bg px-4 py-3">
             <div className="text-xs text-ink-faint">Monto a pagar</div>
-            <div className="font-heading text-xl font-bold text-ink">{formatMonto(montoAPagar) || 'A definir'}</div>
+            <div className="font-heading text-xl font-bold text-ink">{formatMoney(montoAPagar) || 'A definir'}</div>
             <div className="mt-1 text-xs text-ink-faint">{tipo === 'carrera' ? 'Matrícula' : 'Primera cuota'}</div>
           </div>
 
@@ -476,7 +476,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
           </DialogHeader>
           <div className="text-[13px] text-ink-soft">
             Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong> por{' '}
-            <strong className="text-ink">{formatMonto(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
+            <strong className="text-ink">{formatMoney(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
             modificarla hasta que la revisen.
           </div>
           <DialogFooter>

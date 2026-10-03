@@ -23,6 +23,7 @@ import org.springframework.context.ApplicationContext;
 import java.util.HashMap;
 import java.util.Map;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 public class KarateFixtures {
     private static ApplicationContext context() {
@@ -220,7 +221,7 @@ public class KarateFixtures {
         java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
         invoice.setPeriod(java.time.YearMonth.from(due));
         invoice.setDueDate(due);
-        invoice.setBaseAmount(java.math.BigDecimal.valueOf(5000));
+        invoice.setBaseAmount(ars(5000));
         invoice.setStatus(com.red_escuela.backend.billing.entity.InvoiceStatus.PENDING);
         return invoiceRepository.save(invoice).getId();
     }

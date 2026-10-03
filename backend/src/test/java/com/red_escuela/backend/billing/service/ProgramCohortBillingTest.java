@@ -54,6 +54,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -193,7 +194,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         revision.setProgram(program);
         revision.setFeeType(feeType);
         revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(amount);
+        revision.setMonthlyAmount(ars(amount));
         revision.setEffectiveFrom(effectiveFrom);
         revision.setCreatedBy(createdBy);
         priceRevisionRepository.save(revision);
@@ -252,8 +253,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         var invoices = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
         Invoice invoice = invoices.get(0);
-        assertThat(invoice.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(25000));
+        assertThat(invoice.getBaseAmount()).isEqualTo(ars(50000));
+        assertThat(invoice.getAmountDue()).isEqualTo(ars(25000));
         assertThat(invoice.getAdjustments()).hasSize(1);
         assertThat(invoice.getAdjustments().get(0).getAppliedBy()).isNull();
     }
@@ -319,15 +320,15 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
         Invoice invoiceVieja = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
-        assertThat(invoiceVieja.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        assertThat(invoiceVieja.getBaseAmount()).isEqualTo(ars(10000));
 
         persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
 
         Invoice invoiceNueva = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
-        assertThat(invoiceNueva.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(15000));
+        assertThat(invoiceNueva.getBaseAmount()).isEqualTo(ars(15000));
 
         Invoice recargada = invoiceRepository.findById(invoiceVieja.getId()).orElseThrow();
-        assertThat(recargada.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        assertThat(recargada.getBaseAmount()).isEqualTo(ars(10000));
     }
 
     @Test
@@ -472,7 +473,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         courseRevision.setCourse(course);
         courseRevision.setFeeType(FeeType.RECURRING_FEE);
         courseRevision.setDescription("Precio de prueba");
-        courseRevision.setMonthlyAmount(BigDecimal.valueOf(5000));
+        courseRevision.setMonthlyAmount(ars(5000));
         courseRevision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
         courseRevision.setCreatedBy(director);
         priceRevisionRepository.save(courseRevision);
@@ -498,7 +499,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         assertThat(invoicesCarrera).extracting("feeType").containsExactlyInAnyOrder(FeeType.ENROLLMENT_FEE, FeeType.RECURRING_FEE);
         assertThat(invoicesCurso).extracting("feeType").containsExactly(FeeType.RECURRING_FEE);
-        assertThat(invoicesCurso.get(0).getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(5000));
+        assertThat(invoicesCurso.get(0).getBaseAmount()).isEqualTo(ars(5000));
         assertThat(invoicesCarrera).noneMatch(i -> i.getCourseEnrollment() != null);
         assertThat(invoicesCurso).noneMatch(i -> i.getProgramEnrollment() != null);
     }

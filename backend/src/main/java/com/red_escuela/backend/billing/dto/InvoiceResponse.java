@@ -4,7 +4,7 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -12,8 +12,8 @@ import java.util.List;
 import com.red_escuela.backend.dto.ProductRef;
 
 public record InvoiceResponse(
-        Long id, String feeType, String period, LocalDate dueDate, BigDecimal baseAmount,
-        BigDecimal amountDue, BigDecimal remainingBalance, String status,
+        Long id, String feeType, String period, LocalDate dueDate, Money baseAmount,
+        Money amountDue, Money remainingBalance, String status,
         List<InvoiceAdjustmentResponse> adjustments, String fiscalInvoiceStatus,
         LocalDateTime createdAt, LocalDateTime updatedAt,
         String cancelledByName, String cancelledReason, LocalDateTime cancelledAt,

@@ -10,6 +10,8 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
+import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class CreateAdHocInvoiceForCourseEnrollmentService implements CreateAdHocInvoiceForCourseEnrollmentUseCase {
@@ -26,10 +28,14 @@ public class CreateAdHocInvoiceForCourseEnrollmentService implements CreateAdHoc
     }
 
     @Override
+    @Transactional
     public Invoice create(Long courseEnrollmentId, CreateAdHocInvoiceRequest request) {
         requestResolver.validateFeeType(request.feeType());
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
+        if (request.amount().currency() != enrollment.getCourse().getCurrency()) {
+            throw new CurrencyMismatchException(enrollment.getCourse().getCurrency(), request.amount().currency());
+        }
         Subject subject = requestResolver.resolveSubject(request.subjectId());
         ExamBoardRegistration examBoardRegistration = requestResolver.resolveExamBoardRegistration(request.examBoardRegistrationId());
         return invoiceFactory.createAdHocFeeForCourseEnrollment(

@@ -12,6 +12,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { AmountBreakdown } from '@/components/alumno/AmountBreakdown';
 import { useFacturasDeCurso, useFacturasDeMatricula, useMisComprobantes } from '@/hooks/useBilling';
 import { ADJUSTMENT_TYPE_LABELS, signedAdjustmentAmount } from '@/lib/billing';
+import { formatMoney } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
 
@@ -50,9 +51,8 @@ function formatPeriod(period) {
   return `${MESES[parseInt(month, 10) - 1]} ${year}`;
 }
 
-function formatMonto(amount) {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
+function formatMonto(money) {
+  return formatMoney(money) || '-';
 }
 
 function formatFecha(date) {

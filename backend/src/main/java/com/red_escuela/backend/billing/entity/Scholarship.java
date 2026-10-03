@@ -15,6 +15,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
@@ -46,10 +48,10 @@ public class Scholarship {
     @JoinColumn(name = "program_enrollment_id")
     private ProgramEnrollment programEnrollment;
 
-    @Convert(converter = MonetaryAdjustmentValueConverter.class)
+    @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "value", nullable = false, columnDefinition = "jsonb")
-    private MonetaryAdjustmentValue value;
+    private MonetaryAdjustment value;
 
     @Column(name = "reason", length = 500, nullable = false)
     private String reason;

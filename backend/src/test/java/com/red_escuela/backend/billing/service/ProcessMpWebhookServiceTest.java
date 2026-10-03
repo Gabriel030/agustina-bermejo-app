@@ -52,6 +52,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -136,14 +137,14 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(amount);
+        invoice.setBaseAmount(ars(amount));
         invoice.setStatus(InvoiceStatus.PENDING);
         return invoiceRepository.save(invoice);
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
         return new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
-                mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, reportedAmount), 1)),
+                mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
 
@@ -159,7 +160,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
                 .extracting(PaymentAllocation::getAmountApplied)
                 .singleElement()
-                .satisfies(amount -> assertThat(amount).isEqualByComparingTo("4000"));
+                .satisfies(amount -> assertThat(amount).isEqualTo(ars(4000)));
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
     }
 

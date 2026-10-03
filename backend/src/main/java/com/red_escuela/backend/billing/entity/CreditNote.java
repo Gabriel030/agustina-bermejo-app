@@ -3,9 +3,9 @@ import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +29,12 @@ public class CreditNote {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "amount", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "amount_currency", nullable = false))
+    })
+    private Money amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reason_type", nullable = false)
@@ -76,21 +80,21 @@ public class CreditNote {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public BigDecimal getRemainingAmount() {
-        BigDecimal applied = applications.stream()
+    public Money getRemainingAmount() {
+        Money applied = applications.stream()
                 .map(CreditApplication::getAmountApplied)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return amount.subtract(applied);
+                .reduce(Money.zero(amount.currency()), Money::plus);
+        return amount.minus(applied);
     }
 
-    public CreditApplication consume(BigDecimal amountApplied, Invoice invoice, Payment payment) {
+    public CreditApplication consume(Money amountApplied, Invoice invoice, Payment payment) {
         CreditApplication application = new CreditApplication();
         application.setCreditNote(this);
         application.setInvoice(invoice);
         application.setPayment(payment);
         application.setAmountApplied(amountApplied);
         applications.add(application);
-        status = getRemainingAmount().compareTo(BigDecimal.ZERO) == 0
+        status = getRemainingAmount().isZero()
                 ? CreditNoteStatus.CONSUMED
                 : CreditNoteStatus.PARTIALLY_CONSUMED;
         return application;

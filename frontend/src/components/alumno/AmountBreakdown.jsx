@@ -1,4 +1,5 @@
 import { formatMoney, formatSignedMoney } from '@/lib/billing';
+import { moneyValue } from '@/lib/utils';
 
 export function AmountBreakdown({ baseAmount, lines }) {
   return (
@@ -10,7 +11,7 @@ export function AmountBreakdown({ baseAmount, lines }) {
       {lines.map((line, index) => (
         <div key={`${line.label}-${index}`} className="flex justify-between gap-4">
           <span className="text-ink-faint">{line.label}</span>
-          <span className={`font-mono tabular-nums ${line.amount > 0 ? 'text-danger' : 'text-success'}`}>
+          <span className={`font-mono tabular-nums ${moneyValue(line.amount) > 0 ? 'text-danger' : 'text-success'}`}>
             {formatSignedMoney(line.amount)}
           </span>
         </div>

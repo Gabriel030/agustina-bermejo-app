@@ -20,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
+import com.red_escuela.backend.shared.domain.InvalidPercentageException;
+import com.red_escuela.backend.shared.domain.Percentage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,10 +67,10 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.policy1." + System.nanoTime());
         authenticateAs(director);
         CollectionsPolicy today = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, BigDecimal.valueOf(0.10), 30, 2, 60, 3, LocalDate.now()));
+                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, 60, 3, LocalDate.now()));
 
         createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                5, BigDecimal.valueOf(0.20), 15, 1, 30, 2, LocalDate.now().plusMonths(1)));
+                5, Percentage.ofFraction(BigDecimal.valueOf(0.20)), 15, 1, 30, 2, LocalDate.now().plusMonths(1)));
 
         CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
@@ -82,9 +83,9 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.policy2." + System.nanoTime());
         authenticateAs(director);
         createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, BigDecimal.valueOf(0.10), 30, 2, 60, 3, LocalDate.now().minusMonths(2)));
+                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, 60, 3, LocalDate.now().minusMonths(2)));
         CollectionsPolicy mostRecent = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                7, BigDecimal.valueOf(0.15), 20, 1, 45, 2, LocalDate.now().minusDays(1)));
+                7, Percentage.ofFraction(BigDecimal.valueOf(0.15)), 20, 1, 45, 2, LocalDate.now().minusDays(1)));
 
         CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
@@ -93,15 +94,15 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aSurchargePercentageOutsideZeroToOneIsRejectedWhenCreatingThePolicy() {
+    void aSurchargePercentOutsideZeroToOneHundredIsRejected() {
         Person director = persistPerson("director.policy3." + System.nanoTime());
         authenticateAs(director);
 
-        assertThatThrownBy(() -> createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, BigDecimal.valueOf(10), 30, 2, 60, 3, LocalDate.now())))
-                .isInstanceOf(InvalidSurchargePercentageException.class);
-        assertThatThrownBy(() -> createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, BigDecimal.valueOf(-0.10), 30, 2, 60, 3, LocalDate.now())))
-                .isInstanceOf(InvalidSurchargePercentageException.class);
+        assertThatThrownBy(() -> new CreateCollectionsPolicyRequest(
+                10, Percentage.ofPoints(BigDecimal.valueOf(150)), 30, 2, 60, 3, LocalDate.now()))
+                .isInstanceOf(InvalidPercentageException.class);
+        assertThatThrownBy(() -> new CreateCollectionsPolicyRequest(
+                10, Percentage.ofPoints(BigDecimal.valueOf(-10)), 30, 2, 60, 3, LocalDate.now()))
+                .isInstanceOf(InvalidPercentageException.class);
     }
 }

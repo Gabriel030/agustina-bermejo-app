@@ -44,6 +44,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -185,7 +186,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         priceRevision.setCourse(enrollment.getCourse());
         priceRevision.setFeeType(FeeType.RECURRING_FEE);
         priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(java.math.BigDecimal.valueOf(1000));
+        priceRevision.setMonthlyAmount(ars(1000));
         priceRevision.setEffectiveFrom(java.time.LocalDate.now().minusYears(1));
         priceRevision.setCreatedBy(director);
         priceRevisionRepository.save(priceRevision);

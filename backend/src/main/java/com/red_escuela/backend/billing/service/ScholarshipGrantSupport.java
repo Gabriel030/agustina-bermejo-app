@@ -11,7 +11,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -27,7 +27,7 @@ public class ScholarshipGrantSupport {
 
     public Scholarship build(CreateScholarshipRequest request, Person actor) {
         Scholarship scholarship = new Scholarship();
-        scholarship.setValue(request.value().toValue());
+        scholarship.setValue(request.value().toAdjustment());
         scholarship.setReason(request.reason());
         scholarship.setGrantedBy(actor);
         scholarship.addInstallments(request.installments());
@@ -48,8 +48,8 @@ public class ScholarshipGrantSupport {
                 .ifPresent(invoice -> {
                     scholarship.consumeOne(invoice);
                     scholarshipRepository.save(scholarship);
-                    BigDecimal creditAmount = scholarship.getValue().resolve(invoice.getBaseAmount());
-                    if (creditAmount.signum() > 0) {
+                    Money creditAmount = scholarship.getValue().applyTo(invoice.getBaseAmount());
+                    if (!creditAmount.isZero() && !creditAmount.isNegative()) {
                         var creditNote = creditNoteService.createFor(student, creditAmount, CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP,
                                 scholarship.getReason(), scholarship.getGrantedBy());
                         creditNote.getSourceInvoices().add(invoice);

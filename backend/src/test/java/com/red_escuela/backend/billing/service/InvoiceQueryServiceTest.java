@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
@@ -13,7 +16,6 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
@@ -43,6 +45,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -123,7 +126,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         return courseRepository.save(course);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, LocalDate dueDate) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -144,29 +147,29 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         priceRevision.setCourse(course);
         priceRevision.setFeeType(FeeType.RECURRING_FEE);
         priceRevision.setDescription("Cuota mensual 2026");
-        priceRevision.setMonthlyAmount(BigDecimal.valueOf(10000));
+        priceRevision.setMonthlyAmount(ars(10000));
         priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
         priceRevision.setCreatedBy(director);
         priceRevisionRepository.save(priceRevision);
 
         CourseEnrollment enrollment = persistCourseEnrollment("99000401", course);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), LocalDate.now());
-        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(BigDecimal.valueOf(0.10)),
+        Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());
+        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(BigDecimal.valueOf(0.10))),
                 "Descuento de prueba", director);
         invoiceRepository.save(invoice);
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(4000))),
+                List.of(new PaymentAllocationRequest(invoice.getId(), ars(4000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(invoice.getId());
 
         assertThat(breakdown.priceRevisionDescription()).isEqualTo("Cuota mensual 2026");
-        assertThat(breakdown.baseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
         assertThat(breakdown.adjustments()).hasSize(1);
         assertThat(breakdown.adjustments().get(0).type()).isEqualTo("DISCOUNT");
-        assertThat(breakdown.amountDue()).isEqualByComparingTo(BigDecimal.valueOf(9000));
+        assertThat(breakdown.amountDue()).isEqualTo(ars(9000));
         assertThat(breakdown.paymentsApplied()).hasSize(1);
-        assertThat(breakdown.remainingBalance()).isEqualByComparingTo(BigDecimal.valueOf(5000));
+        assertThat(breakdown.remainingBalance()).isEqualTo(ars(5000));
         assertThat(breakdown.status()).isEqualTo("PENDING");
     }
 }

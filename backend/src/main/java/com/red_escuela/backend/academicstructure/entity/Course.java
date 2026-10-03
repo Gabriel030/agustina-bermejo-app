@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -58,6 +60,11 @@ public class Course {
     @Column(name = "price")
     private BigDecimal price;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", nullable = false)
+    private Currency currency = Currency.ARS;
+
     @Column(name = "duration_months")
     private Integer durationMonths;
 
@@ -70,6 +77,10 @@ public class Course {
     @Enumerated(EnumType.STRING)
     @Column(name = "teaching_mode")
     private TeachingMode teachingMode;
+
+    public Money priceAsMoney() {
+        return price == null ? null : Money.of(price, currency);
+    }
 
     public boolean changePrice(BigDecimal newPrice) {
         if (newPrice == null || (price != null && price.compareTo(newPrice) == 0)) {

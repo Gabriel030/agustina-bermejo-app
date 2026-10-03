@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -355,7 +356,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.ENROLLMENT_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(BigDecimal.valueOf(50000));
+        invoice.setBaseAmount(ars(50000));
         invoice.setStatus(status);
         entityManager.persist(invoice);
     }

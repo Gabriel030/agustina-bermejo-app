@@ -6,7 +6,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -65,7 +65,7 @@ public class StudentDebtResolutionService {
 
     private void waive(Invoice invoice, String reason, Person director) {
         invoice.applyAdjustment(InvoiceAdjustmentType.WAIVE_DEBT,
-                new MonetaryAdjustmentValue.FixedAmount(invoice.getRemainingBalance()), reason, director);
+                new MonetaryAdjustment.Nominal(invoice.getRemainingBalance()), reason, director);
         invoiceRepository.save(invoice);
     }
 }

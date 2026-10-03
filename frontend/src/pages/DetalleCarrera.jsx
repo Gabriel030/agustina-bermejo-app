@@ -4,7 +4,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { usePrograma, useProgramaPricing, useOpenProgramCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
-import { formatMonto } from '@/lib/utils';
+import { formatMoney } from '@/lib/utils';
 import { programSummary } from '@/lib/catalog';
 import { CatalogDetailError } from '@/components/catalogo/CatalogDetailError';
 
@@ -88,15 +88,15 @@ export function DetalleCarrera() {
       <GlassCard className="flex flex-wrap gap-6 p-5">
         <div>
           <div className="text-xs text-ink-faint">Matrícula (1ª cohorte)</div>
-          <div className="text-[15px] font-bold text-ink">{formatMonto(pricing?.matriculaCohorte1) || 'A definir'}</div>
+          <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.matriculaCohorte1) || 'A definir'}</div>
         </div>
         <div>
           <div className="text-xs text-ink-faint">Matrícula (2ª cohorte)</div>
-          <div className="text-[15px] font-bold text-ink">{formatMonto(pricing?.matriculaCohorte2) || 'A definir'}</div>
+          <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.matriculaCohorte2) || 'A definir'}</div>
         </div>
         <div>
           <div className="text-xs text-ink-faint">Cuota mensual</div>
-          <div className="text-[15px] font-bold text-ink">{formatMonto(pricing?.cuotaMensual) || 'A definir'}</div>
+          <div className="text-[15px] font-bold text-ink">{formatMoney(pricing?.cuotaMensual) || 'A definir'}</div>
         </div>
       </GlassCard>
 

@@ -8,11 +8,11 @@ import { Stagger } from '@/components/Stagger';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
+import { formatMoney } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
-function formatPesos(amount) {
-  if (amount == null) return '—';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(amount);
+function formatPesos(money) {
+  return formatMoney(money) || '—';
 }
 
 function KpiCards({ data, isLoading }) {
@@ -40,18 +40,23 @@ function KpiCards({ data, isLoading }) {
         <StatCard label="Alumnos al día">
           <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
         </StatCard>
-        <StatCard label="Deuda total">
-          <div className="font-heading text-2xl font-bold text-danger">{formatPesos(data?.totalDebt)}</div>
-        </StatCard>
-        <StatCard label="Proyectado del mes">
-          <div className="font-heading text-2xl font-bold text-ink">{formatPesos(data?.monthlyProjected)}</div>
-        </StatCard>
-        <StatCard label="Cobrado del mes">
-          <div className="font-heading text-2xl font-bold text-success">{formatPesos(data?.monthlyCollected)}</div>
-        </StatCard>
-        <StatCard label="Pendiente del mes">
-          <div className="font-heading text-2xl font-bold text-warning">{formatPesos(data?.monthlyDebt)}</div>
-        </StatCard>
+        {(data?.totalsByCurrency?.length ? data.totalsByCurrency : [{}]).flatMap((totals) => {
+          const suffix = data?.totalsByCurrency?.length > 1 ? ` (${totals.totalDebt.currency})` : '';
+          return [
+            <StatCard key={`debt-${suffix}`} label={`Deuda total${suffix}`}>
+              <div className="font-heading text-2xl font-bold text-danger">{formatPesos(totals.totalDebt)}</div>
+            </StatCard>,
+            <StatCard key={`projected-${suffix}`} label={`Proyectado del mes${suffix}`}>
+              <div className="font-heading text-2xl font-bold text-ink">{formatPesos(totals.monthlyProjected)}</div>
+            </StatCard>,
+            <StatCard key={`collected-${suffix}`} label={`Cobrado del mes${suffix}`}>
+              <div className="font-heading text-2xl font-bold text-success">{formatPesos(totals.monthlyCollected)}</div>
+            </StatCard>,
+            <StatCard key={`pending-${suffix}`} label={`Pendiente del mes${suffix}`}>
+              <div className="font-heading text-2xl font-bold text-warning">{formatPesos(totals.monthlyDebt)}</div>
+            </StatCard>,
+          ];
+        })}
       </Stagger>
     </div>
   );

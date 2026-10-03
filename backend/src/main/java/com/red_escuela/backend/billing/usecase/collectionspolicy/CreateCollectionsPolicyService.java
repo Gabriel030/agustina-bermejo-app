@@ -25,7 +25,7 @@ public class CreateCollectionsPolicyService implements CreateCollectionsPolicyUs
     public CollectionsPolicy create(CreateCollectionsPolicyRequest request) {
         CollectionsPolicy policy = new CollectionsPolicy();
         policy.setGracePeriodDays(request.gracePeriodDays());
-        policy.setSurchargePercentage(request.surchargePercentage());
+        policy.setSurchargeRate(request.surchargePercent());
         policy.setSuspensionAfterDays(request.suspensionAfterDays());
         policy.setSuspensionAfterInvoiceCount(request.suspensionAfterInvoiceCount());
         policy.setWithdrawalAfterDays(request.withdrawalAfterDays());

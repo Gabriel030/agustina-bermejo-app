@@ -39,7 +39,7 @@ public class PromotionBuilder {
             PromotionBenefit benefit = new PromotionBenefit();
             benefit.setPromotion(promotion);
             benefit.setFeeType(benefitRequest.feeType());
-            benefit.setValue(benefitRequest.value().toValue());
+            benefit.setValue(benefitRequest.value().toAdjustment());
             benefit.setInvoiceScopeCount(benefitRequest.invoiceScopeCount());
             promotion.getBenefits().add(benefit);
         }

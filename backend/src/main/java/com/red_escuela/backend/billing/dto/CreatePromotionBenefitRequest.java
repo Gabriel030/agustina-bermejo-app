@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreatePromotionBenefitRequest(
         @NotNull FeeType feeType,
-        @Valid @NotNull MonetaryAdjustmentValueRequest value,
+        @Valid @NotNull MonetaryAdjustmentRequest value,
         Integer invoiceScopeCount) {
 }

@@ -1,5 +1,8 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
@@ -13,7 +16,6 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustment;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -42,6 +44,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -125,11 +128,11 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, LocalDate dueDate) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate) {
         return persistInvoice(enrollment, amount, dueDate, YearMonth.from(dueDate));
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, LocalDate dueDate, YearMonth period) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -143,7 +146,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private CollectionsPolicy persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
         CollectionsPolicy policy = new CollectionsPolicy();
         policy.setGracePeriodDays(gracePeriodDays);
-        policy.setSurchargePercentage(surchargePercentage);
+        policy.setSurchargeRate(Percentage.ofFraction(surchargePercentage));
         policy.setSuspensionAfterDays(30);
         policy.setSuspensionAfterInvoiceCount(2);
         policy.setWithdrawalAfterDays(60);
@@ -158,7 +161,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep1." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000001");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(11));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
 
         sweepService.run(LocalDate.now());
 
@@ -166,7 +169,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
         assertThat(reloaded.getAdjustments()).hasSize(1);
         assertThat(reloaded.getAdjustments().get(0).getType()).isEqualTo(InvoiceAdjustmentType.SURCHARGE);
-        assertThat(reloaded.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(1100));
+        assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
     }
 
     @Test
@@ -174,7 +177,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep2." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000002");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(10));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10));
 
         sweepService.run(LocalDate.now());
 
@@ -186,12 +189,24 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Test
     void sweepCrashMidRowDoesNotLeaveInconsistentState() {
         Person director = persistPerson("director.sweep3." + System.nanoTime());
-        CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
-        jdbcTemplate.update("update collections_policy set surcharge_percentage = 1.5 where id = ?", policy.getId());
+        persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000003");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(11));
-
-        sweepService.run(LocalDate.now());
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
+        jdbcTemplate.execute("""
+                create or replace function fail_invoice_adjustment_insert() returns trigger as $$
+                begin
+                    raise exception 'simulated crash while applying the surcharge';
+                end;
+                $$ language plpgsql
+                """);
+        jdbcTemplate.execute("create trigger fail_invoice_adjustment_insert before insert on invoice_adjustment "
+                + "for each row execute function fail_invoice_adjustment_insert()");
+        try {
+            sweepService.run(LocalDate.now());
+        } finally {
+            jdbcTemplate.execute("drop trigger fail_invoice_adjustment_insert on invoice_adjustment");
+            jdbcTemplate.execute("drop function fail_invoice_adjustment_insert()");
+        }
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PENDING);
@@ -212,7 +227,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
 
         int total = 400;
         for (int i = 0; i < total; i++) {
-            persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusMonths(i).minusDays(11), YearMonth.now().minusMonths(i));
+            persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(i).minusDays(11), YearMonth.now().minusMonths(i));
         }
 
         sweepService.run(LocalDate.now());
@@ -228,8 +243,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep4." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000004");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(11));
-        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(BigDecimal.valueOf(0.90)),
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
+        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(BigDecimal.valueOf(0.90))),
                 "Beca 90%", director);
         invoiceRepository.save(invoice);
 
@@ -239,8 +254,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         List<InvoiceAdjustment> adjustments = reloaded.getAdjustments();
         assertThat(adjustments).hasSize(2);
         var surcharge = adjustments.stream().filter(a -> a.getType() == InvoiceAdjustmentType.SURCHARGE).findFirst().orElseThrow();
-        assertThat(surcharge.getResolvedBase()).isEqualByComparingTo(BigDecimal.valueOf(100));
-        assertThat(surcharge.signedAmount()).isEqualByComparingTo(BigDecimal.valueOf(10.00).setScale(2));
+        assertThat(surcharge.getResolvedBase()).isEqualTo(ars(100));
+        assertThat(surcharge.signedAmount()).isEqualTo(ars(10.00));
     }
 
     @Test
@@ -248,7 +263,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep.twice." + System.nanoTime());
         CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000901");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(15));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
 
         rowProcessor.process(invoice.getId(), policy);
         rowProcessor.process(invoice.getId(), policy);
@@ -256,7 +271,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
         assertThat(reloaded.getAdjustments()).hasSize(1);
-        assertThat(reloaded.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(1100));
+        assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
     }
 
     @Test
@@ -264,7 +279,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.sweep.rerun." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000902");
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000), LocalDate.now().minusDays(15));
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
 
         sweepService.run(LocalDate.now());
         sweepService.run(LocalDate.now());

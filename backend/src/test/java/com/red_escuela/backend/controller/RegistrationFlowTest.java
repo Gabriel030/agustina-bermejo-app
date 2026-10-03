@@ -49,6 +49,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -194,7 +195,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         revision.setCourse(course);
         revision.setFeeType(feeType);
         revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(amount);
+        revision.setMonthlyAmount(ars(amount));
         revision.setEffectiveFrom(LocalDate.now().minusDays(1));
         revision.setCreatedBy(director);
         entityManager.persist(revision);

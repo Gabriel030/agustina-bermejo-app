@@ -7,6 +7,8 @@ import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -40,7 +42,12 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
             return Optional.empty();
         }
         PaymentAllocationRequest reported = new PaymentAllocationRequest(
-                Long.parseLong(payment.getExternalReference()), payment.getTransactionAmount());
+                Long.parseLong(payment.getExternalReference()),
+                Money.of(payment.getTransactionAmount(), toCurrency(payment.getCurrencyId())));
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments()));
+    }
+
+    private static Currency toCurrency(String currencyId) {
+        return currencyId == null ? Currency.ARS : Currency.valueOf(currencyId);
     }
 }

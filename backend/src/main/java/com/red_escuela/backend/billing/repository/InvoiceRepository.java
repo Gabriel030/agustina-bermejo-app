@@ -97,15 +97,22 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             """)
     List<Invoice> findByProgramEnrollmentStatusInWithStudent(@Param("statuses") Collection<InvoiceStatus> statuses);
 
+    interface CurrencyTotal {
+        String getCurrency();
+
+        BigDecimal getTotal();
+    }
+
     @Query(value = """
-            select coalesce(sum(greatest(greatest(i.base_amount + coalesce(adj.total, 0), 0) - coalesce(paid.total, 0), 0)), 0)
+            select i.base_amount_currency as currency,
+                   coalesce(sum(greatest(greatest(i.base_amount + coalesce(adj.total, 0), 0) - coalesce(paid.total, 0), 0)), 0) as total
             from invoice i
             left join (
                 select a.invoice_id,
                        sum(case when a.type = 'SURCHARGE' then 1 else -1 end
                            * case a.value ->> 'type'
-                                 when 'FIXED' then cast(a.value ->> 'amount' as numeric)
-                                 else round(a.resolved_base * cast(a.value ->> 'percentage' as numeric), 2)
+                                 when 'NOMINAL' then cast(a.value ->> 'amount' as numeric)
+                                 else round(a.resolved_base * cast(a.value ->> 'fraction' as numeric), 2)
                              end) as total
                 from invoice_adjustment a
                 group by a.invoice_id) adj on adj.invoice_id = i.id
@@ -114,29 +121,34 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
                 from payment_allocation p
                 group by p.invoice_id) paid on paid.invoice_id = i.id
             where i.status = :status
+            group by i.base_amount_currency
             """, nativeQuery = true)
-    BigDecimal sumOutstandingBalanceByStatus(@Param("status") String status);
+    List<CurrencyTotal> sumOutstandingBalanceByStatus(@Param("status") String status);
 
     @Query(value = """
-            select coalesce(sum(greatest(i.base_amount + coalesce(adj.total, 0), 0)), 0)
+            select i.base_amount_currency as currency,
+                   coalesce(sum(greatest(i.base_amount + coalesce(adj.total, 0), 0)), 0) as total
             from invoice i
             left join (
                 select a.invoice_id,
                        sum(case when a.type = 'SURCHARGE' then 1 else -1 end
                            * case a.value ->> 'type'
-                                 when 'FIXED' then cast(a.value ->> 'amount' as numeric)
-                                 else round(a.resolved_base * cast(a.value ->> 'percentage' as numeric), 2)
+                                 when 'NOMINAL' then cast(a.value ->> 'amount' as numeric)
+                                 else round(a.resolved_base * cast(a.value ->> 'fraction' as numeric), 2)
                              end) as total
                 from invoice_adjustment a
                 group by a.invoice_id) adj on adj.invoice_id = i.id
             where i.period = :period and i.status <> 'CANCELLED'
+            group by i.base_amount_currency
             """, nativeQuery = true)
-    BigDecimal sumAmountDueByPeriod(@Param("period") LocalDate period);
+    List<CurrencyTotal> sumAmountDueByPeriod(@Param("period") LocalDate period);
 
-    @Query("""
-            select coalesce(sum(alloc.amountApplied), 0)
-            from PaymentAllocation alloc
-            where alloc.invoice.period = :period and alloc.invoice.status <> 'CANCELLED'
-            """)
-    BigDecimal sumAllocatedByPeriod(@Param("period") YearMonth period);
+    @Query(value = """
+            select i.base_amount_currency as currency, coalesce(sum(alloc.amount_applied), 0) as total
+            from payment_allocation alloc
+            join invoice i on i.id = alloc.invoice_id
+            where i.period = :period and i.status <> 'CANCELLED'
+            group by i.base_amount_currency
+            """, nativeQuery = true)
+    List<CurrencyTotal> sumAllocatedByPeriod(@Param("period") LocalDate period);
 }

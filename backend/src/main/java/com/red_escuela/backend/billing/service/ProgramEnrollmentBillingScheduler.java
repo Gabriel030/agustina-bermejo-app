@@ -3,7 +3,8 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
@@ -44,7 +45,7 @@ public class ProgramEnrollmentBillingScheduler {
         YearMonth period = YearMonth.from(cohort.getCursadaStart());
         Invoice invoice = invoiceFactory.createForProgramAtomic(enrollment, selection, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
         if (cohort.getIntake() == CohortIntake.SECOND) {
-            invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.5")),
+            invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.5"))),
                     "Matrícula proporcional — segunda cohorte del año", null);
             invoiceRepository.save(invoice);
         }

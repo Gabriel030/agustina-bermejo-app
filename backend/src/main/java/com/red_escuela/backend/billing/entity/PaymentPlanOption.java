@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
@@ -36,10 +38,10 @@ public class PaymentPlanOption {
     @Column(name = "cadence", nullable = false)
     private PaymentPlanCadence cadence;
 
-    @Convert(converter = MonetaryAdjustmentValueConverter.class)
+    @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "upfront_discount", columnDefinition = "jsonb")
-    private MonetaryAdjustmentValue upfrontDiscount;
+    private MonetaryAdjustment upfrontDiscount;
 
     @Column(name = "upfront_window_enabled", nullable = false)
     private boolean upfrontWindowEnabled;

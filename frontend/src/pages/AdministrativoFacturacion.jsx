@@ -13,6 +13,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from 'sonner';
 import { apiFetchBlob } from '@/api/client';
 import { invoiceConcept } from '@/lib/billing';
+import { formatMoney, moneyValue } from '@/lib/utils';
 import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
@@ -71,9 +72,8 @@ function formatPeriod(period) {
   return `${MESES[parseInt(month, 10) - 1]} ${year}`;
 }
 
-function formatMonto(amount) {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
+function formatMonto(money) {
+  return formatMoney(money) || '-';
 }
 
 function formatFecha(date) {
@@ -100,7 +100,7 @@ function paymentAmountsError(payableInvoices, amounts) {
     if (amount < 0) {
       return 'Los montos no pueden ser negativos.';
     }
-    if (inv.remainingBalance != null && amount > inv.remainingBalance) {
+    if (inv.remainingBalance != null && amount > moneyValue(inv.remainingBalance)) {
       return `El monto de ${invoiceConcept(inv.feeType, inv.period)} supera su saldo (${formatMonto(inv.remainingBalance)}).`;
     }
   }
@@ -128,7 +128,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
     Object.fromEntries(
       invoices
         .filter((inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID')
-        .map((inv) => [inv.id, inv.remainingBalance?.toString() ?? '0'])
+        .map((inv) => [inv.id, inv.remainingBalance?.amount ?? '0'])
     )
   );
   const [method, setMethod] = useState('CASH');
@@ -154,8 +154,9 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
     }
 
     const allocations = payableInvoices
-      .map((inv) => ({ invoiceId: inv.id, amountApplied: parseFloat(amounts[inv.id] ?? '0') }))
-      .filter((a) => a.amountApplied > 0);
+      .map((inv) => ({ invoiceId: inv.id, amount: parseFloat(amounts[inv.id] ?? '0'), currency: inv.remainingBalance.currency }))
+      .filter((a) => a.amount > 0)
+      .map((a) => ({ invoiceId: a.invoiceId, amountApplied: { amount: a.amount.toFixed(2), currency: a.currency } }));
 
     if (!allocations.length) {
       setError('Ingresá al menos un monto mayor a cero.');
@@ -200,7 +201,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
                       <input
                         type="number"
                         min="0"
-                        max={inv.remainingBalance ?? undefined}
+                        max={inv.remainingBalance == null ? undefined : moneyValue(inv.remainingBalance)}
                         step="0.01"
                         aria-label={`Monto a imputar a ${invoiceConcept(inv.feeType, inv.period)}`}
                         value={amounts[inv.id] ?? ''}
@@ -215,7 +216,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
 
             <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
               <span className="text-sm font-medium text-ink">Total</span>
-              <span className="font-mono font-semibold text-ink">{formatMonto(total)}</span>
+              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: payableInvoices[0]?.remainingBalance?.currency ?? 'ARS' })}</span>
             </div>
 
             <div className="flex flex-col gap-3">

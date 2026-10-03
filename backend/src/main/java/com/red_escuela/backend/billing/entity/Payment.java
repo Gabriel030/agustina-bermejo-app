@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -24,8 +25,12 @@ public class Payment {
     @Column(name = "version")
     private Long version;
 
-    @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "amount", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "amount_currency", nullable = false))
+    })
+    private Money amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "method", nullable = false)

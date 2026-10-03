@@ -1,11 +1,13 @@
 package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.identity.entity.Person;
 
@@ -27,13 +29,17 @@ public class InvoiceAdjustment {
     @Column(name = "type", nullable = false)
     private InvoiceAdjustmentType type;
 
-    @Convert(converter = MonetaryAdjustmentValueConverter.class)
+    @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "value", nullable = false, columnDefinition = "jsonb")
-    private MonetaryAdjustmentValue value;
+    private MonetaryAdjustment value;
 
-    @Column(name = "resolved_base", nullable = false)
-    private BigDecimal resolvedBase;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "resolved_base", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "resolved_base_currency", nullable = false))
+    })
+    private Money resolvedBase;
 
     @Column(name = "reason", length = 500, nullable = false)
     private String reason;
@@ -49,8 +55,11 @@ public class InvoiceAdjustment {
     @JoinColumn(name = "promotion_benefit_id")
     private PromotionBenefit promotionBenefit;
 
-    public BigDecimal signedAmount() {
-        BigDecimal magnitude = value.resolve(resolvedBase);
-        return type == InvoiceAdjustmentType.SURCHARGE ? magnitude : magnitude.negate();
+    public Money signedAmount() {
+        Money magnitude = value.applyTo(resolvedBase);
+        if (type == InvoiceAdjustmentType.SURCHARGE) {
+            return magnitude;
+        }
+        return Money.zero(magnitude.currency()).minus(magnitude);
     }
 }
