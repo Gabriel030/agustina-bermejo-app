@@ -101,7 +101,10 @@ const PRIORIDAD_INSCRIPCION = { APPROVED: 0, REGULAR: 1, IN_PROGRESS: 2, ENROLLE
 export function inscripcionVigente(inscripciones) {
   return inscripciones
     .filter((i) => i.status in PRIORIDAD_INSCRIPCION)
-    .sort((a, b) => PRIORIDAD_INSCRIPCION[a.status] - PRIORIDAD_INSCRIPCION[b.status])[0];
+    .sort(
+      (a, b) =>
+        PRIORIDAD_INSCRIPCION[a.status] - PRIORIDAD_INSCRIPCION[b.status] || (b.attemptNumber ?? 1) - (a.attemptNumber ?? 1),
+    )[0];
 }
 
 export function ordenarFilasDeMaterias(a, b) {
