@@ -17,6 +17,18 @@ describe('inscripcionVigente', () => {
     expect(inscripcionVigente([desaprobada, recursada])).toBe(recursada);
   });
 
+  it('picks the approved retake over the failed first attempt', () => {
+    const failed = { id: 1, status: 'FAILED', attemptNumber: 1 };
+    const approved = { id: 2, status: 'APPROVED', attemptNumber: 2 };
+    expect(inscripcionVigente([failed, approved])).toBe(approved);
+  });
+
+  it('picks the most recent attempt when every attempt failed', () => {
+    const first = { id: 1, status: 'FAILED', attemptNumber: 1 };
+    const second = { id: 2, status: 'FAILED', attemptNumber: 2 };
+    expect(inscripcionVigente([first, second])).toBe(second);
+  });
+
   it('ignora las bajas', () => {
     expect(inscripcionVigente([{ id: 1, status: 'WITHDRAWN' }])).toBeUndefined();
   });
