@@ -46,7 +46,7 @@ public class ProgramController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public ProgramResponse update(@PathVariable Long id, @RequestBody UpdateProgramRequest request) {
+    public ProgramResponse update(@PathVariable Long id, @Valid @RequestBody UpdateProgramRequest request) {
         return ProgramResponse.from(programService.update(id, request));
     }
 

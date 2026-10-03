@@ -25,7 +25,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA simple ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -40,7 +40,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión única', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión única', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -83,7 +83,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA doble inscripcion ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -106,7 +106,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA sin comision ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -130,7 +130,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA dos comisiones ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -145,14 +145,14 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión mañana', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión mañana', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionManianaId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión tarde', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión tarde', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
 
@@ -177,7 +177,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA ventana cerrada ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, registrationStart: '2020-01-01T00:00:00', registrationEnd: '2020-02-01T00:00:00' }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3, registrationStart: '2020-01-01T00:00:00', registrationEnd: '2020-02-01T00:00:00' }
     When method post
     Then status 201
     * def courseId = response.id
@@ -206,7 +206,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA doble baja ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -234,7 +234,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
     * def nombreCurso = 'Curso QA baja puntual ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -249,7 +249,7 @@ Feature: Inscripción a cursos (CourseEnrollmentController, CourseSectionEnrollm
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
 

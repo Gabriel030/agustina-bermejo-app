@@ -24,6 +24,18 @@ const STEPS = [
   { key: 'approval', label: 'Aprobación' },
 ];
 
+const CODE_EDITABLE_STATUSES = ['DRAFT', 'REJECTED'];
+
+const SAVE_ERROR_MESSAGES = {
+  SUBJECT_ALREADY_EXISTS: 'Ya existe una materia con ese código o ese nombre.',
+  SUBJECT_INVALID_TRANSITION: 'La materia está pendiente de aprobación y no se puede editar hasta que dirección la revise.',
+};
+
+const SUBMIT_ERROR_MESSAGES = {
+  INCOMPLETE_SUBJECT: 'Faltan datos obligatorios: cargá al menos un tipo de horas semanales y la modalidad de calificación.',
+  SUBJECT_INVALID_TRANSITION: 'La materia ya no está en borrador: recargá la página para ver su estado actual.',
+};
+
 function mapApprovalStatus(subject) {
   if (!subject) return 'locked';
   const map = {
@@ -41,7 +53,9 @@ function initialState(subject) {
     step: 'identification',
     visitedSteps: ['identification'],
     savedSubjectId: subject?.id ?? null,
+    savedStatus: subject?.status ?? null,
     approvalStatus: mapApprovalStatus(subject),
+    rejectionReason: subject?.rejectionReason ?? null,
     code: subject?.code ?? '',
     name: subject?.name ?? '',
     weeklyHours: subject?.weeklyHours != null ? String(subject.weeklyHours) : '',
@@ -64,14 +78,26 @@ function reducer(state, action) {
       return { ...state, [action.field]: action.value };
     case 'SAVE_SUCCESS':
       return visited(
-        { ...state, savedSubjectId: action.id, approvalStatus: 'draft', step: 'approval' },
+        {
+          ...state,
+          savedSubjectId: action.subject.id,
+          savedStatus: action.subject.status,
+          approvalStatus: mapApprovalStatus(action.subject),
+          step: 'approval',
+        },
         'approval',
       );
     case 'SUBMIT_SUCCESS':
-      return { ...state, approvalStatus: 'pending' };
+      return { ...state, savedStatus: 'PENDING_APPROVAL', approvalStatus: 'pending', rejectionReason: null };
     default:
       return state;
   }
+}
+
+function updatePayloadFor(payload, savedStatus) {
+  if (CODE_EDITABLE_STATUSES.includes(savedStatus)) return payload;
+  const { code: _code, ...rest } = payload;
+  return rest;
 }
 
 function computeValidity(state) {
@@ -104,12 +130,32 @@ function FieldGroup({ label, required, children, hint }) {
   );
 }
 
+function RejectionNotice({ reason }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3">
+      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+      <div className="min-w-0">
+        <p className="text-[13px] font-semibold text-danger">Dirección rechazó esta materia</p>
+        <p className="mt-0.5 text-[13px] text-ink">{reason}</p>
+        <p className="mt-1 text-[12px] text-ink-faint">Corregí los datos, guardá los cambios y volvé a enviarla a aprobación.</p>
+      </div>
+    </div>
+  );
+}
+
 function Step1Identificacion({ state, dispatch }) {
+  const codeLocked = state.savedStatus !== null && !CODE_EDITABLE_STATUSES.includes(state.savedStatus);
   return (
     <div className="flex flex-col gap-5">
+      {state.approvalStatus === 'rejected' && state.rejectionReason && <RejectionNotice reason={state.rejectionReason} />}
       <div className="grid grid-cols-2 gap-4">
-        <FieldGroup label="Código" required hint="Máximo 4 caracteres">
+        <FieldGroup
+          label="Código"
+          required
+          hint={codeLocked ? 'El código no se puede cambiar una vez aprobada la materia' : 'Máximo 4 caracteres'}
+        >
           <Input
+            disabled={codeLocked}
             value={state.code}
             onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'code', value: e.target.value.toUpperCase().slice(0, 4) })}
             placeholder="MAT1"
@@ -261,8 +307,9 @@ function Step4Aprobacion({ state, onSubmit, isSubmitting }) {
         <XCircle className="h-14 w-14 text-danger" />
         <div>
           <p className="text-[16px] font-semibold text-ink">Solicitud rechazada</p>
+          {state.rejectionReason && <p className="mt-1 text-[13px] text-ink">Motivo: {state.rejectionReason}</p>}
           <p className="mt-1 text-[13px] text-ink-faint">
-            El director rechazó la solicitud. Revisá los datos en los pasos anteriores y volvé a enviarla.
+            Revisá los datos en los pasos anteriores y volvé a enviarla.
           </p>
         </div>
         <Button variant="gradient" onClick={onSubmit} disabled={isSubmitting} className="mt-2">
@@ -286,10 +333,10 @@ function WizardContent({ state, dispatch, onSubmit, isSubmitting }) {
   );
 }
 
-function WizardForm({ isEdit, existingSubject, subjectId }) {
+function WizardForm({ isEdit, existingSubject }) {
   const navigate = useNavigate();
   const createSubject = useCreateSubject();
-  const updateSubject = useUpdateSubject(subjectId);
+  const updateSubject = useUpdateSubject();
   const submitForApproval = useSubmitForApproval();
 
   const [state, dispatch] = useReducer(reducer, existingSubject, initialState);
@@ -327,17 +374,14 @@ function WizardForm({ isEdit, existingSubject, subjectId }) {
     };
 
     try {
-      let result;
-      if (isEdit) {
-        const { code: _code, ...updatePayload } = payload;
-        result = await updateSubject.mutateAsync(updatePayload);
-      } else {
-        result = await createSubject.mutateAsync(payload);
-      }
-      dispatch({ type: 'SAVE_SUCCESS', id: result.id });
-      toast.success(isEdit ? 'Cambios guardados' : 'Borrador guardado');
-    } catch {
-      toast.error('No se pudo guardar la materia. Revisá los datos e intentá de nuevo.');
+      const alreadySaved = state.savedSubjectId !== null;
+      const result = alreadySaved
+        ? await updateSubject.mutateAsync({ id: state.savedSubjectId, ...updatePayloadFor(payload, state.savedStatus) })
+        : await createSubject.mutateAsync(payload);
+      dispatch({ type: 'SAVE_SUCCESS', subject: result });
+      toast.success(alreadySaved ? 'Cambios guardados' : 'Borrador guardado');
+    } catch (err) {
+      toast.error(SAVE_ERROR_MESSAGES[err?.code] ?? 'No se pudo guardar la materia. Revisá los datos e intentá de nuevo.');
     }
   }
 
@@ -348,8 +392,8 @@ function WizardForm({ isEdit, existingSubject, subjectId }) {
       await submitForApproval.mutateAsync(id);
       dispatch({ type: 'SUBMIT_SUCCESS' });
       toast.success('Solicitud enviada al director');
-    } catch {
-      toast.error('No se pudo enviar la solicitud. Intentá de nuevo.');
+    } catch (err) {
+      toast.error(SUBMIT_ERROR_MESSAGES[err?.code] ?? 'No se pudo enviar la solicitud. Intentá de nuevo.');
     }
   }
 
@@ -396,7 +440,7 @@ function WizardForm({ isEdit, existingSubject, subjectId }) {
               <Button
                 variant="gradient"
                 onClick={handleSave}
-                disabled={!allValid || isSaving}
+                disabled={!allValid || isSaving || state.savedStatus === 'PENDING_APPROVAL'}
               >
                 {isSaving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Guardar borrador'}
               </Button>
@@ -436,5 +480,5 @@ export function AdministrativoSubjectWizard() {
     );
   }
 
-  return <WizardForm isEdit={isEdit} existingSubject={existingSubject} subjectId={id} />;
+  return <WizardForm isEdit={isEdit} existingSubject={existingSubject} />;
 }

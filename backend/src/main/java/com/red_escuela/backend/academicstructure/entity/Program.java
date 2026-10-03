@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.util.List;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
 
 @Getter
 @Setter
@@ -64,4 +65,33 @@ public class Program {
 
     @OneToMany(mappedBy = "program", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProgramSubject> programSubjectsList;
+
+    public void requireCurricularYearWithinDuration(Integer curricularYear) {
+        if (curricularYear == null) {
+            return;
+        }
+        if (curricularYear < 1 || (totalYears != null && curricularYear > totalYears)) {
+            throw new CurricularYearOutOfRangeException(curricularYear, totalYears);
+        }
+    }
+
+    public boolean changeRecurringFee(BigDecimal newPrice) {
+        if (newPrice == null || sameAmount(price, newPrice)) {
+            return false;
+        }
+        price = newPrice;
+        return true;
+    }
+
+    public boolean changeEnrollmentFee(BigDecimal newEnrollmentFee) {
+        if (newEnrollmentFee == null || sameAmount(enrollmentFeeAmount, newEnrollmentFee)) {
+            return false;
+        }
+        enrollmentFeeAmount = newEnrollmentFee;
+        return true;
+    }
+
+    private static boolean sameAmount(BigDecimal current, BigDecimal requested) {
+        return current != null && current.compareTo(requested) == 0;
+    }
 }

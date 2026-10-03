@@ -7,6 +7,7 @@ import { Stagger } from '@/components/Stagger';
 import { Buscador } from '@/components/catalogo/Buscador';
 import { Paginador } from '@/components/catalogo/Paginador';
 import { useCursos } from '@/hooks/useCatalogo';
+import { formatCourseDuration } from '@/lib/courseDuration';
 
 // 2 columnas en vez de 3, POR_PAGINA más chico — cards más grandes con más
 // aire para la info (decisión de producto: menos cards por pantalla, mejor
@@ -54,7 +55,7 @@ export function TabCursos({ search, onSearchChange, page, onPageChange }) {
                   de cada card, para que no quede a distinta altura entre cards
                   de la misma fila cuando el título de una ocupa más líneas. */}
               <div className="mt-auto text-[13px] text-ink-faint">
-                {curso.durationMonths} meses{curso.schedule ? ` · ${curso.schedule}` : ''}
+                {formatCourseDuration(curso.durationMonths)}{curso.schedule ? ` · ${curso.schedule}` : ''}
               </div>
             </GlassCard>
           ))}

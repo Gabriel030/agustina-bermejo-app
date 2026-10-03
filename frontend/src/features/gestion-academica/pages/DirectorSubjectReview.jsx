@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { ModalMotivo } from '@/components/director/ModalMotivo';
 import { useSubjects, useApproveSubject, useRejectSubject } from '@/features/gestion-academica/hooks/useSubjects';
 
 const GRADE_MODE_LABELS = {
@@ -58,6 +59,7 @@ function SubjectReviewRow({ subject, onApprove, onReject, isActing }) {
 
 export function DirectorSubjectReview() {
   const [search, setSearch] = useState('');
+  const [subjectToReject, setSubjectToReject] = useState(null);
   const { data, isLoading, isError } = useSubjects('PENDING_APPROVAL');
   const approveSubject = useApproveSubject();
   const rejectSubject = useRejectSubject();
@@ -79,9 +81,10 @@ export function DirectorSubjectReview() {
     }
   }
 
-  async function handleReject(id) {
+  async function handleReject(reason) {
     try {
-      await rejectSubject.mutateAsync({ id });
+      await rejectSubject.mutateAsync({ id: subjectToReject, reason });
+      setSubjectToReject(null);
       toast.success('Materia rechazada');
     } catch {
       toast.error('No se pudo rechazar la materia. Intentá de nuevo.');
@@ -124,13 +127,20 @@ export function DirectorSubjectReview() {
                 key={s.id}
                 subject={s}
                 onApprove={handleApprove}
-                onReject={handleReject}
+                onReject={setSubjectToReject}
                 isActing={isActing}
               />
             ))}
           </div>
         )}
       </GlassCard>
+      <ModalMotivo
+        open={subjectToReject !== null}
+        onClose={() => setSubjectToReject(null)}
+        onConfirmar={handleReject}
+        confirmando={rejectSubject.isPending}
+        requerido
+      />
     </PageContainer>
   );
 }

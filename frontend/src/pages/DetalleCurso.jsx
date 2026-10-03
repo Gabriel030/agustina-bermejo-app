@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useCurso, useCursoPricing, useCursoTemario } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
+import { formatCourseDuration } from '@/lib/courseDuration';
 
 export function DetalleCurso() {
   const { id } = useParams();
@@ -49,7 +50,7 @@ export function DetalleCurso() {
         <div>
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{curso.name}</div>
           <div className="mt-1 text-sm text-ink-faint">
-            {curso.durationMonths} meses{curso.schedule ? ` · ${curso.schedule}` : ''}
+            {formatCourseDuration(curso.durationMonths)}{curso.schedule ? ` · ${curso.schedule}` : ''}
           </div>
         </div>
         <Button
@@ -68,7 +69,7 @@ export function DetalleCurso() {
         </div>
         <div>
           <div className="text-xs text-ink-faint">Duración</div>
-          <div className="text-[15px] font-bold text-ink">{curso.durationMonths} cuotas mensuales</div>
+          <div className="text-[15px] font-bold text-ink">{curso.durationMonths > 0 ? `${curso.durationMonths} cuotas mensuales` : 'A definir'}</div>
         </div>
       </GlassCard>
 

@@ -21,7 +21,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def nombrePrograma = 'Carrera QA inscripciones ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombrePrograma)', totalYears: 1, totalCreditsRequired: 0 }
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id

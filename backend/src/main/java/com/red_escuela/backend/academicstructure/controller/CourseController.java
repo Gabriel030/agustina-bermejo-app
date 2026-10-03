@@ -45,7 +45,7 @@ public class CourseController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public CourseResponse update(@PathVariable Long id, @RequestBody UpdateCourseRequest request) {
+    public CourseResponse update(@PathVariable Long id, @Valid @RequestBody UpdateCourseRequest request) {
         return CourseResponse.from(courseService.update(id, request));
     }
 
