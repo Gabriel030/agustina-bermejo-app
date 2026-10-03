@@ -333,6 +333,29 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(MaxExamAttemptsExceededException.class);
     }
 
+    @Test
+    void retakingTheSubjectGrantsANewRegularFinalAttempt() {
+        Student student = persistStudent("90000202");
+        Subject subject = persistSubject("MateriaRecursada", null);
+        Term term = persistTerm();
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraRecursada"));
+        SubjectSectionEnrollment firstTake = persistEnrollment(student, programEnrollment, persistSection(subject, term), EnrollmentStatus.REGULAR);
+        ExamBoard failedCall = persistExamBoard(subject, term);
+        entityManager.flush();
+
+        ExamBoardRegistration failed = examBoardRegistrationService.registerProgramEnrollment(failedCall.getId(), firstTake.getId());
+        failed.setStatus(ExamBoardRegistrationStatus.GRADED);
+        firstTake.setStatus(EnrollmentStatus.FAILED);
+        SubjectSectionEnrollment retake = persistEnrollment(student, programEnrollment, persistSection(subject, term), EnrollmentStatus.REGULAR);
+        retake.setAttemptNumber(2);
+        ExamBoard nextCall = persistExamBoard(subject, term);
+        entityManager.flush();
+
+        ExamBoardRegistration registration = examBoardRegistrationService.registerProgramEnrollment(nextCall.getId(), retake.getId());
+
+        assertThat(registration.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
     private SubjectSectionEnrollment regularEnrollmentWithAttendance(String dni, AttendanceStatus... statuses) {
         Student student = persistStudent(dni);
         Subject subject = persistSubject("Materia asistencia " + dni, null);
