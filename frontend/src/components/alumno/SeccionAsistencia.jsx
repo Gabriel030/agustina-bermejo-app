@@ -101,7 +101,9 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
   const presentes = (registros ?? []).filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length;
   const porcentajeAsistencia = total > 0 ? presentes / total : 0;
   const meses = agruparPorMes(registros ?? []);
-  const porcentajeRequerido = riesgo?.maxAbsencePercentage != null ? Math.round((1 - riesgo.maxAbsencePercentage) * 100) : null;
+  const rawMax = riesgo?.maxAbsencePercentage;
+  const normalizedMax = rawMax != null && rawMax > 1 ? rawMax / 100 : rawMax;
+  const porcentajeRequerido = normalizedMax != null ? Math.round((1 - normalizedMax) * 100) : null;
 
   function cerrarModal(abierto) {
     if (!abierto) {

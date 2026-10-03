@@ -133,7 +133,7 @@ function InvoiceTable({ invoices, onDetalle }) {
                 {inv.paymentDate ? formatFecha(inv.paymentDate) : <span className="text-border">—</span>}
               </TableCell>
               <TableCell className="text-right font-mono font-semibold tabular-nums">
-                {formatMonto(inv.remainingBalance)}
+                {formatMonto(inv.amountDue)}
               </TableCell>
               <TableCell>
                 <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
