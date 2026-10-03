@@ -241,6 +241,24 @@ está en horario de Argentina y el runner en `Etc/UTC` — la verificación corr
 `TZ=UTC ./mvnw clean verify`. Lo mismo aplicaría a locale o a cualquier default de la
 JVM que dependa del host.
 
+**Hay diferencias de entorno que forzar una variable NO cubre, y ahí la defensa es
+cómo se escribe la aserción.** Dos casos reales:
+
+- **Precisión del reloj.** `LocalDateTime.now()` da microsegundos en macOS y
+  nanosegundos en el runner de Linux, y Postgres guarda `timestamp` con precisión
+  de microsegundos. Un test que compara un `LocalDateTime` en memoria contra el
+  mismo valor leído de la base pasa en una máquina y falla en la otra. Al persistir
+  un instante y compararlo: truncar a `ChronoUnit.MICROS` —la precisión que la base
+  guarda de verdad— o comparar dos lecturas de la base entre sí.
+- **Unicidad "probabilística".** Un código generado con `System.nanoTime() % N`
+  choca o no según la suerte y según cuántas filas acumuló la base compartida de
+  la suite. Rompió el CI dos veces con `uk_subject_code`. Para datos con constraint
+  de unicidad, usar un contador de proceso —`TestSubjectCodes.next()`— que garantice
+  unicidad por construcción, no un random con espacio chico.
+
+En los dos casos el CI local corrido entero y en verde **no puede** atrapar la falla:
+no es un comando que falte correr, es una aserción mal escrita.
+
 Si tocaste backend: `./mvnw clean verify` en verde. Si tocaste frontend: `npm run test`
 en verde + `npm run build` sin errores (ver [docs/context/frontend.md](frontend.md)
 para dónde va cada tipo de componente/hook nuevo, así el test queda en el lugar

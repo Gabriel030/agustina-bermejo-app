@@ -1,0 +1,32 @@
+meta {
+  name: 2. Prometheus sin credenciales da 401
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/actuator/prometheus
+  auth: none
+}
+
+tests {
+  test("status 401, no 403", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+  test("responde el challenge de Basic", function () {
+    expect(res.getHeader("www-authenticate")).to.contain("Basic");
+  });
+}
+
+docs {
+  # Prometheus cerrado
+
+  401 y no 403: un 403 sin `WWW-Authenticate` no le dice al agente de scraping
+  que tiene que autenticarse. Es el único endpoint de la app que hoy devuelve
+  401 correctamente — el resto devuelve 403 para no autenticado, que está
+  anotado como deuda.
+
+  Esto no salió gratis: `httpBasic()` registra el filtro pero **no** deja su
+  `BasicAuthenticationEntryPoint` como entry point de la cadena, así que sin
+  declararlo explícito caía en `Http403ForbiddenEntryPoint`.
+}

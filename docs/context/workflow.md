@@ -15,6 +15,16 @@ Prefijos: `feature/`, `fix/`, `refactor/`, `docs/` (siempre desde `origin/develo
 
 **Sesiones concurrentes:** puede haber otras sesiones de Claude en worktrees (`.claude/worktrees/`). Antes de tocar una rama o commitear: `git worktree list`, `git status`, `git log origin/<rama>..`. Si otra sesión ya pusheó lo mismo, verificar y no rehacer. Nunca `git stash` sin etiqueta única (el stash es compartido).
 
+**Antes de empezar una fase del roadmap y otra vez antes de abrir el PR, correr `gh pr list`.** Mirar solo `develop` no alcanza: un PR puede estar abierto horas antes de mergearse, y en ese lapso las dos sesiones no se ven.
+
+```bash
+gh pr list --state open --json number,title,headRefName
+```
+
+Pasó de verdad el 2026-10-01 con la Fase 5.5 de avisos: dos sesiones la implementaron entera en paralelo —una con un `Dialog`, la otra con un wizard— y se enteraron recién cuando la primera mergeó. El PR #109 estuvo abierto **nueve horas** antes de que se abriera el #110. Ninguna de las dos había corrido `gh pr list`; las dos habían verificado `develop` y las ramas remotas, y en el momento en que lo hicieron la verificación era correcta.
+
+Si la fase ya la está haciendo otra sesión, avisarle con `SendMessage` en vez de duplicarla, y dejar escrito quién la toma.
+
 ## 2. Aprobaciones
 
 - Mostrar archivos tocados + mensaje de commit propuesto y esperar un "sí" explícito **antes de cada commit**.

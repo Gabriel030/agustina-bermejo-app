@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
@@ -226,11 +228,11 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subjectA = new Subject();
-        subjectA.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subjectA.setCode(TestSubjectCodes.next());
         subjectA.setName("Materia MinGrade A");
         entityManager.persist(subjectA);
         Subject subjectB = new Subject();
-        subjectB.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subjectB.setCode(TestSubjectCodes.next());
         subjectB.setName("Materia MinGrade B");
         entityManager.persist(subjectB);
 
@@ -449,7 +451,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia ProgramSubject Baja");
         entityManager.persist(subject);
         entityManager.flush();
@@ -636,7 +638,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia del grupo en uso");
         entityManager.persist(subject);
         entityManager.flush();
@@ -698,7 +700,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Mandatory");
         entityManager.persist(subject);
         entityManager.flush();
@@ -722,7 +724,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Elective");
         entityManager.persist(subject);
         entityManager.flush();

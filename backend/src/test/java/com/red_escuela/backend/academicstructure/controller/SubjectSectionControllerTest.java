@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
@@ -101,7 +103,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSectionOverASubjectSharedByTwoProgramsEndsUpAsOneSingleRow() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Inglés Compartido");
         entityManager.persist(subject);
 
@@ -158,7 +160,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void assigningTheSameInstructorWithTheSameRoleTwiceReturns409() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para docentes");
         entityManager.persist(subject);
 
@@ -202,7 +204,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSectionWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject sin permiso");
         entityManager.persist(subject);
         entityManager.flush();
@@ -220,7 +222,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void creatingSectionWithNonExistentEvaluationSchemeReturns404() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject con esquema inválido");
         entityManager.persist(subject);
 
@@ -246,7 +248,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void removingInstructorFromASectionTheyDoNotBelongToReturns404() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para cruce de comisiones");
         entityManager.persist(subject);
 
@@ -300,7 +302,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void listingSectionsWithAnyAuthenticatedRoleReturns200() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para list");
         entityManager.persist(subject);
         entityManager.flush();
@@ -315,7 +317,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void deactivatingAndReactivatingSectionWorksAndTheListingFiltersByStatus() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para baja de comisión");
         entityManager.persist(subject);
 
@@ -358,7 +360,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void listingInstructorsOfASectionReturns200() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para list docentes");
         entityManager.persist(subject);
 
@@ -400,7 +402,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     @Test
     void updatingSectionUpdatesFields() throws Exception {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Subject para editar comisión");
         entityManager.persist(subject);
 

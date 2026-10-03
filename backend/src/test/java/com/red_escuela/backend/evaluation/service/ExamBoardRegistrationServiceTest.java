@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -83,7 +85,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name, Integer maxFinalExamAttempts) {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         subject.setMaxFinalExamAttempts(maxFinalExamAttempts);
         entityManager.persist(subject);

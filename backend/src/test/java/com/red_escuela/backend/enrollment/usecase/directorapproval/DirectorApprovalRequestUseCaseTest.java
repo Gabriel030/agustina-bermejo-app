@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.entity.Address;
@@ -145,7 +147,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
 
         Subject subject = new Subject();
-        subject.setCode(String.format("T%03d", (int) (Math.abs(System.nanoTime()) % 1000)));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("MateriaExcepcion" + System.nanoTime());
         entityManager.persist(subject);
         Term term = new Term();

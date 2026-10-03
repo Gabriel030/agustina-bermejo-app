@@ -1,5 +1,7 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
@@ -111,7 +113,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia pendiente " + name);
         entityManager.persist(subject);
 

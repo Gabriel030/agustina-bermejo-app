@@ -1,0 +1,35 @@
+meta {
+  name: 1. Health publico sin detalles
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/actuator/health
+  auth: none
+}
+
+tests {
+  test("status 200 sin credenciales", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("reporta UP", function () {
+    expect(res.getBody().status).to.equal("UP");
+  });
+  test("no filtra el detalle de componentes (version de Postgres, paths, Flyway)", function () {
+    expect(res.getBody().components).to.be.undefined;
+  });
+}
+
+docs {
+  # Health público
+
+  Público a propósito: existe para que un chequeo de uptime externo sepa si la
+  app está viva. Por eso `show-details=never` — el detalle expone versión de
+  Postgres, estado de Flyway y paths del filesystem.
+
+  El indicador de `mail` está excluido (`management.health.mail.enabled=false`):
+  verificado que sin SMTP configurado pone el agregado en DOWN y este endpoint
+  devuelve 503 con la API sirviendo perfecto, o sea una falsa alarma por cada
+  hipo de Brevo.
+}

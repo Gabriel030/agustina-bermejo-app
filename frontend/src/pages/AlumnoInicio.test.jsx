@@ -35,8 +35,7 @@ function unAviso(extra = {}) {
 
 function mockearBase(avisos = []) {
   server.use(
-    http.get(`${API}/me/payment-standing`, () => HttpResponse.json({ standing: 'AL_DIA' })),
-    http.get(`${API}/me/invoices/debt-summary`, () => HttpResponse.json({ tieneDeuda: false, montoAdeudado: 0 })),
+    http.get(`${API}/me/billing-standing`, () => HttpResponse.json([])),
     http.get(`${API}/me/course-enrollments`, () => HttpResponse.json([])),
     http.get(`${API}/me/announcements`, () => HttpResponse.json(avisos)),
   );
