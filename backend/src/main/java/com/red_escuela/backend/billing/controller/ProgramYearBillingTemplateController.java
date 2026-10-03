@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
 import com.red_escuela.backend.billing.dto.CreateProgramYearBillingTemplateRequest;
+import com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse;
 import com.red_escuela.backend.billing.dto.ProgramCohortResponse;
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase;
@@ -68,8 +69,8 @@ public class ProgramYearBillingTemplateController {
     }
 
     @GetMapping("/programs/{id}/cohorts")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<ProgramCohortResponse> listProgramCohorts(@PathVariable Long id) {
-        return listCohortsForProgramUseCase.list(id).stream().map(ProgramCohortResponse::from).toList();
+    @PreAuthorize("isAuthenticated()")
+    public List<ProgramCohortCatalogResponse> listProgramCohorts(@PathVariable Long id) {
+        return listCohortsForProgramUseCase.list(id).stream().map(c -> ProgramCohortCatalogResponse.from(c, id)).toList();
     }
 }

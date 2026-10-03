@@ -39,7 +39,9 @@ public class LoginService implements LoginUseCase {
     @Override
     @Transactional
     public AuthTokens login(LoginCommand command) {
-        Optional<Person> personOpt = personRepository.findByUsername(command.username());
+        Optional<Person> personOpt = personRepository.findByUsername(command.username())
+                .or(() -> personRepository.findByEmail(command.username()))
+                .or(() -> personRepository.findByDni(command.username()));
 
         if (personOpt.isEmpty()) {
             recordAttempt(command.username(), null, false, command.ipAddress());

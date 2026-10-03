@@ -14,13 +14,13 @@ export function usePaymentStanding() {
   });
 }
 
-export function useMisCursos() {
-  return useQuery({ queryKey: ['me', 'course-enrollments'], queryFn: () => apiFetch('/me/course-enrollments') });
+export function useMisCursos(enabled = true) {
+  return useQuery({ queryKey: ['me', 'course-enrollments'], queryFn: () => apiFetch('/me/course-enrollments'), enabled });
 }
 
 // Épica 2 Fase 1 (Alumno · Mis carreras).
-export function useMisMatriculaciones() {
-  return useQuery({ queryKey: ['me', 'program-enrollments'], queryFn: () => apiFetch('/me/program-enrollments') });
+export function useMisMatriculaciones(enabled = true) {
+  return useQuery({ queryKey: ['me', 'program-enrollments'], queryFn: () => apiFetch('/me/program-enrollments'), enabled });
 }
 
 export function useMiProgreso(programEnrollmentId) {

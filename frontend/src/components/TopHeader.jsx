@@ -13,7 +13,7 @@ function iniciales(nombre, apellido) {
 export function TopHeader({ titulo, items }) {
   const { usuario } = useAuth();
   const { data: perfil } = usePerfilPropio();
-  const { data: avatarUrl } = useAvatar(perfil?.hasAvatar);
+  const { data: avatarUrl } = useAvatar(!!perfil && !!perfil.hasAvatar);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] shrink-0">
