@@ -55,9 +55,9 @@ public class AttendanceRiskCalculator {
 
     private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
         if (total == 0) {
-            return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
+            return new AttendanceRiskResponse(true, false, null, maxAbsencePercentage);
         }
-        double porcentaje = (double) ausentes / total;
+        double porcentaje = ausentes * 100.0 / total;
         return new AttendanceRiskResponse(true, porcentaje > maxAbsencePercentage, porcentaje, maxAbsencePercentage);
     }
 }
