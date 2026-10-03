@@ -27,10 +27,10 @@ export function useCrearEsquema() {
   });
 }
 
-export function useEditarEsquema(id) {
+export function useEditarEsquema() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => apiFetch(`/evaluation-schemes/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    mutationFn: ({ id, payload }) => apiFetch(`/evaluation-schemes/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['evaluation-schemes'] }),
   });
 }

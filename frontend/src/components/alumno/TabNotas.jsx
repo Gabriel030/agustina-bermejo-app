@@ -19,6 +19,7 @@ const ESTADO_PILL = {
   'en-curso': { label: 'En curso', tone: 'accent' },
   regular: { label: 'Regular · falta final', tone: 'warning' },
   aprobada: { label: 'Aprobada', tone: 'success' },
+  desaprobada: { label: 'Desaprobada', tone: 'danger' },
   disponible: { label: 'Disponible', tone: 'accent' },
   bloqueada: { label: 'Bloqueada', tone: 'neutral' },
 };
@@ -104,7 +105,7 @@ export function TabNotas({ carreraId }) {
             ) : (
               pagina.map((fila, i) => {
                 const pill = ESTADO_PILL[fila.estado];
-                const tieneNotas = fila.estado === 'en-curso' || fila.estado === 'regular' || fila.estado === 'aprobada';
+                const tieneNotas = !!fila.inscripcion;
                 const query = notasQueries[i];
                 const { columnas } = tieneNotas ? mapearNotasAColumnas(query?.data) : { columnas: {} };
                 const nuevoGrupo = !hayOrdenExplicito && fila.curricularYear !== anioAnterior;

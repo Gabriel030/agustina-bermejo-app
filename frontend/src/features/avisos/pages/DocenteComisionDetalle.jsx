@@ -1,5 +1,7 @@
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
+import { GlassCard } from '@/components/GlassCard';
+import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -19,13 +21,13 @@ export function DocenteComisionDetalle() {
   const esCurso = tipo === 'COURSE';
   const tab = esCurso ? 'avisos' : (searchParams.get('tab') ?? 'evaluacion');
 
-  const { data: config, isLoading: cargandoConfig } = useConfiguracionComision(esCurso ? undefined : sectionId);
+  const { data: config, isLoading: cargandoConfig, isError: sinConfig } = useConfiguracionComision(esCurso ? undefined : sectionId);
   const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
   const avisos = useAvisos(sectionId, tipo);
   const eliminarAviso = useEliminarAviso(sectionId, tipo);
 
-  const curso = esCurso ? (dictadas ?? []).find((s) => s.type === 'COURSE' && String(s.id) === sectionId) : null;
-  const cargandoEncabezado = esCurso ? cargandoDictadas : cargandoConfig;
+  const dictada = (dictadas ?? []).find((s) => s.type === tipo && String(s.id) === sectionId);
+  const cargandoEncabezado = esCurso ? cargandoDictadas : cargandoConfig || (sinConfig && cargandoDictadas);
 
   if (cargandoEncabezado) {
     return (
@@ -36,11 +38,30 @@ export function DocenteComisionDetalle() {
     );
   }
 
-  const nombre = esCurso
-    ? [curso?.subjectName, curso?.sectionName].filter(Boolean).join(' · ')
-    : `${config.subjectName} · ${config.sectionName}`;
-  const pill = esCurso ? null : (ESTADO_CONFIG_LABEL[config.status] ?? { label: config.status, tone: 'neutral' });
-  const cerrada = esCurso ? false : comisionCerrada(config.termEndDate);
+  const encabezado = esCurso || sinConfig ? dictada : config;
+
+  if (!encabezado) {
+    return (
+      <PageContainer>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="🔎"
+            title="No encontramos esta comisión"
+            description="Puede que no exista o que no esté asignada a vos."
+            action={
+              <Button variant="outline" asChild>
+                <Link to="/docente/mis-comisiones">Volver a Mis comisiones</Link>
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
+  }
+
+  const nombre = [encabezado.subjectName, encabezado.sectionName].filter(Boolean).join(' · ');
+  const pill = esCurso || sinConfig ? null : (ESTADO_CONFIG_LABEL[config.status] ?? { label: config.status, tone: 'neutral' });
+  const cerrada = esCurso ? false : comisionCerrada(encabezado.termEndDate);
 
   const sufijoTipo = esCurso ? '?type=COURSE' : '';
 
@@ -95,7 +116,16 @@ export function DocenteComisionDetalle() {
       )}
 
       {tab === 'evaluacion' ? (
-        <DocenteConfiguracionEvaluacion />
+        sinConfig ? (
+          <GlassCard className="p-4">
+            <EmptyState
+              title="Esta comisión no tiene configuración de evaluación"
+              description="Las comisiones de ciclos anteriores quedan como registro, sin fechas de evaluación cargadas en el sistema."
+            />
+          </GlassCard>
+        ) : (
+          <DocenteConfiguracionEvaluacion />
+        )
       ) : (
         <>
           {cerrada && (

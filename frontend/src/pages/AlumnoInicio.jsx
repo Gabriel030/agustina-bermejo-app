@@ -12,7 +12,17 @@ import { useNovedades } from '@/hooks/useNovedades';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
 
-const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'WAITLISTED', 'REGULAR']);
+const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'REGULAR']);
+
+function resumenDeCursos(activos, enEspera) {
+  const partes = [];
+  if (activos > 0) partes.push(`Tenés ${activos} curso${activos === 1 ? '' : 's'} en curso`);
+  if (enEspera > 0) {
+    const espera = `lista de espera de ${enEspera} curso${enEspera === 1 ? '' : 's'}`;
+    partes.push(activos > 0 ? `y estás en ${espera}` : `Estás en ${espera}`);
+  }
+  return partes.join(' ');
+}
 
 const NOVEDADES_INICIAL = 3;
 
@@ -104,6 +114,7 @@ export function AlumnoInicio() {
   const cargandoPago = cargandoStanding;
   const pago = standing ? estadoDePago(standing.standing) : null;
   const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
+  const cursosEnEspera = (cursos ?? []).filter((c) => c.status === 'WAITLISTED');
 
   const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
   const novedades = [...(novedadesRaw ?? [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -146,11 +157,9 @@ export function AlumnoInicio() {
         )}
       </GlassCard>
 
-      {cursosActivos.length > 0 && (
+      {cursosActivos.length + cursosEnEspera.length > 0 && (
         <GlassCard className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <span className="text-[13px] font-semibold text-ink-soft">
-            Tenés {cursosActivos.length} curso{cursosActivos.length === 1 ? '' : 's'} en curso
-          </span>
+          <span className="text-[13px] font-semibold text-ink-soft">{resumenDeCursos(cursosActivos.length, cursosEnEspera.length)}</span>
           <Link to="/alumno/mis-cursos" className="text-xs font-bold text-primary hover:underline">
             Ver mis cursos →
           </Link>

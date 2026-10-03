@@ -41,6 +41,7 @@ export const TABS_ESTADO = [
   { id: 'en-curso', label: 'En curso' },
   { id: 'regulares', label: 'Regulares' },
   { id: 'aprobadas', label: 'Aprobadas' },
+  { id: 'desaprobadas', label: 'Desaprobadas' },
   { id: 'bloqueadas', label: 'Bloqueadas' },
 ];
 
@@ -77,6 +78,9 @@ export function clasificarMateriaDelPlan(programSubject, inscripcion) {
   if (inscripcion && ESTADOS_EN_CURSO.has(inscripcion.status)) {
     return { estado: 'en-curso', inscripcion };
   }
+  if (inscripcion?.status === 'FAILED') {
+    return { estado: 'desaprobada', inscripcion };
+  }
   const anio = programSubject.curricularYear ?? 1;
   if (anio > 1) {
     return { estado: 'bloqueada', motivoBloqueo: `Requiere materias de ${anio - 1}° año` };
@@ -90,7 +94,15 @@ export function clasificarMateriaDelPlan(programSubject, inscripcion) {
 // logré), después disponibles, bloqueadas al final — pedido explícito del
 // usuario ("ordenamiento agrupado en año"). Las filas sin año (curricularYear
 // null) van al final, agrupadas aparte.
-export const ORDEN_ESTADO = { 'en-curso': 0, regular: 1, aprobada: 2, disponible: 3, bloqueada: 4 };
+export const ORDEN_ESTADO = { 'en-curso': 0, regular: 1, aprobada: 2, desaprobada: 3, disponible: 4, bloqueada: 5 };
+
+const PRIORIDAD_INSCRIPCION = { APPROVED: 0, REGULAR: 1, IN_PROGRESS: 2, ENROLLED: 2, WAITLISTED: 2, FAILED: 3 };
+
+export function inscripcionVigente(inscripciones) {
+  return inscripciones
+    .filter((i) => i.status in PRIORIDAD_INSCRIPCION)
+    .sort((a, b) => PRIORIDAD_INSCRIPCION[a.status] - PRIORIDAD_INSCRIPCION[b.status])[0];
+}
 
 export function ordenarFilasDeMaterias(a, b) {
   const porAnio = (a.curricularYear ?? Infinity) - (b.curricularYear ?? Infinity);
