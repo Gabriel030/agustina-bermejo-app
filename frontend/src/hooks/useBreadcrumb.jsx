@@ -34,8 +34,8 @@ export function useBreadcrumb() {
   const enDetallePagosCurso = /^\/alumno\/pagos\/curso\/[^/]+$/.test(location.pathname);
   const enDetallePagosCarrera = /^\/alumno\/pagos\/carrera\/[^/]+$/.test(location.pathname);
   const enDetallePagos = enDetallePagosCurso || enDetallePagosCarrera;
-  const { data: cursos } = useMisCursos();
-  const { data: carreras } = useMisMatriculaciones();
+  const { data: cursos } = useMisCursos(enDetallePagosCurso);
+  const { data: carreras } = useMisMatriculaciones(enDetallePagosCarrera);
 
   const enLegajoAlumno = /^\/(preceptor|administrativo|director)\/alumnos\/[^/]+$/.test(location.pathname);
   const { data: legajo } = useLegajoAlumno(params.id, enLegajoAlumno);

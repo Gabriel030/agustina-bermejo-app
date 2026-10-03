@@ -154,6 +154,10 @@ function Paso2Contenido({ state, dispatch }) {
   const navigate = useNavigate();
 
   async function handleCrear() {
+    if (state.totalCreditsRequired === '') {
+      setError('Los créditos requeridos son obligatorios.');
+      return;
+    }
     setError(null);
     try {
       const body = {
@@ -161,7 +165,7 @@ function Paso2Contenido({ state, dispatch }) {
         totalYears: parseInt(state.totalYears),
         ...(state.level && { level: state.level }),
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
-        ...(state.totalCreditsRequired && { totalCreditsRequired: parseInt(state.totalCreditsRequired) }),
+        totalCreditsRequired: parseInt(state.totalCreditsRequired),
         ...(state.totalHoursRequired && { totalHoursRequired: parseInt(state.totalHoursRequired) }),
         ...(state.graduationProfile.trim() && { graduationProfile: state.graduationProfile.trim() }),
         ...(state.admissionRequirements.trim() && { admissionRequirements: state.admissionRequirements.trim() }),
@@ -179,7 +183,7 @@ function Paso2Contenido({ state, dispatch }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Créditos requeridos
+            Créditos requeridos <span className="text-danger">*</span>
           </label>
           <Input
             type="number"
