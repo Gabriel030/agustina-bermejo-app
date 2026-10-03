@@ -131,6 +131,8 @@ import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateExcepti
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
 import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
+import com.red_escuela.backend.attendance.exception.AttendanceStatusNotRecordableException;
+import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotYetTakenException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
@@ -242,6 +244,7 @@ public class GlobalExceptionHandler {
             ExamDateOnHolidayException.class,
             InvalidEvaluationSchemeException.class,
             InvalidGradeScoreException.class,
+            AttendanceStatusNotRecordableException.class,
             SubmissionWindowClosedException.class,
             InvalidSectionEvaluationConfigTransitionException.class,
             InvalidPaymentPlanScopeException.class,
@@ -379,7 +382,8 @@ public class GlobalExceptionHandler {
             RoleNotAssignableByActorException.class,
             NotSectionLeadInstructorException.class,
             NotOwnNotificationException.class,
-            NotSectionInstructorException.class
+            NotSectionInstructorException.class,
+            NotExamBoardTribunalMemberException.class
     })
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public void handleForbidden() {

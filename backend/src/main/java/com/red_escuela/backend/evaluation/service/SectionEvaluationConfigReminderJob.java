@@ -37,7 +37,7 @@ public class SectionEvaluationConfigReminderJob {
     }
 
     @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
-    @Transactional(readOnly = true)
+    @Transactional
     public void sendReminders() {
         LocalDate today = LocalDate.now();
         List<SectionEvaluationConfig> pending = configRepository.findByStatusIn(List.of(

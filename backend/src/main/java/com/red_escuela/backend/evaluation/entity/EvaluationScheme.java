@@ -32,8 +32,8 @@ public class EvaluationScheme {
     private Double finalWeight;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "aggregation_method")
-    private GradeAggregationMethod aggregationMethod;
+    @Column(name = "aggregation_method", nullable = false)
+    private GradeAggregationMethod aggregationMethod = GradeAggregationMethod.SIMPLE_AVERAGE;
 
     @Column(name = "min_regular_grade")
     private Double minRegularGrade;
@@ -67,7 +67,7 @@ public class EvaluationScheme {
         this.examCountExpected = examCountExpected;
         this.hasFinal = hasFinal;
         this.finalWeight = finalWeight;
-        this.aggregationMethod = aggregationMethod;
+        this.aggregationMethod = aggregationMethod == null ? GradeAggregationMethod.SIMPLE_AVERAGE : aggregationMethod;
         this.minRegularGrade = minRegularGrade;
         this.minApprovalGrade = minApprovalGrade;
         this.promotionMinGrade = promotionMinGrade;

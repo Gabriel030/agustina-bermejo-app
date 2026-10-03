@@ -4,6 +4,7 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
+import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
@@ -52,6 +53,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private EvaluationSchemeService evaluationSchemeService;
 
     private Institution persistInstitution() {
         Institution institution = new Institution();
@@ -507,6 +511,25 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
             attendance.setRecordedBy(instructor);
             entityManager.persist(attendance);
         }
+    }
+
+    @Test
+    void schemeCreatedWithoutAggregationMethodStillMakesAStudentWithApprovedExamsRegular() {
+        EvaluationScheme scheme = evaluationSchemeService.create(
+                new CreateEvaluationSchemeRequest("Esquema desde la pantalla", 2, true, null, null, 4.0, 6.0, null, null));
+        Instructor instructor = persistInstructor("71000112");
+        SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000111", scheme, instructor, null);
+        entityManager.flush();
+
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 6.0, 10.0, null, null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(scheme.getAggregationMethod()).isEqualTo(GradeAggregationMethod.SIMPLE_AVERAGE);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
     @Test

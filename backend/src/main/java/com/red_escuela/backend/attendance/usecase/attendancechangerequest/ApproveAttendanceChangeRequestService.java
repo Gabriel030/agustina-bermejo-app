@@ -42,7 +42,7 @@ public class ApproveAttendanceChangeRequestService implements ApproveAttendanceC
         finder.requirePending(request);
 
         Attendance attendance = request.getAttendance();
-        attendance.setStatus(request.getRequestedStatus());
+        attendance.applyApprovedChange(request.getRequestedStatus());
         attendanceRepository.save(attendance);
 
         request.setStatus(AttendanceChangeRequestStatus.APPROVED);

@@ -32,6 +32,7 @@ import java.util.Objects;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
 import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 
 @Service
@@ -143,6 +144,19 @@ public class ExamBoardService {
     public List<ExamBoard> list(ExamBoardStatus status) {
         return status == null ? examBoardRepository.findAllByOrderByExamDateDesc()
                 : examBoardRepository.findByStatusOrderByExamDateDesc(status);
+    }
+
+    public List<ExamBoard> listForTribunalMember(Long instructorId, ExamBoardStatus status) {
+        return list(status).stream()
+                .filter(examBoard -> examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoard.getId(), instructorId))
+                .toList();
+    }
+
+    public void requireTribunalMember(Long examBoardId, Long instructorId) {
+        findOrThrow(examBoardId);
+        if (!examBoardInstructorRepository.existsByExamBoardIdAndInstructorId(examBoardId, instructorId)) {
+            throw new NotExamBoardTribunalMemberException(instructorId, examBoardId);
+        }
     }
 
     private Double finalScoreOf(ExamBoardRegistration registration, List<GradeItem> grades) {

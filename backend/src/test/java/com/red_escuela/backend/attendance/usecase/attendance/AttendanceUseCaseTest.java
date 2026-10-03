@@ -5,6 +5,14 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
+import com.red_escuela.backend.attendance.exception.AttendanceStatusNotRecordableException;
+import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
+import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
+import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
+import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
+import com.red_escuela.backend.attendance.usecase.attendancechangerequest.ApproveAttendanceChangeRequestUseCase;
+import com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeCommand;
+import com.red_escuela.backend.attendance.usecase.attendancechangerequest.RequestAttendanceChangeUseCase;
 import com.red_escuela.backend.exception.AttendanceAlreadyRecordedException;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
@@ -82,6 +90,15 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private RequestAttendanceChangeUseCase requestAttendanceChangeUseCase;
+
+    @Autowired
+    private ApproveAttendanceChangeRequestUseCase approveAttendanceChangeRequestUseCase;
+
+    @Autowired
+    private GetProgramSectionRosterUseCase getProgramSectionRosterUseCase;
 
     @AfterEach
     void clearSecurityContext() {
@@ -586,5 +603,73 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 .isInstanceOf(AttendanceAlreadyRecordedException.class);
         assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()))
                 .extracting(Attendance::getStatus).containsExactly(AttendanceStatus.LATE);
+    }
+
+    @Test
+    void teacherCannotRecordJustifiedOrPendingJustificationWhenTakingAttendance() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000041", "80000042", "MateriaSinAtajoJustificada", instructor);
+
+        assertThatThrownBy(() -> load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.JUSTIFIED))
+                .isInstanceOf(AttendanceStatusNotRecordableException.class);
+        assertThatThrownBy(() -> load(enrollment, instructor[0], CLASS_DAY.minusDays(7), AttendanceStatus.JUSTIFICATION_PENDING))
+                .isInstanceOf(AttendanceStatusNotRecordableException.class);
+        assertThat(listProgramEnrollmentAttendanceUseCase.list(enrollment.getId())).isEmpty();
+    }
+
+    @Test
+    void aChangeRequestCannotAskForAJustifiedStatus() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000043", "80000044", "MateriaCambioAJustificada", instructor);
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+        Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
+
+        assertThatThrownBy(() -> requestAttendanceChangeUseCase.request(new RequestAttendanceChangeCommand(
+                attendance.getId(), instructor[0], new CreateAttendanceChangeRequestRequest(AttendanceStatus.JUSTIFIED, "trajo certificado"))))
+                .isInstanceOf(AttendanceStatusNotRecordableException.class);
+    }
+
+    @Test
+    void approvingAPendingChangeRequestToJustifiedFailsAndKeepsTheAttendance() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000045", "80000046", "MateriaAprobarAJustificada", instructor);
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+        Attendance attendance = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
+        AttendanceChangeRequest pending = new AttendanceChangeRequest();
+        pending.setAttendance(attendance);
+        pending.setRequestedBy(instructor[0]);
+        pending.setPreviousStatus(AttendanceStatus.ABSENT);
+        pending.setRequestedStatus(AttendanceStatus.JUSTIFIED);
+        pending.setReason("pedido viejo");
+        pending.setStatus(AttendanceChangeRequestStatus.PENDING);
+        entityManager.persist(pending);
+        Person preceptor = persistPersonBase("80000047");
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> approveAttendanceChangeRequestUseCase.approve(pending.getId()))
+                .isInstanceOf(AttendanceStatusNotRecordableException.class);
+        assertThat(attendance.getStatus()).isEqualTo(AttendanceStatus.ABSENT);
+    }
+
+    @Test
+    void aJustifiedAbsenceIsNotCountedAsAnAbsenceInTheRoster() {
+        Instructor[] instructor = new Instructor[1];
+        SubjectSectionEnrollment enrollment = enrollInNewSection("80000048", "80000049", "MateriaRosterJustificada", instructor);
+        load(enrollment, instructor[0], CLASS_DAY, AttendanceStatus.ABSENT);
+        load(enrollment, instructor[0], CLASS_DAY.minusDays(7), AttendanceStatus.ABSENT);
+        Attendance first = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).get(0);
+        Person preceptor = persistPersonBase("80000050");
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(first.getId(), "certificado médico", null));
+        entityManager.flush();
+
+        List<RosterEntryResponse> roster = getProgramSectionRosterUseCase.get(
+                new GetProgramSectionRosterCommand(enrollment.getSubjectSection().getId(), instructor[0].getId()));
+
+        assertThat(roster).singleElement().satisfies(row -> {
+            assertThat(row.absenceCount()).isEqualTo(1);
+            assertThat(row.attendancePercentage()).isEqualTo(0.5);
+        });
     }
 }
