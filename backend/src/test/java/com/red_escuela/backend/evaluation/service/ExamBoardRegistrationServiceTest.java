@@ -240,7 +240,9 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         entityManager.flush();
 
-        examBoardRegistrationService.registerProgramEnrollment(examBoard1.getId(), enrollment.getId());
+        ExamBoardRegistration taken = examBoardRegistrationService.registerProgramEnrollment(examBoard1.getId(), enrollment.getId());
+        taken.setStatus(ExamBoardRegistrationStatus.GRADED);
+        entityManager.flush();
 
         assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard2.getId(), enrollment.getId()))
                 .isInstanceOf(MaxExamAttemptsExceededException.class);
@@ -304,5 +306,25 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         ExamBoardRegistration second = examBoardRegistrationService.registerProgramEnrollment(call2.getId(), enrollment.getId());
         assertThat(second.getExamBoard().getId()).isEqualTo(call2.getId());
         assertThat(second.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
+    }
+
+    @Test
+    void byDefaultTheRegularFinalHasASingleAttempt() {
+        Student student = persistStudent("90000201");
+        Subject subject = persistSubject("MateriaUnSoloFinal", null);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard firstCall = persistExamBoard(subject, term);
+        ExamBoard secondCall = persistExamBoard(subject, term);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraUnSoloFinal"));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        ExamBoardRegistration taken = examBoardRegistrationService.registerProgramEnrollment(firstCall.getId(), enrollment.getId());
+        taken.setStatus(ExamBoardRegistrationStatus.GRADED);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(secondCall.getId(), enrollment.getId()))
+                .isInstanceOf(MaxExamAttemptsExceededException.class);
     }
 }

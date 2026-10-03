@@ -72,16 +72,6 @@ public class ExamBoardRegistrationService {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
         }
 
-        Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
-        if (maxAttempts != null) {
-            long previousAttempts = examBoardRegistrationRepository
-                    .countByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatusNot(
-                            enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.WITHDRAWN);
-            if (previousAttempts >= maxAttempts) {
-                throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
-            }
-        }
-
         examBoardRegistrationRepository
                 .findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatus(
                         enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.REGISTERED)
@@ -94,11 +84,22 @@ public class ExamBoardRegistrationService {
 
         var existing = examBoardRegistrationRepository
                 .findByExamBoardIdAndProgramSubjectSectionEnrollmentId(examBoardId, enrollmentId);
+        if (existing.isPresent() && existing.get().getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
+            throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
+        }
+
+        Integer maxAttempts = examBoard.getSubject().getMaxFinalExamAttempts();
+        if (maxAttempts != null) {
+            long previousAttempts = examBoardRegistrationRepository
+                    .countByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatusNot(
+                            enrollment.getProgramEnrollment().getId(), subjectId, ExamBoardRegistrationStatus.WITHDRAWN);
+            if (previousAttempts >= maxAttempts) {
+                throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
+            }
+        }
+
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
-            if (registration.getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
-                throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
-            }
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
             registration.setRegisteredAt(LocalDateTime.now());
             return examBoardRegistrationRepository.save(registration);
@@ -131,6 +132,19 @@ public class ExamBoardRegistrationService {
             throw new ExamBoardSubjectMismatchException(examBoardId, enrollmentId);
         }
 
+        examBoardRegistrationRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
+                .filter(r -> r.getStatus() == ExamBoardRegistrationStatus.REGISTERED && !r.getExamBoard().getId().equals(examBoardId))
+                .findFirst()
+                .ifPresent(other -> {
+                    throw new AlreadyRegisteredInAnotherExamBoardException(courseSubjectId, other.getExamBoard().getId());
+                });
+
+        var existing = examBoardRegistrationRepository
+                .findByExamBoardIdAndCourseSubjectSectionEnrollmentId(examBoardId, enrollmentId);
+        if (existing.isPresent() && existing.get().getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
+            throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
+        }
+
         Integer maxAttempts = examBoard.getCourseSubject().getMaxFinalExamAttempts();
         if (maxAttempts != null) {
             long previousAttempts = examBoardRegistrationRepository
@@ -141,20 +155,8 @@ public class ExamBoardRegistrationService {
             }
         }
 
-        examBoardRegistrationRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId).stream()
-                .filter(r -> r.getStatus() == ExamBoardRegistrationStatus.REGISTERED && !r.getExamBoard().getId().equals(examBoardId))
-                .findFirst()
-                .ifPresent(other -> {
-                    throw new AlreadyRegisteredInAnotherExamBoardException(courseSubjectId, other.getExamBoard().getId());
-                });
-
-        var existing = examBoardRegistrationRepository
-                .findByExamBoardIdAndCourseSubjectSectionEnrollmentId(examBoardId, enrollmentId);
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
-            if (registration.getStatus() != ExamBoardRegistrationStatus.WITHDRAWN) {
-                throw new AlreadyRegisteredInExamBoardException(examBoardId, enrollmentId);
-            }
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
             registration.setRegisteredAt(LocalDateTime.now());
             return examBoardRegistrationRepository.save(registration);

@@ -62,7 +62,7 @@ function initialState(subject) {
     weeklyHoursLab: subject?.weeklyHoursLab != null ? String(subject.weeklyHoursLab) : '',
     description: subject?.description ?? '',
     gradeMode: subject?.gradeMode ?? '',
-    maxFinalExamAttempts: subject?.maxFinalExamAttempts != null ? String(subject.maxFinalExamAttempts) : '',
+    maxFinalExamAttempts: subject?.maxFinalExamAttempts != null ? String(subject.maxFinalExamAttempts) : '1',
   };
 }
 
@@ -227,13 +227,13 @@ function Step3DictadoEvaluacion({ state, dispatch }) {
           </SelectContent>
         </Select>
       </FieldGroup>
-      <FieldGroup label="Intentos máximos de examen final" hint="Dejá vacío para sin límite">
+      <FieldGroup label="Intentos máximos de examen final" hint="Si lo dejás vacío, el final regular tiene un solo intento.">
         <Input
           type="number"
           min="1"
           value={state.maxFinalExamAttempts}
           onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'maxFinalExamAttempts', value: e.target.value })}
-          placeholder="3"
+          placeholder="1"
         />
       </FieldGroup>
     </div>
