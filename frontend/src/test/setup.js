@@ -33,6 +33,18 @@ window.matchMedia =
     return { matches: false, addEventListener() {}, removeEventListener() {} };
   };
 
+// jsdom no implementa la Pointer Events API ni scrollIntoView, y el Select de
+// Radix los usa al abrirse: sin esto, cualquier test que despliegue un Select
+// revienta con "target.hasPointerCapture is not a function".
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 // MSW intercepta a nivel de red (fetch real) — nunca se mockea apiFetch ni los
 // hooks directamente, ver docs/context/testing.md.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

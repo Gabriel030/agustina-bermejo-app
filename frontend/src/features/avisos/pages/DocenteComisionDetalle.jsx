@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
@@ -13,6 +13,7 @@ import { useEliminarAviso } from '../hooks/useEliminarAviso';
 
 export function DocenteComisionDetalle() {
   const { sectionId } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tipo = searchParams.get('type') === 'COURSE' ? 'COURSE' : 'PROGRAM';
   const esCurso = tipo === 'COURSE';
@@ -41,6 +42,16 @@ export function DocenteComisionDetalle() {
   const pill = esCurso ? null : (ESTADO_CONFIG_LABEL[config.status] ?? { label: config.status, tone: 'neutral' });
   const cerrada = esCurso ? false : comisionCerrada(config.termEndDate);
 
+  const sufijoTipo = esCurso ? '?type=COURSE' : '';
+
+  function irANuevoAviso() {
+    navigate(`/docente/mis-comisiones/${sectionId}/avisos/nuevo${sufijoTipo}`);
+  }
+
+  function irAEditar(aviso) {
+    navigate(`/docente/mis-comisiones/${sectionId}/avisos/${aviso.id}/editar${sufijoTipo}`);
+  }
+
   function cambiarTab(nuevoTab) {
     searchParams.set('tab', nuevoTab);
     setSearchParams(searchParams, { replace: true });
@@ -66,7 +77,7 @@ export function DocenteComisionDetalle() {
           )}
         </div>
         {tab === 'avisos' && !cerrada && (
-          <Button variant="gradient" disabled>
+          <Button variant="gradient" onClick={irANuevoAviso}>
             Nuevo aviso
           </Button>
         )}
@@ -99,7 +110,8 @@ export function DocenteComisionDetalle() {
             isError={avisos.isError}
             onReintentar={avisos.refetch}
             soloLectura={cerrada}
-            onEditar={() => {}}
+            onNuevoAviso={irANuevoAviso}
+            onEditar={irAEditar}
             onEliminar={(aviso) => eliminarAviso.mutateAsync(aviso.id)}
             eliminando={eliminarAviso.isPending}
           />
