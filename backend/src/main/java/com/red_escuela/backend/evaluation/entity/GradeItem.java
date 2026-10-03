@@ -8,6 +8,7 @@ import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
 
 @Getter
 @Setter
@@ -58,6 +59,16 @@ public class GradeItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exam_board_id")
     private ExamBoard examBoard;
+
+    public void recordScore(Double score, Double maxScore) {
+        boolean outOfScale = !GradeScale.contains(score);
+        boolean aboveMax = maxScore != null && (maxScore <= 0 || score > maxScore);
+        if (outOfScale || aboveMax) {
+            throw new InvalidGradeScoreException(score, maxScore);
+        }
+        this.score = score;
+        this.maxScore = maxScore;
+    }
 
     @PrePersist
     @PreUpdate

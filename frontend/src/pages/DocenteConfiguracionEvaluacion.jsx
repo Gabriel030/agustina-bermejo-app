@@ -14,23 +14,52 @@ function campoFecha(valor) {
 
 const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4' };
 
-function CampoFecha({ label, value, onChange, disabled }) {
-  const completo = !!value;
+const MENSAJES_ERROR_CONFIGURACION = {
+  EVALUATION_DATE_OUTSIDE_TERM: 'Una de las fechas cae fuera del cuatrimestre. Revisá las fechas marcadas.',
+  EVALUATION_DATE_ON_HOLIDAY: 'Una de las fechas cae en un feriado. Revisá las fechas marcadas.',
+  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración: el cuatrimestre ya empezó. Si necesitás un ajuste, pedíselo a Dirección.',
+  INVALID_SECTION_EVALUATION_CONFIG_TRANSITION: 'La configuración ya no se puede modificar en su estado actual. Recargá la página.',
+};
+
+function soloDia(fechaIso) {
+  return fechaIso ? fechaIso.slice(0, 10) : null;
+}
+
+function problemaDeFecha(valor, config, feriados) {
+  if (!valor) return null;
+  const inicio = soloDia(config.termStartDate);
+  const fin = soloDia(config.termEndDate);
+  if ((inicio && valor < inicio) || (fin && valor > fin)) return 'Fuera del cuatrimestre';
+  if (feriados?.some((f) => f.date === valor)) return 'Cae en un feriado';
+  return null;
+}
+
+function CampoFecha({ label, value, onChange, disabled, error, min, max }) {
+  const completo = !!value && !error;
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-semibold text-ink-soft">{label}</label>
       <div className="relative">
         <input
           type="date"
+          aria-label={label}
           value={campoFecha(value)}
+          min={min ?? undefined}
+          max={max ?? undefined}
           onChange={(e) => onChange(e.target.value || null)}
           disabled={disabled}
+          aria-invalid={!!error}
           className={`w-full rounded-lg border px-3 py-2 pr-8 text-[13.5px] text-ink disabled:bg-neutral-bg disabled:text-ink-faint ${
-            completo && !disabled ? 'border-success bg-success-bg/30' : 'border-border bg-white/70 dark:bg-white/10'
+            error
+              ? 'border-danger bg-danger-bg/30'
+              : completo && !disabled
+                ? 'border-success bg-success-bg/30'
+                : 'border-border bg-white/70 dark:bg-white/10'
           }`}
         />
         {completo && !disabled && <Check className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
       </div>
+      {error && <span className="text-[11.5px] font-semibold text-danger">{error}</span>}
     </div>
   );
 }
@@ -74,19 +103,34 @@ export function DocenteConfiguracionEvaluacion() {
   const cantidadParciales = config.examCountExpected ?? 2;
   const camposParcial = Array.from({ length: cantidadParciales }, (_, i) => i + 1);
   const soloLectura = !config.canEdit;
+  const tieneFinal = config.hasFinal !== false;
+  const plazoVencido = config.canEdit && !config.canSubmit;
+  const minimo = soloDia(config.termStartDate);
+  const maximo = soloDia(config.termEndDate);
+  const errorDe = (campo) => (soloLectura ? null : problemaDeFecha(form[campo], config, feriados));
+  const camposConFecha = [
+    ...[1, 2, 3].slice(0, form.tpCount ?? 0).map((n) => `tp${n}DueDate`),
+    ...camposParcial.map((n) => `exam${n}Date`),
+    ...(tieneFinal ? ['finalCall1Date', 'finalCall2Date'] : []),
+  ];
+  const hayFechasInvalidas = camposConFecha.some((campo) => errorDe(campo));
 
   const camposTpFaltantes = [1, 2, 3].slice(0, form.tpCount ?? 0).filter((n) => !form[`tp${n}DueDate`]).length;
   const camposParcialFaltantes = camposParcial.filter((n) => !form[`exam${n}Date`]).length;
-  const camposFinalFaltantes = [form.finalCall1Date, form.finalCall2Date].filter((v) => !v).length;
+  const camposFinalFaltantes = tieneFinal ? [form.finalCall1Date, form.finalCall2Date].filter((v) => !v).length : 0;
   const faltantes = (form.tpCount ? camposTpFaltantes : 1) + camposParcialFaltantes + camposFinalFaltantes;
   const formularioCompleto = faltantes === 0;
+
+  function mensajeDeError(e) {
+    return MENSAJES_ERROR_CONFIGURACION[e.code] ?? e.message;
+  }
 
   async function guardar() {
     setError(null);
     try {
       await guardarBorrador.mutateAsync(form);
     } catch (e) {
-      setError(e.message);
+      setError(mensajeDeError(e));
     }
   }
 
@@ -96,7 +140,7 @@ export function DocenteConfiguracionEvaluacion() {
       await guardarBorrador.mutateAsync(form);
       await enviarAAprobacion.mutateAsync();
     } catch (e) {
-      setError(e.message);
+      setError(mensajeDeError(e));
     }
   }
 
@@ -192,6 +236,9 @@ export function DocenteConfiguracionEvaluacion() {
                 value={form[`tp${n}DueDate`]}
                 onChange={(v) => setForm((f) => ({ ...f, [`tp${n}DueDate`]: v }))}
                 disabled={soloLectura}
+                error={errorDe(`tp${n}DueDate`)}
+                min={minimo}
+                max={maximo}
               />
             ))}
           </div>
@@ -209,6 +256,9 @@ export function DocenteConfiguracionEvaluacion() {
                 value={form[`exam${n}Date`]}
                 onChange={(v) => setForm((f) => ({ ...f, [`exam${n}Date`]: v }))}
                 disabled={soloLectura}
+                error={errorDe(`exam${n}Date`)}
+                min={minimo}
+                max={maximo}
               />
             ))}
           </div>
@@ -216,25 +266,35 @@ export function DocenteConfiguracionEvaluacion() {
 
         <div className="h-px bg-border" />
 
-        <div className="flex flex-col gap-3">
-          <label className="text-xs font-semibold text-ink-soft">Finales</label>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <CampoFecha
-              label="1er llamado a final"
-              value={form.finalCall1Date}
-              onChange={(v) => setForm((f) => ({ ...f, finalCall1Date: v }))}
-              disabled={soloLectura}
-            />
-            <CampoFecha
-              label="2do llamado a final"
-              value={form.finalCall2Date}
-              onChange={(v) => setForm((f) => ({ ...f, finalCall2Date: v }))}
-              disabled={soloLectura}
-            />
-          </div>
-        </div>
+        {tieneFinal && (
+          <>
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-semibold text-ink-soft">Finales</label>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <CampoFecha
+                  label="1er llamado a final"
+                  value={form.finalCall1Date}
+                  onChange={(v) => setForm((f) => ({ ...f, finalCall1Date: v }))}
+                  disabled={soloLectura}
+                  error={errorDe('finalCall1Date')}
+                  min={minimo}
+                  max={maximo}
+                />
+                <CampoFecha
+                  label="2do llamado a final"
+                  value={form.finalCall2Date}
+                  onChange={(v) => setForm((f) => ({ ...f, finalCall2Date: v }))}
+                  disabled={soloLectura}
+                  error={errorDe('finalCall2Date')}
+                  min={minimo}
+                  max={maximo}
+                />
+              </div>
+            </div>
 
-        <div className="h-px bg-border" />
+            <div className="h-px bg-border" />
+          </>
+        )}
 
         <div>
           <div className="mb-3 text-xs font-semibold text-ink-soft">Vista de calendario</div>
@@ -243,14 +303,27 @@ export function DocenteConfiguracionEvaluacion() {
 
         {error && <div className="text-sm font-semibold text-danger">{error}</div>}
 
+        {plazoVencido && (
+          <div className="rounded-lg bg-warning-bg/60 p-3 text-xs text-ink-soft">
+            Venció el plazo para enviarla: el cuatrimestre empezó el {formatearFecha(config.termStartDate)}. Podés guardar cambios,
+            pero si necesitás que rija una configuración, pedíselo a Dirección.
+          </div>
+        )}
+
         {!soloLectura && (
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             {!formularioCompleto && <span className="text-xs font-semibold text-warning">Faltan {faltantes} datos para poder enviar</span>}
             <Button variant="outline" onClick={guardar} disabled={guardarBorrador.isPending}>
               Guardar borrador
             </Button>
-            <Button variant="gradient" onClick={enviar} disabled={!formularioCompleto || guardarBorrador.isPending || enviarAAprobacion.isPending}>
-              Enviar a aprobación
+            <Button
+              variant="gradient"
+              onClick={enviar}
+              disabled={
+                !formularioCompleto || hayFechasInvalidas || !config.canSubmit || guardarBorrador.isPending || enviarAAprobacion.isPending
+              }
+            >
+              {config.status === 'REJECTED' ? 'Reenviar a aprobación' : 'Enviar a aprobación'}
             </Button>
           </div>
         )}

@@ -50,6 +50,23 @@ describe('TabAsistencia', () => {
     expect(screen.getByText(/pedí la modificación desde Historial/)).toBeInTheDocument();
   });
 
+  it('el docente no puede marcar Justificada: eso lo resuelve el circuito de justificación', async () => {
+    mockSection();
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    expect(within(rowOf('Ana Gómez')).queryByRole('button', { name: 'Justificada' })).not.toBeInTheDocument();
+    expect(within(rowOf('Ana Gómez')).getByRole('button', { name: 'Ausente' })).toBeInTheDocument();
+  });
+
+  it('una inasistencia justificada no suma al contador de inasistencias', async () => {
+    mockSection({ savedStatusForAna: 'JUSTIFIED' });
+    renderWithProviders(<TabAsistencia type="PROGRAM" sectionId={5} />);
+
+    await screen.findByText('Ana Gómez');
+    expect(within(rowOf('Ana Gómez')).getByText('0 inasist.')).toBeInTheDocument();
+  });
+
   it('si la fecha es feriado lo dice en vez de un error genérico', async () => {
     mockSection();
     server.use(

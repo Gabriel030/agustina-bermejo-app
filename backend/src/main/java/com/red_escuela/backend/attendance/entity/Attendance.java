@@ -1,6 +1,7 @@
 package com.red_escuela.backend.attendance.entity;
 import com.red_escuela.backend.exception.AttendanceAlreadyRecordedException;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -67,7 +68,20 @@ public class Attendance {
         }
     }
 
+    public boolean belongsTo(Student student) {
+        Student owner = programSubjectSectionEnrollment != null
+                ? programSubjectSectionEnrollment.getStudent()
+                : courseSubjectSectionEnrollment.getStudent();
+        return owner.getId().equals(student.getId());
+    }
+
+    public void applyApprovedChange(AttendanceStatus requestedStatus) {
+        requestedStatus.requireRecordableByInstructor();
+        status = requestedStatus;
+    }
+
     public void record(AttendanceStatus newStatus) {
+        newStatus.requireRecordableByInstructor();
         if (status != null && status != newStatus) {
             Long enrollmentId = programSubjectSectionEnrollment != null
                     ? programSubjectSectionEnrollment.getId() : courseSubjectSectionEnrollment.getId();

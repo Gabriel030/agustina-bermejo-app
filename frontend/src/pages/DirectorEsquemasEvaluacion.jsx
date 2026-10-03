@@ -6,14 +6,48 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEvaluationSchemes, useCrearEsquema } from '@/hooks/useDirector';
+import { useEvaluationSchemes, useCrearEsquema, useEditarEsquema } from '@/hooks/useDirector';
 
 const FORM_INICIAL = { name: '', examCountExpected: 2, hasFinal: true, minRegularGrade: 4, minApprovalGrade: 6, esPromocional: false, promotionMinGrade: '' };
 
-function Campo({ label, children }) {
+const MENSAJES_ERROR_ESQUEMA = {
+  INVALID_EVALUATION_SCHEME: 'El esquema tiene notas fuera de 0 a 10 o una nota de promoción menor que la de aprobación.',
+  EVALUATION_SCHEME_IN_USE: 'Ese esquema ya está asignado a alguna comisión y no se puede editar: creá uno nuevo.',
+};
+
+function enEscala(valor) {
+  const numero = Number(valor);
+  return valor !== '' && !Number.isNaN(numero) && numero >= 0 && numero <= 10;
+}
+
+function problemaDelEsquema(form) {
+  const notas = [form.minRegularGrade, form.minApprovalGrade, ...(form.esPromocional && form.promotionMinGrade !== '' ? [form.promotionMinGrade] : [])];
+  if (!notas.every(enEscala)) return 'Las notas van de 0 a 10.';
+  if (form.esPromocional && form.promotionMinGrade !== '') {
+    const corte = Number(form.promotionMinGrade);
+    if (corte < Number(form.minApprovalGrade) || corte < Number(form.minRegularGrade)) {
+      return 'La nota de promoción no puede ser menor que la de aprobación ni que la de regularidad.';
+    }
+  }
+  return null;
+}
+
+function formDesdeEsquema(esquema) {
+  return {
+    name: esquema.name,
+    examCountExpected: esquema.examCountExpected,
+    hasFinal: esquema.hasFinal,
+    minRegularGrade: esquema.minRegularGrade,
+    minApprovalGrade: esquema.minApprovalGrade,
+    esPromocional: esquema.promotionMinGrade != null,
+    promotionMinGrade: esquema.promotionMinGrade ?? '',
+  };
+}
+
+function Campo({ label, htmlFor, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-ink-soft">{label}</label>
+      <label htmlFor={htmlFor} className="text-xs font-semibold text-ink-soft">{label}</label>
       {children}
     </div>
   );
@@ -41,26 +75,48 @@ function ChipSelector({ opciones, valor, onChange }) {
 export function DirectorEsquemasEvaluacion() {
   const { data: esquemas, isLoading } = useEvaluationSchemes();
   const crearEsquema = useCrearEsquema();
+  const editarEsquema = useEditarEsquema();
   const [form, setForm] = useState(FORM_INICIAL);
+  const [editando, setEditando] = useState(null);
   const [error, setError] = useState(null);
+  const problema = problemaDelEsquema(form);
+  const guardando = crearEsquema.isPending || editarEsquema.isPending;
 
-  async function crear() {
+  function empezarEdicion(esquema) {
     setError(null);
+    setEditando(esquema);
+    setForm(formDesdeEsquema(esquema));
+  }
+
+  function cancelarEdicion() {
+    setError(null);
+    setEditando(null);
+    setForm(FORM_INICIAL);
+  }
+
+  async function guardar() {
+    setError(null);
+    const payload = {
+      name: form.name,
+      examCountExpected: Number(form.examCountExpected),
+      hasFinal: form.hasFinal,
+      finalWeight: editando?.finalWeight ?? null,
+      aggregationMethod: editando?.aggregationMethod ?? 'SIMPLE_AVERAGE',
+      minRegularGrade: Number(form.minRegularGrade),
+      minApprovalGrade: Number(form.minApprovalGrade),
+      promotionMinGrade: form.esPromocional ? Number(form.promotionMinGrade) : null,
+      notes: editando?.notes ?? null,
+    };
     try {
-      await crearEsquema.mutateAsync({
-        name: form.name,
-        examCountExpected: Number(form.examCountExpected),
-        hasFinal: form.hasFinal,
-        finalWeight: null,
-        aggregationMethod: null,
-        minRegularGrade: Number(form.minRegularGrade),
-        minApprovalGrade: Number(form.minApprovalGrade),
-        promotionMinGrade: form.esPromocional ? Number(form.promotionMinGrade) : null,
-        notes: null,
-      });
+      if (editando) {
+        await editarEsquema.mutateAsync({ id: editando.id, payload });
+      } else {
+        await crearEsquema.mutateAsync(payload);
+      }
+      setEditando(null);
       setForm(FORM_INICIAL);
     } catch (e) {
-      setError(e.message);
+      setError(MENSAJES_ERROR_ESQUEMA[e.code] ?? e.message);
     }
   }
 
@@ -94,8 +150,13 @@ export function DirectorEsquemasEvaluacion() {
                 <div className="text-[13px] font-semibold text-ink">{e.minRegularGrade}</div>
                 <div className="text-[13px] font-semibold text-ink">{e.minApprovalGrade}</div>
                 <div className="text-[13px] font-semibold text-ink">{e.promotionMinGrade ? `Desde ${e.promotionMinGrade}` : 'No ofrece'}</div>
-                <div>
+                <div className="flex flex-wrap items-center gap-2">
                   <StatusPill tone={e.inUse ? 'warning' : 'success'}>{e.inUse ? 'En uso' : 'Editable'}</StatusPill>
+                  {!e.inUse && (
+                    <Button variant="outline" size="sm" aria-label={`Editar ${e.name}`} onClick={() => empezarEdicion(e)}>
+                      Editar
+                    </Button>
+                  )}
                 </div>
               </div>
             ))
@@ -106,18 +167,18 @@ export function DirectorEsquemasEvaluacion() {
         </GlassCard>
 
         <GlassCard className="flex flex-1 flex-col gap-4 p-5">
-          <div className="font-heading text-[15px] font-semibold text-ink">Nuevo esquema</div>
+          <div className="font-heading text-[15px] font-semibold text-ink">{editando ? 'Editar esquema' : 'Nuevo esquema'}</div>
 
           <Campo label="Nombre">
             <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ej: Reglamento 2027..." />
           </Campo>
 
           <div className="grid grid-cols-2 gap-3">
-            <Campo label="Mínimo para quedar regular">
-              <Input type="number" step="0.1" value={form.minRegularGrade} onChange={(e) => setForm((f) => ({ ...f, minRegularGrade: e.target.value }))} />
+            <Campo label="Mínimo para quedar regular" htmlFor="esquema-regular">
+              <Input id="esquema-regular" type="number" step="0.1" min="0" max="10" value={form.minRegularGrade} onChange={(e) => setForm((f) => ({ ...f, minRegularGrade: e.target.value }))} />
             </Campo>
-            <Campo label="Nota para aprobar el final">
-              <Input type="number" step="0.1" value={form.minApprovalGrade} onChange={(e) => setForm((f) => ({ ...f, minApprovalGrade: e.target.value }))} />
+            <Campo label="Nota para aprobar el final" htmlFor="esquema-aprobar">
+              <Input id="esquema-aprobar" type="number" step="0.1" min="0" max="10" value={form.minApprovalGrade} onChange={(e) => setForm((f) => ({ ...f, minApprovalGrade: e.target.value }))} />
             </Campo>
           </div>
 
@@ -148,6 +209,8 @@ export function DirectorEsquemasEvaluacion() {
                 <Input
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="10"
                   placeholder="Nota de corte"
                   value={form.promotionMinGrade}
                   onChange={(e) => setForm((f) => ({ ...f, promotionMinGrade: e.target.value }))}
@@ -157,14 +220,23 @@ export function DirectorEsquemasEvaluacion() {
             </div>
           </Campo>
 
+          {problema && <div className="text-sm font-semibold text-danger">{problema}</div>}
           {error && <div className="text-sm font-semibold text-danger">{error}</div>}
 
-          <Button
-            onClick={crear}
-            disabled={crearEsquema.isPending || !form.name || (form.esPromocional && !form.promotionMinGrade)}
-          >
-            Crear esquema
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {editando && (
+              <Button variant="outline" onClick={cancelarEdicion}>
+                Cancelar
+              </Button>
+            )}
+            <Button
+              onClick={guardar}
+              loading={guardando}
+              disabled={guardando || !form.name || !!problema || (form.esPromocional && !form.promotionMinGrade)}
+            >
+              {editando ? 'Guardar cambios' : 'Crear esquema'}
+            </Button>
+          </div>
         </GlassCard>
       </div>
     </PageContainer>

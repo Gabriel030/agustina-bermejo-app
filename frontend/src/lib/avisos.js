@@ -1,3 +1,5 @@
+import { parsearFecha } from '@/lib/comisiones';
+
 export function instanciaLabel(segmentKey, index) {
   if (segmentKey.startsWith('EXAM')) return `${index}° parcial`;
   if (segmentKey.startsWith('TP')) return `TP ${index}`;
@@ -51,7 +53,7 @@ export function formatearFechaHora(valorIso) {
 
 export function formatearFechaCorta(valorIso) {
   if (!valorIso) return null;
-  return new Date(valorIso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return parsearFecha(valorIso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export const GRUPOS_DE_SEGMENTO = [

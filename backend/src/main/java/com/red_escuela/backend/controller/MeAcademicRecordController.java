@@ -104,8 +104,7 @@ public class MeAcademicRecordController {
     }
 
     private void requireAttendanceOwner(Attendance attendance, Student student) {
-        SubjectSectionEnrollment enrollment = attendance.getProgramSubjectSectionEnrollment();
-        if (enrollment == null || !enrollment.getStudent().getId().equals(student.getId())) {
+        if (!attendance.belongsTo(student)) {
             throw new AttendanceNotFoundException(attendance.getId());
         }
     }

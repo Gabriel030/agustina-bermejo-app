@@ -171,6 +171,103 @@ describe('DocenteComisionDetalle', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 
+  it('una comisión de un ciclo anterior sin configuración muestra la ficha en vez de una pantalla en blanco', async () => {
+    server.use(
+      http.get(`${API}/me/section-evaluation-configs/${SECTION_ID}`, () => new HttpResponse(null, { status: 404 })),
+      http.get(`${API}/me/teaching-sections`, () =>
+        HttpResponse.json([
+          { id: SECTION_ID, type: 'PROGRAM', subjectName: 'Pedagogía', sectionName: 'Comisión A', termStartDate: '2024-03-04T00:00:00', termEndDate: '2024-12-13T00:00:00' },
+        ]),
+      ),
+    );
+    montar();
+
+    expect(await screen.findByRole('heading', { name: 'Pedagogía · Comisión A' })).toBeInTheDocument();
+    expect(screen.getByText('Esta comisión no tiene configuración de evaluación')).toBeInTheDocument();
+  });
+
+  it('una comisión que no es del docente o no existe muestra un estado de error', async () => {
+    server.use(
+      http.get(`${API}/me/section-evaluation-configs/${SECTION_ID}`, () => new HttpResponse(null, { status: 403 })),
+      http.get(`${API}/me/teaching-sections`, () => HttpResponse.json([])),
+    );
+    montar();
+
+    expect(await screen.findByText('No encontramos esta comisión')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a Mis comisiones' })).toBeInTheDocument();
+  });
+
+  it('un borrador con el plazo vencido no se puede enviar y explica por qué', async () => {
+    mockearConfig(unaConfig({ status: 'DRAFT', canEdit: true, canSubmit: false, hasFinal: true }));
+    montar();
+
+    expect(await screen.findByText(/Venció el plazo para enviarla/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enviar a aprobación' })).toBeDisabled();
+  });
+
+  it('una configuración rechazada muestra el motivo y se puede reenviar', async () => {
+    mockearConfig(
+      unaConfig({
+        status: 'REJECTED',
+        rejectionReason: 'El 2do llamado cae fuera del ciclo',
+        canEdit: true,
+        canSubmit: true,
+        hasFinal: true,
+        tpCount: 1,
+        tp1DueDate: '2026-04-24',
+        exam1Date: '2026-05-15',
+        exam2Date: '2026-09-11',
+        finalCall1Date: '2026-12-02',
+        finalCall2Date: '2026-12-10',
+        termEndDate: '2026-12-11T00:00:00',
+      }),
+    );
+    montar();
+
+    expect(await screen.findByText(/El 2do llamado cae fuera del ciclo/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reenviar a aprobación' })).toBeEnabled();
+  });
+
+  it('un error de fecha del backend se explica con su motivo', async () => {
+    mockearConfig(unaConfig({ status: 'DRAFT', canEdit: true, canSubmit: true, hasFinal: true }));
+    server.use(
+      http.put(`${API}/me/section-evaluation-configs/${SECTION_ID}`, () =>
+        HttpResponse.json({ code: 'EVALUATION_DATE_ON_HOLIDAY' }, { status: 400 }),
+      ),
+    );
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(await screen.findByRole('button', { name: 'Guardar borrador' }));
+
+    expect(await screen.findByText(/Una de las fechas cae en un feriado/)).toBeInTheDocument();
+  });
+
+  it('marca la fecha que cae después del cierre del cuatrimestre', async () => {
+    mockearConfig(
+      unaConfig({
+        status: 'DRAFT',
+        canEdit: true,
+        canSubmit: true,
+        hasFinal: true,
+        termStartDate: '2026-03-02T00:00:00',
+        termEndDate: '2026-12-11T00:00:00',
+        finalCall2Date: '2026-12-16',
+      }),
+    );
+    montar();
+
+    expect(await screen.findByText('Fuera del cuatrimestre')).toBeInTheDocument();
+  });
+
+  it('si el esquema no tiene final no pide llamados a final', async () => {
+    mockearConfig(unaConfig({ status: 'DRAFT', canEdit: true, canSubmit: true, hasFinal: false }));
+    montar();
+
+    expect(await screen.findByText('Parciales')).toBeInTheDocument();
+    expect(screen.queryByText('1er llamado a final')).not.toBeInTheDocument();
+  });
+
   it('el diálogo de borrado nombra el aviso y enfoca la salida segura', async () => {
     mockearConfig();
     mockearAvisos([unAviso()]);

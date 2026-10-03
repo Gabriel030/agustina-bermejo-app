@@ -6,12 +6,13 @@ import { StatCard } from '@/components/StatCard';
 import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
+import { Button } from '@/components/ui/button';
 import { useComisionesDictadas, useMisComisiones } from '@/hooks/useDocente';
 import { agruparComisionesPorFase, diasHastaVencimientoMasProximo, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
 
 function FilaComision({ comision }) {
   const esCurso = comision.type === 'COURSE';
-  const pill = esCurso ? null : (ESTADO_CONFIG_LABEL[comision.status] ?? { label: comision.status, tone: 'neutral' });
+  const pill = esCurso || !comision.status ? null : (ESTADO_CONFIG_LABEL[comision.status] ?? { label: comision.status, tone: 'neutral' });
   const coDictantes = comision.instructors?.filter((i) => i.role !== 'LEAD') ?? [];
   const destino = esCurso
     ? `/docente/mis-comisiones/${comision.sectionId}?type=COURSE`
@@ -20,7 +21,7 @@ function FilaComision({ comision }) {
   return (
     <Link
       to={destino}
-      className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
+      className="flex flex-col gap-2 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
     >
       <div className="min-w-0">
         <div className="font-heading text-[13.5px] font-semibold text-ink">
@@ -30,11 +31,11 @@ function FilaComision({ comision }) {
           <div className="mt-0.5 text-[11px] text-ink-faint">Co-dictada con {coDictantes.map((i) => i.name).join(', ')}</div>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap sm:gap-4">
         <StatusPill tone="neutral">{esCurso ? 'Curso' : 'Carrera'}</StatusPill>
         <span className="text-[12px] text-ink-faint">{formatearFecha(comision.termStartDate) ?? '—'}</span>
         {pill && <StatusPill tone={pill.tone}>{pill.label}</StatusPill>}
-        <ChevronRight className="h-4 w-4 text-ink-faint" />
+        <ChevronRight className="ml-auto h-4 w-4 text-ink-faint sm:ml-0" />
       </div>
     </Link>
   );
@@ -79,8 +80,8 @@ function unificarComisiones(configs, dictadas) {
 }
 
 export function DocenteMisComisiones() {
-  const { data: configs, isLoading } = useMisComisiones();
-  const { data: dictadas, isLoading: cargandoDictadas } = useComisionesDictadas();
+  const { data: configs, isLoading, isError, refetch } = useMisComisiones();
+  const { data: dictadas, isLoading: cargandoDictadas, isError: errorDictadas, refetch: refetchDictadas } = useComisionesDictadas();
 
   if (isLoading || cargandoDictadas) {
     return (
@@ -94,9 +95,37 @@ export function DocenteMisComisiones() {
     );
   }
 
+  if (isError || errorDictadas) {
+    return (
+      <PageContainer>
+        <h1 className="font-heading text-2xl font-bold text-ink">Mis comisiones</h1>
+        <GlassCard className="p-4">
+          <EmptyState
+            icon="⚠️"
+            title="No pudimos cargar tus comisiones"
+            description="Puede ser un problema de conexión. Probá de nuevo en un momento."
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  refetch();
+                  refetchDictadas();
+                }}
+              >
+                Reintentar
+              </Button>
+            }
+          />
+        </GlassCard>
+      </PageContainer>
+    );
+  }
+
   const lista = unificarComisiones(configs ?? [], dictadas ?? []);
   const { bandejaDeAprobacion, enCurso, cerradas } = agruparComisionesPorFase(lista);
-  const diasVencimiento = diasHastaVencimientoMasProximo(lista);
+  const vigentes = lista.filter((c) => !cerradas.includes(c));
+  const diasVencimiento = diasHastaVencimientoMasProximo(vigentes);
+  const vencido = diasVencimiento === 'vencido';
 
   return (
     <PageContainer>
@@ -107,14 +136,14 @@ export function DocenteMisComisiones() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Comisiones y cursos este período">
-          <div className="font-heading text-2xl font-bold text-ink">{lista.length}</div>
+          <div className="font-heading text-2xl font-bold text-ink">{vigentes.length}</div>
         </StatCard>
         <StatCard label="Pendientes de completar/aprobar">
           <div className="font-heading text-2xl font-bold text-ink">{bandejaDeAprobacion.length}</div>
         </StatCard>
         <StatCard label="Días para el vencimiento más próximo">
-          <div className={`font-heading text-2xl font-bold ${diasVencimiento !== null && diasVencimiento <= 5 ? 'text-danger' : 'text-ink'}`}>
-            {diasVencimiento ?? '—'}
+          <div className={`font-heading text-2xl font-bold ${vencido || (diasVencimiento !== null && diasVencimiento <= 5) ? 'text-danger' : 'text-ink'}`}>
+            {vencido ? 'Vencido' : (diasVencimiento ?? '—')}
           </div>
         </StatCard>
       </div>

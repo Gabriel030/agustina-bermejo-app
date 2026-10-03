@@ -26,7 +26,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   const [confirmacion, setConfirmacion] = useState(null);
 
   const { filas, cargando: cargandoMaterias } = useMateriasDelPlan(carreraId);
-  const disponibles = filas.filter((f) => f.estado === 'disponible');
+  const disponibles = filas.filter((f) => f.estado === 'disponible' || f.estado === 'desaprobada');
 
   const { data: inscripciones } = useMisInscripciones();
   // Horarios ya comprometidos por el alumno (cualquier carrera, no solo esta —
