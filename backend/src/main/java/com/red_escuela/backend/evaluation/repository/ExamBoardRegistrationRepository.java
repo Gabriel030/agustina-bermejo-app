@@ -23,11 +23,9 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
     Optional<ExamBoardRegistration> findByExamBoardIdAndCourseSubjectSectionEnrollmentId(
             Long examBoardId, Long enrollmentId);
 
-    long countByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndProgramSubjectSectionEnrollment_SubjectSection_Subject_IdAndStatusNot(
-            Long programEnrollmentId, Long subjectId, ExamBoardRegistrationStatus status);
+    long countByProgramSubjectSectionEnrollmentIdAndStatusNot(Long enrollmentId, ExamBoardRegistrationStatus status);
 
-    long countByCourseSubjectSectionEnrollment_CourseEnrollment_IdAndCourseSubjectSectionEnrollment_CourseSubjectSection_CourseSubject_IdAndStatusNot(
-            Long courseEnrollmentId, Long courseSubjectId, ExamBoardRegistrationStatus status);
+    long countByCourseSubjectSectionEnrollmentIdAndStatusNot(Long enrollmentId, ExamBoardRegistrationStatus status);
 
     List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_Student_Id(Long studentId);
 
