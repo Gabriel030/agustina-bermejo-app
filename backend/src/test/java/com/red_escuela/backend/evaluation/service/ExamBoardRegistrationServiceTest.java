@@ -26,6 +26,11 @@ import com.red_escuela.backend.evaluation.exception.AlreadyRegisteredInExamBoard
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.identity.exception.StudentNotRegularException;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
+import java.time.LocalDate;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -326,5 +331,52 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(secondCall.getId(), enrollment.getId()))
                 .isInstanceOf(MaxExamAttemptsExceededException.class);
+    }
+
+    private SubjectSectionEnrollment regularEnrollmentWithAttendance(String dni, AttendanceStatus... statuses) {
+        Student student = persistStudent(dni);
+        Subject subject = persistSubject("Materia asistencia " + dni, null);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        section.setMaxAbsencePercentage(25.0);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("Carrera asistencia " + dni));
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        Person teacher = persistStudent("D" + dni).getPerson();
+        Instructor instructor = new Instructor();
+        instructor.setPerson(teacher);
+        entityManager.persist(instructor);
+        for (int i = 0; i < statuses.length; i++) {
+            Attendance attendance = new Attendance();
+            attendance.setProgramSubjectSectionEnrollment(enrollment);
+            attendance.setClassDate(LocalDate.of(2025, 9, 1 + i));
+            attendance.setStatus(statuses[i]);
+            attendance.setRecordedBy(instructor);
+            entityManager.persist(attendance);
+        }
+        return enrollment;
+    }
+
+    @Test
+    void aRegularStudentOverTheAbsenceLimitCannotRegisterForTheFinal() {
+        SubjectSectionEnrollment enrollment = regularEnrollmentWithAttendance("90000101",
+                AttendanceStatus.ABSENT, AttendanceStatus.ABSENT, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT);
+        ExamBoard examBoard = persistExamBoard(enrollment.getSubjectSection().getSubject(), enrollment.getSubjectSection().getTerm());
+        entityManager.flush();
+
+        assertThatThrownBy(() -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId()))
+                .isInstanceOf(StudentFreeByAbsencesException.class);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    @Test
+    void onceTheAbsencesAreJustifiedBelowTheLimitTheStudentCanRegisterForTheFinal() {
+        SubjectSectionEnrollment enrollment = regularEnrollmentWithAttendance("90000102",
+                AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFIED, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT);
+        ExamBoard examBoard = persistExamBoard(enrollment.getSubjectSection().getSubject(), enrollment.getSubjectSection().getTerm());
+        entityManager.flush();
+
+        ExamBoardRegistration registration = examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId());
+
+        assertThat(registration.getStatus()).isEqualTo(ExamBoardRegistrationStatus.REGISTERED);
     }
 }

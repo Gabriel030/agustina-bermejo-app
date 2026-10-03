@@ -8,6 +8,8 @@ import com.red_escuela.backend.attendance.service.AttendanceFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
+import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -16,15 +18,18 @@ import java.time.LocalDateTime;
 public class ApproveAttendanceJustificationService implements ApproveAttendanceJustificationUseCase {
 
     private final AttendanceRepository attendanceRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final AttendanceFinder attendanceFinder;
     private final CurrentPersonService currentPersonService;
 
     public ApproveAttendanceJustificationService(AttendanceRepository attendanceRepository,
                                                   AttendanceFinder attendanceFinder,
-                                                  CurrentPersonService currentPersonService) {
+                                                  CurrentPersonService currentPersonService,
+                                     ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
         this.attendanceFinder = attendanceFinder;
         this.currentPersonService = currentPersonService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -40,6 +45,8 @@ public class ApproveAttendanceJustificationService implements ApproveAttendanceJ
         attendance.setStatus(AttendanceStatus.JUSTIFIED);
         attendance.setJustifiedBy(justifiedBy);
         attendance.setJustifiedAt(LocalDateTime.now());
-        return attendanceRepository.save(attendance);
+        Attendance saved = attendanceRepository.save(attendance);
+        eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
+        return saved;
     }
 }

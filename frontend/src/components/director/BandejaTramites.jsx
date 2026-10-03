@@ -1,3 +1,4 @@
+import { StablePageHeight } from '@/components/StablePageHeight';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
@@ -80,7 +81,7 @@ export function BandejaTramites({
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <button
         type="button"
         onClick={() => navigate(volverA)}
@@ -129,6 +130,7 @@ export function BandejaTramites({
         </div>
       </div>
 
+      <StablePageHeight resetKey={`${tab}-${search}-${desde}-${hasta}`}>
       <GlassCard className="flex flex-col gap-1 p-4">
         {cargando ? (
           <div className="flex flex-col gap-2 p-2">
@@ -146,6 +148,7 @@ export function BandejaTramites({
           pagina.map((item) => renderFila(item, { esHistorial: tab === 'historial' }))
         )}
       </GlassCard>
+      </StablePageHeight>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />
     </div>

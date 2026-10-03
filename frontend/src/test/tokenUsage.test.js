@@ -16,4 +16,12 @@ describe('design token usage', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('no view with a Paginador stretches to the full content height below its page header', () => {
+    const offenders = Object.entries(sources)
+      .filter(([path, content]) => !path.endsWith('/Paginador.jsx') && content.includes('<Paginador') && content.includes('min-h-full'))
+      .map(([path]) => path);
+
+    expect(offenders).toEqual([]);
+  });
 });

@@ -44,6 +44,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.attendance.repository.AttendanceRepository;
+import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCommand;
+import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceUseCase;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +58,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @Transactional
 class GradeItemServiceTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private JustifyAttendanceUseCase justifyAttendanceUseCase;
 
     @Autowired
     private GradeItemService gradeItemService;
@@ -586,6 +597,17 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         return persistEnrollment(student, programEnrollment, section);
     }
 
+    private void persistPresences(SubjectSectionEnrollment enrollment, Instructor instructor, int count) {
+        for (int day = 1; day <= count; day++) {
+            Attendance attendance = new Attendance();
+            attendance.setProgramSubjectSectionEnrollment(enrollment);
+            attendance.setClassDate(LocalDate.of(2020, 5, day));
+            attendance.setStatus(AttendanceStatus.PRESENT);
+            attendance.setRecordedBy(instructor);
+            entityManager.persist(attendance);
+        }
+    }
+
     private void persistAbsences(SubjectSectionEnrollment enrollment, Instructor instructor, int count) {
         for (int day = 1; day <= count; day++) {
             Attendance attendance = new Attendance();
@@ -643,7 +665,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void studentOverTheAbsenceLimitDoesNotBecomeRegularByGrades() {
+    void aStudentOverTheAbsenceLimitDoesNotBecomeRegularNorFailedWhileFree() {
         Instructor instructor = persistInstructor("71000106");
         SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000105", persistScheme(2, 0, true), instructor, 0.5);
         persistAbsences(enrollment, instructor, 4);
@@ -656,11 +678,11 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
         entityManager.flush();
         entityManager.refresh(enrollment);
-        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
     }
 
     @Test
-    void studentOverTheAbsenceLimitIsNotPromoted() {
+    void aStudentOverTheAbsenceLimitIsNotPromotedWhileFree() {
         Instructor instructor = persistInstructor("71000108");
         SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000107", persistScheme(2, 0, true, 7.0), instructor, 0.5);
         persistAbsences(enrollment, instructor, 4);
@@ -673,8 +695,34 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
 
         entityManager.flush();
         entityManager.refresh(enrollment);
-        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.FAILED);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
         assertThat(enrollment.getFinalScore()).isNull();
+    }
+
+    @Test
+    void justifyingAbsencesBelowTheLimitRestoresTheConditionEarnedByGrades() {
+        Instructor instructor = persistInstructor("71000114");
+        SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000113", persistScheme(2, 0, true), instructor, 25.0);
+        persistAbsences(enrollment, instructor, 2);
+        persistPresences(enrollment, instructor, 2);
+        entityManager.flush();
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(instructor.getPerson().getId().toString(), null));
+        Attendance absence = attendanceRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()).stream()
+                .filter(a -> a.getStatus() == AttendanceStatus.ABSENT).findFirst().orElseThrow();
+        justifyAttendanceUseCase.justify(new JustifyAttendanceCommand(absence.getId(), "certificado médico", null));
+
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
     }
 
     @Test
