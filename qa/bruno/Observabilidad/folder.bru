@@ -1,0 +1,25 @@
+meta {
+  name: Observabilidad
+}
+
+docs {
+  # Observabilidad (Épica 17 · Fase 1)
+
+  Verifica el contrato HTTP de los dos endpoints que expone la instrumentación
+  con Micrometer y Actuator. Los tests de JUnit no alcanzan acá: corren con el
+  contexto de test, donde Spring Boot **desactiva la exportación de métricas a
+  propósito** (`management.defaults.metrics.export.enabled=false`, lo agrega
+  `spring-boot-test-autoconfigure`) y hace falta `@AutoConfigureObservability`
+  para rehabilitarla. Esta carpeta prueba contra el servidor real.
+
+  Requiere el backend levantado con las credenciales de scraping:
+
+  ```bash
+  JWT_SECRET=dev-secret SPRING_PROFILES_ACTIVE=local \
+    ACTUATOR_USER=scraper ACTUATOR_PASSWORD=local ./mvnw spring-boot:run
+  ```
+
+  Si `ACTUATOR_USER`/`ACTUATOR_PASSWORD` no están seteadas no existe ningún
+  usuario y `/actuator/prometheus` responde 401 siempre — es el default seguro,
+  no un bug.
+}
