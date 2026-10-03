@@ -1,0 +1,40 @@
+meta {
+  name: 5. X-Request-Id hostil se sanitiza
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/actuator/health
+  auth: none
+}
+
+headers {
+  X-Request-Id: abc-123;rm -rf /;<script>alert(1)</script>
+}
+
+tests {
+  test("status 200 — un header hostil no rompe el request", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("el valor devuelto quedó sin caracteres peligrosos", function () {
+    const devuelto = res.getHeader("x-request-id");
+    expect(devuelto).to.not.contain("<");
+    expect(devuelto).to.not.contain(" ");
+    expect(devuelto).to.not.contain("/");
+  });
+  test("no supera el largo máximo", function () {
+    expect(res.getHeader("x-request-id").length).to.be.at.most(64);
+  });
+}
+
+docs {
+  # Sanitización del requestId
+
+  El `X-Request-Id` es input del usuario que termina escrito en **cada línea de
+  log** del request. Sin sanitizar, un valor con `\n` permite inyectar una línea
+  de log falsa, y uno de 10 KB infla todo el archivo.
+
+  El filtro deja pasar solo `[A-Za-z0-9._:-]`, trunca a 64 caracteres, y si
+  después de limpiar no queda nada, genera un UUID.
+}

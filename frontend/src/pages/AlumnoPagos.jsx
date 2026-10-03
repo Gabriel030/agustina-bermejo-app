@@ -18,6 +18,7 @@ const STANDING_CONFIG = {
 
 const ENROLLMENT_STATUS_LABELS = {
   ENROLLED: 'En curso',
+  IN_PROGRESS: 'En curso',
   COMPLETED: 'Finalizado',
   WITHDRAWN: 'Dado de baja',
   SUSPENDED: 'Suspendido',

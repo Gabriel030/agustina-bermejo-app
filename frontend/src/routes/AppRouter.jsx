@@ -11,6 +11,7 @@ import { LegajoPersonal } from '@/features/gestion-personas/pages/LegajoPersonal
 import { Login } from '@/pages/Login';
 import { Registrarse } from '@/pages/Registrarse';
 import { ForgotPassword } from '@/pages/ForgotPassword';
+import { VerificacionEmail } from '@/pages/VerificacionEmail';
 import { Catalogo } from '@/pages/Catalogo';
 import { DetalleCarrera } from '@/pages/DetalleCarrera';
 import { DetalleCurso } from '@/pages/DetalleCurso';
@@ -128,6 +129,7 @@ export function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/registrarse" element={<Registrarse />} />
         <Route path="/olvide-mi-contrasena" element={<ForgotPassword />} />
+        <Route path="/verificar-email" element={<VerificacionEmail />} />
         <Route path="/no-autorizado" element={<NoAutorizado />} />
       </Route>
 

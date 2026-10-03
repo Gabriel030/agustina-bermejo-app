@@ -1,0 +1,45 @@
+meta {
+  name: 3. Prometheus con credenciales expone las metricas
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/actuator/prometheus
+  auth: basic
+}
+
+auth:basic {
+  username: {{actuatorUser}}
+  password: {{actuatorPassword}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("content-type de exposicion de Prometheus", function () {
+    expect(res.getHeader("content-type")).to.contain("text/plain");
+  });
+  test("trae las familias esperadas", function () {
+    const cuerpo = res.getBody();
+    expect(cuerpo).to.contain("http_server_requests_seconds_count");
+    expect(cuerpo).to.contain("jvm_memory_used_bytes");
+    expect(cuerpo).to.contain("hikaricp_connections_active");
+  });
+  test("las URIs vienen templatizadas, no con el id concreto", function () {
+    expect(res.getBody()).to.not.match(/uri="\/[a-z-]+\/\d+"/);
+  });
+}
+
+docs {
+  # Prometheus abierto con credenciales
+
+  El último test es el que protege la cuota: si las URIs se registraran con el
+  id concreto (`/students/42`) en vez de templatizadas (`/students/{id}`),
+  cada request nuevo crearía una serie y la cardinalidad crecería sin techo.
+
+  Hay además un `MeterFilter` que corta el registro de series nuevas pasadas
+  las 300 URIs distintas, como red de seguridad por si algún día un bug mete
+  un id en un tag.
+}

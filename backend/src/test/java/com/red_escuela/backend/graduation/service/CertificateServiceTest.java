@@ -1,5 +1,7 @@
 package com.red_escuela.backend.graduation.service;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
@@ -120,7 +122,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
 
     private void persistActiveEnrollment(Student student, ProgramEnrollment enrollment) {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName("MateriaCursandoAhora" + System.nanoTime());
         entityManager.persist(subject);
         Term term = persistTerm();

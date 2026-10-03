@@ -24,7 +24,7 @@ function FilaComision({ comision }) {
     >
       <div className="min-w-0">
         <div className="font-heading text-[13.5px] font-semibold text-ink">
-          {comision.subjectName} · {comision.sectionName}
+          {comision.subjectName} · {comision.sectionName}{comision.termStartDate ? ` (${new Date(comision.termStartDate).getFullYear()})` : ''}
         </div>
         {coDictantes.length > 0 && (
           <div className="mt-0.5 text-[11px] text-ink-faint">Co-dictada con {coDictantes.map((i) => i.name).join(', ')}</div>
