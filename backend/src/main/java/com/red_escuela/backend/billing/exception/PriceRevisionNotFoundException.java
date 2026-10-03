@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.exception;
 
-public class PriceRevisionNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class PriceRevisionNotFoundException extends NotFoundException {
     public PriceRevisionNotFoundException(String message) {
         super(message);
     }

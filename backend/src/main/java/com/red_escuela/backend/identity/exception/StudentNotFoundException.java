@@ -1,6 +1,8 @@
 package com.red_escuela.backend.identity.exception;
 
-public class StudentNotFoundException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.NotFoundException;
+
+public class StudentNotFoundException extends NotFoundException {
     public StudentNotFoundException(Long id) {
         super("Student no encontrado: " + id);
     }

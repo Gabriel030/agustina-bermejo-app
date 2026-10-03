@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.exception;
 
-public class AlreadyEnrolledInSubjectException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.ConflictException;
+
+public class AlreadyEnrolledInSubjectException extends ConflictException {
     public AlreadyEnrolledInSubjectException(Long programEnrollmentId, Long subjectId) {
         super("Ya existe una inscripción activa a otra comisión de la materia " + subjectId
                 + " bajo la matriculación " + programEnrollmentId);

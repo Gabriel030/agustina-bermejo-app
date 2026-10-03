@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.exception;
 
-public class InvalidMpWebhookSignatureException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.UnauthorizedException;
+
+public class InvalidMpWebhookSignatureException extends UnauthorizedException {
     public InvalidMpWebhookSignatureException(String message) {
         super(message);
     }

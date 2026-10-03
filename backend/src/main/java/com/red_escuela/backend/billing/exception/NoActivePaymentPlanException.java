@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.exception;
 
-public class NoActivePaymentPlanException extends RuntimeException {
+import com.red_escuela.backend.shared.exception.ConflictException;
+
+public class NoActivePaymentPlanException extends ConflictException {
     public NoActivePaymentPlanException(String message) {
         super(message);
     }
