@@ -144,4 +144,34 @@ class EmailNormalizationTest extends AbstractIntegrationTest {
         String stored = jdbcTemplate.queryForObject("select email from person where id = ?", String.class, person.getId());
         assertThat(stored).isEqualTo("ana.mig@mail.com");
     }
+
+    @Test
+    void migrationTurnsBlankEmailIntoNull() throws Exception {
+        Person person = persistPerson("norm8", "tmp8@mail.com");
+        jdbcTemplate.update("update person set email = ? where id = ?", "   ", person.getId());
+
+        runMigration();
+
+        String stored = jdbcTemplate.queryForObject("select email from person where id = ?", String.class, person.getId());
+        assertThat(stored).isNull();
+    }
+
+    @Test
+    void migrationFailsWithClearMessageOnInvalidEmail() {
+        Person person = persistPerson("norm9", "tmp9@mail.com");
+        jdbcTemplate.update("update person set email = ? where id = ?", "sin-arroba", person.getId());
+
+        assertThatThrownBy(this::runMigration)
+                .hasStackTraceContaining("formato válido");
+    }
+
+    private void runMigration() {
+        try {
+            String script = StreamUtils.copyToString(
+                    new ClassPathResource("db/migration/V79__normalize_person_email.sql").getInputStream(), StandardCharsets.UTF_8);
+            jdbcTemplate.execute(script);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }
