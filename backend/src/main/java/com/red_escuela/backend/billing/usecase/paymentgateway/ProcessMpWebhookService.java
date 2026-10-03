@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
+import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
@@ -14,6 +15,8 @@ import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.UseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.Optional;
 
 @UseCase
 public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
+    private static final Logger log = LoggerFactory.getLogger(ProcessMpWebhookService.class);
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
@@ -44,14 +48,21 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     @Override
     @Transactional
     public void process(String xSignature, String xRequestId, String mpPaymentId) {
-        signatureVerifier.verify(xSignature, xRequestId, mpPaymentId);
+        try {
+            signatureVerifier.verify(xSignature, xRequestId, mpPaymentId);
+        } catch (InvalidMpWebhookSignatureException e) {
+            log.warn("Webhook de Mercado Pago rechazado por firma inválida: pagoMp={}", mpPaymentId);
+            throw e;
+        }
 
         if (paymentRepository.existsByExternalReference(mpPaymentId)) {
+            log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", mpPaymentId);
             return;
         }
 
         Optional<MercadoPagoApprovedPayment> approved = mercadoPagoPaymentFetcher.fetchApproved(mpPaymentId);
         if (approved.isEmpty()) {
+            log.info("Webhook de Mercado Pago ignorado, el pago no está aprobado: pagoMp={}", mpPaymentId);
             return;
         }
 
@@ -61,6 +72,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
                 .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
 
         if (invoice.getStatus() == InvoiceStatus.PAID) {
+            log.warn("Webhook de Mercado Pago ignorado, la factura ya estaba pagada: pagoMp={}, factura={}", mpPaymentId, invoiceId);
             return;
         }
 
@@ -75,6 +87,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
         );
 
         registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
+        log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }
 
     private Person resolveOwnerPerson(Invoice invoice) {

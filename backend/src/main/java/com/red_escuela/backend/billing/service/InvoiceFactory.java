@@ -17,6 +17,8 @@ import com.red_escuela.backend.billing.entity.Scholarship;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PromotionRedemptionRepository;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,6 +30,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 
 @Service
 public class InvoiceFactory {
+    private static final Logger log = LoggerFactory.getLogger(InvoiceFactory.class);
     private final PriceRevisionService priceRevisionService;
     private final InvoiceRepository invoiceRepository;
     private final ScholarshipRepository scholarshipRepository;
@@ -183,8 +186,12 @@ public class InvoiceFactory {
 
     private Invoice saveIdempotently(Invoice invoice) {
         try {
-            return invoiceRepository.saveAndFlush(invoice);
+            Invoice saved = invoiceRepository.saveAndFlush(invoice);
+            log.info("Factura generada: factura={}, tipo={}, periodo={}, vencimiento={}",
+                    saved.getId(), saved.getFeeType(), saved.getPeriod(), saved.getDueDate());
+            return saved;
         } catch (DataIntegrityViolationException e) {
+            log.warn("Factura omitida por duplicada: tipo={}, periodo={}", invoice.getFeeType(), invoice.getPeriod());
             org.springframework.transaction.interceptor.TransactionAspectSupport
                     .currentTransactionStatus().setRollbackOnly();
             return null;

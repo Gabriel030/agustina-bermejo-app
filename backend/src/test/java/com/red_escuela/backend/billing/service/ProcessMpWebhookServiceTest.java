@@ -31,7 +31,11 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -48,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@ExtendWith(OutputCaptureExtension.class)
 class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -164,5 +169,35 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 status -> service.process("", "request-1", String.valueOf(System.nanoTime()))))
                 .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
         assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+    }
+    @Test
+    void anApprovedPaymentLogsInfoWithPaymentAndInvoiceIds(CapturedOutput output) {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
+        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThat(output.getOut())
+                .contains("Webhook de Mercado Pago acreditado")
+                .contains("pagoMp=" + mpPaymentId)
+                .contains("factura=" + invoice.getId());
+    }
+
+    @Test
+    void anInvalidSignatureLogsWarnWithoutLeakingTheSecretOrTheSignature(CapturedOutput output) {
+        String secret = "super-secret-webhook-key";
+        String signature = "ts=1,v1=deadbeefdeadbeef";
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
+                mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
+
+        assertThatThrownBy(() -> service.process(signature, "request-1", "123456"))
+                .isInstanceOf(InvalidMpWebhookSignatureException.class);
+
+        assertThat(output.getOut())
+                .contains("WARN")
+                .contains("Webhook de Mercado Pago rechazado por firma inválida")
+                .doesNotContain(secret)
+                .doesNotContain("deadbeefdeadbeef");
     }
 }

@@ -8,6 +8,7 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -43,11 +44,13 @@ public class ScheduledAnnouncementDispatchJob {
     }
 
     @Scheduled(cron = "0 */5 * * * *", zone = "${app.timezone}")
+    @SchedulerLock(name = "ScheduledAnnouncementDispatchJob", lockAtMostFor = "PT4M")
     public void run() {
         dispatchDue(LocalDateTime.now());
     }
 
     public void dispatchDue(LocalDateTime now) {
+        log.debug("Envío programado de avisos iniciado: hasta={}", now);
         long start = System.currentTimeMillis();
         int candidates = 0;
         int processed = 0;
