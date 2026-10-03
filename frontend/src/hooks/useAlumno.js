@@ -5,11 +5,13 @@ import { apiFetch } from '@/api/client';
 // useCatalogo.js (que es Autoservicio de alta/inscripción, otra épica).
 
 export function usePaymentStanding() {
-  return useQuery({ queryKey: ['me', 'payment-standing'], queryFn: () => apiFetch('/me/payment-standing') });
-}
-
-export function useDebtSummary() {
-  return useQuery({ queryKey: ['me', 'invoices', 'debt-summary'], queryFn: () => apiFetch('/me/invoices/debt-summary') });
+  return useQuery({
+    queryKey: ['me', 'billing-standing'],
+    queryFn: () => apiFetch('/me/billing-standing'),
+    select: (entries) => ({
+      standing: entries.some((e) => e.billingStanding !== 'UP_TO_DATE') ? 'MOROSO' : 'AL_DIA',
+    }),
+  });
 }
 
 export function useMisCursos() {
