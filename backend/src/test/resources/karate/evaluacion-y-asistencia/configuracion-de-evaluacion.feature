@@ -80,20 +80,21 @@ Feature: Configuración de evaluación, esquemas, notas y mesas — contrato de 
     Then status 200
     And match response.canSubmit == true
 
-  Scenario Outline: Esquema de evaluación con notas fuera de escala o incoherentes — 400 INVALID_EVALUATION_SCHEME
+  Scenario Outline: Esquema de evaluación con notas fuera de escala o incoherentes — 400 con su código
     Given path '/evaluation-schemes'
     And header Authorization = 'Bearer ' + directorToken
     And request { name: 'Esquema QA inválido', examCountExpected: <parciales>, hasFinal: true, minRegularGrade: <regular>, minApprovalGrade: <aprobar>, promotionMinGrade: <promocion> }
     When method post
     Then status 400
-    And match response.code == 'INVALID_EVALUATION_SCHEME'
+    And match response.code == '<codigo>'
 
     Examples:
-      | parciales | regular | aprobar | promocion |
-      | 2         | -2      | 6       | null      |
-      | 2         | 4       | 15      | null      |
-      | 2         | 4       | 6       | 3         |
-      | 5         | 4       | 6       | null      |
+      | parciales | regular | aprobar | promocion | codigo                    |
+      | 2         | -2      | 6       | null      | INVALID_GRADE             |
+      | 2         | 4       | 15      | null      | INVALID_GRADE             |
+      | 2         | 4       | 6       | 3         | INVALID_EVALUATION_SCHEME |
+      | 2         | 6       | 4       | null      | INVALID_EVALUATION_SCHEME |
+      | 5         | 4       | 6       | null      | INVALID_EVALUATION_SCHEME |
 
   Scenario: Nota mayor a la nota máxima — 400 INVALID_GRADE
     * def comision = crearComision('2026-01-05T00:00:00', '2026-12-11T00:00:00')
