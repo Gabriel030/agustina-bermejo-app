@@ -9,6 +9,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { usePrograma } from '@/hooks/useCatalogo';
 import { useCiclos, useCicloSecciones } from '@/features/oferta-academica/hooks/useCiclos';
+import { ResumeCycleButton } from '@/features/oferta-academica/components/ResumeCycleButton';
+import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
 
 const CICLO_STATUS_CONFIG = {
   DRAFT: { label: 'En construcción', tone: 'neutral' },
@@ -45,7 +47,7 @@ function FilaSeccion({ seccion }) {
             <span className="font-heading text-[13.5px] font-semibold text-ink">{seccion.subjectName}</span>
             <span className="text-[12px] text-ink-faint">· {seccion.name}</span>
             {seccion.pendingApproval && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
+              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-brand">
                 Modificación pendiente
               </span>
             )}
@@ -86,17 +88,20 @@ function PanelCiclo({ ciclo }) {
           </div>
           <div className="mt-0.5 text-[12px] text-ink-faint">Creado por {ciclo.createdByName}</div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <ResumeCycleButton cycle={ciclo} />
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/preceptor/oferta-academica/calendario`)}
+            onClick={() => navigate(`/preceptor/oferta-academica/calendario?termId=${ciclo.termId}`)}
           >
             <Calendar className="mr-1.5 h-3.5 w-3.5" />
             Calendario
           </Button>
         </div>
       </div>
+
+      <RejectionReasonNotice cycle={ciclo} />
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -162,14 +167,14 @@ export function PreceptorDetalleCarrera() {
           <button
             type="button"
             onClick={() => setVerAnteriores(false)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-accent' : 'text-ink-faint hover:text-ink'}`}
+            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
           >
             Actuales
           </button>
           <button
             type="button"
             onClick={() => setVerAnteriores(true)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-accent' : 'text-ink-faint hover:text-ink'}`}
+            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
           >
             Anteriores
           </button>

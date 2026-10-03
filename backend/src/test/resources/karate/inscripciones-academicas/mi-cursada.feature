@@ -30,7 +30,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA mi cursada ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }

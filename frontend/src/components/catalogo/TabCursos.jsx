@@ -6,7 +6,8 @@ import { Skeleton } from '@/components/Skeleton';
 import { Stagger } from '@/components/Stagger';
 import { Buscador } from '@/components/catalogo/Buscador';
 import { Paginador } from '@/components/catalogo/Paginador';
-import { useCursos } from '@/hooks/useCatalogo';
+import { useCatalogCourses } from '@/hooks/useCatalogo';
+import { courseSummary, matchesSearch, pageWithinRange } from '@/lib/catalog';
 
 // 2 columnas en vez de 3, POR_PAGINA más chico — cards más grandes con más
 // aire para la info (decisión de producto: menos cards por pantalla, mejor
@@ -15,14 +16,15 @@ const POR_PAGINA = 6;
 
 export function TabCursos({ search, onSearchChange, page, onPageChange }) {
   const navigate = useNavigate();
-  const { data: cursos, isLoading, isError } = useCursos();
+  const { data: cursos, isLoading, isError } = useCatalogCourses();
 
   const filtrados = useMemo(
-    () => (cursos ?? []).filter((c) => c.name.toLowerCase().includes(search.toLowerCase())),
+    () => (cursos ?? []).filter((c) => matchesSearch(c.name, search)),
     [cursos, search],
   );
   const totalPages = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA));
-  const pagina = filtrados.slice((page - 1) * POR_PAGINA, page * POR_PAGINA);
+  const currentPage = pageWithinRange(page, totalPages);
+  const pagina = filtrados.slice((currentPage - 1) * POR_PAGINA, currentPage * POR_PAGINA);
 
   if (isError) {
     return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar los cursos. Probá recargar la página.</GlassCard>;
@@ -53,15 +55,13 @@ export function TabCursos({ search, onSearchChange, page, onPageChange }) {
               {/* mt-auto: mismo criterio que TabCarreras — ancla la meta al pie
                   de cada card, para que no quede a distinta altura entre cards
                   de la misma fila cuando el título de una ocupa más líneas. */}
-              <div className="mt-auto text-[13px] text-ink-faint">
-                {curso.durationMonths} meses{curso.schedule ? ` · ${curso.schedule}` : ''}
-              </div>
+              <div className="mt-auto text-[13px] text-ink-faint">{courseSummary(curso)}</div>
             </GlassCard>
           ))}
         </Stagger>
       </div>
 
-      <Paginador page={page} totalPages={totalPages} onChange={onPageChange} />
+      <Paginador page={currentPage} totalPages={totalPages} onChange={onPageChange} />
     </div>
   );
 }

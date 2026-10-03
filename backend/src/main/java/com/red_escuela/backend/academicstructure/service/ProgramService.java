@@ -9,6 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,8 +74,11 @@ public class ProgramService {
         return programRepository.save(program);
     }
 
-    public List<Program> list(StatusType status) {
-        return status == null ? programRepository.findAll() : programRepository.findByStatus(status);
+    public List<Program> list(StatusType status, Boolean visibleInCatalog) {
+        return programRepository.findAll(Sort.by("name", "id")).stream()
+                .filter(program -> status == null || program.getStatus() == status)
+                .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
+                .toList();
     }
 
     public Program get(Long id) {

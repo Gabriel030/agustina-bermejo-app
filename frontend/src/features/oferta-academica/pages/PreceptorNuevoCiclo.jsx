@@ -1,5 +1,5 @@
-import { useReducer, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useId, useReducer, useState } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ChevronLeft, Plus, CheckCircle2 } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -13,11 +13,14 @@ import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
 import { useInstructores } from '@/features/oferta-academica/hooks/useInstructores';
 import { useClassrooms } from '@/features/oferta-academica/hooks/useClassrooms';
 import {
+  useCycle,
+  useCicloSecciones,
   useCreateCiclo,
   useAddSeccion,
   useAsignarInstructorSeccion,
   useSubmitCiclo,
 } from '@/features/oferta-academica/hooks/useCiclos';
+import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
 
 const PASOS = [
   { key: 'periodo', label: 'Período' },
@@ -34,6 +37,47 @@ const DIAS = [
   { id: 'SATURDAY', label: 'Sáb' },
 ];
 
+const DAY_NAMES = {
+  MONDAY: 'Lunes',
+  TUESDAY: 'Martes',
+  WEDNESDAY: 'Miércoles',
+  THURSDAY: 'Jueves',
+  FRIDAY: 'Viernes',
+  SATURDAY: 'Sábado',
+  SUNDAY: 'Domingo',
+};
+
+const SECTION_ERROR_MESSAGES = {
+  SECTION_SCHEDULE_CONFLICT: 'El aula ya está ocupada ese día y en ese horario durante este período.',
+  SECTION_CAPACITY_EXCEEDS_CLASSROOM: 'El cupo supera la capacidad del aula.',
+  CYCLE_NOT_EDITABLE: 'Este ciclo ya fue enviado a aprobación y no admite comisiones nuevas.',
+};
+
+const SUBMIT_ERROR_MESSAGES = {
+  CYCLE_INCOMPLETE: 'No se pudo enviar a aprobación. Verificá que todas las comisiones tengan docente titular.',
+  CYCLE_NOT_EDITABLE: 'Este ciclo ya fue enviado a aprobación y no se puede modificar.',
+};
+
+const NOT_EDITABLE_MESSAGE = 'Este ciclo ya fue enviado a aprobación y no se puede modificar.';
+
+function sectionCountLabel(count) {
+  return `${count} ${count === 1 ? 'comisión' : 'comisiones'}`;
+}
+
+function formatTime(time) {
+  return time?.slice(0, 5) ?? '—';
+}
+
+function leadInstructorName(section) {
+  return section.instructors?.find((i) => i.role === 'LEAD')?.name ?? 'Sin titular';
+}
+
+function cycleDetailPath(tipo, programaId, cursoId) {
+  return tipo === 'programa'
+    ? `/preceptor/oferta-academica/carreras/${programaId}`
+    : `/preceptor/oferta-academica/cursos/${cursoId}`;
+}
+
 function estadoInicial() {
   return {
     paso: 'periodo',
@@ -43,7 +87,23 @@ function estadoInicial() {
     programaId: '',
     cursoId: '',
     cicloId: null,
-    secciones: [],
+    termName: '',
+    entityName: '',
+  };
+}
+
+function initialStateFor(cycle) {
+  if (!cycle) return estadoInicial();
+  return {
+    paso: 'comisiones',
+    pasosVisitados: ['periodo', 'comisiones'],
+    termId: String(cycle.termId),
+    tipo: cycle.programId ? 'programa' : 'curso',
+    programaId: cycle.programId ? String(cycle.programId) : '',
+    cursoId: cycle.courseId ? String(cycle.courseId) : '',
+    cicloId: cycle.id,
+    termName: cycle.termName,
+    entityName: cycle.programName ?? cycle.courseName ?? '',
   };
 }
 
@@ -58,23 +118,30 @@ function reducer(state, action) {
     case 'SET':
       return { ...state, [action.campo]: action.valor };
     case 'IR_A_COMISIONES':
-      return { ...state, cicloId: action.cicloId, paso: 'comisiones', pasosVisitados: visitado(state, 'comisiones') };
+      return {
+        ...state,
+        cicloId: action.cycle.id,
+        termName: action.cycle.termName,
+        entityName: action.cycle.programName ?? action.cycle.courseName ?? '',
+        paso: 'comisiones',
+        pasosVisitados: visitado(state, 'comisiones'),
+      };
     case 'IR_A_RESUMEN':
       return { ...state, paso: 'resumen', pasosVisitados: visitado(state, 'resumen') };
     case 'IR_A_PASO':
       return { ...state, paso: action.paso };
-    case 'AGREGAR_SECCION':
-      return { ...state, secciones: [...state.secciones, action.seccion] };
     default:
       return state;
   }
 }
 
 function CampoSelect({ label, value, onChange, children, required }) {
+  const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
@@ -86,7 +153,31 @@ function CampoSelect({ label, value, onChange, children, required }) {
   );
 }
 
-function Paso1Periodo({ state, dispatch }) {
+function ReadOnlyField({ label, value }) {
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">{label}</label>
+      <Input id={id} value={value} readOnly className="cursor-default" />
+    </div>
+  );
+}
+
+function CreatedCyclePeriod({ state, dispatch }) {
+  return (
+    <GlassCard className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-4">
+        <ReadOnlyField label="Período académico" value={state.termName} />
+        <ReadOnlyField label={state.tipo === 'programa' ? 'Carrera' : 'Curso'} value={state.entityName} />
+      </div>
+      <Button variant="gradient" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
+        Continuar
+      </Button>
+    </GlassCard>
+  );
+}
+
+function Paso1Periodo({ state, dispatch, onCycleCreated }) {
   const { data: terminos, isLoading: loadingTerminos } = useTerminos();
   const { data: programas, isLoading: loadingProgramas } = useProgramas();
   const { data: cursos, isLoading: loadingCursos } = useCursos();
@@ -99,7 +190,7 @@ function Paso1Periodo({ state, dispatch }) {
   async function handleContinuar() {
     setError(null);
     if (!state.termId || !(state.tipo === 'programa' ? state.programaId : state.cursoId)) {
-      setError('Completá todos los campos antes de continuar.');
+      setError({ message: 'Completá todos los campos antes de continuar.' });
       return;
     }
     const body = { termId: Number(state.termId) };
@@ -107,10 +198,19 @@ function Paso1Periodo({ state, dispatch }) {
     else body.courseId = Number(state.cursoId);
 
     createCiclo.mutate(body, {
-      onSuccess: (ciclo) => dispatch({ type: 'IR_A_COMISIONES', cicloId: ciclo.id }),
-      onError: () => setError('No se pudo crear el ciclo. Verificá que no exista uno en progreso para este período.'),
+      onSuccess: (ciclo) => {
+        dispatch({ type: 'IR_A_COMISIONES', cycle: ciclo });
+        onCycleCreated(ciclo.id);
+      },
+      onError: (err) => setError(
+        err.code === 'CYCLE_ALREADY_IN_PROGRESS'
+          ? { message: 'Ya hay un ciclo en construcción o en revisión para este período. Podés retomarlo desde el detalle.', alreadyInProgress: true }
+          : { message: 'No se pudo crear el ciclo. Probá de nuevo.' },
+      ),
     });
   }
+
+  if (state.cicloId) return <CreatedCyclePeriod state={state} dispatch={dispatch} />;
 
   if (loadingTerminos) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
 
@@ -133,7 +233,7 @@ function Paso1Periodo({ state, dispatch }) {
                 key={op.value}
                 type="button"
                 onClick={() => { dispatch({ type: 'SET', campo: 'tipo', valor: op.value }); dispatch({ type: 'SET', campo: 'programaId', valor: '' }); dispatch({ type: 'SET', campo: 'cursoId', valor: '' }); }}
-                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
+                className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-colors ${state.tipo === op.value ? 'bg-accent-soft text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
               >
                 {op.label}
               </button>
@@ -156,7 +256,19 @@ function Paso1Periodo({ state, dispatch }) {
         )}
       </div>
 
-      {error && <p className="text-[13px] text-danger">{error}</p>}
+      {error && (
+        <p className="text-[13px] text-danger">
+          {error.message}
+          {error.alreadyInProgress && (
+            <>
+              {' '}
+              <Link to={cycleDetailPath(state.tipo, state.programaId, state.cursoId)} className="font-medium underline">
+                {state.tipo === 'programa' ? 'Ir a la carrera' : 'Ir al curso'}
+              </Link>
+            </>
+          )}
+        </p>
+      )}
 
       <Button variant="gradient" onClick={handleContinuar} disabled={createCiclo.isPending}>
         {createCiclo.isPending ? 'Creando…' : 'Crear borrador y continuar'}
@@ -165,7 +277,8 @@ function Paso1Periodo({ state, dispatch }) {
   );
 }
 
-function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, tipoCiclo, onSeccionAgregada }) {
+function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, tipoCiclo }) {
+  const fieldId = useId();
   const [nombre, setNombre] = useState('');
   const [cupo, setCupo] = useState('');
   const [instructorId, setInstructorId] = useState('');
@@ -187,6 +300,15 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       setError('Completá nombre, cupo, docente y aula.');
       return;
     }
+    if (horaFin <= horaInicio) {
+      setError('La hora de fin tiene que ser posterior a la de inicio.');
+      return;
+    }
+    const classroom = aulas?.find((a) => String(a.id) === aulaId);
+    if (classroom && Number(cupo) > classroom.capacity) {
+      setError(`El cupo supera la capacidad del aula (${classroom.capacity} lugares).`);
+      return;
+    }
 
     const sectionBody = {
       name: nombre.trim(),
@@ -200,15 +322,12 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       onSuccess: (sectionId) => {
         asignarInstructor.mutate({ sectionId, instructorId: Number(instructorId) }, {
           onSuccess: () => {
-            const instructorNombre = instructores?.find((i) => String(i.id) === instructorId)?.name ?? '';
-            const aulaNombre = aulas?.find((a) => String(a.id) === aulaId)?.name ?? '';
-            onSeccionAgregada({ id: sectionId, nombre: nombre.trim(), subjectName, cupo: Number(cupo), instructorNombre, dia, horaInicio, horaFin, aulaNombre });
             setNombre(''); setCupo(''); setInstructorId(''); setAulaId(''); setAbierto(false);
           },
           onError: () => setError('Sección creada pero no se pudo asignar el docente. Podés asignarlo después.'),
         });
       },
-      onError: () => setError('No se pudo agregar la sección. Verificá si ya existe conflicto de aula/horario.'),
+      onError: (err) => setError(SECTION_ERROR_MESSAGES[err.code] ?? 'No se pudo agregar la comisión. Probá de nuevo.'),
     });
   }
 
@@ -217,7 +336,7 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-accent hover:bg-accent-soft/50 transition-colors"
+        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] text-brand hover:bg-accent-soft/50 transition-colors"
       >
         <Plus className="h-3.5 w-3.5" />
         Agregar comisión para {subjectName}
@@ -230,18 +349,19 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       <p className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-ink-faint">{subjectName}</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Nombre / turno</label>
-          <Input placeholder="Ej: A, Turno mañana…" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <label htmlFor={`${fieldId}-name`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Nombre / turno</label>
+          <Input id={`${fieldId}-name`} placeholder="Ej: A, Turno mañana…" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Cupo</label>
-          <Input type="number" min="1" placeholder="Ej: 30" value={cupo} onChange={(e) => setCupo(e.target.value)} />
+          <label htmlFor={`${fieldId}-capacity`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Cupo</label>
+          <Input id={`${fieldId}-capacity`} type="number" min="1" placeholder="Ej: 30" value={cupo} onChange={(e) => setCupo(e.target.value)} />
         </div>
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
-        <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Docente titular</label>
+        <label htmlFor={`${fieldId}-instructor`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Docente titular</label>
         <select
+          id={`${fieldId}-instructor`}
           value={instructorId}
           onChange={(e) => setInstructorId(e.target.value)}
           className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent"
@@ -259,7 +379,7 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
               key={d.id}
               type="button"
               onClick={() => setDia(d.id)}
-              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-accent' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
+              className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${dia === d.id ? 'bg-accent-soft font-medium text-brand' : 'bg-neutral-bg/60 text-ink-soft hover:bg-neutral-bg'}`}
             >
               {d.label}
             </button>
@@ -269,18 +389,19 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario inicio</label>
-          <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
+          <label htmlFor={`${fieldId}-start`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario inicio</label>
+          <Input id={`${fieldId}-start`} type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario fin</label>
-          <Input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
+          <label htmlFor={`${fieldId}-end`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Horario fin</label>
+          <Input id={`${fieldId}-end`} type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
         </div>
       </div>
 
       <div className="mt-3 flex flex-col gap-1">
-        <label className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Aula</label>
+        <label htmlFor={`${fieldId}-classroom`} className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Aula</label>
         <select
+          id={`${fieldId}-classroom`}
           value={aulaId}
           onChange={(e) => setAulaId(e.target.value)}
           className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent"
@@ -306,11 +427,13 @@ function Paso2Comisiones({ state, dispatch }) {
   const esProgramaCiclo = state.tipo === 'programa';
   const { data: materiasPrograma, isLoading: loadingPrograma } = useProgramaPlanDeEstudio(esProgramaCiclo ? state.programaId : null);
   const { data: materiasTemario, isLoading: loadingTemario } = useCursoTemario(!esProgramaCiclo ? state.cursoId : null);
+  const { data: cycleSections, isLoading: loadingSections } = useCicloSecciones(state.cicloId);
   const materias = esProgramaCiclo ? materiasPrograma : materiasTemario;
-  const isLoading = esProgramaCiclo ? loadingPrograma : loadingTemario;
+  const isLoading = (esProgramaCiclo ? loadingPrograma : loadingTemario) || loadingSections;
+  const sections = cycleSections ?? [];
 
   const seccionesPorMateria = {};
-  for (const s of state.secciones) {
+  for (const s of sections) {
     if (!seccionesPorMateria[s.subjectName]) seccionesPorMateria[s.subjectName] = [];
     seccionesPorMateria[s.subjectName].push(s);
   }
@@ -338,17 +461,19 @@ function Paso2Comisiones({ state, dispatch }) {
                   <span className="font-heading text-[13.5px] font-semibold text-ink">{subjectName}</span>
                   {secciones.length > 0 && (
                     <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-[11px] font-medium text-success">
-                      {secciones.length} comisión{secciones.length > 1 ? 'es' : ''}
+                      {sectionCountLabel(secciones.length)}
                     </span>
                   )}
                 </div>
 
                 {secciones.map((s) => (
-                  <div key={s.id} className="flex items-center gap-2 rounded-xl bg-success-soft/40 px-3 py-1.5 text-[12px] text-ink-soft">
+                  <div key={s.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-success-soft/40 px-3 py-1.5 text-[12px] text-ink-soft">
                     <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />
-                    <span className="font-medium text-ink">{s.nombre}</span>
-                    <span>· {s.instructorNombre}</span>
-                    <span>· {s.aulaNombre}</span>
+                    <span className="font-medium text-ink">{s.name}</span>
+                    <span>· {leadInstructorName(s)}</span>
+                    {s.slots?.map((slot) => (
+                      <span key={`${slot.dayOfWeek}-${slot.startTime}`}>· {slot.classroomName}</span>
+                    ))}
                   </div>
                 ))}
 
@@ -358,7 +483,6 @@ function Paso2Comisiones({ state, dispatch }) {
                   subjectName={subjectName}
                   cicloId={state.cicloId}
                   tipoCiclo={state.tipo}
-                  onSeccionAgregada={(s) => dispatch({ type: 'AGREGAR_SECCION', seccion: s })}
                 />
               </div>
             );
@@ -373,39 +497,27 @@ function Paso2Comisiones({ state, dispatch }) {
         <Button
           variant="gradient"
           onClick={() => dispatch({ type: 'IR_A_RESUMEN' })}
-          disabled={state.secciones.length === 0}
+          disabled={sections.length === 0}
         >
-          Ver resumen ({state.secciones.length} comisión{state.secciones.length !== 1 ? 'es' : ''})
+          Ver resumen ({sectionCountLabel(sections.length)})
         </Button>
       </div>
     </div>
   );
 }
 
-function Paso3Resumen({ state }) {
+function Paso3Resumen({ state, dispatch }) {
   const navigate = useNavigate();
   const submitCiclo = useSubmitCiclo();
   const [error, setError] = useState(null);
-
-  const { data: terminos } = useTerminos();
-  const { data: programas } = useProgramas();
-  const { data: cursos } = useCursos();
-
-  const termNombre = terminos?.find((t) => String(t.id) === String(state.termId))?.description ?? '—';
-  const entidadLista = state.tipo === 'programa' ? programas : cursos;
-  const entidadId = state.tipo === 'programa' ? state.programaId : state.cursoId;
-  const entidadNombre = entidadLista?.find((e) => String(e.id) === String(entidadId))?.name ?? '—';
+  const { data: cycleSections } = useCicloSecciones(state.cicloId);
+  const sections = cycleSections ?? [];
 
   function handleSubmit() {
     setError(null);
     submitCiclo.mutate(state.cicloId, {
-      onSuccess: () => {
-        const destino = state.tipo === 'programa'
-          ? `/preceptor/oferta-academica/carreras/${state.programaId}`
-          : `/preceptor/oferta-academica/cursos/${state.cursoId}`;
-        navigate(destino);
-      },
-      onError: () => setError('No se pudo enviar a aprobación. Verificá que todas las comisiones tengan docente titular.'),
+      onSuccess: () => navigate(cycleDetailPath(state.tipo, state.programaId, state.cursoId)),
+      onError: (err) => setError(SUBMIT_ERROR_MESSAGES[err.code] ?? 'No se pudo enviar a aprobación. Probá de nuevo.'),
     });
   }
 
@@ -415,28 +527,31 @@ function Paso3Resumen({ state }) {
         <div className="grid grid-cols-2 gap-x-8 gap-y-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">Período</p>
-            <p className="mt-0.5 text-[14px] font-medium text-ink">{termNombre}</p>
+            <p className="mt-0.5 text-[14px] font-medium text-ink">{state.termName || '—'}</p>
           </div>
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">{state.tipo === 'programa' ? 'Carrera' : 'Curso'}</p>
-            <p className="mt-0.5 text-[14px] font-medium text-ink">{entidadNombre}</p>
+            <p className="mt-0.5 text-[14px] font-medium text-ink">{state.entityName || '—'}</p>
           </div>
         </div>
 
         <div>
           <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-ink-faint">
-            Comisiones ({state.secciones.length})
+            Comisiones ({sections.length})
           </p>
           <div className="flex flex-col gap-2">
-            {state.secciones.map((s) => (
+            {sections.map((s) => (
               <div key={s.id} className="rounded-xl border border-surface-border px-3 py-2.5">
                 <div className="flex items-baseline justify-between">
                   <span className="font-heading text-[13px] font-semibold text-ink">{s.subjectName}</span>
-                  <span className="text-[12px] text-ink-faint">{s.nombre}</span>
+                  <span className="text-[12px] text-ink-faint">{s.name}</span>
                 </div>
-                <p className="mt-0.5 text-[12px] text-ink-soft">
-                  {s.instructorNombre} · {s.aulaNombre} · {s.dia} {s.horaInicio}–{s.horaFin}
-                </p>
+                <p className="mt-0.5 text-[12px] text-ink-soft">{leadInstructorName(s)}</p>
+                {s.slots?.map((slot) => (
+                  <p key={`${slot.dayOfWeek}-${slot.startTime}`} className="text-[12px] text-ink-soft">
+                    {slot.classroomName} · {DAY_NAMES[slot.dayOfWeek] ?? slot.dayOfWeek} {formatTime(slot.startTime)}–{formatTime(slot.endTime)}
+                  </p>
+                ))}
               </div>
             ))}
           </div>
@@ -446,7 +561,7 @@ function Paso3Resumen({ state }) {
       {error && <p className="text-[13px] text-danger">{error}</p>}
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'comisiones' })}>
           Volver a comisiones
         </Button>
         <Button variant="gradient" onClick={handleSubmit} disabled={submitCiclo.isPending}>
@@ -457,8 +572,66 @@ function Paso3Resumen({ state }) {
   );
 }
 
+function CycleWizard({ resumedCycle, onCycleCreated }) {
+  const [state, dispatch] = useReducer(reducer, resumedCycle, initialStateFor);
+
+  return (
+    <>
+      <GlassCard className="p-4">
+        <Stepper
+          pasos={PASOS}
+          pasoActual={state.paso}
+          pasosVisitados={state.pasosVisitados}
+          onStepClick={(paso) => dispatch({ type: 'IR_A_PASO', paso })}
+        />
+      </GlassCard>
+
+      <RejectionReasonNotice cycle={resumedCycle} />
+
+      {state.paso === 'periodo' && <Paso1Periodo state={state} dispatch={dispatch} onCycleCreated={onCycleCreated} />}
+      {state.paso === 'comisiones' && <Paso2Comisiones state={state} dispatch={dispatch} />}
+      {state.paso === 'resumen' && <Paso3Resumen state={state} dispatch={dispatch} />}
+    </>
+  );
+}
+
+function ResumedCycleGate({ cycleId, onCycleCreated }) {
+  const { data: cycle, isLoading, isError } = useCycle(cycleId);
+
+  if (isLoading) return <Skeleton className="h-[200px] w-full rounded-2xl" />;
+  if (isError || !cycle) {
+    return (
+      <GlassCard className="p-6">
+        <EmptyState title="No se encontró el ciclo." />
+      </GlassCard>
+    );
+  }
+  if (cycle.status !== 'DRAFT' && cycle.status !== 'REJECTED') {
+    return (
+      <GlassCard className="p-6">
+        <EmptyState
+          title={NOT_EDITABLE_MESSAGE}
+          action={
+            <Button variant="outline" asChild>
+              <Link to={cycleDetailPath(cycle.programId ? 'programa' : 'curso', cycle.programId, cycle.courseId)}>
+                Ver el ciclo
+              </Link>
+            </Button>
+          }
+        />
+      </GlassCard>
+    );
+  }
+  return <CycleWizard resumedCycle={cycle} onCycleCreated={onCycleCreated} />;
+}
+
 export function PreceptorNuevoCiclo() {
-  const [state, dispatch] = useReducer(reducer, null, estadoInicial);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [initialCycleId] = useState(() => searchParams.get('cicloId'));
+
+  function handleCycleCreated(cycleId) {
+    setSearchParams({ cicloId: String(cycleId) }, { replace: true });
+  }
 
   return (
     <PageContainer>
@@ -474,18 +647,9 @@ export function PreceptorNuevoCiclo() {
           <h1 className="font-heading text-xl font-bold text-ink">Alta de ciclo académico</h1>
         </div>
 
-        <GlassCard className="p-4">
-          <Stepper
-            pasos={PASOS}
-            pasoActual={state.paso}
-            pasosVisitados={state.pasosVisitados}
-            onStepClick={(paso) => dispatch({ type: 'IR_A_PASO', paso })}
-          />
-        </GlassCard>
-
-        {state.paso === 'periodo' && <Paso1Periodo state={state} dispatch={dispatch} />}
-        {state.paso === 'comisiones' && <Paso2Comisiones state={state} dispatch={dispatch} />}
-        {state.paso === 'resumen' && <Paso3Resumen state={state} />}
+        {initialCycleId
+          ? <ResumedCycleGate cycleId={initialCycleId} onCycleCreated={handleCycleCreated} />
+          : <CycleWizard resumedCycle={null} onCycleCreated={handleCycleCreated} />}
       </div>
     </PageContainer>
   );

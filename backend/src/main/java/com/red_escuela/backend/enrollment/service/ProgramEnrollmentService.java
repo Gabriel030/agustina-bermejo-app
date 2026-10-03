@@ -194,7 +194,7 @@ public class ProgramEnrollmentService {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
                     var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-                    Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
+                    Double asistencia = riesgo.porcentajeAusentismo() == null ? null : 100 - riesgo.porcentajeAusentismo();
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
                 })
@@ -228,8 +228,7 @@ public class ProgramEnrollmentService {
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
-        LocalDate today = LocalDate.now();
-        if (today.isBefore(cohort.getAdmissionStart()) || today.isAfter(cohort.getAdmissionEnd())) {
+        if (!cohort.isAdmissionOpenOn(LocalDate.now())) {
             throw new CohortAdmissionWindowClosedException(cohort.getId());
         }
     }

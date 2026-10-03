@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useClassroomsAvailability } from '@/features/oferta-academica/hooks/useClassrooms';
+import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
 
 const DIAS = [
   { id: 'MONDAY', label: 'Lunes' },
@@ -65,7 +66,29 @@ function PanelDisponibilidad({ termId, dia, franja, busqueda }) {
   );
 }
 
-export function PreceptorCalendario({ termId }) {
+function PeriodSelect({ termId, onChange }) {
+  const { data: terms } = useTerminos();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="calendar-period" className="text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+        Período
+      </label>
+      <select
+        id="calendar-period"
+        value={termId ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-surface-border bg-surface/50 px-3 py-2 text-[13.5px] text-ink outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+      >
+        <option value="">Seleccioná un período…</option>
+        {(terms ?? []).map((t) => <option key={t.id} value={t.id}>{t.description}</option>)}
+      </select>
+    </div>
+  );
+}
+
+export function PreceptorCalendario() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const termId = searchParams.get('termId');
   const [diaActivo, setDiaActivo] = useState('MONDAY');
   const [franjaActiva, setFranjaActiva] = useState(FRANJAS[0]);
   const [busqueda, setBusqueda] = useState('');
@@ -85,6 +108,11 @@ export function PreceptorCalendario({ termId }) {
         </div>
 
         <GlassCard className="flex flex-col gap-4 p-4">
+          <PeriodSelect
+            termId={termId}
+            onChange={(value) => setSearchParams(value ? { termId: value } : {}, { replace: true })}
+          />
+
           <div className="flex gap-2 overflow-x-auto pb-1">
             {DIAS.map((d) => (
               <button
@@ -108,7 +136,7 @@ export function PreceptorCalendario({ termId }) {
                 onClick={() => setFranjaActiva(f)}
                 className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${
                   franjaActiva.label === f.label
-                    ? 'bg-accent-soft font-medium text-accent'
+                    ? 'bg-accent-soft font-medium text-brand'
                     : 'text-ink-faint hover:text-ink'
                 }`}
               >

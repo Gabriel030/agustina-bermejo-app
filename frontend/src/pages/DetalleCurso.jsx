@@ -5,17 +5,28 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useCurso, useCursoPricing, useCursoTemario } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
+import { courseSummary } from '@/lib/catalog';
+import { CatalogDetailError } from '@/components/catalogo/CatalogDetailError';
 
 export function DetalleCurso() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: curso, isLoading, isError } = useCurso(id);
+  const { data: curso, isLoading, isError, error } = useCurso(id);
   const { data: pricing } = useCursoPricing(id);
   const { data: temario } = useCursoTemario(id);
 
   if (isError) {
-    return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar el curso. Probá recargar la página.</GlassCard>;
+    return (
+      <CatalogDetailError
+        message={
+          error?.status === 404
+            ? 'Este curso no existe o ya no está disponible.'
+            : 'No pudimos cargar el curso. Probá recargar la página.'
+        }
+        onBack={() => navigate('/catalogo?tab=cursos')}
+      />
+    );
   }
   if (isLoading || !curso) {
     return (
@@ -48,17 +59,26 @@ export function DetalleCurso() {
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{curso.name}</div>
-          <div className="mt-1 text-sm text-ink-faint">
-            {curso.durationMonths} meses{curso.schedule ? ` · ${curso.schedule}` : ''}
-          </div>
+          <div className="mt-1 text-sm text-ink-faint">{courseSummary(curso)}</div>
         </div>
-        <Button
-          onClick={() => navigate(`/catalogo/cursos/${id}/inscribirme`)}
-          variant="gradient"
-          className="w-full px-6 py-5 text-[13.5px] md:w-auto"
-        >
-          Inscribirme
-        </Button>
+        <div className="flex w-full flex-col items-end gap-1.5 md:w-auto">
+          <Button
+            onClick={() => navigate(`/catalogo/cursos/${id}/inscribirme`)}
+            disabled={!curso.registrationOpen}
+            variant="gradient"
+            className="w-full px-6 py-5 text-[13.5px] md:w-auto"
+          >
+            Inscribirme
+          </Button>
+          {!curso.registrationOpen && (
+            <span className="text-xs font-medium text-ink-faint">La inscripción a este curso está cerrada.</span>
+          )}
+          {curso.registrationOpen && curso.full && (
+            <span className="text-xs font-medium text-warning">
+              El cupo está completo: si te inscribís, quedás en lista de espera.
+            </span>
+          )}
+        </div>
       </div>
 
       <GlassCard className="flex flex-wrap gap-6 p-5">

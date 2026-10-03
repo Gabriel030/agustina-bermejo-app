@@ -22,8 +22,18 @@ public class CourseResponse {
     private final String teachingMode;
     private final LocalDateTime registrationStart;
     private final LocalDateTime registrationEnd;
+    private final boolean registrationOpen;
+    private final Boolean full;
+
+    public static CourseResponse from(Course course, long occupiedSeats) {
+        return baseBuilder(course).full(!course.hasCapacityFor(occupiedSeats)).build();
+    }
 
     public static CourseResponse from(Course course) {
+        return baseBuilder(course).build();
+    }
+
+    private static CourseResponseBuilder baseBuilder(Course course) {
         return CourseResponse.builder()
                 .id(course.getId())
                 .name(course.getName())
@@ -37,6 +47,6 @@ public class CourseResponse {
                 .teachingMode(course.getTeachingMode() == null ? null : course.getTeachingMode().name())
                 .registrationStart(course.getRegistrationStart())
                 .registrationEnd(course.getRegistrationEnd())
-                .build();
+                .registrationOpen(course.isRegistrationOpenAt(LocalDateTime.now()));
     }
 }

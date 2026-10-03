@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { localIsoDate } from '@/lib/calendario';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   useMisComisionesParaAsistencia,
@@ -32,9 +33,10 @@ const ESTADOS = [
 const CHIP_INACTIVO = 'bg-neutral-bg text-ink-faint hover:bg-neutral-bg/70';
 const ESTADO_POR_VALOR = Object.fromEntries(ESTADOS.map((e) => [e.value, e]));
 
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10);
-}
+const SAVE_ERROR_MESSAGES = {
+  CLASS_ON_HOLIDAY: 'Esa fecha es feriado: no se puede tomar asistencia.',
+  ATTENDANCE_ALREADY_RECORDED: 'Esa asistencia ya estaba guardada. Para corregirla, pedí la modificación desde Historial.',
+};
 
 const NOMBRE_MES = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' });
 
@@ -84,13 +86,13 @@ function FilaAlumno({ alumno, estado, onCambiarEstado, deshabilitada }) {
   );
 }
 
-function TabAsistencia({ type, sectionId }) {
+export function TabAsistencia({ type, sectionId }) {
   const { data: roster, isLoading: cargandoRoster } = useRosterDeAsistencia(type, sectionId);
   const { data: historial } = useHistorialAsistencia(type, sectionId);
   const guardar = useGuardarAsistencia(type, sectionId);
   const cancelar = useCancelarClase(type, sectionId);
 
-  const [classDate, setClassDate] = useState(hoyISO);
+  const [classDate, setClassDate] = useState(() => localIsoDate());
   const { data: claseDelDia } = useClaseDelDia(type, sectionId, classDate);
   const [busqueda, setBusqueda] = useState('');
   const [estados, setEstados] = useState({});
@@ -161,8 +163,8 @@ function TabAsistencia({ type, sectionId }) {
     try {
       await guardar.mutateAsync({ classDate, entries, topic: topic || null, observations: observations || null });
       setHuboCambios(false);
-    } catch {
-      setError('No se pudo guardar la asistencia. Los cambios siguen acá, probá de nuevo.');
+    } catch (err) {
+      setError(SAVE_ERROR_MESSAGES[err.code] ?? 'No se pudo guardar la asistencia. Los cambios siguen acá, probá de nuevo.');
     }
   }
 
@@ -221,6 +223,12 @@ function TabAsistencia({ type, sectionId }) {
         </div>
       )}
 
+      {hayAsistenciaGuardada && !claseCancelada && (
+        <div className="rounded-xl bg-neutral-bg px-4 py-2 text-[13px] font-medium text-ink-soft">
+          La asistencia ya guardada no se edita desde acá: para corregirla, pedí la modificación desde Historial.
+        </div>
+      )}
+
       {error && <div className="rounded-xl bg-danger-bg px-4 py-2 text-[13px] font-semibold text-danger">{error}</div>}
 
       <GlassCard className="flex flex-col gap-3 p-4">
@@ -252,7 +260,7 @@ function TabAsistencia({ type, sectionId }) {
                 alumno={alumno}
                 estado={estados[alumno.enrollmentId]}
                 onCambiarEstado={cambiarEstado}
-                deshabilitada={claseCancelada}
+                deshabilitada={claseCancelada || estadosGuardados[alumno.enrollmentId] != null}
               />
             ))}
           </div>
@@ -804,7 +812,7 @@ export function DocenteTomarAsistencia() {
   const [seccionId, setSeccionId] = useState(null);
 
   const lista = comisiones ?? [];
-  const seccion = lista.find((c) => String(c.id) === seccionId);
+  const seccion = lista.find((c) => `${c.type}-${c.id}` === seccionId);
 
   if (isLoading) {
     return (
@@ -834,7 +842,7 @@ export function DocenteTomarAsistencia() {
           <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una comisión" /></SelectTrigger>
           <SelectContent>
             {lista.map((c) => (
-              <SelectItem key={`${c.type}-${c.id}`} value={String(c.id)}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
+              <SelectItem key={`${c.type}-${c.id}`} value={`${c.type}-${c.id}`}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
             ))}
           </SelectContent>
         </Select>

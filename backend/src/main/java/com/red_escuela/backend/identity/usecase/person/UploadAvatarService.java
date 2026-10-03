@@ -27,10 +27,11 @@ public class UploadAvatarService implements UploadAvatarUseCase {
     @Transactional
     public void upload(MultipartFile file) {
         Person person = currentPersonService.resolveCurrentPerson();
-        if (person.getAvatarPath() != null) {
-            fileStorageService.delete(person.getAvatarPath());
-        }
+        String previousPath = person.getAvatarPath();
         String path = fileStorageService.storeAvatar(person.getId(), file);
+        if (previousPath != null && !previousPath.equals(path)) {
+            fileStorageService.delete(previousPath);
+        }
         person.setAvatarPath(path);
         personRepository.save(person);
     }

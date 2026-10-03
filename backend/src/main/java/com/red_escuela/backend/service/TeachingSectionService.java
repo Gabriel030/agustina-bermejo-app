@@ -23,10 +23,14 @@ public class TeachingSectionService {
 
     public List<TeachingSectionResponse> listByInstructor(Long instructorId) {
         List<TeachingSectionResponse> sections = new ArrayList<>();
-        subjectSectionInstructorRepository.findByInstructorId(instructorId)
-                .forEach(link -> sections.add(TeachingSectionResponse.fromSubjectSection(link.getSection())));
-        courseSubjectSectionInstructorRepository.findByInstructorId(instructorId)
-                .forEach(link -> sections.add(TeachingSectionResponse.fromCourseSubjectSection(link.getSection())));
+        subjectSectionInstructorRepository.findByInstructorId(instructorId).stream()
+                .map(link -> link.getSection())
+                .filter(section -> section.isOfferingApproved())
+                .forEach(section -> sections.add(TeachingSectionResponse.fromSubjectSection(section)));
+        courseSubjectSectionInstructorRepository.findByInstructorId(instructorId).stream()
+                .map(link -> link.getSection())
+                .filter(section -> section.isOfferingApproved())
+                .forEach(section -> sections.add(TeachingSectionResponse.fromCourseSubjectSection(section)));
         return sections;
     }
 }

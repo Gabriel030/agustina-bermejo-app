@@ -9,7 +9,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 ## 1. Layout y estructura de página
 | Componente | Uso | API relevante |
 |---|---|---|
-| `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap) | `className` |
+| `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
 | `GlassCard` [shared] | Superficie de vidrio; base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
 | `MeshBackground` [shared] | Fondo de pantallas públicas | — |
 | `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
@@ -78,9 +78,10 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 
 ## 7. Componentes de dominio (no reusar fuera de su dominio)
 - **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`.
-- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`.
+- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo).
 - **director:** `BandejaTramites`.
 - **docente:** `CalendarioConfiguracion`.
+- **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).
 Si un segundo dominio necesita uno de estos, se sube a `components/` (regla de `frontend.md`).
 
 ## 8. Contextos y hooks transversales
