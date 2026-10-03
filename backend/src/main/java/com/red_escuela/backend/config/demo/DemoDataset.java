@@ -22,7 +22,9 @@ import com.red_escuela.backend.identity.entity.Student;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,9 @@ public class DemoDataset {
     private final List<SubjectSectionEnrollment> sectionEnrollments = new ArrayList<>();
     private final List<CourseSubjectSectionEnrollment> courseSectionEnrollments = new ArrayList<>();
 
+    private final Map<Long, DemoOutcome> outcomes = new HashMap<>();
+    private final Map<Long, LocalDate> finalExamDates = new HashMap<>();
+    private final Map<Long, DemoOutcome> courseOutcomes = new HashMap<>();
     private Student demoStudent;
     private Instructor demoInstructor;
 
