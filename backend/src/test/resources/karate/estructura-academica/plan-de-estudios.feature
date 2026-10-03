@@ -15,7 +15,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Ciclo completo de una materia — alta, aprobación, edición, baja y reactivación
     * def nombre = 'Análisis Matemático I ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal' }
@@ -66,7 +66,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
   Scenario: Materia con nombre duplicado — 409
     * def nombre = 'Historia ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombre)', code: '#(codigo)' }
@@ -103,8 +103,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Profesorado QA ' + java.lang.System.nanoTime()
     * def nombreA = 'Materia A ' + java.lang.System.nanoTime()
     * def nombreB = 'Materia B ' + java.lang.System.nanoTime()
-    * def codigoA = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigoB = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoA = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoB = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -183,7 +183,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Agregar la misma materia dos veces a la carrera — 409
     * def nombrePrograma = 'Carrera QA duplicado ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia duplicable ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -236,7 +236,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
   Scenario: Prerequisito de sí misma — 400
     * def nombrePrograma = 'Carrera QA prereq sí misma ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Materia autorreferencial ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -269,8 +269,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma = 'Carrera QA correlatividades ' + java.lang.System.nanoTime()
     * def nombreC = 'Materia C ' + java.lang.System.nanoTime()
     * def nombreD = 'Materia D ' + java.lang.System.nanoTime()
-    * def codigoC = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigoD = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoC = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigoD = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -336,8 +336,8 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombrePrograma2 = 'Carrera QA 2 ' + java.lang.System.nanoTime()
     * def nombreSubject1 = 'Materia carrera 1 ' + java.lang.System.nanoTime()
     * def nombreSubject2 = 'Materia carrera 2 ' + java.lang.System.nanoTime()
-    * def codigo1 = java.util.UUID.randomUUID().toString().substring(0, 4)
-    * def codigo2 = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo1 = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
+    * def codigo2 = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -397,7 +397,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def nombreGrupo = 'Optativas de Idioma ' + java.lang.System.nanoTime()
     * def nombrePrograma = 'Carrera QA electivas ' + java.lang.System.nanoTime()
     * def nombreMateria = 'Electiva de Idioma ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/elective-groups'
     And header Authorization = 'Bearer ' + adminToken

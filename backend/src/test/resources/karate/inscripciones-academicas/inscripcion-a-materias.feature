@@ -27,7 +27,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA inscripciones ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
@@ -99,7 +99,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def programEnrollmentId = response.id
 
     * def nombreMateriaAjena = 'Materia ajena al plan ' + java.lang.System.nanoTime()
-    * def codigoAjena = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoAjena = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaAjena)', code: '#(codigoAjena)' }
@@ -124,7 +124,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreMateriaAvanzada = 'Materia avanzada ' + java.lang.System.nanoTime()
-    * def codigoAvanzada = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoAvanzada = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaAvanzada)', code: '#(codigoAvanzada)' }
@@ -205,7 +205,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def sectionCId = response.id
 
     * def nombreMateriaOtra = 'Materia otra para cambio ' + java.lang.System.nanoTime()
-    * def codigoOtra = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoOtra = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaOtra)', code: '#(codigoOtra)' }
