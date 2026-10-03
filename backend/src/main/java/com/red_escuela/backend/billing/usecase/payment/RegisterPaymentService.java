@@ -20,6 +20,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ import java.util.List;
 
 @UseCase
 public class RegisterPaymentService implements RegisterPaymentUseCase {
+    private static final Logger log = LoggerFactory.getLogger(RegisterPaymentService.class);
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final CurrentStudentService currentStudentService;
@@ -64,7 +67,9 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             rejected.setPaidAt(LocalDateTime.now());
             rejected.setCardInstallments(request.cardInstallments());
             rejected.setNotes(request.notes());
-            return paymentRepository.save(rejected);
+            Payment savedRejected = paymentRepository.save(rejected);
+            log.warn("Pago rechazado registrado: pago={}, metodo={}, monto={}", savedRejected.getId(), request.method(), total);
+            return savedRejected;
         }
 
         List<PaymentAllocationRequest> ordered = request.allocations().stream()
@@ -114,6 +119,8 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         }
 
         lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
+        log.info("Pago registrado: pago={}, metodo={}, monto={}, facturas={}",
+                payment.getId(), request.method(), total, ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
 
         return payment;
     }

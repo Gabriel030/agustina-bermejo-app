@@ -8,6 +8,9 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import java.util.Optional;
 @Service
 public class SectionEvaluationConfigReminderJob {
 
+    private static final Logger log = LoggerFactory.getLogger(SectionEvaluationConfigReminderJob.class);
     private static final List<Integer> REMINDER_DAYS_BEFORE = List.of(10, 5);
 
     private final SectionEvaluationConfigRepository configRepository;
@@ -37,9 +41,13 @@ public class SectionEvaluationConfigReminderJob {
     }
 
     @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
+    @SchedulerLock(name = "SectionEvaluationConfigReminderJob", lockAtMostFor = "PT30M")
     @Transactional
     public void sendReminders() {
         LocalDate today = LocalDate.now();
+        log.info("Recordatorios de configuración de evaluación iniciados: fecha={}", today);
+        long start = System.currentTimeMillis();
+        int sent = 0;
         List<SectionEvaluationConfig> pending = configRepository.findByStatusIn(List.of(
                 SectionEvaluationConfigStatus.DRAFT,
                 SectionEvaluationConfigStatus.PENDING_APPROVAL,
@@ -52,10 +60,16 @@ public class SectionEvaluationConfigReminderJob {
             }
             long daysToEnrollmentStart = ChronoUnit.DAYS.between(today, term.getEnrollmentStart().toLocalDate());
             if (REMINDER_DAYS_BEFORE.contains((int) daysToEnrollmentStart)) {
-                leadInstructorPerson(config).ifPresent(person -> eventPublisher.publishEvent(
-                        new SectionEvaluationConfigReminderEvent(config, person, (int) daysToEnrollmentStart)));
+                Optional<Person> lead = leadInstructorPerson(config);
+                if (lead.isPresent()) {
+                    eventPublisher.publishEvent(
+                            new SectionEvaluationConfigReminderEvent(config, lead.get(), (int) daysToEnrollmentStart));
+                    sent++;
+                }
             }
         }
+        log.info("Recordatorios de configuración de evaluación finalizados: pendientes={}, enviados={}, duracion={}ms",
+                pending.size(), sent, System.currentTimeMillis() - start);
     }
 
     private Optional<Person> leadInstructorPerson(SectionEvaluationConfig config) {
