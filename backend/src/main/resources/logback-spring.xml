@@ -5,6 +5,13 @@
     explícito). Solo consola (12-factor: los logs van a stdout, no a un archivo del
     filesystem del contenedor) — coherente con que todavía no se definió el despliegue en
     Docker (Fase 5, pendiente).
+
+    Épica 17 Fase 5: se suma un appender JSON (ECS) que reemplaza al de texto plano solo
+    fuera de desarrollo. Leer JSON crudo en la terminal mientras se programa es un
+    retroceso, así que el pattern legible se mantiene para el día a día. El encoder va
+    declarado acá y no por la propiedad logging.structured.format.console porque esa
+    autoconfiguración de Spring Boot no aplica cuando el proyecto trae su propio
+    logback-spring.xml, que es el caso.
 -->
 <configuration>
 
@@ -23,7 +30,21 @@
         <logger name="com.red_escuela.backend" level="INFO" />
     </springProfile>
 
-    <springProfile name="!test">
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+            <format>ecs</format>
+        </encoder>
+    </appender>
+
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="JSON" />
+        </root>
+    </springProfile>
+
+    <!-- Desarrollo: todo lo que no sea test ni prod. El "!test" de antes cubría los dos
+         casos a la vez; sin esta distinción, en prod saldrían las dos salidas duplicadas. -->
+    <springProfile name="!test &amp; !prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE" />
         </root>
