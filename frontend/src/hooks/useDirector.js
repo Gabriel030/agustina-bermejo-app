@@ -170,9 +170,12 @@ export function useAsistenciaPorMateria(programEnrollmentId) {
 
 export function useEstadoDePago(studentId) {
   return useQuery({
-    queryKey: ['students', studentId, 'payment-standing'],
-    queryFn: () => apiFetch(`/students/${studentId}/payment-standing`),
+    queryKey: ['students', studentId, 'billing-overview'],
+    queryFn: () => apiFetch(`/students/${studentId}/billing-overview`),
     enabled: !!studentId,
+    select: (entries) => ({
+      standing: entries.some((e) => e.billingStanding !== 'UP_TO_DATE') ? 'MOROSO' : 'AL_DIA',
+    }),
   });
 }
 

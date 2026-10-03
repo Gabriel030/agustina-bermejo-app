@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
-import { usePaymentStanding, useDebtSummary, useMisCursos } from '@/hooks/useAlumno';
+import { usePaymentStanding, useMisCursos } from '@/hooks/useAlumno';
 import { useNovedades } from '@/hooks/useNovedades';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
@@ -16,9 +16,8 @@ const ESTADOS_CURSO_ACTIVO = new Set(['ENROLLED', 'IN_PROGRESS', 'WAITLISTED', '
 
 const NOVEDADES_INICIAL = 3;
 
-function estadoDePago(standing, tieneDeuda) {
+function estadoDePago(standing) {
   if (standing === 'MOROSO') return { label: 'Atrasado', tone: 'danger' };
-  if (standing === 'AL_DIA' && tieneDeuda) return { label: 'Cuota pendiente', tone: 'warning' };
   if (standing === 'AL_DIA') return { label: 'Al día', tone: 'success' };
   return { label: 'Sin información', tone: 'neutral' };
 }
@@ -96,15 +95,14 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp }) {
 export function AlumnoInicio() {
   const { usuario } = useAuth();
   const { data: standing, isLoading: cargandoStanding } = usePaymentStanding();
-  const { data: deuda, isLoading: cargandoDeuda } = useDebtSummary();
   const { data: cursos } = useMisCursos();
   const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades } = useNovedades();
   const [searchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
   const avisoResaltadoRef = useRef(null);
 
-  const cargandoPago = cargandoStanding || cargandoDeuda;
-  const pago = standing && deuda ? estadoDePago(standing.standing, deuda.tieneDeuda) : null;
+  const cargandoPago = cargandoStanding;
+  const pago = standing ? estadoDePago(standing.standing) : null;
   const cursosActivos = (cursos ?? []).filter((c) => ESTADOS_CURSO_ACTIVO.has(c.status));
 
   const avisoUrlId = searchParams.get('aviso') ? Number(searchParams.get('aviso')) : null;
@@ -205,14 +203,12 @@ export function AlumnoInicio() {
 
         <GlassCard className="flex flex-col gap-3 p-5">
           <div className="font-heading text-[15px] font-semibold text-ink">Estado de cuenta</div>
-          {cargandoDeuda ? (
+          {cargandoPago ? (
             <Skeleton className="h-14 w-full" />
-          ) : deuda?.tieneDeuda ? (
+          ) : standing?.standing === 'MOROSO' ? (
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
-              <div className="font-heading text-xl font-bold text-ink">
-                ${deuda.montoAdeudado?.toLocaleString('es-AR')}
-              </div>
+              <div className="text-[13px] text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
             </div>
           ) : (
             <div className="rounded-xl bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">
