@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.entity.RefreshToken;
+import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
@@ -28,6 +29,7 @@ public class RefreshTokenService implements RefreshTokenUseCase {
         RefreshToken existing = refreshTokenRepository.findByTokenHash(hash)
                 .filter(rt -> !rt.getRevoked())
                 .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(rt -> rt.getPerson().getStatus() == StatusType.ACTIVE)
                 .orElseThrow(InvalidRefreshTokenException::new);
 
         existing.setRevoked(true);

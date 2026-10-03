@@ -37,10 +37,10 @@ public class LoginService implements LoginUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthTokens login(LoginCommand command) {
         Optional<Person> personOpt = personRepository.findByUsername(command.username())
-                .or(() -> personRepository.findByEmail(command.username()))
+                .or(() -> personRepository.findByEmailIgnoreCase(command.username()))
                 .or(() -> personRepository.findByDni(command.username()));
 
         if (personOpt.isEmpty()) {

@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.usecase.person.GetActiveSessionsUseCase;
 import com.red_escuela.backend.identity.usecase.person.GetNotificationPreferencesUseCase;
 import com.red_escuela.backend.identity.usecase.person.GetOwnProfileUseCase;
 import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
+import com.red_escuela.backend.identity.usecase.person.RevokeSessionByIdUseCase;
 import com.red_escuela.backend.identity.usecase.person.UpdateNotificationPreferencesUseCase;
 import com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileUseCase;
 import com.red_escuela.backend.identity.usecase.person.UploadAvatarUseCase;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -43,6 +45,7 @@ public class PersonController {
     private final ChangeOwnPasswordUseCase changeOwnPasswordUseCase;
     private final GetActiveSessionsUseCase getActiveSessionsUseCase;
     private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
+    private final RevokeSessionByIdUseCase revokeSessionByIdUseCase;
     private final GetNotificationPreferencesUseCase getNotificationPreferencesUseCase;
     private final UpdateNotificationPreferencesUseCase updateNotificationPreferencesUseCase;
     private final UploadAvatarUseCase uploadAvatarUseCase;
@@ -54,6 +57,7 @@ public class PersonController {
                             ChangeOwnPasswordUseCase changeOwnPasswordUseCase,
                             GetActiveSessionsUseCase getActiveSessionsUseCase,
                             RevokeAllSessionsUseCase revokeAllSessionsUseCase,
+                            RevokeSessionByIdUseCase revokeSessionByIdUseCase,
                             GetNotificationPreferencesUseCase getNotificationPreferencesUseCase,
                             UpdateNotificationPreferencesUseCase updateNotificationPreferencesUseCase,
                             UploadAvatarUseCase uploadAvatarUseCase,
@@ -64,6 +68,7 @@ public class PersonController {
         this.changeOwnPasswordUseCase = changeOwnPasswordUseCase;
         this.getActiveSessionsUseCase = getActiveSessionsUseCase;
         this.revokeAllSessionsUseCase = revokeAllSessionsUseCase;
+        this.revokeSessionByIdUseCase = revokeSessionByIdUseCase;
         this.getNotificationPreferencesUseCase = getNotificationPreferencesUseCase;
         this.updateNotificationPreferencesUseCase = updateNotificationPreferencesUseCase;
         this.uploadAvatarUseCase = uploadAvatarUseCase;
@@ -99,6 +104,12 @@ public class PersonController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeAllSessions() {
         revokeAllSessionsUseCase.revokeAll(currentPersonService.resolveCurrentPerson());
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeSession(@PathVariable Long id) {
+        revokeSessionByIdUseCase.revokeById(id, currentPersonService.resolveCurrentPerson());
     }
 
     @GetMapping("/notification-preferences")

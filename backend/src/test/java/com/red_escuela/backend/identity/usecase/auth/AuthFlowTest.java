@@ -146,4 +146,16 @@ class AuthFlowTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
                 .isInstanceOf(InvalidRefreshTokenException.class);
     }
+
+    @Test
+    void refreshTokenOfDeactivatedPersonIsRejected() {
+        Person person = persistPerson("baja", "correcta123", AuthProvider.LOCAL);
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("baja", "correcta123", "127.0.0.1"));
+
+        person.setStatus(StatusType.INACTIVE);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+    }
 }

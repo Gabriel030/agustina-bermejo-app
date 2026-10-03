@@ -17,6 +17,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.usecase.auth.RefreshTokenUseCase;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.util.TokenHashUtil;
@@ -44,6 +46,9 @@ import static org.mockito.Mockito.verify;
 class PasswordResetTest extends AbstractIntegrationTest {
     @Autowired
     private LoginUseCase loginUseCase;
+
+    @Autowired
+    private RefreshTokenUseCase refreshTokenUseCase;
 
     @Autowired
     private RequestPasswordResetUseCase requestPasswordResetUseCase;
@@ -239,5 +244,19 @@ class PasswordResetTest extends AbstractIntegrationTest {
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser7", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
+    }
+
+    @Test
+    void passwordResetRevokesAllActiveSessions() {
+        Person person = persistPerson("sesiones1", "sesiones1@example.com", "correcta123", AuthProvider.LOCAL);
+        persistResetToken(person, "999999", LocalDateTime.now().plusMinutes(15), false);
+
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("sesiones1", "correcta123", "127.0.0.1"));
+
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("sesiones1@example.com", "999999"));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class);
     }
 }
