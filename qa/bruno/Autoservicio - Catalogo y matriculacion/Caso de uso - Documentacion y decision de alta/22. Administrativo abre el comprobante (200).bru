@@ -1,0 +1,27 @@
+meta {
+  name: 22. Administrativo abre el comprobante (200)
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/payment-receipts/{{receiptIdDocAlta}}/file
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{adminAccessTokenDocAlta}}
+}
+
+docs {
+  B-p5-8: administración tiene que poder ver el archivo antes de aprobar. Devuelve el archivo con su Content-Type real e inline.
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("devuelve el PDF", function () {
+    expect(res.getHeader("content-type")).to.contain("application/pdf");
+  });
+}

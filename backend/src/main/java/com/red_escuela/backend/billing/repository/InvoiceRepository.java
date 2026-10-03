@@ -108,9 +108,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             """)
     List<Invoice> findByProgramEnrollmentStatusInWithStudent(@Param("statuses") Collection<InvoiceStatus> statuses);
 
-    @Query("select coalesce(sum(i.baseAmount), 0) from Invoice i where i.period = :period and i.status <> 'CANCELLED'")
-    BigDecimal sumBaseAmountByPeriod(@Param("period") YearMonth period);
+    @Query("select distinct i from Invoice i left join fetch i.adjustments where i.period = :period and i.status <> 'CANCELLED'")
+    List<Invoice> findByPeriodNotCancelledWithAdjustments(@Param("period") YearMonth period);
 
-    @Query("select coalesce(sum(i.baseAmount), 0) from Invoice i where i.period = :period and i.status in :statuses")
-    BigDecimal sumBaseAmountByPeriodAndStatusIn(@Param("period") YearMonth period, @Param("statuses") Collection<InvoiceStatus> statuses);
+    @Query("""
+            select coalesce(sum(alloc.amountApplied), 0)
+            from PaymentAllocation alloc
+            where alloc.invoice.period = :period and alloc.invoice.status <> 'CANCELLED'
+            """)
+    BigDecimal sumAllocatedByPeriod(@Param("period") YearMonth period);
 }

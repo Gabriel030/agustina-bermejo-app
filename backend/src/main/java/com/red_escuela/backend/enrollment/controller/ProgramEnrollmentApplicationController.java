@@ -2,9 +2,11 @@ package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
 import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
+import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentApplicationNotFoundException;
+import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentUseCase;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand;
@@ -48,6 +50,7 @@ public class ProgramEnrollmentApplicationController {
     private final AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase;
     private final ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase;
     private final RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
+    private final StudentDocumentRepository studentDocumentRepository;
 
     public ProgramEnrollmentApplicationController(
             CurrentStudentService currentStudentService,
@@ -58,7 +61,8 @@ public class ProgramEnrollmentApplicationController {
             GetProgramEnrollmentApplicationUseCase getProgramEnrollmentApplicationUseCase,
             AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase,
             ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase,
-            RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase) {
+            RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase,
+            StudentDocumentRepository studentDocumentRepository) {
         this.currentStudentService = currentStudentService;
         this.currentPersonService = currentPersonService;
         this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
@@ -68,6 +72,7 @@ public class ProgramEnrollmentApplicationController {
         this.addProgramEnrollmentApplicationDocumentUseCase = addProgramEnrollmentApplicationDocumentUseCase;
         this.approveProgramEnrollmentApplicationUseCase = approveProgramEnrollmentApplicationUseCase;
         this.rejectProgramEnrollmentApplicationUseCase = rejectProgramEnrollmentApplicationUseCase;
+        this.studentDocumentRepository = studentDocumentRepository;
     }
 
     @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -94,6 +99,13 @@ public class ProgramEnrollmentApplicationController {
         ProgramEnrollmentApplication application = getProgramEnrollmentApplicationUseCase.get(id);
         requireOwner(application, student);
         addProgramEnrollmentApplicationDocumentUseCase.add(new AddProgramEnrollmentApplicationDocumentCommand(id, type, file));
+    }
+
+    @GetMapping("/me/documents")
+    public List<StudentDocumentResponse> myDocuments() {
+        Student student = currentStudentService.resolveCurrentStudent();
+        return studentDocumentRepository.findByStudentId(student.getId()).stream()
+                .map(StudentDocumentResponse::from).toList();
     }
 
     @GetMapping("/program-enrollment-applications")

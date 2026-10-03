@@ -19,6 +19,10 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CreditNote;
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
@@ -85,6 +89,9 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private TermRepository termRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @AfterEach
     void clearSecurityContext() {
@@ -325,5 +332,75 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InsufficientCreditBalanceException.class);
 
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+    }
+
+    private CourseEnrollment persistCourseEnrollmentWithStanding(Student student, EnrollmentBillingStanding standing) {
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        enrollment.setBillingStanding(standing);
+        enrollment.setBillingStandingUpdatedAt(LocalDateTime.now().minusMonths(1));
+        return courseEnrollmentRepository.save(enrollment);
+    }
+
+    private void payInFull(Invoice invoice, Person admin) {
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getBaseAmount())),
+                PaymentMethod.CASH, false, null, null, null, null), admin);
+    }
+
+    @Test
+    void payingTheOnlyOverdueInstallmentRestoresTheEnrollmentToUpToDate() {
+        Person admin = persistPerson("admin.pago.standing1." + System.nanoTime());
+        Student student = persistStudent("96000101");
+        CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentBillingStanding.OVERDUE);
+        Invoice overdue = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
+
+        payInFull(overdue, admin);
+
+        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getBillingStanding())
+                .isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+    }
+
+    @Test
+    void payingOnlyPartOfTheOverdueDebtKeepsTheEnrollmentOverdue() {
+        Person admin = persistPerson("admin.pago.standing2." + System.nanoTime());
+        Student student = persistStudent("96000102");
+        CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentBillingStanding.OVERDUE);
+        Invoice first = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(2));
+        persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(1));
+
+        payInFull(first, admin);
+
+        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getBillingStanding())
+                .isEqualTo(EnrollmentBillingStanding.OVERDUE);
+    }
+
+    @Test
+    void settlingAllOverdueDebtOfASuspendedEnrollmentLiftsTheSuspensionAndNotifiesTheStudent() {
+        Person admin = persistPerson("admin.pago.standing3." + System.nanoTime());
+        Student student = persistStudent("96000103");
+        CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentBillingStanding.SUSPENDED);
+        Invoice overdue = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.OVERDUE);
+
+        payInFull(overdue, admin);
+
+        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getBillingStanding())
+                .isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId()))
+                .extracting(Notification::getType)
+                .contains(NotificationType.SUSPENSION_LIFTED);
+    }
+
+    @Test
+    void payingDoesNotRestoreAnEnrollmentWithdrawnForNonPayment() {
+        Person admin = persistPerson("admin.pago.standing4." + System.nanoTime());
+        Student student = persistStudent("96000104");
+        CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        Invoice overdue = persistInvoice(enrollment, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), InvoiceStatus.OVERDUE);
+
+        payInFull(overdue, admin);
+
+        assertThat(courseEnrollmentRepository.findById(enrollment.getId()).orElseThrow().getBillingStanding())
+                .isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
     }
 }

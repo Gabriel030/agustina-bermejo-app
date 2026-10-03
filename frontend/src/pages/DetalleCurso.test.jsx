@@ -164,6 +164,34 @@ describe('DetalleCurso', () => {
     expect(await screen.findByText('Este curso no existe o ya no está disponible.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '← Catálogo' })).toBeInTheDocument();
   });
+
+  it('the payment step shows the bank account the applicant has to transfer to', async () => {
+    server.use(
+      http.get(`${API}/payment-config`, () =>
+        HttpResponse.json({
+          bankAlias: 'isab.pagos.cba',
+          bankCbu: '0070123430004567890123',
+          accountHolder: 'Instituto Superior Agustina Bermejo',
+          mpEnabled: false,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderConWizard();
+
+    await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
+    await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
+    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
+    await user.type(calleInput, 'Calle Falsa');
+    await user.type(numeroInput, '123');
+    await user.type(ciudadInput, 'Ciudad');
+    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
+
+    expect(await screen.findByText('0070123430004567890123')).toBeInTheDocument();
+    expect(screen.getByText('isab.pagos.cba')).toBeInTheDocument();
+    expect(screen.getByText('Instituto Superior Agustina Bermejo')).toBeInTheDocument();
+  });
 });
 
 async function waitForFileInput() {

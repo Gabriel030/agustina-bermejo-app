@@ -49,6 +49,7 @@ import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchExcept
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionNotFoundException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
+import com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
@@ -295,6 +296,7 @@ public class GlobalExceptionHandler {
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
             PaymentReceiptNotFoundException.class,
+            PaymentReceiptFileNotFoundException.class,
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
             PromotionNotFoundException.class,

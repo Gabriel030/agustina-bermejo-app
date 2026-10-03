@@ -37,6 +37,9 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `SortableColumnHeader` [domain: alumno] | Encabezado ordenable (hook `useOrdenamiento`) | — |
 | `AnioColumnFilter` `EstadoColumnFilter` [domain: alumno] | Filtro tipo Excel en el encabezado de columna (checkboxes + seleccionar todo) | — |
 | `AnioGroupHeaderRow` [domain: alumno] | Fila de agrupación por año | — |
+| `AmountBreakdown` [domain: alumno] | Desglose de una cuota: importe base + recargo, beca, promoción o descuento con signo | `baseAmount`, `lines` (`{ label, amount }` con signo) |
+| `InvoiceSummary` [domain: alumno] | Resumen de la cuota que se está pagando (concepto, desglose y total) arriba de los pasos de pago | `breakdown` (respuesta de `/me/invoices/{id}/price-breakdown`) |
+| `BankAccountDetails` [domain: catalogo] | Titular, CBU y alias de la institución (de `/payment-config`) en el paso de pago del wizard | — |
 | `Card` [ui] | Sin uso hoy; usar `GlassCard` | — |
 
 ## 4. Formularios y entrada
@@ -77,8 +80,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | Clases de `index.css` (no-motion) | `card-avisos`, `tabla-avisos`, `nota-fila` — composición opaca de la columna fija de la tabla de avisos (`features/avisos`). No se puede expresar con utilidades: apila `--surface` sobre `--bg1` y mete el tinte de fila como una capa aparte vía `--capa-fila`, porque el shorthand `background` destruiría esa composición |
 
 ## 7. Componentes de dominio (no reusar fuera de su dominio)
-- **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`.
-- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo).
+- **alumno:** `TabAsistencia`, `TabMaterias`, `TabMesasDeExamen`, `TabNotas`, `TabPlanDeEstudio`, `SeccionAsistencia`, `InscripcionMaterias`, `MateriaContenidoMock`, `AmountBreakdown`, `InvoiceSummary`.
+- **catalogo:** `TabCarreras`, `TabCursos`, `TabMisSolicitudes`, `InscripcionWizard`, `CatalogDetailError` (detalle inexistente/no disponible con vuelta al catálogo), `BankAccountDetails`.
 - **director:** `BandejaTramites`.
 - **docente:** `CalendarioConfiguracion`.
 - **oferta-academica:** `ResumeCycleButton` (retomar un ciclo en construcción o rechazado en el wizard, `?cicloId=`), `RejectionReasonNotice` (motivo de rechazo de un ciclo).

@@ -120,6 +120,10 @@ public class Invoice {
         return getAmountDue().subtract(applied);
     }
 
+    public boolean isPayable() {
+        return status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE;
+    }
+
     public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
         PaymentAllocation allocation = new PaymentAllocation();
         allocation.setInvoice(this);

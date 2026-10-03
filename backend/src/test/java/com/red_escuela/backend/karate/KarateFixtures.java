@@ -65,6 +65,10 @@ public class KarateFixtures {
     }
 
     public static Map<String, Object> createConfirmedStudent(Long institutionId) {
+        return createConfirmedStudentWithIdentity(institutionId, null, null, null);
+    }
+
+    public static Map<String, Object> createConfirmedStudentWithIdentity(Long institutionId, String name, String lastname, String dni) {
         AddressRepository addressRepository = context().getBean(AddressRepository.class);
         PersonRepository personRepository = context().getBean(PersonRepository.class);
         RoleRepository roleRepository = context().getBean(RoleRepository.class);
@@ -76,6 +80,9 @@ public class KarateFixtures {
 
         Person person = new Person();
         String username = "karate.alumno." + System.nanoTime();
+        person.setName(name);
+        person.setLastname(lastname);
+        person.setDni(dni);
         person.setUsername(username);
         person.setEmail(username + "@example.com");
         person.setAddress(address);
