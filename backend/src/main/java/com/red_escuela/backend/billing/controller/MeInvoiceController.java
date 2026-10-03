@@ -4,11 +4,9 @@ import com.red_escuela.backend.identity.service.CurrentStudentService;
 import com.red_escuela.backend.billing.dto.BillingStandingResponse;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
-import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
@@ -93,13 +91,13 @@ public class MeInvoiceController {
     @GetMapping("/course-enrollments/{id}/invoices")
     public EnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.courseBillable(id), invoiceQueryService.byOwnCourse(studentId, id));
+        return EnrollmentBillingStatusResponse.of(invoiceQueryService.courseBillable(id), invoiceQueryService.byOwnCourse(studentId, id));
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
     public EnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return toStatusResponse(invoiceQueryService.programBillable(id), invoiceQueryService.byOwnProgram(studentId, id));
+        return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.byOwnProgram(studentId, id));
     }
 
     @GetMapping("/billing-standing")
@@ -121,8 +119,4 @@ public class MeInvoiceController {
         return new BillingStandingResponse(enrollmentType, enrollmentId, billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt());
     }
 
-    private EnrollmentBillingStatusResponse toStatusResponse(BillableEnrollment billable, List<Invoice> invoices) {
-        return new EnrollmentBillingStatusResponse(billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt(),
-                invoices.stream().map(InvoiceResponse::from).toList(), null, null, null, null);
-    }
 }

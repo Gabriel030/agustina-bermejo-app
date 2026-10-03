@@ -10,6 +10,9 @@ import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { toast } from 'sonner';
+import { apiFetchBlob } from '@/api/client';
+import { invoiceConcept } from '@/lib/billing';
 import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
@@ -79,6 +82,47 @@ function formatFecha(date) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+const REGISTER_PAYMENT_ERRORS = {
+  PAYMENT_EXCEEDS_INVOICE_BALANCE: 'El monto supera el saldo de la cuota. Actualizá la pantalla y revisá los saldos.',
+  INVOICE_NOT_PAYABLE: 'Una de las cuotas ya no admite pagos. Actualizá la pantalla y revisá su estado.',
+};
+
+const APPROVE_RECEIPT_ERRORS = {
+  INVOICE_NOT_PAYABLE:
+    'La cuota de este comprobante ya está saldada (por ejemplo, se cobró en mostrador). Rechazalo indicando el motivo.',
+  INVALID_PAYMENT_RECEIPT_STATE: 'Este comprobante ya fue revisado. Actualizá la bandeja.',
+};
+
+function paymentAmountsError(payableInvoices, amounts) {
+  for (const inv of payableInvoices) {
+    const amount = parseFloat(amounts[inv.id] ?? '0');
+    if (isNaN(amount)) continue;
+    if (amount < 0) {
+      return 'Los montos no pueden ser negativos.';
+    }
+    if (inv.remainingBalance != null && amount > inv.remainingBalance) {
+      return `El monto de ${invoiceConcept(inv.feeType, inv.period)} supera su saldo (${formatMonto(inv.remainingBalance)}).`;
+    }
+  }
+  return null;
+}
+
+async function openReceiptFile(receiptId) {
+  const preview = window.open('', '_blank');
+  try {
+    const { blob } = await apiFetchBlob(`/payment-receipts/${receiptId}/file`);
+    const url = URL.createObjectURL(blob);
+    if (preview) {
+      preview.location.href = url;
+    } else {
+      window.location.assign(url);
+    }
+  } catch {
+    preview?.close();
+    toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
+  }
+}
+
 function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
   const [amounts, setAmounts] = useState(() =>
     Object.fromEntries(
@@ -103,6 +147,12 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
   }, 0);
 
   function handleSubmit() {
+    const amountsError = paymentAmountsError(payableInvoices, amounts);
+    if (amountsError) {
+      setError(amountsError);
+      return;
+    }
+
     const allocations = payableInvoices
       .map((inv) => ({ invoiceId: inv.id, amountApplied: parseFloat(amounts[inv.id] ?? '0') }))
       .filter((a) => a.amountApplied > 0);
@@ -116,7 +166,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
       { allocations, method, notes: notes || undefined, externalReference: externalRef || undefined },
       {
         onSuccess: () => onClose(true),
-        onError: (e) => setError(e?.message ?? 'Error al registrar el pago.'),
+        onError: (e) => setError(REGISTER_PAYMENT_ERRORS[e?.code] ?? e?.message ?? 'Error al registrar el pago.'),
       }
     );
   }
@@ -150,7 +200,9 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
                       <input
                         type="number"
                         min="0"
+                        max={inv.remainingBalance ?? undefined}
                         step="0.01"
+                        aria-label={`Monto a imputar a ${invoiceConcept(inv.feeType, inv.period)}`}
                         value={amounts[inv.id] ?? ''}
                         onChange={(e) => setAmounts((prev) => ({ ...prev, [inv.id]: e.target.value }))}
                         className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand"
@@ -448,7 +500,7 @@ function RechazarModal({ receipt, onClose }) {
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="text-sm text-ink-faint">
-            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? `ID ${receipt.invoiceId}`}</span>
+            Alumno: <span className="font-medium text-ink">{receipt.studentName ?? 'Sin datos del alumno'}</span>
           </div>
           <div className="text-sm text-ink-faint">
             Comprobante subido el {formatFecha(receipt.uploadedAt)}
@@ -517,6 +569,7 @@ function TabComprobantes() {
               {receipt.studentDni && (
                 <p className="text-sm text-ink-faint">DNI {receipt.studentDni}</p>
               )}
+              {receipt.productName && <p className="text-sm text-ink-soft">{receipt.productName}</p>}
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-faint">
                 {receipt.invoiceFeeType && (
                   <span>{FEE_TYPE_LABELS[receipt.invoiceFeeType] ?? receipt.invoiceFeeType}</span>
@@ -525,15 +578,14 @@ function TabComprobantes() {
                 <span>Subido {formatFecha(receipt.uploadedAt)}</span>
               </div>
               {receipt.filePath && (
-                <a
-                  href={receipt.filePath}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => openReceiptFile(receipt.id)}
                   className="mt-1.5 inline-flex items-center gap-1 text-sm text-brand hover:underline"
                 >
                   <Receipt size={13} />
                   Ver comprobante
-                </a>
+                </button>
               )}
             </div>
             <div className="flex shrink-0 gap-2">
@@ -543,8 +595,14 @@ function TabComprobantes() {
                 onClick={() => {
                   setPendingApproveId(receipt.id);
                   aprobar(receipt.id, {
-                    onSuccess: () => setPendingApproveId(null),
-                    onError: () => setPendingApproveId(null),
+                    onSuccess: () => {
+                      setPendingApproveId(null);
+                      toast.success('Comprobante aprobado. El pago quedó acreditado.');
+                    },
+                    onError: (error) => {
+                      setPendingApproveId(null);
+                      toast.error(APPROVE_RECEIPT_ERRORS[error?.code] ?? error?.message ?? 'No pudimos aprobar el comprobante.');
+                    },
                   });
                 }}
                 disabled={aprobando && pendingApproveId === receipt.id}

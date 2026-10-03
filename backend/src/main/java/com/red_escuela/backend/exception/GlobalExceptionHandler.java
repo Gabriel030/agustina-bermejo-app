@@ -40,6 +40,8 @@ import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonExceptio
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
+import com.red_escuela.backend.billing.exception.InvalidSurchargePercentageException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.NoActiveCollectionsPolicyException;
@@ -49,6 +51,7 @@ import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchExcept
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionNotFoundException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
+import com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
@@ -176,6 +179,11 @@ public class GlobalExceptionHandler {
     public void handleInvalidCredentials() {
     }
 
+    @ExceptionHandler(InvalidMpWebhookSignatureException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public void handleInvalidMpWebhookSignature() {
+    }
+
     @ExceptionHandler(InvalidRefreshTokenException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public void handleInvalidRefreshToken() {
@@ -219,6 +227,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             UnsupportedFileTypeException.class,
             MaxUploadSizeExceededException.class,
+            InvalidSurchargePercentageException.class,
             DniAlreadyExistsException.class,
             InvalidStaffRoleException.class,
             InvalidPrerequisiteException.class,
@@ -319,6 +328,7 @@ public class GlobalExceptionHandler {
             ClassSessionNotFoundException.class,
             AttendanceChangeRequestNotFoundException.class,
             PaymentReceiptNotFoundException.class,
+            PaymentReceiptFileNotFoundException.class,
             NoActiveCollectionsPolicyException.class,
             ScholarshipNotFoundException.class,
             PromotionNotFoundException.class,

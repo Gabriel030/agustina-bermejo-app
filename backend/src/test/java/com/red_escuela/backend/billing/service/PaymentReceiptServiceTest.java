@@ -19,7 +19,15 @@ import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
+import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
+import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.notification.repository.NotificationRepository;
+import org.springframework.transaction.annotation.Transactional;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
@@ -105,6 +113,12 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -341,5 +355,82 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
+    }
+
+    private List<Notification> notificationsOf(Student student) {
+        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId());
+    }
+
+    @Test
+    void rejectingAReceiptNotifiesTheStudentWithTheReason() {
+        Person admin = persistPerson("admin.receipt10." + System.nanoTime());
+        Student student = persistStudent("97000010");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        rejectPaymentReceiptUseCase.reject(receipt.getId(), "El importe no coincide con la cuota", admin);
+
+        assertThat(notificationsOf(student))
+                .filteredOn(notification -> notification.getType() == NotificationType.PAYMENT_RECEIPT_REJECTED)
+                .singleElement()
+                .satisfies(notification -> assertThat(notification.getMessage()).contains("El importe no coincide con la cuota"));
+    }
+
+    @Test
+    void approvingAReceiptNotifiesTheStudentThatThePaymentWasCredited() {
+        Person admin = persistPerson("admin.receipt11." + System.nanoTime());
+        Student student = persistStudent("97000011");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+
+        assertThat(notificationsOf(student))
+                .extracting(Notification::getType)
+                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED);
+    }
+
+    @Test
+    void approvingAReceiptWhoseInstallmentWasAlreadyPaidAtTheCounterFailsAsNotPayable() {
+        Person admin = persistPerson("admin.receipt12." + System.nanoTime());
+        Student student = persistStudent("97000012");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
+                PaymentMethod.CASH, false, null, null, null, null), admin);
+
+        assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin))
+                .isInstanceOf(InvoiceNotPayableException.class);
+        assertThat(paymentReceiptRepository.findById(receipt.getId()).orElseThrow().getStatus())
+                .isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+
+        rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
+    }
+
+    @Test
+    @Transactional
+    void receiptOfAnInvoiceWithoutEnrollmentShowsTheUploaderNameAndDni() {
+        Student student = persistStudent("97000013");
+        student.getPerson().setName("Ana");
+        student.getPerson().setLastname("Comprobante");
+        student.getPerson().setDni("97000013");
+        personRepository.save(student.getPerson());
+        Invoice invoice = new Invoice();
+        invoice.setFeeType(FeeType.ENROLLMENT_FEE);
+        invoice.setPeriod(YearMonth.now());
+        invoice.setDueDate(LocalDate.now());
+        invoice.setBaseAmount(BigDecimal.valueOf(10000));
+        invoice.setStatus(InvoiceStatus.PENDING);
+        invoice = invoiceRepository.save(invoice);
+        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        PaymentReceiptResponse response = PaymentReceiptResponse.from(receipt);
+
+        assertThat(response.studentName()).isEqualTo("Ana Comprobante");
+        assertThat(response.studentDni()).isEqualTo("97000013");
     }
 }
