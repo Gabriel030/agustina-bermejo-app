@@ -80,6 +80,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
     When method post
     Then status 409
+    And match response.code == 'ALREADY_HAS_PENDING_APPLICATION'
 
     # Sin rol todavía — solicitar por sí solo no otorga nada
     Given path '/me'

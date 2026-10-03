@@ -96,4 +96,34 @@ describe('DetalleCurso', () => {
     expect(inscribirmeOpts.body.get('courseId')).toBe('1');
     expect(inscribirmeOpts.body.get('comprobante').name).toBe('comprobante.pdf');
   });
+
+  it('si el curso tiene la inscripción cerrada lo dice en vez de un error genérico', async () => {
+    server.use(
+      http.post(`${API}/me/course-enrollments`, () =>
+        HttpResponse.json({ code: 'ADMISSION_WINDOW_CLOSED' }, { status: 400 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderConWizard();
+
+    await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
+    await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
+    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
+    await user.type(calleInput, 'Calle Falsa');
+    await user.type(numeroInput, '123');
+    await user.type(ciudadInput, 'Ciudad');
+    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
+    const [fileInput] = await waitForFileInput();
+    await user.upload(fileInput, new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' }));
+    await user.click(await screen.findByRole('button', { name: 'Confirmar solicitud' }));
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sí, confirmar' }));
+
+    expect(await screen.findByText('La inscripción a este curso está cerrada.')).toBeInTheDocument();
+  });
 });
+
+async function waitForFileInput() {
+  await screen.findByText('$ 8.000');
+  return document.querySelectorAll('input[type="file"]');
+}

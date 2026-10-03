@@ -29,6 +29,19 @@ const DOCUMENTOS_CARRERA = [
 
 const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const MENSAJES_ERROR_INSCRIPCION = {
+  ALREADY_HAS_PENDING_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
+  PENDING_COURSE_ENROLLMENT_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
+  ALREADY_ENROLLED_IN_COURSE: 'Ya tenés una inscripción activa en este curso.',
+  ALREADY_ENROLLED_IN_PROGRAM: 'Ya tenés una inscripción activa en esta carrera.',
+  COHORT_ADMISSION_WINDOW_CLOSED: 'La inscripción a esta cohorte está cerrada.',
+  ADMISSION_WINDOW_CLOSED: 'La inscripción a este curso está cerrada.',
+  STUDENT_NOT_CONFIRMED: 'Tu cuenta todavía no está habilitada para inscribirte. Consultá en Secretaría.',
+  DNI_ALREADY_EXISTS: 'Ese DNI ya está registrado en otra cuenta. Revisalo en tus datos personales.',
+  STUDENT_IN_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+  PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
+};
+
 function pasosDe(tipo) {
   return tipo === 'carrera'
     ? [
@@ -183,10 +196,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
     } catch (err) {
       dispatch({
         type: 'ERROR',
-        message:
-          err.message === 'La operación entra en conflicto con el estado actual.'
-            ? 'Ya tenés una solicitud pendiente para esto.'
-            : 'No pudimos completar la inscripción. Probá de nuevo.',
+        message: MENSAJES_ERROR_INSCRIPCION[err.code] ?? 'No pudimos completar la inscripción. Probá de nuevo.',
       });
     }
   }

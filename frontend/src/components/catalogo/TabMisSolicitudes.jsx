@@ -28,7 +28,7 @@ export function TabMisSolicitudes() {
       key: `curso-${s.id}`,
       tipo: 'Curso',
       nombre: s.courseName,
-      status: s.paymentStatus,
+      status: s.courseEnrollmentStatus === 'WAITLISTED' ? 'WAITLISTED' : s.paymentStatus,
       rejectionReason: s.rejectionReason,
       onClick: null,
     }));

@@ -56,6 +56,25 @@ describe('Catalogo', () => {
     expect(screen.getByText('En revisión')).toBeInTheDocument();
   });
 
+  it('muestra en lista de espera una solicitud de curso aprobada cuyo cupo estaba lleno', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+      http.get(`${API}/me/course-enrollment-applications`, () =>
+        HttpResponse.json([
+          { id: 3, courseName: 'Primeros Auxilios', paymentStatus: 'APPROVED', courseEnrollmentId: 25, courseEnrollmentStatus: 'WAITLISTED' },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderCatalogo();
+
+    await user.click(screen.getByRole('tab', { name: 'Mis solicitudes' }));
+
+    expect(await screen.findByText('Primeros Auxilios')).toBeInTheDocument();
+    expect(screen.getByText('En lista de espera')).toBeInTheDocument();
+    expect(screen.queryByText('Aprobada')).not.toBeInTheDocument();
+  });
+
   it('el buscador filtra las carreras por nombre', async () => {
     server.use(
       http.get(`${API}/programs`, () =>
