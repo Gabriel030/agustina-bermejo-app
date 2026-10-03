@@ -122,9 +122,7 @@ public class CourseEnrollmentService {
                     "El curso " + course.getId() + " tiene la ventana de inscripción mal configurada "
                             + "(registrationStart posterior a registrationEnd)");
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (course.getRegistrationStart() != null && now.isBefore(course.getRegistrationStart())
-                || course.getRegistrationEnd() != null && now.isAfter(course.getRegistrationEnd())) {
+        if (!course.isRegistrationOpenAt(LocalDateTime.now())) {
             throw new AdmissionWindowClosedException(
                     "Fuera de la ventana de inscripción del curso " + course.getId());
         }
@@ -186,10 +184,12 @@ public class CourseEnrollmentService {
     private EnrollmentStatus calculateStatusByCourseCapacity(Course course) {
         courseRepository.findByIdForUpdate(course.getId())
                 .orElseThrow(() -> new CourseNotFoundException(course.getId()));
-        long occupied = courseEnrollmentRepository
-                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))
-                .size();
-        return course.hasCapacityFor(occupied) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+        return course.hasCapacityFor(countOccupiedSeats(course.getId())) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
+    public long countOccupiedSeats(Long courseId) {
+        return courseEnrollmentRepository.countByCourseIdAndStatusIn(
+                courseId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS));
     }
 
     private EnrollmentStatus calculateStatusByCapacity(CourseSubjectSection section) {

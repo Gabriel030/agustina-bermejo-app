@@ -21,6 +21,8 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     List<CourseEnrollment> findByCourseIdAndStatusIn(Long courseId, List<EnrollmentStatus> statuses);
 
+    long countByCourseIdAndStatusIn(Long courseId, List<EnrollmentStatus> statuses);
+
     Optional<CourseEnrollment> findFirstByCourseIdAndStatusOrderByEnrollmentDateAsc(Long courseId, EnrollmentStatus status);
 
     List<CourseEnrollment> findByCourseIdAndStatus(Long courseId, EnrollmentStatus status);

@@ -136,7 +136,7 @@ export function PreceptorCalendario() {
                 onClick={() => setFranjaActiva(f)}
                 className={`rounded-lg px-3 py-1 text-[12px] transition-colors ${
                   franjaActiva.label === f.label
-                    ? 'bg-accent-soft font-medium text-accent'
+                    ? 'bg-accent-soft font-medium text-brand'
                     : 'text-ink-faint hover:text-ink'
                 }`}
               >

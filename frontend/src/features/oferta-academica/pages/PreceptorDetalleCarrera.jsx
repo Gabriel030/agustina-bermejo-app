@@ -47,7 +47,7 @@ function FilaSeccion({ seccion }) {
             <span className="font-heading text-[13.5px] font-semibold text-ink">{seccion.subjectName}</span>
             <span className="text-[12px] text-ink-faint">· {seccion.name}</span>
             {seccion.pendingApproval && (
-              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
+              <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-brand">
                 Modificación pendiente
               </span>
             )}
@@ -167,14 +167,14 @@ export function PreceptorDetalleCarrera() {
           <button
             type="button"
             onClick={() => setVerAnteriores(false)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-accent' : 'text-ink-faint hover:text-ink'}`}
+            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${!verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
           >
             Actuales
           </button>
           <button
             type="button"
             onClick={() => setVerAnteriores(true)}
-            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-accent' : 'text-ink-faint hover:text-ink'}`}
+            className={`rounded-full px-3 py-1 text-[13px] transition-colors ${verAnteriores ? 'bg-accent-soft font-medium text-brand' : 'text-ink-faint hover:text-ink'}`}
           >
             Anteriores
           </button>

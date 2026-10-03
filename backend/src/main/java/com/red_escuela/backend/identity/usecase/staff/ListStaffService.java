@@ -2,9 +2,7 @@ package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.repository.PersonSpecifications;
 import com.red_escuela.backend.shared.UseCase;
@@ -12,34 +10,22 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @UseCase
 public class ListStaffService implements ListStaffUseCase {
 
-    private static final Map<String, Set<String>> VISIBLE_ROLES_BY_ACTOR = Map.of(
-            "ADMINISTRATIVO", Set.of("DOCENTE", "PRECEPTOR"),
-            "DIRECTOR", Set.of("DOCENTE", "PRECEPTOR", "ADMINISTRATIVO")
-    );
-
     private final PersonRepository personRepository;
-    private final CurrentPersonService currentPersonService;
+    private final StaffRoleAssignmentPolicy staffRoleAssignmentPolicy;
 
-    public ListStaffService(PersonRepository personRepository, CurrentPersonService currentPersonService) {
+    public ListStaffService(PersonRepository personRepository, StaffRoleAssignmentPolicy staffRoleAssignmentPolicy) {
         this.personRepository = personRepository;
-        this.currentPersonService = currentPersonService;
+        this.staffRoleAssignmentPolicy = staffRoleAssignmentPolicy;
     }
 
     @Override
     public List<Person> list(ListStaffCommand command) {
-        Person actor = currentPersonService.resolveCurrentPerson();
-        Set<String> actorRoles = actor.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-
-        Set<String> visibleRoles = actorRoles.stream()
-                .flatMap(r -> VISIBLE_ROLES_BY_ACTOR.getOrDefault(r, Set.of()).stream())
-                .collect(Collectors.toSet());
+        Set<String> visibleRoles = staffRoleAssignmentPolicy.visibleRolesForCurrentActor();
 
         if (command.roleFilter() != null && !command.roleFilter().isBlank()) {
             visibleRoles = visibleRoles.contains(command.roleFilter())

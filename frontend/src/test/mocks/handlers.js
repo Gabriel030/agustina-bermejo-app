@@ -51,14 +51,14 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
-      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' },
-      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01' },
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
     ]),
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
-    HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3 }),
+    HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: 8000 })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),

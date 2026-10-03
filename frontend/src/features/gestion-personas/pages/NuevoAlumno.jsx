@@ -36,6 +36,21 @@ const schema = z.object({
   country: z.string().optional(),
 });
 
+const TIPOS_REQUERIDOS = ['DNI_FRENTE', 'DNI_DORSO', 'ANALITICO_SECUNDARIO'];
+
+function createProspectErrorMessage(err) {
+  if (err?.status === 409) return 'Ya existe una persona registrada con ese email.';
+  if (err?.status === 400) return 'Revisá los datos básicos: nombre, apellido y un email válido.';
+  return 'No se pudo registrar al alumno. Intentá de nuevo.';
+}
+
+function confirmErrorMessage(err) {
+  if (err?.code === 'DNI_ALREADY_EXISTS') return 'Ya existe una persona con ese DNI.';
+  if (err?.code === 'PROSPECT_ALREADY_CONFIRMED') return 'Este alumno ya fue confirmado.';
+  if (err?.status === 400) return 'Revisá los datos: DNI, calle y ciudad son obligatorios.';
+  return 'No se pudo confirmar el alta. Intentá de nuevo.';
+}
+
 const CAMPOS_POR_PASO = {
   0: ['nombre', 'apellido', 'email'],
   1: [],
@@ -82,13 +97,17 @@ export function NuevoAlumno() {
     }
 
     if (currentStep === 1) {
-      const TIPOS_REQUERIDOS = ['DNI_FRENTE', 'DNI_DORSO', 'ANALITICO_SECUNDARIO'];
       const faltantes = TIPOS_REQUERIDOS.filter((t) => !documentos[t]);
       if (faltantes.length > 0) {
         setErrorDocumentos('Tenés que subir todos los documentos para continuar.');
         return;
       }
       setErrorDocumentos(null);
+    }
+
+    if (currentStep === 0 && studentId) {
+      setCurrentStep(1);
+      return;
     }
 
     if (currentStep === 0) {
@@ -101,7 +120,7 @@ export function NuevoAlumno() {
             setCurrentStep(1);
             setPasosVisitados((prev) => [...new Set([...prev, '1'])]);
           },
-          onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
+          onError: (err) => toast.error(createProspectErrorMessage(err)),
         }
       );
       return;
@@ -127,11 +146,11 @@ export function NuevoAlumno() {
               { studentId, datos: borrador },
               {
                 onSuccess: () => { setCurrentStep(3); setPasosVisitados((prev) => [...new Set([...prev, '3'])]); },
-                onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
+                onError: (err) => toast.error(confirmErrorMessage(err)),
               }
             );
           },
-          onError: (err) => toast.error(err.message ?? 'Ocurrió un error. Intentá de nuevo.'),
+          onError: (err) => toast.error(confirmErrorMessage(err)),
         }
       );
       return;
@@ -170,13 +189,15 @@ export function NuevoAlumno() {
         />
 
         <form onSubmit={(e) => e.preventDefault()}>
-          {currentStep === 0 && <DatosBasicosStep register={register} errors={errors} isLoading={isMutating} />}
+          {currentStep === 0 && (
+            <DatosBasicosStep register={register} errors={errors} isLoading={isMutating} locked={studentId !== null} />
+          )}
           {currentStep === 1 && (
             <DocumentosStep
               documentosSubidos={documentos}
               onFileSelected={handleFileSelected}
               isUploading={subirDocumento.isPending}
-              errorValidacion={errorDocumentos}
+              errorValidacion={TIPOS_REQUERIDOS.every((t) => documentos[t]) ? null : errorDocumentos}
             />
           )}
           {currentStep === 2 && <DatosConfirmacionStep register={register} errors={errors} isLoading={isMutating} />}

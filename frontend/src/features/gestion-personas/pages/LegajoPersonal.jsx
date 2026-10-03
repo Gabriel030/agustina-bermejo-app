@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,12 @@ import { DarDeBajaPersonalModal } from '@/features/gestion-personas/components/D
 import { ReactivarPersonalModal } from '@/features/gestion-personas/components/ReactivarPersonalModal';
 import { ResetPasswordModal } from '@/features/gestion-personas/components/ResetPasswordModal';
 import { EditarPersonalModal } from '@/features/gestion-personas/components/EditarPersonalModal';
+import { canManageStaffRole } from '@/features/gestion-personas/staffRoles';
+
+function staffActionErrorMessage(err, fallback) {
+  if (err?.status === 403) return 'No tenés permiso para gestionar a esta persona.';
+  return fallback;
+}
 
 const ETIQUETA_ROL = {
   DOCENTE: 'Docente',
@@ -45,8 +52,7 @@ export function LegajoPersonal() {
   const [resetOpen, setResetOpen] = useState(false);
   const [editarOpen, setEditarOpen] = useState(false);
 
-  const rolBase = usuario?.roles[0]?.toLowerCase();
-  const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo' || rolBase === 'director';
+  const puedeAccionar = !!legajo && canManageStaffRole(usuario?.roles, legajo.role);
 
   const withdrawMutation = useWithdrawPersonal(id);
   const reactivarMutation = useReactivarPersonal(id);
@@ -171,7 +177,15 @@ export function LegajoPersonal() {
         open={bajaOpen}
         onClose={() => setBajaOpen(false)}
         nombre={nombre}
-        onConfirmar={() => withdrawMutation.mutate(undefined, { onSuccess: () => setBajaOpen(false) })}
+        onConfirmar={() =>
+          withdrawMutation.mutate(undefined, {
+            onSuccess: () => {
+              setBajaOpen(false);
+              toast.success(`${nombre} quedó dado de baja`);
+            },
+            onError: (err) => toast.error(staffActionErrorMessage(err, 'No se pudo dar de baja. Intentá de nuevo.')),
+          })
+        }
         isPending={withdrawMutation.isPending}
       />
 
@@ -179,7 +193,15 @@ export function LegajoPersonal() {
         open={reactivarOpen}
         onClose={() => setReactivarOpen(false)}
         nombre={nombre}
-        onConfirmar={() => reactivarMutation.mutate(undefined, { onSuccess: () => setReactivarOpen(false) })}
+        onConfirmar={() =>
+          reactivarMutation.mutate(undefined, {
+            onSuccess: () => {
+              setReactivarOpen(false);
+              toast.success(`${nombre} fue reactivado`);
+            },
+            onError: (err) => toast.error(staffActionErrorMessage(err, 'No se pudo reactivar. Intentá de nuevo.')),
+          })
+        }
         isPending={reactivarMutation.isPending}
       />
 
@@ -187,7 +209,12 @@ export function LegajoPersonal() {
         open={resetOpen}
         onClose={() => setResetOpen(false)}
         email={legajo?.email}
-        onConfirmar={() => resetMutation.mutateAsync()}
+        onConfirmar={() =>
+          resetMutation.mutateAsync().catch((err) => {
+            toast.error(staffActionErrorMessage(err, 'No se pudo enviar el link. Intentá de nuevo.'));
+            throw err;
+          })
+        }
         isPending={resetMutation.isPending}
       />
 
@@ -195,7 +222,20 @@ export function LegajoPersonal() {
         open={editarOpen}
         onClose={() => setEditarOpen(false)}
         legajo={legajo}
-        onConfirmar={(data) => editarMutation.mutate(data, { onSuccess: () => setEditarOpen(false) })}
+        onConfirmar={(data) =>
+          editarMutation.mutate(data, {
+            onSuccess: () => {
+              setEditarOpen(false);
+              toast.success('Datos de contacto actualizados');
+            },
+            onError: (err) =>
+              toast.error(
+                err?.status === 400
+                  ? 'Revisá los datos: el email no es válido.'
+                  : staffActionErrorMessage(err, 'No se pudieron guardar los cambios. Intentá de nuevo.'),
+              ),
+          })
+        }
         isPending={editarMutation.isPending}
       />
     </PageContainer>

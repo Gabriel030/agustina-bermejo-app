@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 
 @Getter
 @Setter
@@ -69,6 +70,25 @@ public class Course {
     @Enumerated(EnumType.STRING)
     @Column(name = "teaching_mode")
     private TeachingMode teachingMode;
+
+    public boolean changePrice(BigDecimal newPrice) {
+        if (newPrice == null || (price != null && price.compareTo(newPrice) == 0)) {
+            return false;
+        }
+        price = newPrice;
+        return true;
+    }
+
+    public void requireValidRegistrationWindow() {
+        if (registrationStart != null && registrationEnd != null && registrationEnd.isBefore(registrationStart)) {
+            throw new InvalidRegistrationWindowException(registrationStart, registrationEnd);
+        }
+    }
+
+    public boolean isRegistrationOpenAt(LocalDateTime moment) {
+        return (registrationStart == null || !moment.isBefore(registrationStart))
+                && (registrationEnd == null || !moment.isAfter(registrationEnd));
+    }
 
     public boolean hasCapacityFor(long occupiedCount) {
         return capacity == null || occupiedCount < capacity;

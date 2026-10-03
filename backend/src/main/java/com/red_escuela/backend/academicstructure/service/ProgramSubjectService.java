@@ -77,6 +77,7 @@ public class ProgramSubjectService {
                 .orElseThrow(() -> new ProgramNotFoundException(programId));
         Subject subject = subjectRepository.findById(request.subjectId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
+        subject.requireAssignableToPlan();
 
         if (programSubjectRepository.findByProgramIdAndSubjectId(programId, request.subjectId()).isPresent()) {
             throw new ProgramSubjectAlreadyExistsException(programId, request.subjectId());
@@ -91,6 +92,7 @@ public class ProgramSubjectService {
         }
 
         validateCategoryInvariants(request.category(), request.curricularYear(), request.curricularTerm(), request.electiveGroupId());
+        program.requireCurricularYearWithinDuration(request.curricularYear());
 
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
@@ -116,6 +118,7 @@ public class ProgramSubjectService {
         ProgramSubject programSubject = findOrThrow(id);
 
         if (request.curricularYear() != null) {
+            programSubject.getProgram().requireCurricularYearWithinDuration(request.curricularYear());
             programSubject.setCurricularYear(request.curricularYear());
         }
         if (request.curricularTerm() != null) {

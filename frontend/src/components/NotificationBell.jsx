@@ -45,9 +45,10 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <button
           type="button"
+          aria-label={noLeidas > 0 ? `Notificaciones, ${noLeidas} sin leer` : 'Notificaciones'}
           className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink-faint transition-transform hover:scale-105"
         >
-          <Bell className="h-[17px] w-[17px]" />
+          <Bell aria-hidden="true" className="h-[17px] w-[17px]" />
           {noLeidas > 0 && (
             <span className="absolute -right-1 -top-1 flex h-[15px] min-w-[15px] animate-[badge-pulse_1.8s_ease-in-out_infinite] items-center justify-center rounded-full border-2 border-bg1 bg-danger px-1 text-[8.5px] font-bold text-white">
               {noLeidas > 9 ? '9+' : noLeidas}

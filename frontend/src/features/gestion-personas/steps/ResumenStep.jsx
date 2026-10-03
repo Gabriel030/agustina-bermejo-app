@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Mail } from 'lucide-react';
+import { CheckCircle2, Mail } from 'lucide-react';
 
 export function ResumenStep({ alumno, esAnonimo }) {
   const { nombre, apellido, email, telefono, dni, street, number, floor, city, state, postalCode, country } = alumno;
@@ -36,12 +36,12 @@ export function ResumenStep({ alumno, esAnonimo }) {
           </div>
         </div>
       ) : (
-        <div className="flex gap-3 rounded-lg border border-warning-bg bg-warning-bg p-4">
-          <Clock size={18} className="mt-0.5 flex-shrink-0 text-warning" />
+        <div className="flex gap-3 rounded-lg border border-accent-soft bg-accent-soft p-4">
+          <Mail size={18} className="mt-0.5 flex-shrink-0 text-brand" />
           <div>
-            <p className="text-[13px] font-medium text-warning">Alta en proceso</p>
-            <p className="mt-0.5 text-[12px] text-warning">
-              El alumno queda como prospecto hasta que el email sea verificado. Podés reenviar la verificación desde el padrón.
+            <p className="text-[13px] font-medium text-ink">Alumno confirmado</p>
+            <p className="mt-0.5 text-[12px] text-ink-soft">
+              Le enviamos un email a <strong>{email}</strong> para que elija su contraseña. Va a ingresar con su DNI como usuario.
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useDocumentosAlumno } from '@/features/gestion-personas/hooks/useLegajo
 import { Skeleton } from '@/components/Skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SEX_LABEL } from '@/lib/person';
 
 const TIPO_DOCUMENTO = {
   DNI_FRENTE: 'DNI frente',
@@ -17,15 +18,16 @@ const ESTADO_ONBOARDING = {
 const ESTADO_STATUS = {
   ACTIVE: 'Activo',
   INACTIVE: 'Dado de baja',
-  DELETED: 'Eliminado',
+  DELETED: 'Dado de baja',
 };
 
 const MOTIVO_BAJA = {
   ABANDONO: 'Abandono',
-  GRADUACION: 'Graduación',
-  TRASLADO: 'Traslado',
+  CAMBIO_CARRERA: 'Cambio de carrera',
   OTRO: 'Otro',
 };
+
+const ADDRESS_FIELDS = ['street', 'number', 'floor', 'city', 'state', 'postalCode', 'country'];
 
 function Campo({ label, value }) {
   if (!value) return null;
@@ -80,6 +82,8 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
   if (!legajo) return <Skeleton className="h-64 w-full" />;
 
   const domicilio = legajo.domicilio;
+  const hasAddress = !!domicilio && ADDRESS_FIELDS.some((field) => domicilio[field]);
+  const isWithdrawn = legajo.status === 'DELETED';
 
   return (
     <div className="flex flex-col gap-8">
@@ -87,7 +91,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         <Campo label="Nombre" value={`${legajo.nombre} ${legajo.apellido}`} />
         <Campo label="Legajo" value={legajo.legajo ? `#${legajo.legajo}` : null} />
         <Campo label="DNI" value={legajo.dni} />
-        <Campo label="Sexo / Género" value={legajo.sexo} />
+        <Campo label="Sexo / Género" value={SEX_LABEL[legajo.sexo] ?? legajo.sexo} />
         <Campo label="Nacionalidad" value={legajo.nacionalidad} />
         <Campo label="Teléfono" value={legajo.telefono} />
         <Campo label="Email" value={legajo.email} />
@@ -96,7 +100,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         <Campo label="Onboarding" value={ESTADO_ONBOARDING[legajo.onboardingStatus] ?? legajo.onboardingStatus} />
       </Seccion>
 
-      {domicilio && (
+      {hasAddress && (
         <Seccion titulo="Domicilio">
           <Campo label="Calle" value={domicilio.street} />
           <Campo label="Número" value={domicilio.number} />
@@ -108,7 +112,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         </Seccion>
       )}
 
-      {legajo.motivoBaja && (
+      {isWithdrawn && legajo.motivoBaja && (
         <Seccion titulo="Información de baja">
           <Campo label="Motivo" value={MOTIVO_BAJA[legajo.motivoBaja] ?? legajo.motivoBaja} />
           {legajo.detalleBaja && <Campo label="Detalle" value={legajo.detalleBaja} />}

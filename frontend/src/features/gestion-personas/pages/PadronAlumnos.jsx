@@ -122,7 +122,7 @@ export function PadronAlumnos() {
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <Input
-              placeholder="Buscar por nombre, apellido o DNI…"
+              placeholder="Buscar por nombre, apellido, DNI o legajo…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9"

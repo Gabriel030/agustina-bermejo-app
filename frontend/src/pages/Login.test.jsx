@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
@@ -79,4 +79,35 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /ocultar contraseña/i }));
     expect(passwordField).toHaveAttribute('type', 'password');
   });
+
+  it('returns to the requested route keeping its query string after signing in', async () => {
+    const user = userEvent.setup();
+    render(
+      <GoogleOAuthProvider clientId="test-client-id">
+        <MemoryRouter
+          initialEntries={[
+            { pathname: '/login', state: { from: { pathname: '/preceptor/alumnos', search: '?tab=prospectos', hash: '' } } },
+          ]}
+        >
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<CurrentLocation />} />
+            </Routes>
+          </AuthProvider>
+        </MemoryRouter>
+      </GoogleOAuthProvider>,
+    );
+
+    await user.type(screen.getByPlaceholderText('DNI o email'), 'prueba.login');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'Test1234');
+    await user.click(screen.getByRole('button', { name: /ingresar/i }));
+
+    expect(await screen.findByTestId('current-location')).toHaveTextContent('/preceptor/alumnos?tab=prospectos');
+  });
 });
+
+function CurrentLocation() {
+  const location = useLocation();
+  return <div data-testid="current-location">{`${location.pathname}${location.search}`}</div>;
+}

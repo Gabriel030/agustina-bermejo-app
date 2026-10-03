@@ -12,6 +12,7 @@ import com.red_escuela.backend.academicstructure.exception.CourseNotFoundExcepti
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +54,7 @@ public class CourseService {
                 .registrationEnd(request.registrationEnd())
                 .isActive(StatusType.ACTIVE)
                 .build();
+        course.requireValidRegistrationWindow();
         course = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
@@ -67,8 +69,7 @@ public class CourseService {
         Optional.ofNullable(request.name()).ifPresent(course::setName);
         Optional.ofNullable(request.schedule()).ifPresent(course::setSchedule);
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
-        if (request.price() != null && request.price().compareTo(course.getPrice()) != 0) {
-            course.setPrice(request.price());
+        if (course.changePrice(request.price())) {
             Person actor = currentPersonService.resolveCurrentPerson();
             priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
         }
@@ -76,11 +77,15 @@ public class CourseService {
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
+        course.requireValidRegistrationWindow();
         return courseRepository.save(course);
     }
 
-    public List<Course> list(StatusType status) {
-        return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
+    public List<Course> list(StatusType status, Boolean visibleInCatalog) {
+        return courseRepository.findAll(Sort.by("name", "id")).stream()
+                .filter(course -> status == null || course.getIsActive() == status)
+                .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
+                .toList();
     }
 
     public Course get(Long id) {

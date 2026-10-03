@@ -18,7 +18,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal' }
+    And request { name: '#(nombre)', code: '#(codigo)', description: 'Materia troncal', weeklyHours: 4, gradeMode: 'NUMERIC' }
     When method post
     Then status 201
     And match response.status == 'DRAFT'
@@ -274,7 +274,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombrePrograma)', totalYears: 1, totalCreditsRequired: 0 }
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id
@@ -521,3 +521,225 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     And request { name: '#(nombre)' }
     When method post
     Then status 409
+
+  Scenario: Rechazar una materia exige motivo, lo guarda para el administrativo y se limpia al reenviarla
+    * def nombre = 'Materia a rechazar ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 4, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId, 'reject'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: '' }
+    When method post
+    Then status 400
+
+    Given path '/subjects', subjectId, 'reject'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'Falta la bibliografía obligatoria' }
+    When method post
+    Then status 200
+    And match response.status == 'REJECTED'
+    And match response.rejectionReason == 'Falta la bibliografía obligatoria'
+
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And param status = 'REJECTED'
+    When method get
+    Then status 200
+    * def rechazada = response.filter(function(x){ return x.id == subjectId })
+    And match rechazada[0].rejectionReason == 'Falta la bibliografía obligatoria'
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+    And match response.status == 'PENDING_APPROVAL'
+    And match response.rejectionReason == null
+
+  Scenario: Una materia sin horas o sin modalidad de calificación se guarda como borrador pero no se puede enviar a aprobación
+    * def nombre = 'Materia incompleta ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)' }
+    When method post
+    Then status 201
+    And match response.status == 'DRAFT'
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 400
+    And match response.code == 'INCOMPLETE_SUBJECT'
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { weeklyHoursLab: 2 }
+    When method put
+    Then status 200
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 400
+    And match response.code == 'INCOMPLETE_SUBJECT'
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { gradeMode: 'PASS_FAIL' }
+    When method put
+    Then status 200
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+    And match response.status == 'PENDING_APPROVAL'
+
+  Scenario: El código se corrige en borrador y queda fijo una vez aprobada la materia
+    * def nombre = 'Materia con código a corregir ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoCorregido = java.util.UUID.randomUUID().toString().substring(0, 4)
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 3, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { code: '#(codigoCorregido)' }
+    When method put
+    Then status 200
+    And match response.code == codigoCorregido
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId, 'approve'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { code: '#(codigo)', weeklyHours: 5 }
+    When method put
+    Then status 409
+    And match response.code == 'SUBJECT_INVALID_TRANSITION'
+
+  Scenario Outline: Materia con horas negativas o intentos de final en cero — 400
+    * def nombre = 'Materia inválida ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def body = { name: '#(nombre)', code: '#(codigo)', gradeMode: 'NUMERIC' }
+    * body.weeklyHours = <weeklyHours>
+    * body.weeklyHoursLab = <weeklyHoursLab>
+    * body.maxFinalExamAttempts = <attempts>
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request body
+    When method post
+    Then status 400
+
+    Examples:
+      | weeklyHours | weeklyHoursLab | attempts |
+      | -5          | 2              | 3        |
+      | 4           | -1             | 3        |
+      | 4           | 0              | 0        |
+
+  Scenario: Una materia pendiente de aprobación no se puede editar ni agregar a un plan — 409
+    * def nombre = 'Materia pendiente ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def nombrePrograma = 'Carrera QA pendiente ' + java.lang.System.nanoTime()
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombre)', code: '#(codigo)', weeklyHours: 3, gradeMode: 'NUMERIC' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/subjects', subjectId, 'submit-for-approval'
+    And header Authorization = 'Bearer ' + adminToken
+    When method post
+    Then status 200
+
+    Given path '/subjects', subjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { weeklyHours: 6 }
+    When method put
+    Then status 409
+
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def programId = response.id
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 409
+    And match response.code == 'SUBJECT_NOT_ASSIGNABLE_TO_PLAN'
+
+  Scenario: Agregar al plan con año fuera de la duración o sin los datos de su categoría — 400 con código
+    * def nombrePrograma = 'Carrera QA años ' + java.lang.System.nanoTime()
+    * def nombreMateria = 'Materia años ' + java.lang.System.nanoTime()
+    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+
+    Given path '/programs'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombrePrograma)', totalYears: 3, totalCreditsRequired: 0 }
+    When method post
+    Then status 201
+    * def programId = response.id
+
+    Given path '/subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { name: '#(nombreMateria)', code: '#(codigo)' }
+    When method post
+    Then status 201
+    * def subjectId = response.id
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 5, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 400
+    And match response.code == 'CURRICULAR_YEAR_OUT_OF_RANGE'
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 1, credits: 5 }
+    When method post
+    Then status 400
+    And match response.code == 'INVALID_PROGRAM_SUBJECT_CATEGORY'
+
+    Given path '/programs', programId, 'subjects'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { category: 'MANDATORY', subjectId: '#(subjectId)', curricularYear: 3, curricularTerm: 'FIRST', credits: 5 }
+    When method post
+    Then status 201
+    * def programSubjectId = response.id
+
+    Given path '/program-subjects', programSubjectId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { curricularYear: 4 }
+    When method put
+    Then status 400
+    And match response.code == 'CURRICULAR_YEAR_OUT_OF_RANGE'

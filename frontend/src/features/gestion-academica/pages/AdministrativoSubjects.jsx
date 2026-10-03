@@ -18,6 +18,7 @@ const SUBJECT_TABS = [
   { id: 'INACTIVE', label: 'Inactivas' },
   { id: 'DRAFT', label: 'Borrador' },
   { id: 'PENDING_APPROVAL', label: 'Pendientes' },
+  { id: 'REJECTED', label: 'Rechazadas' },
 ];
 
 const SUBJECT_STATUS_CONFIG = {
@@ -71,6 +72,9 @@ function SubjectRow({ subject, navigate }) {
         <span className="block truncate text-[14px] font-medium text-ink">{subject.name}</span>
         {subject.gradeMode && (
           <span className="text-[12px] text-ink-faint">{GRADE_MODE_LABELS[subject.gradeMode] ?? subject.gradeMode}</span>
+        )}
+        {subject.status === 'REJECTED' && subject.rejectionReason && (
+          <span className="block truncate text-[12px] text-danger">Motivo: {subject.rejectionReason}</span>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -424,7 +428,7 @@ export function AdministrativoSubjects() {
     );
 
   return (
-    <PageContainer titulo="Gestión académica" accion={accionBoton}>
+    <PageContainer title="Gestión académica" action={accionBoton}>
       <GlassCard className="p-4">
         <div className="mb-4 flex flex-col gap-3">
           <Tabs value={section} onValueChange={handleSectionChange}>

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
 
 @Getter
 @Setter
@@ -45,6 +46,16 @@ public class Term {
     @Enumerated(EnumType.STRING)
     @Column(name = "enrollment_override")
     private TermEnrollmentOverride enrollmentOverride;
+
+    public void reschedule(LocalDateTime newStartDate, LocalDateTime newEndDate) {
+        LocalDateTime start = newStartDate != null ? newStartDate : startDate;
+        LocalDateTime end = newEndDate != null ? newEndDate : endDate;
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new InvalidTermDatesException(start, end);
+        }
+        startDate = start;
+        endDate = end;
+    }
 
     public boolean contains(YearMonth period) {
         if (startDate == null || endDate == null) {
