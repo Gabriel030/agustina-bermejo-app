@@ -96,6 +96,7 @@ import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExi
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
 import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
+import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
@@ -214,6 +215,7 @@ public class GlobalExceptionHandler {
             StudentNotConfirmedException.class,
             StudentNotActiveException.class,
             AdmissionWindowClosedException.class,
+            ClassOnHolidayException.class,
             EnrollmentWindowClosedException.class,
             ProgramEnrollmentRequiredException.class,
             EnrollmentFeeNotPaidException.class,

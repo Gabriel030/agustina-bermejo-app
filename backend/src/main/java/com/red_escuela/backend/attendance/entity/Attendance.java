@@ -1,4 +1,5 @@
 package com.red_escuela.backend.attendance.entity;
+import com.red_escuela.backend.exception.AttendanceAlreadyRecordedException;
 import com.red_escuela.backend.identity.entity.Person;
 
 import jakarta.persistence.*;
@@ -64,5 +65,14 @@ public class Attendance {
         if (hasCourse == hasProgram) {
             throw new IllegalStateException("Attendance must reference exactly one enrollment: course OR program.");
         }
+    }
+
+    public void record(AttendanceStatus newStatus) {
+        if (status != null && status != newStatus) {
+            Long enrollmentId = programSubjectSectionEnrollment != null
+                    ? programSubjectSectionEnrollment.getId() : courseSubjectSectionEnrollment.getId();
+            throw new AttendanceAlreadyRecordedException(enrollmentId, String.valueOf(classDate));
+        }
+        status = newStatus;
     }
 }

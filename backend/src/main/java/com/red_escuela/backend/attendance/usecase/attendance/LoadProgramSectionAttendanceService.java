@@ -1,5 +1,9 @@
 package com.red_escuela.backend.attendance.usecase.attendance;
 
+import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.attendance.exception.ClassOnHolidayException;
+
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
@@ -15,7 +19,7 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,17 +31,20 @@ public class LoadProgramSectionAttendanceService implements LoadProgramSectionAt
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final AttendanceSectionAccess sectionAccess;
     private final ClassSessionUpserter classSessionUpserter;
+    private final HolidayRepository holidayRepository;
 
     public LoadProgramSectionAttendanceService(AttendanceRepository attendanceRepository,
                                                 SubjectSectionRepository subjectSectionRepository,
                                                 SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
                                                 AttendanceSectionAccess sectionAccess,
-                                                ClassSessionUpserter classSessionUpserter) {
+                                                ClassSessionUpserter classSessionUpserter,
+                                                HolidayRepository holidayRepository) {
         this.attendanceRepository = attendanceRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.sectionAccess = sectionAccess;
         this.classSessionUpserter = classSessionUpserter;
+        this.holidayRepository = holidayRepository;
     }
 
     @Override
@@ -49,24 +56,27 @@ public class LoadProgramSectionAttendanceService implements LoadProgramSectionAt
         Instructor instructor = sectionAccess.resolveInstructor(command.instructorId());
 
         var request = command.request();
-        Map<Long, Attendance> procesadas = new HashMap<>();
+        if (holidayRepository.existsByDate(request.classDate())) {
+            throw new ClassOnHolidayException(request.classDate());
+        }
+        Map<Long, AttendanceStatus> statusByEnrollment = new LinkedHashMap<>();
         for (var entry : request.entries()) {
-            Attendance attendance = procesadas.get(entry.enrollmentId());
-            if (attendance == null) {
-                SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(entry.enrollmentId())
-                        .orElseThrow(() -> new SectionEnrollmentNotFoundException(entry.enrollmentId()));
-                attendance = attendanceRepository
-                        .findByProgramSubjectSectionEnrollmentIdAndClassDate(entry.enrollmentId(), request.classDate())
-                        .orElseGet(Attendance::new);
-                attendance.setProgramSubjectSectionEnrollment(enrollment);
-                attendance.setClassDate(request.classDate());
-                attendance.setRecordedBy(instructor);
-            }
-            attendance.setStatus(entry.status());
-            attendance = attendanceRepository.save(attendance);
-            procesadas.put(entry.enrollmentId(), attendance);
+            statusByEnrollment.put(entry.enrollmentId(), entry.status());
+        }
+        List<Attendance> procesadas = new ArrayList<>();
+        for (var entry : statusByEnrollment.entrySet()) {
+            SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(entry.getKey())
+                    .orElseThrow(() -> new SectionEnrollmentNotFoundException(entry.getKey()));
+            Attendance attendance = attendanceRepository
+                    .findByProgramSubjectSectionEnrollmentIdAndClassDate(entry.getKey(), request.classDate())
+                    .orElseGet(Attendance::new);
+            attendance.setProgramSubjectSectionEnrollment(enrollment);
+            attendance.setClassDate(request.classDate());
+            attendance.setRecordedBy(instructor);
+            attendance.record(entry.getValue());
+            procesadas.add(attendanceRepository.save(attendance));
         }
         classSessionUpserter.upsertHeldForProgramSection(section, request.classDate(), instructor, request.topic(), request.observations());
-        return new ArrayList<>(procesadas.values());
+        return procesadas;
     }
 }

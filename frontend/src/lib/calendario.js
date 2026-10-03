@@ -82,3 +82,9 @@ export function esFeriado(feriados, anio, mes, dia) {
   const clave = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
   return feriados?.some((f) => f.date === clave);
 }
+
+export function localIsoDate(date = new Date()) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
