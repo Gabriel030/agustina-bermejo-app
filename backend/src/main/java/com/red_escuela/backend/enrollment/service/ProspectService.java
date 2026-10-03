@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.service.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {
@@ -44,6 +45,7 @@ public class ProspectService {
     private final RoleRepository roleRepository;
     private final PersonFactory personFactory;
     private final FileStorageService fileStorageService;
+    private final TransactionBoundFileCleanup transactionBoundFileCleanup;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
 
@@ -53,7 +55,7 @@ public class ProspectService {
             InstitutionRepository institutionRepository,
             RoleRepository roleRepository,
             PersonFactory personFactory,
-            FileStorageService fileStorageService,
+            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
             RequestPasswordResetUseCase requestPasswordResetUseCase,
             SendEmailVerificationUseCase sendEmailVerificationUseCase) {
         this.studentRepository = studentRepository;
@@ -62,6 +64,7 @@ public class ProspectService {
         this.roleRepository = roleRepository;
         this.personFactory = personFactory;
         this.fileStorageService = fileStorageService;
+        this.transactionBoundFileCleanup = transactionBoundFileCleanup;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
         this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
     }
@@ -125,11 +128,12 @@ public class ProspectService {
         Student student = findStudentOrThrow(studentId);
 
         studentDocumentRepository.findByStudentIdAndType(studentId, type).ifPresent(existing -> {
-            fileStorageService.delete(existing.getFilePath());
+            transactionBoundFileCleanup.deleteAfterCommit(existing.getFilePath());
             studentDocumentRepository.delete(existing);
         });
 
         String relativePath = fileStorageService.store(studentId, type.name(), file);
+        transactionBoundFileCleanup.deleteIfRolledBack(relativePath);
 
         StudentDocument document = new StudentDocument();
         document.setStudent(student);
