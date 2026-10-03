@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { DatosPersonalesTab } from './DatosPersonalesTab';
+import { DatosPersonalesTab } from '@/features/gestion-personas/pages/tabs/DatosPersonalesTab';
 
 const API = 'http://localhost:8080';
 
@@ -48,5 +48,19 @@ describe('DatosPersonalesTab', () => {
     expect(screen.getByDisplayValue('Dado de baja')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('CAMBIO_CARRERA')).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('Eliminado')).not.toBeInTheDocument();
+  });
+
+  it('shows the sex translated instead of its code', async () => {
+    server.use(http.get(`${API}/students/53/documents`, () => HttpResponse.json([])));
+    renderWithProviders(
+      <DatosPersonalesTab
+        legajo={{ id: 53, nombre: 'Ana', apellido: 'Pérez', sexo: 'F', status: 'ACTIVE' }}
+        puedeAccionar={false}
+        puedeDarDeBaja={false}
+      />,
+    );
+
+    expect(await screen.findByDisplayValue('Femenino')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('F')).not.toBeInTheDocument();
   });
 });

@@ -65,8 +65,9 @@ public class ProgramController {
     }
 
     @GetMapping
-    public List<ProgramResponse> list(@RequestParam(required = false) StatusType status) {
-        return programService.list(status).stream().map(ProgramResponse::from).toList();
+    public List<ProgramResponse> list(@RequestParam(required = false) StatusType status,
+            @RequestParam(required = false) Boolean visibleInCatalog) {
+        return programService.list(status, visibleInCatalog).stream().map(ProgramResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")

@@ -85,6 +85,11 @@ public class Course {
         }
     }
 
+    public boolean isRegistrationOpenAt(LocalDateTime moment) {
+        return (registrationStart == null || !moment.isBefore(registrationStart))
+                && (registrationEnd == null || !moment.isAfter(registrationEnd));
+    }
+
     public boolean hasCapacityFor(long occupiedCount) {
         return capacity == null || occupiedCount < capacity;
     }

@@ -110,3 +110,44 @@ Feature: Alta y edición de personal (POST/PUT /staff)
     And request { telefono: '11-4444-4444' }
     When method put
     Then status 403
+
+  Scenario: Buscar personal sin tildes encuentra apellidos con tilde
+    * def sufijo = '' + java.lang.System.nanoTime()
+    * def dni = 'KARATE' + sufijo
+    * def email = 'karate.gomez.' + sufijo + '@example.com'
+    * def apellido = 'Gómez' + sufijo
+    Given path '/staff'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { nombre: 'QA', apellido: '#(apellido)', email: '#(email)', dni: '#(dni)', city: 'CABA', role: 'DOCENTE' }
+    When method post
+    Then status 201
+    * def staffId = response.id
+
+    Given path '/staff'
+    And header Authorization = 'Bearer ' + adminToken
+    And param search = 'gomez' + sufijo
+    When method get
+    Then status 200
+    And match response[*].id contains staffId
+
+  Scenario: Un Administrativo no puede ver por URL el legajo de otro Administrativo, el Director sí
+    * def sufijo = '' + java.lang.System.nanoTime()
+    * def dni = 'KARATE' + sufijo
+    * def email = 'karate.adminlegajo.' + sufijo + '@example.com'
+    Given path '/staff'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { nombre: 'QA', apellido: 'AdminLegajo', email: '#(email)', dni: '#(dni)', city: 'CABA', role: 'ADMINISTRATIVO' }
+    When method post
+    Then status 201
+    * def adminStaffId = response.id
+
+    Given path '/staff', adminStaffId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 404
+
+    Given path '/staff', adminStaffId
+    And header Authorization = 'Bearer ' + directorToken
+    When method get
+    Then status 200
+    And match response.role == 'ADMINISTRATIVO'

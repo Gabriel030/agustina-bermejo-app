@@ -38,3 +38,19 @@ Feature: Perfil propio (GET/PUT /me)
     Given path '/me'
     When method get
     Then status 403
+
+  Scenario: Dos personas pueden dejar su DNI vacío — el vacío se guarda como sin DNI
+    * def otroAlumnoToken = fixtures.tokenForRole('ALUMNO')
+    Given path '/me'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And request { dni: '' }
+    When method put
+    Then status 200
+    And match response.dni == null
+
+    Given path '/me'
+    And header Authorization = 'Bearer ' + otroAlumnoToken
+    And request { dni: '' }
+    When method put
+    Then status 200
+    And match response.dni == null

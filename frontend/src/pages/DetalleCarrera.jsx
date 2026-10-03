@@ -3,8 +3,10 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { usePrograma, useProgramaPricing, useProgramaCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
+import { usePrograma, useProgramaPricing, useOpenProgramCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { formatMonto } from '@/lib/utils';
+import { programSummary } from '@/lib/catalog';
+import { CatalogDetailError } from '@/components/catalogo/CatalogDetailError';
 
 // Épica 7 Fase 3. Video introductorio: placeholder visual únicamente (decisión
 // confirmada con el usuario — sin carga real todavía).
@@ -12,13 +14,22 @@ export function DetalleCarrera() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: programa, isLoading, isError } = usePrograma(id);
+  const { data: programa, isLoading, isError, error } = usePrograma(id);
   const { data: pricing } = useProgramaPricing(id);
-  const { data: cohorts } = useProgramaCohorts(id);
+  const { data: cohorts } = useOpenProgramCohorts(id);
   const { data: planDeEstudio } = useProgramaPlanDeEstudio(id);
 
   if (isError) {
-    return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar la carrera. Probá recargar la página.</GlassCard>;
+    return (
+      <CatalogDetailError
+        message={
+          error?.status === 404
+            ? 'Esta carrera no existe o ya no está disponible.'
+            : 'No pudimos cargar la carrera. Probá recargar la página.'
+        }
+        onBack={() => navigate('/catalogo?tab=carreras')}
+      />
+    );
   }
   if (isLoading || !programa) {
     return (
@@ -57,7 +68,7 @@ export function DetalleCarrera() {
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{programa.name}</div>
-          <div className="mt-1 text-sm text-ink-faint">{programa.totalYears} años · Título oficial</div>
+          <div className="mt-1 text-sm text-ink-faint">{programSummary(programa)}</div>
         </div>
         <div className="flex w-full flex-col items-end gap-1.5 md:w-auto">
           <Button

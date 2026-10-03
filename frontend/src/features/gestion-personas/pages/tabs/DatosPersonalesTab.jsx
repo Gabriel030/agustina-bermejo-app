@@ -2,6 +2,7 @@ import { useDocumentosAlumno } from '@/features/gestion-personas/hooks/useLegajo
 import { Skeleton } from '@/components/Skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SEX_LABEL } from '@/lib/person';
 
 const TIPO_DOCUMENTO = {
   DNI_FRENTE: 'DNI frente',
@@ -90,7 +91,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
         <Campo label="Nombre" value={`${legajo.nombre} ${legajo.apellido}`} />
         <Campo label="Legajo" value={legajo.legajo ? `#${legajo.legajo}` : null} />
         <Campo label="DNI" value={legajo.dni} />
-        <Campo label="Sexo / Género" value={legajo.sexo} />
+        <Campo label="Sexo / Género" value={SEX_LABEL[legajo.sexo] ?? legajo.sexo} />
         <Campo label="Nacionalidad" value={legajo.nacionalidad} />
         <Campo label="Teléfono" value={legajo.telefono} />
         <Campo label="Email" value={legajo.email} />

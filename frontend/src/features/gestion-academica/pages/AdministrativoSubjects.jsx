@@ -428,7 +428,7 @@ export function AdministrativoSubjects() {
     );
 
   return (
-    <PageContainer titulo="Gestión académica" accion={accionBoton}>
+    <PageContainer title="Gestión académica" action={accionBoton}>
       <GlassCard className="p-4">
         <div className="mb-4 flex flex-col gap-3">
           <Tabs value={section} onValueChange={handleSectionChange}>
