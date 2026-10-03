@@ -17,12 +17,15 @@ const GRADE_MODE_LABELS = {
 
 function SubjectReviewRow({ subject, onApprove, onReject, isActing }) {
   return (
-    <div className="flex w-full items-center justify-between gap-4 rounded-2xl px-4 py-3">
-      <div className="min-w-0 flex-1">
+    <div
+      data-testid="subject-review-row"
+      className="flex w-full flex-col gap-3 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+    >
+      <div className="min-w-0 sm:flex-1">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">{subject.code}</span>
         </div>
-        <span className="block truncate text-[14px] font-medium text-ink">{subject.name}</span>
+        <span className="block text-[14px] font-medium text-ink sm:truncate">{subject.name}</span>
         {subject.gradeMode && (
           <span className="text-[12px] text-ink-faint">{GRADE_MODE_LABELS[subject.gradeMode] ?? subject.gradeMode}</span>
         )}
@@ -30,7 +33,7 @@ function SubjectReviewRow({ subject, onApprove, onReject, isActing }) {
           <p className="mt-1 line-clamp-2 text-[12px] text-ink-faint">{subject.description}</p>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:flex-nowrap">
         <StatusPill tone="warning">Pendiente</StatusPill>
         <Button
           variant="outline"
@@ -89,7 +92,7 @@ export function DirectorSubjectReview() {
   }
 
   return (
-    <PageContainer titulo="Banco de materias">
+    <PageContainer title="Banco de materias">
       <GlassCard className="p-4">
         <div className="mb-4 flex items-center justify-between gap-4">
           <div className="relative flex-1">
