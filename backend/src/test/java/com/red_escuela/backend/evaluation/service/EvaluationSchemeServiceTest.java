@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
@@ -36,7 +38,7 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         entityManager.persist(subject);
         return subject;

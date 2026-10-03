@@ -1,5 +1,7 @@
 package com.red_escuela.backend.announcement;
 
+import com.red_escuela.backend.config.TestSubjectCodes;
+
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
@@ -433,7 +435,7 @@ class AnnouncementServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
-        subject.setCode(String.valueOf((int) (System.nanoTime() % 9000) + 1000));
+        subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         entityManager.persist(subject);
         return subject;
