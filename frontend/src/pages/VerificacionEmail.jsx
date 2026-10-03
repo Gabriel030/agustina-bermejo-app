@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -11,12 +11,15 @@ export function VerificacionEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const [estado, setEstado] = useState('verificando');
+  const requestedTokenRef = useRef(null);
 
   useEffect(() => {
     if (!token) {
       setEstado('error');
       return;
     }
+    if (requestedTokenRef.current === token) return;
+    requestedTokenRef.current = token;
     apiFetch(`/verify-email?token=${encodeURIComponent(token)}`)
       .then(() => setEstado('ok'))
       .catch(() => setEstado('error'));
@@ -45,8 +48,8 @@ export function VerificacionEmail() {
 
           {estado === 'ok' && (
             <>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 size={36} className="text-green-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-bg">
+                <CheckCircle2 size={36} className="text-success" />
               </div>
               <div>
                 <p className="font-heading text-lg font-bold text-ink">Email verificado</p>
@@ -54,12 +57,15 @@ export function VerificacionEmail() {
                   Tu email fue confirmado correctamente. La institución procesará tu inscripción y te contactará a la brevedad.
                 </p>
               </div>
+              <Link to="/login" className="text-[13px] font-semibold text-brand hover:text-accent-2">
+                Ir a ingresar
+              </Link>
             </>
           )}
 
           {estado === 'error' && (
             <>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-danger-bg">
                 <XCircle size={36} className="text-danger" />
               </div>
               <div>

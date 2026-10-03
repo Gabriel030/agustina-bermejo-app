@@ -16,13 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -165,5 +168,40 @@ class PersonControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void rejectedAvatarUploadKeepsThePreviousPhoto() throws Exception {
+        Person owner = persistPersonWithRole("avatar1", "60121212", "ALUMNO");
+        String token = jwtService.generateAccessToken(owner);
+        byte[] previousPhoto = new byte[] {1, 2, 3, 4};
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.png", "image/png", previousPhoto))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.gif", "image/gif", new byte[] {9, 9}))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE_TYPE"));
+
+        mockMvc.perform(get("/me/avatar")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(previousPhoto));
+    }
+
+    @Test
+    void getAvatarReturns404WhenTheStoredFileIsMissing() throws Exception {
+        Person owner = persistPersonWithRole("avatar2", "60131313", "ALUMNO");
+        owner.setAvatarPath("avatars/missing-" + owner.getId() + ".png");
+        entityManager.flush();
+        String token = jwtService.generateAccessToken(owner);
+
+        mockMvc.perform(get("/me/avatar")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 }

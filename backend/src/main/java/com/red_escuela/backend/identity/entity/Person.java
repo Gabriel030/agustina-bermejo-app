@@ -88,4 +88,7 @@ public class Person {
     @Column(name = "email_verified")
     private Boolean emailVerified;
 
+    public void changeDni(String newDni) {
+        this.dni = newDni == null || newDni.isBlank() ? null : newDni.trim();
+    }
 }
