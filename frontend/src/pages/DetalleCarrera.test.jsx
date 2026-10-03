@@ -63,6 +63,59 @@ describe('DetalleCarrera', () => {
     expect(await screen.findByText('Todavía no hay cohortes abiertas para esta carrera.')).toBeInTheDocument();
   });
 
+  it('disables Inscribirme when every cohort has its admission window closed', async () => {
+    server.use(
+      http.get(`${API}/programs/1/cohorts`, () =>
+        HttpResponse.json([
+          { id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-02', admissionStart: '2026-01-05', admissionEnd: '2026-03-31', admissionOpen: false },
+        ]),
+      ),
+    );
+    renderDetalle();
+
+    const button = await screen.findByRole('button', { name: 'Inscribirme' });
+    expect(await screen.findByText('Todavía no hay cohortes abiertas para esta carrera.')).toBeInTheDocument();
+    expect(button).toBeDisabled();
+  });
+
+  it('only offers cohorts with an open admission window in the enrollment wizard', async () => {
+    server.use(
+      http.get(`${API}/programs/1/cohorts`, () =>
+        HttpResponse.json([
+          { id: 1, programId: 1, label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-02', admissionOpen: false },
+          { id: 2, programId: 1, label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-03', admissionOpen: true },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderConWizard();
+
+    await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
+
+    expect(await screen.findByText('Agosto 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Marzo 2026')).not.toBeInTheDocument();
+  });
+
+  it('shows the teaching mode instead of a hardcoded official title', async () => {
+    server.use(
+      http.get(`${API}/programs/1`, () =>
+        HttpResponse.json({ id: 1, name: 'Carrera de prueba', totalYears: 3, teachingMode: 'HYBRID', totalCreditsRequired: 0 }),
+      ),
+    );
+    renderDetalle();
+
+    expect(await screen.findByText('3 años · Híbrido')).toBeInTheDocument();
+    expect(screen.queryByText(/Título oficial/)).not.toBeInTheDocument();
+  });
+
+  it('says the program does not exist and offers a way back when the API answers 404', async () => {
+    server.use(http.get(`${API}/programs/9999`, () => new HttpResponse(null, { status: 404 })));
+    renderDetalle('9999');
+
+    expect(await screen.findByText('Esta carrera no existe o ya no está disponible.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '← Catálogo' })).toBeInTheDocument();
+  });
+
   it('Inscribirme navega a una página propia, no abre un modal', async () => {
     const user = userEvent.setup();
     renderConWizard();

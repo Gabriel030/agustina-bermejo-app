@@ -42,6 +42,10 @@ public class ProgramCohort {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    public boolean isAdmissionOpenOn(LocalDate day) {
+        return !day.isBefore(admissionStart) && !day.isAfter(admissionEnd);
+    }
+
     @PrePersist
     void onCreate() {
         if (this.createdAt == null) {
