@@ -17,6 +17,8 @@ import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.shared.UseCase;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
@@ -24,6 +26,7 @@ import java.util.List;
 
 @UseCase
 public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
+    private static final Logger log = LoggerFactory.getLogger(CreateMpPreferenceService.class);
 
     private final InvoiceRepository invoiceRepository;
     private final String accessToken;
@@ -83,8 +86,10 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
 
         try {
             Preference preference = new PreferenceClient().create(request);
+            log.info("Preferencia de Mercado Pago creada: preferencia={}, factura={}, monto={}", preference.getId(), invoiceId, amount);
             return new MpPreferenceResponse(preference.getId(), preference.getInitPoint());
         } catch (MPException | MPApiException e) {
+            log.error("Falló la creación de la preferencia de Mercado Pago: factura={}", invoiceId, e);
             throw new MercadoPagoGatewayException("Error al crear preferencia de pago", e);
         }
     }
