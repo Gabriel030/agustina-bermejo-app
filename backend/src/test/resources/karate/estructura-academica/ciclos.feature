@@ -24,7 +24,7 @@ Feature: Ciclos de oferta académica y disponibilidad de aulas
     * def programId = response.id
 
     * def subjectName = 'Materia ciclos ' + java.lang.System.nanoTime()
-    * def subjectCode = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def subjectCode = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(subjectName)', code: '#(subjectCode)' }
