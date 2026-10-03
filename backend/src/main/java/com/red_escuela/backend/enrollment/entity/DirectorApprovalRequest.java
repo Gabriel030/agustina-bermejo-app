@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
+import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 
 @Getter
 @Setter
@@ -63,9 +63,7 @@ public class DirectorApprovalRequest {
 
     public static DirectorApprovalRequest open(ExceptionType type, ProgramEnrollment programEnrollment, Subject subject,
                                                String justification, Person requestedBy, LocalDateTime requestedAt) {
-        if (!programEnrollment.isActive()) {
-            throw new ProgramEnrollmentRequiredException(programEnrollment.getId());
-        }
+        programEnrollment.requireActive();
         if (subject == null) {
             throw new DirectorApprovalSubjectRequiredException(type);
         }
@@ -78,6 +76,17 @@ public class DirectorApprovalRequest {
         request.requestedBy = requestedBy;
         request.requestedAt = requestedAt;
         return request;
+    }
+
+    public void decide(DirectorApprovalRequestStatus decision, Person director, String notes, LocalDateTime decidedAt) {
+        boolean validDecision = decision == DirectorApprovalRequestStatus.APPROVED || decision == DirectorApprovalRequestStatus.REJECTED;
+        if (status != DirectorApprovalRequestStatus.REQUESTED || !validDecision) {
+            throw new InvalidDirectorApprovalRequestStateException(id);
+        }
+        status = decision;
+        decidedBy = director;
+        decisionNotes = notes;
+        this.decidedAt = decidedAt;
     }
 
     public Person student() {

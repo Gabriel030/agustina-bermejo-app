@@ -17,6 +17,7 @@ import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequi
 import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.enrollment.service.DirectorApprovalRequestDecisionRecorder;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
@@ -78,6 +79,9 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private DirectorApprovalRequestDecisionRecorder decisionRecorder;
 
     @Autowired
     private EntityManager entityManager;
@@ -244,6 +248,25 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> rejectDirectorApprovalRequestUseCase.reject(new DecideDirectorApprovalRequestCommand(request.getId(), "tarde")))
                 .isInstanceOf(InvalidDirectorApprovalRequestStateException.class);
+    }
+
+    @Test
+    void recordingADecisionThatIsNeitherApprovalNorRejectionFails() {
+        Student student = persistStudent("A0000012");
+        Program program = persistProgram("CarreraExcepcion12");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        Subject subject = persistSubjectInPlan(program, "MateriaExcepcion12");
+        entityManager.flush();
+        authenticateAsPerson("PRECEPTOR_A0000012");
+        DirectorApprovalRequest request = requestDirectorApprovalUseCase.request(
+                new CreateDirectorApprovalRequestRequest(ExceptionType.LATE_EXAM, enrollment.getId(), subject.getId(), "Pendiente"));
+        authenticateAsPerson("DIRECTOR_A0000012");
+
+        assertThatThrownBy(() -> decisionRecorder.record(request, DirectorApprovalRequestStatus.REQUESTED, "No es una decisión"))
+                .isInstanceOf(InvalidDirectorApprovalRequestStateException.class);
+        assertThat(request.getDecidedBy()).isNull();
+        assertThat(request.getDecisionNotes()).isNull();
+        assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(student.getPerson().getId())).isEmpty();
     }
 
     @Test

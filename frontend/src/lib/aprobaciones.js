@@ -12,7 +12,8 @@ const ALREADY_DECIDED_CODES = ['INVALID_DIRECTOR_APPROVAL_REQUEST_STATE', 'INVAL
 
 const DECISION_ERROR_MESSAGES = {
   GRADUATION_REQUIREMENTS_NOT_MET: 'No se puede aprobar: el alumno todavía no cumple los requisitos para egresar.',
-  PENDING_DEBT: 'No se puede aprobar: el alumno tiene cuotas vencidas.',
+  PENDING_DEBT: 'No se puede aprobar: el alumno tiene cuotas impagas.',
+  PROGRAM_ENROLLMENT_REQUIRED: 'No se puede aprobar: la matrícula del alumno ya no está activa.',
 };
 
 export function isAlreadyDecided(error) {

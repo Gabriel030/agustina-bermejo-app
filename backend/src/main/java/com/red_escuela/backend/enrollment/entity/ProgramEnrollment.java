@@ -15,6 +15,7 @@ import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 
 @Getter
 @Setter
@@ -71,7 +72,14 @@ public class ProgramEnrollment implements BillableEnrollment {
         return status == ProgramEnrollmentStatus.ENROLLED || status == ProgramEnrollmentStatus.PAUSED;
     }
 
+    public void requireActive() {
+        if (!isActive()) {
+            throw new ProgramEnrollmentRequiredException(id);
+        }
+    }
+
     public void complete(LocalDateTime completedAt) {
+        requireActive();
         status = ProgramEnrollmentStatus.COMPLETED;
         completionDate = completedAt;
     }

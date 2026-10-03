@@ -50,11 +50,12 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         GraduationRequest request = graduationRequestFinder.findOrThrow(graduationRequestId);
         request.requireAwaitingDirectorDecision();
         ProgramEnrollment programEnrollment = request.getProgramEnrollment();
+        programEnrollment.requireActive();
         if (!programEnrollmentService.calculateProgress(programEnrollment.getId()).elegibleParaCompletar()) {
             throw new GraduationRequirementsNotMetException(programEnrollment.getId());
         }
         Long studentId = programEnrollment.getStudent().getId();
-        if (invoiceQueryService.hasOverdueDebt(studentId)) {
+        if (invoiceQueryService.hasDebt(studentId)) {
             throw new PendingDebtException(studentId);
         }
 

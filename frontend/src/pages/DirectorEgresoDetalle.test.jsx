@@ -115,7 +115,19 @@ describe('DirectorEgresoDetalle', () => {
     expect(screen.queryByRole('button', { name: 'Aprobar egreso' })).not.toBeInTheDocument();
   });
 
-  it('explains that the student has overdue debt when the backend blocks the approval', async () => {
+  it('explains that the program enrollment is no longer active when the backend blocks the approval', async () => {
+    mockGraduation({ approve: () => HttpResponse.json({ code: 'PROGRAM_ENROLLMENT_REQUIRED' }, { status: 400 }) });
+    const user = userEvent.setup();
+    renderDetail();
+
+    const approveButton = await screen.findByRole('button', { name: 'Aprobar egreso' });
+    await waitFor(() => expect(approveButton).toBeEnabled());
+    await user.click(approveButton);
+
+    expect(await screen.findByText('No se puede aprobar: la matrícula del alumno ya no está activa.')).toBeInTheDocument();
+  });
+
+  it('explains that the student has unpaid installments when the backend blocks the approval', async () => {
     mockGraduation({ approve: () => HttpResponse.json({ code: 'PENDING_DEBT' }, { status: 409 }) });
     const user = userEvent.setup();
     renderDetail();
@@ -124,6 +136,6 @@ describe('DirectorEgresoDetalle', () => {
     await waitFor(() => expect(approveButton).toBeEnabled());
     await user.click(approveButton);
 
-    expect(await screen.findByText('No se puede aprobar: el alumno tiene cuotas vencidas.')).toBeInTheDocument();
+    expect(await screen.findByText('No se puede aprobar: el alumno tiene cuotas impagas.')).toBeInTheDocument();
   });
 });

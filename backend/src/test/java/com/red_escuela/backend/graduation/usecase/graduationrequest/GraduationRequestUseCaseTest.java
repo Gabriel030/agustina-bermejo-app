@@ -22,6 +22,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActiveException;
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
@@ -210,7 +211,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void verifyDebtWithOnlyNotYetDueInstallmentsSucceeds() {
+    void verifyDebtWithANotYetDueUnpaidInstallmentFails() {
         Student student = persistStudent("80000006");
         Program program = persistProgramWithoutRequirements("CarreraSinRequisitos5");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
@@ -220,9 +221,28 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         persistInvoice(enrollment, LocalDate.now().plusDays(7));
         authenticateAsPerson("ADMIN80000006");
 
-        GraduationRequest verified = verifyGraduationRequestDebtUseCase.verify(request.getId());
+        assertThatThrownBy(() -> verifyGraduationRequestDebtUseCase.verify(request.getId()))
+                .isInstanceOf(PendingDebtException.class);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
+                .isEqualTo(GraduationRequestStatus.REQUESTED);
+    }
 
-        assertThat(verified.getStatus()).isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
+    @Test
+    void approveFailsWhenTheStudentHasANotYetDueUnpaidInstallment() {
+        Student student = persistStudent("80000010");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos9");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000010");
+
+        persistInvoice(enrollment, LocalDate.now().plusDays(7));
+        entityManager.flush();
+        authenticateAsPerson("DIRECTOR80000010");
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId()))
+                .isInstanceOf(PendingDebtException.class);
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     @Test
@@ -243,6 +263,26 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
                 .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void approveFailsWhenTheProgramEnrollmentWasWithdrawn() {
+        Student student = persistStudent("80000009");
+        Program program = persistProgramWithoutRequirements("CarreraSinRequisitos8");
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program);
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000009");
+
+        enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        entityManager.flush();
+        authenticateAsPerson("DIRECTOR80000009");
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId()))
+                .isInstanceOf(ProgramEnrollmentRequiredException.class);
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus())
+                .isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+        assertThat(entityManager.find(GraduationRequest.class, request.getId()).getStatus())
+                .isEqualTo(GraduationRequestStatus.ADMIN_VERIFIED);
     }
 
     @Test

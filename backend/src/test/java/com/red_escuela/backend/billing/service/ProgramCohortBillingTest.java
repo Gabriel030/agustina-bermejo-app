@@ -154,7 +154,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Program program = new Program();
         program.setName(nombre);
         program.setTotalYears(3);
-        program.setTotalCreditsRequired(0);
+        program.setTotalCreditsRequired(1);
         return programRepository.save(program);
     }
 

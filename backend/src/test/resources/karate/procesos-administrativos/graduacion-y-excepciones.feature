@@ -160,7 +160,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Then status 200
     And match response[0].status == 'REQUESTED'
 
-  Scenario: Verificar deuda con una cuota que todavía no venció — el alumno está al día, 200
+  Scenario: Verificar deuda con una cuota impaga que todavía no venció — también bloquea, 409
     * def alumno = fixtures.createConfirmedStudent(institutionId)
 
     Given path '/students', alumno.studentId, 'program-enrollments'
@@ -181,8 +181,8 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     Given path '/graduation-requests', graduationRequestId, 'verify-debt'
     And header Authorization = 'Bearer ' + adminToken
     When method post
-    Then status 200
-    And match response.status == 'ADMIN_VERIFIED'
+    Then status 409
+    And match response.code == 'PENDING_DEBT'
 
   Scenario: Aprobar el egreso de un alumno que dejó de cumplir los requisitos — 409 con código
     * def alumno = fixtures.createConfirmedStudent(institutionId)
