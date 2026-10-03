@@ -123,6 +123,7 @@ import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestNotFo
 import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
+import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -354,6 +355,7 @@ public class GlobalExceptionHandler {
             ElectiveGroupInUseException.class,
             AlreadyEnrolledInProgramException.class,
             AlreadyEnrolledInCourseException.class,
+            StudentFreeByAbsencesException.class,
             PendingCourseEnrollmentApplicationException.class,
             AlreadyEnrolledInSubjectException.class,
             CannotWithdrawException.class,

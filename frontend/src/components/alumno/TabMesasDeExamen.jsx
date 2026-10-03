@@ -29,11 +29,15 @@ function formatearFecha(iso) {
 // (ya cargadas por el padre) son las que ese alumno tiene para ESTA materia puntual — pedido
 // explícito del usuario: la fila tiene que mostrar directo si ya está inscripto (sin ir a otra
 // pestaña) y bloquear los demás llamados hasta que se dé de baja del que tiene activo.
-function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones }) {
+const REGISTRATION_ERROR_MESSAGES = {
+  STUDENT_FREE_BY_ABSENCES: 'Superaste el máximo de inasistencias: justificalas para poder inscribirte al final.',
+};
+
+export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscripciones }) {
   const { data: mesas, isLoading } = useMesasDisponibles(subjectId);
   const inscribirme = useInscribirmeAMesa();
   const darmeDeBaja = useDarmeDeBajaDeMesa();
-  const [errorId, setErrorId] = useState(null);
+  const [registrationError, setRegistrationError] = useState(null);
 
   if (isLoading) {
     return (
@@ -56,11 +60,14 @@ function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscrip
   const activa = misInscripciones.find((mia) => mia.status === 'REGISTERED' && mia.score == null);
 
   async function inscribirseA(mesaId) {
-    setErrorId(null);
+    setRegistrationError(null);
     try {
       await inscribirme.mutateAsync({ examBoardId: mesaId, programSectionEnrollmentId });
-    } catch {
-      setErrorId(mesaId);
+    } catch (err) {
+      setRegistrationError({
+        examBoardId: mesaId,
+        message: REGISTRATION_ERROR_MESSAGES[err.code] ?? 'No pudimos inscribirte, probá de nuevo.',
+      });
     }
   }
 
@@ -101,7 +108,9 @@ function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, misInscrip
                 <Button variant="gradient" onClick={() => inscribirseA(mesa.id)} disabled={inscribirme.isPending || bloqueadaPorOtra}>
                   {bloqueadaPorOtra ? 'Ya estás inscripto a otro llamado' : inscribirme.isPending ? 'Inscribiendo…' : 'Inscribirme a este llamado'}
                 </Button>
-                {errorId === mesa.id && <span className="text-[11px] font-medium text-danger">No pudimos inscribirte, probá de nuevo.</span>}
+                {registrationError?.examBoardId === mesa.id && (
+                  <span className="text-[11px] font-medium text-danger">{registrationError.message}</span>
+                )}
               </div>
             )}
           </div>
