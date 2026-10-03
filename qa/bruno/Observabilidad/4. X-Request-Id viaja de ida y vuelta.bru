@@ -1,0 +1,36 @@
+meta {
+  name: 4. X-Request-Id viaja de ida y vuelta
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/actuator/health
+  auth: none
+}
+
+headers {
+  X-Request-Id: bruno-trazabilidad-001
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("devuelve el mismo requestId que mandó el cliente", function () {
+    expect(res.getHeader("x-request-id")).to.equal("bruno-trazabilidad-001");
+  });
+}
+
+docs {
+  # Correlación de requests (Épica 17 · Fase 5)
+
+  El `X-Request-Id` es contrato HTTP: el backend lo acepta del cliente si viene
+  y lo genera si no, lo deja en el MDC —así cada línea de log del request lo
+  lleva— y lo devuelve en la respuesta, para que quien reporte un error pueda
+  pasar ese id.
+
+  Por qué se prueba acá y no solo con MockMvc: el filtro corre en la cadena de
+  servlets real, antes que Spring Security. Un test de JUnit puede dar por buena
+  una cadena de filtros que en el servidor real quedó en otro orden.
+}
