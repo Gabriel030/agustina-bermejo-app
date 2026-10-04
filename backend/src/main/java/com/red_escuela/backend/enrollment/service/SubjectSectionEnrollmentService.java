@@ -311,7 +311,7 @@ public class SubjectSectionEnrollmentService {
 
     private void validateEnrollmentFeePaid(ProgramEnrollment programEnrollment) {
         Invoice enrollmentFeeInvoice = invoiceRepository
-                .findByProgramEnrollmentIdAndFeeType(programEnrollment.getId(), FeeType.ENROLLMENT_FEE)
+                .findFirstByProgramEnrollmentIdAndFeeTypeOrderByPeriodDesc(programEnrollment.getId(), FeeType.ENROLLMENT_FEE)
                 .orElse(null);
         if (!programEnrollment.canEnrollInSubjects(enrollmentFeeInvoice)) {
             throw new EnrollmentFeeNotPaidException(programEnrollment.getId());
