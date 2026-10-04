@@ -61,6 +61,10 @@ public class Scholarship {
     @Column(name = "status", nullable = false)
     private ScholarshipStatus status = ScholarshipStatus.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "applies_to", nullable = false)
+    private ScholarshipScope appliesTo = ScholarshipScope.INSTALLMENTS;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "granted_by_id", nullable = false)
     private Person grantedBy;

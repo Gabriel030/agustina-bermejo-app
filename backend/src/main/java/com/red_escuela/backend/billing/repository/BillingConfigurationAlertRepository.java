@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface BillingConfigurationAlertRepository extends JpaRepository<BillingConfigurationAlert, Long> {
 
-    Optional<BillingConfigurationAlert> findByProgramIdAndPeriod(Long programId, YearMonth period);
+    Optional<BillingConfigurationAlert> findByProgramIdAndPeriodAndReason(Long programId, YearMonth period, String reason);
 
     @Query("select a from BillingConfigurationAlert a join fetch a.program where a.resolvedAt is null order by a.period desc")
     List<BillingConfigurationAlert> findByResolvedAtIsNullOrderByPeriodDesc();

@@ -21,11 +21,15 @@ public class ChargePlanExecutor {
     }
 
     public int execute(ProgramEnrollment enrollment, PaymentPlanSelection selection, ChargePlan plan) {
+        return execute(enrollment, selection, plan, false);
+    }
+
+    public int execute(ProgramEnrollment enrollment, PaymentPlanSelection selection, ChargePlan plan, boolean inCurrentTransaction) {
         log.info("Plan de cargos: inscripcion={}, mes={}, cargos={}, decisiones={}",
                 plan.enrollmentId(), plan.month(), plan.charges().size(), plan.describe());
         int issued = 0;
         for (PlannedCharge charge : plan.charges()) {
-            if (issue(enrollment, selection, charge) != null) {
+            if (issue(enrollment, selection, charge, inCurrentTransaction) != null) {
                 issued++;
             }
         }
@@ -33,7 +37,16 @@ public class ChargePlanExecutor {
     }
 
     public Invoice issue(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedCharge charge) {
+        return issue(enrollment, selection, charge, false);
+    }
+
+    public Invoice issue(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedCharge charge, boolean inCurrentTransaction) {
         FeeType feeType = charge.kind() == ChargeKind.ENROLLMENT_FEE ? FeeType.ENROLLMENT_FEE : FeeType.RECURRING_FEE;
-        return invoiceFactory.createForProgram(enrollment, selection, feeType, charge.period(), charge.dueDate(), charge.priceDate());
+        if (inCurrentTransaction) {
+            return invoiceFactory.createForProgramAtomic(enrollment, selection, feeType, charge.period(), charge.dueDate(), charge.priceDate(),
+                    charge.templateId(), charge.slot());
+        }
+        return invoiceFactory.createForProgram(enrollment, selection, feeType, charge.period(), charge.dueDate(), charge.priceDate(),
+                charge.templateId(), charge.slot());
     }
 }

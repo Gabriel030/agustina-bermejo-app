@@ -82,7 +82,7 @@ public class InvoiceGenerationService {
 
     @Transactional
     public void generateChargesForProgram(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today) {
-        executePlan(programEnrollment, month, today, ChargeScope.ALL);
+        executePlan(programEnrollment, month, today, ChargeScope.ALL, true);
     }
 
     private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, ChargeScope scope) {
@@ -90,9 +90,13 @@ public class InvoiceGenerationService {
     }
 
     private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today, ChargeScope scope) {
+        executePlan(programEnrollment, month, today, scope, false);
+    }
+
+    private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today, ChargeScope scope, boolean inCurrentTransaction) {
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(programEnrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), scope);
-        planExecutor.execute(programEnrollment, context.selection(), plan);
+        planExecutor.execute(programEnrollment, context.selection(), plan, inCurrentTransaction);
     }
 
     private boolean isBillableProgramEnrollment(ProgramEnrollment programEnrollment) {

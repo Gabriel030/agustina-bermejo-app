@@ -13,6 +13,9 @@ import java.time.YearMonth;
 @Entity
 @Table(name = "billing_configuration_alert")
 public class BillingConfigurationAlert {
+
+    public static final String REASON_YEAR_NOT_CONFIGURED = "YEAR_NOT_CONFIGURED";
+    public static final String REASON_YEAR_GAP = "YEAR_GAP";
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +27,9 @@ public class BillingConfigurationAlert {
 
     @Column(name = "period", nullable = false)
     private YearMonth period;
+
+    @Column(name = "reason", nullable = false, length = 30)
+    private String reason = REASON_YEAR_NOT_CONFIGURED;
 
     @Column(name = "affected_enrollments", nullable = false)
     private Integer affectedEnrollments;

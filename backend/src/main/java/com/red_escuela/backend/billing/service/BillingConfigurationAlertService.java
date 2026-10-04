@@ -40,35 +40,41 @@ public class BillingConfigurationAlertService {
     public void refresh(YearMonth month) {
         LocalDateTime now = LocalDateTime.now(clock);
         for (BillingConfigurationAlertRepository.ProgramCount count : alertRepository.countBillableEnrollmentsByProgram(ACTIVE)) {
-            Long programId = count.getProgramId();
-            boolean configured = isConfigured(programId, month);
-            BillingConfigurationAlert alert = alertRepository.findByProgramIdAndPeriod(programId, month).orElse(null);
-            if (configured) {
-                if (alert != null && alert.isOpen()) {
-                    alert.setResolvedAt(now);
-                    alertRepository.save(alert);
-                }
-                continue;
-            }
-            if (alert == null) {
-                alert = new BillingConfigurationAlert();
-                alert.setProgram(programRepository.getReferenceById(programId));
-                alert.setPeriod(month);
-                alert.setDetectedAt(now);
-            }
-            alert.setAffectedEnrollments(count.getTotal().intValue());
-            alert.setLastDetectedAt(now);
-            alert.setResolvedAt(null);
-            alertRepository.save(alert);
-            log.warn("Año lectivo sin configurar: programa={}, mes={}, inscripciones afectadas={}", programId, month, count.getTotal());
+            YearCycles cycles = cyclesOf(count.getProgramId(), month);
+            syncAlert(count, month, BillingConfigurationAlert.REASON_YEAR_NOT_CONFIGURED, !cycles.isConfiguredFor(month), now);
+            syncAlert(count, month, BillingConfigurationAlert.REASON_YEAR_GAP, cycles.hasGapAt(month), now);
         }
+    }
+
+    private void syncAlert(BillingConfigurationAlertRepository.ProgramCount count, YearMonth month, String reason, boolean active, LocalDateTime now) {
+        Long programId = count.getProgramId();
+        BillingConfigurationAlert alert = alertRepository.findByProgramIdAndPeriodAndReason(programId, month, reason).orElse(null);
+        if (!active) {
+            if (alert != null && alert.isOpen()) {
+                alert.setResolvedAt(now);
+                alertRepository.save(alert);
+            }
+            return;
+        }
+        if (alert == null) {
+            alert = new BillingConfigurationAlert();
+            alert.setProgram(programRepository.getReferenceById(programId));
+            alert.setPeriod(month);
+            alert.setReason(reason);
+            alert.setDetectedAt(now);
+        }
+        alert.setAffectedEnrollments(count.getTotal().intValue());
+        alert.setLastDetectedAt(now);
+        alert.setResolvedAt(null);
+        alertRepository.save(alert);
+        log.warn("Alerta de configuración de cobro: programa={}, mes={}, motivo={}, inscripciones afectadas={}", programId, month, reason, count.getTotal());
     }
 
     @Transactional
     public void resolveCoveredAlerts(Long programId) {
         LocalDateTime now = LocalDateTime.now(clock);
         for (BillingConfigurationAlert alert : alertRepository.findByProgramIdAndResolvedAtIsNull(programId)) {
-            if (isConfigured(programId, alert.getPeriod())) {
+            if (isResolved(programId, alert)) {
                 alert.setResolvedAt(now);
                 alertRepository.save(alert);
             }
@@ -80,8 +86,13 @@ public class BillingConfigurationAlertService {
         return alertRepository.findByResolvedAtIsNullOrderByPeriodDesc();
     }
 
-    private boolean isConfigured(Long programId, YearMonth month) {
-        YearCycles cycles = new YearCycles(templateRepository.findAllByProgramId(programId).stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
-        return cycles.isConfiguredFor(month);
+    private boolean isResolved(Long programId, BillingConfigurationAlert alert) {
+        YearCycles cycles = cyclesOf(programId, alert.getPeriod());
+        return BillingConfigurationAlert.REASON_YEAR_GAP.equals(alert.getReason()) ? !cycles.hasGapAt(alert.getPeriod())
+                : cycles.isConfiguredFor(alert.getPeriod());
+    }
+
+    private YearCycles cyclesOf(Long programId, YearMonth month) {
+        return new YearCycles(templateRepository.findAllByProgramId(programId).stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
     }
 }

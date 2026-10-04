@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
@@ -73,7 +74,12 @@ public class GrantEnrollmentFeeExemptionService implements GrantEnrollmentFeeExe
         exemption.setReason(request.reason().trim());
         exemption.setGrantedBy(currentPersonService.resolveCurrentPerson());
         exemption.setGrantedAt(LocalDateTime.now(clock));
-        EnrollmentFeeExemption saved = exemptionRepository.save(exemption);
+        EnrollmentFeeExemption saved;
+        try {
+            saved = exemptionRepository.saveAndFlush(exemption);
+        } catch (DataIntegrityViolationException e) {
+            throw new EnrollmentFeeExemptionAlreadyExistsException(programEnrollmentId, template.getId(), request.slot());
+        }
         log.info("Habilitación de matrícula otorgada: habilitacion={}, inscripcion={}, plantilla={}, matricula={}, por={}",
                 saved.getId(), programEnrollmentId, template.getId(), request.slot(), saved.getGrantedBy().getId());
         eventPublisher.publishEvent(new EnrollmentFeeExemptionGrantedEvent(saved));

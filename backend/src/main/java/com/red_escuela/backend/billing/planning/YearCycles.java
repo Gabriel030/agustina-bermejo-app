@@ -27,13 +27,20 @@ public final class YearCycles {
         return cycles.stream().anyMatch(c -> !c.end().isBefore(month));
     }
 
+    public boolean hasGapAt(YearMonth month) {
+        boolean touched = cycles.stream().anyMatch(c -> c.start().getYear() <= month.getYear() && c.end().getYear() >= month.getYear());
+        boolean before = cycles.stream().anyMatch(c -> c.end().getYear() < month.getYear());
+        boolean after = cycles.stream().anyMatch(c -> c.start().getYear() > month.getYear());
+        return !touched && before && after;
+    }
+
     public Optional<YearCycle> covering(YearMonth month) {
         List<YearCycle> matches = cycles.stream().filter(c -> c.contains(month)).toList();
         return pick(matches);
     }
 
-    public Optional<YearCycle> forCuota(YearMonth month) {
-        List<YearCycle> matches = cycles.stream().filter(c -> c.termContains(month)).toList();
+    public Optional<YearCycle> forInstallment(YearMonth month) {
+        List<YearCycle> matches = cycles.stream().filter(c -> c.installmentRangeContains(month)).toList();
         return pick(matches);
     }
 

@@ -6,6 +6,8 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import java.time.YearMonth;
 
 public final class YearCycle {
+    private static final int PREVIOUS_YEAR_THRESHOLD_MONTHS = 6;
+
     private final ProgramYearBillingTemplate template;
     private final YearMonth start;
     private final YearMonth end;
@@ -25,14 +27,21 @@ public final class YearCycle {
     public static YearCycle of(ProgramYearBillingTemplate template, int fallbackYear) {
         Term term = template.getTerm();
         if (term.getStartDate() == null || term.getEndDate() == null) {
-            YearMonth first = YearMonth.of(fallbackYear, 1);
-            return new YearCycle(template, first, YearMonth.of(fallbackYear, 12), first, fallbackYear, first);
+            int year = term.getYear() != null ? term.getYear() : fallbackYear;
+            YearMonth first = YearMonth.of(year, 1);
+            return new YearCycle(template, first, YearMonth.of(year, 12), first, year, first);
         }
         YearMonth termStart = YearMonth.from(term.getStartDate());
         YearMonth termEnd = YearMonth.from(term.getEndDate());
-        YearMonth firstFee = YearMonth.of(termStart.getYear(), template.getFirstEnrollmentFeeMonth());
+        YearMonth firstFee = firstFeePeriod(template, termStart);
         YearMonth start = firstFee.isBefore(termStart) ? firstFee : termStart;
         return new YearCycle(template, start, termEnd, termStart, termStart.getYear(), start);
+    }
+
+    private static YearMonth firstFeePeriod(ProgramYearBillingTemplate template, YearMonth termStart) {
+        int month = template.getFirstEnrollmentFeeMonth();
+        boolean belongsToPreviousYear = month - termStart.getMonthValue() >= PREVIOUS_YEAR_THRESHOLD_MONTHS;
+        return YearMonth.of(belongsToPreviousYear ? termStart.getYear() - 1 : termStart.getYear(), month);
     }
 
     public YearCycle withCoverageStart(YearMonth lowerBound) {
@@ -63,8 +72,8 @@ public final class YearCycle {
         return !month.isBefore(start) && !month.isAfter(end);
     }
 
-    public boolean termContains(YearMonth month) {
-        return template.getTerm().contains(month);
+    public boolean installmentRangeContains(YearMonth month) {
+        return !month.isBefore(termStart) && !month.isAfter(end);
     }
 
     public int slotCount() {
@@ -72,8 +81,14 @@ public final class YearCycle {
     }
 
     public YearMonth slotPeriod(int slot) {
-        int month = slot == 1 ? template.getFirstEnrollmentFeeMonth() : template.getSecondEnrollmentFeeMonth();
-        return YearMonth.of(baseYear, month);
+        if (slot == 1) {
+            Term term = template.getTerm();
+            if (term.getStartDate() == null || term.getEndDate() == null) {
+                return YearMonth.of(baseYear, template.getFirstEnrollmentFeeMonth());
+            }
+            return firstFeePeriod(template, termStart);
+        }
+        return YearMonth.of(baseYear, template.getSecondEnrollmentFeeMonth());
     }
 
     public int slotOf(YearMonth month) {

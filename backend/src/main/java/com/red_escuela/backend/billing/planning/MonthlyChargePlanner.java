@@ -35,7 +35,7 @@ public final class MonthlyChargePlanner {
         }
         decisions.add(new PlanDecision(1, "ELIGIBLE", "plan de pago " + facts.cadenceAtMonth()));
 
-        Optional<YearCycle> cuotaCycle = facts.cycles().forCuota(month);
+        Optional<YearCycle> cuotaCycle = facts.cycles().forInstallment(month);
         Optional<YearCycle> covering = facts.cycles().covering(month);
         boolean notConfigured = !facts.cycles().isConfiguredFor(month);
         if (notConfigured) {
@@ -62,23 +62,23 @@ public final class MonthlyChargePlanner {
             for (int index = 1; index <= cycle.slotCount(); index++) {
                 final int slot = index;
                 String label = "plantilla " + cycle.templateId() + " matrícula " + slot;
-                if (facts.onlyFinalExamsLeft() && !template.isRequireEnrollmentFeeForFinalExamOnlyStudents()) {
-                    if (isDueNow(facts, cycle, slot)) {
-                        decisions.add(new PlanDecision(6, "ONLY_FINAL_EXAMS", label + " no se emite: solo debe finales"));
-                    }
+                if (!isDueNow(facts, cycle, slot)) {
                     continue;
                 }
                 if (facts.entryMonth() != null && cycle.slotTo(slot).isBefore(facts.entryMonth())) {
                     continue;
                 }
-                boolean issued = facts.enrollmentFeePeriods().stream().anyMatch(p -> cycle.slotContains(slot, p));
-                if (issued) {
-                    if (isDueNow(facts, cycle, slot)) {
-                        decisions.add(new PlanDecision(7, "ALREADY_ISSUED", label));
-                    }
+                if (facts.paused() && !template.isPaysWhilePaused()) {
+                    decisions.add(new PlanDecision(1, "PAUSED_NOT_BILLED", label + " no se emite: inscripción en pausa académica"));
                     continue;
                 }
-                if (!isDueNow(facts, cycle, slot)) {
+                if (facts.onlyFinalExamsLeft() && !template.isRequireEnrollmentFeeForFinalExamOnlyStudents()) {
+                    decisions.add(new PlanDecision(6, "ONLY_FINAL_EXAMS", label + " no se emite: solo debe finales"));
+                    continue;
+                }
+                Optional<IssuedEnrollmentFee> existing = facts.feeOf(cycle, slot);
+                if (existing.isPresent()) {
+                    decisions.add(new PlanDecision(7, existing.get().isCancelled() ? "FEE_CANCELLED" : "ALREADY_ISSUED", label));
                     continue;
                 }
                 PlannedCharge charge = chargeForSlot(facts, cycle, slot, "matrícula del ciclo " + cycle.termStart().getYear() + " (" + label + ")");
@@ -88,23 +88,24 @@ public final class MonthlyChargePlanner {
         }
     }
 
-    public static PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason) {
+    public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason) {
         YearMonth period = cycle.slotPeriod(slot);
         SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
-        if (window != null) {
-            return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, window.closesOn(), facts.today(), cycle.templateId(), slot, reason);
-        }
-        LocalDate due = period.atDay(1);
+        LocalDate regularDue = window != null ? window.closesOn() : period.atDay(1);
+        LocalDate due = regularDue.isBefore(facts.today())
+                ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
+                : regularDue;
         return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason);
     }
 
-    private boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot) {
+    public YearMonth emissionMonth(ChargePlanningFacts facts, YearCycle cycle, int slot) {
         SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
-        if (window == null) {
-            return cycle.slotPeriod(slot).equals(facts.month());
-        }
-        LocalDate emission = window.opensOn().minusDays(cycle.template().getEnrollmentFeeLeadDays());
-        return !YearMonth.from(emission).isAfter(facts.month()) && !facts.today().isAfter(window.closesOn());
+        YearMonth opening = window != null ? YearMonth.from(window.opensOn()) : cycle.slotPeriod(slot);
+        return opening.minusMonths(cycle.template().getEnrollmentFeeLeadMonths());
+    }
+
+    public boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot) {
+        return !emissionMonth(facts, cycle, slot).isAfter(facts.month()) && !cycle.slotTo(slot).isBefore(facts.month());
     }
 
     private void planRecurringFee(ChargePlanningFacts facts, Optional<YearCycle> cuotaCycle, boolean hasCoveringCycle,
@@ -123,7 +124,11 @@ public final class MonthlyChargePlanner {
             return;
         }
         YearCycle cycle = cuotaCycle.get();
-        long issuedInTerm = facts.recurringPeriods().stream().filter(cycle::termContains).count();
+        if (facts.paused() && !cycle.template().isPaysWhilePaused()) {
+            decisions.add(new PlanDecision(1, "PAUSED_NOT_BILLED", "no se emite cuota: inscripción en pausa académica"));
+            return;
+        }
+        long issuedInTerm = facts.recurringPeriods().stream().filter(cycle::installmentRangeContains).count();
         if (issuedInTerm >= cycle.template().getRecurringFeeInvoicesCount()) {
             decisions.add(new PlanDecision(5, "INSTALLMENT_CAP_REACHED", issuedInTerm + " de " + cycle.template().getRecurringFeeInvoicesCount()));
             return;

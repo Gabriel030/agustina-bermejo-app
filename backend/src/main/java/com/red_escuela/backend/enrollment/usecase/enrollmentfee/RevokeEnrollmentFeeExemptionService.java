@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import com.red_escuela.backend.enrollment.entity.EnrollmentFeeExemption;
+import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlreadyRevokedException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotFoundException;
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -37,7 +39,11 @@ public class RevokeEnrollmentFeeExemptionService implements RevokeEnrollmentFeeE
         EnrollmentFeeExemption exemption = exemptionRepository.findById(exemptionId)
                 .orElseThrow(() -> new EnrollmentFeeExemptionNotFoundException(exemptionId));
         exemption.revoke(currentPersonService.resolveCurrentPerson(), LocalDateTime.now(clock), notes);
-        exemptionRepository.save(exemption);
+        try {
+            exemptionRepository.saveAndFlush(exemption);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new EnrollmentFeeExemptionAlreadyRevokedException(exemptionId);
+        }
         log.info("Habilitación de matrícula revocada: habilitacion={}, inscripcion={}", exemptionId, exemption.getProgramEnrollment().getId());
         eventPublisher.publishEvent(new EnrollmentFeeExemptionRevokedEvent(exemption));
     }

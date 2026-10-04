@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
 import jakarta.persistence.*;
@@ -42,8 +43,14 @@ public class ProgramYearBillingTemplate {
     @Column(name = "second_enrollment_fee_month")
     private Integer secondEnrollmentFeeMonth;
 
-    @Column(name = "enrollment_fee_lead_days", nullable = false)
-    private Integer enrollmentFeeLeadDays = 15;
+    @Column(name = "enrollment_fee_lead_months", nullable = false)
+    private Integer enrollmentFeeLeadMonths = 1;
+
+    @Column(name = "late_enrollment_fee_due_days", nullable = false)
+    private Integer lateEnrollmentFeeDueDays = 10;
+
+    @Column(name = "pays_while_paused", nullable = false)
+    private boolean paysWhilePaused = false;
 
     @Column(name = "blocks_enrollment", nullable = false)
     private boolean blocksEnrollment = true;
@@ -66,10 +73,10 @@ public class ProgramYearBillingTemplate {
 
     public void configureEnrollmentFees(int count, int firstMonth, Integer secondMonth) {
         if (count != 1 && count != 2) {
-            throw new com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException("La cantidad de matrículas debe ser 1 o 2");
+            throw new InvalidEnrollmentFeeConfigurationException("La cantidad de matrículas debe ser 1 o 2");
         }
         if (firstMonth < 1 || firstMonth > 12) {
-            throw new com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException("El mes de matrícula debe estar entre 1 y 12");
+            throw new InvalidEnrollmentFeeConfigurationException("El mes de matrícula debe estar entre 1 y 12");
         }
         if (count == 1) {
             this.enrollmentFeeCount = 1;
@@ -78,7 +85,7 @@ public class ProgramYearBillingTemplate {
             return;
         }
         if (secondMonth == null || secondMonth <= firstMonth || secondMonth > 12) {
-            throw new com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException("Con 2 matrículas, el mes de la segunda debe ser posterior al de la primera");
+            throw new InvalidEnrollmentFeeConfigurationException("Con 2 matrículas, el mes de la segunda debe ser posterior al de la primera");
         }
         this.enrollmentFeeCount = 2;
         this.firstEnrollmentFeeMonth = firstMonth;

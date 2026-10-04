@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.academicstructure.entity.Term;
 import java.time.Clock;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -65,6 +66,15 @@ public class ExamBoardRegistrationService {
         this.clock = clock;
     }
 
+    private void requireEnrollmentFeeOfCourseTerm(SubjectSectionEnrollment enrollment) {
+        Term term = enrollment.getSubjectSection().getTerm();
+        if (term == null) {
+            enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
+            return;
+        }
+        enrollmentFeeRequirementService.requireForTerm(enrollment.getProgramEnrollment(), term, EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
+    }
+
     @Transactional
     public ExamBoardRegistration registerProgramEnrollment(Long examBoardId, Long enrollmentId) {
         ExamBoard examBoard = findExamBoardOrThrow(examBoardId);
@@ -72,7 +82,7 @@ public class ExamBoardRegistrationService {
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
-        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
+        requireEnrollmentFeeOfCourseTerm(enrollment);
         if (!directorApprovalRequestRepository.hasApproved(
                 enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId(), ExceptionType.LATE_EXAM)) {
             requireOpenRegistrationWindow(examBoard);

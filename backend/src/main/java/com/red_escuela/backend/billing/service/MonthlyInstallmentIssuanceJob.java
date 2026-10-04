@@ -42,15 +42,18 @@ public class MonthlyInstallmentIssuanceJob {
     private final MeterRegistry meterRegistry;
     private final Clock clock;
     private BillingConfigurationAlertService alertService;
+    private SuspendedEnrollmentClosureService closureService;
 
     @Autowired
     public MonthlyInstallmentIssuanceJob(PaymentPlanSelectionRepository paymentPlanSelectionRepository,
                                           BatchExecutionLogRepository batchExecutionLogRepository,
                                           MonthlyInstallmentRowProcessor rowProcessor, ObjectMapper objectMapper,
                                           MeterRegistry meterRegistry,
-                                          Clock clock, BillingConfigurationAlertService alertService) {
+                                          Clock clock, BillingConfigurationAlertService alertService,
+                                          SuspendedEnrollmentClosureService closureService) {
         this(paymentPlanSelectionRepository, batchExecutionLogRepository, rowProcessor, objectMapper, meterRegistry, clock);
         this.alertService = alertService;
+        this.closureService = closureService;
     }
 
     public MonthlyInstallmentIssuanceJob(PaymentPlanSelectionRepository paymentPlanSelectionRepository,
@@ -97,6 +100,7 @@ public class MonthlyInstallmentIssuanceJob {
                         PaymentPlanCadence.MONTHLY, EnrollmentStatus.ENROLLED, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForCourseEnrollment(id, month), counters, errors);
 
+        closeSuspendedEnrollments();
         refreshAlerts(month);
         long durationMs = System.currentTimeMillis() - start;
         log.info("Emisión mensual de cuotas finalizada: mes={}, candidatas={}, emitidas={}, omitidas={}, fallidas={}, duracion={}ms",
@@ -108,6 +112,17 @@ public class MonthlyInstallmentIssuanceJob {
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
                 JOB_NAME, LocalDateTime.now(clock), counters.candidates, processed, counters.failed, durationMs, status, serialize(errors)));
+    }
+
+    private void closeSuspendedEnrollments() {
+        if (closureService == null) {
+            return;
+        }
+        try {
+            closureService.closeFinishedCycles();
+        } catch (RuntimeException e) {
+            log.error("Falló el cierre de inscripciones suspendidas al fin del año lectivo", e);
+        }
     }
 
     private void refreshAlerts(YearMonth month) {

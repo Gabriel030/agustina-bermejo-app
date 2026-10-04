@@ -22,6 +22,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long programEnrollmentId);
 
+    boolean existsByProgramEnrollmentIdAndFeeTypeAndTemplateIdAndEnrollmentFeeSlot(Long programEnrollmentId, FeeType feeType, Long templateId, Integer enrollmentFeeSlot);
+
     boolean existsByProgramEnrollmentIdAndFeeTypeAndPeriod(Long programEnrollmentId, FeeType feeType, YearMonth period);
 
     boolean existsByCourseEnrollmentIdAndFeeTypeAndPeriod(Long courseEnrollmentId, FeeType feeType, YearMonth period);
