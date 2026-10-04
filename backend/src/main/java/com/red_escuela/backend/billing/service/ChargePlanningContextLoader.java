@@ -93,9 +93,21 @@ public class ChargePlanningContextLoader {
         YearMonth entryMonth = enrollment.getProgramCohort() != null ? YearMonth.from(enrollment.getProgramCohort().getCursadaStart())
                 : (enrollment.getEnrollmentDate() != null ? YearMonth.from(enrollment.getEnrollmentDate()) : null);
 
+        var cohort = enrollment.getProgramCohort();
+        Long entryTemplateId = null;
+        Integer entrySlot = null;
+        java.time.LocalDate cursadaStart = null;
+        if (cohort != null) {
+            entryTemplateId = cohort.getTemplate().getId();
+            entrySlot = YearCycle.of(cohort.getTemplate(), YearMonth.from(cohort.getCursadaStart()).getYear()).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            cursadaStart = cohort.getCursadaStart();
+        }
+        boolean upfront = selection != null && cadence == PaymentPlanCadence.UPFRONT;
         ChargePlanningFacts facts = new ChargePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 cadence, !selections.isEmpty(),
-                cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList));
+                cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList),
+                entryTemplateId, entrySlot, cursadaStart,
+                upfront ? selection.getEffectiveFrom() : null, upfront ? selection.getScopeMonths() : null);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
 

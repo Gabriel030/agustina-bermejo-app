@@ -8,7 +8,10 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.service.InvoiceFactory;
+import com.red_escuela.backend.billing.issuing.ChargeIssuer;
+import com.red_escuela.backend.billing.issuing.ChargeRequests;
+import com.red_escuela.backend.billing.issuing.IssueResult;
+import com.red_escuela.backend.billing.exception.ChargeRejectedException;
 import com.red_escuela.backend.billing.service.ProgramCohortService;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -30,7 +33,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     private final ProgramEnrollmentApplicationRepository applicationRepository;
     private final ProgramRepository programRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final InvoiceFactory invoiceFactory;
+    private final ChargeIssuer chargeIssuer;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ProgramCohortService programCohortService;
     private final Clock clock;
@@ -38,14 +41,14 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     public RequestProgramEnrollmentApplicationService(ProgramEnrollmentApplicationRepository applicationRepository,
                                                         ProgramRepository programRepository,
                                                         ProgramEnrollmentService programEnrollmentService,
-                                                        InvoiceFactory invoiceFactory,
+                                                        ChargeIssuer chargeIssuer,
                                                         UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase,
                                                         ProgramCohortService programCohortService,
                                                         Clock clock) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.invoiceFactory = invoiceFactory;
+        this.chargeIssuer = chargeIssuer;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.programCohortService = programCohortService;
         this.clock = clock;
@@ -66,7 +69,11 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
                     throw new AlreadyHasPendingApplicationException(student.getId(), command.programId());
                 });
 
-        Invoice invoice = invoiceFactory.createAdHocForProgram(program, FeeType.ENROLLMENT_FEE, YearMonth.now(clock), LocalDate.now(clock));
+        Invoice invoice = switch (chargeIssuer.issueInCurrentTransaction(ChargeRequests.programAdmission(program, cohort, LocalDate.now(clock)))) {
+            case IssueResult.Issued issued -> issued.invoice();
+            case IssueResult.Rejected rejected -> throw new ChargeRejectedException(rejected.evaluation());
+            case IssueResult.AlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("admission");
+        };
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), command.comprobante());
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();

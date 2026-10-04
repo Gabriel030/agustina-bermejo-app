@@ -60,7 +60,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 class ProgramCohortBillingTest extends AbstractIntegrationTest {
     @Autowired
-    private ProgramEnrollmentBillingScheduler billingScheduler;
+    private BillingTestTrigger billingTrigger;
 
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
@@ -69,7 +69,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private InvoiceFactory invoiceFactory;
+    private com.red_escuela.backend.billing.service.BillingTestTrigger issuingTrigger;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -114,7 +114,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -225,7 +225,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100001");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        billingScheduler.generateEnrollmentFee(enrollment);
+        billingTrigger.issueEntryFee(enrollment);
 
         var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -248,7 +248,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100002");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohortSecond);
 
-        billingScheduler.generateEnrollmentFee(enrollment);
+        billingTrigger.issueEntryFee(enrollment);
 
         var invoices = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -291,8 +291,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollmentA = persistProgramEnrollment(studentA, program, first);
         ProgramEnrollment enrollmentB = persistProgramEnrollment(studentB, program, second);
 
-        billingScheduler.generateEnrollmentFee(enrollmentA);
-        billingScheduler.generateEnrollmentFee(enrollmentB);
+        billingTrigger.issueEntryFee(enrollmentA);
+        billingTrigger.issueEntryFee(enrollmentB);
 
         var invoicesA = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentA.getId());
         var invoicesB = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentB.getId());
@@ -319,12 +319,14 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100005");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        Invoice invoiceVieja = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 1));
+        Invoice invoiceVieja = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
         assertThat(invoiceVieja.getBaseAmount()).isEqualTo(ars(10000));
 
         persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
 
-        Invoice invoiceNueva = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 7, 1));
+        Invoice invoiceNueva = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
         assertThat(invoiceNueva.getBaseAmount()).isEqualTo(ars(15000));
 
         Invoice recargada = invoiceRepository.findById(invoiceVieja.getId()).orElseThrow();

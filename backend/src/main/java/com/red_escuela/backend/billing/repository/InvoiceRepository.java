@@ -200,4 +200,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
             group by i.base_amount_currency
             """, nativeQuery = true)
     List<CurrencyTotal> sumAllocatedByPeriod(@Param("period") LocalDate period);
+
+    Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndPeriod(Long programEnrollmentId, FeeType feeType, YearMonth period);
+
+    Optional<Invoice> findFirstByCourseEnrollmentIdAndFeeTypeAndPeriod(Long courseEnrollmentId, FeeType feeType, YearMonth period);
+
+    Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndTemplateIdAndEnrollmentFeeSlot(Long programEnrollmentId, FeeType feeType, Long templateId, Integer enrollmentFeeSlot);
 }

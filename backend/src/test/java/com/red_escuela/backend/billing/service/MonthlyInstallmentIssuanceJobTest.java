@@ -355,12 +355,15 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void doesNotIssueToUpfrontEnrollments() {
+    void issuesAllTheInstallmentsOfTheScopeToUpfrontEnrollmentsOnceAndNeverRepeatsThem() {
         Fixture fixture = setUpProgramEnrollment("94100031", PaymentPlanCadence.UPFRONT, 10, CohortIntake.FIRST, YearMonth.of(2026, 1));
 
         job.run(MARCH);
+        int issued = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId()).size();
+        job.run(MARCH.plusMonths(1));
 
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId())).isEmpty();
+        assertThat(issued).isPositive();
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId())).hasSize(issued);
     }
 
     @Test
@@ -426,7 +429,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
         job.run(YearMonth.of(2026, 7));
 
-        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2026, 2));
+        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
         assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod)
                 .containsExactly(MARCH, YearMonth.of(2026, 7));
     }

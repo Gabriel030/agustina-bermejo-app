@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchExcept
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.billing.service.PaymentPlanOptionFinder;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionGuard;
-import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingScheduler;
+import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
 import com.red_escuela.backend.billing.service.PromotionRedeemer;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
@@ -30,7 +30,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CurrentPersonService currentPersonService;
     private final PaymentPlanSelectionGuard guard;
-    private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
+    private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final PromotionRedeemer promotionRedeemer;
     private final InvoiceGenerationService invoiceGenerationService;
@@ -38,7 +38,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
 
     public SelectPaymentPlanForProgramService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                                ProgramEnrollmentRepository programEnrollmentRepository, CurrentPersonService currentPersonService,
-                                               PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler,
+                                               PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingSetup programEnrollmentBillingSetup,
                                                RecurringFeeWindowService recurringFeeWindowService, PromotionRedeemer promotionRedeemer,
                                                InvoiceGenerationService invoiceGenerationService,
                                                Clock clock) {
@@ -48,7 +48,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.currentPersonService = currentPersonService;
         this.guard = guard;
-        this.programEnrollmentBillingScheduler = programEnrollmentBillingScheduler;
+        this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
         this.recurringFeeWindowService = recurringFeeWindowService;
         this.promotionRedeemer = promotionRedeemer;
         this.clock = clock;
@@ -86,7 +86,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
         if (isFirstSelection) {
             promotionRedeemer.redeemIfEligible(programEnrollment, saved);
-            programEnrollmentBillingScheduler.generateEnrollmentFee(programEnrollment, saved);
+            programEnrollmentBillingSetup.assignTemplateIfMissing(programEnrollment);
             invoiceGenerationService.generateChargesForProgram(programEnrollment, YearMonth.now(clock), LocalDate.now(clock));
         }
         return saved;

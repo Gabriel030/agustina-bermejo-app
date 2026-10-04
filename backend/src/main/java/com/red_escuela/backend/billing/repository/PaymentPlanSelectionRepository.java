@@ -83,4 +83,16 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
     List<Long> findCourseEnrollmentIdsWithActivePlan(@Param("cadence") PaymentPlanCadence cadence,
                                                       @Param("status") EnrollmentStatus status,
                                                       @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("""
+            select s from PaymentPlanSelection s join s.paymentPlanOption o
+            where o.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.UPFRONT
+              and s.programEnrollment is not null
+              and s.effectiveTo is null
+              and not exists (
+                  select i.id from Invoice i
+                  where i.paymentPlanSelection = s and i.feeType = com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE)
+            order by s.id
+            """)
+    List<PaymentPlanSelection> findUpfrontProgramSelectionsWithoutInstallments();
 }

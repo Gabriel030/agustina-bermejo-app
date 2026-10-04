@@ -86,7 +86,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         courseEnrollmentApplicationRepository.save(application);
 
         Invoice invoice = application.getPaymentReceipt().getInvoice();
-        invoice.setCourseEnrollment(enrollment);
+        invoice.attachToEnrollment(enrollment);
         invoiceRepository.save(invoice);
     }
 

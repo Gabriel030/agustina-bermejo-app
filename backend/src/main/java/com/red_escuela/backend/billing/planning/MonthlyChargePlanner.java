@@ -9,8 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@org.springframework.stereotype.Component
-public final class MonthlyChargePlanner {
+public final class MonthlyChargePlanner implements ChargePlanner<ChargePlanningFacts> {
+
+    public ChargePlan plan(ChargePlanningFacts facts) {
+        return plan(facts, ChargeScope.ALL);
+    }
 
     public ChargePlan plan(ChargePlanningFacts facts, ChargeScope scope) {
         return plan(facts, scope, false);
@@ -66,7 +69,8 @@ public final class MonthlyChargePlanner {
             for (int index = 1; index <= cycle.slotCount(); index++) {
                 final int slot = index;
                 String label = "plantilla " + cycle.templateId() + " matrícula " + slot;
-                if (!isDueNow(facts, cycle, slot, catchUp)) {
+                boolean entry = facts.isEntrySlot(cycle, slot);
+                if (!isDueNow(facts, cycle, slot, catchUp) && !(catchUp && entry)) {
                     continue;
                 }
                 if (facts.entryMonth() != null && cycle.slotTo(slot).isBefore(facts.entryMonth())) {
@@ -85,7 +89,7 @@ public final class MonthlyChargePlanner {
                     decisions.add(new PlanDecision(7, existing.get().isCancelled() ? "FEE_CANCELLED" : "ALREADY_ISSUED", label));
                     continue;
                 }
-                PlannedCharge charge = chargeForSlot(facts, cycle, slot, "matrícula del ciclo " + cycle.termStart().getYear() + " (" + label + ")");
+                PlannedCharge charge = chargeForSlot(facts, cycle, slot, "matrícula del ciclo " + cycle.termStart().getYear() + " (" + label + ")", catchUp);
                 charges.add(charge);
                 decisions.add(new PlanDecision(4, "ISSUE_ENROLLMENT_FEE", label + " período " + charge.period() + " vence " + charge.dueDate()));
             }
@@ -93,13 +97,24 @@ public final class MonthlyChargePlanner {
     }
 
     public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason) {
+        return chargeForSlot(facts, cycle, slot, reason, false);
+    }
+
+    public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason, boolean catchUp) {
+        boolean entry = facts.isEntrySlot(cycle, slot);
+        if (entry && facts.cursadaStart() != null) {
+            LocalDate entryDue = facts.cursadaStart().isBefore(facts.today())
+                    ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
+                    : facts.cursadaStart();
+            return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, facts.entryMonth(), entryDue, facts.today(), cycle.templateId(), slot, reason, true, false);
+        }
         YearMonth period = cycle.slotPeriod(slot);
         SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
         LocalDate regularDue = window != null ? window.closesOn() : period.atDay(1);
         LocalDate due = regularDue.isBefore(facts.today())
                 ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
                 : regularDue;
-        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason);
+        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason, entry, false);
     }
 
     public YearMonth emissionMonth(ChargePlanningFacts facts, YearCycle cycle, int slot) {
@@ -124,6 +139,10 @@ public final class MonthlyChargePlanner {
     private void planRecurringFee(ChargePlanningFacts facts, Optional<YearCycle> cuotaCycle, boolean hasCoveringCycle,
                                   List<PlannedCharge> charges, List<PlanDecision> decisions) {
         YearMonth month = facts.month();
+        if (facts.cadenceAtMonth() == PaymentPlanCadence.UPFRONT) {
+            planUpfront(facts, charges, decisions);
+            return;
+        }
         if (facts.entryMonth() != null && month.isBefore(facts.entryMonth())) {
             decisions.add(new PlanDecision(2, "BEFORE_ENTRY", "la cursada del alumno empieza en " + facts.entryMonth()));
             return;
@@ -156,7 +175,38 @@ public final class MonthlyChargePlanner {
         }
         LocalDate due = facts.today().plusDays(cycle.template().getRecurringFeeDueDays());
         charges.add(new PlannedCharge(ChargeKind.RECURRING_FEE, month, due, facts.today(), cycle.templateId(), null,
-                "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount() + " del año lectivo"));
+                "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount() + " del año lectivo", false, false));
         decisions.add(new PlanDecision(5, "ISSUE_INSTALLMENT", "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount()));
+    }
+
+    private void planUpfront(ChargePlanningFacts facts, List<PlannedCharge> charges, List<PlanDecision> decisions) {
+        if (facts.upfrontFrom() == null || facts.upfrontScopeMonths() == null) {
+            decisions.add(new PlanDecision(5, "UPFRONT_WITHOUT_SCOPE", "el plan anual no tiene alcance"));
+            return;
+        }
+        if (facts.paused() || facts.onlyFinalExamsLeft()) {
+            decisions.add(new PlanDecision(5, facts.paused() ? "PAUSED_NOT_BILLED" : "ONLY_FINAL_EXAMS", "no se emiten cuotas del plan anual"));
+            return;
+        }
+        YearMonth last = facts.upfrontFrom().plusMonths(facts.upfrontScopeMonths() - 1L);
+        java.util.Map<Long, Long> issuedByTemplate = new java.util.HashMap<>();
+        for (YearMonth period = facts.upfrontFrom(); !period.isAfter(last); period = period.plusMonths(1)) {
+            Optional<YearCycle> cycle = facts.cycles().forInstallment(period);
+            if (cycle.isEmpty() || facts.recurringPeriods().contains(period)) {
+                continue;
+            }
+            YearCycle current = cycle.get();
+            long issued = issuedByTemplate.computeIfAbsent(current.templateId(),
+                    id -> facts.recurringPeriods().stream().filter(current::installmentRangeContains).count());
+            if (issued >= current.template().getRecurringFeeInvoicesCount()) {
+                decisions.add(new PlanDecision(5, "INSTALLMENT_CAP_REACHED", "plan anual " + period));
+                continue;
+            }
+            issuedByTemplate.put(current.templateId(), issued + 1);
+            LocalDate due = facts.today().plusDays(current.template().getRecurringFeeDueDays());
+            charges.add(new PlannedCharge(ChargeKind.RECURRING_FEE, period, due, facts.today(), current.templateId(), null,
+                    "cuota " + (issued + 1) + " del plan anual", false, true));
+            decisions.add(new PlanDecision(5, "ISSUE_UPFRONT_INSTALLMENT", "cuota del plan anual " + period));
+        }
     }
 }

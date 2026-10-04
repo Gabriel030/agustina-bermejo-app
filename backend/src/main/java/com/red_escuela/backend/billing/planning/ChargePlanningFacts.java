@@ -24,7 +24,16 @@ public record ChargePlanningFacts(
         YearCycles cycles,
         List<IssuedEnrollmentFee> enrollmentFees,
         Set<YearMonth> recurringPeriods,
-        Map<String, SlotWindow> windows) {
+        Map<String, SlotWindow> windows,
+        Long entryTemplateId,
+        Integer entrySlot,
+        LocalDate cursadaStart,
+        YearMonth upfrontFrom,
+        Integer upfrontScopeMonths) {
+
+    public boolean isEntrySlot(YearCycle cycle, int slot) {
+        return entryTemplateId != null && entrySlot != null && entryTemplateId.equals(cycle.templateId()) && entrySlot == slot;
+    }
 
     public Optional<IssuedEnrollmentFee> feeOf(YearCycle cycle, int slot) {
         List<IssuedEnrollmentFee> covering = enrollmentFees.stream().filter(f -> f.covers(cycle, slot)).toList();

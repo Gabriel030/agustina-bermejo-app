@@ -68,7 +68,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
     private static final YearMonth FIRST_MONTH = YearMonth.of(2026, 3);
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
     private InvoiceRepository invoiceRepository;

@@ -166,7 +166,7 @@ public class EnrollmentFeeRequirementService {
         }
         log.info("Matrícula emitida a demanda: inscripcion={}, plantilla={}, matricula={}, periodo={}",
                 enrollment.getId(), cycle.templateId(), slot, charge.get().period());
-        planExecutor.issue(enrollment, context.selection(), charge.get());
+        planExecutor.issue(enrollment, context.selection(), charge.get(), com.red_escuela.backend.billing.entity.IssueReason.ENROLLMENT_FEE_ON_DEMAND, false);
         return true;
     }
 

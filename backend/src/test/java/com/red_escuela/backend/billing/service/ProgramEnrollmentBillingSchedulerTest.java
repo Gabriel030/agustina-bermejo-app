@@ -45,7 +45,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
     @Autowired
-    private ProgramEnrollmentBillingScheduler billingScheduler;
+    private BillingTestTrigger billingTrigger;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -161,7 +161,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         try {
             transactionTemplate.executeWithoutResult(status -> {
-                billingScheduler.generateEnrollmentFee(enrollment);
+                billingTrigger.issueEntryFee(enrollment);
                 throw new RuntimeException("Falla simulada después de generar la matrícula");
             });
         } catch (RuntimeException ignored) {

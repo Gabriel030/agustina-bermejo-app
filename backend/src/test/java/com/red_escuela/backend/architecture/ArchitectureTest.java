@@ -50,4 +50,36 @@ class ArchitectureTest {
     void plainServicesAreNotUseCases() {
         ArchitectureRules.plainServicesAreNotUseCases().check(MAIN_CLASSES);
     }
+
+    @Test
+    void invoicesAreIssuedOnlyByChargeIssuer() {
+        ArchitectureRules.invoicesAreIssuedOnlyByChargeIssuer().check(MAIN_CLASSES);
+    }
+
+    @Test
+    void invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
+        ArchitectureRules.invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing().check(MAIN_CLASSES);
+    }
+
+    @Test
+    void policiesAndPlannersArePure() {
+        ArchitectureRules.policiesArePure().check(MAIN_CLASSES);
+    }
+
+    @Test
+    void issuanceRulesDetectViolations() {
+        JavaClasses fixture = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
+                .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
+
+        assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByChargeIssuer().check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("InvoiceIssuingFixture");
+        assertThatThrownBy(() -> ArchitectureRules.invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing().check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("InvoiceIssuingFixture");
+        assertThatThrownBy(() -> ArchitectureRules.policiesArePure().check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("ImpurePolicyFixture");
+    }
 }

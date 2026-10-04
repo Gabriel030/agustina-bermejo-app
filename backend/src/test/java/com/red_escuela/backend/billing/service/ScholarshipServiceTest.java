@@ -55,7 +55,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase grantScholarshipForProgramUseCase;
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;
@@ -381,5 +381,37 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         assertThat(reloaded.getInstallments())
                 .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.APPLIED)
                 .hasSize(1);
+    }
+
+    @Test
+    void t12CoursePriceIncreasedOnDayThreeAppliesToTheInvoiceEmittedOnDayFourAndNotToTheOneEmittedOnDayOne() {
+        Person director = persistPerson("director.t12." + System.nanoTime());
+        Course course = persistCourse(director, BigDecimal.valueOf(10000));
+        CourseEnrollment early = persistCourseEnrollment("88000091", course);
+        CourseEnrollment late = persistCourseEnrollment("88000092", course);
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 6, 1));
+        seleccionarPlanMensual(early, director);
+        seleccionarPlanMensual(late, director);
+
+        invoiceGenerationService.generateNextInstallmentForCourse(early, YearMonth.of(2026, 6));
+
+        PriceRevision increase = new PriceRevision();
+        increase.setCourse(course);
+        increase.setFeeType(FeeType.RECURRING_FEE);
+        increase.setDescription("Aumento");
+        increase.setMonthlyAmount(ars(BigDecimal.valueOf(12000)));
+        increase.setEffectiveFrom(LocalDate.of(2026, 6, 3));
+        increase.setCreatedBy(director);
+        priceRevisionRepository.save(increase);
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 6, 4));
+        invoiceGenerationService.generateNextInstallmentForCourse(late, YearMonth.of(2026, 6));
+
+        Invoice first = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(early.getId()).get(0);
+        Invoice second = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(late.getId()).get(0);
+        assertThat(first.getBaseAmount()).isEqualTo(ars(10000));
+        assertThat(first.getDueDate()).isEqualTo(LocalDate.of(2026, 6, 11));
+        assertThat(second.getBaseAmount()).isEqualTo(ars(12000));
+        assertThat(second.getDueDate()).isEqualTo(LocalDate.of(2026, 6, 14));
+        assertThat(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(early.getId()).get(0).getBaseAmount()).isEqualTo(ars(10000));
     }
 }

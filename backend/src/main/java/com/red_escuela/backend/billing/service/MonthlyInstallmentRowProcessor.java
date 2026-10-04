@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.IssueReason;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -16,12 +17,14 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import com.red_escuela.backend.billing.planning.ChargePlan;
+import com.red_escuela.backend.billing.planning.CourseChargePlanner;
 import com.red_escuela.backend.billing.planning.ChargeScope;
 import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
 
 @Service
 public class MonthlyInstallmentRowProcessor {
-    private final InvoiceGenerationService invoiceGenerationService;
+    private final CourseChargeContextLoader courseContextLoader;
+    private final CourseChargePlanner courseChargePlanner;
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
@@ -30,7 +33,7 @@ public class MonthlyInstallmentRowProcessor {
     private final ChargePlanExecutor planExecutor;
     private final Clock clock;
 
-    public MonthlyInstallmentRowProcessor(InvoiceGenerationService invoiceGenerationService, InvoiceRepository invoiceRepository,
+    public MonthlyInstallmentRowProcessor(CourseChargeContextLoader courseContextLoader, CourseChargePlanner courseChargePlanner, InvoiceRepository invoiceRepository,
                                            ProgramEnrollmentRepository programEnrollmentRepository,
                                            CourseEnrollmentRepository courseEnrollmentRepository,
                                            ChargePlanningContextLoader contextLoader, MonthlyChargePlanner planner,
@@ -39,7 +42,8 @@ public class MonthlyInstallmentRowProcessor {
         this.planner = planner;
         this.planExecutor = planExecutor;
         this.clock = clock;
-        this.invoiceGenerationService = invoiceGenerationService;
+        this.courseContextLoader = courseContextLoader;
+        this.courseChargePlanner = courseChargePlanner;
         this.invoiceRepository = invoiceRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -52,7 +56,7 @@ public class MonthlyInstallmentRowProcessor {
         LocalDate today = LocalDate.now(clock);
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL);
-        return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);
+        return outcome(planExecutor.execute(enrollment, context.selection(), plan, IssueReason.MONTHLY_JOB) > 0);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -62,7 +66,7 @@ public class MonthlyInstallmentRowProcessor {
         LocalDate today = LocalDate.now(clock);
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL, true);
-        return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);
+        return outcome(planExecutor.execute(enrollment, context.selection(), plan, IssueReason.REACTIVATION) > 0);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -71,18 +75,14 @@ public class MonthlyInstallmentRowProcessor {
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY, true);
-        return planExecutor.execute(enrollment, context.selection(), plan);
+        return planExecutor.execute(enrollment, context.selection(), plan, IssueReason.CONFIGURATION_CHANGE);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public InstallmentIssuanceOutcome issueForCourseEnrollment(Long enrollmentId, YearMonth month) {
-        CourseEnrollment enrollment = courseEnrollmentRepository.findById(enrollmentId)
-                .orElseThrow(() -> new CourseEnrollmentNotFoundException(enrollmentId));
-        if (invoiceRepository.existsByCourseEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month)) {
-            return InstallmentIssuanceOutcome.SKIPPED;
-        }
-        invoiceGenerationService.generateNextInstallmentForCourse(enrollment, month);
-        return outcome(invoiceRepository.existsByCourseEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month));
+        CourseChargeContextLoader.CourseContext context = courseContextLoader.load(enrollmentId, month, LocalDate.now(clock));
+        ChargePlan plan = courseChargePlanner.plan(context.facts());
+        return outcome(planExecutor.executeForCourse(context.enrollment(), context.selection(), plan) > 0);
     }
 
     private InstallmentIssuanceOutcome outcome(boolean issued) {

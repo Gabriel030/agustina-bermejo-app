@@ -1,0 +1,60 @@
+package com.red_escuela.backend.billing.service;
+
+import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
+import com.red_escuela.backend.billing.planning.CourseChargeFacts;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
+import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+public class CourseChargeContextLoader {
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final PaymentPlanSelectionRepository selectionRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final int recurringFeeDueDays;
+
+    public CourseChargeContextLoader(CourseEnrollmentRepository courseEnrollmentRepository, PaymentPlanSelectionRepository selectionRepository,
+                                     InvoiceRepository invoiceRepository, @Value("${app.billing.course-recurring-fee-due-days}") int recurringFeeDueDays) {
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.selectionRepository = selectionRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.recurringFeeDueDays = recurringFeeDueDays;
+    }
+
+    public record CourseContext(CourseChargeFacts facts, PaymentPlanSelection selection, CourseEnrollment enrollment) {
+    }
+
+    public CourseContext load(Long enrollmentId, YearMonth month, LocalDate today) {
+        CourseEnrollment enrollment = courseEnrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new CourseEnrollmentNotFoundException(enrollmentId));
+        Course course = enrollment.getCourse();
+        PaymentPlanSelection selection = selectionRepository.findActiveForCourseEnrollment(enrollmentId, month).orElse(null);
+        PaymentPlanCadence cadence = selection == null ? null : selection.getPaymentPlanOption().getCadence();
+        List<Invoice> recurring = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollmentId).stream()
+                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE).toList();
+        Set<YearMonth> periods = recurring.stream().map(Invoice::getPeriod).collect(Collectors.toSet());
+        long inTerm = recurring.stream().filter(i -> course.getTerm().contains(i.getPeriod())).count();
+        boolean suspended = enrollment.getBillingStanding() == EnrollmentBillingStanding.SUSPENDED
+                || enrollment.getBillingStanding() == EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
+        CourseChargeFacts facts = new CourseChargeFacts(enrollmentId, month, today, enrollment.getStatus() == EnrollmentStatus.ENROLLED, suspended,
+                selection != null, cadence, selection == null ? null : selection.getEffectiveFrom(), selection == null ? null : selection.getScopeMonths(),
+                course.getTerm()::contains, course.getDurationMonths(), periods, inTerm, recurringFeeDueDays);
+        return new CourseContext(facts, selection, enrollment);
+    }
+}
