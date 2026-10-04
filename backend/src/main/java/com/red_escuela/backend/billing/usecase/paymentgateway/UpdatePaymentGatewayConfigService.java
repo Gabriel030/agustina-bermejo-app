@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentGatewayConfigResponse;
 import com.red_escuela.backend.billing.dto.UpdatePaymentGatewayConfigRequest;
 import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
@@ -14,9 +15,11 @@ import java.time.LocalDateTime;
 public class UpdatePaymentGatewayConfigService implements UpdatePaymentGatewayConfigUseCase {
 
     private final PaymentGatewayConfigRepository configRepository;
+    private final Clock clock;
 
-    public UpdatePaymentGatewayConfigService(PaymentGatewayConfigRepository configRepository) {
+    public UpdatePaymentGatewayConfigService(PaymentGatewayConfigRepository configRepository, Clock clock) {
         this.configRepository = configRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -37,7 +40,7 @@ public class UpdatePaymentGatewayConfigService implements UpdatePaymentGatewayCo
         if (request.mpEnabled() != null) {
             config.setMpEnabled(request.mpEnabled());
         }
-        config.setUpdatedAt(LocalDateTime.now());
+        config.setUpdatedAt(LocalDateTime.now(clock));
         config.setUpdatedBy(updatedBy);
 
         PaymentGatewayConfig saved = configRepository.save(config);

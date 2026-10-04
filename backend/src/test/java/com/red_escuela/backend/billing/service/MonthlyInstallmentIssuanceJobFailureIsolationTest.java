@@ -36,7 +36,8 @@ class MonthlyInstallmentIssuanceJobFailureIsolationTest {
         when(processor.issueForProgramEnrollment(2L, MONTH)).thenThrow(new IllegalStateException("boom"));
         when(processor.issueForProgramEnrollment(3L, MONTH)).thenReturn(InstallmentIssuanceOutcome.ISSUED);
         MonthlyInstallmentIssuanceJob job = new MonthlyInstallmentIssuanceJob(
-                selections, logs, processor, new ObjectMapper(), new SimpleMeterRegistry());
+                selections, logs, processor, new ObjectMapper(), new SimpleMeterRegistry(),
+                java.time.Clock.systemDefaultZone());
 
         job.run(MONTH);
 

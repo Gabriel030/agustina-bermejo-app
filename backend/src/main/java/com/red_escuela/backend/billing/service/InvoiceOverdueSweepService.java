@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -36,21 +37,24 @@ public class InvoiceOverdueSweepService {
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final InvoiceOverdueRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
     public InvoiceOverdueSweepService(InvoiceRepository invoiceRepository, CollectionsPolicyRepository collectionsPolicyRepository,
                                        BatchExecutionLogRepository batchExecutionLogRepository, InvoiceOverdueRowProcessor rowProcessor,
-                                       ObjectMapper objectMapper) {
+                                       ObjectMapper objectMapper,
+                                       Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.collectionsPolicyRepository = collectionsPolicyRepository;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 3 * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "InvoiceOverdueSweepService", lockAtMostFor = "PT30M")
     public void run() {
-        run(LocalDate.now());
+        run(LocalDate.now(clock));
     }
 
     public void run(LocalDate today) {
@@ -97,7 +101,7 @@ public class InvoiceOverdueSweepService {
         BatchExecutionStatus status = failed == 0 ? BatchExecutionStatus.SUCCESS
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, status, serialize(errors)));
+                JOB_NAME, LocalDateTime.now(clock), candidates, processed, failed, durationMs, status, serialize(errors)));
     }
 
     private String serialize(List<Map<String, Object>> errors) {

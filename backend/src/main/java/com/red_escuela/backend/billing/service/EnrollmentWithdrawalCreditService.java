@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.billing.entity.CreditNote;
@@ -24,12 +25,15 @@ public class EnrollmentWithdrawalCreditService {
     private final InvoiceRepository invoiceRepository;
     private final CreditNoteService creditNoteService;
     private final CurrentPersonService currentPersonService;
+    private final Clock clock;
 
     public EnrollmentWithdrawalCreditService(InvoiceRepository invoiceRepository, CreditNoteService creditNoteService,
-                                              CurrentPersonService currentPersonService) {
+                                              CurrentPersonService currentPersonService,
+                                              Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.creditNoteService = creditNoteService;
         this.currentPersonService = currentPersonService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -63,7 +67,7 @@ public class EnrollmentWithdrawalCreditService {
     }
 
     private void process(Student student, List<Invoice> pending, List<Invoice> paid, String reason, String creditNoteDescription) {
-        YearMonth withdrawalPeriod = YearMonth.now();
+        YearMonth withdrawalPeriod = YearMonth.now(clock);
         List<Invoice> paidFuturePeriods = paid.stream()
                 .filter(invoice -> invoice.getPeriod().isAfter(withdrawalPeriod))
                 .toList();

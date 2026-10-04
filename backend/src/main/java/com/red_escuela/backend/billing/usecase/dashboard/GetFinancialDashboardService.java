@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -28,12 +29,15 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
     private final InvoiceRepository invoiceRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final Clock clock;
 
     public GetFinancialDashboardService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                        ProgramEnrollmentRepository programEnrollmentRepository) {
+                                        ProgramEnrollmentRepository programEnrollmentRepository,
+                                        Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -48,7 +52,7 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
         activeStudentIds.removeAll(debtorIds);
         int studentsUpToDate = activeStudentIds.size();
 
-        YearMonth currentPeriod = YearMonth.now();
+        YearMonth currentPeriod = YearMonth.now(clock);
         Map<Currency, Money> totalDebt = byCurrency(invoiceRepository.sumOutstandingBalanceByStatus(InvoiceStatus.OVERDUE.name()));
         Map<Currency, Money> monthlyProjected = byCurrency(invoiceRepository.sumAmountDueByPeriod(currentPeriod.atDay(1)));
         Map<Currency, Money> monthlyCollected = byCurrency(invoiceRepository.sumAllocatedByPeriod(currentPeriod.atDay(1)));

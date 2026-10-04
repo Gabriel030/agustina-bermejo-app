@@ -1,4 +1,5 @@
 package com.red_escuela.backend.billing.entity;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
@@ -68,7 +69,7 @@ public class CreditNote {
 
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ApplicationTime.now();
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -77,7 +78,7 @@ public class CreditNote {
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ApplicationTime.now();
     }
 
     public Money getRemainingAmount() {

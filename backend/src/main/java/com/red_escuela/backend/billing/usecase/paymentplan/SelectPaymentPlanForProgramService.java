@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentplan;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -30,11 +31,13 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final PromotionRedeemer promotionRedeemer;
+    private final Clock clock;
 
     public SelectPaymentPlanForProgramService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                                ProgramEnrollmentRepository programEnrollmentRepository, CurrentPersonService currentPersonService,
                                                PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler,
-                                               RecurringFeeWindowService recurringFeeWindowService, PromotionRedeemer promotionRedeemer) {
+                                               RecurringFeeWindowService recurringFeeWindowService, PromotionRedeemer promotionRedeemer,
+                                               Clock clock) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.paymentPlanOptionFinder = paymentPlanOptionFinder;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -43,6 +46,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         this.programEnrollmentBillingScheduler = programEnrollmentBillingScheduler;
         this.recurringFeeWindowService = recurringFeeWindowService;
         this.promotionRedeemer = promotionRedeemer;
+        this.clock = clock;
     }
 
     @Override
@@ -61,14 +65,14 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
 
         paymentPlanSelectionRepository.findByProgramEnrollmentIdAndEffectiveToIsNull(programEnrollmentId)
                 .ifPresent(previous -> {
-                    previous.setEffectiveTo(YearMonth.now().minusMonths(1));
+                    previous.setEffectiveTo(YearMonth.now(clock).minusMonths(1));
                     paymentPlanSelectionRepository.saveAndFlush(previous);
                 });
 
         PaymentPlanSelection selection = new PaymentPlanSelection();
         selection.setProgramEnrollment(programEnrollment);
         selection.setPaymentPlanOption(option);
-        selection.setEffectiveFrom(YearMonth.now());
+        selection.setEffectiveFrom(YearMonth.now(clock));
         if (option.getCadence() == PaymentPlanCadence.UPFRONT) {
             guard.validateScope(request.scopeMonths(), recurringFeeWindowService.remainingInvoices(programEnrollment));
             selection.setScopeMonths(request.scopeMonths());

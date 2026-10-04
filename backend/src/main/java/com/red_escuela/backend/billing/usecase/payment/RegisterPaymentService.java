@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.payment;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
@@ -40,15 +41,18 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final CurrentStudentService currentStudentService;
     private final CreditNoteService creditNoteService;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
                                    CurrentStudentService currentStudentService, CreditNoteService creditNoteService,
-                                   ApplicationEventPublisher eventPublisher) {
+                                   ApplicationEventPublisher eventPublisher,
+                                   Clock clock) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.currentStudentService = currentStudentService;
         this.creditNoteService = creditNoteService;
         this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
     @Override
@@ -66,7 +70,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             rejected.setStatus(PaymentStatus.REJECTED);
             rejected.setRejectionReason(request.rejectionReason());
             rejected.setRegisteredBy(registeredBy);
-            rejected.setPaidAt(LocalDateTime.now());
+            rejected.setPaidAt(LocalDateTime.now(clock));
             rejected.setCardInstallments(request.cardInstallments());
             rejected.setNotes(request.notes());
             Payment savedRejected = paymentRepository.save(rejected);
@@ -106,7 +110,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         payment.setMethod(request.method());
         payment.setStatus(PaymentStatus.CONFIRMED);
         payment.setRegisteredBy(registeredBy);
-        payment.setPaidAt(LocalDateTime.now());
+        payment.setPaidAt(LocalDateTime.now(clock));
         payment.setExternalReference(request.externalReference());
         payment.setCardInstallments(request.cardInstallments());
         payment.setNotes(request.notes());
@@ -147,8 +151,8 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         boolean wasSuspended = enrollment.getBillingStanding() == EnrollmentBillingStanding.SUSPENDED;
         LocalDateTime suspendedAt = enrollment.getBillingStandingUpdatedAt();
         if (enrollment.settleArrears() && wasSuspended) {
-            YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now();
-            eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now()));
+            YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now(clock);
+            eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now(clock)));
         }
     }
 

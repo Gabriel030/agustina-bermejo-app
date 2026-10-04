@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -101,7 +102,7 @@ public class Invoice {
 
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ApplicationTime.now();
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -110,7 +111,7 @@ public class Invoice {
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ApplicationTime.now();
     }
 
     public Money getAmountDue() {
@@ -166,7 +167,7 @@ public class Invoice {
         status = InvoiceStatus.CANCELLED;
         this.cancelledBy = cancelledBy;
         this.cancelledReason = reason;
-        this.cancelledAt = LocalDateTime.now();
+        this.cancelledAt = ApplicationTime.now();
     }
 
     public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustment value, String reason, Person appliedBy) {
@@ -182,7 +183,7 @@ public class Invoice {
         adjustment.setResolvedBase(base);
         adjustment.setReason(reason);
         adjustment.setAppliedBy(appliedBy);
-        adjustment.setAppliedAt(LocalDateTime.now());
+        adjustment.setAppliedAt(ApplicationTime.now());
         adjustment.setPromotionBenefit(promotionBenefit);
         adjustments.add(adjustment);
         if (getRemainingBalance().isZero()

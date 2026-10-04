@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -40,7 +41,7 @@ public class PromotionRedemption {
     @PrePersist
     void onCreate() {
         if (this.redeemedAt == null) {
-            this.redeemedAt = LocalDateTime.now();
+            this.redeemedAt = ApplicationTime.now();
         }
     }
 }

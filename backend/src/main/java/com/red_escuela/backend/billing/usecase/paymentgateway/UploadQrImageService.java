@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentGatewayConfigResponse;
 import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
 import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository;
@@ -18,12 +19,15 @@ public class UploadQrImageService implements UploadQrImageUseCase {
     private final PaymentGatewayConfigRepository configRepository;
     private final FileStorageService fileStorageService;
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
+    private final Clock clock;
 
     public UploadQrImageService(PaymentGatewayConfigRepository configRepository, FileStorageService fileStorageService,
-                                TransactionBoundFileCleanup transactionBoundFileCleanup) {
+                                TransactionBoundFileCleanup transactionBoundFileCleanup,
+                                Clock clock) {
         this.configRepository = configRepository;
         this.fileStorageService = fileStorageService;
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
+        this.clock = clock;
     }
 
     @Override
@@ -39,7 +43,7 @@ public class UploadQrImageService implements UploadQrImageUseCase {
             transactionBoundFileCleanup.deleteAfterCommit(previousPath);
         }
         config.setQrImagePath(path);
-        config.setUpdatedAt(LocalDateTime.now());
+        config.setUpdatedAt(LocalDateTime.now(clock));
         config.setUpdatedBy(updatedBy);
 
         PaymentGatewayConfig saved = configRepository.save(config);

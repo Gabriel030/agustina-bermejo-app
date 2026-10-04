@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -40,24 +41,27 @@ public class EnrollmentBillingComplianceSweepService {
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final EnrollmentBillingComplianceRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
     public EnrollmentBillingComplianceSweepService(CourseEnrollmentRepository courseEnrollmentRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
                                                      CollectionsPolicyRepository collectionsPolicyRepository,
                                                      BatchExecutionLogRepository batchExecutionLogRepository,
-                                                     EnrollmentBillingComplianceRowProcessor rowProcessor, ObjectMapper objectMapper) {
+                                                     EnrollmentBillingComplianceRowProcessor rowProcessor, ObjectMapper objectMapper,
+                                                     Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.collectionsPolicyRepository = collectionsPolicyRepository;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 1 3 * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "EnrollmentBillingComplianceSweepService", lockAtMostFor = "PT30M")
     public void run() {
-        run(LocalDate.now());
+        run(LocalDate.now(clock));
     }
 
     public void run(LocalDate today) {
@@ -122,7 +126,7 @@ public class EnrollmentBillingComplianceSweepService {
         BatchExecutionStatus status = failed == 0 ? BatchExecutionStatus.SUCCESS
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, status, serialize(errors)));
+                JOB_NAME, LocalDateTime.now(clock), candidates, processed, failed, durationMs, status, serialize(errors)));
     }
 
     private Map<String, Object> errorOf(String enrollmentType, Long id, Exception e) {

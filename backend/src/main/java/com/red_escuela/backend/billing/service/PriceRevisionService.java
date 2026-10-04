@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
@@ -17,9 +18,11 @@ import java.util.Optional;
 @Service
 public class PriceRevisionService {
     private final PriceRevisionRepository priceRevisionRepository;
+    private final Clock clock;
 
-    public PriceRevisionService(PriceRevisionRepository priceRevisionRepository) {
+    public PriceRevisionService(PriceRevisionRepository priceRevisionRepository, Clock clock) {
         this.priceRevisionRepository = priceRevisionRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -29,7 +32,7 @@ public class PriceRevisionService {
         revision.setFeeType(feeType);
         revision.setMonthlyAmount(monthlyAmount);
         revision.setDescription(description);
-        revision.setEffectiveFrom(LocalDate.now());
+        revision.setEffectiveFrom(LocalDate.now(clock));
         revision.setCreatedBy(createdBy);
         return priceRevisionRepository.save(revision);
     }
@@ -41,7 +44,7 @@ public class PriceRevisionService {
         revision.setFeeType(feeType);
         revision.setMonthlyAmount(monthlyAmount);
         revision.setDescription(description);
-        revision.setEffectiveFrom(LocalDate.now());
+        revision.setEffectiveFrom(LocalDate.now(clock));
         revision.setCreatedBy(createdBy);
         return priceRevisionRepository.save(revision);
     }
