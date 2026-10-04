@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -361,7 +363,7 @@ class ExamBoardRegistrationServiceTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("Materia asistencia " + dni, null);
         Term term = persistTerm();
         SubjectSection section = persistSection(subject, term);
-        section.setMaxAbsencePercentage(25.0);
+        section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("Carrera asistencia " + dni));
         SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
         Person teacher = persistStudent("D" + dni).getPerson();

@@ -21,7 +21,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'

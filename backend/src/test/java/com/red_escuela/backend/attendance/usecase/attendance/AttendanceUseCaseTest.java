@@ -18,6 +18,7 @@ import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 import com.red_escuela.backend.attendance.dto.AttendanceRiskResponse;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.attendance.entity.Attendance;
@@ -50,6 +51,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -171,7 +173,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         section.setName(subject.getName() + " - Com A");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setMaxAbsencePercentage(maxAbsencePercentage);
+        section.setMaxAbsenceRate(maxAbsencePercentage == null ? null : Percentage.ofPoints(BigDecimal.valueOf(maxAbsencePercentage)));
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         return section;
@@ -350,7 +352,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isFalse();
-        assertThat(riesgo.porcentajeAusentismo()).isNull();
+        assertThat(riesgo.absencePercent()).isNull();
     }
 
     @Test
@@ -380,7 +382,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
         assertThat(riesgo.calculable()).isTrue();
         assertThat(riesgo.libre()).isTrue();
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(50.0);
+        assertThat(riesgo.absencePercent().points()).isEqualByComparingTo("50");
     }
 
     @Test
@@ -511,7 +513,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         submitAttendanceProofUseCase.submit(new SubmitAttendanceProofCommand(ausente.getId(), "motivo médico", "students/1/comprobante.pdf"));
 
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(25.0);
+        assertThat(riesgo.absencePercent().points()).isEqualByComparingTo("25");
     }
 
     @Test
@@ -536,7 +538,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
 
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
         assertThat(riesgo.libre()).isFalse();
-        assertThat(riesgo.porcentajeAusentismo()).isEqualTo(25.0);
+        assertThat(riesgo.absencePercent().points()).isEqualByComparingTo("25");
     }
 
     @Test
@@ -560,7 +562,8 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
 
         List<SubjectAttendanceSummaryResponse> summary = programEnrollmentService.attendanceSummaryBySubject(programEnrollment.getId());
-        assertThat(summary).extracting(SubjectAttendanceSummaryResponse::subjectName, SubjectAttendanceSummaryResponse::attendancePercentage)
+        assertThat(summary).extracting(SubjectAttendanceSummaryResponse::subjectName,
+                        row -> row.attendancePercent() == null ? null : row.attendancePercent().points().doubleValue())
                 .containsExactlyInAnyOrder(
                         org.assertj.core.groups.Tuple.tuple("MateriaConClases", 50.0),
                         org.assertj.core.groups.Tuple.tuple("MateriaSinRegistros", null));
@@ -675,7 +678,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
 
         assertThat(roster).singleElement().satisfies(row -> {
             assertThat(row.absenceCount()).isEqualTo(1);
-            assertThat(row.attendancePercentage()).isEqualTo(0.5);
+            assertThat(row.attendancePercent().points()).isEqualByComparingTo("50");
         });
     }
 
@@ -711,7 +714,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         assertThat(roster).hasSize(40);
         assertThat(roster).allSatisfy(row -> {
             assertThat(row.absenceCount()).isEqualTo(1);
-            assertThat(row.attendancePercentage()).isEqualTo(0.75);
+            assertThat(row.attendancePercent().points()).isEqualByComparingTo("75");
         });
     }
 }

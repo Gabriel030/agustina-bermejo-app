@@ -13,7 +13,7 @@ Feature: Catálogo — Carreras (ProgramController)
     * def nombreCarrera = 'Karate - Carrera catálogo ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 4, price: 60000, totalCreditsRequired: 120 }
+    And request { name: '#(nombreCarrera)', totalYears: 4, price: { amount: '60000', currency: 'ARS' }, totalCreditsRequired: 120 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -109,11 +109,11 @@ Feature: Catálogo — Carreras (ProgramController)
 
     Given path '/programs', sinPrecioId
     And header Authorization = 'Bearer ' + adminToken
-    And request { price: 45000, enrollmentFeeAmount: 30000 }
+    And request { price: { amount: '45000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '30000', currency: 'ARS' } }
     When method put
     Then status 200
-    And match response.price == 45000
-    And match response.enrollmentFeeAmount == 30000
+    And match response.price == { amount: '45000.00', currency: 'ARS' }
+    And match response.enrollmentFeeAmount == { amount: '30000.00', currency: 'ARS' }
 
   Scenario: Mandar en null un campo opcional de la carrera lo borra; omitirlo lo conserva
     Given path '/programs', programId

@@ -200,7 +200,7 @@ function Paso2Detalle({ state, dispatch }) {
         name: state.name,
         termId: parseInt(state.termId),
         capacity: parseInt(state.capacity),
-        ...(state.price && { price: parseFloat(state.price) }),
+        ...(state.price && { price: { amount: String(parseFloat(state.price)), currency: 'ARS' } }),
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
         ...(state.schedule.trim() && { schedule: state.schedule.trim() }),
         ...(state.durationMonths && { durationMonths: parseInt(state.durationMonths) }),

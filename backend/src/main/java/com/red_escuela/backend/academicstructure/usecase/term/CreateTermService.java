@@ -24,8 +24,7 @@ public class CreateTermService implements CreateTermUseCase {
         term.setDescription(request.description());
         term.setType(request.type());
         term.reschedule(request.startDate(), request.endDate());
-        term.setEnrollmentStart(request.enrollmentStart());
-        term.setEnrollmentEnd(request.enrollmentEnd());
+        term.defineEnrollmentWindow(request.enrollmentStart(), request.enrollmentEnd());
         term.setStatus(StatusType.ACTIVE);
         return termRepository.save(term);
     }

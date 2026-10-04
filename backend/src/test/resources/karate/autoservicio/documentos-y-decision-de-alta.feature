@@ -16,7 +16,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id

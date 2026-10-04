@@ -20,7 +20,7 @@ Feature: Catálogo — Cursos (CourseController)
     * def nombreCurso = 'Karate - Curso catálogo ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Lun 18-21hs', capacity: 15, price: 20000, durationMonths: 2 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Lun 18-21hs', capacity: 15, price: { amount: '20000', currency: 'ARS' }, durationMonths: 2 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -94,10 +94,10 @@ Feature: Catálogo — Cursos (CourseController)
 
     Given path '/courses', sinPrecioId
     And header Authorization = 'Bearer ' + adminToken
-    And request { price: 18000 }
+    And request { price: { amount: '18000', currency: 'ARS' } }
     When method put
     Then status 200
-    And match response.price == 18000
+    And match response.price == { amount: '18000.00', currency: 'ARS' }
 
   Scenario Outline: Alta de curso con duración faltante o inválida, o con fechas de inscripción invertidas — 400
     * def nombreInvalido = 'Karate - Curso inválido ' + java.lang.System.nanoTime()
