@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import com.red_escuela.backend.identity.entity.Person;
 
 @Getter
@@ -35,6 +36,9 @@ public class ProgramCohort {
     @Column(name = "cursada_start", nullable = false)
     private LocalDate cursadaStart;
 
+    @Column(name = "enrollment_fee_month", nullable = false)
+    private Integer enrollmentFeeMonth;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
     private Person createdBy;
@@ -46,8 +50,15 @@ public class ProgramCohort {
         return !day.isBefore(admissionStart) && !day.isAfter(admissionEnd);
     }
 
+    public boolean isEnrollmentFeeMonth(YearMonth period) {
+        return enrollmentFeeMonth != null && period.getMonthValue() == enrollmentFeeMonth;
+    }
+
     @PrePersist
     void onCreate() {
+        if (enrollmentFeeMonth == null) {
+            enrollmentFeeMonth = 2;
+        }
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -32,5 +33,33 @@ describe('NuevaCohortDialog', () => {
     expect(await screen.findByRole('option', { name: '2027 — 10 cuotas' })).toBeInTheDocument();
     expect(screen.queryByText(/todavía no tiene una plantilla de aranceles/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear cohorte' })).toBeEnabled();
+  });
+
+  it('sends the chosen enrollment fee month, February by default, when creating the cohort', async () => {
+    mockTemplates([{ id: 3, termId: 7, recurringFeeInvoicesCount: 10 }]);
+    let body;
+    server.use(
+      http.post(`${API}/year-billing-templates/3/cohorts`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ id: 1 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<NuevaCohortDialog open onClose={() => {}} programId={12} />);
+
+    await screen.findByRole('option', { name: '2027 — 10 cuotas' });
+    const monthSelect = screen.getByLabelText('Mes de matrícula');
+    expect(monthSelect).toHaveValue('2');
+    await user.selectOptions(monthSelect, 'Marzo');
+    const selects = document.querySelectorAll('select');
+    await user.selectOptions(selects[0], '3');
+    await user.selectOptions(selects[1], 'FIRST');
+    const dates = document.querySelectorAll('input[type="date"]');
+    await user.type(dates[0], '2026-11-01');
+    await user.type(dates[1], '2026-12-15');
+    await user.type(dates[2], '2027-03-01');
+    await user.click(screen.getByRole('button', { name: 'Crear cohorte' }));
+
+    await waitFor(() => expect(body).toMatchObject({ enrollmentFeeMonth: 3, intake: 'FIRST' }));
   });
 });
