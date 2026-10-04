@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.FeeType;
@@ -21,10 +22,12 @@ import java.util.List;
 public class ScholarshipGrantSupport {
     private final ScholarshipRepository scholarshipRepository;
     private final CreditNoteService creditNoteService;
+    private final Clock clock;
 
-    public ScholarshipGrantSupport(ScholarshipRepository scholarshipRepository, CreditNoteService creditNoteService) {
+    public ScholarshipGrantSupport(ScholarshipRepository scholarshipRepository, CreditNoteService creditNoteService, Clock clock) {
         this.scholarshipRepository = scholarshipRepository;
         this.creditNoteService = creditNoteService;
+        this.clock = clock;
     }
 
     public Scholarship build(CreateScholarshipRequest request, Person actor, Currency currency) {
@@ -45,7 +48,7 @@ public class ScholarshipGrantSupport {
     }
 
     public void applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(Scholarship scholarship, List<Invoice> paidInvoices, Student student) {
-        YearMonth currentPeriod = YearMonth.now();
+        YearMonth currentPeriod = YearMonth.now(clock);
         paidInvoices.stream()
                 .filter(invoice -> invoice.getFeeType() == FeeType.RECURRING_FEE && currentPeriod.equals(invoice.getPeriod()))
                 .findFirst()

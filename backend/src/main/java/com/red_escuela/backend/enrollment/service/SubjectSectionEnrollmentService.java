@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -58,15 +59,16 @@ public class SubjectSectionEnrollmentService {
     private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
     private final InvoiceRepository invoiceRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
+    private final Clock clock;
 
-    public SubjectSectionEnrollmentService(
-            SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
+    public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramEnrollmentRepository programEnrollmentRepository,
             SubjectSectionRepository subjectSectionRepository,
             ProgramSubjectRepository programSubjectRepository,
             ProgramSubjectPrerequisiteRepository prerequisiteRepository,
             InvoiceRepository invoiceRepository,
-            DirectorApprovalRequestRepository directorApprovalRequestRepository) {
+            DirectorApprovalRequestRepository directorApprovalRequestRepository,
+            Clock clock) {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectSectionRepository = subjectSectionRepository;
@@ -74,6 +76,7 @@ public class SubjectSectionEnrollmentService {
         this.prerequisiteRepository = prerequisiteRepository;
         this.invoiceRepository = invoiceRepository;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -116,7 +119,7 @@ public class SubjectSectionEnrollmentService {
         nueva.setProgramEnrollment(programEnrollment);
         nueva.setSubjectSection(section);
         nueva.setStatus(calculateStatusByCapacity(section));
-        nueva.setEnrolledAt(LocalDateTime.now());
+        nueva.setEnrolledAt(LocalDateTime.now(clock));
         nueva.setAttemptNumber(calculateAttemptNumber(programEnrollmentId, subjectId, section));
         return subjectSectionEnrollmentRepository.save(nueva);
     }
@@ -143,7 +146,7 @@ public class SubjectSectionEnrollmentService {
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede dar de baja");
         }
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
-        enrollment.setDroppedAt(LocalDateTime.now());
+        enrollment.setDroppedAt(LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
         promoteNextFromWaitlist(enrollment.getSubjectSection().getId());
     }
@@ -175,7 +178,7 @@ public class SubjectSectionEnrollmentService {
         Student student = origen.getStudent();
         ProgramEnrollment programEnrollment = origen.getProgramEnrollment();
         Integer attemptNumber = origen.getAttemptNumber();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         origen.setStatus(EnrollmentStatus.WITHDRAWN);
         origen.setDroppedAt(now);
@@ -289,7 +292,7 @@ public class SubjectSectionEnrollmentService {
         }
         boolean open;
         try {
-            open = term.isEnrollmentOpenAt(LocalDateTime.now());
+            open = term.isEnrollmentOpenAt(LocalDateTime.now(clock));
         } catch (InvalidDateRangeException e) {
             throw new InvalidWindowConfigurationException(
                     "El Term " + term.getId() + " tiene la ventana de inscripción mal configurada "

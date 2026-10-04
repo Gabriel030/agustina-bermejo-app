@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -20,9 +21,11 @@ import java.util.stream.Collectors;
 public class ListDebtorsService implements ListDebtorsUseCase {
 
     private final InvoiceRepository invoiceRepository;
+    private final Clock clock;
 
-    public ListDebtorsService(InvoiceRepository invoiceRepository) {
+    public ListDebtorsService(InvoiceRepository invoiceRepository, Clock clock) {
         this.invoiceRepository = invoiceRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class ListDebtorsService implements ListDebtorsUseCase {
                 : Comparator.comparing(DebtorSummaryResponse::debtAgeDays, Comparator.reverseOrder());
 
         return accumulators.values().stream()
-                .map(DebtorAccumulator::toResponse)
+                .map(accumulator -> accumulator.toResponse(LocalDate.now(clock)))
                 .sorted(comparator)
                 .collect(Collectors.toList());
     }
@@ -77,10 +80,10 @@ public class ListDebtorsService implements ListDebtorsUseCase {
             }
         }
 
-        DebtorSummaryResponse toResponse() {
+        DebtorSummaryResponse toResponse(LocalDate today) {
             Person person = student.getPerson();
             int debtAgeDays = oldestDueDate != null
-                    ? (int) ChronoUnit.DAYS.between(oldestDueDate, LocalDate.now())
+                    ? (int) ChronoUnit.DAYS.between(oldestDueDate, today)
                     : 0;
             return new DebtorSummaryResponse(
                     student.getId(),

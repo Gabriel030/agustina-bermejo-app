@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -36,22 +37,25 @@ public class MonthlyInstallmentIssuanceJob {
     private final MonthlyInstallmentRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final Clock clock;
 
     public MonthlyInstallmentIssuanceJob(PaymentPlanSelectionRepository paymentPlanSelectionRepository,
                                           BatchExecutionLogRepository batchExecutionLogRepository,
                                           MonthlyInstallmentRowProcessor rowProcessor, ObjectMapper objectMapper,
-                                          MeterRegistry meterRegistry) {
+                                          MeterRegistry meterRegistry,
+                                          Clock clock) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
         this.meterRegistry = meterRegistry;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 4 1 * *", zone = "${app.timezone}")
     @SchedulerLock(name = "MonthlyInstallmentIssuanceJob", lockAtMostFor = "PT30M")
     public void run() {
-        run(YearMonth.now());
+        run(YearMonth.now(clock));
     }
 
     public void run(YearMonth month) {
@@ -79,7 +83,7 @@ public class MonthlyInstallmentIssuanceJob {
         BatchExecutionStatus status = counters.failed == 0 ? BatchExecutionStatus.SUCCESS
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(), counters.candidates, processed, counters.failed, durationMs, status, serialize(errors)));
+                JOB_NAME, LocalDateTime.now(clock), counters.candidates, processed, counters.failed, durationMs, status, serialize(errors)));
     }
 
     private void sweep(String enrollmentType, Function<Long, List<Long>> nextPage,

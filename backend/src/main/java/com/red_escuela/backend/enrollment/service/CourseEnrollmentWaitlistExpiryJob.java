@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -16,16 +17,18 @@ public class CourseEnrollmentWaitlistExpiryJob {
 
     private final CourseRepository courseRepository;
     private final CourseWaitlistExpiration courseWaitlistExpiration;
+    private final Clock clock;
 
-    public CourseEnrollmentWaitlistExpiryJob(CourseRepository courseRepository, CourseWaitlistExpiration courseWaitlistExpiration) {
+    public CourseEnrollmentWaitlistExpiryJob(CourseRepository courseRepository, CourseWaitlistExpiration courseWaitlistExpiration, Clock clock) {
         this.courseRepository = courseRepository;
         this.courseWaitlistExpiration = courseWaitlistExpiration;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "CourseEnrollmentWaitlistExpiryJob", lockAtMostFor = "PT30M")
     public void expireWaitlists() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         log.info("Vencimiento de listas de espera iniciado: fecha={}", today);
         long start = System.currentTimeMillis();
         int candidates = 0;

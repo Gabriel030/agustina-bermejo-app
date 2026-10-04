@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.entity;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Student;
 
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public interface BillableEnrollment {
             return false;
         }
         setBillingStanding(EnrollmentBillingStanding.UP_TO_DATE);
-        setBillingStandingUpdatedAt(LocalDateTime.now());
+        setBillingStandingUpdatedAt(ApplicationTime.now());
         return true;
     }
 }

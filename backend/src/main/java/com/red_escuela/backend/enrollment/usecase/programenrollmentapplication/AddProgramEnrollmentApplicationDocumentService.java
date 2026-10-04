@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
@@ -18,14 +19,17 @@ public class AddProgramEnrollmentApplicationDocumentService implements AddProgra
     private final StudentDocumentRepository studentDocumentRepository;
     private final FileStorageService fileStorageService;
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
+    private final Clock clock;
 
     public AddProgramEnrollmentApplicationDocumentService(ProgramEnrollmentApplicationFinder applicationFinder,
                                                             StudentDocumentRepository studentDocumentRepository,
-                                                            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup) {
+                                                            FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
+                                                            Clock clock) {
         this.applicationFinder = applicationFinder;
         this.studentDocumentRepository = studentDocumentRepository;
         this.fileStorageService = fileStorageService;
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
+        this.clock = clock;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class AddProgramEnrollmentApplicationDocumentService implements AddProgra
         document.setStudent(application.getStudent());
         document.setType(command.type());
         document.setFilePath(relativePath);
-        document.setUploadedAt(LocalDateTime.now());
+        document.setUploadedAt(LocalDateTime.now(clock));
         return studentDocumentRepository.save(document);
     }
 }

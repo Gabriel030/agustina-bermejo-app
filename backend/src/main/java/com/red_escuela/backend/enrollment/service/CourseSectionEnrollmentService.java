@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
@@ -17,12 +18,14 @@ import java.util.List;
 public class CourseSectionEnrollmentService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final CourseSubjectSectionRepository courseSubjectSectionRepository;
+    private final Clock clock;
 
-    public CourseSectionEnrollmentService(
-            CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
-            CourseSubjectSectionRepository courseSubjectSectionRepository) {
+    public CourseSectionEnrollmentService(CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
+            CourseSubjectSectionRepository courseSubjectSectionRepository,
+            Clock clock) {
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.courseSubjectSectionRepository = courseSubjectSectionRepository;
+        this.clock = clock;
     }
 
     public List<CourseSubjectSectionEnrollment> listByEnrollment(Long courseEnrollmentId) {
@@ -37,7 +40,7 @@ public class CourseSectionEnrollmentService {
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS, no se puede dar de baja");
         }
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
-        enrollment.setDroppedAt(LocalDateTime.now());
+        enrollment.setDroppedAt(LocalDateTime.now(clock));
         courseSubjectSectionEnrollmentRepository.save(enrollment);
         promoteNextFromWaitlist(enrollment.getCourseSubjectSection().getId());
     }

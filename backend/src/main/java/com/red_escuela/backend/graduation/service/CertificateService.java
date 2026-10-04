@@ -1,4 +1,5 @@
 package com.red_escuela.backend.graduation.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
@@ -41,16 +42,18 @@ public class CertificateService {
     private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
+    private final Clock clock;
 
-    public CertificateService(
-            ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
+    public CertificateService(ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
             InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
-            CurrentPersonService currentPersonService) {
+            CurrentPersonService currentPersonService,
+            Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.invoiceQueryService = invoiceQueryService;
         this.certificateIssuanceRepository = certificateIssuanceRepository;
         this.currentPersonService = currentPersonService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -103,7 +106,7 @@ public class CertificateService {
         CertificateIssuance issuance = new CertificateIssuance();
         issuance.setType(type);
         issuance.setProgramEnrollment(enrollment);
-        issuance.setIssuedAt(LocalDateTime.now());
+        issuance.setIssuedAt(LocalDateTime.now(clock));
         issuance.setRequestedBy(currentPersonService.resolveCurrentPerson());
         certificateIssuanceRepository.save(issuance);
     }
@@ -139,7 +142,7 @@ public class CertificateService {
                 content.beginText();
                 content.setFont(fontRegular, 10);
                 content.newLineAtOffset(margen, Math.max(y, margen));
-                content.showText("Fecha de emisión: " + LocalDateTime.now().format(FECHA));
+                content.showText("Fecha de emisión: " + LocalDateTime.now(clock).format(FECHA));
                 content.endText();
             }
 

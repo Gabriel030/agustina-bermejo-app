@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -58,7 +59,7 @@ public class PaymentReceipt {
     @PrePersist
     void onCreate() {
         if (this.uploadedAt == null) {
-            this.uploadedAt = LocalDateTime.now();
+            this.uploadedAt = ApplicationTime.now();
         }
     }
 
@@ -96,7 +97,7 @@ public class PaymentReceipt {
     private void markReviewed(PaymentReceiptStatus newStatus, Person reviewer) {
         this.status = newStatus;
         this.reviewedBy = reviewer;
-        this.reviewedAt = LocalDateTime.now();
+        this.reviewedAt = ApplicationTime.now();
     }
 
     private void requirePendingReview() {

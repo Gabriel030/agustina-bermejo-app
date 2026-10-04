@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -73,7 +74,7 @@ public class Scholarship {
     @PrePersist
     void onCreate() {
         if (this.grantedAt == null) {
-            this.grantedAt = LocalDateTime.now();
+            this.grantedAt = ApplicationTime.now();
         }
     }
 

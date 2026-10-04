@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import java.time.Clock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
@@ -38,12 +39,13 @@ public class CourseEnrollmentApplicationService {
     private final InvoiceFactory invoiceFactory;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
-    public CourseEnrollmentApplicationService(
-            StudentRepository studentRepository, CourseRepository courseRepository,
+    public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseRepository courseRepository,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            InvoiceFactory invoiceFactory, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper) {
+            InvoiceFactory invoiceFactory, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper,
+            Clock clock) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseEnrollmentService = courseEnrollmentService;
@@ -51,6 +53,7 @@ public class CourseEnrollmentApplicationService {
         this.invoiceFactory = invoiceFactory;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Transactional
@@ -65,7 +68,7 @@ public class CourseEnrollmentApplicationService {
             throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());
         }
 
-        Invoice invoice = invoiceFactory.createAdHocForCourse(course, FeeType.RECURRING_FEE, YearMonth.now(), LocalDate.now());
+        Invoice invoice = invoiceFactory.createAdHocForCourse(course, FeeType.RECURRING_FEE, YearMonth.now(clock), LocalDate.now(clock));
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();

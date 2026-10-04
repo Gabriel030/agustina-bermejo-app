@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
+import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -32,19 +33,22 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     private final InvoiceFactory invoiceFactory;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ProgramCohortService programCohortService;
+    private final Clock clock;
 
     public RequestProgramEnrollmentApplicationService(ProgramEnrollmentApplicationRepository applicationRepository,
                                                         ProgramRepository programRepository,
                                                         ProgramEnrollmentService programEnrollmentService,
                                                         InvoiceFactory invoiceFactory,
                                                         UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase,
-                                                        ProgramCohortService programCohortService) {
+                                                        ProgramCohortService programCohortService,
+                                                        Clock clock) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.invoiceFactory = invoiceFactory;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.programCohortService = programCohortService;
+        this.clock = clock;
     }
 
     @Override
@@ -62,7 +66,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
                     throw new AlreadyHasPendingApplicationException(student.getId(), command.programId());
                 });
 
-        Invoice invoice = invoiceFactory.createAdHocForProgram(program, FeeType.ENROLLMENT_FEE, YearMonth.now(), LocalDate.now());
+        Invoice invoice = invoiceFactory.createAdHocForProgram(program, FeeType.ENROLLMENT_FEE, YearMonth.now(clock), LocalDate.now(clock));
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), command.comprobante());
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
@@ -70,7 +74,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
         application.setProgram(program);
         application.setProgramCohort(cohort);
         application.setStatus(ProgramEnrollmentApplicationStatus.PENDING);
-        application.setRequestedAt(LocalDateTime.now());
+        application.setRequestedAt(LocalDateTime.now(clock));
         application.setPaymentReceipt(receipt);
         return applicationRepository.save(application);
     }

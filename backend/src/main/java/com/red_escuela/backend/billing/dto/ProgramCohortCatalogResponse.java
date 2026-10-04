@@ -12,7 +12,7 @@ public record ProgramCohortCatalogResponse(Long id, Long programId, String label
 
     private static final DateTimeFormatter LABEL_FMT = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("es", "AR"));
 
-    public static ProgramCohortCatalogResponse from(ProgramCohort cohort, Long programId) {
+    public static ProgramCohortCatalogResponse from(ProgramCohort cohort, Long programId, LocalDate today) {
         String label = cohort.getCursadaStart() != null
                 ? cohort.getCursadaStart().format(LABEL_FMT).substring(0, 1).toUpperCase()
                   + cohort.getCursadaStart().format(LABEL_FMT).substring(1)
@@ -26,6 +26,6 @@ public record ProgramCohortCatalogResponse(Long id, Long programId, String label
                 cohort.getCursadaStart(),
                 cohort.getAdmissionStart(),
                 cohort.getAdmissionEnd(),
-                cohort.isAdmissionOpenOn(LocalDate.now()));
+                cohort.isAdmissionOpenOn(today));
     }
 }

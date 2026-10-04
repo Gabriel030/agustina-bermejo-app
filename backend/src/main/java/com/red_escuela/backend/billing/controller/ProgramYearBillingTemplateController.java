@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -33,19 +35,22 @@ public class ProgramYearBillingTemplateController {
     private final ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase;
     private final ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase;
     private final UpdateCohortEnrollmentFeeMonthUseCase updateEnrollmentFeeMonthUseCase;
+    private final Clock clock;
 
     public ProgramYearBillingTemplateController(CreateProgramYearBillingTemplateUseCase createTemplateUseCase,
                                                   CreateProgramCohortUseCase createCohortUseCase,
                                                   ListProgramCohortsForTemplateUseCase listCohortsForTemplateUseCase,
                                                   ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase,
                                                   ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase,
-                                                  UpdateCohortEnrollmentFeeMonthUseCase updateEnrollmentFeeMonthUseCase) {
+                                                  UpdateCohortEnrollmentFeeMonthUseCase updateEnrollmentFeeMonthUseCase,
+                                                  Clock clock) {
         this.createTemplateUseCase = createTemplateUseCase;
         this.createCohortUseCase = createCohortUseCase;
         this.listCohortsForTemplateUseCase = listCohortsForTemplateUseCase;
         this.listCohortsForProgramUseCase = listCohortsForProgramUseCase;
         this.listBillingTemplatesUseCase = listBillingTemplatesUseCase;
         this.updateEnrollmentFeeMonthUseCase = updateEnrollmentFeeMonthUseCase;
+        this.clock = clock;
     }
 
     @PostMapping("/programs/{id}/year-billing-templates")
@@ -83,6 +88,6 @@ public class ProgramYearBillingTemplateController {
     @GetMapping("/programs/{id}/cohorts")
     @PreAuthorize("isAuthenticated()")
     public List<ProgramCohortCatalogResponse> listProgramCohorts(@PathVariable Long id) {
-        return listCohortsForProgramUseCase.list(id).stream().map(c -> ProgramCohortCatalogResponse.from(c, id)).toList();
+        return listCohortsForProgramUseCase.list(id).stream().map(c -> ProgramCohortCatalogResponse.from(c, id, LocalDate.now(clock))).toList();
     }
 }

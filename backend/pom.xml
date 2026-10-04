@@ -152,6 +152,12 @@
 			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit</artifactId>
+			<version>1.4.2</version>
+			<scope>test</scope>
+		</dependency>
 		<!--
 			QA de contrato HTTP con criterios de aceptación legibles (ver
 			docs/context/testing.md, "QA de contrato HTTP (Karate)") — a diferencia de

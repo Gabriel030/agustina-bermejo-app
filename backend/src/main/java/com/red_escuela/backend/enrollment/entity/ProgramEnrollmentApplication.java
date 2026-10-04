@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.entity;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 
@@ -63,14 +64,14 @@ public class ProgramEnrollmentApplication {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
-        this.decidedAt = LocalDateTime.now();
+        this.decidedAt = ApplicationTime.now();
     }
 
     public void reject(Person decidedBy, String reason) {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.REJECTED;
         this.decidedBy = decidedBy;
-        this.decidedAt = LocalDateTime.now();
+        this.decidedAt = ApplicationTime.now();
         this.rejectionReason = reason;
     }
 

@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.identity.usecase.emailverification.SendEmailVerificationUseCase;
 import com.red_escuela.backend.identity.service.PersonFactory;
@@ -48,16 +49,17 @@ public class ProspectService {
     private final TransactionBoundFileCleanup transactionBoundFileCleanup;
     private final RequestPasswordResetUseCase requestPasswordResetUseCase;
     private final SendEmailVerificationUseCase sendEmailVerificationUseCase;
+    private final Clock clock;
 
-    public ProspectService(
-            StudentRepository studentRepository,
+    public ProspectService(StudentRepository studentRepository,
             StudentDocumentRepository studentDocumentRepository,
             InstitutionRepository institutionRepository,
             RoleRepository roleRepository,
             PersonFactory personFactory,
             FileStorageService fileStorageService, TransactionBoundFileCleanup transactionBoundFileCleanup,
             RequestPasswordResetUseCase requestPasswordResetUseCase,
-            SendEmailVerificationUseCase sendEmailVerificationUseCase) {
+            SendEmailVerificationUseCase sendEmailVerificationUseCase,
+            Clock clock) {
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
         this.institutionRepository = institutionRepository;
@@ -67,6 +69,7 @@ public class ProspectService {
         this.transactionBoundFileCleanup = transactionBoundFileCleanup;
         this.requestPasswordResetUseCase = requestPasswordResetUseCase;
         this.sendEmailVerificationUseCase = sendEmailVerificationUseCase;
+        this.clock = clock;
     }
 
     @Transactional
@@ -139,7 +142,7 @@ public class ProspectService {
         document.setStudent(student);
         document.setType(type);
         document.setFilePath(relativePath);
-        document.setUploadedAt(LocalDateTime.now());
+        document.setUploadedAt(LocalDateTime.now(clock));
 
         return studentDocumentRepository.save(document);
     }

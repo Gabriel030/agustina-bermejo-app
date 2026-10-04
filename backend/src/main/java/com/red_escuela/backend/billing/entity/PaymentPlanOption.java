@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
@@ -64,7 +65,7 @@ public class PaymentPlanOption {
 
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = ApplicationTime.now();
         if (this.createdAt == null) {
             this.createdAt = now;
         }
@@ -73,6 +74,6 @@ public class PaymentPlanOption {
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ApplicationTime.now();
     }
 }

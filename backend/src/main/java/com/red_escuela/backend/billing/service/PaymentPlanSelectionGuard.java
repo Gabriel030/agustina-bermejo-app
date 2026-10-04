@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
@@ -13,9 +14,11 @@ import java.time.LocalDate;
 @Service
 public class PaymentPlanSelectionGuard {
     private final CurrentStudentService currentStudentService;
+    private final Clock clock;
 
-    public PaymentPlanSelectionGuard(CurrentStudentService currentStudentService) {
+    public PaymentPlanSelectionGuard(CurrentStudentService currentStudentService, Clock clock) {
         this.currentStudentService = currentStudentService;
+        this.clock = clock;
     }
 
     public void validateOwnershipIfStudent(Long ownerStudentId, Long enrollmentId) {
@@ -33,7 +36,7 @@ public class PaymentPlanSelectionGuard {
         if (!option.isUpfrontWindowEnabled()) {
             throw new UpfrontWindowClosedException(option.getId());
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (today.isBefore(option.getUpfrontWindowStart()) || today.isAfter(option.getUpfrontWindowEnd())) {
             throw new UpfrontWindowClosedException(option.getId());
         }

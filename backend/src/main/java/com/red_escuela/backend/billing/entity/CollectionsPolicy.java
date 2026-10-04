@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.persistence.PercentageConverter;
@@ -53,7 +54,7 @@ public class CollectionsPolicy {
     @PrePersist
     void onCreate() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
+            this.createdAt = ApplicationTime.now();
         }
     }
 }

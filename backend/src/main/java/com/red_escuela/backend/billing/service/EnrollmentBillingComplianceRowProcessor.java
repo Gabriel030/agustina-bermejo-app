@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -39,11 +40,13 @@ public class EnrollmentBillingComplianceRowProcessor {
     private final ProgramEnrollmentService programEnrollmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final MeterRegistry meterRegistry;
+    private final Clock clock;
 
     public EnrollmentBillingComplianceRowProcessor(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
                                                      CourseEnrollmentService courseEnrollmentService, ProgramEnrollmentService programEnrollmentService,
-                                                     ApplicationEventPublisher eventPublisher, MeterRegistry meterRegistry) {
+                                                     ApplicationEventPublisher eventPublisher, MeterRegistry meterRegistry,
+                                                     Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -51,6 +54,7 @@ public class EnrollmentBillingComplianceRowProcessor {
         this.programEnrollmentService = programEnrollmentService;
         this.eventPublisher = eventPublisher;
         this.meterRegistry = meterRegistry;
+        this.clock = clock;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -108,7 +112,7 @@ public class EnrollmentBillingComplianceRowProcessor {
 
         if (next != previous) {
             billable.setBillingStanding(next);
-            billable.setBillingStandingUpdatedAt(LocalDateTime.now());
+            billable.setBillingStandingUpdatedAt(LocalDateTime.now(clock));
         }
         if (previous == EnrollmentBillingStanding.SUSPENDED && next == EnrollmentBillingStanding.UP_TO_DATE) {
             YearMonth suspendedSince = previousUpdatedAt != null ? YearMonth.from(previousUpdatedAt) : YearMonth.from(today);

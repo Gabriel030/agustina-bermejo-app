@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentplan;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -29,11 +30,13 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
     private final PaymentPlanSelectionGuard guard;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final PromotionRedeemer promotionRedeemer;
+    private final Clock clock;
 
     public SelectPaymentPlanForCourseService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                               CourseEnrollmentRepository courseEnrollmentRepository, CurrentPersonService currentPersonService,
                                               PaymentPlanSelectionGuard guard, RecurringFeeWindowService recurringFeeWindowService,
-                                              PromotionRedeemer promotionRedeemer) {
+                                              PromotionRedeemer promotionRedeemer,
+                                              Clock clock) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.paymentPlanOptionFinder = paymentPlanOptionFinder;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -41,6 +44,7 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         this.guard = guard;
         this.recurringFeeWindowService = recurringFeeWindowService;
         this.promotionRedeemer = promotionRedeemer;
+        this.clock = clock;
     }
 
     @Override
@@ -61,7 +65,7 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         PaymentPlanSelection selection = new PaymentPlanSelection();
         selection.setCourseEnrollment(courseEnrollment);
         selection.setPaymentPlanOption(option);
-        selection.setEffectiveFrom(YearMonth.now());
+        selection.setEffectiveFrom(YearMonth.now(clock));
         if (option.getCadence() == PaymentPlanCadence.UPFRONT) {
             guard.validateScope(request.scopeMonths(), recurringFeeWindowService.remainingInvoices(courseEnrollment));
             selection.setScopeMonths(request.scopeMonths());

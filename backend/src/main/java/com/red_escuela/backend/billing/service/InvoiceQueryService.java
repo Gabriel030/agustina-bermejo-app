@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
@@ -32,13 +33,16 @@ public class InvoiceQueryService {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final PriceRevisionService priceRevisionService;
+    private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService) {
+                                ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService,
+                                Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.priceRevisionService = priceRevisionService;
+        this.clock = clock;
     }
 
     public List<Invoice> byCourse(Long courseEnrollmentId) {
@@ -163,7 +167,7 @@ public class InvoiceQueryService {
     }
 
     public boolean hasOverdueDebt(Long studentId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         for (CourseEnrollment enrollment : courseEnrollmentRepository.findByStudentId(studentId)) {
             if (invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).stream().anyMatch(i -> isOverdue(i, today))) {
                 return true;

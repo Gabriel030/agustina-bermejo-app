@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import java.time.Clock;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.exception.InvalidGraduationRequestStateException;
@@ -20,15 +21,18 @@ public class RejectGraduationRequestService implements RejectGraduationRequestUs
     private final GraduationRequestFinder graduationRequestFinder;
     private final CurrentPersonService currentPersonService;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     public RejectGraduationRequestService(GraduationRequestRepository graduationRequestRepository,
                                            GraduationRequestFinder graduationRequestFinder,
                                            CurrentPersonService currentPersonService,
-                                           ApplicationEventPublisher eventPublisher) {
+                                           ApplicationEventPublisher eventPublisher,
+                                           Clock clock) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.graduationRequestFinder = graduationRequestFinder;
         this.currentPersonService = currentPersonService;
         this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
     @Override
@@ -41,7 +45,7 @@ public class RejectGraduationRequestService implements RejectGraduationRequestUs
 
         request.setStatus(GraduationRequestStatus.REJECTED);
         request.setDecidedBy(currentPersonService.resolveCurrentPerson());
-        request.setDecidedAt(LocalDateTime.now());
+        request.setDecidedAt(LocalDateTime.now(clock));
         request.setRejectionReason(command.motivo());
         GraduationRequest saved = graduationRequestRepository.save(request);
 
