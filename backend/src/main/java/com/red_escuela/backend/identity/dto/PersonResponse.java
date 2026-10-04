@@ -20,7 +20,7 @@ public record PersonResponse(
                 person.getName(),
                 person.getLastname(),
                 person.getSex(),
-                person.getEmail(),
+                person.emailValue(),
                 person.getPhoneNumber(),
                 person.getDni(),
                 address == null ? null : address.getStreet(),

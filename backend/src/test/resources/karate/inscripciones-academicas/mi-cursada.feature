@@ -98,7 +98,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', date: '2026-03-15T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'EXAM', date: '2026-03-15T00:00:00', score: 8 }
     When method post
     Then status 201
 

@@ -181,7 +181,7 @@ public class ProspectService {
             throw new DniAlreadyExistsException(request.dni());
         }
 
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
 
         return student;
     }

@@ -1,5 +1,9 @@
 package com.red_escuela.backend.karate;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
+import java.math.BigDecimal;
+
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
@@ -170,8 +174,8 @@ public class KarateFixtures {
         scheme.setHasFinal(true);
         scheme.setFinalWeight(0.5);
         scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
-        scheme.setMinRegularGrade(4.0);
-        scheme.setMinApprovalGrade(6.0);
+        scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
+        scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
         return evaluationSchemeRepository.save(scheme).getId();
     }
 
@@ -198,7 +202,7 @@ public class KarateFixtures {
                 approved.setProgramEnrollment(enrollment);
                 approved.setSubjectSection(section);
                 approved.setStatus(com.red_escuela.backend.enrollment.entity.EnrollmentStatus.APPROVED);
-                approved.setFinalScore(8.0);
+                approved.setFinalScore(Grade.of(BigDecimal.valueOf(8.0)));
                 approved.setEnrolledAt(java.time.LocalDateTime.of(2026, 3, 1, 10, 0));
                 approved.setAttemptNumber(1);
                 context().getBean(com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository.class).save(approved);

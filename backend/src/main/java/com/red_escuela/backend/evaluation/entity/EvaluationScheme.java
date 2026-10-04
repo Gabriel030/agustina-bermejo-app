@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Check;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
+import com.red_escuela.backend.shared.domain.Grade;
 
 @Getter
 @Setter
@@ -36,13 +37,13 @@ public class EvaluationScheme {
     private GradeAggregationMethod aggregationMethod = GradeAggregationMethod.SIMPLE_AVERAGE;
 
     @Column(name = "min_regular_grade")
-    private Double minRegularGrade;
+    private Grade minRegularGrade;
 
     @Column(name = "min_approval_grade")
-    private Double minApprovalGrade;
+    private Grade minApprovalGrade;
 
     @Column(name = "promotion_min_grade")
-    private Double promotionMinGrade;
+    private Grade promotionMinGrade;
 
     @Column(name = "notes", length = 1000)
     private String notes;
@@ -50,18 +51,16 @@ public class EvaluationScheme {
     private static final int MAX_EXAM_COUNT = 4;
 
     public void define(String name, Integer examCountExpected, Boolean hasFinal, Double finalWeight,
-                       GradeAggregationMethod aggregationMethod, Double minRegularGrade, Double minApprovalGrade,
-                       Double promotionMinGrade, String notes) {
+                       GradeAggregationMethod aggregationMethod, Grade minRegularGrade, Grade minApprovalGrade,
+                       Grade promotionMinGrade, String notes) {
         if (examCountExpected < 1 || examCountExpected > MAX_EXAM_COUNT) {
             throw new InvalidEvaluationSchemeException("la cantidad de parciales va de 1 a " + MAX_EXAM_COUNT);
         }
-        requireOnScale(minRegularGrade, "mínimo para quedar regular");
-        requireOnScale(minApprovalGrade, "nota para aprobar");
-        if (promotionMinGrade != null) {
-            requireOnScale(promotionMinGrade, "nota de promoción");
-            if (promotionMinGrade < minApprovalGrade || promotionMinGrade < minRegularGrade) {
-                throw new InvalidEvaluationSchemeException("la nota de promoción no puede ser menor que la de aprobación ni que la de regularidad");
-            }
+        if (minRegularGrade.compareTo(minApprovalGrade) > 0) {
+            throw new InvalidEvaluationSchemeException("la nota para aprobar no puede ser menor que el mínimo para quedar regular");
+        }
+        if (promotionMinGrade != null && promotionMinGrade.compareTo(minApprovalGrade) < 0) {
+            throw new InvalidEvaluationSchemeException("la nota de promoción no puede ser menor que la de aprobación ni que la de regularidad");
         }
         this.name = name;
         this.examCountExpected = examCountExpected;
@@ -72,11 +71,5 @@ public class EvaluationScheme {
         this.minApprovalGrade = minApprovalGrade;
         this.promotionMinGrade = promotionMinGrade;
         this.notes = notes;
-    }
-
-    private static void requireOnScale(double grade, String label) {
-        if (!GradeScale.contains(grade)) {
-            throw new InvalidEvaluationSchemeException(label + " fuera de la escala " + GradeScale.MIN + "-" + GradeScale.MAX);
-        }
     }
 }

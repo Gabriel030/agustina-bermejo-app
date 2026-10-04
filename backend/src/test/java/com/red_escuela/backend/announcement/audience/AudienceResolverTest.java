@@ -139,7 +139,7 @@ class AudienceResolverTest {
         scheme.setExamCountExpected(3);
         scheme.setTpCountExpected(3);
         scheme.setHasFinal(true);
-        scheme.setMinApprovalGrade(MIN_APPROVAL);
+        scheme.setMinApprovalGrade(com.red_escuela.backend.shared.domain.Grade.of(java.math.BigDecimal.valueOf(MIN_APPROVAL)));
         return new SectionSnapshot(List.of(), scheme);
     }
 

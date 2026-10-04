@@ -34,7 +34,7 @@ public class ResetStaffPasswordService implements ResetStaffPasswordUseCase {
         if (!isStaff) {
             throw new PersonNotFoundException(personId);
         }
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
         log.info("Reset de contraseña solicitado: personId={}", personId);
     }
 }

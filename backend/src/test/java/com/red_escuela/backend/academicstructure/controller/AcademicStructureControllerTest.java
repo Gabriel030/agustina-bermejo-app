@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import java.math.BigDecimal;
+
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -257,7 +259,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         AddPrerequisiteRequest request = new AddPrerequisiteRequest(
-                entradaB.getId(), RequirementType.APPROVED, 99.0, null);
+                entradaB.getId(), RequirementType.APPROVED, BigDecimal.valueOf(99.0), null);
 
         mockMvc.perform(post("/program-subjects/{id}/prerequisites", entradaA.getId())
                         .contentType(MediaType.APPLICATION_JSON)

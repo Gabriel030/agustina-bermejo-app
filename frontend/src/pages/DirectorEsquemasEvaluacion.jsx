@@ -11,18 +11,18 @@ import { useEvaluationSchemes, useCrearEsquema, useEditarEsquema } from '@/hooks
 const FORM_INICIAL = { name: '', examCountExpected: 2, hasFinal: true, minRegularGrade: 4, minApprovalGrade: 6, esPromocional: false, promotionMinGrade: '' };
 
 const MENSAJES_ERROR_ESQUEMA = {
-  INVALID_EVALUATION_SCHEME: 'El esquema tiene notas fuera de 0 a 10 o una nota de promoción menor que la de aprobación.',
+  INVALID_EVALUATION_SCHEME: 'El esquema tiene notas fuera de 1 a 10 o una nota de promoción menor que la de aprobación.',
   EVALUATION_SCHEME_IN_USE: 'Ese esquema ya está asignado a alguna comisión y no se puede editar: creá uno nuevo.',
 };
 
 function enEscala(valor) {
   const numero = Number(valor);
-  return valor !== '' && !Number.isNaN(numero) && numero >= 0 && numero <= 10;
+  return valor !== '' && !Number.isNaN(numero) && numero >= 1 && numero <= 10;
 }
 
 function problemaDelEsquema(form) {
   const notas = [form.minRegularGrade, form.minApprovalGrade, ...(form.esPromocional && form.promotionMinGrade !== '' ? [form.promotionMinGrade] : [])];
-  if (!notas.every(enEscala)) return 'Las notas van de 0 a 10.';
+  if (!notas.every(enEscala)) return 'Las notas van de 1 a 10.';
   if (form.esPromocional && form.promotionMinGrade !== '') {
     const corte = Number(form.promotionMinGrade);
     if (corte < Number(form.minApprovalGrade) || corte < Number(form.minRegularGrade)) {

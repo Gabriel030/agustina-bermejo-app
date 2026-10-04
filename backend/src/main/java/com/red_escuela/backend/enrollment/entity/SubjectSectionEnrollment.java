@@ -1,4 +1,6 @@
 package com.red_escuela.backend.enrollment.entity;
+
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
@@ -60,7 +62,7 @@ public class SubjectSectionEnrollment {
     private Integer attemptNumber;
 
     @Column(name = "final_score")
-    private Double finalScore;
+    private Grade finalScore;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "final_grade_type")

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.repository;
 
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -13,9 +14,7 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
 
     Optional<Person> findByUsername(String username);
 
-    Optional<Person> findByEmail(String email);
-
-    Optional<Person> findByEmailIgnoreCase(String email);
+    Optional<Person> findByEmail(EmailAddress email);
 
     Optional<Person> findByDni(String dni);
 

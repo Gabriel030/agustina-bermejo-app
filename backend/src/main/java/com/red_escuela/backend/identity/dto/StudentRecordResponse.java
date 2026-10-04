@@ -31,7 +31,7 @@ public record StudentRecordResponse(
                 p.getLastname(),
                 p.getDni(),
                 p.getUsername(),
-                p.getEmail(),
+                p.emailValue(),
                 p.getSex(),
                 p.getNationality(),
                 p.getPhoneNumber(),
