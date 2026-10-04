@@ -191,6 +191,34 @@ public class ProgramEnrollmentService {
                 obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, hasActiveEnrollment(id), promedioGeneral);
     }
 
+    public boolean hasOnlyFinalExamsLeft(Long id) {
+        ProgramEnrollment enrollment = findOrThrow(id);
+        Program program = enrollment.getProgram();
+        List<ProgramSubject> entries = programSubjectRepository.findByProgramId(program.getId());
+        if (entries.isEmpty()
+                || subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
+                        id, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))) {
+            return false;
+        }
+        List<ProgramSubject> coursed = entries.stream().filter(entry -> isCoursed(id, entry)).toList();
+        boolean mandatoryPending = entries.stream().anyMatch(entry -> entry.getElectiveGroup() == null && !coursed.contains(entry));
+        int coursedCredits = coursed.stream().mapToInt(ProgramSubject::getCredits).sum();
+        boolean electiveGroupsMet = programElectiveGroupRepository.findByProgramId(program.getId()).stream()
+                .allMatch(group -> coursed.stream()
+                        .filter(entry -> entry.getElectiveGroup() != null
+                                && entry.getElectiveGroup().getId().equals(group.getElectiveGroup().getId()))
+                        .count() >= group.getMinRequired());
+        return !coursed.isEmpty() && program.getTotalCreditsRequired() > 0
+                && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
+    }
+
+    private boolean isCoursed(Long programEnrollmentId, ProgramSubject entry) {
+        return !subjectSectionEnrollmentRepository
+                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
+                        programEnrollmentId, entry.getSubject().getId(), List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR))
+                .isEmpty();
+    }
+
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
