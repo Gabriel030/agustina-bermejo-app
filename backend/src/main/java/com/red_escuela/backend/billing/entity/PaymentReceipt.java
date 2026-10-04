@@ -51,6 +51,10 @@ public class PaymentReceipt {
     @JoinColumn(name = "uploaded_by_id")
     private Person uploadedBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
+
     @PrePersist
     void onCreate() {
         if (this.uploadedAt == null) {

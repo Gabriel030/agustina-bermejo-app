@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, Long> {
@@ -23,6 +24,15 @@ public interface PaymentReceiptRepository extends JpaRepository<PaymentReceipt, 
             order by r.uploadedAt asc, r.id asc
             """)
     List<PaymentReceipt> findByStatusWithStudentDetails(@Param("status") PaymentReceiptStatus status);
+
+    @Query("""
+            select r from PaymentReceipt r
+            left join fetch r.uploadedBy
+            left join fetch r.reviewedBy
+            where r.invoice.id in :invoiceIds
+            order by r.uploadedAt desc, r.id desc
+            """)
+    List<PaymentReceipt> findByInvoiceIdsWithPeople(@Param("invoiceIds") Collection<Long> invoiceIds);
 
     List<PaymentReceipt> findByStatusOrderByUploadedAtAsc(PaymentReceiptStatus status);
 

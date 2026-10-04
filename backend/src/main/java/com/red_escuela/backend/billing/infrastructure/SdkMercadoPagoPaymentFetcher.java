@@ -6,6 +6,7 @@ import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.payment.Payment;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.entity.CardType;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
@@ -51,7 +52,17 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
         PaymentAllocationRequest reported = new PaymentAllocationRequest(
                 Long.parseLong(payment.getExternalReference()),
                 Money.of(payment.getTransactionAmount(), currency.get()));
-        return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments()));
+        return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments(), toCardType(payment.getPaymentTypeId())));
+    }
+
+    static CardType toCardType(String paymentTypeId) {
+        if ("credit_card".equals(paymentTypeId)) {
+            return CardType.CREDIT;
+        }
+        if ("debit_card".equals(paymentTypeId)) {
+            return CardType.DEBIT;
+        }
+        return null;
     }
 
     static Optional<Currency> toCurrency(String currencyId) {

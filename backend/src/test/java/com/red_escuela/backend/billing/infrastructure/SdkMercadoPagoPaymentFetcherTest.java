@@ -19,4 +19,12 @@ class SdkMercadoPagoPaymentFetcherTest {
         assertEquals(Optional.of(Currency.ARS), SdkMercadoPagoPaymentFetcher.toCurrency(null));
         assertEquals(Optional.of(Currency.USD), SdkMercadoPagoPaymentFetcher.toCurrency("USD"));
     }
+
+    @Test
+    void theGatewayPaymentTypeIsMappedToCreditOrDebitAndAnythingElseToNull() {
+        assertEquals(com.red_escuela.backend.billing.entity.CardType.CREDIT, SdkMercadoPagoPaymentFetcher.toCardType("credit_card"));
+        assertEquals(com.red_escuela.backend.billing.entity.CardType.DEBIT, SdkMercadoPagoPaymentFetcher.toCardType("debit_card"));
+        assertEquals(null, SdkMercadoPagoPaymentFetcher.toCardType("account_money"));
+        assertEquals(null, SdkMercadoPagoPaymentFetcher.toCardType(null));
+    }
 }

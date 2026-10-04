@@ -2,7 +2,8 @@ package com.red_escuela.backend.identity.controller;
 
 import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
-import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
@@ -17,10 +18,7 @@ import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
 import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteUseCase;
 import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
 import jakarta.validation.Valid;
@@ -36,7 +34,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/students")
@@ -45,9 +42,7 @@ public class StudentController {
     private final GetStudentRecordUseCase getStudentRecordUseCase;
     private final WithdrawStudentUseCase withdrawStudentUseCase;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
-    private final InvoiceQueryService invoiceQueryService;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase;
     private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
     private final CreateManualCreditNoteUseCase createManualCreditNoteUseCase;
     private final StudentRepository studentRepository;
@@ -55,17 +50,14 @@ public class StudentController {
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
                               WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
-                              InvoiceQueryService invoiceQueryService, CourseEnrollmentRepository courseEnrollmentRepository,
-                              ProgramEnrollmentRepository programEnrollmentRepository, ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
+                              GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase, ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
                               CreateManualCreditNoteUseCase createManualCreditNoteUseCase, StudentRepository studentRepository,
                               StudentDocumentRepository studentDocumentRepository) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
-        this.invoiceQueryService = invoiceQueryService;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.getStudentBillingOverviewUseCase = getStudentBillingOverviewUseCase;
         this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
         this.createManualCreditNoteUseCase = createManualCreditNoteUseCase;
         this.studentRepository = studentRepository;
@@ -112,16 +104,8 @@ public class StudentController {
 
     @GetMapping("/{id}/billing-overview")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<EnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
-        if (!studentRepository.existsById(id)) {
-            throw new StudentNotFoundException(id);
-        }
-        return Stream.concat(
-                courseEnrollmentRepository.findByStudentId(id).stream()
-                        .map(enrollment -> EnrollmentBillingStatusResponse.of(enrollment, invoiceQueryService.byCourse(enrollment.getId()))),
-                programEnrollmentRepository.findByStudentId(id).stream()
-                        .map(enrollment -> EnrollmentBillingStatusResponse.of(enrollment, invoiceQueryService.byProgram(enrollment.getId()))))
-                .toList();
+    public List<AdminEnrollmentBillingStatusResponse> billingOverview(@PathVariable Long id) {
+        return getStudentBillingOverviewUseCase.get(id);
     }
 
 

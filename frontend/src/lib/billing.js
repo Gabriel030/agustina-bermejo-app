@@ -26,6 +26,57 @@ export function formatPeriod(period) {
   return `${MONTHS[parseInt(month, 10) - 1]} ${year}`;
 }
 
+export function formatDate(value) {
+  if (!value) return '';
+  const [year, month, day] = value.split('T')[0].split('-');
+  return `${day}/${month}/${year}`;
+}
+
+export function formatDateTime(value) {
+  if (!value) return '';
+  const time = value.includes('T') ? value.split('T')[1].slice(0, 5) : '';
+  return time ? `${formatDate(value)} ${time}` : formatDate(value);
+}
+
+export const PAYMENT_METHOD_LABELS = {
+  CASH: 'Efectivo',
+  TRANSFER: 'Transferencia bancaria',
+  CARD: 'Tarjeta',
+  MERCADO_PAGO: 'Mercado Pago',
+  CREDIT_BALANCE: 'Saldo a favor',
+};
+
+const CARD_TYPE_LABELS = {
+  CREDIT: 'Tarjeta de crédito',
+  DEBIT: 'Tarjeta de débito',
+};
+
+export function paymentMethodLabel(method, cardType, cardInstallments) {
+  const parts = [PAYMENT_METHOD_LABELS[method] ?? method];
+  if (cardType) {
+    parts.push(CARD_TYPE_LABELS[cardType]);
+  }
+  if (cardType !== 'DEBIT' && cardInstallments) {
+    parts.push(cardInstallments === 1 ? '1 cuota' : `${cardInstallments} cuotas`);
+  }
+  return parts.join(' · ');
+}
+
+export const RECEIPT_STATUS_CONFIG = {
+  PENDING_REVIEW: { label: 'En revisión', tone: 'warning' },
+  APPROVED: { label: 'Aprobado', tone: 'success' },
+  REJECTED: { label: 'Rechazado', tone: 'danger' },
+};
+
+export function hasInvoiceDetail(invoice) {
+  return (
+    (invoice.payments?.length ?? 0) > 0 ||
+    (invoice.receipts?.length ?? 0) > 0 ||
+    (invoice.adjustments?.length ?? 0) > 0 ||
+    invoice.status === 'CANCELLED'
+  );
+}
+
 export function formatMoney(money) {
   return formatMoneyOrEmpty(money) || '-';
 }

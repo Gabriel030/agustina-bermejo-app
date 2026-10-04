@@ -165,6 +165,25 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
+                id -> Optional.of(new MercadoPagoApprovedPayment(
+                        new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6,
+                        com.red_escuela.backend.billing.entity.CardType.CREDIT)),
+                new MpWebhookSignatureVerifier("", true));
+
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference()))
+                .singleElement().satisfies(payment -> {
+                    assertThat(payment.getCardType()).isEqualTo(com.red_escuela.backend.billing.entity.CardType.CREDIT);
+                    assertThat(payment.getCardInstallments()).isEqualTo(6);
+                });
+    }
+
+    @Test
     void aMercadoPagoAmountAboveTheBalanceKeepsTheOverpaymentRule() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(15000));

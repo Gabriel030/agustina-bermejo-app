@@ -15,11 +15,40 @@ function formatPesos(money) {
   return formatMoney(money) || '—';
 }
 
+const COUNT_GRID = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]';
+const AMOUNT_GRID = 'grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))]';
+
+function CurrencyKpis({ totals, currencyLabel }) {
+  return (
+    <section aria-label={currencyLabel ?? 'Montos'} className="flex min-w-0 flex-col gap-2">
+      {currencyLabel && (
+        <h2 className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{currencyLabel}</h2>
+      )}
+      <div className={AMOUNT_GRID}>
+        <Stagger className="min-w-0">
+          <StatCard label="Deuda total">
+            <div className="font-heading text-2xl font-bold text-danger">{formatPesos(totals.totalDebt)}</div>
+          </StatCard>
+          <StatCard label="Proyectado del mes">
+            <div className="font-heading text-2xl font-bold text-ink">{formatPesos(totals.monthlyProjected)}</div>
+          </StatCard>
+          <StatCard label="Cobrado del mes">
+            <div className="font-heading text-2xl font-bold text-success">{formatPesos(totals.monthlyCollected)}</div>
+          </StatCard>
+          <StatCard label="Pendiente del mes">
+            <div className="font-heading text-2xl font-bold text-warning">{formatPesos(totals.monthlyDebt)}</div>
+          </StatCard>
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
 function KpiCards({ data, isLoading }) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className={COUNT_GRID}>
+        {Array.from({ length: 4 }).map((_, i) => (
           <GlassCard key={i} className="p-5">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="mt-2 h-8 w-20" />
@@ -29,35 +58,28 @@ function KpiCards({ data, isLoading }) {
     );
   }
 
+  const totalsByCurrency = data?.totalsByCurrency ?? [];
+  const multiCurrency = totalsByCurrency.length > 1;
+
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-      <Stagger>
-        <StatCard label="Alumnos en deuda">
-          <div className="flex items-end gap-1.5">
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className={COUNT_GRID}>
+        <Stagger className="min-w-0">
+          <StatCard label="Alumnos en deuda">
             <span className="font-heading text-3xl font-bold text-danger">{data?.studentsInDebt ?? 0}</span>
-          </div>
-        </StatCard>
-        <StatCard label="Alumnos al día">
-          <div className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</div>
-        </StatCard>
-        {(data?.totalsByCurrency?.length ? data.totalsByCurrency : [{}]).flatMap((totals) => {
-          const suffix = data?.totalsByCurrency?.length > 1 ? ` (${totals.totalDebt.currency})` : '';
-          return [
-            <StatCard key={`debt-${suffix}`} label={`Deuda total${suffix}`}>
-              <div className="font-heading text-2xl font-bold text-danger">{formatPesos(totals.totalDebt)}</div>
-            </StatCard>,
-            <StatCard key={`projected-${suffix}`} label={`Proyectado del mes${suffix}`}>
-              <div className="font-heading text-2xl font-bold text-ink">{formatPesos(totals.monthlyProjected)}</div>
-            </StatCard>,
-            <StatCard key={`collected-${suffix}`} label={`Cobrado del mes${suffix}`}>
-              <div className="font-heading text-2xl font-bold text-success">{formatPesos(totals.monthlyCollected)}</div>
-            </StatCard>,
-            <StatCard key={`pending-${suffix}`} label={`Pendiente del mes${suffix}`}>
-              <div className="font-heading text-2xl font-bold text-warning">{formatPesos(totals.monthlyDebt)}</div>
-            </StatCard>,
-          ];
-        })}
-      </Stagger>
+          </StatCard>
+          <StatCard label="Alumnos al día">
+            <span className="font-heading text-3xl font-bold text-success">{data?.studentsUpToDate ?? 0}</span>
+          </StatCard>
+        </Stagger>
+      </div>
+      {(totalsByCurrency.length ? totalsByCurrency : [{}]).map((totals) => (
+        <CurrencyKpis
+          key={totals.totalDebt?.currency ?? 'none'}
+          totals={totals}
+          currencyLabel={multiCurrency ? totals.totalDebt.currency : null}
+        />
+      ))}
     </div>
   );
 }
@@ -116,15 +138,12 @@ export function DirectorFinanciero() {
   const { data: debtors, isLoading: cargandoDeudores } = useDebtors(sortBy);
 
   return (
-    <PageContainer>
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-bold text-ink">Resumen financiero</h1>
-        <p className="mt-0.5 text-sm text-ink-soft">Estado de cobros y alumnos con deuda vencida</p>
-      </div>
+    <PageContainer title="Resumen financiero">
+      <p className="-mt-4 text-sm text-ink-soft">Estado de cobros y alumnos con deuda vencida</p>
 
       <KpiCards data={kpis} isLoading={cargandoKpis} />
 
-      <GlassCard className="mt-6">
+      <GlassCard>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-danger" />

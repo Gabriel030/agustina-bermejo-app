@@ -166,6 +166,14 @@ class StudentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void billingOverviewIsForbiddenForRolesOtherThanAdministrativoAndDirector() throws Exception {
+        String token = tokenWithRole("preceptor.billing1", "PRECEPTOR");
+
+        mockMvc.perform(get("/students/{id}/billing-overview", 1L).header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void listingWithoutFilterReturnsOnlyConfirmed() throws Exception {
         Institution institution = persistInstitution();
         persistStudent("40111222", "40111222", "correcta123", StudentOnboardingStatus.CONFIRMADO, institution);
