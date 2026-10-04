@@ -85,7 +85,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -204,7 +204,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -320,7 +320,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -394,7 +394,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 
@@ -493,7 +493,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
 
     Given path '/section-enrollments', sectionEnrollment1Id, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 7 }
     When method post
     Then status 201
 

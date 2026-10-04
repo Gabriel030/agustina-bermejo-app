@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -206,7 +208,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         sectionEnrollment.setProgramEnrollment(enrollment);
         sectionEnrollment.setSubjectSection(section);
         sectionEnrollment.setStatus(EnrollmentStatus.APPROVED);
-        sectionEnrollment.setFinalScore(8.0);
+        sectionEnrollment.setFinalScore(Grade.of(BigDecimal.valueOf(8.0)));
         sectionEnrollment.setEnrolledAt(LocalDateTime.of(2026, 3, 1, 10, 0));
         sectionEnrollment.setAttemptNumber(1);
         entityManager.persist(sectionEnrollment);

@@ -37,7 +37,7 @@ describe('DirectorEsquemasEvaluacion', () => {
     expect(enviado.aggregationMethod).toBe('SIMPLE_AVERAGE');
   });
 
-  it('no deja crear un esquema con notas fuera de 0 a 10', async () => {
+  it('no deja crear un esquema con notas fuera de 1 a 10', async () => {
     mockearEsquemas();
     const user = userEvent.setup();
     renderWithProviders(<DirectorEsquemasEvaluacion />);
@@ -47,7 +47,7 @@ describe('DirectorEsquemasEvaluacion', () => {
     await user.clear(aprobar);
     await user.type(aprobar, '15');
 
-    expect(screen.getByText('Las notas van de 0 a 10.')).toBeInTheDocument();
+    expect(screen.getByText('Las notas van de 1 a 10.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear esquema' })).toBeDisabled();
   });
 

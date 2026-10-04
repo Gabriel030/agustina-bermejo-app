@@ -1,5 +1,9 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
+import java.math.BigDecimal;
+
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -49,7 +53,7 @@ import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceCo
 import com.red_escuela.backend.attendance.usecase.attendance.JustifyAttendanceUseCase;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import com.red_escuela.backend.evaluation.exception.InvalidGradeScoreException;
+import com.red_escuela.backend.shared.domain.InvalidGradeException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,9 +139,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         scheme.setTpCountExpected(tpCount);
         scheme.setHasFinal(hasFinal);
         scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
-        scheme.setMinRegularGrade(4.0);
-        scheme.setMinApprovalGrade(6.0);
-        scheme.setPromotionMinGrade(promotionMinGrade);
+        scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
+        scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
+        scheme.setPromotionMinGrade(promotionMinGrade == null ? null : Grade.of(BigDecimal.valueOf(promotionMinGrade)));
         entityManager.persist(scheme);
         return scheme;
     }
@@ -229,7 +233,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateGradeItemRequest request = new CreateGradeItemRequest(
-                GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null);
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null);
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(), request))
                 .isInstanceOf(NoEvaluationSchemeException.class);
@@ -250,7 +254,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateGradeItemRequest request = new CreateGradeItemRequest(
-                GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null);
+                GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null);
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), outsideInstructor.getId(), request))
                 .isInstanceOf(NotOwnSectionException.class);
@@ -272,9 +276,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 2.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(2.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -297,9 +301,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -322,13 +326,13 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 2.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(2.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 9.0, 10.0, "corregida", null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(9.0), "corregida", null));
 
         var items = gradeItemService.listByProgramEnrollment(enrollment.getId());
         assertThat(items).hasSize(1);
-        assertThat(items.get(0).getScore()).isEqualTo(9.0);
+        assertThat(items.get(0).getScore()).isEqualTo(Grade.of(BigDecimal.valueOf(9.0)));
     }
 
     @Test
@@ -348,12 +352,12 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(enrollment.getFinalScore()).isEqualTo(8.0);
+        assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(8.0)));
     }
 
     @Test
@@ -369,7 +373,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -390,7 +394,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -421,7 +425,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         GradeItem saved = gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
 
         EntityManagerHolder sharedTransaction = (EntityManagerHolder) TransactionSynchronizationManager.getResource(entityManagerFactory);
         assertThat(sharedTransaction.getEntityManager().getTransaction().getRollbackOnly()).isFalse();
@@ -447,14 +451,14 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(enrollment.getFinalScore()).isEqualTo(7.5);
+        assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
         assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.PROMOTION);
     }
 
@@ -474,9 +478,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 6.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(6.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 5.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(5.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -499,9 +503,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 10.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(10.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), 1.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), BigDecimal.valueOf(1.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -525,7 +529,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -549,14 +553,14 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(enrollment.getFinalScore()).isEqualTo(7.0);
+        assertThat(enrollment.getFinalScore()).isEqualTo(Grade.of(BigDecimal.valueOf(7.0)));
         assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.evaluation.entity.FinalGradeType.FINAL_EXAM);
     }
 
@@ -577,9 +581,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 3.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(3.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), 2.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 2, null, LocalDateTime.now(), BigDecimal.valueOf(2.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -622,15 +626,15 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
     @Test
     void schemeCreatedWithoutAggregationMethodStillMakesAStudentWithApprovedExamsRegular() {
         EvaluationScheme scheme = evaluationSchemeService.create(
-                new CreateEvaluationSchemeRequest("Esquema desde la pantalla", 2, true, null, null, 4.0, 6.0, null, null));
+                new CreateEvaluationSchemeRequest("Esquema desde la pantalla", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(6.0), null, null));
         Instructor instructor = persistInstructor("71000112");
         SubjectSectionEnrollment enrollment = enrollmentWithScheme("71000111", scheme, instructor, null);
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 6.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(6.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -645,8 +649,8 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.TP, 3, null, LocalDateTime.now(), 15.0, 10.0, null, null)))
-                .isInstanceOf(InvalidGradeScoreException.class);
+                new CreateGradeItemRequest(GradeItemType.TP, 3, null, LocalDateTime.now(), BigDecimal.valueOf(15.0), null, null)))
+                .isInstanceOf(InvalidGradeException.class);
         assertThat(gradeItemService.listByProgramEnrollment(enrollment.getId())).isEmpty();
     }
 
@@ -657,11 +661,11 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), -1.0, 10.0, null, null)))
-                .isInstanceOf(InvalidGradeScoreException.class);
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(-1.0), null, null)))
+                .isInstanceOf(InvalidGradeException.class);
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 11.0, null, null, null)))
-                .isInstanceOf(InvalidGradeScoreException.class);
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(11.0), null, null)))
+                .isInstanceOf(InvalidGradeException.class);
     }
 
     @Test
@@ -672,9 +676,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -689,9 +693,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 9.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(9.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 9.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(9.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);
@@ -707,9 +711,9 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         persistPresences(enrollment, instructor, 2);
         entityManager.flush();
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), 7.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null));
         entityManager.flush();
         entityManager.refresh(enrollment);
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
@@ -734,7 +738,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), 8.0, 10.0, null, null));
+                new CreateGradeItemRequest(GradeItemType.FINAL, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null));
 
         entityManager.flush();
         entityManager.refresh(enrollment);

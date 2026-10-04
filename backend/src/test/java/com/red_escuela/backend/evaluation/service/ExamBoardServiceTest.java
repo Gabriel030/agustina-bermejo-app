@@ -1,5 +1,9 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
+import java.math.BigDecimal;
+
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -178,8 +182,7 @@ class ExamBoardServiceTest extends AbstractIntegrationTest {
         finalGrade.setType(GradeItemType.FINAL);
         finalGrade.setSequenceNumber(1);
         finalGrade.setDate(LocalDateTime.of(2020, 9, 2, 18, 0));
-        finalGrade.setScore(7.0);
-        finalGrade.setMaxScore(10.0);
+        finalGrade.setScore(Grade.of(BigDecimal.valueOf(7.0)));
         finalGrade.setExamBoard(examBoard);
         entityManager.persist(finalGrade);
         entityManager.flush();
@@ -188,7 +191,7 @@ class ExamBoardServiceTest extends AbstractIntegrationTest {
 
         assertThat(summary).singleElement().satisfies(row -> {
             assertThat(row.status()).isEqualTo("GRADED");
-            assertThat(row.finalScore()).isEqualTo(7.0);
+            assertThat(row.finalScore()).isEqualByComparingTo(BigDecimal.valueOf(7.0));
         });
     }
 }

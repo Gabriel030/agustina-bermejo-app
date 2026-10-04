@@ -1,4 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
+import com.red_escuela.backend.shared.domain.Grade;
+import java.math.BigDecimal;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
@@ -178,12 +180,11 @@ public class ProgramEnrollmentService {
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
-        var notasFinales = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
+        List<Grade> finalGrades = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
                 .map(SubjectSectionEnrollment::getFinalScore)
                 .filter(java.util.Objects::nonNull)
-                .mapToDouble(Double::doubleValue)
-                .average();
-        Double promedioGeneral = notasFinales.isPresent() ? notasFinales.getAsDouble() : null;
+                .toList();
+        BigDecimal promedioGeneral = Grade.average(finalGrades).map(Grade::value).orElse(null);
 
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,

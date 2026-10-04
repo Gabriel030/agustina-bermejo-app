@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.shared.domain.Grade;
+import java.math.BigDecimal;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
@@ -10,7 +12,7 @@ import java.util.List;
 
 public record SectionEnrollmentResponse(
         Long id, Long programEnrollmentId, Long sectionId, String sectionName, Long subjectId, String subjectCode, String subjectName,
-        Integer curricularYear, String curricularTerm, String status, Integer attemptNumber, Double finalScore, String finalGradeType,
+        Integer curricularYear, String curricularTerm, String status, Integer attemptNumber, BigDecimal finalScore, String finalGradeType,
         LocalDateTime enrolledAt, LocalDateTime droppedAt, String schedule, String instructorTitular, String instructorAdjunto) {
     public static SectionEnrollmentResponse from(SubjectSectionEnrollment enrollment) {
         return from(enrollment, null, null);
@@ -36,7 +38,7 @@ public record SectionEnrollmentResponse(
                 curricularTerm == null ? null : curricularTerm.name(),
                 enrollment.getStatus() == null ? null : enrollment.getStatus().name(),
                 enrollment.getAttemptNumber(),
-                enrollment.getFinalScore(),
+                Grade.valueOrNull(enrollment.getFinalScore()),
                 enrollment.getFinalGradeType() == null ? null : enrollment.getFinalGradeType().name(),
                 enrollment.getEnrolledAt(),
                 enrollment.getDroppedAt(),

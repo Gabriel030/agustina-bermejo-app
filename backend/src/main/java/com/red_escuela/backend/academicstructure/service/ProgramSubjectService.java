@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
@@ -194,7 +195,7 @@ public class ProgramSubjectService {
         prerequisite.setProgramSubject(objetivo);
         prerequisite.setPrerequisiteProgramSubject(prerequisitePropuesto);
         prerequisite.setRequirementType(request.requirementType());
-        prerequisite.setMinGrade(request.minGrade());
+        prerequisite.setMinGrade(Grade.ofNullable(request.minGrade()));
         prerequisite.setNotes(request.notes());
 
         try {

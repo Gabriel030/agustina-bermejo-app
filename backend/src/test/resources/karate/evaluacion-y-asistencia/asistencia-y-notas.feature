@@ -87,13 +87,13 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 8 }
     When method post
     Then status 201
 
@@ -105,7 +105,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 6 }
     When method post
     Then status 201
 
@@ -118,7 +118,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'FINAL', sequenceNumber: 1, date: '2026-06-01T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'FINAL', sequenceNumber: 1, date: '2026-06-01T00:00:00', score: 8 }
     When method post
     Then status 201
 
@@ -147,19 +147,19 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 2, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 2 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 3, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 2, date: '2026-05-01T00:00:00', score: 3 }
     When method post
     Then status 201
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 1 }
     When method post
     Then status 201
 
@@ -195,7 +195,7 @@ Feature: Asistencia y notas (AttendanceController, GradeItemController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + otroDocente.accessToken
-    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7, maxScore: 10 }
+    And request { type: 'EXAM', sequenceNumber: 1, date: '2026-04-01T00:00:00', score: 7 }
     When method post
     Then status 403
 

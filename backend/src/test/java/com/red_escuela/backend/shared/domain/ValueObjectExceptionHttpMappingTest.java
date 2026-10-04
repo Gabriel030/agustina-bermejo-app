@@ -26,6 +26,7 @@ class ValueObjectExceptionHttpMappingTest {
                 case "percentage" -> Percentage.ofPoints(new BigDecimal("150"));
                 case "currency" -> Money.zero(Currency.ARS).plus(Money.zero(Currency.USD));
                 case "date-range" -> new DateRange(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 1, 1));
+                case "grade" -> Grade.of(new BigDecimal("10.20"));
                 case "email" -> EmailAddress.of("not-an-email");
                 case "adjustment" -> new MonetaryAdjustment.Nominal(Money.of(new BigDecimal("-1"), Currency.ARS));
                 default -> throw new UnsupportedOperationException(kind);
@@ -42,6 +43,7 @@ class ValueObjectExceptionHttpMappingTest {
             "percentage, INVALID_PERCENTAGE",
             "currency, CURRENCY_MISMATCH",
             "date-range, INVALID_DATE_RANGE",
+            "grade, INVALID_GRADE",
             "email, INVALID_EMAIL_ADDRESS",
             "adjustment, NEGATIVE_ADJUSTMENT_AMOUNT"
     })
