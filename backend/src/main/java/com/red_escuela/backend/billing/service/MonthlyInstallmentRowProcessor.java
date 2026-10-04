@@ -49,7 +49,7 @@ public class MonthlyInstallmentRowProcessor {
     public InstallmentIssuanceOutcome issueForProgramEnrollment(Long enrollmentId, YearMonth month) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        LocalDate today = month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1);
+        LocalDate today = LocalDate.now(clock);
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL);
         return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);
@@ -59,7 +59,7 @@ public class MonthlyInstallmentRowProcessor {
     public InstallmentIssuanceOutcome issueForProgramEnrollmentCatchingUp(Long enrollmentId, YearMonth month) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        LocalDate today = month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1);
+        LocalDate today = LocalDate.now(clock);
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
         ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL, true);
         return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);

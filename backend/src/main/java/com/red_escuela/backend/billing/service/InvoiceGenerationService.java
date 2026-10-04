@@ -35,11 +35,14 @@ public class InvoiceGenerationService {
     private final MonthlyChargePlanner planner;
     private final ChargePlanExecutor planExecutor;
     private final Clock clock;
+    private final int recurringFeeDueDays;
 
     public InvoiceGenerationService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, InvoiceRepository invoiceRepository, InvoiceFactory invoiceFactory,
                                      RecurringFeeWindowService recurringFeeWindowService,
                                      ProgramEnrollmentService programEnrollmentService, ChargePlanningContextLoader contextLoader,
-                                     MonthlyChargePlanner planner, ChargePlanExecutor planExecutor, Clock clock) {
+                                     MonthlyChargePlanner planner, ChargePlanExecutor planExecutor, Clock clock,
+                                     @org.springframework.beans.factory.annotation.Value("${app.billing.recurring-fee-due-days:10}") int recurringFeeDueDays) {
+        this.recurringFeeDueDays = recurringFeeDueDays;
         this.contextLoader = contextLoader;
         this.planner = planner;
         this.planExecutor = planExecutor;
@@ -86,7 +89,7 @@ public class InvoiceGenerationService {
     }
 
     private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, ChargeScope scope) {
-        executePlan(programEnrollment, month, month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1), scope);
+        executePlan(programEnrollment, month, LocalDate.now(clock), scope);
     }
 
     private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today, ChargeScope scope) {
@@ -118,13 +121,13 @@ public class InvoiceGenerationService {
 
     private void generateByFrequency(PaymentPlanSelection selection, CourseEnrollment courseEnrollment, ProgramEnrollment programEnrollment, YearMonth today) {
         if (selection.getPaymentPlanOption().getCadence() == PaymentPlanCadence.MONTHLY) {
-            createOne(courseEnrollment, programEnrollment, selection, today, today.atDay(1));
+            createOne(courseEnrollment, programEnrollment, selection, today, LocalDate.now(clock).plusDays(recurringFeeDueDays));
             return;
         }
         if (today.equals(selection.getEffectiveFrom())) {
             YearMonth end = selection.getEffectiveFrom().plusMonths(selection.getScopeMonths() - 1L);
             for (YearMonth month = selection.getEffectiveFrom(); !month.isAfter(end); month = month.plusMonths(1)) {
-                createOne(courseEnrollment, programEnrollment, selection, month, selection.getEffectiveFrom().atDay(1));
+                createOne(courseEnrollment, programEnrollment, selection, month, LocalDate.now(clock).plusDays(recurringFeeDueDays));
             }
         }
     }

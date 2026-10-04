@@ -26,6 +26,12 @@ public class YearBillingConfigurationApplier {
         if (request.lateEnrollmentFeeDueDays() != null) {
             template.setLateEnrollmentFeeDueDays(request.lateEnrollmentFeeDueDays());
         }
+        if (request.recurringFeeDueDays() != null) {
+            template.setRecurringFeeDueDays(request.recurringFeeDueDays());
+        }
+        if (request.withdrawSuspendedAtTermEnd() != null) {
+            template.setWithdrawSuspendedAtTermEnd(request.withdrawSuspendedAtTermEnd());
+        }
         if (request.paysWhilePaused() != null) {
             template.setPaysWhilePaused(request.paysWhilePaused());
         }

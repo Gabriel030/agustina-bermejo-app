@@ -45,7 +45,7 @@ public class ChargePlanningContextLoader {
                                        InvoiceRepository invoiceRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
-                                       @Value("${app.billing.irregular-term-types:INTENSIVO,VERANO,INVIERNO,RECUPERATORIO,EXTRAORDINARIO}") Set<String> irregularTermTypes) {
+                                       @Value("${app.billing.irregular-term-types:}") Set<String> irregularTermTypes) {
         this.irregularTermTypes = irregularTermTypes.stream().map(String::trim).map(String::toUpperCase).collect(Collectors.toSet());
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;

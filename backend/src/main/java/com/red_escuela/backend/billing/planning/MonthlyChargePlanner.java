@@ -154,7 +154,7 @@ public final class MonthlyChargePlanner {
             decisions.add(new PlanDecision(7, "ALREADY_ISSUED", "cuota " + month));
             return;
         }
-        LocalDate due = month.atDay(1);
+        LocalDate due = facts.today().plusDays(cycle.template().getRecurringFeeDueDays());
         charges.add(new PlannedCharge(ChargeKind.RECURRING_FEE, month, due, facts.today(), cycle.templateId(), null,
                 "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount() + " del año lectivo"));
         decisions.add(new PlanDecision(5, "ISSUE_INSTALLMENT", "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount()));

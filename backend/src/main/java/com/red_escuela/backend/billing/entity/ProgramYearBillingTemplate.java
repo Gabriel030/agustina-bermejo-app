@@ -49,6 +49,12 @@ public class ProgramYearBillingTemplate {
     @Column(name = "late_enrollment_fee_due_days", nullable = false)
     private Integer lateEnrollmentFeeDueDays = 10;
 
+    @Column(name = "recurring_fee_due_days", nullable = false)
+    private Integer recurringFeeDueDays = 10;
+
+    @Column(name = "withdraw_suspended_at_term_end", nullable = false)
+    private boolean withdrawSuspendedAtTermEnd = true;
+
     @Column(name = "pays_while_paused", nullable = false)
     private boolean paysWhilePaused = false;
 

@@ -9,6 +9,8 @@ public record YearBillingConfigurationRequest(
         @Min(1) @Max(12) Integer secondEnrollmentFeeMonth,
         @Min(0) @Max(6) Integer enrollmentFeeLeadMonths,
         @Min(1) @Max(60) Integer lateEnrollmentFeeDueDays,
+        @Min(1) @Max(60) Integer recurringFeeDueDays,
+        Boolean withdrawSuspendedAtTermEnd,
         Boolean paysWhilePaused,
         Boolean blocksEnrollment,
         Boolean blocksExamRegistration,
@@ -16,6 +18,6 @@ public record YearBillingConfigurationRequest(
         Boolean requireEnrollmentFeeForFinalExamOnlyStudents) {
 
     public static YearBillingConfigurationRequest defaults() {
-        return new YearBillingConfigurationRequest(null, null, null, null, null, null, null, null, null, null);
+        return new YearBillingConfigurationRequest(null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

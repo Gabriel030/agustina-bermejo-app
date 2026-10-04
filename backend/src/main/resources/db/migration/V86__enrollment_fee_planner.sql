@@ -3,6 +3,8 @@ alter table program_year_billing_template add column first_enrollment_fee_month 
 alter table program_year_billing_template add column second_enrollment_fee_month integer;
 alter table program_year_billing_template add column enrollment_fee_lead_months integer not null default 1;
 alter table program_year_billing_template add column late_enrollment_fee_due_days integer not null default 10;
+alter table program_year_billing_template add column recurring_fee_due_days integer not null default 10;
+alter table program_year_billing_template add column withdraw_suspended_at_term_end boolean not null default true;
 alter table program_year_billing_template add column pays_while_paused boolean not null default false;
 alter table program_year_billing_template add column blocks_enrollment boolean not null default true;
 alter table program_year_billing_template add column blocks_exam_registration boolean not null default true;
@@ -21,6 +23,7 @@ alter table program_year_billing_template add constraint ck_template_fee_months_
     (enrollment_fee_count = 1 and second_enrollment_fee_month is null)
     or (enrollment_fee_count = 2 and second_enrollment_fee_month is not null and second_enrollment_fee_month > first_enrollment_fee_month));
 alter table program_year_billing_template add constraint ck_template_lead_months check (enrollment_fee_lead_months between 0 and 6);
+alter table program_year_billing_template add constraint ck_template_recurring_due_days check (recurring_fee_due_days between 1 and 60);
 alter table program_year_billing_template add constraint ck_template_late_due_days check (late_enrollment_fee_due_days between 1 and 60);
 
 alter table program_cohort add column entry_fee_discount numeric(7,6) not null default 0;
