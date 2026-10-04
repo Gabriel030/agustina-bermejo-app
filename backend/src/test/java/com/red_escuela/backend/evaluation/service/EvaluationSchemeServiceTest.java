@@ -1,7 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
 import com.red_escuela.backend.shared.domain.Grade;
-import com.red_escuela.backend.shared.domain.InvalidGradeException;
 
 import java.math.BigDecimal;
 
@@ -86,10 +85,10 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
     void creatingASchemeWithGradesOutsideTheZeroToTenScaleFails() {
         assertThatThrownBy(() -> evaluationSchemeService.create(
                 new CreateEvaluationSchemeRequest("Notas fuera de escala", 2, true, null, null, BigDecimal.valueOf(-2.0), BigDecimal.valueOf(6.0), null, null)))
-                .isInstanceOf(InvalidGradeException.class);
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
         assertThatThrownBy(() -> evaluationSchemeService.create(
                 new CreateEvaluationSchemeRequest("Final sobre 15", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(15.0), null, null)))
-                .isInstanceOf(InvalidGradeException.class);
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
     }
 
     @Test
@@ -120,7 +119,7 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> evaluationSchemeService.update(scheme.getId(),
                 new CreateEvaluationSchemeRequest("Reglamento a corregir", 2, true, null, null, BigDecimal.valueOf(4.0), BigDecimal.valueOf(11.0), null, null)))
-                .isInstanceOf(InvalidGradeException.class);
+                .isInstanceOf(InvalidEvaluationSchemeException.class);
         assertThat(scheme.getMinApprovalGrade()).isEqualTo(Grade.of(BigDecimal.valueOf(6.0)));
     }
 
