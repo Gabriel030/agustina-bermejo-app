@@ -37,8 +37,8 @@ public class CreateProgramCohortService implements CreateProgramCohortUseCase {
         cohort.setAdmissionEnd(request.admissionEnd());
         cohort.setCursadaStart(request.cursadaStart());
         cohort.setEnrollmentFeeMonth(request.enrollmentFeeMonth());
-        if (request.entryFeeDiscountPoints() != null) {
-            cohort.setEntryFeeDiscount(request.entryFeeDiscountPoints());
+        if (request.entryFeeDiscountPercent() != null) {
+            cohort.setEntryFeeDiscount(request.entryFeeDiscountPercent());
         }
         cohort.setCreatedBy(actor);
         return programCohortRepository.save(cohort);
