@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
@@ -29,6 +30,7 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
     private final CurrentPersonService currentPersonService;
     private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     public ApproveGraduationRequestService(GraduationRequestRepository graduationRequestRepository,
                                             ProgramEnrollmentRepository programEnrollmentRepository,
@@ -37,7 +39,8 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
                                             InvoiceQueryService invoiceQueryService,
                                             CurrentPersonService currentPersonService,
                                             EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService,
-                                            ApplicationEventPublisher eventPublisher) {
+                                            ApplicationEventPublisher eventPublisher,
+                                            Clock clock) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.graduationRequestFinder = graduationRequestFinder;
@@ -46,6 +49,7 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         this.currentPersonService = currentPersonService;
         this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
         this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
     @Override
@@ -63,7 +67,7 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
             throw new PendingDebtException(studentId);
         }
 
-        request.approve(currentPersonService.resolveCurrentPerson(), LocalDateTime.now());
+        request.approve(currentPersonService.resolveCurrentPerson(), LocalDateTime.now(clock));
         graduationRequestRepository.save(request);
         programEnrollmentRepository.save(programEnrollment);
         enrollmentWithdrawalCreditService.handleProgramEnrollmentGraduation(programEnrollment);

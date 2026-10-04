@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
@@ -42,20 +43,22 @@ public class ExamBoardRegistrationService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final Clock clock;
 
-    public ExamBoardRegistrationService(
-            ExamBoardRegistrationRepository examBoardRegistrationRepository,
+    public ExamBoardRegistrationService(ExamBoardRegistrationRepository examBoardRegistrationRepository,
             ExamBoardRepository examBoardRepository,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
-            AttendanceRiskCalculator attendanceRiskCalculator) {
+            AttendanceRiskCalculator attendanceRiskCalculator,
+            Clock clock) {
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.clock = clock;
     }
 
     @Transactional
@@ -108,7 +111,7 @@ public class ExamBoardRegistrationService {
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-            registration.setRegisteredAt(LocalDateTime.now());
+            registration.setRegisteredAt(LocalDateTime.now(clock));
             return examBoardRegistrationRepository.save(registration);
         }
 
@@ -116,7 +119,7 @@ public class ExamBoardRegistrationService {
         created.setExamBoard(examBoard);
         created.setProgramSubjectSectionEnrollment(enrollment);
         created.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-        created.setRegisteredAt(LocalDateTime.now());
+        created.setRegisteredAt(LocalDateTime.now(clock));
         try {
             return examBoardRegistrationRepository.saveAndFlush(created);
         } catch (DataIntegrityViolationException e) {
@@ -167,7 +170,7 @@ public class ExamBoardRegistrationService {
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-            registration.setRegisteredAt(LocalDateTime.now());
+            registration.setRegisteredAt(LocalDateTime.now(clock));
             return examBoardRegistrationRepository.save(registration);
         }
 
@@ -175,7 +178,7 @@ public class ExamBoardRegistrationService {
         created.setExamBoard(examBoard);
         created.setCourseSubjectSectionEnrollment(enrollment);
         created.setStatus(ExamBoardRegistrationStatus.REGISTERED);
-        created.setRegisteredAt(LocalDateTime.now());
+        created.setRegisteredAt(LocalDateTime.now(clock));
         try {
             return examBoardRegistrationRepository.saveAndFlush(created);
         } catch (DataIntegrityViolationException e) {
@@ -221,7 +224,7 @@ public class ExamBoardRegistrationService {
     }
 
     private void requireOpenRegistrationWindow(ExamBoard examBoard) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         if (examBoard.getRegistrationStart() != null && now.isBefore(examBoard.getRegistrationStart())) {
             throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
         }

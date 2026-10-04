@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
@@ -54,16 +55,17 @@ public class CourseEnrollmentService {
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
+    private final Clock clock;
 
-    public CourseEnrollmentService(
-            CourseEnrollmentRepository courseEnrollmentRepository,
+    public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
             StudentRepository studentRepository,
             CourseRepository courseRepository,
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
+            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService,
+            Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -74,6 +76,7 @@ public class CourseEnrollmentService {
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
         this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -91,7 +94,7 @@ public class CourseEnrollmentService {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         validateCanEnroll(student, course);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
@@ -122,7 +125,7 @@ public class CourseEnrollmentService {
                     "El curso " + course.getId() + " tiene la ventana de inscripción mal configurada "
                             + "(registrationStart posterior a registrationEnd)");
         }
-        if (!course.isRegistrationOpenAt(LocalDateTime.now())) {
+        if (!course.isRegistrationOpenAt(LocalDateTime.now(clock))) {
             throw new AdmissionWindowClosedException(
                     "Fuera de la ventana de inscripción del curso " + course.getId());
         }
@@ -221,7 +224,7 @@ public class CourseEnrollmentService {
     }
 
     void cancelModuleEnrollments(CourseEnrollment enrollment) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
             if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS

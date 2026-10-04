@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import java.time.Clock;
 import com.red_escuela.backend.shared.domain.Grade;
 import java.math.BigDecimal;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
@@ -49,9 +50,9 @@ public class ExamBoardService {
     private final InstructorRepository instructorRepository;
     private final HolidayRepository holidayRepository;
     private final GradeItemRepository gradeItemRepository;
+    private final Clock clock;
 
-    public ExamBoardService(
-            ExamBoardRepository examBoardRepository,
+    public ExamBoardService(ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             ExamBoardRegistrationRepository examBoardRegistrationRepository,
             SubjectRepository subjectRepository,
@@ -59,7 +60,8 @@ public class ExamBoardService {
             TermRepository termRepository,
             InstructorRepository instructorRepository,
             HolidayRepository holidayRepository,
-            GradeItemRepository gradeItemRepository) {
+            GradeItemRepository gradeItemRepository,
+            Clock clock) {
         this.holidayRepository = holidayRepository;
         this.gradeItemRepository = gradeItemRepository;
         this.examBoardRepository = examBoardRepository;
@@ -69,6 +71,7 @@ public class ExamBoardService {
         this.courseSubjectRepository = courseSubjectRepository;
         this.termRepository = termRepository;
         this.instructorRepository = instructorRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -125,7 +128,7 @@ public class ExamBoardService {
     @Transactional
     public ExamBoard close(Long examBoardId) {
         ExamBoard examBoard = findOrThrow(examBoardId);
-        examBoard.close(LocalDateTime.now());
+        examBoard.close(LocalDateTime.now(clock));
         return examBoardRepository.save(examBoard);
     }
 

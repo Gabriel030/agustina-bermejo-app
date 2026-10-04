@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import java.time.Clock;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
@@ -20,15 +21,18 @@ public class VerifyGraduationRequestDebtService implements VerifyGraduationReque
     private final GraduationRequestFinder graduationRequestFinder;
     private final InvoiceQueryService invoiceQueryService;
     private final CurrentPersonService currentPersonService;
+    private final Clock clock;
 
     public VerifyGraduationRequestDebtService(GraduationRequestRepository graduationRequestRepository,
                                                GraduationRequestFinder graduationRequestFinder,
                                                InvoiceQueryService invoiceQueryService,
-                                               CurrentPersonService currentPersonService) {
+                                               CurrentPersonService currentPersonService,
+                                               Clock clock) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.graduationRequestFinder = graduationRequestFinder;
         this.invoiceQueryService = invoiceQueryService;
         this.currentPersonService = currentPersonService;
+        this.clock = clock;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class VerifyGraduationRequestDebtService implements VerifyGraduationReque
 
         request.setStatus(GraduationRequestStatus.ADMIN_VERIFIED);
         request.setVerifiedBy(currentPersonService.resolveCurrentPerson());
-        request.setVerifiedAt(LocalDateTime.now());
+        request.setVerifiedAt(LocalDateTime.now(clock));
         return graduationRequestRepository.save(request);
     }
 }

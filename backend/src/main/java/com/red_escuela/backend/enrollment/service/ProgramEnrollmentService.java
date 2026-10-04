@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.Percentage;
 import java.math.BigDecimal;
@@ -64,9 +65,9 @@ public class ProgramEnrollmentService {
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
     private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
+    private final Clock clock;
 
-    public ProgramEnrollmentService(
-            ProgramEnrollmentRepository programEnrollmentRepository,
+    public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
             StudentRepository studentRepository,
             ProgramRepository programRepository,
             ProgramSubjectRepository programSubjectRepository,
@@ -76,7 +77,8 @@ public class ProgramEnrollmentService {
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
+            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService,
+            Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -89,6 +91,7 @@ public class ProgramEnrollmentService {
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
         this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -108,7 +111,7 @@ public class ProgramEnrollmentService {
             validateAdmissionWindow(cohort);
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 studentId, program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED));
         if (!activas.isEmpty()) {
@@ -259,7 +262,7 @@ public class ProgramEnrollmentService {
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
-        if (!cohort.isAdmissionOpenOn(LocalDate.now())) {
+        if (!cohort.isAdmissionOpenOn(LocalDate.now(clock))) {
             throw new CohortAdmissionWindowClosedException(cohort.getId());
         }
     }

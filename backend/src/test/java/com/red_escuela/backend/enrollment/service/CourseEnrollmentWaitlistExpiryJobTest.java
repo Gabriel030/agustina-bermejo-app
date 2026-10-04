@@ -32,7 +32,7 @@ class CourseEnrollmentWaitlistExpiryJobTest {
         when(courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull()).thenReturn(List.of(failing, healthy));
         doThrow(new IllegalStateException("fila inconsistente")).when(courseWaitlistExpiration).expire(eq(1L));
 
-        new CourseEnrollmentWaitlistExpiryJob(courseRepository, courseWaitlistExpiration).expireWaitlists();
+        new CourseEnrollmentWaitlistExpiryJob(courseRepository, courseWaitlistExpiration, java.time.Clock.systemDefaultZone()).expireWaitlists();
 
         verify(courseWaitlistExpiration).expire(1L);
         verify(courseWaitlistExpiration).expire(2L);

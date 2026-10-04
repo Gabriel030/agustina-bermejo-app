@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.directorapproval;
 
+import java.time.Clock;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
@@ -28,17 +29,20 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
     private final SubjectRepository subjectRepository;
     private final ProgramSubjectRepository programSubjectRepository;
     private final CurrentPersonService currentPersonService;
+    private final Clock clock;
 
     public RequestDirectorApprovalService(DirectorApprovalRequestRepository directorApprovalRequestRepository,
                                            ProgramEnrollmentRepository programEnrollmentRepository,
                                            SubjectRepository subjectRepository,
                                            ProgramSubjectRepository programSubjectRepository,
-                                           CurrentPersonService currentPersonService) {
+                                           CurrentPersonService currentPersonService,
+                                           Clock clock) {
         this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectRepository = subjectRepository;
         this.programSubjectRepository = programSubjectRepository;
         this.currentPersonService = currentPersonService;
+        this.clock = clock;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class RequestDirectorApprovalService implements RequestDirectorApprovalUs
 
         DirectorApprovalRequest entity = DirectorApprovalRequest.open(
                 request.type(), programEnrollment, subject, request.justification(),
-                currentPersonService.resolveCurrentPerson(), LocalDateTime.now());
+                currentPersonService.resolveCurrentPerson(), LocalDateTime.now(clock));
 
         boolean alreadyActive = directorApprovalRequestRepository
                 .findByProgramEnrollmentIdAndTypeAndStatus(
