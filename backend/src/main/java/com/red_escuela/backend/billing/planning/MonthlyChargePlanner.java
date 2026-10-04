@@ -13,6 +13,10 @@ import java.util.Optional;
 public final class MonthlyChargePlanner {
 
     public ChargePlan plan(ChargePlanningFacts facts, ChargeScope scope) {
+        return plan(facts, scope, false);
+    }
+
+    public ChargePlan plan(ChargePlanningFacts facts, ChargeScope scope, boolean catchUp) {
         List<PlanDecision> decisions = new ArrayList<>();
         List<PlannedCharge> charges = new ArrayList<>();
         YearMonth month = facts.month();
@@ -48,7 +52,7 @@ public final class MonthlyChargePlanner {
         }
 
         if (scope != ChargeScope.RECURRING_ONLY) {
-            planEnrollmentFees(facts, charges, decisions);
+            planEnrollmentFees(facts, charges, decisions, catchUp);
         }
         if (scope != ChargeScope.ENROLLMENT_FEE_ONLY) {
             planRecurringFee(facts, cuotaCycle, covering.isPresent(), charges, decisions);
@@ -56,13 +60,13 @@ public final class MonthlyChargePlanner {
         return new ChargePlan(facts.enrollmentId(), month, charges, decisions, notConfigured);
     }
 
-    private void planEnrollmentFees(ChargePlanningFacts facts, List<PlannedCharge> charges, List<PlanDecision> decisions) {
+    private void planEnrollmentFees(ChargePlanningFacts facts, List<PlannedCharge> charges, List<PlanDecision> decisions, boolean catchUp) {
         for (YearCycle cycle : facts.cycles().all()) {
             ProgramYearBillingTemplate template = cycle.template();
             for (int index = 1; index <= cycle.slotCount(); index++) {
                 final int slot = index;
                 String label = "plantilla " + cycle.templateId() + " matrícula " + slot;
-                if (!isDueNow(facts, cycle, slot)) {
+                if (!isDueNow(facts, cycle, slot, catchUp)) {
                     continue;
                 }
                 if (facts.entryMonth() != null && cycle.slotTo(slot).isBefore(facts.entryMonth())) {
@@ -106,7 +110,14 @@ public final class MonthlyChargePlanner {
         return YearMonth.from(window.opensOn()).minusMonths(cycle.template().getEnrollmentFeeLeadMonths());
     }
 
-    public boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot) {
+    public boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot, boolean catchUp) {
+        if (!catchUp) {
+            SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
+            if (window == null) {
+                return cycle.slotPeriod(slot).equals(facts.month());
+            }
+            return !emissionMonth(facts, cycle, slot).isAfter(facts.month()) && !facts.today().isAfter(window.closesOn());
+        }
         return !emissionMonth(facts, cycle, slot).isAfter(facts.month()) && !cycle.slotTo(slot).isBefore(facts.month());
     }
 

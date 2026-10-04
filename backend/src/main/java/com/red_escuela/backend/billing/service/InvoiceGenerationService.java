@@ -95,7 +95,7 @@ public class InvoiceGenerationService {
 
     private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today, ChargeScope scope, boolean inCurrentTransaction) {
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(programEnrollment, month, today);
-        ChargePlan plan = planner.plan(context.facts(), scope);
+        ChargePlan plan = planner.plan(context.facts(), scope, inCurrentTransaction);
         planExecutor.execute(programEnrollment, context.selection(), plan, inCurrentTransaction);
     }
 

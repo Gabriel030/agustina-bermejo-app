@@ -29,7 +29,7 @@ public class ChargesOnReactivationListener {
             return;
         }
         try {
-            InstallmentIssuanceOutcome outcome = rowProcessor.issueForProgramEnrollment(enrollment.getId(), YearMonth.now(clock));
+            InstallmentIssuanceOutcome outcome = rowProcessor.issueForProgramEnrollmentCatchingUp(enrollment.getId(), YearMonth.now(clock));
             log.info("Cargos del mes al reactivar la inscripción: inscripcion={}, resultado={}", enrollment.getId(), outcome);
         } catch (RuntimeException e) {
             log.error("Falló la emisión de cargos al reactivar la inscripción: inscripcion={}", enrollment.getId(), e);

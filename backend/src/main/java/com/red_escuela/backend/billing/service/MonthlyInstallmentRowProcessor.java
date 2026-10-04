@@ -56,11 +56,21 @@ public class MonthlyInstallmentRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public InstallmentIssuanceOutcome issueForProgramEnrollmentCatchingUp(Long enrollmentId, YearMonth month) {
+        ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
+        LocalDate today = month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1);
+        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
+        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL, true);
+        return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int issueEnrollmentFeesOnly(Long enrollmentId, YearMonth month, LocalDate today) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
         ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
-        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY);
+        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY, true);
         return planExecutor.execute(enrollment, context.selection(), plan);
     }
 

@@ -93,7 +93,7 @@ public class EnrollmentFeeRequirementService {
         int latestSlot = 0;
         for (YearCycle cycle : facts.cycles().all()) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
-                if (planner.isDueNow(facts, cycle, slot) && (latest == null || cycle.start().isAfter(latest.start())
+                if (planner.isDueNow(facts, cycle, slot, true) && (latest == null || cycle.start().isAfter(latest.start())
                         || (cycle.start().equals(latest.start()) && slot > latestSlot))) {
                     latest = cycle;
                     latestSlot = slot;
@@ -158,7 +158,7 @@ public class EnrollmentFeeRequirementService {
     }
 
     private boolean issueOnDemand(ProgramEnrollment enrollment, ChargePlanningContextLoader.PlanningContext context, YearCycle cycle, int slot) {
-        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY);
+        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY, true);
         Optional<PlannedCharge> charge = plan.charges().stream()
                 .filter(c -> cycle.templateId().equals(c.templateId()) && c.slot() != null && c.slot() == slot).findFirst();
         if (charge.isEmpty()) {

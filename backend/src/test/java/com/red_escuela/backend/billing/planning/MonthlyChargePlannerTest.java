@@ -196,12 +196,12 @@ class MonthlyChargePlannerTest {
         ProgramYearBillingTemplate t = template(1, 2027, 10, 1, 2, null);
         Builder builder = Builder.base(t).window(1, 1, LocalDate.of(2027, 1, 25), LocalDate.of(2027, 3, 10));
 
-        ChargePlan april = planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY);
+        ChargePlan april = planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY, true);
         assertThat(april.charges()).hasSize(1);
         assertThat(april.charges().get(0).dueDate()).isEqualTo(LocalDate.of(2027, 4, 12));
 
         t.setLateEnrollmentFeeDueDays(30);
-        assertThat(planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY).charges().get(0).dueDate())
+        assertThat(planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY, true).charges().get(0).dueDate())
                 .isEqualTo(LocalDate.of(2027, 5, 2));
     }
 

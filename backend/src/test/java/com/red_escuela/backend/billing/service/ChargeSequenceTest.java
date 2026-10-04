@@ -226,7 +226,9 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
         transactionTemplate.executeWithoutResult(s -> eventPublisher.publishEvent(new SuspensionLiftedEvent(
                 entityManager.find(ProgramEnrollment.class, enrollment), YearMonth.of(2026, 3), YearMonth.of(2026, 5))));
 
-        assertThat(sequence(enrollment)).containsExactly("C2026-05");
+        assertThat(sequence(enrollment)).isEqualTo(expected("M2026-02", "C2026-05"));
+        Invoice lateFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0);
+        assertThat(lateFee.getDueDate()).isEqualTo(date(2026, 5, 30));
         assertInvariants(enrollment, y26);
     }
 
@@ -306,7 +308,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
         });
 
         assertThat(sequence(active)).isEqualTo(expected("M2026-02", "C2026-03"));
-        assertThat(sequence(paused)).isEqualTo(expected("M2026-02", "C2026-03"));
+        assertThat(sequence(paused)).isEmpty();
         for (Long id : List.of(suspended, withdrawnForNonPayment, withdrawn, completed)) {
             assertThat(sequence(id)).isEmpty();
         }
@@ -354,10 +356,10 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
         today(date(2026, 12, 1));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 12), date(2026, 12, 1));
 
-        today(date(2026, 12, 1));
+        today(date(2026, 11, 2));
         job.run();
         assertThat(sequence(enrollment)).isEmpty();
-        today(date(2027, 1, 2));
+        today(date(2026, 12, 2));
         job.run();
 
         List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
@@ -418,7 +420,8 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
             assertInvariants(c, y26, y27);
         });
 
-        assertThat(periods(b, FeeType.RECURRING_FEE)).isEmpty();
+        assertThat(periods(b, FeeType.RECURRING_FEE)).allMatch(period -> !period.isBefore(YearMonth.of(2026, 11)));
+        assertThat(periods(b, FeeType.RECURRING_FEE)).startsWith(YearMonth.of(2026, 11), YearMonth.of(2026, 12), YearMonth.of(2027, 3));
         assertThat(periods(a, FeeType.ENROLLMENT_FEE)).containsExactly(
                 YearMonth.of(2026, 3), YearMonth.of(2026, 7), YearMonth.of(2027, 2));
         assertThat(periods(c, FeeType.ENROLLMENT_FEE)).containsExactly(

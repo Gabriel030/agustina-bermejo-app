@@ -42,6 +42,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -298,11 +299,13 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
                 return loaded;
             });
             long installments = all.stream().filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
-                    .filter(i -> i.getPeriod().getYear() == year.year()).count();
+                    .filter(i -> year.templateId().equals(i.getTemplateId())).count();
             assertThat(installments).as("cuotas del año lectivo %s", year.year()).isLessThanOrEqualTo(template.getRecurringFeeInvoicesCount());
-            long fees = all.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
-                    .filter(i -> i.getPeriod().getYear() == year.year()).count();
-            assertThat(fees).as("matrículas del ciclo %s", year.year()).isLessThanOrEqualTo(template.getEnrollmentFeeCount());
+            List<Invoice> fees = all.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
+                    .filter(i -> year.templateId().equals(i.getTemplateId())).toList();
+            assertThat(fees).as("matrículas del ciclo %s", year.year()).hasSizeLessThanOrEqualTo(template.getEnrollmentFeeCount());
+            assertThat(fees.stream().map(Invoice::getEnrollmentFeeSlot).filter(Objects::nonNull).distinct().count())
+                    .as("una matrícula por número de slot en el ciclo %s", year.year()).isEqualTo(fees.stream().filter(f -> f.getEnrollmentFeeSlot() != null).count());
         }
     }
 

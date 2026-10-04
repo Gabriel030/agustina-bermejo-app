@@ -17,8 +17,9 @@ import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -39,10 +40,14 @@ public class SuspendedEnrollmentClosureService {
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentService programEnrollmentService;
     private final Clock clock;
+    private final TransactionTemplate requiresNew;
 
     public SuspendedEnrollmentClosureService(ProgramEnrollmentRepository programEnrollmentRepository,
                                              ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository,
-                                             ProgramEnrollmentService programEnrollmentService, Clock clock) {
+                                             ProgramEnrollmentService programEnrollmentService, Clock clock,
+                                             PlatformTransactionManager transactionManager) {
+        this.requiresNew = new TransactionTemplate(transactionManager);
+        this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;
         this.invoiceRepository = invoiceRepository;
@@ -54,7 +59,7 @@ public class SuspendedEnrollmentClosureService {
         int closed = 0;
         for (Long id : programEnrollmentRepository.findIdsByBillingStandingAndStatusIn(EnrollmentBillingStanding.SUSPENDED, ACTIVE)) {
             try {
-                if (closeIfCycleEnded(id)) {
+                if (Boolean.TRUE.equals(requiresNew.execute(status -> closeIfCycleEnded(id)))) {
                     closed++;
                 }
             } catch (RuntimeException e) {
@@ -64,8 +69,7 @@ public class SuspendedEnrollmentClosureService {
         return closed;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean closeIfCycleEnded(Long enrollmentId) {
+    private boolean closeIfCycleEnded(Long enrollmentId) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
         LocalDate today = LocalDate.now(clock);
@@ -77,8 +81,8 @@ public class SuspendedEnrollmentClosureService {
         if (cycle.isEmpty() || !YearMonth.from(today).isAfter(cycle.get().end())) {
             return false;
         }
-        programEnrollmentService.withdraw(enrollmentId);
         enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        programEnrollmentService.withdraw(enrollmentId);
         enrollment.setBillingStandingUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         for (Invoice invoice : invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollmentId, List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {

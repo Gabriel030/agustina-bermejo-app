@@ -61,16 +61,16 @@ alter table invoice add column enrollment_fee_slot integer check (enrollment_fee
 with candidates as (
     select i.id as invoice_id, t.id as template_id,
            case when t.enrollment_fee_count = 2 and extract(month from i.period) >= t.second_enrollment_fee_month
-                     and extract(year from i.period) = coalesce(extract(year from tm.start_date), tm.year)
+                     and extract(year from i.period) = coalesce(extract(year from tm.start_date), tm.year_number)
                 then 2 else 1 end as slot,
-           row_number() over (partition by i.id order by abs(coalesce(extract(year from tm.start_date), tm.year) - extract(year from i.period)), t.id) as pick
+           row_number() over (partition by i.id order by abs(coalesce(extract(year from tm.start_date), tm.year_number) - extract(year from i.period)), t.id) as pick
     from invoice i
     join program_enrollment e on e.id = i.program_enrollment_id
     join program_year_billing_template t on t.program_id = e.program_id
     join term tm on tm.id = t.term_id
     where i.fee_type = 'ENROLLMENT_FEE'
-      and (coalesce(extract(year from tm.start_date), tm.year) = extract(year from i.period)
-           or (extract(month from i.period) = 12 and coalesce(extract(year from tm.start_date), tm.year) = extract(year from i.period) + 1))
+      and (coalesce(extract(year from tm.start_date), tm.year_number) = extract(year from i.period)
+           or (extract(month from i.period) = 12 and coalesce(extract(year from tm.start_date), tm.year_number) = extract(year from i.period) + 1))
 ), chosen as (
     select invoice_id, template_id, slot,
            row_number() over (partition by (select program_enrollment_id from invoice x where x.id = invoice_id), template_id, slot order by invoice_id) as rank_in_slot
