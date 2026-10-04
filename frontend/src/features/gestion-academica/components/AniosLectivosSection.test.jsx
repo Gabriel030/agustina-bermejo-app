@@ -44,7 +44,7 @@ describe('AniosLectivosSection', () => {
       return HttpResponse.json(TEMPLATE);
     }));
     const user = userEvent.setup();
-    renderWithProviders(<AniosLectivosSection programId={12} />);
+    renderWithProviders(<AniosLectivosSection programId={12} canEdit />);
 
     await user.click(await screen.findByRole('button', { name: /Configurar cobro de Año lectivo 2027/ }));
     await user.selectOptions(screen.getByLabelText('Cantidad de matrículas por año'), '2');
@@ -61,5 +61,14 @@ describe('AniosLectivosSection', () => {
       blocksEnrollment: true, blocksExamRegistration: false, blocksCertificates: true,
       requireEnrollmentFeeForFinalExamOnlyStudents: false,
     }));
+  });
+
+  it('shows the configuration read-only, with no save button, when the user cannot edit', async () => {
+    mockApi();
+    renderWithProviders(<AniosLectivosSection programId={12} />);
+
+    expect(await screen.findByText(/Año lectivo 2027/)).toBeInTheDocument();
+    expect(screen.getByText('Solo el director puede modificar la configuración de cobro.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Configurar cobro/ })).not.toBeInTheDocument();
   });
 });

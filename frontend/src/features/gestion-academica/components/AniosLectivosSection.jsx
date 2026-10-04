@@ -150,7 +150,7 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
   );
 }
 
-export function AniosLectivosSection({ programId }) {
+export function AniosLectivosSection({ programId, canEdit = false }) {
   const { data: templates, isLoading } = useProgramBillingTemplates(programId);
   const { data: alertas } = useBillingConfigurationAlerts();
   const { data: terminos } = useTerminos();
@@ -175,6 +175,10 @@ export function AniosLectivosSection({ programId }) {
         </div>
       )}
 
+      {!canEdit && (
+        <p className="text-[13px] text-ink-faint">Solo el director puede modificar la configuración de cobro.</p>
+      )}
+
       {isLoading ? (
         <Skeleton rows={2} />
       ) : !templates?.length ? (
@@ -190,10 +194,12 @@ export function AniosLectivosSection({ programId }) {
                   <p className="text-[14px] font-semibold text-ink">{tituloDe(template)} — {template.recurringFeeInvoicesCount} cuotas</p>
                   <p className="text-[12px] text-ink-faint">{descripcionMatriculas(template)}</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setEditando(template)} aria-label={`Configurar cobro de ${tituloDe(template)}`}>
-                  <Settings2 className="mr-1.5 h-3.5 w-3.5" />
-                  Configurar cobro
-                </Button>
+                {canEdit && (
+                  <Button variant="outline" size="sm" onClick={() => setEditando(template)} aria-label={`Configurar cobro de ${tituloDe(template)}`}>
+                    <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                    Configurar cobro
+                  </Button>
+                )}
               </div>
             </GlassCard>
           ))}
