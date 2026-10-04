@@ -16,7 +16,7 @@ import com.red_escuela.backend.shared.domain.Money;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 
 @Getter

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ReinstateEnrollmentRequest;
-import com.red_escuela.backend.entity.ReinstatementDecision;
+import com.red_escuela.backend.enrollment.entity.ReinstatementDecision;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import jakarta.validation.Valid;

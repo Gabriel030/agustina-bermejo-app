@@ -6,7 +6,7 @@ import com.red_escuela.backend.academicstructure.entity.*;
 import com.red_escuela.backend.academicstructure.exception.*;
 import com.red_escuela.backend.academicstructure.repository.*;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

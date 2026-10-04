@@ -8,7 +8,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.PasswordPolicyValidator;
 import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 

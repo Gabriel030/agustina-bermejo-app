@@ -1,7 +1,7 @@
 package com.red_escuela.backend.identity.repository;
 
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;

@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.entity;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 
-import com.red_escuela.backend.exception.InvalidProgramEnrollmentApplicationStateException;
+import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

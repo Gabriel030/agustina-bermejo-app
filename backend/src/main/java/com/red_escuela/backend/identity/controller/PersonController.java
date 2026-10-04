@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.dto.NotificationPreferencesResponse;
 import com.red_escuela.backend.identity.dto.PersonResponse;
 import com.red_escuela.backend.identity.dto.SessionResponse;
 import com.red_escuela.backend.identity.dto.UpdateNotificationPreferencesRequest;
-import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
+import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.usecase.person.ChangeOwnPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.person.GetActiveSessionsUseCase;
@@ -17,7 +17,7 @@ import com.red_escuela.backend.identity.usecase.person.UpdateNotificationPrefere
 import com.red_escuela.backend.identity.usecase.person.UpdateOwnProfileUseCase;
 import com.red_escuela.backend.identity.usecase.person.UploadAvatarUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.shared.storage.FileStorageService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

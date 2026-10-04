@@ -6,7 +6,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.springframework.data.domain.Sort;

@@ -9,7 +9,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

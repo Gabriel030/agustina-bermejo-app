@@ -3,7 +3,7 @@ package com.red_escuela.backend.identity.usecase.student;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.repository.StudentSpecifications;
+import com.red_escuela.backend.identity.repository.StudentSpecifications;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;

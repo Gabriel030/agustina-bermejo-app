@@ -4,8 +4,8 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
-import com.red_escuela.backend.service.FileStorageService;
-import com.red_escuela.backend.service.TransactionBoundFileCleanup;
+import com.red_escuela.backend.shared.storage.FileStorageService;
+import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

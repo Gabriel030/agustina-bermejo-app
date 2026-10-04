@@ -8,7 +8,7 @@ import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.SecureTokenGenerator;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,4 +1,5 @@
 package com.red_escuela.backend.entity;
+import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

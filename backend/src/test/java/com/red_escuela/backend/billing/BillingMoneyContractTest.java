@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.dto.CollectionsPolicyResponse;
 import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationResponse;
-import com.red_escuela.backend.exception.GlobalExceptionHandler;
+import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
 import jakarta.validation.Valid;
 import org.junit.jupiter.api.Test;

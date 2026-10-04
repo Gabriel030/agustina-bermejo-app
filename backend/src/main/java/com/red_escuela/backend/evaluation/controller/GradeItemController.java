@@ -3,7 +3,7 @@ package com.red_escuela.backend.evaluation.controller;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.GradeItemResponse;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.evaluation.service.GradeItemService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

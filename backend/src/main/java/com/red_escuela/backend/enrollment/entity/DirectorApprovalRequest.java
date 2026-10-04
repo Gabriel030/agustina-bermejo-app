@@ -7,7 +7,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
 import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 

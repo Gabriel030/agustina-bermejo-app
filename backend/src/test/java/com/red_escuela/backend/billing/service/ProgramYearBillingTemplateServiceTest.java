@@ -1,13 +1,13 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;

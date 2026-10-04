@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.usecase.paymentgateway.GetPaymentGatewayC
 import com.red_escuela.backend.billing.usecase.paymentgateway.UpdatePaymentGatewayConfigUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.UploadQrImageUseCase;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.shared.storage.FileStorageService;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;

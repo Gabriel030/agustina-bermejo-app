@@ -10,7 +10,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
-import com.red_escuela.backend.evaluation.service.EvaluationSchemeService;
 
 @SpringBootTest
 @ActiveProfiles("test")

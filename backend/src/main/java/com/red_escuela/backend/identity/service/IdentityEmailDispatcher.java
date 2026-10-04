@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.service;
 
-import com.red_escuela.backend.service.EmailService;
+import com.red_escuela.backend.shared.mail.EmailService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;

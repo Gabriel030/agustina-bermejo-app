@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.usecase.paymentreceipt;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
-import com.red_escuela.backend.service.FileStorageService;
+import com.red_escuela.backend.shared.storage.FileStorageService;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.io.UncheckedIOException;

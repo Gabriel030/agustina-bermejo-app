@@ -1,4 +1,5 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.shared.mail.EmailService;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
@@ -10,18 +11,18 @@ import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.usecase.auth.RefreshTokenUseCase;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

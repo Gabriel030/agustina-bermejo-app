@@ -13,7 +13,7 @@ import com.red_escuela.backend.academicstructure.usecase.term.ListTermsUseCase;
 import com.red_escuela.backend.academicstructure.usecase.term.OpenTermEnrollmentUseCase;
 import com.red_escuela.backend.academicstructure.usecase.term.UpdateTermCommand;
 import com.red_escuela.backend.academicstructure.usecase.term.UpdateTermUseCase;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;

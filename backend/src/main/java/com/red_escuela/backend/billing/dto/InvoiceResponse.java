@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import com.red_escuela.backend.dto.ProductRef;
 
 public record InvoiceResponse(
         Long id, String feeType, String period, LocalDate dueDate, Money baseAmount,

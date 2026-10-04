@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.student;
 
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;

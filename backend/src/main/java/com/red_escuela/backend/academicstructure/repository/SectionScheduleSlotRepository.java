@@ -30,8 +30,8 @@ public interface SectionScheduleSlotRepository extends JpaRepository<SectionSche
                 or (cst.startDate <= :termEnd and cst.endDate >= :termStart)
             )
             and (
-                ss.status = com.red_escuela.backend.entity.StatusType.ACTIVE
-                or cs.status = com.red_escuela.backend.entity.StatusType.ACTIVE
+                ss.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
+                or cs.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE
                 or ssc.status in (
                     com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.DRAFT,
                     com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus.PENDING_APPROVAL)

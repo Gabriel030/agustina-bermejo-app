@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.billing.entity.FeeType;
@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -40,7 +40,6 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationService;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest

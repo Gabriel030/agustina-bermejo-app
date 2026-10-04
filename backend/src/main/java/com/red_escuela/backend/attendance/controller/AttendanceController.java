@@ -41,7 +41,7 @@ import com.red_escuela.backend.attendance.usecase.attendance.LoadCourseSectionAt
 import com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.LoadProgramSectionAttendanceUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.RejectAttendanceJustificationUseCase;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
