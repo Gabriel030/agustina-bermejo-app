@@ -107,7 +107,7 @@ public class ChargePlanningContextLoader {
                 LocalDate opens = inSlot.stream().map(t -> t.getEnrollmentStart().toLocalDate()).min(LocalDate::compareTo).orElseThrow();
                 LocalDate closes = inSlot.stream()
                         .map(t -> t.getEnrollmentEnd() != null ? t.getEnrollmentEnd().toLocalDate() : t.getStartDate().toLocalDate())
-                        .max(LocalDate::compareTo).orElseThrow();
+                        .min(LocalDate::compareTo).orElseThrow();
                 windows.put(SlotWindow.key(cycle.templateId(), slot), new SlotWindow(opens, closes));
             }
         }
