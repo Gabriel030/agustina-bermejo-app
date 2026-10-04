@@ -21,6 +21,7 @@ import {
 } from '@/features/gestion-academica/hooks/usePrograms';
 import { PanelAgregarMateria } from './PanelAgregarMateria';
 import { PanelCorrelativas } from './PanelCorrelativas';
+import { AniosLectivosSection } from '@/features/gestion-academica/components/AniosLectivosSection';
 import { CohortesSection } from '@/features/gestion-academica/components/CohortesSection';
 
 const CATEGORY_LABELS = {
@@ -380,6 +381,7 @@ export function CarreraDetalle() {
         <Tabs defaultValue="plan">
           <TabsList variant="segmented">
             <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
+            <TabsTrigger value="anios">Años lectivos</TabsTrigger>
             <TabsTrigger value="cohortes">Cohortes</TabsTrigger>
           </TabsList>
 
@@ -420,6 +422,12 @@ export function CarreraDetalle() {
                   )}
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="anios">
+            <div className="mt-4">
+              <AniosLectivosSection programId={id} />
             </div>
           </TabsContent>
 

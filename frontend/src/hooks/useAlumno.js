@@ -156,3 +156,11 @@ export function useJustificarInasistencia() {
       queryClient.invalidateQueries({ queryKey: ['me', 'section-enrollments', sectionEnrollmentId, 'attendance'] }),
   });
 }
+
+export function useEstadoMatricula(programEnrollmentId) {
+  return useQuery({
+    queryKey: ['me', 'program-enrollments', programEnrollmentId, 'enrollment-fee-status'],
+    queryFn: () => apiFetch(`/me/program-enrollments/${programEnrollmentId}/enrollment-fee-status`),
+    enabled: !!programEnrollmentId,
+  });
+}

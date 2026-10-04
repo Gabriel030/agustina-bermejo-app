@@ -40,6 +40,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
   const [admissionEnd, setAdmissionEnd] = useState('');
   const [cursadaStart, setCursadaStart] = useState('');
   const [enrollmentFeeMonth, setEnrollmentFeeMonth] = useState(DEFAULT_ENROLLMENT_FEE_MONTH);
+  const [entryFeeDiscount, setEntryFeeDiscount] = useState('');
 
   function getTemplateLabel(template) {
     const term = (terminos ?? []).find((t) => String(t.id) === String(template.termId));
@@ -54,6 +55,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
     setAdmissionEnd('');
     setCursadaStart('');
     setEnrollmentFeeMonth(DEFAULT_ENROLLMENT_FEE_MONTH);
+    setEntryFeeDiscount('');
   }
 
   async function handleSubmit(e) {
@@ -70,6 +72,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         admissionEnd,
         cursadaStart,
         enrollmentFeeMonth: Number(enrollmentFeeMonth),
+        ...(entryFeeDiscount !== '' ? { entryFeeDiscountPoints: Number(entryFeeDiscount) } : {}),
       });
       toast.success('Cohorte creada.');
       reset();
@@ -200,7 +203,30 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               ))}
             </select>
             <p className="text-[12px] text-ink-faint">
-              Mes en que se emite la matrícula de reinscripción de los alumnos de esta cohorte.
+              Dato histórico: el mes de la matrícula de reinscripción ahora se define en el año lectivo de la carrera.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="cohort-entry-fee-discount"
+              className="text-[11px] font-bold uppercase tracking-widest text-ink-faint"
+            >
+              Descuento de la matrícula de ingreso (%)
+            </label>
+            <input
+              id="cohort-entry-fee-discount"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={entryFeeDiscount}
+              onChange={(e) => setEntryFeeDiscount(e.target.value)}
+              placeholder={intake === 'SECOND' ? '50 (por defecto)' : '0 (sin descuento)'}
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            <p className="text-[12px] text-ink-faint">
+              Si lo dejás vacío se usa el valor por defecto: 50% para el 2do semestre y sin descuento para el 1er semestre.
             </p>
           </div>
 
