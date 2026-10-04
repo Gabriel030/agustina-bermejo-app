@@ -28,7 +28,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     long countByProgramEnrollmentIdAndFeeTypeAndPeriodBetween(Long programEnrollmentId, FeeType feeType, YearMonth from, YearMonth to);
 
-    Optional<Invoice> findByProgramEnrollmentIdAndFeeType(Long programEnrollmentId, FeeType feeType);
+    Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeOrderByPeriodDesc(Long programEnrollmentId, FeeType feeType);
 
     @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);

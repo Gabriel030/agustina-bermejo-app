@@ -351,10 +351,14 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoiceStatus status) {
+        persistEnrollmentFeeInvoice(enrollment, status, YearMonth.now());
+    }
+
+    private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoiceStatus status, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.ENROLLMENT_FEE);
-        invoice.setPeriod(YearMonth.now());
+        invoice.setPeriod(period);
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(50000));
         invoice.setStatus(status);
@@ -400,6 +404,49 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
 
         assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void enrollingWithAnEntryFeeAndAReenrollmentFeeOfTheFollowingYearDoesNotFail() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000021", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaReinscripcion");
+        Program program = persistProgram("CarreraReinscripcion");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID, YearMonth.now().minusYears(1));
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID, YearMonth.now());
+        entityManager.flush();
+
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void enrollingWithAPaidEntryFeeButAnUnpaidReenrollmentFeeIsRejected() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000022", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaReinscripcionImpaga");
+        Program program = persistProgram("CarreraReinscripcionImpaga");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID, YearMonth.now().minusYears(1));
+        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PENDING, YearMonth.now());
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(EnrollmentFeeNotPaidException.class);
     }
 
     @Test
