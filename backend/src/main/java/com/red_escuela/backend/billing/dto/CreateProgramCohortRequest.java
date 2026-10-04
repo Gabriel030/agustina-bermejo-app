@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 public record CreateProgramCohortRequest(
         @NotNull CohortIntake intake, @NotNull LocalDate admissionStart, @NotNull LocalDate admissionEnd, @NotNull LocalDate cursadaStart,
         @Min(1) @Max(12) Integer enrollmentFeeMonth,
-        @jakarta.validation.constraints.DecimalMin("0") @jakarta.validation.constraints.DecimalMax("100") java.math.BigDecimal entryFeeDiscountPoints) {
+        Percentage entryFeeDiscountPoints) {
 
     public CreateProgramCohortRequest(CohortIntake intake, LocalDate admissionStart, LocalDate admissionEnd, LocalDate cursadaStart, Integer enrollmentFeeMonth) {
         this(intake, admissionStart, admissionEnd, cursadaStart, enrollmentFeeMonth, null);

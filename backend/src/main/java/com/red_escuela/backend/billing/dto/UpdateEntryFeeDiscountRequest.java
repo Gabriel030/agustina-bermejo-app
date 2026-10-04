@@ -1,10 +1,8 @@
 package com.red_escuela.backend.billing.dto;
 
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.red_escuela.backend.shared.domain.Percentage;
 import jakarta.validation.constraints.NotNull;
 
-import java.math.BigDecimal;
-
-public record UpdateEntryFeeDiscountRequest(@NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal discountPoints) {
+public record UpdateEntryFeeDiscountRequest(@NotNull @JsonProperty("discountPoints") Percentage discount) {
 }

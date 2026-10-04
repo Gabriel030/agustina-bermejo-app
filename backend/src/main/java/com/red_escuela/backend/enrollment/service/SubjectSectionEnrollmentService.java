@@ -221,7 +221,7 @@ public class SubjectSectionEnrollmentService {
         return resolveProgramSubject(enrollment).map(ProgramSubject::getCurricularTerm).orElse(null);
     }
 
-    private java.util.Optional<ProgramSubject> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
+    private Optional<ProgramSubject> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
         return programSubjectRepository.findByProgramIdAndSubjectId(
                 enrollment.getProgramEnrollment().getProgram().getId(),
                 enrollment.getSubjectSection().getSubject().getId());

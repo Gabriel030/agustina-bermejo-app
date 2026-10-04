@@ -129,7 +129,7 @@ public class InvoiceGenerationService {
         }
     }
 
-    private void createOne(CourseEnrollment courseEnrollment, ProgramEnrollment programEnrollment, PaymentPlanSelection selection, YearMonth period, java.time.LocalDate dueDate) {
+    private void createOne(CourseEnrollment courseEnrollment, ProgramEnrollment programEnrollment, PaymentPlanSelection selection, YearMonth period, LocalDate dueDate) {
         boolean canBeBilled = courseEnrollment != null
                 ? recurringFeeWindowService.canBeBilled(courseEnrollment, period)
                 : recurringFeeWindowService.canBeBilled(programEnrollment, period);

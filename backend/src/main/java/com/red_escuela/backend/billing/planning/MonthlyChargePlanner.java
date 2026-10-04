@@ -100,8 +100,10 @@ public final class MonthlyChargePlanner {
 
     public YearMonth emissionMonth(ChargePlanningFacts facts, YearCycle cycle, int slot) {
         SlotWindow window = facts.windows().get(SlotWindow.key(cycle.templateId(), slot));
-        YearMonth opening = window != null ? YearMonth.from(window.opensOn()) : cycle.slotPeriod(slot);
-        return opening.minusMonths(cycle.template().getEnrollmentFeeLeadMonths());
+        if (window == null) {
+            return cycle.slotPeriod(slot);
+        }
+        return YearMonth.from(window.opensOn()).minusMonths(cycle.template().getEnrollmentFeeLeadMonths());
     }
 
     public boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot) {

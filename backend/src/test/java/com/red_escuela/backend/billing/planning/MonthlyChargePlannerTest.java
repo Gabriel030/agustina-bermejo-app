@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.planning;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import org.junit.jupiter.api.Test;
@@ -33,55 +34,60 @@ class MonthlyChargePlannerTest {
 
     private record Builder(boolean active, boolean suspended, boolean completed, boolean onlyFinals, YearMonth entry, PaymentPlanCadence cadence,
                            boolean hasPlan, List<ProgramYearBillingTemplate> templates, Set<YearMonth> fees, Set<YearMonth> installments,
-                           Map<String, SlotWindow> windows) {
+                           Map<String, SlotWindow> windows, boolean paused) {
         static Builder base(ProgramYearBillingTemplate... templates) {
-            return new Builder(true, false, false, false, null, PaymentPlanCadence.MONTHLY, true, List.of(templates), Set.of(), Set.of(), Map.of());
+            return new Builder(true, false, false, false, null, PaymentPlanCadence.MONTHLY, true, List.of(templates), Set.of(), Set.of(), Map.of(), false);
         }
 
         Builder inactive() {
-            return new Builder(false, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows);
+            return new Builder(false, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder isSuspended() {
-            return new Builder(active, true, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows);
+            return new Builder(active, true, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder isCompleted() {
-            return new Builder(active, suspended, true, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows);
+            return new Builder(active, suspended, true, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder isOnlyFinals() {
-            return new Builder(active, suspended, completed, true, entry, cadence, hasPlan, templates, fees, installments, windows);
+            return new Builder(active, suspended, completed, true, entry, cadence, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder entry(YearMonth month) {
-            return new Builder(active, suspended, completed, onlyFinals, month, cadence, hasPlan, templates, fees, installments, windows);
+            return new Builder(active, suspended, completed, onlyFinals, month, cadence, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder cadence(PaymentPlanCadence value) {
-            return new Builder(active, suspended, completed, onlyFinals, entry, value, hasPlan, templates, fees, installments, windows);
+            return new Builder(active, suspended, completed, onlyFinals, entry, value, hasPlan, templates, fees, installments, windows, paused);
         }
 
         Builder noPlan() {
-            return new Builder(active, suspended, completed, onlyFinals, entry, null, false, templates, fees, installments, windows);
+            return new Builder(active, suspended, completed, onlyFinals, entry, null, false, templates, fees, installments, windows, paused);
         }
 
         Builder fees(YearMonth... periods) {
-            return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, Set.of(periods), installments, windows);
+            return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, Set.of(periods), installments, windows, paused);
         }
 
         Builder installments(YearMonth... periods) {
-            return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, Set.of(periods), windows);
+            return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, Set.of(periods), windows, paused);
         }
 
         Builder window(long templateId, int slot, LocalDate opens, LocalDate closes) {
             return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments,
-                    Map.of(SlotWindow.key(templateId, slot), new SlotWindow(opens, closes)));
+                    Map.of(SlotWindow.key(templateId, slot), new SlotWindow(opens, closes)), paused);
+        }
+
+        Builder isPaused() {
+            return new Builder(active, suspended, completed, onlyFinals, entry, cadence, hasPlan, templates, fees, installments, windows, true);
         }
 
         ChargePlanningFacts at(YearMonth month, LocalDate today) {
             YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
-            return new ChargePlanningFacts(1L, month, today, active, suspended, completed, onlyFinals, entry, cadence, hasPlan, cycles, fees, installments, windows);
+            return new ChargePlanningFacts(1L, month, today, active, suspended, completed, paused, onlyFinals, entry, cadence, hasPlan, cycles,
+                    fees.stream().map(p -> new IssuedEnrollmentFee(null, null, null, p, InvoiceStatus.PENDING, p.atDay(1))).toList(), installments, windows);
         }
     }
 
@@ -123,8 +129,8 @@ class MonthlyChargePlannerTest {
     @Test
     void installmentCapAndIdempotencyAreReportedWithTheirOwnCode() {
         ProgramYearBillingTemplate t = template(1, 2026, 2, 1, 2, null);
-        ChargePlan capped = plan(Builder.base(t).installments(ym(2026, 3), ym(2026, 4)), ym(2026, 5));
-        ChargePlan repeated = plan(Builder.base(t).installments(ym(2026, 3)), ym(2026, 3));
+        ChargePlan capped = plan(Builder.base(t).fees(ym(2026, 2)).installments(ym(2026, 3), ym(2026, 4)), ym(2026, 5));
+        ChargePlan repeated = plan(Builder.base(t).fees(ym(2026, 2)).installments(ym(2026, 3)), ym(2026, 3));
 
         assertThat(capped.charges()).isEmpty();
         assertThat(capped.decisions()).extracting(PlanDecision::code).contains("INSTALLMENT_CAP_REACHED");
@@ -162,24 +168,117 @@ class MonthlyChargePlannerTest {
 
     @Test
     void installmentsAreNotChargedBeforeTheStudentsEntryMonth() {
-        ChargePlan plan = plan(Builder.base(template(1, 2026, 10, 1, 2, null)).entry(ym(2026, 8)), ym(2026, 7));
+        ChargePlan plan = plan(Builder.base(template(1, 2026, 10, 1, 2, null)).entry(ym(2026, 8)).fees(ym(2026, 2)), ym(2026, 7));
 
         assertThat(plan.charges()).isEmpty();
         assertThat(plan.decisions()).extracting(PlanDecision::code).contains("BEFORE_ENTRY");
     }
 
     @Test
-    void windowDrivenEmissionHappensFifteenDaysBeforeTheWindowOpensWithTheMonthOfThatDateAsEarliestJobRun() {
+    void windowDrivenEmissionHappensInTheMonthBeforeTheWindowOpensAndItIsConfigurable() {
         ProgramYearBillingTemplate t = template(1, 2027, 10, 1, 2, null);
         Builder builder = Builder.base(t).window(1, 1, LocalDate.of(2027, 1, 25), LocalDate.of(2027, 3, 10));
 
+        assertThat(plan(builder, ym(2026, 11)).charges()).isEmpty();
+        ChargePlan december = planner.plan(builder.at(ym(2026, 12), LocalDate.of(2026, 12, 2)), ChargeScope.ALL);
+        assertThat(december.charges()).hasSize(1);
+        assertThat(december.charges().get(0).dueDate()).isEqualTo(LocalDate.of(2027, 3, 10));
+        assertThat(december.charges().get(0).priceDate()).isEqualTo(LocalDate.of(2026, 12, 2));
+        assertThat(december.charges().get(0).period()).isEqualTo(ym(2027, 2));
+
+        t.setEnrollmentFeeLeadMonths(0);
         assertThat(plan(builder, ym(2026, 12)).charges()).isEmpty();
-        ChargePlan january = planner.plan(builder.at(ym(2027, 1), LocalDate.of(2027, 1, 2)), ChargeScope.ALL);
-        assertThat(january.charges()).hasSize(1);
-        assertThat(january.charges().get(0).dueDate()).isEqualTo(LocalDate.of(2027, 3, 10));
-        assertThat(january.charges().get(0).priceDate()).isEqualTo(LocalDate.of(2027, 1, 2));
-        assertThat(january.charges().get(0).period()).isEqualTo(ym(2027, 2));
-        assertThat(planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY).charges()).isEmpty();
+        assertThat(planner.plan(builder.at(ym(2027, 1), LocalDate.of(2027, 1, 2)), ChargeScope.ALL).charges()).hasSize(1);
+    }
+
+    @Test
+    void aFeeEmittedAfterTheWindowClosedIsDueTenDaysLaterAndNeverBornOverdueAndTheDaysAreConfigurable() {
+        ProgramYearBillingTemplate t = template(1, 2027, 10, 1, 2, null);
+        Builder builder = Builder.base(t).window(1, 1, LocalDate.of(2027, 1, 25), LocalDate.of(2027, 3, 10));
+
+        ChargePlan april = planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY);
+        assertThat(april.charges()).hasSize(1);
+        assertThat(april.charges().get(0).dueDate()).isEqualTo(LocalDate.of(2027, 4, 12));
+
+        t.setLateEnrollmentFeeDueDays(30);
+        assertThat(planner.plan(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), ChargeScope.ENROLLMENT_FEE_ONLY).charges().get(0).dueDate())
+                .isEqualTo(LocalDate.of(2027, 5, 2));
+    }
+
+    @Test
+    void pausedEnrollmentsAreNotBilledUnlessTheYearIsConfiguredToChargeWhilePaused() {
+        ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
+        Builder paused = Builder.base(t).isPaused();
+
+        assertThat(plan(paused, ym(2026, 3)).charges()).isEmpty();
+        assertThat(plan(paused, ym(2026, 3)).decisions()).extracting(PlanDecision::code).contains("PAUSED_NOT_BILLED");
+
+        t.setPaysWhilePaused(true);
+        assertThat(plan(paused, ym(2026, 3)).charges()).hasSize(2);
+    }
+
+    @Test
+    void aCancelledFeeIsNeverIssuedAgainAndIsReportedWithItsOwnCode() {
+        ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
+        YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
+        ChargePlanningFacts facts = new ChargePlanningFacts(1L, ym(2026, 3), LocalDate.of(2026, 3, 1), true, false, false, false, false, null,
+                PaymentPlanCadence.MONTHLY, true, cycles, List.of(new IssuedEnrollmentFee(9L, 1L, 1, ym(2026, 3), InvoiceStatus.CANCELLED, LocalDate.of(2026, 3, 1))),
+                Set.of(), Map.of());
+
+        ChargePlan plan = planner.plan(facts, ChargeScope.ENROLLMENT_FEE_ONLY);
+
+        assertThat(plan.charges()).isEmpty();
+        assertThat(plan.decisions()).extracting(PlanDecision::code).contains("FEE_CANCELLED");
+    }
+
+    @Test
+    void movingTheSecondFeeMonthOfARunningYearDoesNotCreateAnotherFeeBecauseSlotsAreTrackedByNumber() {
+        ProgramYearBillingTemplate t = template(1, 2026, 10, 2, 2, 7);
+        YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
+        List<IssuedEnrollmentFee> issued = List.of(
+                new IssuedEnrollmentFee(1L, 1L, 1, ym(2026, 2), InvoiceStatus.PAID, LocalDate.of(2026, 2, 1)),
+                new IssuedEnrollmentFee(2L, 1L, 2, ym(2026, 7), InvoiceStatus.PENDING, LocalDate.of(2026, 7, 1)));
+        t.configureEnrollmentFees(2, 2, 8);
+        ChargePlanningFacts facts = new ChargePlanningFacts(1L, ym(2026, 9), LocalDate.of(2026, 9, 1), true, false, false, false, false, null,
+                PaymentPlanCadence.MONTHLY, true, cycles, issued, Set.of(), Map.of());
+
+        assertThat(planner.plan(facts, ChargeScope.ENROLLMENT_FEE_ONLY).charges()).isEmpty();
+    }
+
+    @Test
+    void firstFeeMonthsFarAfterTheTermStartBelongToThePreviousCalendarYear() {
+        YearCycle december = YearCycle.of(template(1, 2027, 10, 1, 12, null), 2027);
+        YearCycle february = YearCycle.of(template(2, 2027, 10, 1, 2, null), 2027);
+
+        assertThat(december.slotPeriod(1)).isEqualTo(ym(2026, 12));
+        assertThat(december.start()).isEqualTo(ym(2026, 12));
+        assertThat(february.slotPeriod(1)).isEqualTo(ym(2027, 2));
+    }
+
+    @Test
+    void anUndatedTermUsesItsOwnYearSoTheCapOfASecondYearStartsFromZero() {
+        Term term = new Term();
+        term.setYear(2027);
+        ProgramYearBillingTemplate t = new ProgramYearBillingTemplate();
+        t.setId(2L);
+        t.setTerm(term);
+        t.setRecurringFeeInvoicesCount(2);
+        YearCycle cycle = YearCycle.of(t, 2026);
+        Set<YearMonth> issuedLastYear = Set.of(ym(2026, 3), ym(2026, 4), ym(2026, 5));
+
+        assertThat(issuedLastYear.stream().filter(cycle::installmentRangeContains)).isEmpty();
+        assertThat(cycle.installmentRangeContains(ym(2027, 3))).isTrue();
+    }
+
+    @Test
+    void yearGapsAreDetectedOnlyWhenACalendarYearHasNoCycleBetweenTwoConfiguredYears() {
+        YearCycles cycles = new YearCycles(List.of(YearCycle.of(template(1, 2026, 10, 1, 2, null), 2026),
+                YearCycle.of(template(2, 2028, 10, 1, 2, null), 2028)), null);
+
+        assertThat(cycles.hasGapAt(ym(2027, 5))).isTrue();
+        assertThat(cycles.hasGapAt(ym(2026, 5))).isFalse();
+        assertThat(cycles.hasGapAt(ym(2028, 5))).isFalse();
+        assertThat(cycles.hasGapAt(ym(2029, 5))).isFalse();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.util.Optional;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.billing.entity.FeeType;
@@ -132,7 +133,7 @@ public class InvoiceFactory {
         return invoice;
     }
 
-    private void applyActiveScholarshipIfPresent(Invoice invoice, java.util.Optional<Scholarship> activeScholarship) {
+    private void applyActiveScholarshipIfPresent(Invoice invoice, Optional<Scholarship> activeScholarship) {
         activeScholarship.ifPresent(scholarship -> {
             if (invoice.getProgramEnrollment() != null && !scholarship.getAppliesTo().covers(invoice.getFeeType())) {
                 return;

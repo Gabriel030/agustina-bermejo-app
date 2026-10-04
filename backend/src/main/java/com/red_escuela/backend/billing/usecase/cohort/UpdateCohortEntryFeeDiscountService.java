@@ -7,7 +7,6 @@ import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 
 @UseCase
 public class UpdateCohortEntryFeeDiscountService implements UpdateCohortEntryFeeDiscountUseCase {
@@ -19,9 +18,9 @@ public class UpdateCohortEntryFeeDiscountService implements UpdateCohortEntryFee
 
     @Override
     @Transactional
-    public ProgramCohort update(Long cohortId, BigDecimal discountPoints) {
+    public ProgramCohort update(Long cohortId, Percentage discount) {
         ProgramCohort cohort = programCohortRepository.findById(cohortId).orElseThrow(() -> new ProgramCohortNotFoundException(cohortId));
-        cohort.setEntryFeeDiscount(Percentage.ofPoints(discountPoints));
+        cohort.setEntryFeeDiscount(discount);
         return programCohortRepository.save(cohort);
     }
 }

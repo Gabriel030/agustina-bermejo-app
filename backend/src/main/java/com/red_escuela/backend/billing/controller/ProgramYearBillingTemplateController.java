@@ -93,7 +93,7 @@ public class ProgramYearBillingTemplateController {
     @PatchMapping("/cohorts/{id}/entry-fee-discount")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public ProgramCohortResponse updateEntryFeeDiscount(@PathVariable Long id, @Valid @RequestBody UpdateEntryFeeDiscountRequest request) {
-        return ProgramCohortResponse.from(updateEntryFeeDiscountUseCase.update(id, request.discountPoints()));
+        return ProgramCohortResponse.from(updateEntryFeeDiscountUseCase.update(id, request.discount()));
     }
 
     @GetMapping("/programs/{id}/cohorts")

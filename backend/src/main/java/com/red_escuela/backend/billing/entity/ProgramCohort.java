@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.persistence.PercentageConverter;
 import com.red_escuela.backend.shared.time.ApplicationTime;
@@ -67,7 +68,7 @@ public class ProgramCohort {
             enrollmentFeeMonth = 2;
         }
         if (entryFeeDiscount == null) {
-            entryFeeDiscount = Percentage.ofFraction(intake == CohortIntake.SECOND ? new java.math.BigDecimal("0.5") : java.math.BigDecimal.ZERO);
+            entryFeeDiscount = Percentage.ofFraction(intake == CohortIntake.SECOND ? new BigDecimal("0.5") : BigDecimal.ZERO);
         }
         if (this.createdAt == null) {
             this.createdAt = ApplicationTime.now();
