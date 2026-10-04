@@ -355,12 +355,15 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void doesNotIssueToUpfrontEnrollments() {
+    void issuesAllTheInstallmentsOfTheScopeToUpfrontEnrollmentsOnceAndNeverRepeatsThem() {
         Fixture fixture = setUpProgramEnrollment("94100031", PaymentPlanCadence.UPFRONT, 10, CohortIntake.FIRST, YearMonth.of(2026, 1));
 
         job.run(MARCH);
+        int issued = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId()).size();
+        job.run(MARCH.plusMonths(1));
 
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId())).isEmpty();
+        assertThat(issued).isPositive();
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId())).hasSize(issued);
     }
 
     @Test

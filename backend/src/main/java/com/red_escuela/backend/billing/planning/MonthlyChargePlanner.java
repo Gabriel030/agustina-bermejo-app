@@ -89,7 +89,7 @@ public final class MonthlyChargePlanner implements ChargePlanner<ChargePlanningF
                     decisions.add(new PlanDecision(7, existing.get().isCancelled() ? "FEE_CANCELLED" : "ALREADY_ISSUED", label));
                     continue;
                 }
-                PlannedCharge charge = chargeForSlot(facts, cycle, slot, "matrícula del ciclo " + cycle.termStart().getYear() + " (" + label + ")");
+                PlannedCharge charge = chargeForSlot(facts, cycle, slot, "matrícula del ciclo " + cycle.termStart().getYear() + " (" + label + ")", catchUp);
                 charges.add(charge);
                 decisions.add(new PlanDecision(4, "ISSUE_ENROLLMENT_FEE", label + " período " + charge.period() + " vence " + charge.dueDate()));
             }
@@ -97,7 +97,12 @@ public final class MonthlyChargePlanner implements ChargePlanner<ChargePlanningF
     }
 
     public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason) {
-        if (facts.isEntrySlot(cycle, slot) && facts.cursadaStart() != null) {
+        return chargeForSlot(facts, cycle, slot, reason, false);
+    }
+
+    public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason, boolean catchUp) {
+        boolean entry = facts.isEntrySlot(cycle, slot);
+        if (entry && catchUp && facts.cursadaStart() != null) {
             LocalDate entryDue = facts.cursadaStart().isBefore(facts.today())
                     ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
                     : facts.cursadaStart();
@@ -109,7 +114,7 @@ public final class MonthlyChargePlanner implements ChargePlanner<ChargePlanningF
         LocalDate due = regularDue.isBefore(facts.today())
                 ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
                 : regularDue;
-        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason, false, false);
+        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason, entry, false);
     }
 
     public YearMonth emissionMonth(ChargePlanningFacts facts, YearCycle cycle, int slot) {
