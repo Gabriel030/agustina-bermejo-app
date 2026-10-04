@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.UnsupportedCurrencyException;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
@@ -68,7 +69,13 @@ public class ValueObjectJacksonModule extends SimpleModule {
         public Money deserialize(JsonParser parser, DeserializationContext context) throws IOException {
             JsonNode node = context.readTree(parser);
             BigDecimal amount = new BigDecimal(requiredField(node, AMOUNT, context, Money.class).asText());
-            Currency currency = Currency.valueOf(requiredField(node, CURRENCY, context, Money.class).asText());
+            String currencyCode = requiredField(node, CURRENCY, context, Money.class).asText();
+            Currency currency;
+            try {
+                currency = Currency.valueOf(currencyCode);
+            } catch (IllegalArgumentException e) {
+                throw new UnsupportedCurrencyException(currencyCode);
+            }
             return Money.of(amount, currency);
         }
     }

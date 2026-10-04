@@ -27,7 +27,7 @@ public class CreatePromotionForProgramService implements CreatePromotionForProgr
     @Transactional
     public Promotion create(Long programId, CreatePromotionRequest request) {
         Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
-        Promotion promotion = promotionBuilder.build(request);
+        Promotion promotion = promotionBuilder.build(request, program.getCurrency());
         promotion.setProgram(program);
         return promotionRepository.save(promotion);
     }

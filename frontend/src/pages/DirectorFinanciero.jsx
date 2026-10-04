@@ -95,7 +95,7 @@ function DebtorsTable({ data, isLoading }) {
       </TableHeader>
       <TableBody>
         {data.map((d) => (
-          <TableRow key={d.studentId} className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
+          <TableRow key={`${d.studentId}-${d.totalDebt.currency}`}className="cursor-pointer" onClick={() => navigate(`/director/alumnos/${d.studentId}`)}>
             <TableCell className="pl-4 font-medium text-ink">{d.fullName}</TableCell>
             <TableCell className="text-ink-soft">{d.dni}</TableCell>
             <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>

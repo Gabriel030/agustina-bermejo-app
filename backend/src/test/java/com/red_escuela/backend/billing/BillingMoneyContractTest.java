@@ -92,7 +92,16 @@ class BillingMoneyContractTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.surchargePercent").value(10));
         mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(body.formatted("150")))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PERCENTAGE"));
+    }
+
+    @Test
+    void anUnknownCurrencyIsRejectedWith400AndItsCode() throws Exception {
+        mockMvc.perform(post("/contract/allocation").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"invoiceId\":1,\"amountApplied\":{\"amount\":\"100.00\",\"currency\":\"EUR\"}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_CURRENCY"));
     }
 
     @Test

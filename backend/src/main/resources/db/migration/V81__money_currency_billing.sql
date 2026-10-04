@@ -72,3 +72,4 @@ set upfront_discount = jsonb_build_object('type', 'PROPORTIONAL', 'fraction', up
 where upfront_discount ->> 'type' = 'PERCENTAGE';
 
 alter table collections_policy alter column surcharge_percentage type numeric(7,6);
+alter table collections_policy add constraint ck_collections_policy_surcharge_percentage check (surcharge_percentage between 0 and 1);

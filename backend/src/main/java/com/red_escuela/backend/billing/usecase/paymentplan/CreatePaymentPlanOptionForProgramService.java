@@ -28,7 +28,7 @@ public class CreatePaymentPlanOptionForProgramService implements CreatePaymentPl
     @Transactional
     public PaymentPlanOption create(Long programId, CreatePaymentPlanOptionRequest request) {
         Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
-        PaymentPlanOption option = paymentPlanOptionBuilder.build(request);
+        PaymentPlanOption option = paymentPlanOptionBuilder.build(request, program.getCurrency());
         option.setProgram(program);
         return paymentPlanOptionRepository.save(option);
     }

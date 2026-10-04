@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.identity.entity.Person;

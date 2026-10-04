@@ -11,6 +11,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import org.springframework.stereotype.Service;
 
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
 import java.time.YearMonth;
 import java.util.List;
@@ -25,9 +27,11 @@ public class ScholarshipGrantSupport {
         this.creditNoteService = creditNoteService;
     }
 
-    public Scholarship build(CreateScholarshipRequest request, Person actor) {
+    public Scholarship build(CreateScholarshipRequest request, Person actor, Currency currency) {
+        MonetaryAdjustment value = request.value().toAdjustment();
+        value.requireCurrency(currency);
         Scholarship scholarship = new Scholarship();
-        scholarship.setValue(request.value().toAdjustment());
+        scholarship.setValue(value);
         scholarship.setReason(request.reason());
         scholarship.setGrantedBy(actor);
         scholarship.addInstallments(request.installments());

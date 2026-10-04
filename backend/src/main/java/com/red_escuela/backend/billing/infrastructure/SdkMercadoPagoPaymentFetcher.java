@@ -10,11 +10,13 @@ import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Slf4j
 @Component
 public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
     private static final String APPROVED = "approved";
@@ -41,13 +43,25 @@ public class SdkMercadoPagoPaymentFetcher implements MercadoPagoPaymentFetcher {
         if (!APPROVED.equals(payment.getStatus())) {
             return Optional.empty();
         }
+        Optional<Currency> currency = toCurrency(payment.getCurrencyId());
+        if (currency.isEmpty()) {
+            log.warn("Pago de Mercado Pago ignorado, moneda no soportada: pagoMp={}, moneda={}", mpPaymentId, payment.getCurrencyId());
+            return Optional.empty();
+        }
         PaymentAllocationRequest reported = new PaymentAllocationRequest(
                 Long.parseLong(payment.getExternalReference()),
-                Money.of(payment.getTransactionAmount(), toCurrency(payment.getCurrencyId())));
+                Money.of(payment.getTransactionAmount(), currency.get()));
         return Optional.of(new MercadoPagoApprovedPayment(reported, payment.getInstallments()));
     }
 
-    private static Currency toCurrency(String currencyId) {
-        return currencyId == null ? Currency.ARS : Currency.valueOf(currencyId);
+    static Optional<Currency> toCurrency(String currencyId) {
+        if (currencyId == null) {
+            return Optional.of(Currency.ARS);
+        }
+        try {
+            return Optional.of(Currency.valueOf(currencyId));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 }

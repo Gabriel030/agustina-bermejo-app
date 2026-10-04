@@ -6,12 +6,22 @@ public sealed interface MonetaryAdjustment permits MonetaryAdjustment.Nominal, M
 
     Money applyTo(Money base);
 
+    default void requireCurrency(Currency currency) {
+    }
+
     record Nominal(Money amount) implements MonetaryAdjustment {
 
         public Nominal {
             Objects.requireNonNull(amount, "amount");
             if (amount.isNegative()) {
                 throw new NegativeAdjustmentAmountException();
+            }
+        }
+
+        @Override
+        public void requireCurrency(Currency currency) {
+            if (amount.currency() != currency) {
+                throw new CurrencyMismatchException(currency, amount.currency());
             }
         }
 

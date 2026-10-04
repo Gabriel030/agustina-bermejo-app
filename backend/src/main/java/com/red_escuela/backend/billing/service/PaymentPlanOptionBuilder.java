@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
@@ -15,13 +17,17 @@ public class PaymentPlanOptionBuilder {
         this.currentPersonService = currentPersonService;
     }
 
-    public PaymentPlanOption build(CreatePaymentPlanOptionRequest request) {
+    public PaymentPlanOption build(CreatePaymentPlanOptionRequest request, Currency currency) {
         validateUpfrontWindow(request);
         Person actor = currentPersonService.resolveCurrentPerson();
         PaymentPlanOption option = new PaymentPlanOption();
         option.setDescription(request.description());
         option.setCadence(request.cadence());
-        option.setUpfrontDiscount(request.upfrontDiscount() == null ? null : request.upfrontDiscount().toAdjustment());
+        MonetaryAdjustment discount = request.upfrontDiscount() == null ? null : request.upfrontDiscount().toAdjustment();
+        if (discount != null) {
+            discount.requireCurrency(currency);
+        }
+        option.setUpfrontDiscount(discount);
         option.setUpfrontWindowEnabled(request.upfrontWindowEnabled());
         option.setUpfrontWindowStart(request.upfrontWindowStart());
         option.setUpfrontWindowEnd(request.upfrontWindowEnd());
