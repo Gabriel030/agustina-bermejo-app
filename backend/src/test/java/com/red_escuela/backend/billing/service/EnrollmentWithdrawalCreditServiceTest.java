@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -41,6 +42,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -125,7 +127,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, InvoiceStatus status, YearMonth period) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -139,7 +141,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     @Test
     void voluntaryWithdrawalCancelsPendingInstallments() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000001." + System.nanoTime());
-        Invoice pendiente = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
+        Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
 
         authenticateAs(persistPerson("preceptor.baja1." + System.nanoTime()));
         courseEnrollmentService.withdraw(enrollment.getId());
@@ -152,31 +154,31 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     @Test
     void voluntaryWithdrawalWithFutureInstallmentsAlreadyPaidGeneratesCreditNoteForThatPeriod() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000002." + System.nanoTime());
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now());
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
 
         authenticateAs(persistPerson("preceptor.baja2." + System.nanoTime()));
         courseEnrollmentService.withdraw(enrollment.getId());
 
         CreditNote creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
         assertThat(creditNote.getReasonType()).isEqualTo(CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED);
-        assertThat(creditNote.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
+        assertThat(creditNote.getAmount()).isEqualTo(ars(1000));
     }
 
     @Test
     void voluntaryWithdrawalWithSeveralFutureInstallmentsAlreadyPaidTracksAllOfThemInSourceInvoices() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000004." + System.nanoTime());
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
-        Invoice futura1 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(1));
-        Invoice futura2 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
-        Invoice futura3 = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(3));
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now());
+        Invoice futura1 = persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(1));
+        Invoice futura2 = persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
+        Invoice futura3 = persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(3));
 
         authenticateAs(persistPerson("preceptor.baja4." + System.nanoTime()));
         courseEnrollmentService.withdraw(enrollment.getId());
 
         Long creditNoteId = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0).getId();
         CreditNote creditNote = creditNoteRepository.findByIdWithSourceInvoices(creditNoteId).orElseThrow();
-        assertThat(creditNote.getAmount()).isEqualByComparingTo(BigDecimal.valueOf(3000));
+        assertThat(creditNote.getAmount()).isEqualTo(ars(3000));
         assertThat(creditNote.getSourceInvoices()).extracting(Invoice::getId)
                 .containsExactlyInAnyOrder(futura1.getId(), futura2.getId(), futura3.getId());
     }
@@ -184,8 +186,8 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     @Test
     void voluntaryWithdrawalWithoutFutureInstallmentsAlreadyPaidGeneratesNoCreditNote() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000005." + System.nanoTime());
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now());
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now());
 
         authenticateAs(persistPerson("preceptor.baja5." + System.nanoTime()));
         courseEnrollmentService.withdraw(enrollment.getId());
@@ -196,8 +198,8 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     @Test
     void withdrawalForNonPaymentDoesNotCancelInstallmentsOrGenerateCredit() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000003." + System.nanoTime());
-        Invoice pendiente = persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
-        persistInvoice(enrollment, BigDecimal.valueOf(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
+        Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
+        persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now().plusMonths(2));
         enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
         courseEnrollmentRepository.save(enrollment);
 

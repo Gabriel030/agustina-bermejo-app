@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateScholarshipRequest(
-        @Valid @NotNull MonetaryAdjustmentValueRequest value,
+        @Valid @NotNull MonetaryAdjustmentRequest value,
         @NotBlank String reason,
         @NotNull @Min(1) Integer installments) {
 }

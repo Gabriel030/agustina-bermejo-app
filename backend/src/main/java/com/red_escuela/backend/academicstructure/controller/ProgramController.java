@@ -85,6 +85,6 @@ public class ProgramController {
     @GetMapping("/{id}/pricing")
     public ProgramPricingResponse getPricing(@PathVariable Long id) {
         var program = programService.get(id);
-        return new ProgramPricingResponse(id, program.getEnrollmentFeeAmount(), program.getEnrollmentFeeAmount(), program.getPrice());
+        return new ProgramPricingResponse(id, program.enrollmentFeeAsMoney(), program.enrollmentFeeAsMoney(), program.priceAsMoney());
     }
 }

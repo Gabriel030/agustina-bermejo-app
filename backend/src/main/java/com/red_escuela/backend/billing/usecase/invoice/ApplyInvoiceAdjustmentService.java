@@ -27,7 +27,7 @@ public class ApplyInvoiceAdjustmentService implements ApplyInvoiceAdjustmentUseC
             throw new InvoiceNotPayableException(command.invoiceId(), invoice.getStatus().name());
         }
         var request = command.request();
-        invoice.applyAdjustment(request.type(), request.value().toValue(), request.reason(), currentPersonService.resolveCurrentPerson());
+        invoice.applyAdjustment(request.type(), request.value().toAdjustment(), request.reason(), currentPersonService.resolveCurrentPerson());
         return invoiceRepository.save(invoice);
     }
 }

@@ -19,6 +19,7 @@ import com.red_escuela.backend.billing.repository.PromotionRedemptionRepository;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -142,7 +143,7 @@ public class InvoiceFactory {
         return saveAdHoc(feeType, period, dueDate, price);
     }
 
-    private Invoice saveAdHoc(FeeType feeType, YearMonth period, LocalDate dueDate, java.math.BigDecimal price) {
+    private Invoice saveAdHoc(FeeType feeType, YearMonth period, LocalDate dueDate, Money price) {
         Invoice invoice = new Invoice();
         invoice.setFeeType(feeType);
         invoice.setPeriod(period);
@@ -153,7 +154,7 @@ public class InvoiceFactory {
     }
 
     @Transactional
-    public Invoice createAdHocFeeForCourseEnrollment(CourseEnrollment courseEnrollment, FeeType feeType, java.math.BigDecimal amount,
+    public Invoice createAdHocFeeForCourseEnrollment(CourseEnrollment courseEnrollment, FeeType feeType, Money amount,
                                                        LocalDate dueDate, String description, Subject subject, ExamBoardRegistration examBoardRegistration) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(courseEnrollment);
@@ -169,7 +170,7 @@ public class InvoiceFactory {
     }
 
     @Transactional
-    public Invoice createAdHocFeeForProgramEnrollment(ProgramEnrollment programEnrollment, FeeType feeType, java.math.BigDecimal amount,
+    public Invoice createAdHocFeeForProgramEnrollment(ProgramEnrollment programEnrollment, FeeType feeType, Money amount,
                                                         LocalDate dueDate, String description, Subject subject, ExamBoardRegistration examBoardRegistration) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(programEnrollment);

@@ -45,7 +45,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public void handleMalformedBody() {
+    public ErrorCodeResponse handleMalformedBody(HttpMessageNotReadableException exception) {
+        for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause() == cause ? null : cause.getCause()) {
+            if (cause instanceof BadRequestException) {
+                return ErrorCodeResponse.of(cause);
+            }
+        }
+        return null;
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

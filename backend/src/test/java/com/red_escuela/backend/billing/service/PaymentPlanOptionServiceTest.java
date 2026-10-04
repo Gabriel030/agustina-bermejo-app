@@ -1,8 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.identity.entity.Person;
@@ -25,6 +26,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -123,13 +125,13 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
 
     @Test
     void bothValuesAtOnceAreRejected() {
-        assertThatThrownBy(() -> new MonetaryAdjustmentValueRequest(BigDecimal.TEN, BigDecimal.valueOf(0.1)).toValue())
+        assertThatThrownBy(() -> new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.NOMINAL, ars(10), Percentage.ofFraction(BigDecimal.valueOf(0.1))).toAdjustment())
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void noValueIsRejected() {
-        assertThatThrownBy(() -> new MonetaryAdjustmentValueRequest(null, null).toValue())
+        assertThatThrownBy(() -> new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, null).toAdjustment())
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

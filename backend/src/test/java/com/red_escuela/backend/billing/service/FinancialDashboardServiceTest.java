@@ -1,5 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -14,7 +18,6 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
@@ -44,6 +47,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -123,7 +127,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, InvoiceStatus status, YearMonth period) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -134,7 +138,13 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         return invoiceRepository.save(invoice);
     }
 
-    private void pay(Invoice invoice, BigDecimal amount, Person admin) {
+    private static FinancialDashboardResponse.CurrencyTotals arsTotals(FinancialDashboardResponse response) {
+        return response.totalsByCurrency().stream()
+                .filter(totals -> totals.totalDebt().currency() == Currency.ARS)
+                .findFirst().orElseThrow();
+    }
+
+    private void pay(Invoice invoice, Money amount, Person admin) {
         registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), amount)),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
@@ -145,16 +155,16 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.dashboard1." + System.nanoTime());
         Student student = persistStudent("dashboard.debtor1." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(2));
-        invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.10")), "Recargo por mora");
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(2));
+        invoice.markOverdue(new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.10"))), "Recargo por mora");
         invoice = invoiceRepository.save(invoice);
-        pay(invoice, BigDecimal.valueOf(3000), admin);
+        pay(invoice, ars(3000), admin);
 
         DebtorSummaryResponse debtor = listDebtorsUseCase.list("DEBT_AMOUNT").stream()
                 .filter(summary -> summary.studentId().equals(student.getId()))
                 .findFirst().orElseThrow();
 
-        assertThat(debtor.totalDebt()).isEqualByComparingTo("8000");
+        assertThat(debtor.totalDebt()).isEqualTo(ars(8000));
     }
 
     @Test
@@ -163,17 +173,17 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("dashboard.total." + System.nanoTime()));
         FinancialDashboardResponse before = getFinancialDashboardUseCase.execute();
 
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(2));
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(2));
         invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT,
-                new MonetaryAdjustmentValue.FixedAmount(BigDecimal.valueOf(500)), "Descuento", admin);
-        invoice.markOverdue(new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.10")), "Recargo por mora");
+                new MonetaryAdjustment.Nominal(ars(500)), "Descuento", admin);
+        invoice.markOverdue(new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.10"))), "Recargo por mora");
         invoice = invoiceRepository.save(invoice);
-        pay(invoice, BigDecimal.valueOf(2000), admin);
-        persistInvoice(enrollment, BigDecimal.valueOf(7000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(1));
+        pay(invoice, ars(2000), admin);
+        persistInvoice(enrollment, ars(7000), InvoiceStatus.PENDING, YearMonth.now().minusMonths(1));
 
         FinancialDashboardResponse after = getFinancialDashboardUseCase.execute();
 
-        assertThat(after.totalDebt().subtract(before.totalDebt())).isEqualByComparingTo("8450");
+        assertThat(arsTotals(after).totalDebt().minus(arsTotals(before).totalDebt())).isEqualTo(ars(8450));
     }
 
     @Test
@@ -184,18 +194,18 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         CourseEnrollment regularEnrollment = persistCourseEnrollment(student);
         FinancialDashboardResponse before = getFinancialDashboardUseCase.execute();
 
-        Invoice withScholarship = persistInvoice(scholarshipEnrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING, YearMonth.now());
+        Invoice withScholarship = persistInvoice(scholarshipEnrollment, ars(10000), InvoiceStatus.PENDING, YearMonth.now());
         withScholarship.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP,
-                new MonetaryAdjustmentValue.PercentageAmount(new BigDecimal("0.50")), "Beca 50%", admin);
+                new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.50"))), "Beca 50%", admin);
         invoiceRepository.save(withScholarship);
-        Invoice partiallyPaid = persistInvoice(regularEnrollment,BigDecimal.valueOf(8000), InvoiceStatus.PENDING, YearMonth.now());
-        pay(partiallyPaid, BigDecimal.valueOf(3000), admin);
+        Invoice partiallyPaid = persistInvoice(regularEnrollment,ars(8000), InvoiceStatus.PENDING, YearMonth.now());
+        pay(partiallyPaid, ars(3000), admin);
 
         FinancialDashboardResponse after = getFinancialDashboardUseCase.execute();
 
-        assertThat(after.monthlyProjected().subtract(before.monthlyProjected())).isEqualByComparingTo("13000");
-        assertThat(after.monthlyCollected().subtract(before.monthlyCollected())).isEqualByComparingTo("3000");
-        assertThat(after.monthlyDebt().subtract(before.monthlyDebt())).isEqualByComparingTo("10000");
+        assertThat(arsTotals(after).monthlyProjected().minus(arsTotals(before).monthlyProjected())).isEqualTo(ars(13000));
+        assertThat(arsTotals(after).monthlyCollected().minus(arsTotals(before).monthlyCollected())).isEqualTo(ars(3000));
+        assertThat(arsTotals(after).monthlyDebt().minus(arsTotals(before).monthlyDebt())).isEqualTo(ars(10000));
     }
 
     @Test
@@ -205,7 +215,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
         persistStudent("dashboard.noenrollment." + System.nanoTime());
         persistCourseEnrollment(persistStudent("dashboard.uptodate." + System.nanoTime()));
         CourseEnrollment indebted = persistCourseEnrollment(persistStudent("dashboard.indebted." + System.nanoTime()));
-        persistInvoice(indebted, BigDecimal.valueOf(5000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(1));
+        persistInvoice(indebted, ars(5000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(1));
 
         FinancialDashboardResponse after = getFinancialDashboardUseCase.execute();
 

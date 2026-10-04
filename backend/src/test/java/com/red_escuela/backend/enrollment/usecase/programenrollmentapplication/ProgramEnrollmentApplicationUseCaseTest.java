@@ -41,6 +41,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -139,7 +140,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         revision.setProgram(program);
         revision.setFeeType(FeeType.ENROLLMENT_FEE);
         revision.setDescription("Matrícula de prueba");
-        revision.setMonthlyAmount(amount);
+        revision.setMonthlyAmount(ars(amount));
         revision.setEffectiveFrom(LocalDate.now().minusDays(1));
         revision.setCreatedBy(createdBy);
         entityManager.persist(revision);
@@ -164,7 +165,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
         assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
-        assertThat(application.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(application.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
     }
 
     @Test
@@ -241,7 +242,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 .isNotEmpty();
 
         assertThat(aprobada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
-        assertThat(aprobada.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
+        assertThat(aprobada.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
         assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

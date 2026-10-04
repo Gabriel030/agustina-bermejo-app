@@ -15,9 +15,9 @@ function invoice(overrides) {
     feeType: 'RECURRING_FEE',
     period: '2026-09',
     dueDate: '2026-09-10',
-    baseAmount: 48000,
-    amountDue: 48000,
-    remainingBalance: 48000,
+    baseAmount: { amount: '48000.00', currency: 'ARS' },
+    amountDue: { amount: '48000.00', currency: 'ARS' },
+    remainingBalance: { amount: '48000.00', currency: 'ARS' },
     status: 'PENDING',
     adjustments: [],
     paymentDate: null,
@@ -57,7 +57,7 @@ describe('AlumnoPagoDetalle', () => {
     server.use(
       http.get(`${API}/me/course-enrollments/10/invoices`, () =>
         HttpResponse.json(billingStatus('COURSE', 'Primeros Auxilios y RCP', [
-          invoice({ id: 5, period: '2026-03', status: 'PAID', remainingBalance: 0, amountDue: 11050, baseAmount: 11050 }),
+          invoice({ id: 5, period: '2026-03', status: 'PAID', remainingBalance: { amount: '0.00', currency: 'ARS' }, amountDue: { amount: '11050.00', currency: 'ARS' }, baseAmount: { amount: '11050.00', currency: 'ARS' } }),
         ])),
       ),
       http.get(`${API}/me/program-enrollments/10/invoices`, () => new HttpResponse(null, { status: 403 })),
@@ -138,9 +138,9 @@ describe('AlumnoPagoDetalle', () => {
         HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
           invoice({
             status: 'OVERDUE',
-            amountDue: 52800,
-            remainingBalance: 52800,
-            adjustments: [{ type: 'SURCHARGE', resolvedAmount: 4800, reason: 'Recargo por mora' }],
+            amountDue: { amount: '52800.00', currency: 'ARS' },
+            remainingBalance: { amount: '52800.00', currency: 'ARS' },
+            adjustments: [{ type: 'SURCHARGE', resolvedAmount: { amount: '4800.00', currency: 'ARS' }, reason: 'Recargo por mora' }],
           }),
         ])),
       ),
@@ -153,6 +153,6 @@ describe('AlumnoPagoDetalle', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText('Importe de la cuota')).toBeInTheDocument();
     expect(within(dialog).getByText('Recargo por mora')).toBeInTheDocument();
-    expect(within(dialog).getByText('+ $ 4.800')).toBeInTheDocument();
+    expect(within(dialog).getByText('+ $ 4.800,00')).toBeInTheDocument();
   });
 });

@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationService;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -118,7 +119,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         revision.setCourse(course);
         revision.setFeeType(FeeType.RECURRING_FEE);
         revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(amount);
+        revision.setMonthlyAmount(ars(amount));
         revision.setEffectiveFrom(LocalDate.now().minusDays(1));
         revision.setCreatedBy(createdBy);
         entityManager.persist(revision);

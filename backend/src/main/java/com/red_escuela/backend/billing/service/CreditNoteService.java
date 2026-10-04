@@ -14,7 +14,8 @@ import com.red_escuela.backend.identity.entity.Student;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,14 +28,15 @@ public class CreditNoteService {
     }
 
     @Transactional(readOnly = true)
-    public BigDecimal availableBalance(Long studentId) {
+    public Money availableBalance(Long studentId, Currency currency) {
         return creditNoteRepository.findByStudentIdAndStatusNotOrderByCreatedAtAsc(studentId, CreditNoteStatus.CONSUMED).stream()
+                .filter(note -> note.getAmount().currency() == currency)
                 .map(CreditNote::getRemainingAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .reduce(Money.zero(currency), Money::plus);
     }
 
     @Transactional
-    public CreditNote createFor(Student student, BigDecimal amount, CreditNoteReasonType reasonType, String reason, Person createdBy) {
+    public CreditNote createFor(Student student, Money amount, CreditNoteReasonType reasonType, String reason, Person createdBy) {
         CreditNote creditNote = new CreditNote();
         creditNote.setStudent(student);
         creditNote.setAmount(amount);
@@ -45,28 +47,31 @@ public class CreditNoteService {
     }
 
     @Transactional
-    public List<CreditApplication> consumeForInvoice(Long studentId, BigDecimal amount, Invoice invoice, Payment payment) {
+    public List<CreditApplication> consumeForInvoice(Long studentId, Money amount, Invoice invoice, Payment payment) {
         List<Long> candidateIds = creditNoteRepository.findIdsByStudentIdAndStatusNotOrderByCreatedAtAsc(studentId, CreditNoteStatus.CONSUMED);
 
         List<CreditApplication> applications = new ArrayList<>();
-        BigDecimal remaining = amount;
+        Money remaining = amount;
         for (Long id : candidateIds) {
-            if (remaining.signum() == 0) {
+            if (remaining.isZero()) {
                 break;
             }
             CreditNote locked = creditNoteRepository.findByIdForUpdate(id)
                     .orElseThrow(() -> new CreditNoteNotFoundException(id));
-            BigDecimal noteRemaining = locked.getRemainingAmount();
-            if (noteRemaining.signum() == 0) {
+            if (locked.getAmount().currency() != amount.currency()) {
                 continue;
             }
-            BigDecimal toApply = noteRemaining.min(remaining);
+            Money noteRemaining = locked.getRemainingAmount();
+            if (noteRemaining.isZero()) {
+                continue;
+            }
+            Money toApply = noteRemaining.isGreaterThan(remaining) ? remaining : noteRemaining;
             applications.add(locked.consume(toApply, invoice, payment));
             creditNoteRepository.save(locked);
-            remaining = remaining.subtract(toApply);
+            remaining = remaining.minus(toApply);
         }
-        if (remaining.signum() > 0) {
-            throw new InsufficientCreditBalanceException(studentId, amount, amount.subtract(remaining));
+        if (remaining.isGreaterThan(Money.zero(amount.currency()))) {
+            throw new InsufficientCreditBalanceException(studentId, amount, amount.minus(remaining));
         }
         return applications;
     }

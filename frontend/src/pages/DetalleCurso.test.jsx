@@ -45,7 +45,7 @@ describe('DetalleCurso', () => {
     renderDetalle();
 
     expect(await screen.findByText('Curso de prueba')).toBeInTheDocument();
-    expect(screen.getByText('$ 8.000')).toBeInTheDocument();
+    expect(screen.getByText('$ 8.000,00')).toBeInTheDocument();
     expect(screen.getByText('Módulo 1 — Fundamentos')).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('DetalleCurso', () => {
     await user.click(screen.getByRole('button', { name: 'Continuar →' }));
 
     // Sin paso de documentos: se va directo al monto a pagar.
-    expect(await screen.findByText('$ 8.000')).toBeInTheDocument();
+    expect(await screen.findByText('$ 8.000,00')).toBeInTheDocument();
 
     const file = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
     const [fileInput] = document.querySelectorAll('input[type="file"]');
@@ -195,6 +195,6 @@ describe('DetalleCurso', () => {
 });
 
 async function waitForFileInput() {
-  await screen.findByText('$ 8.000');
+  await screen.findByText('$ 8.000,00');
   return document.querySelectorAll('input[type="file"]');
 }

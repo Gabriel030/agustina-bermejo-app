@@ -40,6 +40,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -121,7 +122,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now().minusMonths(3));
         invoice.setDueDate(LocalDate.now().minusMonths(3));
-        invoice.setBaseAmount(deuda);
+        invoice.setBaseAmount(ars(deuda));
         invoice.setStatus(InvoiceStatus.OVERDUE);
         invoiceRepository.save(invoice);
         return enrollment;
@@ -163,7 +164,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now().plusDays(5));
-        invoice.setBaseAmount(BigDecimal.valueOf(5000));
+        invoice.setBaseAmount(ars(5000));
         invoice.setStatus(InvoiceStatus.PENDING);
         invoiceRepository.save(invoice);
 
@@ -182,7 +183,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
@@ -199,7 +200,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(2000))),
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(2000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
@@ -232,7 +233,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         com.red_escuela.backend.billing.entity.Scholarship scholarship = new com.red_escuela.backend.billing.entity.Scholarship();
         scholarship.setProgramEnrollment(cicloViejo);
-        scholarship.setValue(new com.red_escuela.backend.billing.entity.MonetaryAdjustmentValue.FixedAmount(BigDecimal.valueOf(2000)));
+        scholarship.setValue(new com.red_escuela.backend.shared.domain.MonetaryAdjustment.Nominal(ars(2000)));
         scholarship.setReason("Beca del ciclo viejo");
         scholarship.setGrantedBy(director);
         scholarship.addInstallments(3);
@@ -279,7 +280,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(deudaVieja.getId(), BigDecimal.valueOf(5000))),
+                List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));

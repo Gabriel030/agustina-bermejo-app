@@ -47,7 +47,7 @@ export const handlers = [
     HttpResponse.json({ id: Number(params.id), name: 'Carrera de prueba', totalYears: 3, totalCreditsRequired: 0 }),
   ),
   http.get(`${API}/programs/:id/pricing`, ({ params }) =>
-    HttpResponse.json({ programId: Number(params.id), matriculaCohorte1: 50000, matriculaCohorte2: 25000, cuotaMensual: 15000 }),
+    HttpResponse.json({ programId: Number(params.id), matriculaCohorte1: { amount: '50000.00', currency: 'ARS' }, matriculaCohorte2: { amount: '25000.00', currency: 'ARS' }, cuotaMensual: { amount: '15000.00', currency: 'ARS' } }),
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
@@ -60,7 +60,7 @@ export const handlers = [
   http.get(`${API}/courses/:id`, ({ params }) =>
     HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),
-  http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: 8000 })),
+  http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
   http.post(`${API}/me/program-enrollment-applications`, () =>

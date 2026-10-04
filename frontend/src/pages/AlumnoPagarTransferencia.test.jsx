@@ -14,11 +14,11 @@ const overdueBreakdown = {
   invoiceId: 61,
   feeType: 'RECURRING_FEE',
   period: '2026-09',
-  baseAmount: 48000,
-  adjustments: [{ type: 'SURCHARGE', amount: 4800, humanLabel: 'Recargo por mora' }],
-  amountDue: 52800,
+  baseAmount: { amount: '48000.00', currency: 'ARS' },
+  adjustments: [{ type: 'SURCHARGE', amount: { amount: '4800.00', currency: 'ARS' }, humanLabel: 'Recargo por mora' }],
+  amountDue: { amount: '52800.00', currency: 'ARS' },
   paymentsApplied: [],
-  remainingBalance: 52800,
+  remainingBalance: { amount: '52800.00', currency: 'ARS' },
   status: 'OVERDUE',
 };
 
@@ -47,9 +47,9 @@ describe('AlumnoPagarTransferencia', () => {
     renderTransfer();
 
     expect(await screen.findByText('Cuota mensual · sep 2026')).toBeInTheDocument();
-    expect(screen.getAllByText('$ 52.800').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$ 52.800,00').length).toBeGreaterThan(0);
     expect(screen.getByText('Recargo por mora')).toBeInTheDocument();
-    expect(screen.getByText(/Transferí exactamente \$ 52\.800/)).toBeInTheDocument();
+    expect(screen.getByText(/Transferí exactamente \$ 52\.800,00/)).toBeInTheDocument();
   });
 
   it('opens on the follow-up step when the installment already has a receipt under review', async () => {

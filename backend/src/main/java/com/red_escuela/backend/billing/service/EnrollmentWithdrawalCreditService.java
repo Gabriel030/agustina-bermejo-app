@@ -15,7 +15,7 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -75,7 +75,7 @@ public class EnrollmentWithdrawalCreditService {
         if (paidFuturePeriods.isEmpty()) {
             return;
         }
-        BigDecimal total = paidFuturePeriods.stream().map(Invoice::getAmountDue).reduce(BigDecimal.ZERO, BigDecimal::add);
+        Money total = paidFuturePeriods.stream().map(Invoice::getAmountDue).reduce(Money::plus).orElseThrow();
         CreditNote creditNote = creditNoteService.createFor(student, total, CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED,
                 "Baja anticipada — cuotas futuras ya pagas", actor);
         creditNote.getSourceInvoices().addAll(paidFuturePeriods);

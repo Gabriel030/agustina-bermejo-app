@@ -7,7 +7,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.CreateInvoiceAdjustmentRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
@@ -43,6 +43,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -123,14 +124,14 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(BigDecimal.valueOf(10000));
+        invoice.setBaseAmount(ars(10000));
         invoice.setStatus(status);
         return invoiceRepository.save(invoice);
     }
 
     private ApplyInvoiceAdjustmentCommand surchargeOf(Invoice invoice) {
         return new ApplyInvoiceAdjustmentCommand(invoice.getId(), new CreateInvoiceAdjustmentRequest(
-                InvoiceAdjustmentType.SURCHARGE, new MonetaryAdjustmentValueRequest(BigDecimal.valueOf(500), null), "Recargo manual"));
+                InvoiceAdjustmentType.SURCHARGE, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.NOMINAL, ars(500), null), "Recargo manual"));
     }
 
     @Test
@@ -156,6 +157,6 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
         applyInvoiceAdjustmentUseCase.apply(surchargeOf(invoice));
 
         assertThat(invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow().getAmountDue())
-                .isEqualByComparingTo("10500");
+                .isEqualTo(ars(10500));
     }
 }

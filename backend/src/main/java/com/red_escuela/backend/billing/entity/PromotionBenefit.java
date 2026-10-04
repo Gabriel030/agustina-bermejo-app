@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
@@ -34,10 +36,10 @@ public class PromotionBenefit {
     @Column(name = "fee_type", nullable = false)
     private FeeType feeType;
 
-    @Convert(converter = MonetaryAdjustmentValueConverter.class)
+    @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "value", nullable = false, columnDefinition = "jsonb")
-    private MonetaryAdjustmentValue value;
+    private MonetaryAdjustment value;
 
     @Column(name = "invoice_scope_count")
     private Integer invoiceScopeCount;

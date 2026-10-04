@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
@@ -48,6 +49,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -124,7 +126,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -140,7 +142,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         listos.countDown();
         arranca.await();
         return registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoiceId, monto)),
+                List.of(new PaymentAllocationRequest(invoiceId, ars(monto))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
     }
 
@@ -150,7 +152,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         Person admin2 = persistPerson("admin.concurrencia2." + System.nanoTime());
         Student student = persistStudent("98000001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000));
+        Invoice invoice = persistInvoice(enrollment, ars(10000));
 
         CountDownLatch listos = new CountDownLatch(2);
         CountDownLatch arranca = new CountDownLatch(1);
@@ -182,7 +184,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
-        assertThat(allocations.get(0).getAmountApplied()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(10000));
     }
 
     @Test
@@ -191,7 +193,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         Person admin2 = persistPerson("admin.concurrencia4." + System.nanoTime());
         Student student = persistStudent("98000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(1000));
+        Invoice invoice = persistInvoice(enrollment, ars(1000));
 
         CountDownLatch listos = new CountDownLatch(2);
         CountDownLatch arranca = new CountDownLatch(1);
@@ -223,6 +225,6 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
-        assertThat(allocations.get(0).getAmountApplied()).isEqualByComparingTo(BigDecimal.valueOf(600));
+        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(600));
     }
 }

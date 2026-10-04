@@ -50,6 +50,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.red_escuela.backend.shared.domain.Money;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -58,6 +59,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -166,7 +168,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         price.setProgram(program);
         price.setFeeType(FeeType.RECURRING_FEE);
         price.setDescription("Cuota mensual");
-        price.setMonthlyAmount(BigDecimal.valueOf(10000));
+        price.setMonthlyAmount(ars(10000));
         price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
         price.setCreatedBy(director);
         entityManager.persist(price);
@@ -303,7 +305,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         assertThat(invoices).hasSize(1);
         Invoice unpaid = invoices.get(0);
         assertThat(unpaid.getStatus()).isEqualTo(InvoiceStatus.PENDING);
-        BigDecimal balance = transactionTemplate.execute(status ->
+        Money balance = transactionTemplate.execute(status ->
                 invoiceRepository.findById(unpaid.getId()).orElseThrow().getRemainingBalance());
 
         GraduationRequest request = requestGraduationUseCase.request(billed.enrollment().getId());

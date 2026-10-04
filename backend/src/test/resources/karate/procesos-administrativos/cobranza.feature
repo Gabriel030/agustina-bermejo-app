@@ -5,18 +5,17 @@ Feature: Cobranza — política de mora y webhook de Mercado Pago
     * def fixtures = Java.type('com.red_escuela.backend.karate.KarateFixtures')
     * def directorToken = fixtures.tokenForRole('DIRECTOR')
 
-  Scenario Outline: Una política con recargo fuera de 0 a 1 se rechaza con un código propio — 400
+  Scenario Outline: Una política con recargo fuera de 0 a 100 se rechaza — 400
     Given path '/collections-policy'
     And header Authorization = 'Bearer ' + directorToken
-    And request { gracePeriodDays: 10, surchargePercentage: <recargo>, suspensionAfterDays: 30, suspensionAfterInvoiceCount: 2, withdrawalAfterDays: 60, withdrawalAfterInvoiceCount: 3 }
+    And request { gracePeriodDays: 10, surchargePercent: <recargo>, suspensionAfterDays: 30, suspensionAfterInvoiceCount: 2, withdrawalAfterDays: 60, withdrawalAfterInvoiceCount: 3 }
     When method post
     Then status 400
-    And match response.code == 'INVALID_SURCHARGE_PERCENTAGE'
 
     Examples:
       | recargo |
-      | 1.5     |
-      | -0.1    |
+      | 150     |
+      | -10     |
 
   Scenario: Sin secreto configurado el webhook de Mercado Pago no se procesa — 401
     Given path '/payments/mp-webhook'

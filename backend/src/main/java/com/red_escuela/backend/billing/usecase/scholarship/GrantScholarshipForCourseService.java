@@ -43,7 +43,7 @@ public class GrantScholarshipForCourseService implements GrantScholarshipForCour
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
         support.validateInstallmentsWithinCohortSpan(request.installments(), recurringFeeWindowService.remainingInvoices(enrollment));
-        Scholarship scholarship = support.build(request, currentPersonService.resolveCurrentPerson());
+        Scholarship scholarship = support.build(request, currentPersonService.resolveCurrentPerson(), enrollment.getCourse().getCurrency());
         scholarship.setCourseEnrollment(enrollment);
         scholarship = scholarshipRepository.save(scholarship);
         support.applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(scholarship,

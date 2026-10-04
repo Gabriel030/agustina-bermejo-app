@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.entity.Address;
@@ -47,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -123,10 +126,10 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         authenticateAs(admin);
 
         CreditNote creditNote = createManualCreditNoteUseCase.create(student.getId(),
-                new CreateCreditNoteRequest(BigDecimal.valueOf(500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Corrección de cobro duplicado"));
+                new CreateCreditNoteRequest(ars(500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Corrección de cobro duplicado"));
 
         assertThat(creditNote.getId()).isNotNull();
-        assertThat(creditNoteService.availableBalance(student.getId())).isEqualByComparingTo(BigDecimal.valueOf(500));
+        assertThat(creditNoteService.availableBalance(student.getId(), Currency.ARS)).isEqualTo(ars(500));
     }
 
     @Test
@@ -136,7 +139,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         authenticateAs(admin);
 
         assertThatThrownBy(() -> createManualCreditNoteUseCase.create(student.getId(),
-                new CreateCreditNoteRequest(BigDecimal.valueOf(500), CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED, "Intento inválido")))
+                new CreateCreditNoteRequest(ars(500), CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED, "Intento inválido")))
                 .isInstanceOf(InvalidCreditNoteReasonException.class);
     }
 
@@ -144,11 +147,11 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     void twoConcurrentConsumptionsWithinTheTotalBalanceBothSucceed() throws Exception {
         Person admin = persistPerson("admin.credit3." + System.nanoTime());
         Student student = persistStudent("99100003." + System.nanoTime());
-        creditNoteService.createFor(student, BigDecimal.valueOf(600), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota 1", admin);
-        creditNoteService.createFor(student, BigDecimal.valueOf(600), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota 2", admin);
+        creditNoteService.createFor(student, ars(600), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota 1", admin);
+        creditNoteService.createFor(student, ars(600), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota 2", admin);
 
-        Invoice invoiceA = persistInvoice(student, BigDecimal.valueOf(600));
-        Invoice invoiceB = persistInvoice(student, BigDecimal.valueOf(600));
+        Invoice invoiceA = persistInvoice(student, ars(600));
+        Invoice invoiceB = persistInvoice(student, ars(600));
         Payment paymentA = persistPayment(admin);
         Payment paymentB = persistPayment(admin);
 
@@ -159,12 +162,12 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         Callable<Object> consumoA = () -> {
             listos.countDown();
             arranca.await();
-            return creditNoteService.consumeForInvoice(student.getId(), BigDecimal.valueOf(600), invoiceA, paymentA);
+            return creditNoteService.consumeForInvoice(student.getId(), ars(600), invoiceA, paymentA);
         };
         Callable<Object> consumoB = () -> {
             listos.countDown();
             arranca.await();
-            return creditNoteService.consumeForInvoice(student.getId(), BigDecimal.valueOf(600), invoiceB, paymentB);
+            return creditNoteService.consumeForInvoice(student.getId(), ars(600), invoiceB, paymentB);
         };
 
         Future<Object> resultadoA = executor.submit(consumoA);
@@ -183,22 +186,22 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         executor.shutdown();
 
         assertThat(exitos).isEqualTo(2);
-        assertThat(creditNoteService.availableBalance(student.getId())).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(creditNoteService.availableBalance(student.getId(), Currency.ARS)).isEqualTo(ars(0));
     }
 
     @Test
     void consumptionWithoutSufficientBalanceIsRejected() {
         Person admin = persistPerson("admin.credit4." + System.nanoTime());
         Student student = persistStudent("99100004." + System.nanoTime());
-        creditNoteService.createFor(student, BigDecimal.valueOf(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota", admin);
-        Invoice invoice = persistInvoice(student, BigDecimal.valueOf(1000));
+        creditNoteService.createFor(student, ars(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Nota", admin);
+        Invoice invoice = persistInvoice(student, ars(1000));
         Payment payment = persistPayment(admin);
 
-        assertThatThrownBy(() -> creditNoteService.consumeForInvoice(student.getId(), BigDecimal.valueOf(1000), invoice, payment))
+        assertThatThrownBy(() -> creditNoteService.consumeForInvoice(student.getId(), ars(1000), invoice, payment))
                 .isInstanceOf(InsufficientCreditBalanceException.class);
     }
 
-    private Invoice persistInvoice(Student student, BigDecimal amount) {
+    private Invoice persistInvoice(Student student, Money amount) {
         Invoice invoice = new Invoice();
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(YearMonth.now());
@@ -210,7 +213,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
 
     private Payment persistPayment(Person registeredBy) {
         Payment payment = new Payment();
-        payment.setAmount(BigDecimal.valueOf(600));
+        payment.setAmount(ars(600));
         payment.setMethod(PaymentMethod.CREDIT_BALANCE);
         payment.setStatus(PaymentStatus.CONFIRMED);
         payment.setRegisteredBy(registeredBy);

@@ -52,7 +52,7 @@ async function openRegisterPaymentModal(user) {
           productName: 'Profesorado de Educación Inicial',
           billingStanding: 'OVERDUE',
           invoices: [
-            { id: 61, feeType: 'RECURRING_FEE', period: '2026-09', dueDate: '2026-09-10', remainingBalance: 52800, status: 'OVERDUE' },
+            { id: 61, feeType: 'RECURRING_FEE', period: '2026-09', dueDate: '2026-09-10', remainingBalance: { amount: '52800.00', currency: 'ARS' }, status: 'OVERDUE' },
           ],
         },
       ]),
@@ -130,7 +130,7 @@ describe('AdministrativoFacturacion — registrar pago', () => {
     await user.type(amount, '999999');
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
 
-    expect(await within(dialog).findByText('El monto de Cuota mensual · sep 2026 supera su saldo ($ 52.800).')).toBeInTheDocument();
+    expect(await within(dialog).findByText('El monto de Cuota mensual · sep 2026 supera su saldo ($ 52.800,00).')).toBeInTheDocument();
     expect(fetchSpy.mock.calls.some(([url, options]) => String(url).endsWith('/payments') && options?.method === 'POST')).toBe(false);
   });
 

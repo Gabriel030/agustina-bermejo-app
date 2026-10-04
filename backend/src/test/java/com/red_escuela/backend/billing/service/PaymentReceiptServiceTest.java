@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.entity.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -62,6 +63,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -162,7 +164,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, BigDecimal amount, InvoiceStatus status) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -188,7 +190,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         return programEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(ProgramEnrollment enrollment, BigDecimal amount, InvoiceStatus status) {
+    private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.RECURRING_FEE);
@@ -208,7 +210,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt1." + System.nanoTime());
         Student student = persistStudent("97000001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
 
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
@@ -223,7 +225,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt2." + System.nanoTime());
         Student student = persistStudent("97000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
@@ -237,7 +239,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt3." + System.nanoTime());
         Student student = persistStudent("97000003");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         PaymentReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
@@ -251,7 +253,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt4." + System.nanoTime());
         Student student = persistStudent("97000004");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         PaymentReceipt rejected = rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin);
@@ -269,7 +271,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student owner = persistStudent("97000005");
         Student intruder = persistStudent("97000006");
         CourseEnrollment enrollment = persistCourseEnrollment(owner);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
 
         assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), intruder.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotFoundException.class);
@@ -281,7 +283,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin2 = persistPerson("admin.receipt8b." + System.nanoTime());
         Student student = persistStudent("97000008");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         CountDownLatch listos = new CountDownLatch(2);
@@ -336,7 +338,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     void uploadingAReceiptOnAnAlreadyPaidInvoiceIsRejected() {
         Student student = persistStudent("97000007");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PAID);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PAID);
 
         assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(InvoiceNotPayableException.class);
@@ -347,7 +349,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt9." + System.nanoTime());
         Student student = persistStudent("97000009");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student);
-        Invoice invoice = persistInvoice(programEnrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(programEnrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         List<PaymentReceipt> ownReceipts = findOwnPaymentReceiptsUseCase.findOwn(student.getId());
@@ -366,7 +368,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt10." + System.nanoTime());
         Student student = persistStudent("97000010");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "El importe no coincide con la cuota", admin);
@@ -382,7 +384,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt11." + System.nanoTime());
         Student student = persistStudent("97000011");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
@@ -397,10 +399,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.receipt12." + System.nanoTime());
         Student student = persistStudent("97000012");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, BigDecimal.valueOf(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), BigDecimal.valueOf(10000))),
+                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin))
@@ -423,7 +425,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.ENROLLMENT_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(BigDecimal.valueOf(10000));
+        invoice.setBaseAmount(ars(10000));
         invoice.setStatus(InvoiceStatus.PENDING);
         invoice = invoiceRepository.save(invoice);
         PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());

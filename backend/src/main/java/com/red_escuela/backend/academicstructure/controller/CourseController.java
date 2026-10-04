@@ -88,6 +88,6 @@ public class CourseController {
     @GetMapping("/{id}/pricing")
     public CoursePricingResponse getPricing(@PathVariable Long id) {
         var course = courseService.get(id);
-        return new CoursePricingResponse(id, course.getPrice());
+        return new CoursePricingResponse(id, course.priceAsMoney());
     }
 }

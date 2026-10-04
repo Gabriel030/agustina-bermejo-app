@@ -1,15 +1,16 @@
 import { GlassCard } from '@/components/GlassCard';
 import { AmountBreakdown } from '@/components/alumno/AmountBreakdown';
 import { ADJUSTMENT_TYPE_LABELS, formatMoney, invoiceConcept } from '@/lib/billing';
+import { moneyValue } from '@/lib/utils';
 
 export function InvoiceSummary({ breakdown }) {
-  const alreadyPaid = (breakdown.paymentsApplied ?? []).reduce((sum, payment) => sum + payment.amountApplied, 0);
+  const alreadyPaid = (breakdown.paymentsApplied ?? []).reduce((sum, payment) => sum + moneyValue(payment.amountApplied), 0);
   const lines = [
     ...(breakdown.adjustments ?? []).map((adjustment) => ({
       label: ADJUSTMENT_TYPE_LABELS[adjustment.type] ?? adjustment.type,
       amount: adjustment.amount,
     })),
-    ...(alreadyPaid > 0 ? [{ label: 'Pagos ya registrados', amount: -alreadyPaid }] : []),
+    ...(alreadyPaid > 0 ? [{ label: 'Pagos ya registrados', amount: { amount: (-alreadyPaid).toFixed(2), currency: breakdown.baseAmount.currency } }] : []),
   ];
 
   return (

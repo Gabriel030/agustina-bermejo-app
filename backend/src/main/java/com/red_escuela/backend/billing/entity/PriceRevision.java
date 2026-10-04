@@ -2,9 +2,9 @@ package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -36,8 +36,12 @@ public class PriceRevision {
     @Column(name = "description", nullable = false, length = 200)
     private String description;
 
-    @Column(name = "monthly_amount", nullable = false)
-    private BigDecimal monthlyAmount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "monthly_amount", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "monthly_amount_currency", nullable = false))
+    })
+    private Money monthlyAmount;
 
     @Column(name = "effective_from", nullable = false)
     private LocalDate effectiveFrom;

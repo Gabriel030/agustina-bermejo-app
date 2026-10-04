@@ -1,10 +1,13 @@
 package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -63,8 +66,12 @@ public class Invoice {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(name = "base_amount", nullable = false)
-    private BigDecimal baseAmount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "base_amount", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "base_amount_currency", nullable = false))
+    })
+    private Money baseAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -106,37 +113,44 @@ public class Invoice {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public BigDecimal getAmountDue() {
-        BigDecimal net = baseAmount.add(adjustments.stream()
+    public Money getAmountDue() {
+        Money net = baseAmount.plus(adjustments.stream()
                 .map(InvoiceAdjustment::signedAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-        return net.max(BigDecimal.ZERO);
+                .reduce(Money.zero(currency()), Money::plus));
+        return net.isNegative() ? Money.zero(currency()) : net;
     }
 
-    public BigDecimal getRemainingBalance() {
-        BigDecimal applied = allocations.stream()
+    public Money getRemainingBalance() {
+        Money applied = allocations.stream()
                 .map(PaymentAllocation::getAmountApplied)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return getAmountDue().subtract(applied);
+                .reduce(Money.zero(currency()), Money::plus);
+        return getAmountDue().minus(applied);
+    }
+
+    public Currency currency() {
+        return baseAmount.currency();
     }
 
     public boolean isPayable() {
         return status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE;
     }
 
-    public PaymentAllocation registerPayment(BigDecimal amountApplied, Payment payment) {
+    public PaymentAllocation registerPayment(Money amountApplied, Payment payment) {
+        if (amountApplied.currency() != currency()) {
+            throw new CurrencyMismatchException(currency(), amountApplied.currency());
+        }
         PaymentAllocation allocation = new PaymentAllocation();
         allocation.setInvoice(this);
         allocation.setPayment(payment);
         allocation.setAmountApplied(amountApplied);
         allocations.add(allocation);
-        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0) {
+        if (getRemainingBalance().isZero()) {
             status = InvoiceStatus.PAID;
         }
         return allocation;
     }
 
-    public boolean markOverdue(MonetaryAdjustmentValue surchargeValue, String reason) {
+    public boolean markOverdue(MonetaryAdjustment surchargeValue, String reason) {
         if (status != InvoiceStatus.PENDING) {
             return false;
         }
@@ -155,12 +169,12 @@ public class Invoice {
         this.cancelledAt = LocalDateTime.now();
     }
 
-    public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy) {
+    public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustment value, String reason, Person appliedBy) {
         applyAdjustment(type, value, reason, appliedBy, null);
     }
 
-    public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustmentValue value, String reason, Person appliedBy, PromotionBenefit promotionBenefit) {
-        BigDecimal base = (type == InvoiceAdjustmentType.SURCHARGE) ? getRemainingBalance() : this.baseAmount;
+    public void applyAdjustment(InvoiceAdjustmentType type, MonetaryAdjustment value, String reason, Person appliedBy, PromotionBenefit promotionBenefit) {
+        Money base = (type == InvoiceAdjustmentType.SURCHARGE) ? getRemainingBalance() : this.baseAmount;
         InvoiceAdjustment adjustment = new InvoiceAdjustment();
         adjustment.setInvoice(this);
         adjustment.setType(type);
@@ -171,7 +185,7 @@ public class Invoice {
         adjustment.setAppliedAt(LocalDateTime.now());
         adjustment.setPromotionBenefit(promotionBenefit);
         adjustments.add(adjustment);
-        if (getRemainingBalance().compareTo(BigDecimal.ZERO) == 0
+        if (getRemainingBalance().isZero()
                 && (status == InvoiceStatus.PENDING || status == InvoiceStatus.OVERDUE)) {
             status = InvoiceStatus.WAIVED;
         }

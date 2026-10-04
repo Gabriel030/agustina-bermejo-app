@@ -16,7 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
@@ -53,14 +54,15 @@ public class CourseService {
                 .registrationStart(request.registrationStart())
                 .registrationEnd(request.registrationEnd())
                 .isActive(StatusType.ACTIVE)
+                .currency(Optional.ofNullable(request.currency()).orElse(Currency.ARS))
                 .build();
         course.requireValidRegistrationWindow();
-        course = courseRepository.save(course);
+        Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
-        BigDecimal price = course.getPrice() == null ? BigDecimal.ZERO : course.getPrice();
-        priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, price, "Precio inicial", actor);
-        return course;
+        Money price = Optional.ofNullable(saved.priceAsMoney()).orElseGet(() -> Money.zero(saved.getCurrency()));
+        priceRevisionService.registerForCourse(saved, FeeType.RECURRING_FEE, price, "Precio inicial", actor);
+        return saved;
     }
 
     @Transactional
@@ -71,7 +73,7 @@ public class CourseService {
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         if (course.changePrice(request.price())) {
             Person actor = currentPersonService.resolveCurrentPerson();
-            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
+            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, Money.of(request.price(), course.getCurrency()), "Ajuste de precio", actor);
         }
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);

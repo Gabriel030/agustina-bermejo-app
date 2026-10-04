@@ -47,6 +47,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -197,7 +198,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         invoice.setFeeType(FeeType.RECURRING_FEE);
         invoice.setPeriod(java.time.YearMonth.from(dueDate));
         invoice.setDueDate(dueDate);
-        invoice.setBaseAmount(BigDecimal.valueOf(100));
+        invoice.setBaseAmount(ars(100));
         invoice.setStatus(InvoiceStatus.PENDING);
         entityManager.persist(invoice);
     }

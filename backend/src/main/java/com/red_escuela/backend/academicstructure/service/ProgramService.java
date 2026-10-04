@@ -13,7 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -46,6 +47,7 @@ public class ProgramService {
                 .graduationProfile(request.graduationProfile())
                 .admissionRequirements(request.admissionRequirements())
                 .status(StatusType.ACTIVE)
+                .currency(Optional.ofNullable(request.currency()).orElse(Currency.ARS))
                 .build();
         program = programRepository.save(program);
         registerInitialPriceRevisions(program);
@@ -59,10 +61,10 @@ public class ProgramService {
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         if (program.changeRecurringFee(request.getPrice())) {
-            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.getPrice(), "Ajuste de precio", actor);
+            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, Money.of(request.getPrice(), program.getCurrency()), "Ajuste de precio", actor);
         }
         if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
-            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), "Ajuste de matrícula", actor);
+            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, Money.of(request.getEnrollmentFeeAmount(), program.getCurrency()), "Ajuste de matrícula", actor);
         }
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
@@ -110,9 +112,9 @@ public class ProgramService {
 
     private void registerInitialPriceRevisions(Program program) {
         Person actor = currentPersonService.resolveCurrentPerson();
-        BigDecimal tuition = program.getPrice() == null ? BigDecimal.ZERO : program.getPrice();
+        Money tuition = Optional.ofNullable(program.priceAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
         priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, tuition, "Precio inicial", actor);
-        BigDecimal enrollmentFee = program.getEnrollmentFeeAmount() == null ? BigDecimal.ZERO : program.getEnrollmentFeeAmount();
+        Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
         priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, enrollmentFee, "Matrícula inicial", actor);
     }
 

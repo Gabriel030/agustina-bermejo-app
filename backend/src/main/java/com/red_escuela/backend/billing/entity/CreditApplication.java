@@ -2,9 +2,9 @@ package com.red_escuela.backend.billing.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import com.red_escuela.backend.shared.domain.Money;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -29,8 +29,12 @@ public class CreditApplication {
     @JoinColumn(name = "payment_id")
     private Payment payment;
 
-    @Column(name = "amount_applied", nullable = false)
-    private BigDecimal amountApplied;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "amount_applied", nullable = false)),
+            @AttributeOverride(name = "currency", column = @Column(name = "amount_applied_currency", nullable = false))
+    })
+    private Money amountApplied;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

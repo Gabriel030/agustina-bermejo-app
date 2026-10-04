@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -118,7 +119,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenPreceptor = tokenWithRole("preceptor.adhoc.test", "PRECEPTOR");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, BigDecimal.valueOf(1500), LocalDate.now(), "Derecho de examen", null, null);
+                FeeType.EXAM_RIGHT, ars(1500), LocalDate.now(), "Derecho de examen", null, null);
         String body = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
@@ -140,7 +141,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenAdministrativo = tokenWithRole("administrativo.adhoc.test", "ADMINISTRATIVO");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.DEGREE_ISSUANCE, BigDecimal.valueOf(3000), LocalDate.now(), "Emisión de título", null, null);
+                FeeType.DEGREE_ISSUANCE, ars(3000), LocalDate.now(), "Emisión de título", null, null);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
                         .contentType(MediaType.APPLICATION_JSON)
