@@ -92,6 +92,12 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @Autowired
+    private com.red_escuela.backend.attendance.service.SectionRosterBuilder sectionRosterBuilder;
+
+    @Autowired
+    private jakarta.persistence.EntityManagerFactory entityManagerFactory;
+
+    @Autowired
     private RequestAttendanceChangeUseCase requestAttendanceChangeUseCase;
 
     @Autowired
@@ -670,6 +676,42 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         assertThat(roster).singleElement().satisfies(row -> {
             assertThat(row.absenceCount()).isEqualTo(1);
             assertThat(row.attendancePercentage()).isEqualTo(0.5);
+        });
+    }
+
+    @Test
+    void aRosterOfFortyStudentsIsBuiltWithAtMostThreeQueries() {
+        Institution institution = persistInstitution();
+        Instructor instructor = persistInstructor("80000100");
+        SubjectSection section = persistSection(persistSubject("MateriaRoster40"), persistTerm(), 25.0);
+        assignInstructor(section, instructor);
+        List<SubjectSectionEnrollment> enrollments = new java.util.ArrayList<>();
+        for (int i = 0; i < 40; i++) {
+            Student student = persistStudent("8100" + String.format("%04d", i), institution);
+            ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("CarreraRoster40-" + i));
+            enrollments.add(persistEnrollment(student, programEnrollment, section));
+        }
+        entityManager.flush();
+        for (int day = 0; day < 4; day++) {
+            int currentDay = day;
+            List<AttendanceEntry> entries = new java.util.ArrayList<>();
+            for (int i = 0; i < enrollments.size(); i++) {
+                AttendanceStatus status = (i + currentDay) % 4 == 0 ? AttendanceStatus.ABSENT : AttendanceStatus.PRESENT;
+                entries.add(new AttendanceEntry(enrollments.get(i).getId(), status));
+            }
+            loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
+                    new CargarAsistenciaRequest(CLASS_DAY.minusDays(7L * currentDay), entries, null, null)));
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        List<RosterEntryResponse> roster = com.red_escuela.backend.shared.persistence.QueryCountAssertions.assertAtMostQueries(
+                entityManagerFactory, 3, () -> sectionRosterBuilder.buildForProgramSection(section.getId()));
+
+        assertThat(roster).hasSize(40);
+        assertThat(roster).allSatisfy(row -> {
+            assertThat(row.absenceCount()).isEqualTo(1);
+            assertThat(row.attendancePercentage()).isEqualTo(0.75);
         });
     }
 }

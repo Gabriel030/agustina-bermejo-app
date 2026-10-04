@@ -78,6 +78,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsUseCase findActivePromotionsUseCase;
 
     @Autowired
+    private jakarta.persistence.EntityManagerFactory entityManagerFactory;
+
+    @Autowired
     private com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsUseCase findLostPromotionBenefitsUseCase;
 
     @Autowired
@@ -480,6 +483,28 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = findLostPromotionBenefitsUseCase.find();
         assertThat(perdidos).anyMatch(p -> p.studentName().equals("Persona 89000122")
                 && p.remaining() == 2 && p.used() == 1 && p.feeType().equals("RECURRING_FEE"));
+    }
+
+    @Test
+    void theLostBenefitsReportDoesNotQueryPerRedemption() {
+        Person director = persistPerson("director.promo123." + System.nanoTime());
+        authenticateAs(director);
+        for (int i = 0; i < 3; i++) {
+            ProgramEnrollment enrollment = persistProgramEnrollment("8900013" + i, LocalDateTime.now(), director);
+            createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
+                    "Promo " + i, LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
+                    List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+            seleccionarPlanMensualCarrera(enrollment, director);
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
+            seleccionarPlanMensualCarrera(enrollment, director);
+        }
+
+        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos =
+                com.red_escuela.backend.shared.persistence.QueryCountAssertions.assertAtMostQueries(
+                        entityManagerFactory, 2, () -> findLostPromotionBenefitsUseCase.find());
+
+        assertThat(perdidos).filteredOn(p -> p.studentName().startsWith("Persona 8900013"))
+                .hasSize(3).allMatch(p -> p.used() == 1 && p.remaining() == 2);
     }
 
     @Test

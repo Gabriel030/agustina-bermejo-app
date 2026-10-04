@@ -32,12 +32,12 @@ public class AttendanceRiskCalculator {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getSubjectSection().getMaxAbsencePercentage();
         if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null, null);
+            return evaluate(null, 0, 0);
         }
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+        return evaluate(maxAbsencePercentage, total, ausentes);
     }
 
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
@@ -45,15 +45,18 @@ public class AttendanceRiskCalculator {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
         Double maxAbsencePercentage = enrollment.getCourseSubjectSection().getMaxAbsencePercentage();
         if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null, null);
+            return evaluate(null, 0, 0);
         }
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
                 enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+        return evaluate(maxAbsencePercentage, total, ausentes);
     }
 
-    private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
+    public AttendanceRiskResponse evaluate(Double maxAbsencePercentage, long total, long ausentes) {
+        if (maxAbsencePercentage == null) {
+            return new AttendanceRiskResponse(false, false, null, null);
+        }
         if (total == 0) {
             return new AttendanceRiskResponse(true, false, null, maxAbsencePercentage);
         }
