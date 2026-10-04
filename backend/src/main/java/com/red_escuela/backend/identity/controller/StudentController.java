@@ -9,7 +9,7 @@ import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.usecase.student.GetStudentRecordUseCase;

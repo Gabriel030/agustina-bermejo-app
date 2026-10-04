@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -13,13 +13,13 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.billing.exception.UpfrontWindowClosedException;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
@@ -464,6 +464,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         authenticateAsPerson(intruso.getPerson());
         assertThatThrownBy(() -> selectPaymentPlanForCourseUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(mensual.getId(), null)))
-                .isInstanceOf(com.red_escuela.backend.exception.NotOwnEnrollmentException.class);
+                .isInstanceOf(com.red_escuela.backend.billing.exception.NotOwnEnrollmentException.class);
     }
 }

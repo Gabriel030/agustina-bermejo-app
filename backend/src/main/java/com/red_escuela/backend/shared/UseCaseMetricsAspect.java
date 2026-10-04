@@ -1,6 +1,6 @@
 package com.red_escuela.backend.shared;
 
-import com.red_escuela.backend.exception.ErrorCodeResponse;
+import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.aspectj.lang.ProceedingJoinPoint;

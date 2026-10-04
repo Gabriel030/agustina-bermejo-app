@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.ClassroomAvailabilityRespon
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.service.SectionConflictChecker;
 import com.red_escuela.backend.academicstructure.service.TermFinder;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

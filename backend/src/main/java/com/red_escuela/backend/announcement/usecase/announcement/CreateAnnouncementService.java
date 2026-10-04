@@ -14,7 +14,7 @@ import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.AnnouncementDispatcher;
 import com.red_escuela.backend.announcement.service.SectionMembership;
 import com.red_escuela.backend.announcement.service.audience.AudienceLabels;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

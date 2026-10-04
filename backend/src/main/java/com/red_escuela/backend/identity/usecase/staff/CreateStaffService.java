@@ -11,7 +11,7 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
-import com.red_escuela.backend.exception.RoleNotFoundException;
+import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.dao.DataIntegrityViolationException;

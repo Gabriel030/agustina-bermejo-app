@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.person;
 
-import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
+import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;

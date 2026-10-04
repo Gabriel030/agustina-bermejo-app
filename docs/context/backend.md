@@ -29,6 +29,20 @@ referencia completa del patrón — mirala antes de tocar código nuevo.
   entity/  controller/  repository/  dto/  exception/
 ```
 
+**Raíz del paquete (`com.red_escuela.backend`)**: solo `BackendApplication`,
+`config/`, `shared/`, los paquetes de feature y `academicrecord/` (composición:
+solo el controller `MeAcademicRecordController`, sin entidades). No hay
+`entity/`, `service/`, `dto/`, `controller/`, `repository/`, `util/` ni
+`exception/` sueltos en la raíz.
+
+`shared/` contiene lo realmente compartido entre features: `domain/` (Value
+Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
+`persistence/` (convertidores JPA), `serialization/`, `validation/`,
+`exception/` (bases `BadRequestException`, etc., más `ErrorCodeResponse` y
+`GlobalExceptionHandler`), `storage/` (`FileStorageService`,
+`TransactionBoundFileCleanup`, `UnsupportedFileTypeException`) y `mail/`
+(`EmailService`, `BrevoEmailService`).
+
 - **`@UseCase`** (`shared/UseCase.java`) es una anotación real (meta-anotada
   `@Component`), no una convención de carpeta — patrón de Tom Hombergs
   ([buckpal](https://github.com/thombergs/buckpal), *Get Your Hands Dirty on
@@ -327,12 +341,11 @@ ni controller, parece legacy sin uso real. Pendiente una decisión explícita
 sobre si se elimina.
 
 `EmailService`/`BrevoEmailService`/`FileStorageService` **no** entraron a
-esta feature — son infraestructura genérica ya usada cross-feature
+esta feature — son infraestructura genérica usada cross-feature
 (`EmailService` solo lo llama `identity.usecase.auth.RequestPasswordResetService`,
 nada que ver con el sistema de eventos; `FileStorageService` lo usan
-enrollment/evaluation/billing) y quedan en `service/` a nivel raíz, mismo
-criterio que otros colaboradores verdaderamente compartidos entre features
-que nunca migraron a un paquete propio.
+enrollment/evaluation/billing/identity) y viven en `shared/mail` y
+`shared/storage`.
 
 ## Excepciones
 
@@ -352,7 +365,7 @@ status HTTP:
 | `TooManyRequestsException` | 429 | vacío |
 | `ExternalServiceException` | 502 | vacío |
 
-`exception/GlobalExceptionHandler.java` tiene un `@ExceptionHandler` por base:
+`shared/exception/GlobalExceptionHandler.java` tiene un `@ExceptionHandler` por base:
 una excepción nueva se agrega extendiendo la base que corresponda, **sin tocar el
 handler**. Ninguna excepción de dominio extiende `RuntimeException` directo; la
 única con handler propio es `InvalidEmailVerificationTokenException` (400 sin

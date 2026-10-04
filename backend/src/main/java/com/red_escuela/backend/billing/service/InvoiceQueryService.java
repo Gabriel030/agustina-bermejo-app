@@ -15,7 +15,7 @@ import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
-import com.red_escuela.backend.exception.NotOwnEnrollmentException;
+import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;

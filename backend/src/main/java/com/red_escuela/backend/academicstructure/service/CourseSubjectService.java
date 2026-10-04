@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateCourseSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;

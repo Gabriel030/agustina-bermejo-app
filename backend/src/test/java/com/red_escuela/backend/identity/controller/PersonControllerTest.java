@@ -2,11 +2,11 @@ package com.red_escuela.backend.identity.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;

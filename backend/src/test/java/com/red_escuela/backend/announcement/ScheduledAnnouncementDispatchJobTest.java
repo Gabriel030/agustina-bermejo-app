@@ -22,8 +22,8 @@ import com.red_escuela.backend.announcement.service.ScheduledAnnouncementDispatc
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementCommand;
 import com.red_escuela.backend.announcement.usecase.announcement.CreateAnnouncementUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.controller;
 
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
 import com.red_escuela.backend.identity.dto.StaffRecordResponse;
 import com.red_escuela.backend.identity.dto.StaffResponse;

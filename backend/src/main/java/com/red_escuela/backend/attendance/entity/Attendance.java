@@ -1,5 +1,5 @@
 package com.red_escuela.backend.attendance.entity;
-import com.red_escuela.backend.exception.AttendanceAlreadyRecordedException;
+import com.red_escuela.backend.attendance.exception.AttendanceAlreadyRecordedException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 

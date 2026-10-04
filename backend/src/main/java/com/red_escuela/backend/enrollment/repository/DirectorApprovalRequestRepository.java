@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
-import com.red_escuela.backend.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

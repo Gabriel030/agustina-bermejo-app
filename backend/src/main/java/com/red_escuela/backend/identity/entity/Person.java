@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.entity;
-import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.StatusType;
 
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.persistence.EmailAddressConverter;

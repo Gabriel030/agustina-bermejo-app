@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicstructure.usecase.classroom;
 
 import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -10,11 +10,11 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
@@ -32,8 +32,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentWaitlistExpiryJob;
 
 @SpringBootTest
 @ActiveProfiles("test")

@@ -12,7 +12,7 @@ import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSe
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;

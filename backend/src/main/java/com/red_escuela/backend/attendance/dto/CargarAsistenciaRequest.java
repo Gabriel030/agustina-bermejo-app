@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.List;
-import com.red_escuela.backend.attendance.dto.AttendanceEntry;
 
 public record CargarAsistenciaRequest(
         @NotNull LocalDate classDate, @NotEmpty List<AttendanceEntry> entries,

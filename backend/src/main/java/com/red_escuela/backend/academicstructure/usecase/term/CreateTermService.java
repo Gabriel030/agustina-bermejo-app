@@ -3,7 +3,7 @@ package com.red_escuela.backend.academicstructure.usecase.term;
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

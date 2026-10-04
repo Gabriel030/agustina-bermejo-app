@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.service.InvoiceDetailLoader;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.exception.NotOwnEnrollmentException;
+import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

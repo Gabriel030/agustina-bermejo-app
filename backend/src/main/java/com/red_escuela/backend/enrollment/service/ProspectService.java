@@ -6,7 +6,7 @@ import com.red_escuela.backend.identity.service.PersonFactory;
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -15,9 +15,9 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
-import com.red_escuela.backend.exception.InstitutionNotFoundException;
+import com.red_escuela.backend.identity.exception.InstitutionNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProspectAlreadyConfirmedException;
-import com.red_escuela.backend.exception.RoleNotFoundException;
+import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -32,8 +32,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.service.FileStorageService;
-import com.red_escuela.backend.service.TransactionBoundFileCleanup;
+import com.red_escuela.backend.shared.storage.FileStorageService;
+import com.red_escuela.backend.shared.storage.TransactionBoundFileCleanup;
 
 @Service
 public class ProspectService {

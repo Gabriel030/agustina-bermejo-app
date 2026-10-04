@@ -22,7 +22,7 @@ import com.red_escuela.backend.attendance.service.AttendanceRiskCalculator;
 import com.red_escuela.backend.evaluation.exception.StudentFreeByAbsencesException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
-import com.red_escuela.backend.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;

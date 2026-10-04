@@ -3,7 +3,7 @@ package com.red_escuela.backend.academicstructure.controller;
 import com.red_escuela.backend.academicstructure.dto.CourseSubjectResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseSubjectRequest;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseSubjectService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

@@ -5,7 +5,7 @@ import com.red_escuela.backend.identity.entity.RefreshToken;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

@@ -9,7 +9,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 
 @Getter
 @Setter

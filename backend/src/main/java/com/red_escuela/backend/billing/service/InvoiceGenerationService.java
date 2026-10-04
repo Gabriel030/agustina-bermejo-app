@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.YearMonth;
-import com.red_escuela.backend.service.RecurringFeeWindowService;
 
 @Service
 public class InvoiceGenerationService {

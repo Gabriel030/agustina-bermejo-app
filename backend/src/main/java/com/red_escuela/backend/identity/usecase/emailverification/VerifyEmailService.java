@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenException;
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;

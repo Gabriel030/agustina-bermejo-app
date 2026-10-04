@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
-import com.red_escuela.backend.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

@@ -1,12 +1,12 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.entity.RefreshToken;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;

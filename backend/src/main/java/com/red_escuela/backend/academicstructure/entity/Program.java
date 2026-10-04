@@ -10,7 +10,7 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
 
 @Getter

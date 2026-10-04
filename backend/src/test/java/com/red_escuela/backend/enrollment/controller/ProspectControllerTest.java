@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -244,7 +244,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         String rawPasswordResetCode = "123456";
         PasswordResetToken existing = resetTokens.get(0);
-        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
+        existing.setTokenHash(com.red_escuela.backend.identity.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
         entityManager.merge(existing);
         entityManager.flush();
 

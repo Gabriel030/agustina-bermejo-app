@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.service.CourseService;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;

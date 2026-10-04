@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.service;
 
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.exception.RoleNotFoundException;
+import com.red_escuela.backend.identity.exception.RoleNotFoundException;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import org.springframework.stereotype.Service;
 

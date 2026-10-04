@@ -4,7 +4,6 @@ import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
-import com.red_escuela.backend.dto.ProductRef;
 import com.red_escuela.backend.shared.domain.Money;
 
 import java.time.LocalDate;

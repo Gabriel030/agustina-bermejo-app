@@ -2,11 +2,11 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CollectionsPolicy;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.shared.domain;
 
-import com.red_escuela.backend.exception.GlobalExceptionHandler;
+import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.test.web.servlet.MockMvc;

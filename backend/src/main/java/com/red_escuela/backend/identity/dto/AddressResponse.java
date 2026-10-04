@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.dto;
 
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 
 public record AddressResponse(
         String street,

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Set;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
