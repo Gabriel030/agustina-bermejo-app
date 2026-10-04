@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
@@ -43,6 +44,7 @@ public class ExamBoardRegistrationService {
     private final CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository;
     private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
     public ExamBoardRegistrationService(ExamBoardRegistrationRepository examBoardRegistrationRepository,
@@ -51,7 +53,9 @@ public class ExamBoardRegistrationService {
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             DirectorApprovalRequestRepository directorApprovalRequestRepository,
             AttendanceRiskCalculator attendanceRiskCalculator,
+            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
+        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
@@ -68,6 +72,7 @@ public class ExamBoardRegistrationService {
 
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
         if (!directorApprovalRequestRepository.hasApproved(
                 enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId(), ExceptionType.LATE_EXAM)) {
             requireOpenRegistrationWindow(examBoard);

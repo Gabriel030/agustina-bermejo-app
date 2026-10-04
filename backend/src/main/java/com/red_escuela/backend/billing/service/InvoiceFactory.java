@@ -72,7 +72,13 @@ public class InvoiceFactory {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Invoice createForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        Invoice invoice = saveIdempotently(buildForProgram(programEnrollment, selection, feeType, period, dueDate));
+        return createForProgram(programEnrollment, selection, feeType, period, dueDate, dueDate);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Invoice createForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                    LocalDate dueDate, LocalDate priceDate) {
+        Invoice invoice = saveIdempotently(buildForProgram(programEnrollment, selection, feeType, period, dueDate, priceDate));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
             if (selection != null) {
@@ -93,7 +99,12 @@ public class InvoiceFactory {
     }
 
     private Invoice buildForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        var price = priceRevisionService.resolveCurrentForProgram(programEnrollment.getProgram().getId(), feeType, dueDate);
+        return buildForProgram(programEnrollment, selection, feeType, period, dueDate, dueDate);
+    }
+
+    private Invoice buildForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                    LocalDate dueDate, LocalDate priceDate) {
+        var price = priceRevisionService.resolveCurrentForProgram(programEnrollment.getProgram().getId(), feeType, priceDate);
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(programEnrollment);
         invoice.setPaymentPlanSelection(selection);

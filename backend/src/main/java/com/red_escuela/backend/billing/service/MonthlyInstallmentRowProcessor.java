@@ -12,7 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import com.red_escuela.backend.billing.planning.ChargePlan;
+import com.red_escuela.backend.billing.planning.ChargeScope;
+import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
 
 @Service
 public class MonthlyInstallmentRowProcessor {
@@ -20,10 +25,20 @@ public class MonthlyInstallmentRowProcessor {
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ChargePlanningContextLoader contextLoader;
+    private final MonthlyChargePlanner planner;
+    private final ChargePlanExecutor planExecutor;
+    private final Clock clock;
 
     public MonthlyInstallmentRowProcessor(InvoiceGenerationService invoiceGenerationService, InvoiceRepository invoiceRepository,
                                            ProgramEnrollmentRepository programEnrollmentRepository,
-                                           CourseEnrollmentRepository courseEnrollmentRepository) {
+                                           CourseEnrollmentRepository courseEnrollmentRepository,
+                                           ChargePlanningContextLoader contextLoader, MonthlyChargePlanner planner,
+                                           ChargePlanExecutor planExecutor, Clock clock) {
+        this.contextLoader = contextLoader;
+        this.planner = planner;
+        this.planExecutor = planExecutor;
+        this.clock = clock;
         this.invoiceGenerationService = invoiceGenerationService;
         this.invoiceRepository = invoiceRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -34,17 +49,19 @@ public class MonthlyInstallmentRowProcessor {
     public InstallmentIssuanceOutcome issueForProgramEnrollment(Long enrollmentId, YearMonth month) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        boolean issued = false;
-        if (enrollment.isEnrollmentFeeMonth(month)
-                && !invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.ENROLLMENT_FEE, month)) {
-            invoiceGenerationService.generateEnrollmentFeeForProgram(enrollment, month);
-            issued = invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.ENROLLMENT_FEE, month);
-        }
-        if (!invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month)) {
-            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, month);
-            issued = invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month) || issued;
-        }
-        return outcome(issued);
+        LocalDate today = month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1);
+        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
+        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ALL);
+        return outcome(planExecutor.execute(enrollment, context.selection(), plan) > 0);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int issueEnrollmentFeesOnly(Long enrollmentId, YearMonth month, LocalDate today) {
+        ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
+                .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
+        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
+        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY);
+        return planExecutor.execute(enrollment, context.selection(), plan);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

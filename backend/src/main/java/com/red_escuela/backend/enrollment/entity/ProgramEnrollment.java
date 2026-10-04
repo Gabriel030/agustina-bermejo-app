@@ -92,12 +92,4 @@ public class ProgramEnrollment implements BillableEnrollment {
         status = ProgramEnrollmentStatus.COMPLETED;
         completionDate = completedAt;
     }
-
-    public boolean canEnrollInSubjects(Invoice enrollmentFeeInvoice) {
-        if (programCohort == null) {
-            return true;
-        }
-        return enrollmentFeeInvoice != null
-                && (enrollmentFeeInvoice.getStatus() == InvoiceStatus.PAID || enrollmentFeeInvoice.getStatus() == InvoiceStatus.WAIVED);
-    }
 }

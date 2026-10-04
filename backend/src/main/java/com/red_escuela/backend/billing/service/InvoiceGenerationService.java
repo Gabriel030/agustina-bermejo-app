@@ -17,7 +17,12 @@ import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import com.red_escuela.backend.billing.planning.ChargePlan;
+import com.red_escuela.backend.billing.planning.ChargeScope;
+import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
 
 @Service
 public class InvoiceGenerationService {
@@ -26,10 +31,19 @@ public class InvoiceGenerationService {
     private final InvoiceFactory invoiceFactory;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final ProgramEnrollmentService programEnrollmentService;
+    private final ChargePlanningContextLoader contextLoader;
+    private final MonthlyChargePlanner planner;
+    private final ChargePlanExecutor planExecutor;
+    private final Clock clock;
 
     public InvoiceGenerationService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, InvoiceRepository invoiceRepository, InvoiceFactory invoiceFactory,
                                      RecurringFeeWindowService recurringFeeWindowService,
-                                     ProgramEnrollmentService programEnrollmentService) {
+                                     ProgramEnrollmentService programEnrollmentService, ChargePlanningContextLoader contextLoader,
+                                     MonthlyChargePlanner planner, ChargePlanExecutor planExecutor, Clock clock) {
+        this.contextLoader = contextLoader;
+        this.planner = planner;
+        this.planExecutor = planExecutor;
+        this.clock = clock;
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.invoiceRepository = invoiceRepository;
         this.invoiceFactory = invoiceFactory;
@@ -54,25 +68,31 @@ public class InvoiceGenerationService {
         }
         PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForProgramEnrollment(programEnrollment.getId(), today)
                 .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for program enrollment " + programEnrollment.getId()));
+        if (selection.getPaymentPlanOption().getCadence() == PaymentPlanCadence.MONTHLY) {
+            executePlan(programEnrollment, today, ChargeScope.RECURRING_ONLY);
+            return;
+        }
         generateByFrequency(selection, null, programEnrollment, today);
     }
 
     @Transactional
     public void generateEnrollmentFeeForProgram(ProgramEnrollment programEnrollment, YearMonth today) {
-        if (!isBillableProgramEnrollment(programEnrollment)) {
-            return;
-        }
-        if (!programEnrollment.isEnrollmentFeeMonth(today)) {
-            return;
-        }
-        long issuedThisYear = invoiceRepository.countByProgramEnrollmentIdAndFeeTypeAndPeriodBetween(
-                programEnrollment.getId(), FeeType.ENROLLMENT_FEE, YearMonth.of(today.getYear(), 1), YearMonth.of(today.getYear(), 12));
-        if (issuedThisYear > 0) {
-            return;
-        }
-        PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForProgramEnrollment(programEnrollment.getId(), today)
-                .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for program enrollment " + programEnrollment.getId()));
-        invoiceFactory.createForProgram(programEnrollment, selection, FeeType.ENROLLMENT_FEE, today, today.atDay(1));
+        executePlan(programEnrollment, today, ChargeScope.ENROLLMENT_FEE_ONLY);
+    }
+
+    @Transactional
+    public void generateChargesForProgram(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today) {
+        executePlan(programEnrollment, month, today, ChargeScope.ALL);
+    }
+
+    private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, ChargeScope scope) {
+        executePlan(programEnrollment, month, month.equals(YearMonth.now(clock)) ? LocalDate.now(clock) : month.atDay(1), scope);
+    }
+
+    private void executePlan(ProgramEnrollment programEnrollment, YearMonth month, LocalDate today, ChargeScope scope) {
+        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(programEnrollment, month, today);
+        ChargePlan plan = planner.plan(context.facts(), scope);
+        planExecutor.execute(programEnrollment, context.selection(), plan);
     }
 
     private boolean isBillableProgramEnrollment(ProgramEnrollment programEnrollment) {

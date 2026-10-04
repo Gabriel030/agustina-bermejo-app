@@ -44,9 +44,10 @@ public class ProgramEnrollmentBillingScheduler {
         }
         YearMonth period = YearMonth.from(cohort.getCursadaStart());
         Invoice invoice = invoiceFactory.createForProgramAtomic(enrollment, selection, FeeType.ENROLLMENT_FEE, period, cohort.getCursadaStart());
-        if (cohort.getIntake() == CohortIntake.SECOND) {
-            invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(new BigDecimal("0.5"))),
-                    "Matrícula proporcional — segunda cohorte del año", null);
+        Percentage discount = cohort.getEntryFeeDiscount();
+        if (discount != null && discount.fraction().signum() > 0) {
+            invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(discount),
+                    "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", null);
             invoiceRepository.save(invoice);
         }
         if (enrollment.getCurrentBillingTemplate() == null) {

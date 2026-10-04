@@ -18,7 +18,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,6 +32,7 @@ import java.util.function.Function;
 public class MonthlyInstallmentIssuanceJob {
     private static final Logger log = LoggerFactory.getLogger(MonthlyInstallmentIssuanceJob.class);
     private static final int PAGE_SIZE = 200;
+    static final int ISSUANCE_LAST_DAY = 5;
     private static final String JOB_NAME = "MonthlyInstallmentIssuanceJob";
 
     private final PaymentPlanSelectionRepository paymentPlanSelectionRepository;
@@ -38,6 +41,17 @@ public class MonthlyInstallmentIssuanceJob {
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
+    private BillingConfigurationAlertService alertService;
+
+    @Autowired
+    public MonthlyInstallmentIssuanceJob(PaymentPlanSelectionRepository paymentPlanSelectionRepository,
+                                          BatchExecutionLogRepository batchExecutionLogRepository,
+                                          MonthlyInstallmentRowProcessor rowProcessor, ObjectMapper objectMapper,
+                                          MeterRegistry meterRegistry,
+                                          Clock clock, BillingConfigurationAlertService alertService) {
+        this(paymentPlanSelectionRepository, batchExecutionLogRepository, rowProcessor, objectMapper, meterRegistry, clock);
+        this.alertService = alertService;
+    }
 
     public MonthlyInstallmentIssuanceJob(PaymentPlanSelectionRepository paymentPlanSelectionRepository,
                                           BatchExecutionLogRepository batchExecutionLogRepository,
@@ -52,10 +66,15 @@ public class MonthlyInstallmentIssuanceJob {
         this.clock = clock;
     }
 
-    @Scheduled(cron = "0 0 4 1 * *", zone = "${app.timezone}")
+    @Scheduled(cron = "0 0 4 1-5 * *", zone = "${app.timezone}")
     @SchedulerLock(name = "MonthlyInstallmentIssuanceJob", lockAtMostFor = "PT30M")
     public void run() {
-        run(YearMonth.now(clock));
+        LocalDate today = LocalDate.now(clock);
+        if (today.getDayOfMonth() > ISSUANCE_LAST_DAY) {
+            log.info("Emisión mensual de cuotas omitida: el día {} está fuera de la ventana 1 a {}", today, ISSUANCE_LAST_DAY);
+            return;
+        }
+        run(YearMonth.from(today));
     }
 
     public void run(YearMonth month) {
@@ -69,11 +88,16 @@ public class MonthlyInstallmentIssuanceJob {
                 lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithActivePlan(
                         PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
+        sweep("ProgramEnrollmentWithoutMonthlyPlan",
+                lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithoutActivePlan(
+                        PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
+                id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
         sweep("CourseEnrollment",
                 lastId -> paymentPlanSelectionRepository.findCourseEnrollmentIdsWithActivePlan(
                         PaymentPlanCadence.MONTHLY, EnrollmentStatus.ENROLLED, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForCourseEnrollment(id, month), counters, errors);
 
+        refreshAlerts(month);
         long durationMs = System.currentTimeMillis() - start;
         log.info("Emisión mensual de cuotas finalizada: mes={}, candidatas={}, emitidas={}, omitidas={}, fallidas={}, duracion={}ms",
                 month, counters.candidates, counters.issued, counters.skipped, counters.failed, durationMs);
@@ -84,6 +108,17 @@ public class MonthlyInstallmentIssuanceJob {
                 : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         batchExecutionLogRepository.save(new BatchExecutionLog(
                 JOB_NAME, LocalDateTime.now(clock), counters.candidates, processed, counters.failed, durationMs, status, serialize(errors)));
+    }
+
+    private void refreshAlerts(YearMonth month) {
+        if (alertService == null) {
+            return;
+        }
+        try {
+            alertService.refresh(month);
+        } catch (RuntimeException e) {
+            log.error("Falló la actualización de alertas de configuración de cobro: mes={}", month, e);
+        }
     }
 
     private void sweep(String enrollmentType, Function<Long, List<Long>> nextPage,

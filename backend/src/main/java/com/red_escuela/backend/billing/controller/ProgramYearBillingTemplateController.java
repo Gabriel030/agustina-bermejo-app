@@ -6,6 +6,10 @@ import com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse;
 import com.red_escuela.backend.billing.dto.ProgramCohortResponse;
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.dto.UpdateEnrollmentFeeMonthRequest;
+import com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest;
+import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
+import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase;
+import com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEnrollmentFeeMonthUseCase;
 import org.springframework.web.bind.annotation.PatchMapping;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase;
@@ -35,6 +39,8 @@ public class ProgramYearBillingTemplateController {
     private final ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase;
     private final ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase;
     private final UpdateCohortEnrollmentFeeMonthUseCase updateEnrollmentFeeMonthUseCase;
+    private final UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase;
+    private final UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase;
     private final Clock clock;
 
     public ProgramYearBillingTemplateController(CreateProgramYearBillingTemplateUseCase createTemplateUseCase,
@@ -43,7 +49,11 @@ public class ProgramYearBillingTemplateController {
                                                   ListProgramCohortsForProgramUseCase listCohortsForProgramUseCase,
                                                   ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase,
                                                   UpdateCohortEnrollmentFeeMonthUseCase updateEnrollmentFeeMonthUseCase,
+                                                  UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase,
+                                                  UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase,
                                                   Clock clock) {
+        this.updateYearConfigurationUseCase = updateYearConfigurationUseCase;
+        this.updateEntryFeeDiscountUseCase = updateEntryFeeDiscountUseCase;
         this.createTemplateUseCase = createTemplateUseCase;
         this.createCohortUseCase = createCohortUseCase;
         this.listCohortsForTemplateUseCase = listCohortsForTemplateUseCase;
@@ -57,7 +67,7 @@ public class ProgramYearBillingTemplateController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('DIRECTOR')")
     public ProgramYearBillingTemplateResponse create(@PathVariable Long id, @Valid @RequestBody CreateProgramYearBillingTemplateRequest request) {
-        return ProgramYearBillingTemplateResponse.from(createTemplateUseCase.create(id, request.termId(), request.recurringFeeInvoicesCount()));
+        return ProgramYearBillingTemplateResponse.from(createTemplateUseCase.create(id, request.termId(), request.recurringFeeInvoicesCount(), request.configuration()));
     }
 
     @PostMapping("/year-billing-templates/{id}/cohorts")
@@ -83,6 +93,18 @@ public class ProgramYearBillingTemplateController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public ProgramCohortResponse updateEnrollmentFeeMonth(@PathVariable Long id, @Valid @RequestBody UpdateEnrollmentFeeMonthRequest request) {
         return ProgramCohortResponse.from(updateEnrollmentFeeMonthUseCase.update(id, request.enrollmentFeeMonth()));
+    }
+
+    @PatchMapping("/year-billing-templates/{id}/configuration")
+    @PreAuthorize("hasRole('DIRECTOR')")
+    public ProgramYearBillingTemplateResponse updateConfiguration(@PathVariable Long id, @Valid @RequestBody YearBillingConfigurationRequest request) {
+        return ProgramYearBillingTemplateResponse.from(updateYearConfigurationUseCase.update(id, request));
+    }
+
+    @PatchMapping("/cohorts/{id}/entry-fee-discount")
+    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    public ProgramCohortResponse updateEntryFeeDiscount(@PathVariable Long id, @Valid @RequestBody UpdateEntryFeeDiscountRequest request) {
+        return ProgramCohortResponse.from(updateEntryFeeDiscountUseCase.update(id, request.discountPoints()));
     }
 
     @GetMapping("/programs/{id}/cohorts")
