@@ -334,4 +334,44 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
         assertThat(issued).hasSize(10).allSatisfy(i -> assertThat(i.getDueDate()).isEqualTo(date(2027, 3, 12)));
         assertThat(regularizationService.dryRun().stream().filter(c -> c.enrollmentId().equals(enrollment))).isEmpty();
     }
+
+    @Test
+    void entryFeeIssuedBySelectionFirstAndByTheJobAfterwardsIsExactlyOneForTheSameMonth() {
+        Career career = newCareer();
+        Year y27 = newYear(career, 2027, 10, 1, 2, null);
+        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
+        today(date(2027, 2, 15));
+        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 2), date(2027, 2, 15));
+
+        planSelectionCharges(enrollment, YearMonth.of(2027, 2), date(2027, 2, 15));
+        today(date(2027, 2, 20));
+        job.run();
+        today(date(2027, 3, 1));
+        job.run();
+
+        List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
+        assertThat(fees).hasSize(1);
+        assertThat(fees.get(0).getPeriod()).isEqualTo(YearMonth.of(2027, 3));
+        assertThat(fees.get(0).getIssueReason()).isEqualTo(IssueReason.PLAN_SELECTION);
+    }
+
+    @Test
+    void entryFeeIssuedByTheJobFirstAndBySelectionAfterwardsIsExactlyOneForTheSameMonth() {
+        Career career = newCareer();
+        Year y27 = newYear(career, 2027, 10, 1, 2, null);
+        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
+        today(date(2027, 1, 5));
+        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 5));
+
+        today(date(2027, 2, 1));
+        job.run();
+        planSelectionCharges(enrollment, YearMonth.of(2027, 2), date(2027, 2, 15));
+        today(date(2027, 3, 1));
+        job.run();
+
+        List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
+        assertThat(fees).hasSize(1);
+        assertThat(fees.get(0).getPeriod()).isEqualTo(YearMonth.of(2027, 3));
+        assertThat(fees.get(0).getIssueReason()).isEqualTo(IssueReason.MONTHLY_JOB);
+    }
 }

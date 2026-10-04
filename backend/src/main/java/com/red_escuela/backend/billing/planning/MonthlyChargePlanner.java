@@ -102,7 +102,7 @@ public final class MonthlyChargePlanner implements ChargePlanner<ChargePlanningF
 
     public PlannedCharge chargeForSlot(ChargePlanningFacts facts, YearCycle cycle, int slot, String reason, boolean catchUp) {
         boolean entry = facts.isEntrySlot(cycle, slot);
-        if (entry && catchUp && facts.cursadaStart() != null) {
+        if (entry && facts.cursadaStart() != null) {
             LocalDate entryDue = facts.cursadaStart().isBefore(facts.today())
                     ? facts.today().plusDays(cycle.template().getLateEnrollmentFeeDueDays())
                     : facts.cursadaStart();

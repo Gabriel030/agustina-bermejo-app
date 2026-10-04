@@ -330,4 +330,13 @@ class MonthlyChargePlannerTest {
         assertThat(two.slotOf(ym(2026, 8))).isEqualTo(2);
         assertThat(one.slotOf(ym(2026, 8))).isEqualTo(1);
     }
+
+    @org.junit.jupiter.api.Disabled("Hallazgo 18.13a: BEFORE_ENTRY usa el mes de inicio del cohorte original; un repitente que cursa un año lectivo anterior a ese inicio no recibe cuotas. Se resuelve en 18.13b")
+    @Test
+    void aRepeaterWhoStudiesAYearThatStartsBeforeTheOriginalCohortEntryIsStillBilled() {
+        ChargePlan plan = plan(Builder.base(template(1, 2026, 10, 1, 3, null)).entry(ym(2026, 8)), ym(2026, 4));
+
+        assertThat(plan.decisions()).extracting(PlanDecision::code).doesNotContain("BEFORE_ENTRY");
+        assertThat(plan.charges()).extracting(PlannedCharge::kind).contains(ChargeKind.RECURRING_FEE);
+    }
 }

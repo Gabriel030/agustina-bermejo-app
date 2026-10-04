@@ -429,7 +429,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
         job.run(YearMonth.of(2026, 7));
 
-        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2026, 2));
+        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
         assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod)
                 .containsExactly(MARCH, YearMonth.of(2026, 7));
     }
