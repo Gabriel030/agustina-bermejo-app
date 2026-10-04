@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.shared.domain.Grade;
+import java.math.BigDecimal;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardRegistrationSummaryResponse;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -159,12 +161,13 @@ public class ExamBoardService {
         }
     }
 
-    private Double finalScoreOf(ExamBoardRegistration registration, List<GradeItem> grades) {
+    private BigDecimal finalScoreOf(ExamBoardRegistration registration, List<GradeItem> grades) {
         return grades.stream()
                 .filter(grade -> sameEnrollment(grade, registration))
                 .map(GradeItem::getScore)
                 .filter(Objects::nonNull)
                 .findFirst()
+                .map(Grade::value)
                 .orElse(null);
     }
 

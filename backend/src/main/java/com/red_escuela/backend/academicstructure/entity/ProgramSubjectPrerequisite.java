@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,7 +41,7 @@ public class ProgramSubjectPrerequisite {
     private RequirementType requirementType;
 
     @Column(name = "min_grade")
-    private Double minGrade;
+    private Grade minGrade;
 
     @Column(name = "notes", length = 500)
     private String notes;

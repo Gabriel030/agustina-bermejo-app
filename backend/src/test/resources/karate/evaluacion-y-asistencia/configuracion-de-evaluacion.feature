@@ -90,12 +90,13 @@ Feature: Configuración de evaluación, esquemas, notas y mesas — contrato de 
 
     Examples:
       | parciales | regular | aprobar | promocion |
-      | 2         | -2      | 6       | null      |
-      | 2         | 4       | 15      | null      |
-      | 2         | 4       | 6       | 3         |
-      | 5         | 4       | 6       | null      |
+      | 2         | -2      | 6       | null |
+      | 2         | 4       | 15      | null |
+      | 2         | 4       | 6       | 3 |
+      | 2         | 6       | 4       | null |
+      | 5         | 4       | 6       | null |
 
-  Scenario: Nota mayor a la nota máxima — 400 INVALID_GRADE_SCORE
+  Scenario: Nota mayor a la nota máxima — 400 INVALID_GRADE
     * def comision = crearComision('2026-01-05T00:00:00', '2026-12-11T00:00:00')
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
     * def nombrePrograma = 'Carrera QA config ' + java.lang.System.nanoTime()
@@ -128,10 +129,10 @@ Feature: Configuración de evaluación, esquemas, notas y mesas — contrato de 
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 15, maxScore: 10 }
+    And request { type: 'TP', sequenceNumber: 1, date: '2026-05-15T00:00:00', score: 15 }
     When method post
     Then status 400
-    And match response.code == 'INVALID_GRADE_SCORE'
+    And match response.code == 'INVALID_GRADE'
 
   Scenario: Mesas — no se agenda en feriado y el acta no se cierra antes del examen
     * def comision = crearComision('2026-01-05T00:00:00', '2026-12-11T00:00:00')

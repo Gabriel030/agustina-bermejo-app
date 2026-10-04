@@ -116,7 +116,7 @@ public class SectionSnapshotLoader {
         Map<Integer, Double> scores = new HashMap<>();
         for (GradeItem item : items) {
             if (item.getType() == type && item.getSequenceNumber() != null && item.getScore() != null) {
-                scores.put(item.getSequenceNumber(), item.getScore());
+                scores.put(item.getSequenceNumber(), item.getScore().value().doubleValue());
             }
         }
         return scores;
