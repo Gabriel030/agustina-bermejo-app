@@ -31,13 +31,16 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final PromotionRedeemer promotionRedeemer;
+    private final com.red_escuela.backend.billing.service.InvoiceGenerationService invoiceGenerationService;
     private final Clock clock;
 
     public SelectPaymentPlanForProgramService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                                ProgramEnrollmentRepository programEnrollmentRepository, CurrentPersonService currentPersonService,
                                                PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler,
                                                RecurringFeeWindowService recurringFeeWindowService, PromotionRedeemer promotionRedeemer,
+                                               com.red_escuela.backend.billing.service.InvoiceGenerationService invoiceGenerationService,
                                                Clock clock) {
+        this.invoiceGenerationService = invoiceGenerationService;
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
         this.paymentPlanOptionFinder = paymentPlanOptionFinder;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -82,6 +85,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         if (isFirstSelection) {
             promotionRedeemer.redeemIfEligible(programEnrollment, saved);
             programEnrollmentBillingScheduler.generateEnrollmentFee(programEnrollment, saved);
+            invoiceGenerationService.generateChargesForProgram(programEnrollment, YearMonth.now(clock), java.time.LocalDate.now(clock));
         }
         return saved;
     }

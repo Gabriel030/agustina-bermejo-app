@@ -23,6 +23,10 @@ public final class YearCycles {
         return cycles;
     }
 
+    public boolean isConfiguredFor(YearMonth month) {
+        return cycles.stream().anyMatch(c -> !c.end().isBefore(month));
+    }
+
     public Optional<YearCycle> covering(YearMonth month) {
         List<YearCycle> matches = cycles.stream().filter(c -> c.contains(month)).toList();
         return pick(matches);

@@ -37,9 +37,11 @@ public final class MonthlyChargePlanner {
 
         Optional<YearCycle> cuotaCycle = facts.cycles().forCuota(month);
         Optional<YearCycle> covering = facts.cycles().covering(month);
-        boolean notConfigured = cuotaCycle.isEmpty() && covering.isEmpty();
+        boolean notConfigured = !facts.cycles().isConfiguredFor(month);
         if (notConfigured) {
             decisions.add(new PlanDecision(2, "YEAR_NOT_CONFIGURED", "la carrera no tiene año lectivo que cubra " + month));
+        } else if (cuotaCycle.isEmpty() && covering.isEmpty()) {
+            decisions.add(new PlanDecision(2, "BETWEEN_YEARS", "entre dos años lectivos configurados"));
         } else {
             YearCycle cycle = cuotaCycle.orElseGet(covering::orElseThrow);
             decisions.add(new PlanDecision(2, "CYCLE", "plantilla " + cycle.templateId() + " con " + cycle.slotCount() + " matrícula(s)"));
@@ -93,7 +95,7 @@ public final class MonthlyChargePlanner {
             return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, window.closesOn(), facts.today(), cycle.templateId(), slot, reason);
         }
         LocalDate due = period.atDay(1);
-        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, due, cycle.templateId(), slot, reason);
+        return new PlannedCharge(ChargeKind.ENROLLMENT_FEE, period, due, facts.today(), cycle.templateId(), slot, reason);
     }
 
     private boolean isDueNow(ChargePlanningFacts facts, YearCycle cycle, int slot) {
@@ -108,6 +110,10 @@ public final class MonthlyChargePlanner {
     private void planRecurringFee(ChargePlanningFacts facts, Optional<YearCycle> cuotaCycle, boolean hasCoveringCycle,
                                   List<PlannedCharge> charges, List<PlanDecision> decisions) {
         YearMonth month = facts.month();
+        if (facts.entryMonth() != null && month.isBefore(facts.entryMonth())) {
+            decisions.add(new PlanDecision(2, "BEFORE_ENTRY", "la cursada del alumno empieza en " + facts.entryMonth()));
+            return;
+        }
         if (facts.cadenceAtMonth() != PaymentPlanCadence.MONTHLY) {
             decisions.add(new PlanDecision(5, "PLAN_NOT_MONTHLY", "el plan vigente es " + facts.cadenceAtMonth()));
             return;
@@ -131,7 +137,7 @@ public final class MonthlyChargePlanner {
             return;
         }
         LocalDate due = month.atDay(1);
-        charges.add(new PlannedCharge(ChargeKind.RECURRING_FEE, month, due, due, cycle.templateId(), null,
+        charges.add(new PlannedCharge(ChargeKind.RECURRING_FEE, month, due, facts.today(), cycle.templateId(), null,
                 "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount() + " del año lectivo"));
         decisions.add(new PlanDecision(5, "ISSUE_INSTALLMENT", "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount()));
     }

@@ -82,6 +82,6 @@ public class BillingConfigurationAlertService {
 
     private boolean isConfigured(Long programId, YearMonth month) {
         YearCycles cycles = new YearCycles(templateRepository.findAllByProgramId(programId).stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
-        return cycles.covering(month).isPresent();
+        return cycles.isConfiguredFor(month);
     }
 }
