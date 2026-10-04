@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -128,7 +129,7 @@ class TimeZoneContextTest extends AbstractIntegrationTest {
         try {
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T02:30:00Z"));
             monthlyJob.run();
-            verify(monthlyJob).run(YearMonth.of(2027, 2));
+            verify(monthlyJob, never()).run(any(YearMonth.class));
 
             MutableClock.INSTANCE.setInstant(Instant.parse("2027-03-01T07:00:00Z"));
             monthlyJob.run();
