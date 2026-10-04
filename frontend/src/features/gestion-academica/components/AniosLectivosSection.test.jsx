@@ -11,7 +11,7 @@ const API = 'http://localhost:8080';
 
 const TEMPLATE = {
   id: 3, programId: 12, termId: 7, recurringFeeInvoicesCount: 10, enrollmentFeeCount: 1, firstEnrollmentFeeMonth: 2,
-  secondEnrollmentFeeMonth: null, enrollmentFeeLeadDays: 15, blocksEnrollment: true, blocksExamRegistration: true,
+  secondEnrollmentFeeMonth: null, enrollmentFeeLeadMonths: 1, lateEnrollmentFeeDueDays: 10, paysWhilePaused: false, blocksEnrollment: true, blocksExamRegistration: true,
   blocksCertificates: true, requireEnrollmentFeeForFinalExamOnlyStudents: false,
 };
 
@@ -57,7 +57,7 @@ describe('AniosLectivosSection', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => expect(body).toMatchObject({
-      enrollmentFeeCount: 2, firstEnrollmentFeeMonth: 2, secondEnrollmentFeeMonth: 7, enrollmentFeeLeadDays: 15,
+      enrollmentFeeCount: 2, firstEnrollmentFeeMonth: 2, secondEnrollmentFeeMonth: 7, enrollmentFeeLeadMonths: 1, lateEnrollmentFeeDueDays: 10, paysWhilePaused: false,
       blocksEnrollment: true, blocksExamRegistration: false, blocksCertificates: true,
       requireEnrollmentFeeForFinalExamOnlyStudents: false,
     }));

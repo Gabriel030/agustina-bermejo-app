@@ -29,7 +29,9 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
   const [cantidad, setCantidad] = useState(String(template.enrollmentFeeCount ?? 1));
   const [primerMes, setPrimerMes] = useState(String(template.firstEnrollmentFeeMonth ?? 2));
   const [segundoMes, setSegundoMes] = useState(String(template.secondEnrollmentFeeMonth ?? 7));
-  const [anticipacion, setAnticipacion] = useState(String(template.enrollmentFeeLeadDays ?? 15));
+  const [anticipacion, setAnticipacion] = useState(String(template.enrollmentFeeLeadMonths ?? 1));
+  const [diasTardia, setDiasTardia] = useState(String(template.lateEnrollmentFeeDueDays ?? 10));
+  const [pagaEnPausa, setPagaEnPausa] = useState(template.paysWhilePaused ?? false);
   const [bloqueaMaterias, setBloqueaMaterias] = useState(template.blocksEnrollment ?? true);
   const [bloqueaMesas, setBloqueaMesas] = useState(template.blocksExamRegistration ?? true);
   const [bloqueaCertificados, setBloqueaCertificados] = useState(template.blocksCertificates ?? true);
@@ -47,7 +49,9 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
         enrollmentFeeCount: Number(cantidad),
         firstEnrollmentFeeMonth: Number(primerMes),
         ...(cantidad === '2' ? { secondEnrollmentFeeMonth: Number(segundoMes) } : {}),
-        enrollmentFeeLeadDays: Number(anticipacion),
+        enrollmentFeeLeadMonths: Number(anticipacion),
+        lateEnrollmentFeeDueDays: Number(diasTardia),
+        paysWhilePaused: pagaEnPausa,
         blocksEnrollment: bloqueaMaterias,
         blocksExamRegistration: bloqueaMesas,
         blocksCertificates: bloqueaCertificados,
@@ -91,10 +95,10 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
               </div>
             )}
             <div className="flex flex-col gap-1">
-              <label htmlFor="anio-anticipacion" className={LABEL_CLASS}>Días de anticipación a la inscripción</label>
-              <input id="anio-anticipacion" type="number" min="0" max="120" value={anticipacion}
+              <label htmlFor="anio-anticipacion" className={LABEL_CLASS}>Meses de anticipación a la inscripción</label>
+              <input id="anio-anticipacion" type="number" min="0" max="6" value={anticipacion}
                 onChange={(e) => setAnticipacion(e.target.value)} className={SELECT_CLASS} />
-              <p className="text-[12px] text-ink-faint">La matrícula se emite este tiempo antes de que abra la inscripción del cuatrimestre.</p>
+              <p className="text-[12px] text-ink-faint">La matrícula se emite entre el 1 y el 5 del mes que corresponde a esta anticipación antes de que abra la inscripción del cuatrimestre.</p>
             </div>
           </fieldset>
 
@@ -117,6 +121,20 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
           <div className="flex flex-col gap-1">
             <label htmlFor="anio-solo-finales" className={LABEL_CLASS}>Alumnos que solo rinden finales: ¿deben pagar matrícula?</label>
             <select id="anio-solo-finales" value={soloFinales ? 'si' : 'no'} onChange={(e) => setSoloFinales(e.target.value === 'si')} className={SELECT_CLASS}>
+              <option value="no">No</option>
+              <option value="si">Sí</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="anio-dias-tardia" className={LABEL_CLASS}>Días de vencimiento de una matrícula emitida fuera de ventana</label>
+            <input id="anio-dias-tardia" type="number" min="1" max="60" value={diasTardia}
+              onChange={(e) => setDiasTardia(e.target.value)} className={SELECT_CLASS} />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="anio-paga-pausa" className={LABEL_CLASS}>Alumnos en pausa académica: ¿pagan cuotas y matrícula?</label>
+            <select id="anio-paga-pausa" value={pagaEnPausa ? 'si' : 'no'} onChange={(e) => setPagaEnPausa(e.target.value === 'si')} className={SELECT_CLASS}>
               <option value="no">No</option>
               <option value="si">Sí</option>
             </select>
