@@ -35,4 +35,8 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     @Query("select distinct e.student.id from ProgramEnrollment e where e.status in :statuses")
     List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from ProgramEnrollment e where e.id = :id")
+    java.util.Optional<ProgramEnrollment> findByIdForUpdate(@Param("id") Long id);
 }

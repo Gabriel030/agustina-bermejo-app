@@ -28,7 +28,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     private static final YearMonth JAN_2026 = YearMonth.of(2026, 1);
     private static final YearMonth DEC_2027 = YearMonth.of(2027, 12);
@@ -316,7 +316,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
-    void upfrontStudentsAreChargedTheEnrollmentFeeButNeverMonthlyInstallments() {
+    void upfrontStudentsAreChargedTheEnrollmentFeeAndTheInstallmentsOfTheirScopeUpFront() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         today(date(2026, 1, 10));
@@ -324,7 +324,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
 
         runEveryMonth(JAN_2026, YearMonth.of(2026, 6), () -> assertInvariants(enrollment, y26));
 
-        assertThat(sequence(enrollment)).containsExactly("M2026-02");
+        assertThat(sequence(enrollment)).containsExactly("M2026-02", "C2026-03", "C2026-04", "C2026-05", "C2026-06", "C2026-07", "C2026-08", "C2026-09", "C2026-10");
     }
 
     @Test
@@ -420,8 +420,8 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
             assertInvariants(c, y26, y27);
         });
 
-        assertThat(periods(b, FeeType.RECURRING_FEE)).allMatch(period -> !period.isBefore(YearMonth.of(2026, 11)));
-        assertThat(periods(b, FeeType.RECURRING_FEE)).startsWith(YearMonth.of(2026, 11), YearMonth.of(2026, 12), YearMonth.of(2027, 3));
+        assertThat(periods(b, FeeType.RECURRING_FEE)).startsWith(YearMonth.of(2026, 3), YearMonth.of(2026, 4));
+        assertThat(periods(b, FeeType.RECURRING_FEE)).contains(YearMonth.of(2026, 11), YearMonth.of(2026, 12), YearMonth.of(2027, 3));
         assertThat(periods(a, FeeType.ENROLLMENT_FEE)).containsExactly(
                 YearMonth.of(2026, 3), YearMonth.of(2026, 7), YearMonth.of(2027, 2));
         assertThat(periods(c, FeeType.ENROLLMENT_FEE)).containsExactly(

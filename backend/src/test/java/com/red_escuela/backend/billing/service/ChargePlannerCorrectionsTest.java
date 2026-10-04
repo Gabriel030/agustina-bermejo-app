@@ -235,7 +235,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
 
         runEveryMonth(JAN_2026, YearMonth.of(2027, 12), () -> assertInvariants(enrollment, y26, y27));
 
-        assertThat(periods(enrollment, FeeType.RECURRING_FEE)).allMatch(p -> p.isAfter(YearMonth.of(2026, 10)));
+        assertThat(periods(enrollment, FeeType.RECURRING_FEE).stream().filter(p -> p.getYear() == 2026)).hasSize(10);
         assertThat(periods(enrollment, FeeType.RECURRING_FEE).stream().filter(p -> p.getYear() == 2027)).hasSize(10);
         assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).contains(YearMonth.of(2027, 2));
     }

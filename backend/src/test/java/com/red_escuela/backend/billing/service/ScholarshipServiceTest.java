@@ -55,7 +55,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase grantScholarshipForProgramUseCase;
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseUseCase selectPaymentPlanForCourseUseCase;

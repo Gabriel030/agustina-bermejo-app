@@ -63,7 +63,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
     @Autowired
     protected TransactionTemplate transactionTemplate;
     @Autowired
-    protected ProgramEnrollmentBillingScheduler enrollmentBillingScheduler;
+    protected BillingTestTrigger enrollmentBillingTrigger;
 
     protected record Year(Long templateId, Long termId, int year) {
     }
@@ -224,7 +224,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
             PaymentPlanSelection selection = entityManager.createQuery(
                     "select s from PaymentPlanSelection s where s.programEnrollment.id = :id", PaymentPlanSelection.class)
                     .setParameter("id", enrollmentId).getResultList().get(0);
-            enrollmentBillingScheduler.generateEnrollmentFee(enrollment, selection);
+            enrollmentBillingTrigger.issueEntryFee(enrollment, selection);
         });
     }
 

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
-import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingScheduler;
+import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -19,14 +19,14 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
     private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
     private final ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
-    private final ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler;
+    private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
 
     public ApproveProgramEnrollmentApplicationService(ProgramEnrollmentApplicationFinder applicationFinder,
                                                         ProgramEnrollmentService programEnrollmentService,
                                                         PersonRoleGranter personRoleGranter,
                                                         ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase,
-                                                        ProgramEnrollmentBillingScheduler programEnrollmentBillingScheduler) {
-        this.programEnrollmentBillingScheduler = programEnrollmentBillingScheduler;
+                                                        ProgramEnrollmentBillingSetup programEnrollmentBillingSetup) {
+        this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
         this.applicationFinder = applicationFinder;
         this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
@@ -46,7 +46,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
         personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
 
         if (application.getPaymentReceipt() != null) {
-            programEnrollmentBillingScheduler.adoptAdmissionFee(enrollment, application.getPaymentReceipt().getInvoice());
+            programEnrollmentBillingSetup.attachAdmissionFee(enrollment, application.getPaymentReceipt().getInvoice());
         }
 
         if (application.getPaymentReceipt() != null && application.getPaymentReceipt().isPendingReview()) {

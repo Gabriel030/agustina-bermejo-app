@@ -5,9 +5,18 @@ import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.base.DescribedPredicate;
 
+import com.tngtech.archunit.lang.CompositeArchRule;
+import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.InvoiceDraft;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
+import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameStartingWith;
+import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -75,5 +84,27 @@ public final class ArchitectureRules {
                 .that().resideInAPackage("..service..")
                 .should().beAnnotatedWith(ROOT + ".shared.UseCase")
                 .because("@UseCase is reserved for classes in a usecase package");
+    }
+
+    public static ArchRule invoicesAreIssuedOnlyByChargeIssuer() {
+        ArchRule issueCalls = noClasses().that().resideOutsideOfPackages("..billing.issuing..")
+                .should().callMethod(Invoice.class, "issue", InvoiceDraft.class, LocalDate.class)
+                .because("every invoice must be issued through ChargeIssuer");
+        ArchRule constructorCalls = noClasses().that().resideOutsideOfPackages("..billing.entity..")
+                .should().callConstructor(Invoice.class)
+                .because("every invoice must be issued through ChargeIssuer");
+        return CompositeArchRule.of(issueCalls).and(constructorCalls);
+    }
+
+    public static ArchRule invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
+        return noClasses().that().resideOutsideOfPackages("..billing.entity..", "..billing.issuing..")
+                .should().callMethodWhere(target(nameStartingWith("set")).and(target(owner(assignableTo(Invoice.class)))))
+                .because("invoice state changes through aggregate methods, not setters");
+    }
+
+    public static ArchRule policiesArePure() {
+        return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..")
+                .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "..repository..")
+                .because("policies and planners are pure domain logic");
     }
 }

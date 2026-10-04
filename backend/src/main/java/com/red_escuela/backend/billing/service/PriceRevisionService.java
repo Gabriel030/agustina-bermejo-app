@@ -68,4 +68,14 @@ public class PriceRevisionService {
     public Optional<PriceRevision> findRevisionForProgram(Long programId, FeeType feeType, LocalDate at) {
         return priceRevisionRepository.findTopByProgramIdAndFeeTypeAndEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(programId, feeType, at);
     }
+
+    public PriceRevision resolveRevisionForProgram(Long programId, FeeType feeType, LocalDate at) {
+        return findRevisionForProgram(programId, feeType, at)
+                .orElseThrow(() -> new PriceRevisionNotFoundException("No PriceRevision found for program " + programId + "/" + feeType));
+    }
+
+    public PriceRevision resolveRevisionForCourse(Long courseId, FeeType feeType, LocalDate at) {
+        return findRevisionForCourse(courseId, feeType, at)
+                .orElseThrow(() -> new PriceRevisionNotFoundException("No PriceRevision found for course " + courseId + "/" + feeType));
+    }
 }

@@ -1,0 +1,22 @@
+package com.red_escuela.backend.billing.issuing.policy;
+
+import com.red_escuela.backend.billing.issuing.ChargeTarget;
+import com.red_escuela.backend.billing.issuing.IssuanceContext;
+import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.shared.domain.policy.Policy;
+import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
+
+public final class EnrollmentFeeSlotRequiredPolicy implements Policy<IssuanceContext> {
+    public String name() {
+        return "EnrollmentFeeSlotRequiredPolicy";
+    }
+
+    public PolicyVerdict evaluate(IssuanceContext ctx) {
+        boolean programFee = ctx.request().feeType() == FeeType.ENROLLMENT_FEE
+                && (ctx.request().target() instanceof ChargeTarget.ProgramStudent || ctx.request().target() instanceof ChargeTarget.ProgramApplicant);
+        if (programFee && (ctx.request().templateId() == null || ctx.request().slot() == null)) {
+            return PolicyVerdict.deny(name(), "ENROLLMENT_FEE_SLOT_REQUIRED", "La matrícula de carrera necesita plantilla y matrícula del ciclo");
+        }
+        return PolicyVerdict.allow(name());
+    }
+}

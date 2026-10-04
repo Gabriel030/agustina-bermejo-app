@@ -84,6 +84,14 @@ public class Invoice {
     @Column(name = "status", nullable = false)
     private InvoiceStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "issue_reason", nullable = false)
+    private IssueReason issueReason = IssueReason.LEGACY;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "price_revision_id")
+    private PriceRevision priceRevision;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -105,6 +113,52 @@ public class Invoice {
 
     @OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaymentAllocation> allocations = new ArrayList<>();
+
+    public static Invoice issue(InvoiceDraft draft, LocalDate issuedOn) {
+        if (draft.dueDate().isBefore(issuedOn)) {
+            throw new IllegalArgumentException("Due date " + draft.dueDate() + " is before issue date " + issuedOn);
+        }
+        Invoice invoice = new Invoice();
+        invoice.programEnrollment = draft.programEnrollment();
+        invoice.courseEnrollment = draft.courseEnrollment();
+        invoice.paymentPlanSelection = draft.selection();
+        invoice.feeType = draft.feeType();
+        invoice.period = draft.period();
+        invoice.dueDate = draft.dueDate();
+        invoice.baseAmount = draft.baseAmount();
+        invoice.issueReason = draft.reason();
+        invoice.priceRevision = draft.priceRevision();
+        invoice.templateId = draft.templateId();
+        invoice.enrollmentFeeSlot = draft.enrollmentFeeSlot();
+        invoice.description = draft.description();
+        invoice.subject = draft.subject();
+        invoice.examBoardRegistration = draft.examBoardRegistration();
+        invoice.status = InvoiceStatus.PENDING;
+        return invoice;
+    }
+
+    public void attachToEnrollment(ProgramEnrollment enrollment) {
+        requireAttachable(IssueReason.ADMISSION);
+        if (enrollment.getProgramCohort() == null || templateId == null
+                || !templateId.equals(enrollment.getProgramCohort().getTemplate().getId())) {
+            throw new com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException("invoice " + id + " / program enrollment " + enrollment.getId());
+        }
+        this.programEnrollment = enrollment;
+    }
+
+    public void attachToEnrollment(CourseEnrollment enrollment) {
+        requireAttachable(IssueReason.COURSE_ADMISSION);
+        this.courseEnrollment = enrollment;
+    }
+
+    private void requireAttachable(IssueReason expected) {
+        if (issueReason != expected) {
+            throw new com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException("invoice " + id + " has reason " + issueReason);
+        }
+        if (programEnrollment != null || courseEnrollment != null) {
+            throw new com.red_escuela.backend.billing.exception.InvoiceAlreadyAttachedException("invoice " + id);
+        }
+    }
 
     @PrePersist
     void onCreate() {
