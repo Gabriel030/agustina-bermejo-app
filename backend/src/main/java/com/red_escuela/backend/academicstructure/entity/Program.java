@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import com.red_escuela.backend.entity.StatusType;
@@ -90,20 +91,34 @@ public class Program {
         return enrollmentFeeAmount == null ? null : Money.of(enrollmentFeeAmount, currency);
     }
 
-    public boolean changeRecurringFee(BigDecimal newPrice) {
-        if (newPrice == null || sameAmount(price, newPrice)) {
+    public boolean changeRecurringFee(Money newPrice) {
+        if (newPrice == null) {
             return false;
         }
-        price = newPrice;
+        requireProgramCurrency(newPrice);
+        if (sameAmount(price, newPrice.amount())) {
+            return false;
+        }
+        price = newPrice.amount();
         return true;
     }
 
-    public boolean changeEnrollmentFee(BigDecimal newEnrollmentFee) {
-        if (newEnrollmentFee == null || sameAmount(enrollmentFeeAmount, newEnrollmentFee)) {
+    public boolean changeEnrollmentFee(Money newEnrollmentFee) {
+        if (newEnrollmentFee == null) {
             return false;
         }
-        enrollmentFeeAmount = newEnrollmentFee;
+        requireProgramCurrency(newEnrollmentFee);
+        if (sameAmount(enrollmentFeeAmount, newEnrollmentFee.amount())) {
+            return false;
+        }
+        enrollmentFeeAmount = newEnrollmentFee.amount();
         return true;
+    }
+
+    private void requireProgramCurrency(Money money) {
+        if (money.currency() != currency) {
+            throw new CurrencyMismatchException(currency, money.currency());
+        }
     }
 
     private static boolean sameAmount(BigDecimal current, BigDecimal requested) {

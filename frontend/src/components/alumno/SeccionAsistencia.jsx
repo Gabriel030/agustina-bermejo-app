@@ -42,14 +42,14 @@ function agruparPorMes(registros) {
 // institucional real, ver AttendanceService.calcularRiesgo en el backend).
 function GraficoDeTorta({ porcentaje, enRiesgo }) {
   const color = enRiesgo ? 'var(--danger)' : 'var(--success)';
-  const deg = Math.round((porcentaje ?? 0) * 360);
+  const deg = Math.round((porcentaje ?? 0) * 3.6);
   return (
     <div
       className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full"
       style={{ background: `conic-gradient(${color} 0deg ${deg}deg, var(--neutral-bg) ${deg}deg 360deg)` }}
     >
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface">
-        <span className="font-heading text-sm font-bold text-ink">{Math.round((porcentaje ?? 0) * 100)}%</span>
+        <span className="font-heading text-sm font-bold text-ink">{Math.round(porcentaje ?? 0)}%</span>
       </div>
     </div>
   );
@@ -99,11 +99,10 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
 
   const total = registros?.length ?? 0;
   const presentes = (registros ?? []).filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length;
-  const porcentajeAsistencia = total > 0 ? presentes / total : 0;
+  const porcentajeAsistencia =
+    riesgo?.absencePercent != null ? 100 - riesgo.absencePercent : total > 0 ? (presentes / total) * 100 : 0;
   const meses = agruparPorMes(registros ?? []);
-  const rawMax = riesgo?.maxAbsencePercentage;
-  const normalizedMax = rawMax != null && rawMax > 1 ? rawMax / 100 : rawMax;
-  const porcentajeRequerido = normalizedMax != null ? Math.round((1 - normalizedMax) * 100) : null;
+  const porcentajeRequerido = riesgo?.maxAbsencePercent != null ? Math.round(100 - riesgo.maxAbsencePercent) : null;
 
   function cerrarModal(abierto) {
     if (!abierto) {
@@ -141,7 +140,7 @@ export function SeccionAsistencia({ sectionEnrollmentId }) {
                 </div>
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-ink-faint uppercase">% Asistencia</div>
-                  <div className="font-heading text-xl font-bold text-ink">{Math.round(porcentajeAsistencia * 100)}%</div>
+                  <div className="font-heading text-xl font-bold text-ink">{Math.round(porcentajeAsistencia)}%</div>
                 </div>
               </div>
               {riesgo?.calculable && porcentajeRequerido != null && (

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
@@ -43,18 +44,19 @@ public class CourseService {
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
+        Currency currency = resolveCurrency(request.price(), request.currency());
         Course course = Course.builder()
                 .name(request.name())
                 .term(term)
                 .schedule(request.schedule())
                 .capacity(request.capacity())
-                .price(request.price())
+                .price(request.price() == null ? null : request.price().amount())
                 .durationMonths(request.durationMonths())
                 .teachingMode(request.teachingMode())
                 .registrationStart(request.registrationStart())
                 .registrationEnd(request.registrationEnd())
                 .isActive(StatusType.ACTIVE)
-                .currency(Optional.ofNullable(request.currency()).orElse(Currency.ARS))
+                .currency(currency)
                 .build();
         course.requireValidRegistrationWindow();
         Course saved = courseRepository.save(course);
@@ -73,7 +75,7 @@ public class CourseService {
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         if (course.changePrice(request.price())) {
             Person actor = currentPersonService.resolveCurrentPerson();
-            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, Money.of(request.price(), course.getCurrency()), "Ajuste de precio", actor);
+            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
         }
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
@@ -106,6 +108,16 @@ public class CourseService {
         Course course = findOrThrow(id);
         course.setIsActive(StatusType.ACTIVE);
         courseRepository.save(course);
+    }
+
+    private static Currency resolveCurrency(Money price, Currency requested) {
+        if (price == null) {
+            return Optional.ofNullable(requested).orElse(Currency.ARS);
+        }
+        if (requested != null && requested != price.currency()) {
+            throw new CurrencyMismatchException(requested, price.currency());
+        }
+        return price.currency();
     }
 
     private Course findOrThrow(Long id) {

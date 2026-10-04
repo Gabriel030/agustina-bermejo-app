@@ -13,6 +13,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,8 +28,6 @@ public class AttendanceHistoryBuilder {
 
     private static final List<EnrollmentStatus> ACTIVE_ENROLLMENT_STATUSES =
             List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
-    private static final Set<AttendanceStatus> PRESENT_LIKE_STATUSES =
-            Set.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.JUSTIFIED);
 
     private final AttendanceRepository attendanceRepository;
     private final ClassSessionRepository classSessionRepository;
@@ -96,8 +95,8 @@ public class AttendanceHistoryBuilder {
                         Attendance::getClassDate,
                         a -> new AttendanceHistoryResponse.HistoryCell(a.getId(), a.getStatus().name()),
                         (a, b) -> b));
-        long presentes = asistenciasDelAlumno.stream().filter(a -> PRESENT_LIKE_STATUSES.contains(a.getStatus())).count();
-        Double porcentaje = asistenciasDelAlumno.isEmpty() ? null : (double) presentes / asistenciasDelAlumno.size();
+        long presentes = asistenciasDelAlumno.stream().filter(a -> a.getStatus().countsAsPresence()).count();
+        Percentage porcentaje = Percentage.ratio(presentes, asistenciasDelAlumno.size()).orElse(null);
         return new AttendanceHistoryResponse.StudentHistoryRow(
                 studentId, person.getName() + " " + person.getLastname(), celdasPorFecha, porcentaje);
     }

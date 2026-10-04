@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { moneyValue } from '@/lib/utils';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -60,7 +61,7 @@ export function CursoEditarDatos() {
     if (course) {
       setName(course.name ?? '');
       setCapacity(course.capacity?.toString() ?? '');
-      setPrice(course.price?.toString() ?? '');
+      setPrice(course.price ? String(moneyValue(course.price)) : '');
       setTeachingMode(course.teachingMode ?? '');
       setSchedule(course.schedule ?? '');
       setDurationMonths(course.durationMonths?.toString() ?? '');
@@ -91,7 +92,7 @@ export function CursoEditarDatos() {
       await updateCourse.mutateAsync({
         name: name.trim(),
         capacity: parseInt(capacity),
-        ...(price && { price: parseFloat(price) }),
+        ...(price && { price: { amount: String(parseFloat(price)), currency: course.price?.currency ?? 'ARS' } }),
         ...(teachingMode && { teachingMode }),
         schedule: schedule.trim() || null,
         durationMonths: parseInt(durationMonths),

@@ -26,7 +26,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def nombreCurso = 'Karate - Curso ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Sáb 10-13hs', capacity: 20, price: 15000, durationMonths: 3 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', schedule: 'Sáb 10-13hs', capacity: 20, price: { amount: '15000', currency: 'ARS' }, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id

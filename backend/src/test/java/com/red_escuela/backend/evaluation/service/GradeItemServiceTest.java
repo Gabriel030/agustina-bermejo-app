@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import java.math.BigDecimal;
@@ -595,7 +596,7 @@ class GradeItemServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent(dni, institution);
         Subject subject = persistSubject("Materia " + dni);
         SubjectSection section = persistSection(subject, persistTerm(), scheme);
-        section.setMaxAbsencePercentage(maxAbsencePercentage);
+        section.setMaxAbsenceRate(maxAbsencePercentage == null ? null : Percentage.ofPoints(BigDecimal.valueOf(maxAbsencePercentage)));
         assignInstructor(section, instructor);
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student, persistProgram("Carrera " + dni));
         return persistEnrollment(student, programEnrollment, section);

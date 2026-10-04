@@ -153,7 +153,7 @@ export function DirectorEgresoDetalle() {
               <div key={a.subjectName} className="flex items-center justify-between rounded-xl px-3 py-2 hover:bg-neutral-bg/40">
                 <div className="text-[13.5px] text-ink">{a.subjectName}</div>
                 <div className="text-[13.5px] font-semibold text-ink">
-                  {a.attendancePercentage == null ? '—' : `${a.attendancePercentage.toFixed(0)}%`}
+                  {a.attendancePercent == null ? '—' : `${Math.round(a.attendancePercent)}%`}
                 </div>
               </div>
             ))}

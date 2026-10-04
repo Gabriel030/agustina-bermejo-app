@@ -497,7 +497,7 @@ function TabHistorial({ type, sectionId }) {
                   );
                 })}
                 <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-accent-2 bg-gradient-to-r from-brand to-accent-2 text-white' : 'border-transparent text-ink'}`}>
-                  {fila.attendancePercentage == null ? '-' : `${Math.round(fila.attendancePercentage * 100)}%`}
+                  {fila.attendancePercent == null ? '-' : `${Math.round(fila.attendancePercent)}%`}
                 </td>
               </tr>
             );
@@ -644,7 +644,7 @@ function DistribucionDeAsistencia({ type, sectionId }) {
 
 function BarraAsistenciaPorAlumno({ entrada, totalClases }) {
   const [hover, setHover] = useState(false);
-  const porcentaje = entrada.attendancePercentage == null ? null : Math.round(entrada.attendancePercentage * 100);
+  const porcentaje = entrada.attendancePercent == null ? null : Math.round(entrada.attendancePercent);
   const inasistencias = entrada.absenceCount;
   // "Presencias" = clases registradas menos las que ya cuentan como inasistencia (Ausente,
   // justificación pendiente o justificada) — mismo criterio que absenceCount en el backend.
@@ -708,7 +708,7 @@ function TabReporteDeAsistencia({ type, sectionId }) {
         <GlassCard className="flex flex-col gap-1 p-3">
           <div className="px-2 pb-1 font-heading text-[14px] font-semibold text-ink">% de asistencia por alumno</div>
           <div className="px-2 pb-1 text-[11px] text-ink-faint">Pasá el mouse por la barra para ver presencias e inasistencias</div>
-          {[...reporte].sort((a, b) => (b.attendancePercentage ?? 0) - (a.attendancePercentage ?? 0)).map((entrada) => (
+          {[...reporte].sort((a, b) => (b.attendancePercent ?? 0) - (a.attendancePercent ?? 0)).map((entrada) => (
             <BarraAsistenciaPorAlumno key={entrada.enrollmentId} entrada={entrada} totalClases={totalClasesPorAlumno.get(entrada.studentId)} />
           ))}
         </GlassCard>

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
@@ -35,11 +36,12 @@ public class ProgramService {
 
     @Transactional
     public Program create(CreateProgramRequest request) {
+        Currency currency = resolveCurrency(request.price(), request.enrollmentFeeAmount(), request.currency());
         Program program = Program.builder()
                 .name(request.name())
                 .totalYears(request.totalYears())
-                .price(request.price())
-                .enrollmentFeeAmount(request.enrollmentFeeAmount())
+                .price(request.price() == null ? null : request.price().amount())
+                .enrollmentFeeAmount(request.enrollmentFeeAmount() == null ? null : request.enrollmentFeeAmount().amount())
                 .totalCreditsRequired(request.totalCreditsRequired())
                 .totalHoursRequired(request.totalHoursRequired())
                 .teachingMode(request.teachingMode())
@@ -47,7 +49,7 @@ public class ProgramService {
                 .graduationProfile(request.graduationProfile())
                 .admissionRequirements(request.admissionRequirements())
                 .status(StatusType.ACTIVE)
-                .currency(Optional.ofNullable(request.currency()).orElse(Currency.ARS))
+                .currency(currency)
                 .build();
         program = programRepository.save(program);
         registerInitialPriceRevisions(program);
@@ -61,10 +63,10 @@ public class ProgramService {
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         if (program.changeRecurringFee(request.getPrice())) {
-            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, Money.of(request.getPrice(), program.getCurrency()), "Ajuste de precio", actor);
+            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.getPrice(), "Ajuste de precio", actor);
         }
         if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
-            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, Money.of(request.getEnrollmentFeeAmount(), program.getCurrency()), "Ajuste de matrícula", actor);
+            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), "Ajuste de matrícula", actor);
         }
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
@@ -116,6 +118,20 @@ public class ProgramService {
         priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, tuition, "Precio inicial", actor);
         Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
         priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, enrollmentFee, "Matrícula inicial", actor);
+    }
+
+    private static Currency resolveCurrency(Money price, Money enrollmentFee, Currency requested) {
+        Currency currency = Optional.ofNullable(price).map(Money::currency)
+                .or(() -> Optional.ofNullable(enrollmentFee).map(Money::currency))
+                .or(() -> Optional.ofNullable(requested))
+                .orElse(Currency.ARS);
+        if (requested != null && requested != currency) {
+            throw new CurrencyMismatchException(requested, currency);
+        }
+        if (enrollmentFee != null && enrollmentFee.currency() != currency) {
+            throw new CurrencyMismatchException(currency, enrollmentFee.currency());
+        }
+        return currency;
     }
 
     private Program findOrThrow(Long id) {

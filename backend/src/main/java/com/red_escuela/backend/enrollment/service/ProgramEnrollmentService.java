@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.shared.domain.Percentage;
 import java.math.BigDecimal;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -195,7 +196,8 @@ public class ProgramEnrollmentService {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
                     var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-                    Double asistencia = riesgo.porcentajeAusentismo() == null ? null : 100 - riesgo.porcentajeAusentismo();
+                    Percentage asistencia = riesgo.absencePercent() == null ? null
+                            : Percentage.ofFraction(BigDecimal.ONE.subtract(riesgo.absencePercent().fraction()));
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
                 })
