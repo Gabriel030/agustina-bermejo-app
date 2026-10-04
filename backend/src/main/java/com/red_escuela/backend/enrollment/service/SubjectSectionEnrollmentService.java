@@ -19,13 +19,13 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionChangeException;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
@@ -284,21 +284,18 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validateEnrollmentWindow(Term term) {
-        if (term.getEnrollmentOverride() == TermEnrollmentOverride.CLOSED) {
+        if (term.isEnrollmentClosedByOverride()) {
             throw new TermEnrollmentOverrideClosedException(term.getId());
         }
-        if (term.getEnrollmentOverride() == TermEnrollmentOverride.OPEN) {
-            return;
-        }
-        if (term.getEnrollmentStart() != null && term.getEnrollmentEnd() != null
-                && term.getEnrollmentStart().isAfter(term.getEnrollmentEnd())) {
+        boolean open;
+        try {
+            open = term.isEnrollmentOpenAt(LocalDateTime.now());
+        } catch (InvalidDateRangeException e) {
             throw new InvalidWindowConfigurationException(
                     "El Term " + term.getId() + " tiene la ventana de inscripción mal configurada "
                             + "(enrollmentStart posterior a enrollmentEnd)");
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (term.getEnrollmentStart() != null && now.isBefore(term.getEnrollmentStart())
-                || term.getEnrollmentEnd() != null && now.isAfter(term.getEnrollmentEnd())) {
+        if (!open) {
             throw new EnrollmentWindowClosedException("Fuera de la ventana de inscripción del Term " + term.getId());
         }
     }
@@ -314,7 +311,7 @@ public class SubjectSectionEnrollmentService {
 
     private void validateEnrollmentFeePaid(ProgramEnrollment programEnrollment) {
         Invoice enrollmentFeeInvoice = invoiceRepository
-                .findByProgramEnrollmentIdAndFeeType(programEnrollment.getId(), FeeType.ENROLLMENT_FEE)
+                .findFirstByProgramEnrollmentIdAndFeeTypeOrderByPeriodDesc(programEnrollment.getId(), FeeType.ENROLLMENT_FEE)
                 .orElse(null);
         if (!programEnrollment.canEnrollInSubjects(enrollmentFeeInvoice)) {
             throw new EnrollmentFeeNotPaidException(programEnrollment.getId());

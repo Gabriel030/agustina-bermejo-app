@@ -3,12 +3,12 @@ package com.red_escuela.backend.academicstructure.dto;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.PositiveOrZero;
+import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.validation.NonNegativeMoney;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 
 @Getter
@@ -18,10 +18,10 @@ public class UpdateProgramRequest {
     private String name;
     @Min(1)
     private Integer totalYears;
-    @PositiveOrZero
-    private BigDecimal price;
-    @PositiveOrZero
-    private BigDecimal enrollmentFeeAmount;
+    @NonNegativeMoney
+    private Money price;
+    @NonNegativeMoney
+    private Money enrollmentFeeAmount;
     @Min(0)
     private Integer totalCreditsRequired;
     private Optional<Integer> totalHoursRequired;

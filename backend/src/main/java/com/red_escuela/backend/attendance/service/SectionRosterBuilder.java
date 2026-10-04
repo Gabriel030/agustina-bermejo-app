@@ -11,12 +11,12 @@ import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollm
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -25,11 +25,6 @@ public class SectionRosterBuilder {
 
     private static final List<EnrollmentStatus> ACTIVE_ENROLLMENT_STATUSES =
             List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
-    private static final List<AttendanceStatus> ABSENCE_STATUSES_FOR_COUNT =
-            List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING);
-    private static final Set<AttendanceStatus> PRESENT_LIKE_STATUSES =
-            Set.of(AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.JUSTIFIED);
-    private static final List<AttendanceStatus> PRESENT_LIKE_STATUSES_LIST = List.copyOf(PRESENT_LIKE_STATUSES);
 
     private final AttendanceRepository attendanceRepository;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
@@ -50,10 +45,10 @@ public class SectionRosterBuilder {
         List<SubjectSectionEnrollment> enrollments = subjectSectionEnrollmentRepository
                 .findWithStudentBySectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
         Map<Long, EnrollmentAttendanceCounts> counts = indexByEnrollment(
-                attendanceRepository.countsByProgramSection(sectionId, PRESENT_LIKE_STATUSES_LIST, ABSENCE_STATUSES_FOR_COUNT));
+                attendanceRepository.countsByProgramSection(sectionId, AttendanceStatus.presenceStatuses(), AttendanceStatus.absenceStatuses()));
         return enrollments.stream()
                 .map(enrollment -> buildEntry(enrollment.getId(), enrollment.getStudent(),
-                        enrollment.getSubjectSection().getMaxAbsencePercentage(), counts.get(enrollment.getId())))
+                        enrollment.getSubjectSection().getMaxAbsenceRate(), counts.get(enrollment.getId())))
                 .toList();
     }
 
@@ -61,10 +56,10 @@ public class SectionRosterBuilder {
         List<CourseSubjectSectionEnrollment> enrollments = courseSubjectSectionEnrollmentRepository
                 .findWithStudentBySectionIdAndStatusIn(sectionId, ACTIVE_ENROLLMENT_STATUSES);
         Map<Long, EnrollmentAttendanceCounts> counts = indexByEnrollment(
-                attendanceRepository.countsByCourseSection(sectionId, PRESENT_LIKE_STATUSES_LIST, ABSENCE_STATUSES_FOR_COUNT));
+                attendanceRepository.countsByCourseSection(sectionId, AttendanceStatus.presenceStatuses(), AttendanceStatus.absenceStatuses()));
         return enrollments.stream()
                 .map(enrollment -> buildEntry(enrollment.getId(), enrollment.getStudent(),
-                        enrollment.getCourseSubjectSection().getMaxAbsencePercentage(), counts.get(enrollment.getId())))
+                        enrollment.getCourseSubjectSection().getMaxAbsenceRate(), counts.get(enrollment.getId())))
                 .toList();
     }
 
@@ -79,17 +74,17 @@ public class SectionRosterBuilder {
         return counts.stream().collect(Collectors.toMap(EnrollmentAttendanceCounts::getEnrollmentId, Function.identity()));
     }
 
-    private RosterEntryResponse buildEntry(Long enrollmentId, Student student, Double maxAbsencePercentage,
+    private RosterEntryResponse buildEntry(Long enrollmentId, Student student, Percentage maxAbsenceRate,
                                            EnrollmentAttendanceCounts counts) {
         Person person = student.getPerson();
         long total = counts == null ? 0 : counts.getTotal();
         long presentes = counts == null ? 0 : counts.getPresent();
         long absenceCount = counts == null ? 0 : counts.getAbsences();
-        Double attendancePercentage = total == 0 ? null : (double) presentes / total;
-        boolean atRisk = riskCalculator.evaluate(maxAbsencePercentage, total, absenceCount).libre();
+        Percentage attendancePercent = Percentage.ratio(presentes, total).orElse(null);
+        boolean atRisk = riskCalculator.evaluate(maxAbsenceRate, total, absenceCount).libre();
         return new RosterEntryResponse(
                 enrollmentId, student.getId(), fullName(person), person.getDni(),
-                absenceCount, attendancePercentage, atRisk);
+                absenceCount, attendancePercent, atRisk);
     }
 
     private String fullName(Person person) {

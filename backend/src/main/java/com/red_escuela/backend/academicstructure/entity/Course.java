@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import java.util.HashSet;
 import java.util.List;
@@ -82,12 +83,22 @@ public class Course {
         return price == null ? null : Money.of(price, currency);
     }
 
-    public boolean changePrice(BigDecimal newPrice) {
-        if (newPrice == null || (price != null && price.compareTo(newPrice) == 0)) {
+    public boolean changePrice(Money newPrice) {
+        if (newPrice == null) {
             return false;
         }
-        price = newPrice;
+        requireCourseCurrency(newPrice);
+        if (price != null && price.compareTo(newPrice.amount()) == 0) {
+            return false;
+        }
+        price = newPrice.amount();
         return true;
+    }
+
+    private void requireCourseCurrency(Money money) {
+        if (money.currency() != currency) {
+            throw new CurrencyMismatchException(currency, money.currency());
+        }
     }
 
     public void requireValidRegistrationWindow() {

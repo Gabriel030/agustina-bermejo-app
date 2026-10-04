@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { formatMoney } from '@/lib/utils';
 import { ChevronLeft, Plus, Globe, GlobeOff, Pencil, Power, PowerOff, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
@@ -122,7 +123,7 @@ export function CursoDetalle() {
     course.teachingMode ? TEACHING_MODE_LABELS[course.teachingMode] : null,
     course.durationMonths ? `${course.durationMonths} meses` : null,
     course.capacity ? `${course.capacity} cupos` : null,
-    course.price != null ? `$${Number(course.price).toLocaleString('es-AR')}` : null,
+    course.price != null ? formatMoney(course.price) : null,
   ].filter(Boolean);
 
   const sortedModules = [...(modules ?? [])].sort(

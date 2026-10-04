@@ -21,6 +21,13 @@ const INTAKE_OPTIONS = [
   { value: 'SECOND', label: '2do semestre' },
 ];
 
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+const DEFAULT_ENROLLMENT_FEE_MONTH = '2';
+
 export function NuevaCohortDialog({ open, onClose, programId }) {
   const { data: templates, isSuccess: templatesLoaded } = useProgramBillingTemplates(programId);
   const missingTemplates = templatesLoaded && templates.length === 0;
@@ -32,6 +39,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
   const [admissionStart, setAdmissionStart] = useState('');
   const [admissionEnd, setAdmissionEnd] = useState('');
   const [cursadaStart, setCursadaStart] = useState('');
+  const [enrollmentFeeMonth, setEnrollmentFeeMonth] = useState(DEFAULT_ENROLLMENT_FEE_MONTH);
 
   function getTemplateLabel(template) {
     const term = (terminos ?? []).find((t) => String(t.id) === String(template.termId));
@@ -45,6 +53,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
     setAdmissionStart('');
     setAdmissionEnd('');
     setCursadaStart('');
+    setEnrollmentFeeMonth(DEFAULT_ENROLLMENT_FEE_MONTH);
   }
 
   async function handleSubmit(e) {
@@ -60,6 +69,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         admissionStart,
         admissionEnd,
         cursadaStart,
+        enrollmentFeeMonth: Number(enrollmentFeeMonth),
       });
       toast.success('Cohorte creada.');
       reset();
@@ -167,6 +177,31 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="cohort-enrollment-fee-month"
+              className="text-[11px] font-bold uppercase tracking-widest text-ink-faint"
+            >
+              Mes de matrícula
+            </label>
+            <select
+              id="cohort-enrollment-fee-month"
+              value={enrollmentFeeMonth}
+              onChange={(e) => setEnrollmentFeeMonth(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            >
+              {MONTH_NAMES.map((name, index) => (
+                <option key={name} value={String(index + 1)}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[12px] text-ink-faint">
+              Mes en que se emite la matrícula de reinscripción de los alumnos de esta cohorte.
+            </p>
           </div>
 
           <DialogFooter>

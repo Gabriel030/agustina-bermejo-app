@@ -57,6 +57,26 @@ public class Term {
         endDate = end;
     }
 
+    public void defineEnrollmentWindow(LocalDateTime newStart, LocalDateTime newEnd) {
+        EnrollmentWindow window = new EnrollmentWindow(
+                newStart != null ? newStart : enrollmentStart,
+                newEnd != null ? newEnd : enrollmentEnd);
+        enrollmentStart = window.start();
+        enrollmentEnd = window.end();
+    }
+
+    public EnrollmentWindow enrollmentWindow() {
+        return new EnrollmentWindow(enrollmentStart, enrollmentEnd);
+    }
+
+    public boolean isEnrollmentOpenAt(LocalDateTime moment) {
+        return enrollmentWindow().isOpenAt(moment, enrollmentOverride);
+    }
+
+    public boolean isEnrollmentClosedByOverride() {
+        return enrollmentOverride == TermEnrollmentOverride.CLOSED;
+    }
+
     public boolean contains(YearMonth period) {
         if (startDate == null || endDate == null) {
             return true;

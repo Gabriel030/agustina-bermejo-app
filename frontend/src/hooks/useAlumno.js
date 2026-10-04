@@ -98,7 +98,7 @@ export function useMiAsistencia(sectionEnrollmentId) {
 }
 
 // % de ausentismo real y si ya supera el máximo permitido de la comisión (política
-// institucional real, SubjectSection.maxAbsencePercentage — nunca un 70% fijo).
+// institucional real, SubjectSection.maxAbsenceRate — nunca un 70% fijo).
 export function useMiRiesgoDeAsistencia(sectionEnrollmentId) {
   return useQuery({
     queryKey: ['me', 'section-enrollments', sectionEnrollmentId, 'attendance', 'risk'],

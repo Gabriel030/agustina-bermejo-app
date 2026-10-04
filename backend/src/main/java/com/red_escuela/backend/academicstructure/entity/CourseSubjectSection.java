@@ -1,6 +1,8 @@
 package com.red_escuela.backend.academicstructure.entity;
 
 import jakarta.persistence.*;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.persistence.PercentageConverter;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -51,8 +53,9 @@ public class CourseSubjectSection {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "max_absence_percentage")
-    private Double maxAbsencePercentage;
+    @Convert(converter = PercentageConverter.class)
+    @Column(name = "max_absence_percentage", precision = 7, scale = 6)
+    private Percentage maxAbsenceRate;
 
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CourseSubjectSectionInstructor> instructors;

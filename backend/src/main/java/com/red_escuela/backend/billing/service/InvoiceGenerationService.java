@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.exception.NoActivePaymentPlanException;
+import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import org.springframework.stereotype.Service;
@@ -22,14 +23,16 @@ import com.red_escuela.backend.service.RecurringFeeWindowService;
 @Service
 public class InvoiceGenerationService {
     private final PaymentPlanSelectionRepository paymentPlanSelectionRepository;
+    private final InvoiceRepository invoiceRepository;
     private final InvoiceFactory invoiceFactory;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final ProgramEnrollmentService programEnrollmentService;
 
-    public InvoiceGenerationService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, InvoiceFactory invoiceFactory,
+    public InvoiceGenerationService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, InvoiceRepository invoiceRepository, InvoiceFactory invoiceFactory,
                                      RecurringFeeWindowService recurringFeeWindowService,
                                      ProgramEnrollmentService programEnrollmentService) {
         this.paymentPlanSelectionRepository = paymentPlanSelectionRepository;
+        this.invoiceRepository = invoiceRepository;
         this.invoiceFactory = invoiceFactory;
         this.recurringFeeWindowService = recurringFeeWindowService;
         this.programEnrollmentService = programEnrollmentService;
@@ -47,15 +50,38 @@ public class InvoiceGenerationService {
 
     @Transactional
     public void generateNextInstallmentForProgram(ProgramEnrollment programEnrollment, YearMonth today) {
-        boolean noEstaActivaAcademicamente = programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
-                && programEnrollment.getStatus() != ProgramEnrollmentStatus.PAUSED;
-        if (isSuspendedOrWithdrawnForNonPayment(programEnrollment) || noEstaActivaAcademicamente
-                || hasCompletedTheStudyPlan(programEnrollment)) {
+        if (!isBillableProgramEnrollment(programEnrollment)) {
             return;
         }
         PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForProgramEnrollment(programEnrollment.getId(), today)
                 .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for program enrollment " + programEnrollment.getId()));
         generateByFrequency(selection, null, programEnrollment, today);
+    }
+
+    @Transactional
+    public void generateEnrollmentFeeForProgram(ProgramEnrollment programEnrollment, YearMonth today) {
+        if (!isBillableProgramEnrollment(programEnrollment)) {
+            return;
+        }
+        if (!programEnrollment.isEnrollmentFeeMonth(today)) {
+            return;
+        }
+        long issuedThisYear = invoiceRepository.countByProgramEnrollmentIdAndFeeTypeAndPeriodBetween(
+                programEnrollment.getId(), FeeType.ENROLLMENT_FEE, YearMonth.of(today.getYear(), 1), YearMonth.of(today.getYear(), 12));
+        if (issuedThisYear > 0) {
+            return;
+        }
+        PaymentPlanSelection selection = paymentPlanSelectionRepository.findActiveForProgramEnrollment(programEnrollment.getId(), today)
+                .orElseThrow(() -> new NoActivePaymentPlanException("No active payment plan for program enrollment " + programEnrollment.getId()));
+        invoiceFactory.createForProgram(programEnrollment, selection, FeeType.ENROLLMENT_FEE, today, today.atDay(1));
+    }
+
+    private boolean isBillableProgramEnrollment(ProgramEnrollment programEnrollment) {
+        boolean notAcademicallyActive = programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
+                && programEnrollment.getStatus() != ProgramEnrollmentStatus.PAUSED;
+        return !isSuspendedOrWithdrawnForNonPayment(programEnrollment) && !notAcademicallyActive
+                && !hasCompletedTheStudyPlan(programEnrollment)
+                && !programEnrollmentService.hasOnlyFinalExamsLeft(programEnrollment.getId());
     }
 
     private boolean hasCompletedTheStudyPlan(ProgramEnrollment programEnrollment) {

@@ -7,14 +7,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.validation.NonNegativeMoney;
 
-import java.math.BigDecimal;
 
 public record CreateProgramRequest(
         @NotBlank String name,
         @NotNull Integer totalYears,
-        BigDecimal price,
-        BigDecimal enrollmentFeeAmount,
+        @NonNegativeMoney Money price,
+        @NonNegativeMoney Money enrollmentFeeAmount,
         @NotNull @Min(0) Integer totalCreditsRequired,
         Integer totalHoursRequired,
         TeachingMode teachingMode,
@@ -23,7 +24,7 @@ public record CreateProgramRequest(
         String admissionRequirements,
         Currency currency) {
 
-    public CreateProgramRequest(String name, Integer totalYears, BigDecimal price, BigDecimal enrollmentFeeAmount,
+    public CreateProgramRequest(String name, Integer totalYears, Money price, Money enrollmentFeeAmount,
                                 Integer totalCreditsRequired, Integer totalHoursRequired, TeachingMode teachingMode,
                                 ProgramLevel level, String graduationProfile, String admissionRequirements) {
         this(name, totalYears, price, enrollmentFeeAmount, totalCreditsRequired, totalHoursRequired, teachingMode,

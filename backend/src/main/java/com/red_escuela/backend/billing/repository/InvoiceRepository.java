@@ -22,7 +22,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long programEnrollmentId);
 
-    Optional<Invoice> findByProgramEnrollmentIdAndFeeType(Long programEnrollmentId, FeeType feeType);
+    boolean existsByProgramEnrollmentIdAndFeeTypeAndPeriod(Long programEnrollmentId, FeeType feeType, YearMonth period);
+
+    boolean existsByCourseEnrollmentIdAndFeeTypeAndPeriod(Long courseEnrollmentId, FeeType feeType, YearMonth period);
+
+    long countByProgramEnrollmentIdAndFeeTypeAndPeriodBetween(Long programEnrollmentId, FeeType feeType, YearMonth from, YearMonth to);
+
+    Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeOrderByPeriodDesc(Long programEnrollmentId, FeeType feeType);
 
     @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);
