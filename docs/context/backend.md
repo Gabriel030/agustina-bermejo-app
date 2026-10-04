@@ -347,6 +347,19 @@ nada que ver con el sistema de eventos; `FileStorageService` lo usan
 enrollment/evaluation/billing/identity) y viven en `shared/mail` y
 `shared/storage`.
 
+## Reglas de arquitectura
+
+Tests ArchUnit en `backend/src/test/java/com/red_escuela/backend/architecture/` (`ArchitectureRules` define las reglas, `ArchitectureTest` las ejecuta sobre las clases de `main`). Fallan el build (`verify`):
+
+- Ningún campo de `..entity..` ni `..dto..` es `BigDecimal`/`Double`/`Float`/`double`/`float` si su nombre sugiere plata, porcentaje o nota (`amount`, `price`, `fee`, `grade`, `score`, ...): usar `Money`, `Percentage` o `Grade`. **Congelada** hoy con las violaciones existentes (precios y notas aún sin migrar).
+- Un campo `Percentage` en un `dto` termina en `Percent` o `Rate`.
+- `shared` no depende de ningún paquete de feature. **Congelada** (hoy: `shared/mail` y `GlobalExceptionHandler`).
+- Un `*Service` en `..usecase..` lleva `@UseCase`; una clase en `..service..` no.
+
+Ciclos entre features, imports de repositorios de otra feature y dependencias de controllers no van con ArchUnit: los cubre Spring Modulith.
+
+Las reglas congeladas usan `FreezingArchRule`; el almacén está en `backend/src/test/resources/archunit-frozen/` (config en `archunit.properties`, con `allowStoreUpdates=false`: una violación nueva falla, una arreglada también hasta actualizar el almacén). Para descongelar: corregir el código y borrar del almacén las líneas de esa violación (o poner `freeze.refreeze=true` en `archunit.properties`, correr el test una vez y volverlo a `false`). Una violación nueva no se congela: se arregla.
+
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema
