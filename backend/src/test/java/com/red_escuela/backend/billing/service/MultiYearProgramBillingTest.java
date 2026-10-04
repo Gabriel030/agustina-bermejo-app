@@ -311,7 +311,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         Term term1 = persistTerm(1, base.plusMonths(10), base.plusMonths(19));
         ProgramYearBillingTemplate template1 = persistTemplate(program, term1, 10, director);
         ProgramCohort cohort1 = persistCohort(template1, CohortIntake.FIRST,
-                LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now(), director);
+                LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now().plusMonths(10), director);
 
         Term termRepite = persistTerm(2, base.minusMonths(1), base.plusMonths(9));
         ProgramYearBillingTemplate templateRepite = persistTemplate(program, termRepite, 10, director);

@@ -9,6 +9,25 @@ export function useProgramBillingTemplates(programId) {
   });
 }
 
+export function useUpdateYearBillingConfiguration() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ templateId, ...body }) =>
+      apiFetch(`/year-billing-templates/${templateId}/configuration`, { method: 'PATCH', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['program-billing-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-configuration-alerts'] });
+    },
+  });
+}
+
+export function useBillingConfigurationAlerts() {
+  return useQuery({
+    queryKey: ['billing-configuration-alerts'],
+    queryFn: () => apiFetch('/billing/configuration-alerts'),
+  });
+}
+
 export function useProgramCohorts(programId) {
   return useQuery({
     queryKey: ['program-cohorts', programId],

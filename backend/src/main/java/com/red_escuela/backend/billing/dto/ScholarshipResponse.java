@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 public record ScholarshipResponse(
         Long id, MonetaryAdjustment value, String reason, String status, int totalInstallments,
-        int remainingInstallments, String grantedByName, LocalDateTime grantedAt) {
+        int remainingInstallments, String grantedByName, LocalDateTime grantedAt, String appliesTo) {
 
     public static ScholarshipResponse from(Scholarship scholarship) {
         int remaining = (int) scholarship.getInstallments().stream()
@@ -18,6 +18,6 @@ public record ScholarshipResponse(
                 scholarship.getId(), scholarship.getValue(), scholarship.getReason(), scholarship.getStatus().name(),
                 scholarship.getInstallments().size(), remaining,
                 scholarship.getGrantedBy().getName() + " " + scholarship.getGrantedBy().getLastname(),
-                scholarship.getGrantedAt());
+                scholarship.getGrantedAt(), scholarship.getAppliesTo().name());
     }
 }

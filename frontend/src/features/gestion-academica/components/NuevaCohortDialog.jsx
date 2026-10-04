@@ -21,13 +21,6 @@ const INTAKE_OPTIONS = [
   { value: 'SECOND', label: '2do semestre' },
 ];
 
-const MONTH_NAMES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
-
-const DEFAULT_ENROLLMENT_FEE_MONTH = '2';
-
 export function NuevaCohortDialog({ open, onClose, programId }) {
   const { data: templates, isSuccess: templatesLoaded } = useProgramBillingTemplates(programId);
   const missingTemplates = templatesLoaded && templates.length === 0;
@@ -39,7 +32,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
   const [admissionStart, setAdmissionStart] = useState('');
   const [admissionEnd, setAdmissionEnd] = useState('');
   const [cursadaStart, setCursadaStart] = useState('');
-  const [enrollmentFeeMonth, setEnrollmentFeeMonth] = useState(DEFAULT_ENROLLMENT_FEE_MONTH);
+  const [entryFeeDiscount, setEntryFeeDiscount] = useState('');
 
   function getTemplateLabel(template) {
     const term = (terminos ?? []).find((t) => String(t.id) === String(template.termId));
@@ -53,7 +46,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
     setAdmissionStart('');
     setAdmissionEnd('');
     setCursadaStart('');
-    setEnrollmentFeeMonth(DEFAULT_ENROLLMENT_FEE_MONTH);
+    setEntryFeeDiscount('');
   }
 
   async function handleSubmit(e) {
@@ -69,7 +62,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         admissionStart,
         admissionEnd,
         cursadaStart,
-        enrollmentFeeMonth: Number(enrollmentFeeMonth),
+        ...(entryFeeDiscount !== '' ? { entryFeeDiscountPoints: Number(entryFeeDiscount) } : {}),
       });
       toast.success('Cohorte creada.');
       reset();
@@ -96,14 +89,14 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {missingTemplates && (
             <p className="rounded-xl bg-warning-bg px-3 py-2 text-[13px] text-ink">
-              Esta carrera todavía no tiene una plantilla de aranceles, que define cuántas cuotas se facturan en el año.
+              Esta carrera todavía no tiene un año lectivo configurado, que define cuántas cuotas se facturan en el año.
               Dirección tiene que cargarla antes de abrir una cohorte.
             </p>
           )}
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-bold uppercase tracking-widest text-ink-faint">
-              Plantilla de aranceles
+              Año lectivo
             </label>
             <select
               value={selectedTemplateId}
@@ -111,7 +104,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               required
             >
-              <option value="">Seleccioná una plantilla</option>
+              <option value="">Seleccioná un año lectivo</option>
               {(templates ?? []).map((t) => (
                 <option key={t.id} value={t.id}>
                   {getTemplateLabel(t)}
@@ -181,26 +174,24 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
 
           <div className="flex flex-col gap-1">
             <label
-              htmlFor="cohort-enrollment-fee-month"
+              htmlFor="cohort-entry-fee-discount"
               className="text-[11px] font-bold uppercase tracking-widest text-ink-faint"
             >
-              Mes de matrícula
+              Descuento de la matrícula de ingreso (%)
             </label>
-            <select
-              id="cohort-enrollment-fee-month"
-              value={enrollmentFeeMonth}
-              onChange={(e) => setEnrollmentFeeMonth(e.target.value)}
+            <input
+              id="cohort-entry-fee-discount"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={entryFeeDiscount}
+              onChange={(e) => setEntryFeeDiscount(e.target.value)}
+              placeholder={intake === 'SECOND' ? '50 (por defecto)' : '0 (sin descuento)'}
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-              required
-            >
-              {MONTH_NAMES.map((name, index) => (
-                <option key={name} value={String(index + 1)}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            />
             <p className="text-[12px] text-ink-faint">
-              Mes en que se emite la matrícula de reinscripción de los alumnos de esta cohorte.
+              Si lo dejás vacío se usa el valor por defecto: 50% para el 2do semestre y sin descuento para el 1er semestre.
             </p>
           </div>
 

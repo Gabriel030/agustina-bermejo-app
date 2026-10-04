@@ -463,8 +463,14 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
         List<Invoice> recurringInvoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE).toList();
-        Invoice invoice = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(0).getId()).orElseThrow();
-        assertThat(invoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        Invoice firstInvoice = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(0).getId()).orElseThrow();
+        assertThat(firstInvoice.getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now().plusMonths(1));
+        Invoice nextInvoice = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
+                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE).reduce((first, second) -> second).orElseThrow();
+        nextInvoice = invoiceRepository.findByIdWithAdjustments(nextInvoice.getId()).orElseThrow();
+        assertThat(nextInvoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
     }
 
     @Test

@@ -40,6 +40,7 @@ import { AdministrativoSolicitudesAsistencia } from '@/pages/AdministrativoSolic
 import { AdministrativoSubjects } from '@/features/gestion-academica/pages/AdministrativoSubjects';
 import { AdministrativoSubjectWizard } from '@/features/gestion-academica/pages/AdministrativoSubjectWizard';
 import { CarreraWizard } from '@/features/gestion-academica/pages/CarreraWizard';
+import { DirectorAniosLectivos } from '@/features/gestion-academica/pages/DirectorAniosLectivos';
 import { CarreraDetalle } from '@/features/gestion-academica/pages/CarreraDetalle';
 import { CarreraEditarDatos } from '@/features/gestion-academica/pages/CarreraEditarDatos';
 import { CursoWizard } from '@/features/gestion-academica/pages/CursoWizard';
@@ -226,6 +227,7 @@ export function AppRouter() {
           {(rol === 'administrativo' || rol === 'director') && (
             <Route path="personal/:id" element={<LegajoPersonal />} />
           )}
+          {rol === 'director' && <Route path="financiero/anios-lectivos" element={<DirectorAniosLectivos />} />}
           {rol === 'director' && <Route path="revisar-configuracion/:sectionId" element={<DirectorRevisarConfiguracion />} />}
           {rol === 'director' && <Route path="aprobaciones/configuracion-evaluacion" element={<DirectorAprobacionesConfigEvaluacion />} />}
           {rol === 'director' && <Route path="aprobaciones/egresos" element={<DirectorAprobacionesEgresos />} />}

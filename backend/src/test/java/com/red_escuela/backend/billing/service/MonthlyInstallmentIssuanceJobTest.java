@@ -256,7 +256,26 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
     private void setEnrollmentFeeMonth(Fixture fixture, int month) {
         transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().setEnrollmentFeeMonth(month));
+                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().getTemplate().configureEnrollmentFees(1, month, null));
+    }
+
+    private void persistNextYearTemplate(Fixture fixture) {
+        transactionTemplate.executeWithoutResult(tx -> {
+            ProgramEnrollment enrollment = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId());
+            Term nextTerm = new Term();
+            nextTerm.setYear(2027);
+            nextTerm.setDescription("2027");
+            nextTerm.setStatus(StatusType.ACTIVE);
+            nextTerm.setStartDate(LocalDateTime.of(2027, 3, 1, 0, 0));
+            nextTerm.setEndDate(LocalDateTime.of(2027, 12, 31, 23, 59));
+            entityManager.persist(nextTerm);
+            ProgramYearBillingTemplate nextTemplate = new ProgramYearBillingTemplate();
+            nextTemplate.setProgram(enrollment.getProgram());
+            nextTemplate.setTerm(nextTerm);
+            nextTemplate.setRecurringFeeInvoicesCount(10);
+            nextTemplate.setCreatedBy(fixture.director());
+            entityManager.persist(nextTemplate);
+        });
     }
 
     private void setTotalCreditsRequired(Fixture fixture, int credits) {
@@ -425,6 +444,8 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             entryFee.setStatus(InvoiceStatus.PAID);
             entityManager.persist(entryFee);
         });
+
+        persistNextYearTemplate(fixture);
 
         job.run(YearMonth.of(2026, 7));
         job.run(YearMonth.of(2027, 2));

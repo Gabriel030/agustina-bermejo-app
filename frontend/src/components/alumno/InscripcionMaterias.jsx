@@ -5,7 +5,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
-import { useMisInscripciones, useSeccionesDeMateria, useInscribirmeAMateria } from '@/hooks/useAlumno';
+import { useMisInscripciones, useSeccionesDeMateria, useInscribirmeAMateria, useEstadoMatricula } from '@/hooks/useAlumno';
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { AvisoMatricula } from './AvisoMatricula';
+import { obligacionPendiente, CODIGO_MATRICULA_IMPAGA } from '@/lib/matricula';
 import { ESTADOS_EN_CURSO } from '@/lib/notas';
 import { horarioMockDeComision, seSuperponen } from '@/lib/horarioMock';
 
@@ -24,6 +28,11 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   const [materiaSeleccionada, setMateriaSeleccionada] = useState(null);
   const [comisionSeleccionada, setComisionSeleccionada] = useState(null);
   const [confirmacion, setConfirmacion] = useState(null);
+  const [matriculaRechazada, setMatriculaRechazada] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { data: obligaciones } = useEstadoMatricula(carreraId);
+  const pendiente = obligacionPendiente(obligaciones);
 
   const { filas, cargando: cargandoMaterias } = useMateriasDelPlan(carreraId);
   const disponibles = filas.filter((f) => f.estado === 'disponible' || f.estado === 'desaprobada');
@@ -55,7 +64,15 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   }
 
   async function confirmar() {
-    await inscribirme.mutateAsync({ programEnrollmentId: carreraId, sectionId: comisionSeleccionada.id });
+    try {
+      await inscribirme.mutateAsync({ programEnrollmentId: carreraId, sectionId: comisionSeleccionada.id });
+    } catch (error) {
+      if (error?.code === CODIGO_MATRICULA_IMPAGA) {
+        setMatriculaRechazada(true);
+        queryClient.invalidateQueries({ queryKey: ['me', 'program-enrollments', carreraId, 'enrollment-fee-status'] });
+      }
+      return;
+    }
     setConfirmacion({ subjectName: materiaSeleccionada.subjectName, sectionName: comisionSeleccionada.name });
     setMateriaSeleccionada(null);
     setComisionSeleccionada(null);
@@ -166,7 +183,11 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
             </div>
           )}
 
-          {inscribirme.isError && (
+          {(pendiente || matriculaRechazada) && (
+            <AvisoMatricula obligacion={pendiente} onPagar={(invoiceId) => navigate(`/alumno/pagos/${invoiceId}/seleccion`)} />
+          )}
+
+          {inscribirme.isError && !matriculaRechazada && (
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">
               No pudimos completar la inscripción. Probá de nuevo.
             </div>

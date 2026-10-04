@@ -37,6 +37,9 @@ public class ScholarshipGrantSupport {
         scholarship.setValue(value);
         scholarship.setReason(request.reason());
         scholarship.setGrantedBy(actor);
+        if (request.appliesTo() != null) {
+            scholarship.setAppliesTo(request.appliesTo());
+        }
         scholarship.addInstallments(request.installments());
         return scholarship;
     }

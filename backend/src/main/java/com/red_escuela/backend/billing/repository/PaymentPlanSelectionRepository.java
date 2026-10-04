@@ -45,7 +45,6 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
             where s.programEnrollment is not null
               and s.paymentPlanOption.cadence = :cadence
               and s.programEnrollment.status in :statuses
-              and (s.programEnrollment.currentBillingTemplate is not null or s.programEnrollment.programCohort is not null)
               and s.effectiveFrom <= :month
               and (s.effectiveTo is null or s.effectiveTo >= :month)
               and s.programEnrollment.id > :lastId
@@ -54,6 +53,22 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
     List<Long> findProgramEnrollmentIdsWithActivePlan(@Param("cadence") PaymentPlanCadence cadence,
                                                        @Param("statuses") List<ProgramEnrollmentStatus> statuses,
                                                        @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("""
+            select pe.id from ProgramEnrollment pe
+            where pe.status in :statuses
+              and pe.id > :lastId
+              and exists (select 1 from PaymentPlanSelection s where s.programEnrollment = pe)
+              and not exists (select 1 from PaymentPlanSelection m
+                              where m.programEnrollment = pe
+                                and m.paymentPlanOption.cadence = :cadence
+                                and m.effectiveFrom <= :month
+                                and (m.effectiveTo is null or m.effectiveTo >= :month))
+            order by pe.id
+            """)
+    List<Long> findProgramEnrollmentIdsWithoutActivePlan(@Param("cadence") PaymentPlanCadence cadence,
+                                                          @Param("statuses") List<ProgramEnrollmentStatus> statuses,
+                                                          @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
 
     @Query("""
             select distinct s.courseEnrollment.id from PaymentPlanSelection s

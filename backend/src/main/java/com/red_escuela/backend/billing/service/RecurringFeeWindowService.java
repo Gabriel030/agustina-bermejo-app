@@ -13,7 +13,11 @@ import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.YearMonth;
+import com.red_escuela.backend.billing.planning.YearCycle;
+import com.red_escuela.backend.billing.planning.YearCycles;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import java.util.List;
 
 @Service
@@ -21,26 +25,38 @@ public class RecurringFeeWindowService {
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ProgramYearBillingTemplateRepository templateRepository;
+    private final Clock clock;
 
     public RecurringFeeWindowService(InvoiceRepository invoiceRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                                        CourseEnrollmentRepository courseEnrollmentRepository) {
+                                        CourseEnrollmentRepository courseEnrollmentRepository,
+                                        ProgramYearBillingTemplateRepository templateRepository, Clock clock) {
+        this.templateRepository = templateRepository;
+        this.clock = clock;
         this.invoiceRepository = invoiceRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
     public boolean canBeBilled(ProgramEnrollment programEnrollment, YearMonth period) {
-        ProgramYearBillingTemplate template = currentTemplate(programEnrollment);
-        long generated = recurringFeeInvoicesGeneratedInWindow(
-                invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId()), template.getTerm());
-        return template.canGenerateInvoice(period, generated);
+        ProgramYearBillingTemplate template = templateFor(programEnrollment, period);
+        if (template == null) {
+            return false;
+        }
+        YearCycle cycle = YearCycle.of(template, period.getYear());
+        long generated = generatedInCycle(programEnrollment, cycle);
+        return cycle.installmentRangeContains(period) && generated < template.getRecurringFeeInvoicesCount();
     }
 
     public int remainingInvoices(ProgramEnrollment programEnrollment) {
-        ProgramYearBillingTemplate template = currentTemplate(programEnrollment);
-        long generated = recurringFeeInvoicesGeneratedInWindow(
-                invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId()), template.getTerm());
-        return template.remainingInvoices(generated);
+        ProgramYearBillingTemplate template = templateFor(programEnrollment, YearMonth.now(clock));
+        if (template == null) {
+            template = fallbackTemplate(programEnrollment);
+        }
+        if (template == null) {
+            return 0;
+        }
+        return template.remainingInvoices(generatedInCycle(programEnrollment, YearCycle.of(template, YearMonth.now(clock).getYear())));
     }
 
     public boolean canBeBilled(CourseEnrollment courseEnrollment, YearMonth period) {
@@ -57,12 +73,32 @@ public class RecurringFeeWindowService {
         return course.remainingInvoices(generated);
     }
 
-    private ProgramYearBillingTemplate currentTemplate(ProgramEnrollment programEnrollment) {
-        ProgramEnrollment managed = programEnrollmentRepository.findById(programEnrollment.getId())
+    private long generatedInCycle(ProgramEnrollment programEnrollment, YearCycle cycle) {
+        return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId()).stream()
+                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
+                .filter(i -> cycle.installmentRangeContains(i.getPeriod()))
+                .count();
+    }
+
+    private ProgramYearBillingTemplate templateFor(ProgramEnrollment programEnrollment, YearMonth period) {
+        ProgramEnrollment managed = managedProgramEnrollment(programEnrollment);
+        Long hint = managed.getCurrentBillingTemplate() != null ? managed.getCurrentBillingTemplate().getId() : null;
+        YearCycles cycles = new YearCycles(
+                templateRepository.findAllByProgramId(managed.getProgram().getId()).stream().map(t -> YearCycle.of(t, period.getYear())).toList(), hint);
+        return cycles.forInstallment(period).map(YearCycle::template).orElse(null);
+    }
+
+    private ProgramYearBillingTemplate fallbackTemplate(ProgramEnrollment programEnrollment) {
+        ProgramEnrollment managed = managedProgramEnrollment(programEnrollment);
+        if (managed.getCurrentBillingTemplate() != null) {
+            return managed.getCurrentBillingTemplate();
+        }
+        return managed.getProgramCohort() != null ? managed.getProgramCohort().getTemplate() : null;
+    }
+
+    private ProgramEnrollment managedProgramEnrollment(ProgramEnrollment programEnrollment) {
+        return programEnrollmentRepository.findById(programEnrollment.getId())
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollment.getId()));
-        return managed.getCurrentBillingTemplate() != null
-                ? managed.getCurrentBillingTemplate()
-                : managed.getProgramCohort().getTemplate();
     }
 
     private CourseEnrollment managedCourseEnrollment(CourseEnrollment courseEnrollment) {

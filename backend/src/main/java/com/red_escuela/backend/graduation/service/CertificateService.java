@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 @Service
@@ -42,12 +43,15 @@ public class CertificateService {
     private final InvoiceQueryService invoiceQueryService;
     private final CertificateIssuanceRepository certificateIssuanceRepository;
     private final CurrentPersonService currentPersonService;
+    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
     private final Clock clock;
 
     public CertificateService(ProgramEnrollmentRepository programEnrollmentRepository, ProgramEnrollmentService programEnrollmentService,
             InvoiceQueryService invoiceQueryService, CertificateIssuanceRepository certificateIssuanceRepository,
             CurrentPersonService currentPersonService,
+            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
             Clock clock) {
+        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.invoiceQueryService = invoiceQueryService;
@@ -59,6 +63,7 @@ public class CertificateService {
     @Transactional
     public byte[] issueRegularCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementService.Scope.CERTIFICATE);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
@@ -83,6 +88,7 @@ public class CertificateService {
     @Transactional
     public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementService.Scope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
         List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 

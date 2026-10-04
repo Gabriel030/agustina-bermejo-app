@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { TrendingDown, TrendingUp, Users, AlertCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -142,6 +142,10 @@ export function DirectorFinanciero() {
       <p className="-mt-4 text-sm text-ink-soft">Estado de cobros y alumnos con deuda vencida</p>
 
       <KpiCards data={kpis} isLoading={cargandoKpis} />
+
+      <Link to="/director/financiero/anios-lectivos" className="text-sm font-semibold text-primary hover:underline">
+        Configurar el cobro de los años lectivos por carrera
+      </Link>
 
       <GlassCard>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

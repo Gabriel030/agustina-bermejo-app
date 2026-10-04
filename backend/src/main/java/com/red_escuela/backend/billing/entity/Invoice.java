@@ -64,6 +64,12 @@ public class Invoice {
     @Column(name = "period", nullable = false)
     private YearMonth period;
 
+    @Column(name = "template_id")
+    private Long templateId;
+
+    @Column(name = "enrollment_fee_slot")
+    private Integer enrollmentFeeSlot;
+
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 

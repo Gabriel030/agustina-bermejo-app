@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import java.util.Optional;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.billing.entity.FeeType;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -32,6 +34,7 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 @Service
 public class InvoiceFactory {
     private static final Logger log = LoggerFactory.getLogger(InvoiceFactory.class);
+    private static final String UNIQUE_VIOLATION = "23505";
     private final PriceRevisionService priceRevisionService;
     private final InvoiceRepository invoiceRepository;
     private final ScholarshipRepository scholarshipRepository;
@@ -72,7 +75,19 @@ public class InvoiceFactory {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Invoice createForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        Invoice invoice = saveIdempotently(buildForProgram(programEnrollment, selection, feeType, period, dueDate));
+        return createForProgram(programEnrollment, selection, feeType, period, dueDate, dueDate);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Invoice createForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                    LocalDate dueDate, LocalDate priceDate) {
+        return createForProgram(programEnrollment, selection, feeType, period, dueDate, priceDate, null, null);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Invoice createForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                    LocalDate dueDate, LocalDate priceDate, Long templateId, Integer enrollmentFeeSlot) {
+        Invoice invoice = saveIdempotently(buildForProgram(programEnrollment, selection, feeType, period, dueDate, priceDate, templateId, enrollmentFeeSlot));
         if (invoice != null) {
             applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
             if (selection != null) {
@@ -84,7 +99,13 @@ public class InvoiceFactory {
 
     @Transactional
     public Invoice createForProgramAtomic(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        Invoice invoice = invoiceRepository.saveAndFlush(buildForProgram(programEnrollment, selection, feeType, period, dueDate));
+        return createForProgramAtomic(programEnrollment, selection, feeType, period, dueDate, dueDate, null, null);
+    }
+
+    @Transactional
+    public Invoice createForProgramAtomic(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                          LocalDate dueDate, LocalDate priceDate, Long templateId, Integer enrollmentFeeSlot) {
+        Invoice invoice = invoiceRepository.saveAndFlush(buildForProgram(programEnrollment, selection, feeType, period, dueDate, priceDate, templateId, enrollmentFeeSlot));
         applyActiveScholarshipIfPresent(invoice, scholarshipRepository.findActiveByProgramEnrollmentIdForUpdate(programEnrollment.getId()));
         if (selection != null) {
             applyActivePromotionIfPresent(invoice, selection);
@@ -93,20 +114,30 @@ public class InvoiceFactory {
     }
 
     private Invoice buildForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period, LocalDate dueDate) {
-        var price = priceRevisionService.resolveCurrentForProgram(programEnrollment.getProgram().getId(), feeType, dueDate);
+        return buildForProgram(programEnrollment, selection, feeType, period, dueDate, dueDate, null, null);
+    }
+
+    private Invoice buildForProgram(ProgramEnrollment programEnrollment, PaymentPlanSelection selection, FeeType feeType, YearMonth period,
+                                    LocalDate dueDate, LocalDate priceDate, Long templateId, Integer enrollmentFeeSlot) {
+        var price = priceRevisionService.resolveCurrentForProgram(programEnrollment.getProgram().getId(), feeType, priceDate);
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(programEnrollment);
         invoice.setPaymentPlanSelection(selection);
         invoice.setFeeType(feeType);
         invoice.setPeriod(period);
+        invoice.setTemplateId(templateId);
+        invoice.setEnrollmentFeeSlot(enrollmentFeeSlot);
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(price);
         invoice.setStatus(InvoiceStatus.PENDING);
         return invoice;
     }
 
-    private void applyActiveScholarshipIfPresent(Invoice invoice, java.util.Optional<Scholarship> activeScholarship) {
+    private void applyActiveScholarshipIfPresent(Invoice invoice, Optional<Scholarship> activeScholarship) {
         activeScholarship.ifPresent(scholarship -> {
+            if (invoice.getProgramEnrollment() != null && !scholarship.getAppliesTo().covers(invoice.getFeeType())) {
+                return;
+            }
             scholarship.consumeOne(invoice);
             invoice.applyAdjustment(InvoiceAdjustmentType.SCHOLARSHIP, scholarship.getValue(), scholarship.getReason(), null);
             scholarshipRepository.save(scholarship);
@@ -192,10 +223,25 @@ public class InvoiceFactory {
                     saved.getId(), saved.getFeeType(), saved.getPeriod(), saved.getDueDate());
             return saved;
         } catch (DataIntegrityViolationException e) {
+            if (!isDuplicateViolation(e)) {
+                throw e;
+            }
             log.warn("Factura omitida por duplicada: tipo={}, periodo={}", invoice.getFeeType(), invoice.getPeriod());
             org.springframework.transaction.interceptor.TransactionAspectSupport
                     .currentTransactionStatus().setRollbackOnly();
             return null;
         }
+    }
+
+    private static boolean isDuplicateViolation(DataIntegrityViolationException e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sql && UNIQUE_VIOLATION.equals(sql.getSQLState())) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return false;
     }
 }

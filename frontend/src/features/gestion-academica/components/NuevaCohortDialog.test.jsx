@@ -21,7 +21,7 @@ describe('NuevaCohortDialog', () => {
     renderWithProviders(<NuevaCohortDialog open onClose={() => {}} programId={12} />);
 
     expect(
-      await screen.findByText(/Esta carrera todavía no tiene una plantilla de aranceles/),
+      await screen.findByText(/Esta carrera todavía no tiene un año lectivo configurado/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear cohorte' })).toBeDisabled();
   });
@@ -31,7 +31,7 @@ describe('NuevaCohortDialog', () => {
     renderWithProviders(<NuevaCohortDialog open onClose={() => {}} programId={12} />);
 
     expect(await screen.findByRole('option', { name: '2027 — 10 cuotas' })).toBeInTheDocument();
-    expect(screen.queryByText(/todavía no tiene una plantilla de aranceles/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/todavía no tiene un año lectivo configurado/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear cohorte' })).toBeEnabled();
   });
 
@@ -48,9 +48,7 @@ describe('NuevaCohortDialog', () => {
     renderWithProviders(<NuevaCohortDialog open onClose={() => {}} programId={12} />);
 
     await screen.findByRole('option', { name: '2027 — 10 cuotas' });
-    const monthSelect = screen.getByLabelText('Mes de matrícula');
-    expect(monthSelect).toHaveValue('2');
-    await user.selectOptions(monthSelect, 'Marzo');
+    expect(screen.queryByLabelText('Mes de matrícula')).not.toBeInTheDocument();
     const selects = document.querySelectorAll('select');
     await user.selectOptions(selects[0], '3');
     await user.selectOptions(selects[1], 'FIRST');
@@ -60,6 +58,6 @@ describe('NuevaCohortDialog', () => {
     await user.type(dates[2], '2027-03-01');
     await user.click(screen.getByRole('button', { name: 'Crear cohorte' }));
 
-    await waitFor(() => expect(body).toMatchObject({ enrollmentFeeMonth: 3, intake: 'FIRST' }));
+    await waitFor(() => expect(body).toMatchObject({ intake: 'FIRST' }));
   });
 });

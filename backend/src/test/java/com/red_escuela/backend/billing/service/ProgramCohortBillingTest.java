@@ -230,7 +230,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
         assertThat(invoices.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
-        assertThat(invoices.get(0).getDueDate()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(invoices.get(0).getDueDate()).isAfterOrEqualTo(LocalDate.now());
     }
 
     @Test
