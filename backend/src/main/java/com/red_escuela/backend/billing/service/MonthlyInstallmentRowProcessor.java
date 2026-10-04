@@ -34,17 +34,17 @@ public class MonthlyInstallmentRowProcessor {
     public InstallmentIssuanceOutcome issueForProgramEnrollment(Long enrollmentId, YearMonth month) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
-        boolean enrollmentMonth = enrollment.isEnrollmentFeeMonth(month);
-        FeeType feeType = enrollmentMonth ? FeeType.ENROLLMENT_FEE : FeeType.RECURRING_FEE;
-        if (invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, feeType, month)) {
-            return InstallmentIssuanceOutcome.SKIPPED;
-        }
-        if (enrollmentMonth) {
+        boolean issued = false;
+        if (enrollment.isEnrollmentFeeMonth(month)
+                && !invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.ENROLLMENT_FEE, month)) {
             invoiceGenerationService.generateEnrollmentFeeForProgram(enrollment, month);
-        } else {
-            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, month);
+            issued = invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.ENROLLMENT_FEE, month);
         }
-        return outcome(invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, feeType, month));
+        if (!invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month)) {
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, month);
+            issued = invoiceRepository.existsByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, FeeType.RECURRING_FEE, month) || issued;
+        }
+        return outcome(issued);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -254,6 +254,58 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
                 .toList();
     }
 
+    private void setEnrollmentFeeMonth(Fixture fixture, int month) {
+        transactionTemplate.executeWithoutResult(tx ->
+                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().setEnrollmentFeeMonth(month));
+    }
+
+    private void setTotalCreditsRequired(Fixture fixture, int credits) {
+        transactionTemplate.executeWithoutResult(tx ->
+                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgram().setTotalCreditsRequired(credits));
+    }
+
+    @Test
+    void enrollmentMonthInsideTheTermIssuesTheEnrollmentFeeAndTheInstallment() {
+        Fixture fixture = monthlyFixture("94100151");
+        setEnrollmentFeeMonth(fixture, 3);
+
+        job.run(MARCH);
+
+        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+    }
+
+    @Test
+    void enrollmentMonthInsideTheTermStillIssuesTheInstallmentWhenTheEnrollmentFeeWasAlreadyIssuedThatYear() {
+        Fixture fixture = monthlyFixture("94100161");
+        setEnrollmentFeeMonth(fixture, 3);
+        transactionTemplate.executeWithoutResult(tx -> {
+            Invoice invoice = new Invoice();
+            invoice.setProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId()));
+            invoice.setFeeType(FeeType.ENROLLMENT_FEE);
+            invoice.setPeriod(YearMonth.of(2026, 1));
+            invoice.setDueDate(LocalDate.of(2026, 1, 1));
+            invoice.setBaseAmount(ars(5000));
+            invoice.setStatus(InvoiceStatus.PAID);
+            entityManager.persist(invoice);
+        });
+
+        job.run(MARCH);
+
+        assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).hasSize(1);
+        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+    }
+
+    @Test
+    void aNewStudentWithoutSubjectEnrollmentsIsNotConsideredToOweOnlyFinalExams() {
+        Fixture fixture = monthlyFixture("94100171");
+        setTotalCreditsRequired(fixture, 0);
+
+        job.run(MARCH);
+
+        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+    }
+
     @Test
     void issuesTheMonthlyInstallmentToAnActiveProgramEnrollment() {
         Fixture fixture = monthlyFixture("94100001");

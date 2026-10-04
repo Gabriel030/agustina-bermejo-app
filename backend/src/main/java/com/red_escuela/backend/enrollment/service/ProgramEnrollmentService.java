@@ -208,7 +208,8 @@ public class ProgramEnrollmentService {
                         .filter(entry -> entry.getElectiveGroup() != null
                                 && entry.getElectiveGroup().getId().equals(group.getElectiveGroup().getId()))
                         .count() >= group.getMinRequired());
-        return !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
+        return !coursed.isEmpty() && program.getTotalCreditsRequired() > 0
+                && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
     }
 
     private boolean isCoursed(Long programEnrollmentId, ProgramSubject entry) {
