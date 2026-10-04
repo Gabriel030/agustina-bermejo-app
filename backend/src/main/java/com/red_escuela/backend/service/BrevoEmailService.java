@@ -40,7 +40,7 @@ public class BrevoEmailService implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(fromAddress);
-            helper.setTo(person.getEmail());
+            helper.setTo(person.emailValue());
             helper.setSubject("Código para recuperar tu contraseña");
             helper.setText(buildHtml(institutionName, person.getName(), code), true);
             mailSender.send(message);
@@ -61,7 +61,7 @@ public class BrevoEmailService implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
             helper.setFrom(fromAddress);
-            helper.setTo(person.getEmail());
+            helper.setTo(person.emailValue());
             helper.setSubject("Verificá tu email para completar tu preinscripción");
             helper.setText(buildVerificationHtml(institutionName, person.getName(), verificationLink), true);
             mailSender.send(message);

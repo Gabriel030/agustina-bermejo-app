@@ -8,6 +8,8 @@ import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.domain.InvalidEmailAddressException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +42,7 @@ public class LoginService implements LoginUseCase {
     @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthTokens login(LoginCommand command) {
         Optional<Person> personOpt = personRepository.findByUsername(command.username())
-                .or(() -> personRepository.findByEmailIgnoreCase(command.username()))
+                .or(() -> findByEmailIfValid(command.username()))
                 .or(() -> personRepository.findByDni(command.username()));
 
         if (personOpt.isEmpty()) {
@@ -97,5 +99,13 @@ public class LoginService implements LoginUseCase {
         attempt.setIpAddress(ipAddress);
         attempt.setAttemptedAt(LocalDateTime.now());
         loginAttemptRepository.save(attempt);
+    }
+
+    private Optional<Person> findByEmailIfValid(String candidate) {
+        try {
+            return personRepository.findByEmail(EmailAddress.of(candidate));
+        } catch (InvalidEmailAddressException e) {
+            return Optional.empty();
+        }
     }
 }

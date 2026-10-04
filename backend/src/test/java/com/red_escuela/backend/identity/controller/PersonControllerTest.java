@@ -94,12 +94,12 @@ class PersonControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
-        assertThat(propioActualizado.getEmail()).isEqualTo("nuevo.email@example.com");
+        assertThat(propioActualizado.emailValue()).isEqualTo("nuevo.email@example.com");
         assertThat(propioActualizado.getPhoneNumber()).isEqualTo("1155556666");
         assertThat(propioActualizado.getDni()).isEqualTo("60111222");
 
         Person otroSinCambios = personRepository.findById(otro.getId()).orElseThrow();
-        assertThat(otroSinCambios.getEmail()).isEqualTo("otro1@example.com");
+        assertThat(otroSinCambios.emailValue()).isEqualTo("otro1@example.com");
         assertThat(otroSinCambios.getPhoneNumber()).isNull();
     }
 

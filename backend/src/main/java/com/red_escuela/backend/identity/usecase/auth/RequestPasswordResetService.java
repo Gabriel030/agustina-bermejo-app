@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
@@ -39,7 +40,7 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
     @Override
     @Transactional
     public void requestReset(String email) {
-        Optional<Person> personOpt = personRepository.findByEmail(email);
+        Optional<Person> personOpt = personRepository.findByEmail(EmailAddress.of(email));
         if (personOpt.isEmpty()) {
             return;
         }

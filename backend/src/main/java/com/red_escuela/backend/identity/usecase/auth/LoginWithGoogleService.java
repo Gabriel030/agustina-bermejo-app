@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.entity.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
@@ -36,7 +37,7 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
             return authTokenIssuer.issueTokens(byGoogleId.get());
         }
 
-        Person person = personRepository.findByEmail(profile.email())
+        Person person = personRepository.findByEmail(EmailAddress.of(profile.email()))
                 .orElseThrow(() -> new GoogleAccountNotLinkedException(profile.email()));
         requireAllowedToLogIn(person);
 

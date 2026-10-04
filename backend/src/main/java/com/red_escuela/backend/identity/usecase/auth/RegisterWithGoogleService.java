@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -41,7 +42,7 @@ public class RegisterWithGoogleService implements RegisterWithGoogleUseCase {
     public AuthTokens register(RegisterWithGoogleCommand command) {
         var profile = googleIdTokenService.verify(command.idToken());
 
-        if (personRepository.findByEmail(profile.email()).isPresent()) {
+        if (personRepository.findByEmail(EmailAddress.of(profile.email())).isPresent()) {
             throw new UsernameAlreadyExistsException(profile.email());
         }
 
