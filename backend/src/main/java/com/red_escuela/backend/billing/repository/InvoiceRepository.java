@@ -71,6 +71,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     long countByPaymentPlanSelectionAndFeeTypeAndPromotionBenefit(
             @Param("paymentPlanSelectionId") Long paymentPlanSelectionId, @Param("feeType") FeeType feeType, @Param("promotionBenefitId") Long promotionBenefitId);
 
+    @Query("""
+            select i.paymentPlanSelection.id as paymentPlanSelectionId, i.feeType as feeType,
+                   a.promotionBenefit.id as promotionBenefitId, count(i) as used
+            from Invoice i join i.adjustments a
+            where i.paymentPlanSelection.id in :paymentPlanSelectionIds
+              and a.promotionBenefit is not null
+            group by i.paymentPlanSelection.id, i.feeType, a.promotionBenefit.id
+            """)
+    List<PromotionBenefitUsage> countPromotionBenefitUsageBySelections(
+            @Param("paymentPlanSelectionIds") List<Long> paymentPlanSelectionIds);
+
     @Query("select distinct ce.student.id from Invoice i join i.courseEnrollment ce where i.status = :status")
     List<Long> findCourseStudentIdsByStatus(@Param("status") InvoiceStatus status);
 
