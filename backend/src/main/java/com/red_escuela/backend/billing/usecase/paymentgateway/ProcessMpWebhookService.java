@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -86,7 +87,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
                 null
         );
 
-        registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
+        Payment payment = registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
+        payment.setCardType(approved.get().cardType());
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }
 

@@ -55,6 +55,10 @@ public class Payment {
     @Column(name = "card_installments")
     private Integer cardInstallments;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "card_type")
+    private CardType cardType;
+
     @Column(name = "notes", length = 500)
     private String notes;
 

@@ -3,7 +3,9 @@ import com.red_escuela.backend.identity.service.CurrentStudentService;
 
 import com.red_escuela.backend.billing.dto.BillingStandingResponse;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
-import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
+import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
+import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
@@ -40,12 +42,16 @@ public class MeInvoiceController {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
     private final CreateMpPreferenceUseCase createMpPreferenceUseCase;
+    private final GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase;
+    private final GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
                                 CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
                                 ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
-                                CreateMpPreferenceUseCase createMpPreferenceUseCase) {
+                                CreateMpPreferenceUseCase createMpPreferenceUseCase,
+                                GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase,
+                                GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase) {
         this.invoiceQueryService = invoiceQueryService;
         this.currentStudentService = currentStudentService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
@@ -54,6 +60,8 @@ public class MeInvoiceController {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
         this.createMpPreferenceUseCase = createMpPreferenceUseCase;
+        this.getOwnCourseEnrollmentBillingStatusUseCase = getOwnCourseEnrollmentBillingStatusUseCase;
+        this.getOwnProgramEnrollmentBillingStatusUseCase = getOwnProgramEnrollmentBillingStatusUseCase;
     }
 
     @GetMapping("/credit-notes")
@@ -89,15 +97,15 @@ public class MeInvoiceController {
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
+    public MeEnrollmentBillingStatusResponse myCourseInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return EnrollmentBillingStatusResponse.of(invoiceQueryService.courseBillable(id), invoiceQueryService.byOwnCourse(studentId, id));
+        return getOwnCourseEnrollmentBillingStatusUseCase.get(studentId, id);
     }
 
     @GetMapping("/program-enrollments/{id}/invoices")
-    public EnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
+    public MeEnrollmentBillingStatusResponse myProgramInstallments(@PathVariable Long id) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.byOwnProgram(studentId, id));
+        return getOwnProgramEnrollmentBillingStatusUseCase.get(studentId, id);
     }
 
     @GetMapping("/billing-standing")

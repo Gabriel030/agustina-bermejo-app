@@ -8,9 +8,9 @@ import { GlassCard } from '@/components/GlassCard';
 // un número).
 export function StatCard({ label, children, className }) {
   return (
-    <GlassCard className={`p-5 ${className ?? ''}`}>
+    <GlassCard className={`min-w-0 p-5 ${className ?? ''}`}>
       <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{label}</div>
-      <div className="mt-1">{children}</div>
+      <div className="mt-1 min-w-0 overflow-hidden tabular-nums">{children}</div>
     </GlassCard>
   );
 }

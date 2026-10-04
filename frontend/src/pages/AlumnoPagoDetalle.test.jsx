@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
@@ -66,7 +66,7 @@ describe('AlumnoPagoDetalle', () => {
     renderDetail('/alumno/pagos/curso/10');
 
     expect(await screen.findByText('Curso: Primeros Auxilios y RCP')).toBeInTheDocument();
-    expect(screen.getByText('mar 2026')).toBeInTheDocument();
+    expect(screen.getByText('Cuota mensual · mar 2026')).toBeInTheDocument();
     expect(screen.queryByText('No hay cuotas para esta inscripción.')).not.toBeInTheDocument();
   });
 
@@ -149,10 +149,82 @@ describe('AlumnoPagoDetalle', () => {
 
     renderDetail('/alumno/pagos/carrera/10');
 
-    await user.click(await screen.findByRole('button', { name: 'Detalle' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Importe de la cuota')).toBeInTheDocument();
-    expect(within(dialog).getByText('Recargo por mora')).toBeInTheDocument();
-    expect(within(dialog).getByText('+ $ 4.800,00')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: /Ver detalle de/ }));
+    expect(screen.getByText('Importe de la cuota')).toBeInTheDocument();
+    expect(screen.getByText('Recargo por mora')).toBeInTheDocument();
+    expect(screen.getByText('+ $ 4.800,00')).toBeInTheDocument();
+  });
+
+  it('shows the payment date, the balance under the amount and the period inside the concept', async () => {
+    withReceipts([]);
+    server.use(
+      http.get(`${API}/me/program-enrollments/10/invoices`, () =>
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
+          invoice({
+            status: 'PARTIALLY_PAID',
+            period: '2026-03',
+            dueDate: '2026-03-10',
+            amountDue: { amount: '52000.00', currency: 'ARS' },
+            remainingBalance: { amount: '20000.00', currency: 'ARS' },
+            paymentDate: '2026-03-12T09:05:00',
+            payments: [
+              { paymentId: 1, method: 'CASH', amountApplied: { amount: '12000.00', currency: 'ARS' }, paymentTotal: { amount: '12000.00', currency: 'ARS' }, paidAt: '2026-03-12T09:05:00' },
+              { paymentId: 2, method: 'CASH', amountApplied: { amount: '20000.00', currency: 'ARS' }, paymentTotal: { amount: '20000.00', currency: 'ARS' }, paidAt: '2026-03-11T10:00:00' },
+            ],
+          }),
+        ])),
+      ),
+    );
+
+    renderDetail('/alumno/pagos/carrera/10');
+
+    expect(await screen.findByText('Cuota mensual · mar 2026')).toBeInTheDocument();
+    expect(screen.getByText('10/03/2026')).toBeInTheDocument();
+    expect(screen.getByText('12/03/2026')).toBeInTheDocument();
+    expect(screen.getByText('2 pagos')).toBeInTheDocument();
+    expect(screen.getByText('Saldo $ 20.000,00')).toBeInTheDocument();
+  });
+
+  it('expands the installment to show each payment with its card type and installments but not who registered it', async () => {
+    withReceipts([]);
+    server.use(
+      http.get(`${API}/me/program-enrollments/10/invoices`, () =>
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
+          invoice({
+            status: 'PAID',
+            paymentDate: '2026-03-12T09:05:00',
+            payments: [
+              { paymentId: 1, method: 'MERCADO_PAGO', cardType: 'CREDIT', cardInstallments: 3, externalReference: '998877', amountApplied: { amount: '52000.00', currency: 'ARS' }, paymentTotal: { amount: '52000.00', currency: 'ARS' }, paidAt: '2026-03-12T09:05:00' },
+            ],
+          }),
+        ])),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderDetail('/alumno/pagos/carrera/10');
+
+    const toggle = await screen.findByRole('button', { name: /Ver detalle de/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Mercado Pago · Tarjeta de crédito · 3 cuotas')).toBeInTheDocument();
+    expect(screen.getByText(/Ref\. 998877/)).toBeInTheDocument();
+    expect(screen.queryByText(/Registrado por/)).not.toBeInTheDocument();
+  });
+
+  it('does not make an installment without payments or receipts expandable', async () => {
+    withReceipts([]);
+    server.use(
+      http.get(`${API}/me/program-enrollments/10/invoices`, () =>
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [invoice({ status: 'PENDING', period: '2026-03' })])),
+      ),
+    );
+
+    renderDetail('/alumno/pagos/carrera/10');
+
+    await screen.findByText('Cuota mensual · mar 2026');
+    expect(screen.queryByRole('button', { name: /Ver detalle de/ })).not.toBeInTheDocument();
   });
 });

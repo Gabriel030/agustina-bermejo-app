@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, CheckCircle, XCircle, Receipt, ChevronDown, ChevronUp, CreditCard } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PageContainer } from '@/components/PageContainer';
@@ -12,7 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { apiFetchBlob } from '@/api/client';
-import { invoiceConcept } from '@/lib/billing';
+import { FEE_TYPE_LABELS, formatDate, formatPeriod, hasInvoiceDetail, invoiceConcept } from '@/lib/billing';
+import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
+import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
+import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
+import { useExpandedRows } from '@/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
 import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
 import {
@@ -32,18 +36,9 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
-const FEE_TYPE_LABELS = {
-  RECURRING_FEE: 'Cuota mensual',
-  ENROLLMENT_FEE: 'Matrícula',
-  SUBSCRIPTION_FEE: 'Cuota anual',
-  EXAM_RIGHT: 'Derecho a examen',
-  RETAKEN_SUBJECT_FEE: 'Recurse',
-  DEGREE_ISSUANCE: 'Emisión de título',
-  ADMINISTRATIVE_FEE: 'Gestión administrativa',
-};
-
 const INVOICE_STATUS_CONFIG = {
   PENDING: { label: 'Pendiente', tone: 'warning' },
+  PENDING_REVIEW: { label: 'En revisión', tone: 'neutral' },
   OVERDUE: { label: 'Vencida', tone: 'danger' },
   PAID: { label: 'Pagada', tone: 'success' },
   PARTIALLY_PAID: { label: 'Pago parcial', tone: 'warning' },
@@ -65,21 +60,8 @@ const PAYMENT_METHODS = [
   { value: 'MERCADO_PAGO', label: 'Mercado Pago' },
 ];
 
-function formatPeriod(period) {
-  if (!period) return '-';
-  const [year, month] = period.split('-');
-  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${MESES[parseInt(month, 10) - 1]} ${year}`;
-}
-
 function formatMonto(money) {
   return formatMoney(money) || '-';
-}
-
-function formatFecha(date) {
-  if (!date) return '-';
-  const d = new Date(date.includes('T') ? date : date + 'T00:00:00');
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 const REGISTER_PAYMENT_ERRORS = {
@@ -278,10 +260,85 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
   );
 }
 
-function EnrollmentCard({ enrollment }) {
-  const [expanded, setExpanded] = useState(false);
+const PAYABLE_STATUSES = ['PENDING', 'OVERDUE', 'PARTIALLY_PAID'];
+
+function displayedStatus(invoice) {
+  const underReview =
+    PAYABLE_STATUSES.includes(invoice.status) && (invoice.receipts ?? []).some((r) => r.status === 'PENDING_REVIEW');
+  return underReview ? 'PENDING_REVIEW' : invoice.status;
+}
+
+function InvoicesTable({ invoices }) {
+  const { isExpanded, toggle } = useExpandedRows();
+
+  return (
+    <Table className="min-w-[760px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Concepto</TableHead>
+          <TableHead>Vencimiento</TableHead>
+          <TableHead>Fecha de pago</TableHead>
+          <TableHead className="text-right">Importe</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead className="w-10" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invoices.map((inv) => {
+          const status = displayedStatus(inv);
+          const statusInfo = INVOICE_STATUS_CONFIG[status] ?? { label: status, tone: 'neutral' };
+          const expandable = hasInvoiceDetail(inv);
+          const open = expandable && isExpanded(inv.id);
+          const concept = invoiceConcept(inv.feeType, inv.period);
+          return (
+            <Fragment key={inv.id}>
+              <TableRow
+                className={expandable ? 'cursor-pointer' : undefined}
+                onClick={expandable ? () => toggle(inv.id) : undefined}
+              >
+                <TableCell className="font-medium">{concept}</TableCell>
+                <TableCell className="text-ink-faint">{formatDate(inv.dueDate)}</TableCell>
+                <TableCell>
+                  <PaymentDateCell invoice={inv} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <InvoiceAmountCell invoice={inv} />
+                </TableCell>
+                <TableCell>
+                  <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+                </TableCell>
+                <TableCell>
+                  {expandable && (
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      aria-controls={`invoice-detail-${inv.id}`}
+                      aria-label={`Ver pagos de ${concept}`}
+                      className="rounded-lg p-1 text-ink-faint"
+                    >
+                      {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  )}
+                </TableCell>
+              </TableRow>
+              {open && (
+                <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
+                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink />
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+function EnrollmentCard({ enrollment, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [showModal, setShowModal] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   const standingInfo = BILLING_STANDING_CONFIG[enrollment.billingStanding] ?? {
     label: enrollment.billingStanding,
@@ -289,21 +346,20 @@ function EnrollmentCard({ enrollment }) {
   };
 
   const invoices = enrollment.invoices ?? [];
-  const hasPayable = invoices.some(
-    (inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID'
-  );
+  const hasPayable = invoices.some((inv) => PAYABLE_STATUSES.includes(inv.status));
 
   const productLabel = `${enrollment.enrollmentType === 'COURSE' ? 'Curso' : 'Carrera'}: ${enrollment.productName ?? enrollment.enrollmentId}`;
 
   function handleModalClose(paid) {
     setShowModal(false);
-    if (paid) setSuccessMsg('Pago registrado correctamente.');
+    if (paid) toast.success('Pago registrado correctamente.');
   }
 
   return (
     <div className="rounded-2xl border border-border bg-surface">
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-4 p-4 text-left"
       >
@@ -311,7 +367,7 @@ function EnrollmentCard({ enrollment }) {
           <p className="truncate font-semibold text-ink">{productLabel}</p>
           {enrollment.billingStandingUpdatedAt && (
             <p className="text-xs text-ink-faint">
-              Desde {formatFecha(enrollment.billingStandingUpdatedAt)}
+              Desde {formatDate(enrollment.billingStandingUpdatedAt)}
             </p>
           )}
         </div>
@@ -321,42 +377,10 @@ function EnrollmentCard({ enrollment }) {
 
       {expanded && (
         <div className="border-t border-border px-4 pb-4 pt-3">
-          {successMsg && (
-            <p className="mb-3 rounded-lg bg-success-bg px-3 py-2 text-sm text-success">{successMsg}</p>
-          )}
-
           {invoices.length === 0 ? (
             <p className="py-4 text-center text-sm text-ink-faint">Sin cuotas generadas todavía.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Concepto</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead>Vencimiento</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((inv) => {
-                  const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-                  return (
-                    <TableRow key={inv.id}>
-                      <TableCell className="font-medium">{FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}</TableCell>
-                      <TableCell className="text-ink-faint">{formatPeriod(inv.period)}</TableCell>
-                      <TableCell className="text-ink-faint">{formatFecha(inv.dueDate)}</TableCell>
-                      <TableCell className="text-right font-mono font-semibold tabular-nums">
-                        {formatMonto(inv.remainingBalance)}
-                      </TableCell>
-                      <TableCell>
-                        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <InvoicesTable invoices={invoices} />
           )}
 
           {hasPayable && (
@@ -466,7 +490,11 @@ function TabFacturacion() {
           )}
           {!loadingOverview &&
             overview?.map((enrollment) => (
-              <EnrollmentCard key={`${enrollment.enrollmentType}-${enrollment.enrollmentId}`} enrollment={enrollment} />
+              <EnrollmentCard
+                key={`${enrollment.enrollmentType}-${enrollment.enrollmentId}`}
+                enrollment={enrollment}
+                defaultExpanded={overview.length === 1}
+              />
             ))}
         </>
       )}
@@ -504,7 +532,7 @@ function RechazarModal({ receipt, onClose }) {
             Alumno: <span className="font-medium text-ink">{receipt.studentName ?? 'Sin datos del alumno'}</span>
           </div>
           <div className="text-sm text-ink-faint">
-            Comprobante subido el {formatFecha(receipt.uploadedAt)}
+            Comprobante subido el {formatDate(receipt.uploadedAt)}
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
@@ -576,7 +604,7 @@ function TabComprobantes() {
                   <span>{FEE_TYPE_LABELS[receipt.invoiceFeeType] ?? receipt.invoiceFeeType}</span>
                 )}
                 {receipt.invoicePeriod && <span>{formatPeriod(receipt.invoicePeriod)}</span>}
-                <span>Subido {formatFecha(receipt.uploadedAt)}</span>
+                <span>Subido {formatDate(receipt.uploadedAt)}</span>
               </div>
               {receipt.filePath && (
                 <button
@@ -631,26 +659,34 @@ function TabComprobantes() {
   );
 }
 
+const TAB_ACCOUNT = 'estado-de-cuenta';
+const TAB_RECEIPTS = 'comprobantes';
+
 export function AdministrativoFacturacion() {
-  const [tab, setTab] = useState('facturacion');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === TAB_RECEIPTS ? TAB_RECEIPTS : TAB_ACCOUNT;
+  const { data: pendingReceipts } = useComprobantesAdmin();
+  const pendingCount = pendingReceipts?.length ?? 0;
+
+  function handleTabChange(value) {
+    setSearchParams(value === TAB_ACCOUNT ? {} : { tab: value });
+  }
 
   return (
-    <PageContainer>
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented" className="w-full">
-          <TabsTrigger value="facturacion" className="flex-1">
-            Facturación
-          </TabsTrigger>
-          <TabsTrigger value="comprobantes" className="flex-1">
-            Comprobantes
+    <PageContainer title="Facturación">
+      <Tabs value={tab} onValueChange={handleTabChange}>
+        <TabsList variant="segmented">
+          <TabsTrigger value={TAB_ACCOUNT}>Estado de cuenta</TabsTrigger>
+          <TabsTrigger value={TAB_RECEIPTS}>
+            {pendingCount > 0 ? `Comprobantes · ${pendingCount}` : 'Comprobantes'}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="facturacion" className="mt-5">
+        <TabsContent value={TAB_ACCOUNT} className="mt-5">
           <TabFacturacion />
         </TabsContent>
 
-        <TabsContent value="comprobantes" className="mt-5">
+        <TabsContent value={TAB_RECEIPTS} className="mt-5">
           <TabComprobantes />
         </TabsContent>
       </Tabs>

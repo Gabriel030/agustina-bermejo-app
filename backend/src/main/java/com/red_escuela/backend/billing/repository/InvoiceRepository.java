@@ -27,6 +27,36 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);
 
+    @Query("""
+            select distinct i from Invoice i
+            left join fetch i.allocations a
+            left join fetch a.payment p
+            left join fetch p.registeredBy
+            left join fetch i.cancelledBy
+            where i.courseEnrollment.id = :courseEnrollmentId
+            order by i.period
+            """)
+    List<Invoice> findByCourseEnrollmentIdWithPayments(@Param("courseEnrollmentId") Long courseEnrollmentId);
+
+    @Query("""
+            select distinct i from Invoice i
+            left join fetch i.allocations a
+            left join fetch a.payment p
+            left join fetch p.registeredBy
+            left join fetch i.cancelledBy
+            where i.programEnrollment.id = :programEnrollmentId
+            order by i.period
+            """)
+    List<Invoice> findByProgramEnrollmentIdWithPayments(@Param("programEnrollmentId") Long programEnrollmentId);
+
+    @Query("""
+            select distinct i from Invoice i
+            left join fetch i.adjustments adj
+            left join fetch adj.appliedBy
+            where i.id in :ids
+            """)
+    List<Invoice> fetchAdjustments(@Param("ids") Collection<Long> ids);
+
     @Query("select i from Invoice i left join fetch i.adjustments where i.id = :id")
     Optional<Invoice> findByIdWithAdjustments(@Param("id") Long id);
 

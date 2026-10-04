@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentReceipt;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -62,9 +63,10 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         receipt.approve(decidedBy);
 
         Invoice invoice = receipt.getInvoice();
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getRemainingBalance())),
                 PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
+        receipt.setPayment(payment);
 
         courseEnrollmentApplicationRepository.findByPaymentReceiptId(id)
                 .filter(application -> application.getCourseEnrollment() == null)
