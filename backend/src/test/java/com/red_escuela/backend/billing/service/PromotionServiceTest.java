@@ -493,7 +493,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
             ProgramEnrollment enrollment = persistProgramEnrollment("8900013" + i, LocalDateTime.now(), director);
             createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                     "Promo " + i, LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                    List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                    List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
             seleccionarPlanMensualCarrera(enrollment, director);
             invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
             seleccionarPlanMensualCarrera(enrollment, director);
