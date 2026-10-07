@@ -339,20 +339,20 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule methodIsCalledOnlyBy(String ownerClassName, java.util.function.Predicate<String> methodNameFilter,
-                                                String allowedCallerClassName, String allowedCallerTypeName, String description) {
+                                                String allowedCallerClassName, Class<?> allowedCallerType, String description) {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ownerClassName)
                 .and().doNotHaveFullyQualifiedName(allowedCallerClassName)
-                .and(DescribedPredicate.not(assignableTo(allowedCallerTypeName)))
+                .and(DescribedPredicate.not(assignableTo(allowedCallerType)))
                 .should().callCodeUnitWhere(DescribedPredicate.describe("a " + description + " on " + ownerClassName,
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ownerClassName)
                                 && methodNameFilter.test(call.getTarget().getName())))
                 .allowEmptyShould(true)
-                .because(description + " is allowed only to " + allowedCallerTypeName + " implementations");
+                .because(description + " is allowed only to " + allowedCallerType.getSimpleName() + " implementations");
     }
 
-    public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, String operationTypeName) {
-        return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationTypeName,
+    public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
+        return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationType,
                 "save of the invoice");
     }
 
@@ -366,8 +366,8 @@ public final class ArchitectureRules {
                 .because("the current account is written only through StudentCurrentAccountService");
     }
 
-    public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, String operationTypeName) {
-        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record"), serviceClassName, operationTypeName,
+    public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, Class<?> operationType) {
+        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record"), serviceClassName, operationType,
                 "recording of an account entry");
     }
 }
