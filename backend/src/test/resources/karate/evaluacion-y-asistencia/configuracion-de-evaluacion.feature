@@ -14,6 +14,7 @@ Feature: Configuración de evaluación, esquemas, notas y mesas — contrato de 
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     * def docente = fixtures.createTeacherWithToken()
     * def evaluationSchemeId = fixtures.createEvaluationScheme()

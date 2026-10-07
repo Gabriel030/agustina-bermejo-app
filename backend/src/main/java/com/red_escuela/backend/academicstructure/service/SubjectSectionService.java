@@ -64,6 +64,7 @@ public class SubjectSectionService {
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
+        subject.requireOpenableForSections();
 
         SubjectSection section = new SubjectSection();
         section.setSubject(subject);

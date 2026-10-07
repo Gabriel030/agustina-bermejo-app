@@ -34,6 +34,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -106,6 +107,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     When method post
     Then status 201
     * def subjectAjenoId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAjenoId)
 
     Given path '/subjects', subjectAjenoId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -131,6 +133,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     When method post
     Then status 201
     * def subjectAvanzadaId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAvanzadaId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -212,6 +215,7 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     When method post
     Then status 201
     * def subjectOtraId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectOtraId)
 
     Given path '/subjects', subjectOtraId, 'sections'
     And header Authorization = 'Bearer ' + adminToken

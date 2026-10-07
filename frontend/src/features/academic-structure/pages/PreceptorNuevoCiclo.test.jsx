@@ -148,6 +148,47 @@ describe('PreceptorNuevoCiclo', () => {
     expect(posted).toBe(false);
   });
 
+  it('does not offer to open sections for a draft subject and explains why', async () => {
+    mockCatalog();
+    server.use(
+      http.get(`${API}/programs/9/subjects`, () =>
+        HttpResponse.json([
+          { id: 1, subjectId: 120, subjectName: 'Anatomía', subjectStatus: 'ACTIVE' },
+          { id: 2, subjectId: 121, subjectName: 'Fisiología', subjectStatus: 'DRAFT' },
+        ]),
+      ),
+    );
+    mockExistingCycle(aCycle(), []);
+    renderWizard('/preceptor/oferta-academica/nuevo-ciclo?cicloId=16');
+
+    expect(await screen.findByRole('button', { name: /Agregar comisión para Anatomía/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Agregar comisión para Fisiología/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('La materia todavía es un borrador: el director tiene que aprobarla antes de abrir comisiones.'),
+    ).toBeInTheDocument();
+  });
+
+  it('explains when the API rejects a section because the subject is still a draft', async () => {
+    mockCatalog();
+    mockExistingCycle();
+    server.use(
+      http.post(`${API}/academic-offering-cycles/16/sections`, () =>
+        HttpResponse.json({ code: 'SUBJECT_NOT_OPENABLE_FOR_SECTIONS' }, { status: 409 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWizard('/preceptor/oferta-academica/nuevo-ciclo?cicloId=16');
+
+    await openSectionForm(user);
+    await user.type(screen.getByLabelText('Cupo'), '15');
+    await user.selectOptions(screen.getByLabelText('Aula'), '3');
+    await user.click(screen.getByRole('button', { name: 'Agregar comisión' }));
+
+    expect(
+      await screen.findByText('La materia todavía es un borrador: el director tiene que aprobarla antes de abrir comisiones.'),
+    ).toBeInTheDocument();
+  });
+
   it('explains a classroom conflict reported by the API', async () => {
     mockCatalog();
     mockExistingCycle();

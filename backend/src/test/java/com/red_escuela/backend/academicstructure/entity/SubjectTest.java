@@ -3,7 +3,10 @@ package com.red_escuela.backend.academicstructure.entity;
 import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
 import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -98,5 +101,47 @@ class SubjectTest {
         assertThatCode(subject::requireEditable).doesNotThrowAnyException();
         assertThatCode(subject::requireAssignableToPlan).doesNotThrowAnyException();
         assertThat(subject.getStatus()).isEqualTo(SubjectStatus.ACTIVE);
+    }
+
+    @Test
+    void draftSubjectIsNotAssignableToPlan() {
+        Subject subject = completeDraft();
+
+        assertThatThrownBy(subject::requireAssignableToPlan).isInstanceOf(SubjectNotAssignableToPlanException.class);
+    }
+
+    @Test
+    void inactiveSubjectRemainsAssignableToPlan() {
+        Subject subject = completeDraft();
+        subject.submitForApproval();
+        subject.approve();
+        subject.deactivate();
+
+        assertThatCode(subject::requireAssignableToPlan).doesNotThrowAnyException();
+    }
+
+    @Test
+    void draftSubjectCannotOpenSections() {
+        Subject subject = completeDraft();
+
+        assertThatThrownBy(subject::requireOpenableForSections).isInstanceOf(SubjectNotOpenableForSectionsException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = SubjectStatus.class, names = "DRAFT", mode = EnumSource.Mode.EXCLUDE)
+    void subjectsPastDraftCanOpenSections(SubjectStatus status) {
+        Subject subject = completeDraft();
+        subject.setStatus(status);
+
+        assertThatCode(subject::requireOpenableForSections).doesNotThrowAnyException();
+    }
+
+    @Test
+    void sectionsOpenOnceTheDirectorApprovesTheSubject() {
+        Subject subject = completeDraft();
+        subject.submitForApproval();
+        subject.approve();
+
+        assertThatCode(subject::requireOpenableForSections).doesNotThrowAnyException();
     }
 }

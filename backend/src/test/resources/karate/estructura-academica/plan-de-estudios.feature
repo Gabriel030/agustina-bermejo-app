@@ -119,6 +119,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectAId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAId)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -126,6 +127,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectBId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectBId)
 
     # A en el 2do cuatrimestre de 1er año — para que B (1er cuatrimestre, más abajo)
     # pueda ser su correlativa sin violar la validación de orden cronológico (una
@@ -198,6 +200,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -251,6 +254,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -285,6 +289,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectCId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectCId)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -292,6 +297,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectDId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectDId)
 
     # C en 2do año y D en 1ro — D tiene que ser cronológicamente anterior a C para
     # poder ser su correlativa (ver validación de orden cronológico agregada a
@@ -359,6 +365,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subject1Id = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subject1Id)
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -366,6 +373,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subject2Id = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subject2Id)
 
     Given path '/programs', program1Id, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -419,6 +427,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     # Decisión 8: no se puede tagear con un grupo que la carrera no asignó todavía
     Given path '/programs', programId, 'subjects'
@@ -715,6 +724,7 @@ Feature: Plan de estudios (Subject, ProgramSubject, correlatividades, grupos ele
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken

@@ -52,6 +52,7 @@ public class GradeItemService {
     private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final GraduationRequestAutoRequester graduationRequestAutoRequester;
     private final AttendanceRiskCalculator attendanceRiskCalculator;
+    private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
 
     public GradeItemService(
             GradeItemRepository gradeItemRepository,
@@ -62,7 +63,8 @@ public class GradeItemService {
             ExamBoardRepository examBoardRepository,
             ExamBoardInstructorRepository examBoardInstructorRepository,
             GraduationRequestAutoRequester graduationRequestAutoRequester,
-            AttendanceRiskCalculator attendanceRiskCalculator) {
+            AttendanceRiskCalculator attendanceRiskCalculator,
+            FinalExamEligibilityEvaluator finalExamEligibilityEvaluator) {
         this.gradeItemRepository = gradeItemRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.courseSubjectSectionEnrollmentRepository = courseSubjectSectionEnrollmentRepository;
@@ -72,6 +74,7 @@ public class GradeItemService {
         this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.graduationRequestAutoRequester = graduationRequestAutoRequester;
         this.attendanceRiskCalculator = attendanceRiskCalculator;
+        this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
     }
 
     @Transactional
@@ -92,10 +95,12 @@ public class GradeItemService {
                 .findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
+        boolean correction = isFinalCorrection(gradeItem, request);
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
-        applyProgramEnrollmentCondition(enrollment);
+        applyProgramEnrollmentCondition(enrollment, correction);
         return gradeItem;
     }
 
@@ -103,28 +108,35 @@ public class GradeItemService {
     public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
         subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
-                .ifPresent(this::applyProgramEnrollmentCondition);
+                .ifPresent(enrollment -> applyProgramEnrollmentCondition(enrollment, false));
     }
 
     @Transactional
     public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
         courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
                 .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
-                .ifPresent(this::applyCourseEnrollmentCondition);
+                .ifPresent(enrollment -> applyCourseEnrollmentCondition(enrollment, false));
     }
 
-    private void applyProgramEnrollmentCondition(SubjectSectionEnrollment enrollment) {
+    private void applyProgramEnrollmentCondition(SubjectSectionEnrollment enrollment, boolean finalCorrection) {
         Long enrollmentId = enrollment.getId();
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts),
-                enrollment.getStatus(), () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
                 enrollment.setFinalScore(result.finalScore());
                 enrollment.setFinalGradeType(result.finalGradeType());
+            } else if (finalCorrection) {
+                enrollment.setFinalScore(null);
+                enrollment.setFinalGradeType(null);
             }
             subjectSectionEnrollmentRepository.save(enrollment);
             if (result.status() == EnrollmentStatus.APPROVED) {
@@ -151,25 +163,34 @@ public class GradeItemService {
                 .findByCourseSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
                         enrollmentId, request.type(), request.sequenceNumber())
                 .orElseGet(GradeItem::new);
+        boolean correction = isFinalCorrection(gradeItem, request);
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular(), correction);
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
-        applyCourseEnrollmentCondition(enrollment);
+        applyCourseEnrollmentCondition(enrollment, correction);
         return gradeItem;
     }
 
-    private void applyCourseEnrollmentCondition(CourseSubjectSectionEnrollment enrollment) {
+    private void applyCourseEnrollmentCondition(CourseSubjectSectionEnrollment enrollment, boolean finalCorrection) {
         Long enrollmentId = enrollment.getId();
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, enrollment.getStatus(), maxFinalExamAttempts),
-                enrollment.getStatus(), () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
                 enrollment.setFinalScore(result.finalScore());
                 enrollment.setFinalGradeType(result.finalGradeType());
+            } else if (finalCorrection) {
+                enrollment.setFinalScore(null);
+                enrollment.setFinalGradeType(null);
             }
             courseSubjectSectionEnrollmentRepository.save(enrollment);
         }
@@ -220,6 +241,16 @@ public class GradeItemService {
             throw new NotOwnSectionException(instructorId, examBoardId);
         }
         return examBoard;
+    }
+
+    private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {
+        return request.type() == GradeItemType.FINAL && existing.getId() != null;
+    }
+
+    private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, boolean regular, boolean correction) {
+        if (request.type() == GradeItemType.FINAL && !correction) {
+            finalExamEligibilityEvaluator.requireEligible(enrollmentId, regular);
+        }
     }
 
     private void applyData(GradeItem gradeItem, CreateGradeItemRequest request, ExamBoard examBoard) {

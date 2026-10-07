@@ -60,6 +60,7 @@ public class CreateCycleSectionService implements CreateCycleSectionUseCase {
     private Long createSubjectSection(AcademicOfferingCycle cycle, CreateCycleSectionRequest request) {
         var subject = subjectRepository.findById(request.subjectId())
                 .orElseThrow(() -> new SubjectNotFoundException(request.subjectId()));
+        subject.requireOpenableForSections();
         var section = new SubjectSection();
         section.setName(request.name());
         section.setSubject(subject);

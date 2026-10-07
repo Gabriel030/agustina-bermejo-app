@@ -70,4 +70,12 @@ public class CourseSubjectSectionEnrollment {
     @Enumerated(EnumType.STRING)
     @Column(name = "final_grade_type")
     private FinalGradeType finalGradeType;
+
+    public boolean isRegular() {
+        return status == EnrollmentStatus.REGULAR;
+    }
+
+    public EnrollmentStatus statusAssumingRegularWhen(boolean assumeRegular) {
+        return assumeRegular ? EnrollmentStatus.REGULAR : status;
+    }
 }

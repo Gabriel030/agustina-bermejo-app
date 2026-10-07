@@ -38,6 +38,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programConCreditosId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -51,6 +52,7 @@ Feature: Egreso, constancias y excepciones del Director (RF-AL-12/RF-AL-15/RF-DI
     When method post
     Then status 201
     * def planSubjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(planSubjectId)
 
     Given path '/programs', programSinRequisitosId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken

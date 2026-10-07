@@ -36,6 +36,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -216,6 +217,7 @@ Feature: Mesas de examen (ExamBoardController, ExamBoardRegistrationController, 
     When method post
     Then status 201
     * def subjectOtroId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectOtroId)
 
     Given path '/exam-boards'
     And header Authorization = 'Bearer ' + adminToken

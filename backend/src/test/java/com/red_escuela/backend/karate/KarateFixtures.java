@@ -25,6 +25,9 @@ import com.red_escuela.backend.identity.infrastructure.JwtService;
 import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
+import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
+import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import java.util.Map;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -161,6 +164,13 @@ public class KarateFixtures {
         result.put("instructorId", instructor.getId());
         result.put("accessToken", jwtService.generateAccessToken(person));
         return result;
+    }
+
+    public static void activateSubject(Long subjectId) {
+        SubjectRepository subjectRepository = context().getBean(SubjectRepository.class);
+        Subject subject = subjectRepository.findById(subjectId).orElseThrow();
+        subject.setStatus(SubjectStatus.ACTIVE);
+        subjectRepository.save(subject);
     }
 
     public static Long createEvaluationScheme() {
