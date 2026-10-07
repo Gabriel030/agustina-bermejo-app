@@ -5,6 +5,43 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+const FEATURES = [
+  'identity',
+  'academic-structure',
+  'enrollment',
+  'attendance',
+  'evaluation',
+  'billing',
+  'graduation',
+  'announcements',
+  'notifications',
+  'workspace',
+  'gestion-personas',
+  'gestion-academica',
+  'oferta-academica',
+  'avisos',
+]
+
+const boundaryMessage = 'Una feature solo puede importar de otra a través de su index.js.'
+
+const featureBoundaryRules = FEATURES.map((feature) => ({
+  files: [`src/features/${feature}/**/*.{js,jsx}`],
+  ignores: ['src/features/*/routes.jsx'],
+  rules: {
+    'no-restricted-imports': [
+      'warn',
+      {
+        patterns: [
+          {
+            group: ['@/features/*/**', `!@/features/${feature}/**`, '!@/features/*/index', '!@/features/*/index.js'],
+            message: boundaryMessage,
+          },
+        ],
+      },
+    ],
+  },
+}))
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -41,6 +78,30 @@ export default defineConfig([
     files: ['src/components/ui/**/*.jsx', 'src/context/**/*.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/features/*/routes.jsx', 'src/routes/*.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  ...featureBoundaryRules,
+  {
+    files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],
+    ignores: ['**/*.test.{js,jsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@/features/**'],
+              message: 'components, lib y layouts no pueden importar de features.',
+            },
+          ],
+        },
+      ],
     },
   },
 ])

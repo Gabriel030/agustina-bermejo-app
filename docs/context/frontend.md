@@ -90,6 +90,28 @@ está en esta lista.
   dentro del componente**, sin pasarlo por Context ni por una librería. Ver
   `Login.jsx` como referencia — dos campos, sin necesidad de nada más.
 
+## Estructura por módulo (Épica 18, Fase F0)
+
+El front se organiza por módulo de backend, no por rol:
+
+- `src/features/<módulo>/` con `routes.jsx` (y, a medida que F1 mueve cada módulo, `pages/`,
+  `components/`, `hooks/` y `api.js`). Módulos: `identity`, `academic-structure`, `enrollment`,
+  `attendance`, `evaluation`, `billing`, `graduation`, `announcements`, `notifications`,
+  `workspace` (pantallas que combinan varios módulos).
+- Cada `routes.jsx` exporta `routes = { public, shared, role }`: `public` (rutas sin sesión),
+  `shared` (rutas de cualquier usuario autenticado, bajo el layout del rol o el de autoservicio) y
+  `role` (`{ roles, path, element }`, relativas a `/<rol>`).
+- `src/routes/featureRoutes.jsx` junta las de todas las features y `src/routes/roleConfig.js`
+  define layout y páginas de navegación de cada rol (las que no tienen ruta real caen en
+  `Placeholder`). `AppRouter` solo compone: para sumar una pantalla se toca solo el `routes.jsx`
+  de su módulo.
+- Un componente que usan dos o más módulos va a `src/components/`, no a una feature.
+- Hasta que F1 mueva las páginas, cada `routes.jsx` importa desde `src/pages/` y desde las
+  carpetas viejas (`gestion-personas`, `gestion-academica`, `oferta-academica`, `avisos`).
+
+Regla de límites (ESLint, `no-restricted-imports`, en `warn` hasta M6): una feature no importa
+de otra salvo por su `index.js`, y `components/`, `lib/` y `layouts/` no importan de `features/`.
+
 ## Estructura de carpetas
 
 Fase 1 usa carpetas **por tipo** (`api/`, `components/`, `context/`, `layouts/`,
