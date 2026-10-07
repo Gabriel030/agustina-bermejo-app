@@ -216,4 +216,59 @@ class ArchitectureTest {
                 .hasMessageContaining("EntityWithSetterAndMoneyFixture.amount")
                 .hasMessageNotContaining("CleanEntityFixture");
     }
+
+    private static final String INVOICE_CLASS = "com.red_escuela.backend.billing.invoice.domain.Invoice";
+    private static final String INVOICE_FACTORY_CLASS = "com.red_escuela.backend.billing.invoice.domain.InvoiceFactory";
+    private static final String DOCUMENT_MACHINE_CLASS = "com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatusStateMachine";
+    private static final String PAYMENT_MACHINE_CLASS = "com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatusStateMachine";
+    private static final String STATUS_FIXTURE_CLASS = "com.red_escuela.backend.architecture.fixture.billing.invoice.StatusAggregateFixture";
+
+    @Test
+    @Tag("D-051")
+    void invoicesAreCreatedOnlyByInvoiceFactory() {
+        ArchitectureRules.invoicesAreCreatedOnlyByInvoiceFactory(INVOICE_CLASS, INVOICE_FACTORY_CLASS).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-051")
+    void invoiceCreationRuleDetectsADraftCreatedOutsideTheFactory() {
+        JavaClasses fixture = new ClassFileImporter()
+                .importClasses(com.red_escuela.backend.billing.invoice.domain.InvoiceDraftCreatingFixture.class);
+
+        assertThatThrownBy(() -> ArchitectureRules.invoicesAreCreatedOnlyByInvoiceFactory(INVOICE_CLASS, INVOICE_FACTORY_CLASS).check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("InvoiceDraftCreatingFixture");
+    }
+
+    @Test
+    @Tag("D-051")
+    void statusChangesOnlyThroughTransitionTables() {
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable(INVOICE_CLASS, "documentStatus", "changeDocumentStatus", DOCUMENT_MACHINE_CLASS).check(MAIN_CLASSES);
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable(INVOICE_CLASS, "paymentStatus", "changePaymentStatus", PAYMENT_MACHINE_CLASS).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-051")
+    void transitionTableRuleDetectsAWriteOutsideTheTransitionMethodAndAMethodThatSkipsTheMachine() {
+        assertThatThrownBy(() -> ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable(
+                STATUS_FIXTURE_CLASS, "status", "changeStatus", DOCUMENT_MACHINE_CLASS).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("rogueWrite")
+                .hasMessageContaining("StatusAggregateFixture.changeStatus does not call")
+                .hasMessageNotContaining("StatusAggregateFixture.changeStatus()");
+    }
+
+    @Test
+    @Tag("D-051")
+    void billingV2DoesNotDependOnLegacyBilling() {
+        ArchitectureRules.billingV2DoesNotDependOnLegacyBilling("..billing.invoice..", "..billing.account..").check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-051")
+    void legacyDependencyRuleDetectsAV2ClassUsingLegacyBilling() {
+        assertThatThrownBy(() -> ArchitectureRules.billingV2DoesNotDependOnLegacyBilling(ArchitectureRules.ROOT + ".architecture.fixture.billing.invoice..").check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LegacyBillingDependingFixture");
+    }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+@Repository("legacyInvoiceRepository")
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByCourseEnrollmentIdOrderByPeriod(Long courseEnrollmentId);
 
@@ -32,11 +34,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeOrderByPeriodDesc(Long programEnrollmentId, FeeType feeType);
 
-    @Query("select distinct i from Invoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
+    @Query("select distinct i from LegacyInvoice i left join fetch i.adjustments where i.programEnrollment.id = :programEnrollmentId order by i.period")
     List<Invoice> findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(@Param("programEnrollmentId") Long programEnrollmentId);
 
     @Query("""
-            select distinct i from Invoice i
+            select distinct i from LegacyInvoice i
             left join fetch i.allocations a
             left join fetch a.payment p
             left join fetch p.registeredBy
@@ -47,7 +49,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByCourseEnrollmentIdWithPayments(@Param("courseEnrollmentId") Long courseEnrollmentId);
 
     @Query("""
-            select distinct i from Invoice i
+            select distinct i from LegacyInvoice i
             left join fetch i.allocations a
             left join fetch a.payment p
             left join fetch p.registeredBy
@@ -58,18 +60,18 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByProgramEnrollmentIdWithPayments(@Param("programEnrollmentId") Long programEnrollmentId);
 
     @Query("""
-            select distinct i from Invoice i
+            select distinct i from LegacyInvoice i
             left join fetch i.adjustments adj
             left join fetch adj.appliedBy
             where i.id in :ids
             """)
     List<Invoice> fetchAdjustments(@Param("ids") Collection<Long> ids);
 
-    @Query("select i from Invoice i left join fetch i.adjustments where i.id = :id")
+    @Query("select i from LegacyInvoice i left join fetch i.adjustments where i.id = :id")
     Optional<Invoice> findByIdWithAdjustments(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select i from Invoice i where i.id = :id")
+    @Query("select i from LegacyInvoice i where i.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
 
     List<Invoice> findByStatusAndDueDateBeforeAndIdGreaterThanOrderByIdAsc(
@@ -84,7 +86,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     long countByProgramEnrollmentIdAndStatus(Long programEnrollmentId, InvoiceStatus status);
 
     @Query("""
-            select case when count(i) > 0 then true else false end from Invoice i
+            select case when count(i) > 0 then true else false end from LegacyInvoice i
             left join i.courseEnrollment ce
             left join i.programEnrollment pe
             where i.status = :status
@@ -101,7 +103,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, List<InvoiceStatus> statuses);
 
     @Query("""
-            select count(i) from Invoice i join i.adjustments a
+            select count(i) from LegacyInvoice i join i.adjustments a
             where i.paymentPlanSelection.id = :paymentPlanSelectionId
               and i.feeType = :feeType
               and a.promotionBenefit.id = :promotionBenefitId
@@ -112,7 +114,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("""
             select i.paymentPlanSelection.id as paymentPlanSelectionId, i.feeType as feeType,
                    a.promotionBenefit.id as promotionBenefitId, count(i) as used
-            from Invoice i join i.adjustments a
+            from LegacyInvoice i join i.adjustments a
             where i.paymentPlanSelection.id in :paymentPlanSelectionIds
               and a.promotionBenefit is not null
             group by i.paymentPlanSelection.id, i.feeType, a.promotionBenefit.id
@@ -120,14 +122,14 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<PromotionBenefitUsage> countPromotionBenefitUsageBySelections(
             @Param("paymentPlanSelectionIds") List<Long> paymentPlanSelectionIds);
 
-    @Query("select distinct ce.student.id from Invoice i join i.courseEnrollment ce where i.status = :status")
+    @Query("select distinct ce.student.id from LegacyInvoice i join i.courseEnrollment ce where i.status = :status")
     List<Long> findCourseStudentIdsByStatus(@Param("status") InvoiceStatus status);
 
-    @Query("select distinct pe.student.id from Invoice i join i.programEnrollment pe where i.status = :status")
+    @Query("select distinct pe.student.id from LegacyInvoice i join i.programEnrollment pe where i.status = :status")
     List<Long> findProgramStudentIdsByStatus(@Param("status") InvoiceStatus status);
 
     @Query("""
-            select i from Invoice i
+            select i from LegacyInvoice i
             join fetch i.courseEnrollment ce
             join fetch ce.student s
             join fetch s.person
@@ -137,7 +139,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByCourseEnrollmentStatusInWithStudent(@Param("statuses") Collection<InvoiceStatus> statuses);
 
     @Query("""
-            select i from Invoice i
+            select i from LegacyInvoice i
             join fetch i.programEnrollment pe
             join fetch pe.student s
             join fetch s.person
@@ -155,7 +157,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query(value = """
             select i.base_amount_currency as currency,
                    coalesce(sum(greatest(greatest(i.base_amount + coalesce(adj.total, 0), 0) - coalesce(paid.total, 0), 0)), 0) as total
-            from invoice i
+            from legacy_invoice i
             left join (
                 select a.invoice_id,
                        sum(case when a.type = 'SURCHARGE' then 1 else -1 end
@@ -177,7 +179,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query(value = """
             select i.base_amount_currency as currency,
                    coalesce(sum(greatest(i.base_amount + coalesce(adj.total, 0), 0)), 0) as total
-            from invoice i
+            from legacy_invoice i
             left join (
                 select a.invoice_id,
                        sum(case when a.type = 'SURCHARGE' then 1 else -1 end
@@ -195,7 +197,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query(value = """
             select i.base_amount_currency as currency, coalesce(sum(alloc.amount_applied), 0) as total
             from payment_allocation alloc
-            join invoice i on i.id = alloc.invoice_id
+            join legacy_invoice i on i.id = alloc.invoice_id
             where i.period = :period and i.status <> 'CANCELLED'
             group by i.base_amount_currency
             """, nativeQuery = true)

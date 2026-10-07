@@ -61,8 +61,8 @@ class MoneyCurrencyMigrationTest {
 
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
 
-            assertThat(jdbc.queryForObject("select base_amount_currency from invoice where id = ?", String.class, invoiceId)).isEqualTo("ARS");
-            assertThat(jdbc.queryForObject("select base_amount from invoice where id = ?", BigDecimal.class, invoiceId))
+            assertThat(jdbc.queryForObject("select base_amount_currency from legacy_invoice where id = ?", String.class, invoiceId)).isEqualTo("ARS");
+            assertThat(jdbc.queryForObject("select base_amount from legacy_invoice where id = ?", BigDecimal.class, invoiceId))
                     .isEqualByComparingTo("48000.00");
             Map<String, Object> payment = jdbc.queryForMap("select amount, amount_currency from payment");
             assertThat(payment.get("amount_currency")).isEqualTo("ARS");
