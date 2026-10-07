@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestStatus;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.events.AuthorizationRequestExpiredEvent;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestObservers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,11 +22,13 @@ public class AuthorizationRequestExpirer {
 
     private final AuthorizationRequestRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuthorizationRequestObservers observers;
     private final Clock clock;
 
-    public AuthorizationRequestExpirer(AuthorizationRequestRepository repository, ApplicationEventPublisher eventPublisher, Clock clock) {
+    public AuthorizationRequestExpirer(AuthorizationRequestRepository repository, ApplicationEventPublisher eventPublisher, AuthorizationRequestObservers observers, Clock clock) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
+        this.observers = observers;
         this.clock = clock;
     }
 
@@ -34,6 +37,7 @@ public class AuthorizationRequestExpirer {
         List<AuthorizationRequest> due = repository.findByStatusAndExpiresOnLessThanEqual(AuthorizationRequestStatus.PENDING, LocalDate.now(clock));
         for (AuthorizationRequest request : due) {
             request.expire(Instant.now(clock));
+            observers.afterExpired(request.getId(), request.getOperationType());
             eventPublisher.publishEvent(AuthorizationRequestExpiredEvent.expiredFor(request.getId(), request.getRequestedBy().getId(), request.getOperationType().name()));
         }
         log.info("Authorization requests expired: count={}", due.size());

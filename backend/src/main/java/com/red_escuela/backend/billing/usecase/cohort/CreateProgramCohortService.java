@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -16,9 +17,11 @@ public class CreateProgramCohortService implements CreateProgramCohortUseCase {
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateService templateService;
     private final CurrentPersonService currentPersonService;
+    private final LegacyConfigurationMirror configurationMirror;
 
     public CreateProgramCohortService(ProgramCohortRepository programCohortRepository, ProgramYearBillingTemplateService templateService,
-                                       CurrentPersonService currentPersonService) {
+                                       CurrentPersonService currentPersonService, LegacyConfigurationMirror configurationMirror) {
+        this.configurationMirror = configurationMirror;
         this.programCohortRepository = programCohortRepository;
         this.templateService = templateService;
         this.currentPersonService = currentPersonService;
@@ -41,6 +44,8 @@ public class CreateProgramCohortService implements CreateProgramCohortUseCase {
             cohort.setEntryFeeDiscount(request.entryFeeDiscountPercent());
         }
         cohort.setCreatedBy(actor);
-        return programCohortRepository.save(cohort);
+        ProgramCohort saved = programCohortRepository.save(cohort);
+        configurationMirror.recordCohortEntryDiscount(saved, actor.getId());
+        return saved;
     }
 }

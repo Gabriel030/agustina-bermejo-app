@@ -3,7 +3,22 @@ package com.red_escuela.backend.billing.configuration.service;
 import com.red_escuela.backend.billing.configuration.exception.BillingConfigurationFrozenException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymentSettingsException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
+import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.billing.configuration.exception.CancellationReasonRequiredException;
+import com.red_escuela.backend.billing.configuration.exception.ChangeReasonRequiredException;
+import com.red_escuela.backend.billing.configuration.exception.InvalidAnnualUpfrontSettingsException;
+import com.red_escuela.backend.billing.configuration.exception.InvalidIssuanceSettingsException;
+import com.red_escuela.backend.billing.configuration.exception.ProposalAlreadyOpenException;
+import com.red_escuela.backend.billing.configuration.exception.ProposalExpiredException;
+import com.red_escuela.backend.billing.configuration.exception.RetroactiveEffectiveDateException;
+import com.red_escuela.backend.billing.configuration.exception.VersionAlreadyEffectiveException;
+import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
+import com.red_escuela.backend.billing.configuration.policy.ConfigurationChangeCheck;
 import com.red_escuela.backend.billing.configuration.policy.LatePaymentSettingsValues;
+import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalCheck;
+import com.red_escuela.backend.billing.configuration.policy.ProposalSlot;
+import com.red_escuela.backend.billing.configuration.policy.VersionCancellationCheck;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -19,12 +34,33 @@ public class ConfigurationPolicyEvaluator {
     private final PolicySet<YearBillingConfigurationChange> yearCoherencePolicies;
     private final PolicySet<YearBillingConfigurationChange> yearFreezePolicies;
     private final PolicySet<LatePaymentSettingsValues> latePaymentPolicies;
+    private final PolicySet<ConfigurationChangeCheck> changePolicies;
+    private final PolicySet<ProposalSlot> proposalPolicies;
+    private final PolicySet<ProposalApprovalCheck> approvalPolicies;
+    private final PolicySet<VersionCancellationCheck> cancellationPolicies;
+    private final PolicySet<LatePaymentTerms> lateTermsPolicies;
+    private final PolicySet<IssuanceSettings> issuancePolicies;
+    private final PolicySet<AnnualUpfrontCheck> annualUpfrontPolicies;
     private final MeterRegistry meterRegistry;
 
     public ConfigurationPolicyEvaluator(PolicySet<YearBillingConfigurationChange> yearBillingConfigurationPolicySet,
                                         PolicySet<YearBillingConfigurationChange> yearBillingConfigurationFreezePolicySet,
                                         PolicySet<LatePaymentSettingsValues> latePaymentSettingsPolicySet,
+                                        PolicySet<ConfigurationChangeCheck> billingConfigurationChangePolicySet,
+                                        PolicySet<ProposalSlot> billingConfigurationProposalPolicySet,
+                                        PolicySet<ProposalApprovalCheck> configurationProposalApprovalPolicySet,
+                                        PolicySet<VersionCancellationCheck> configurationVersionCancellationPolicySet,
+                                        PolicySet<LatePaymentTerms> latePaymentTermsPolicySet,
+                                        PolicySet<IssuanceSettings> issuanceSettingsPolicySet,
+                                        PolicySet<AnnualUpfrontCheck> annualUpfrontSettingsPolicySet,
                                         MeterRegistry meterRegistry) {
+        this.changePolicies = billingConfigurationChangePolicySet;
+        this.proposalPolicies = billingConfigurationProposalPolicySet;
+        this.approvalPolicies = configurationProposalApprovalPolicySet;
+        this.cancellationPolicies = configurationVersionCancellationPolicySet;
+        this.lateTermsPolicies = latePaymentTermsPolicySet;
+        this.issuancePolicies = issuanceSettingsPolicySet;
+        this.annualUpfrontPolicies = annualUpfrontSettingsPolicySet;
         this.yearCoherencePolicies = yearBillingConfigurationPolicySet;
         this.yearFreezePolicies = yearBillingConfigurationFreezePolicySet;
         this.latePaymentPolicies = latePaymentSettingsPolicySet;
@@ -41,6 +77,36 @@ public class ConfigurationPolicyEvaluator {
 
     public void requireCoherentLatePaymentSettings(LatePaymentSettingsValues values) {
         evaluate(latePaymentPolicies, values, InvalidLatePaymentSettingsException::new);
+    }
+
+    public void requireValidChange(ConfigurationChangeCheck check) {
+        evaluate(changePolicies, check, violations -> "CHANGE_REASON_REQUIRED".equals(violations.get(0).code())
+                ? new ChangeReasonRequiredException(violations) : new RetroactiveEffectiveDateException(violations));
+    }
+
+    public void requireNoOpenProposal(ProposalSlot slot) {
+        evaluate(proposalPolicies, slot, ProposalAlreadyOpenException::new);
+    }
+
+    public void requireProposalNotExpired(ProposalApprovalCheck check) {
+        evaluate(approvalPolicies, check, ProposalExpiredException::new);
+    }
+
+    public void requireCancellableVersion(VersionCancellationCheck check) {
+        evaluate(cancellationPolicies, check, violations -> "CANCELLATION_REASON_REQUIRED".equals(violations.get(0).code())
+                ? new CancellationReasonRequiredException(violations) : new VersionAlreadyEffectiveException(violations));
+    }
+
+    public void requireCoherentLatePaymentTerms(LatePaymentTerms terms) {
+        evaluate(lateTermsPolicies, terms, InvalidLatePaymentSettingsException::new);
+    }
+
+    public void requireCoherentIssuanceSettings(IssuanceSettings settings) {
+        evaluate(issuancePolicies, settings, InvalidIssuanceSettingsException::new);
+    }
+
+    public void requireCoherentAnnualUpfrontSettings(AnnualUpfrontCheck check) {
+        evaluate(annualUpfrontPolicies, check, InvalidAnnualUpfrontSettingsException::new);
     }
 
     private <C> void evaluate(PolicySet<C> policies, C context, Function<List<PolicyViolation>, ? extends RuntimeException> exceptionFactory) {

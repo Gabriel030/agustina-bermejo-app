@@ -10,6 +10,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
@@ -31,12 +32,14 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final YearBillingConfigurationDefaults configurationDefaults;
+    private final LegacyConfigurationMirror configurationMirror;
 
     public CreateProgramYearBillingTemplateService(ProgramYearBillingTemplateRepository templateRepository, ProgramRepository programRepository,
                                                      TermRepository termRepository, CurrentPersonService currentPersonService,
                                                      YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
                                                      YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
-                                                     YearBillingConfigurationDefaults configurationDefaults) {
+                                                     YearBillingConfigurationDefaults configurationDefaults, LegacyConfigurationMirror configurationMirror) {
+        this.configurationMirror = configurationMirror;
         this.configurationDefaults = configurationDefaults;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
@@ -69,6 +72,7 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         template.setCreatedBy(actor);
         configurationApplier.applyYearBillingConfiguration(template, effectiveConfiguration);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
+        configurationMirror.recordYearTerms(saved, actor.getId());
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(programId));
         return saved;
     }

@@ -287,6 +287,7 @@
 								<param>com.red_escuela.backend.shared.domain.*</param>
 								<param>com.red_escuela.backend.shared.domain.policy.*</param>
 								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
+								<param>com.red_escuela.backend.billing.configuration.domain.*</param>
 								<param>com.red_escuela.backend.billing.operation.*</param>
 								<param>com.red_escuela.backend.billing.authorization.domain.*</param>
 								<param>com.red_escuela.backend.shared.domain.statemachine.*</param>
@@ -296,6 +297,7 @@
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
 								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
+								<param>com.red_escuela.backend.billing.configuration.domain.*</param>
 								<param>com.red_escuela.backend.billing.operation.*</param>
 								<param>com.red_escuela.backend.billing.authorization.domain.*</param>
 								<param>com.red_escuela.backend.billing.invoice.domain.*</param>

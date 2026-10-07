@@ -1,0 +1,65 @@
+package com.red_escuela.backend.billing.configuration.service;
+
+import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
+import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
+import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
+import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
+import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
+import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
+import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+@Component
+@Transactional(readOnly = true)
+public class BillingConfigurationReader {
+    private final ConfigurationVersionRepository repository;
+
+    public BillingConfigurationReader(ConfigurationVersionRepository repository) {
+        this.repository = repository;
+    }
+
+    public Optional<YearBillingTerms> findYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {
+        return findEffective(ConfigurationTopic.ofYearTerms(programId, termId), date, YearBillingTerms.class);
+    }
+
+    public Optional<CohortEntryDiscount> findCohortEntryEffectiveOn(Long cohortId, LocalDate date) {
+        return findEffective(ConfigurationTopic.ofCohortEntry(cohortId), date, CohortEntryDiscount.class);
+    }
+
+    public Optional<LatePaymentTerms> findLatePaymentSettingsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), date, LatePaymentTerms.class);
+    }
+
+    public Optional<IssuanceSettings> findIssuanceSettingsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.ISSUANCE), date, IssuanceSettings.class);
+    }
+
+    public Optional<AllocationSettings> findAllocationSettingsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.ALLOCATION), date, AllocationSettings.class);
+    }
+
+    public Optional<AnnualUpfrontSettings> findAnnualUpfrontSettingsEffectiveOn(Long programId, Long termId, LocalDate date) {
+        return findEffective(ConfigurationTopic.ofAnnualUpfront(programId, termId), date, AnnualUpfrontSettings.class);
+    }
+
+    public Optional<CourseTerms> findCourseTermsEffectiveOn(Long courseId, LocalDate date) {
+        return findEffective(ConfigurationTopic.ofCourseTerms(courseId), date, CourseTerms.class);
+    }
+
+    public Optional<IrregularTermTypes> findIrregularTermTypesEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), date, IrregularTermTypes.class);
+    }
+
+    private <V extends ConfigurationValues> Optional<V> findEffective(ConfigurationTopic topic, LocalDate date, Class<V> valuesType) {
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date).map(version -> valuesType.cast(version.values()));
+    }
+}

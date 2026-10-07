@@ -1,6 +1,8 @@
 package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.billing.events.AuthorizationRequestExpiredEvent;
+import com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent;
+import com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent;
 import com.red_escuela.backend.billing.events.AuthorizationRequestedEvent;
 import com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
@@ -17,6 +19,8 @@ public class BillingOperationNotificationListener {
     static final String LATE_PAYMENT_SETTINGS_HANDLER = "BillingOperationNotificationListener.notifyLatePaymentSettingsCreated";
     static final String AUTHORIZATION_REQUESTED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequested";
     static final String AUTHORIZATION_EXPIRED_HANDLER = "BillingOperationNotificationListener.notifyAuthorizationRequestExpired";
+    static final String CONFIGURATION_DECIDED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationChangeDecided";
+    static final String CONFIGURATION_CANCELLED_HANDLER = "BillingOperationNotificationListener.notifyConfigurationVersionCancelled";
     private static final String DIRECTOR_ROLE = "DIRECTOR";
 
     private final ProcessedEffectGuard effectGuard;
@@ -51,6 +55,24 @@ public class BillingOperationNotificationListener {
                 NotificationType.AUTHORIZATION_REQUEST_EXPIRED,
                 "Una propuesta de configuración venció sin que se decidiera. Hay que cargarla de nuevo con una fecha nueva.",
                 List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "AuthorizationRequest", event.authorizationRequestId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyConfigurationChangeDecided(ConfigurationChangeDecidedEvent event) {
+        boolean approved = "APPROVED".equals(event.decision());
+        String message = approved ? "El director aprobó tu propuesta de configuración (" + event.topicKey() + ")."
+                : "El director rechazó tu propuesta de configuración (" + event.topicKey() + "): " + event.reason();
+        sendOnce(event, CONFIGURATION_DECIDED_HANDLER, new BillingOperationNotification(
+                approved ? NotificationType.CONFIGURATION_CHANGE_APPROVED : NotificationType.CONFIGURATION_CHANGE_REJECTED,
+                message, List.of(new PersonIdRecipient(event.proposedByPersonId())), "ConfigurationVersion", event.configurationVersionId()));
+    }
+
+    @ApplicationModuleListener
+    public void notifyConfigurationVersionCancelled(ConfigurationVersionCancelledEvent event) {
+        sendOnce(event, CONFIGURATION_CANCELLED_HANDLER, new BillingOperationNotification(
+                NotificationType.CONFIGURATION_VERSION_CANCELLED,
+                "Se canceló antes de regir el cambio de configuración " + event.topicKey() + " previsto desde el " + event.effectiveFrom() + ": " + event.reason(),
+                List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "ConfigurationVersion", event.configurationVersionId()));
     }
 
     private void sendOnce(DeduplicableDomainEvent event, String handlerName, BillingOperationNotification notification) {
