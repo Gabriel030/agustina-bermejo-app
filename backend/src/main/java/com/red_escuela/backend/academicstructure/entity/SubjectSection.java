@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import org.springframework.modulith.NamedInterface;
+
 import jakarta.persistence.*;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.persistence.PercentageConverter;
@@ -11,6 +13,7 @@ import java.util.List;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

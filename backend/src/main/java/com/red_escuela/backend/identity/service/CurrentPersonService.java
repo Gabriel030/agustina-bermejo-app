@@ -1,4 +1,6 @@
 package com.red_escuela.backend.identity.service;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 
 import com.red_escuela.backend.identity.entity.Person;
@@ -6,6 +8,7 @@ import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+@NamedInterface("api")
 @Service
 public class CurrentPersonService {
     private final PersonRepository personRepository;

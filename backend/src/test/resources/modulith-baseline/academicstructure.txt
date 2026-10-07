@@ -1,0 +1,9 @@
+COUNT billing 6
+COUNT enrollment 1
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.entity.CourseSubjectSection -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.entity.SubjectSection -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.service.CourseSectionService -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.service.CourseSectionService -> com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.service.SubjectSectionService -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.service.SubjectSectionService -> com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException. Allowed targets: shared, identity :: *.
+Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.service.SubjectSectionService -> com.red_escuela.backend.evaluation.service.SectionEvaluationConfigDraftInitializer. Allowed targets: shared, identity :: *.

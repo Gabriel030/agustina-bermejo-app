@@ -1,0 +1,13 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.graduation`
+|Bean references
+|* `c.r.b.i.service.CurrentStudentService` (in Identity)
+* `c.r.b.e.service.ProgramEnrollmentService` (in Enrollment)
+* `c.r.b.e.repository.ProgramEnrollmentRepository` (in Enrollment)
+* `c.r.b.b.service.InvoiceQueryService` (in Billing)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.b.service.EnrollmentFeeRequirementService` (in Billing)
+* `c.r.b.b.service.EnrollmentWithdrawalCreditService` (in Billing)
+|===

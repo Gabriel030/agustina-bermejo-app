@@ -1,4 +1,6 @@
 package com.red_escuela.backend.identity.entity;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

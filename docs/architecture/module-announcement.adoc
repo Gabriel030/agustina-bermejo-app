@@ -1,0 +1,19 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.announcement`
+|Bean references
+|* `c.r.b.b.repository.BatchExecutionLogRepository` (in Billing)
+* `c.r.b.a.repository.SubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.e.repository.SubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.e.repository.CourseSubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.a.repository.SubjectSectionRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionRepository` (in Academic structure)
+* `c.r.b.e.repository.GradeItemRepository` (in Evaluation)
+* `c.r.b.a.repository.AttendanceRepository` (in Attendance)
+* `c.r.b.a.service.CurrentInstructorService` (in Academic structure)
+* `c.r.b.n.repository.NotificationRepository` (in Notification)
+* `c.r.b.i.repository.StudentRepository` (in Identity)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+|===

@@ -1,0 +1,25 @@
+@startuml
+set separator none
+title Shared
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("BackendApplication.BackendApplication_boundary", "BackendApplication", $tags="") {
+  Component(BackendApplication.BackendApplication.Identity, "Identity", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Shared, "Shared", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Academicstructure, "Academic structure", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Identity, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml
