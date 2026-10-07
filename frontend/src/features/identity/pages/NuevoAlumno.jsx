@@ -8,11 +8,11 @@ import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Stepper } from '@/components/Stepper';
-import { DatosBasicosStep } from '@/features/gestion-personas/steps/DatosBasicosStep';
-import { DocumentosStep } from '@/features/gestion-personas/steps/DocumentosStep';
-import { DatosConfirmacionStep } from '@/features/gestion-personas/steps/DatosConfirmacionStep';
-import { ResumenStep } from '@/features/gestion-personas/steps/ResumenStep';
-import { useCrearProspecto, useSubirDocumentoProspecto, useGuardarBorradorProspecto, useConfirmarAlta } from '@/features/gestion-personas/hooks/useProspectos';
+import { DatosBasicosStep } from '@/features/identity/steps/DatosBasicosStep';
+import { DocumentosStep } from '@/features/identity/steps/DocumentosStep';
+import { DatosConfirmacionStep } from '@/features/identity/steps/DatosConfirmacionStep';
+import { ResumenStep } from '@/features/identity/steps/ResumenStep';
+import { useCrearProspecto, useSubirDocumentoProspecto, useGuardarBorradorProspecto, useConfirmarAlta } from '@/features/identity/hooks/useProspectos';
 
 const PASOS = [
   { key: '0', label: 'Datos básicos' },

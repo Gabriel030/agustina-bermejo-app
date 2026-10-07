@@ -1,14 +1,14 @@
 import { Navigate } from 'react-router-dom';
-import { Login } from '@/pages/Login';
-import { Registrarse } from '@/pages/Registrarse';
-import { ForgotPassword } from '@/pages/ForgotPassword';
-import { VerificacionEmail } from '@/pages/VerificacionEmail';
+import { Login } from '@/features/identity/pages/Login';
+import { Registrarse } from '@/features/identity/pages/Registrarse';
+import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
+import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
 import { NoAutorizado } from '@/pages/NoAutorizado';
-import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
-import { LegajoAlumno } from '@/features/gestion-personas/pages/LegajoAlumno';
-import { NuevoAlumno } from '@/features/gestion-personas/pages/NuevoAlumno';
-import { GestionPersonal } from '@/features/gestion-personas/pages/GestionPersonal';
-import { LegajoPersonal } from '@/features/gestion-personas/pages/LegajoPersonal';
+import { MiPerfil } from '@/features/identity/pages/MiPerfil';
+import { LegajoAlumno } from '@/features/identity/pages/LegajoAlumno';
+import { NuevoAlumno } from '@/features/identity/pages/NuevoAlumno';
+import { GestionPersonal } from '@/features/identity/pages/GestionPersonal';
+import { LegajoPersonal } from '@/features/identity/pages/LegajoPersonal';
 
 export const routes = {
   public: [

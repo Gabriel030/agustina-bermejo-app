@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster, toast } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
-import { MiPerfil } from '@/features/gestion-personas/pages/MiPerfil';
+import { MiPerfil } from '@/features/identity/pages/MiPerfil';
 
 const API = 'http://localhost:8080';
 

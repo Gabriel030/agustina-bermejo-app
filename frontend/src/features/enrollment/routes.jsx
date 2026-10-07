@@ -8,7 +8,7 @@ import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
 import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExcepciones';
 import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
-import { PadronAlumnos } from '@/features/gestion-personas/pages/PadronAlumnos';
+import { PadronAlumnos } from '@/features/identity/pages/PadronAlumnos';
 import { Navigate } from 'react-router-dom';
 
 export const routes = {

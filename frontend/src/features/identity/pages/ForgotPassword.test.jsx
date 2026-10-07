@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
-import { ForgotPassword } from '@/pages/ForgotPassword';
+import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
 
 const API = 'http://localhost:8080';
 

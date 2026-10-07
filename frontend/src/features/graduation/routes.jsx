@@ -1,5 +1,5 @@
-import { DirectorAprobacionesEgresos } from '@/pages/DirectorAprobacionesEgresos';
-import { DirectorEgresoDetalle } from '@/pages/DirectorEgresoDetalle';
+import { DirectorAprobacionesEgresos } from '@/features/graduation/pages/DirectorAprobacionesEgresos';
+import { DirectorEgresoDetalle } from '@/features/graduation/pages/DirectorEgresoDetalle';
 
 export const routes = {
   public: [],

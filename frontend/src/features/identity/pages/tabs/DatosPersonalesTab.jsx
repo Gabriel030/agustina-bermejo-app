@@ -1,4 +1,4 @@
-import { useDocumentosAlumno } from '@/features/gestion-personas/hooks/useLegajoAlumno';
+import { useDocumentosAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { Skeleton } from '@/components/Skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

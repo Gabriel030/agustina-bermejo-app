@@ -9,14 +9,8 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { ModalMotivo } from '@/components/director/ModalMotivo';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
-import {
-  useEgreso,
-  useProgresoStaff,
-  useAsistenciaPorMateria,
-  useEstadoDePago,
-  useAprobarEgreso,
-  useRechazarEgreso,
-} from '@/hooks/useDirector';
+import { useEgreso, useAprobarEgreso, useRechazarEgreso } from '@/features/graduation/hooks/useGraduation';
+import { useProgresoStaff, useAsistenciaPorMateria, useEstadoDePago } from '@/hooks/useDirector';
 import { formatearFecha } from '@/lib/comisiones';
 import { ESTADO_TRAMITE_LABEL, decisionErrorMessage, isAlreadyDecided } from '@/lib/aprobaciones';
 

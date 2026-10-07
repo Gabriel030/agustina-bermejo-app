@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EmptyState } from '@/components/EmptyState';
-import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/hooks/useNotifications';
+import { useMisNotificaciones, useMarcarNotificacionLeida } from '@/features/notifications/hooks/useNotifications';
 import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION, tiempoRelativo } from '@/lib/notificaciones';
 
 const ANNOUNCEMENT_TYPES = new Set(['ANNOUNCEMENT_PUBLISHED', 'ANNOUNCEMENT_UPDATED']);

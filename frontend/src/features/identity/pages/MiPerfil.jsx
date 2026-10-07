@@ -21,7 +21,7 @@ import {
   useActualizarPreferenciasNotificaciones,
   useAvatar,
   useSubirAvatar,
-} from '@/features/gestion-personas/hooks/useMiPerfil';
+} from '@/features/identity/hooks/useMiPerfil';
 
 const ETIQUETAS_EVENTO = {
   ACCOUNT_CREATED: 'Cuenta creada',

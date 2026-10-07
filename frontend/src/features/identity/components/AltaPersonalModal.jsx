@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
-import { STAFF_ROLE_LABELS, manageableStaffRoles } from '@/features/gestion-personas/staffRoles';
+import { STAFF_ROLE_LABELS, manageableStaffRoles } from '@/features/identity/staffRoles';
 
 const EMPTY = {
   nombre: '', apellido: '', email: '', dni: '', role: '',

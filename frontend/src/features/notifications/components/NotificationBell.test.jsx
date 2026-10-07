@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { NotificationBell } from '@/components/NotificationBell';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 
 const API = 'http://localhost:8080';
 

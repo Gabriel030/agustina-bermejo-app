@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { BandejaTramites } from '@/components/director/BandejaTramites';
-import { useEgresosPendientes, useHistorialEgresos } from '@/hooks/useDirector';
+import { useEgresosPendientes, useHistorialEgresos } from '@/features/graduation/hooks/useGraduation';
 import { formatearFecha } from '@/lib/comisiones';
 import { ESTADO_TRAMITE_LABEL } from '@/lib/aprobaciones';
 

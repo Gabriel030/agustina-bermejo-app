@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { usePaymentStanding, useMisCursos } from '@/hooks/useAlumno';
-import { useNovedades } from '@/hooks/useNovedades';
+import { useNovedades } from '@/features/announcements';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
 import { tiempoRelativo } from '@/lib/notificaciones';
 

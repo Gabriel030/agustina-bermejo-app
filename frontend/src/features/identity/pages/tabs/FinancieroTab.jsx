@@ -12,7 +12,7 @@ import {
   useHabilitacionesDeMatricula,
   useOtorgarHabilitacion,
   useRevocarHabilitacion,
-} from '@/features/gestion-personas/hooks/useMatriculaAlumno';
+} from '@/features/identity/hooks/useMatriculaAlumno';
 
 const ESTADO_MATRICULA = {
   NOT_ISSUED: { label: 'Todavía no emitida', tone: 'neutral' },

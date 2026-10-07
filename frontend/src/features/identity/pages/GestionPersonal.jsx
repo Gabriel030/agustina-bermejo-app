@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { usePersonal } from '@/features/gestion-personas/hooks/usePersonal';
-import { useCrearPersonal } from '@/features/gestion-personas/hooks/useAccionesPersonal';
-import { AltaPersonalModal } from '@/features/gestion-personas/components/AltaPersonalModal';
+import { usePersonal } from '@/features/identity/hooks/usePersonal';
+import { useCrearPersonal } from '@/features/identity/hooks/useAccionesPersonal';
+import { AltaPersonalModal } from '@/features/identity/components/AltaPersonalModal';
 
 const TABS = [
   { id: 'activos', label: 'Activos', params: { status: 'ACTIVE' } },

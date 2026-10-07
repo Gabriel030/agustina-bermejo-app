@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
-import { Registrarse } from '@/pages/Registrarse';
+import { Registrarse } from '@/features/identity/pages/Registrarse';
 
 const API = 'http://localhost:8080';
 

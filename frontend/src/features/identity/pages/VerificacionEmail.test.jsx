@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
-import { VerificacionEmail } from '@/pages/VerificacionEmail';
+import { VerificacionEmail } from '@/features/identity/pages/VerificacionEmail';
 
 const API = 'http://localhost:8080';
 

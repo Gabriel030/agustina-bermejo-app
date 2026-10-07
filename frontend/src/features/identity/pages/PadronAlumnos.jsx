@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
+import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 
 const TABS = [
   { id: 'activos', label: 'Activos', params: { status: 'ACTIVE', onboardingStatus: 'CONFIRMADO' } },

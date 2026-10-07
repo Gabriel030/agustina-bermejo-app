@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { DatosPersonalesTab } from '@/features/gestion-personas/pages/tabs/DatosPersonalesTab';
+import { DatosPersonalesTab } from '@/features/identity/pages/tabs/DatosPersonalesTab';
 
 const API = 'http://localhost:8080';
 

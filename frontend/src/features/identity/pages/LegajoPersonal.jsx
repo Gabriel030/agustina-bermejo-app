@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { useAuth } from '@/context/AuthContext';
-import { useLegajoPersonal } from '@/features/gestion-personas/hooks/useLegajoPersonal';
-import { useWithdrawPersonal, useReactivarPersonal, useResetPersonalPassword, useEditarPersonal } from '@/features/gestion-personas/hooks/useAccionesPersonal';
-import { DarDeBajaPersonalModal } from '@/features/gestion-personas/components/DarDeBajaPersonalModal';
-import { ReactivarPersonalModal } from '@/features/gestion-personas/components/ReactivarPersonalModal';
-import { ResetPasswordModal } from '@/features/gestion-personas/components/ResetPasswordModal';
-import { EditarPersonalModal } from '@/features/gestion-personas/components/EditarPersonalModal';
-import { canManageStaffRole } from '@/features/gestion-personas/staffRoles';
+import { useLegajoPersonal } from '@/features/identity/hooks/useLegajoPersonal';
+import { useWithdrawPersonal, useReactivarPersonal, useResetPersonalPassword, useEditarPersonal } from '@/features/identity/hooks/useAccionesPersonal';
+import { DarDeBajaPersonalModal } from '@/features/identity/components/DarDeBajaPersonalModal';
+import { ReactivarPersonalModal } from '@/features/identity/components/ReactivarPersonalModal';
+import { ResetPasswordModal } from '@/features/identity/components/ResetPasswordModal';
+import { EditarPersonalModal } from '@/features/identity/components/EditarPersonalModal';
+import { canManageStaffRole } from '@/features/identity/staffRoles';
 
 function staffActionErrorMessage(err, fallback) {
   if (err?.status === 403) return 'No tenés permiso para gestionar a esta persona.';

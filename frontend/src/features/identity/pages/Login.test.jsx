@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
-import { Login } from '@/pages/Login';
+import { Login } from '@/features/identity/pages/Login';
 
 const API = 'http://localhost:8080';
 

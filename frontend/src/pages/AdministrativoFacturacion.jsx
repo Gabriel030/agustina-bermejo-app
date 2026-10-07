@@ -18,7 +18,7 @@ import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
-import { useAlumnos } from '@/features/gestion-personas/hooks/useAlumnos';
+import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
   useRegistrarPago,
