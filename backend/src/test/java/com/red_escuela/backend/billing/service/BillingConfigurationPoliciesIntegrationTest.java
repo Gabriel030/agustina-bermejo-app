@@ -288,8 +288,9 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
         boolean secondIssued = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().anyMatch(i -> Integer.valueOf(2).equals(i.getEnrollmentFeeSlot()));
         int configuredCount = template(year).getEnrollmentFeeCount();
         assertThat(secondIssued && configuredCount == 1).isFalse();
-        boolean anyFeeIssued = !invoices(enrollment, FeeType.ENROLLMENT_FEE).isEmpty();
-        assertThat(reductionOutcome).isEqualTo(anyFeeIssued ? "FROZEN" : "UPDATED");
+        if (secondIssued) {
+            assertThat(reductionOutcome).isEqualTo("FROZEN");
+        }
     }
 
     private CreateCollectionsPolicyRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {

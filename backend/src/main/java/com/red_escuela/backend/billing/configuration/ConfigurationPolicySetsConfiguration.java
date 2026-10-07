@@ -1,5 +1,19 @@
-package com.red_escuela.backend.billing.configuration.policy;
+package com.red_escuela.backend.billing.configuration;
 
+import com.red_escuela.backend.billing.configuration.policy.EffectiveDateNotRetroactivePolicy;
+import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeCountFrozenPolicy;
+import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeMonthFrozenPolicy;
+import com.red_escuela.backend.billing.configuration.policy.FirstEnrollmentFeeNotAfterTermStartPolicy;
+import com.red_escuela.backend.billing.configuration.policy.GracePeriodNotNegativePolicy;
+import com.red_escuela.backend.billing.configuration.policy.GracePeriodWithinSuspensionDaysPolicy;
+import com.red_escuela.backend.billing.configuration.policy.InstallmentCountWithinTermSpanPolicy;
+import com.red_escuela.backend.billing.configuration.policy.IssuedInstallmentsWithinTermRangePolicy;
+import com.red_escuela.backend.billing.configuration.policy.LatePaymentSettingsValues;
+import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeAfterFirstPolicy;
+import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeWithinTermPolicy;
+import com.red_escuela.backend.billing.configuration.policy.SuspensionInvoiceCountAtLeastOnePolicy;
+import com.red_escuela.backend.billing.configuration.policy.TermHasDatesPolicy;
+import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;

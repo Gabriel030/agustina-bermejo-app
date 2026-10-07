@@ -33,7 +33,12 @@ public class YearBillingConfigurationChangeLoader {
 
     public YearBillingConfigurationChange loadCreation(Term term, Integer recurringFeeInvoicesCount, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate defaults = new ProgramYearBillingTemplate();
-        ProgramYearBillingTemplateSnapshot proposed = merge(snapshotOf(defaults, null), request, recurringFeeInvoicesCount);
+        ProgramYearBillingTemplateSnapshot base = snapshotOf(defaults, null);
+        if (request == null) {
+            base = new ProgramYearBillingTemplateSnapshot(base.enrollmentFeeCount(),
+                    monthOf(term.getStartDate()).map(YearMonth::getMonthValue).orElse(base.firstEnrollmentFeeMonth()), null, null);
+        }
+        ProgramYearBillingTemplateSnapshot proposed = merge(base, request, recurringFeeInvoicesCount);
         return YearBillingConfigurationChange.forCreation(proposed, monthOf(term.getStartDate()), monthOf(term.getEndDate()));
     }
 
