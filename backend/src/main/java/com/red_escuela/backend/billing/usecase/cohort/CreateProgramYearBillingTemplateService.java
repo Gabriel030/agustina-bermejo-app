@@ -56,7 +56,7 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         template.setCreatedBy(actor);
         configurationApplier.apply(template, configuration);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(programId));
+        eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(programId));
         return saved;
     }
 }

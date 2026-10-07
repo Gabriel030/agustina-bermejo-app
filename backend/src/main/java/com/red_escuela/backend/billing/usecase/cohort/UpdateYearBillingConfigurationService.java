@@ -32,7 +32,7 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
         ProgramYearBillingTemplate template = templateService.findOrThrow(templateId);
         configurationApplier.apply(template, request);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(template.getProgram().getId()));
+        eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return saved;
     }
 }

@@ -10,7 +10,6 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,7 @@ import java.util.List;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class ChargeSequenceTest extends AbstractChargeSequenceTest {
 
@@ -232,10 +232,9 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
 
         setStanding(enrollment, EnrollmentBillingStanding.UP_TO_DATE);
         today(date(2026, 5, 20));
-        transactionTemplate.executeWithoutResult(s -> eventPublisher.publishEvent(new SuspensionLiftedEvent(
-                entityManager.find(ProgramEnrollment.class, enrollment), YearMonth.of(2026, 3), YearMonth.of(2026, 5))));
+        transactionTemplate.executeWithoutResult(s -> eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, enrollment, YearMonth.of(2026, 3), YearMonth.of(2026, 5))));
 
-        assertThat(sequence(enrollment)).isEqualTo(expected("M2026-02", "C2026-05"));
+        await().untilAsserted(() -> assertThat(sequence(enrollment)).isEqualTo(expected("M2026-02", "C2026-05")));
         Invoice lateFee = invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0);
         assertThat(lateFee.getDueDate()).isEqualTo(date(2026, 5, 30));
         assertInvariants(enrollment, y26);
@@ -258,10 +257,12 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
         assertThat(openAlerts(career).get(0).getAffectedEnrollments()).isEqualTo(1);
 
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(career.programId()));
+        publishYearBillingConfigured(career);
 
-        assertThat(sequence(enrollment)).containsExactly("M2027-02");
-        assertThat(openAlerts(career)).isEmpty();
+        await().untilAsserted(() -> {
+            assertThat(sequence(enrollment)).containsExactly("M2027-02");
+            assertThat(openAlerts(career)).isEmpty();
+        });
         today(date(2027, 3, 1));
         job.run();
         assertThat(sequence(enrollment)).containsExactly("M2027-02", "C2027-03");
@@ -410,11 +411,11 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
         today(date(2027, 2, 10));
         newYear(career, 2027, 10, 1, 2, null);
 
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(career.programId()));
+        publishYearBillingConfigured(career);
 
-        assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).containsExactly(YearMonth.of(2027, 2));
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(career.programId()));
-        assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
+        await().untilAsserted(() -> assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).containsExactly(YearMonth.of(2027, 2)));
+        publishYearBillingConfigured(career);
+        await().during(java.time.Duration.ofSeconds(1)).untilAsserted(() -> assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1));
     }
 
     @Test
@@ -488,5 +489,9 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
 
     private List<BillingConfigurationAlert> openAlerts(Career career) {
         return alertService.listOpen().stream().filter(a -> a.getProgram().getId().equals(career.programId())).toList();
+    }
+
+    private void publishYearBillingConfigured(Career career) {
+        transactionTemplate.executeWithoutResult(s -> eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(career.programId())));
     }
 }

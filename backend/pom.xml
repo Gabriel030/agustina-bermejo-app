@@ -58,6 +58,16 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-starter-jdbc</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.modulith</groupId>
+					<artifactId>spring-modulith-moments</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>

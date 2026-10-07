@@ -62,7 +62,7 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
         tokenRepository.save(token);
 
         String link = frontendBaseUrl + "/verificar-email?token=" + clearToken;
-        eventPublisher.publishEvent(new EmailVerificationIssuedEvent(person, link));
+        eventPublisher.publishEvent(EmailVerificationIssuedEvent.issuedFor(person.getId(), link));
         log.info("Email de verificación enviado para student {}, person {}", studentId, person.getId());
     }
 }
