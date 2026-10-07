@@ -26,6 +26,7 @@ const LABEL_CLASS = 'text-[11px] font-bold uppercase tracking-widest text-ink-fa
 
 function ConfigurarAnioDialog({ template, titulo, onClose }) {
   const update = useUpdateYearBillingConfiguration();
+  const [violations, setViolations] = useState([]);
   const [cantidad, setCantidad] = useState(String(template.enrollmentFeeCount ?? 1));
   const [primerMes, setPrimerMes] = useState(String(template.firstEnrollmentFeeMonth ?? 2));
   const [segundoMes, setSegundoMes] = useState(String(template.secondEnrollmentFeeMonth ?? 7));
@@ -43,6 +44,7 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
       toast.error('El mes de la segunda matrícula tiene que ser posterior al de la primera.');
       return;
     }
+    setViolations([]);
     try {
       await update.mutateAsync({
         templateId: template.id,
@@ -59,7 +61,8 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
       });
       toast.success('Configuración del año lectivo guardada.');
       onClose();
-    } catch {
+    } catch (error) {
+      setViolations(error?.violations ?? []);
       toast.error('No se pudo guardar la configuración.');
     }
   }
@@ -140,6 +143,13 @@ function ConfigurarAnioDialog({ template, titulo, onClose }) {
             </select>
           </div>
 
+          {violations.length > 0 && (
+            <ul role="alert" className="list-disc space-y-1 pl-5 text-sm text-destructive">
+              {violations.map((violation) => (
+                <li key={violation.code}>{violation.message}</li>
+              ))}
+            </ul>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
             <Button type="submit" variant="gradient" loading={update.isPending}>Guardar</Button>

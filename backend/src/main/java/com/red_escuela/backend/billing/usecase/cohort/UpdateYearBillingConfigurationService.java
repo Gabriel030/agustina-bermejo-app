@@ -1,9 +1,12 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
+import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
+import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
+import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationChangeLoader;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
+import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
 import com.red_escuela.backend.billing.service.YearBillingConfigurationApplier;
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
 import com.red_escuela.backend.shared.UseCase;
@@ -12,15 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class UpdateYearBillingConfigurationService implements UpdateYearBillingConfigurationUseCase {
-    private final ProgramYearBillingTemplateService templateService;
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final YearBillingConfigurationApplier configurationApplier;
     private final ApplicationEventPublisher eventPublisher;
+    private final YearBillingConfigurationChangeLoader changeLoader;
+    private final ConfigurationPolicyEvaluator policyEvaluator;
 
-    public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateService templateService,
-                                                 ProgramYearBillingTemplateRepository templateRepository,
-                                                 YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher) {
-        this.templateService = templateService;
+    public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateRepository templateRepository,
+                                                 YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
+                                                 YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator) {
+        this.changeLoader = changeLoader;
+        this.policyEvaluator = policyEvaluator;
         this.templateRepository = templateRepository;
         this.configurationApplier = configurationApplier;
         this.eventPublisher = eventPublisher;
@@ -29,8 +34,12 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     @Override
     @Transactional
     public ProgramYearBillingTemplate update(Long templateId, YearBillingConfigurationRequest request) {
-        ProgramYearBillingTemplate template = templateService.findOrThrow(templateId);
-        configurationApplier.apply(template, request);
+        ProgramYearBillingTemplate template = templateRepository.findByIdForUpdate(templateId)
+                .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(templateId));
+        YearBillingConfigurationChange change = changeLoader.loadConfigurationUpdate(template, request);
+        policyEvaluator.requireCoherentYearConfiguration(change);
+        policyEvaluator.requireUnfrozenYearConfiguration(change);
+        configurationApplier.applyYearBillingConfiguration(template, request);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return saved;

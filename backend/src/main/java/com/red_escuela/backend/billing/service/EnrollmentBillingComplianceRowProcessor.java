@@ -28,30 +28,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 
 @Service
 public class EnrollmentBillingComplianceRowProcessor {
     private final InvoiceRepository invoiceRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CourseEnrollmentService courseEnrollmentService;
-    private final ProgramEnrollmentService programEnrollmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
 
     public EnrollmentBillingComplianceRowProcessor(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
-                                                     CourseEnrollmentService courseEnrollmentService, ProgramEnrollmentService programEnrollmentService,
                                                      ApplicationEventPublisher eventPublisher, MeterRegistry meterRegistry,
                                                      Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.courseEnrollmentService = courseEnrollmentService;
-        this.programEnrollmentService = programEnrollmentService;
         this.eventPublisher = eventPublisher;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
@@ -63,7 +56,7 @@ public class EnrollmentBillingComplianceRowProcessor {
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, id,
                 () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByCourseEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
-                policy, today, () -> courseEnrollmentService.withdraw(id));
+                policy, today);
         courseEnrollmentRepository.save(enrollment);
     }
 
@@ -73,12 +66,12 @@ public class EnrollmentBillingComplianceRowProcessor {
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, id,
                 () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByProgramEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
-                policy, today, () -> programEnrollmentService.withdraw(id));
+                policy, today);
         programEnrollmentRepository.save(enrollment);
     }
 
-    private void recalculateStanding(BillableEnrollment billable, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId, Supplier<Optional<Invoice>> oldestOverdueInvoice,
-                                      LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today, Runnable withdraw) {
+    private void recalculateStanding(BillableEnrollment billable, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId,
+                                      Supplier<Optional<Invoice>> oldestOverdueInvoice, LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today) {
         EnrollmentBillingStanding previous = billable.getBillingStanding();
         LocalDateTime previousUpdatedAt = billable.getBillingStandingUpdatedAt();
         long overdueInvoiceCount = overdueCount.getAsLong();
@@ -90,13 +83,7 @@ public class EnrollmentBillingComplianceRowProcessor {
             Invoice oldestOverdue = oldestOverdueInvoice.get()
                     .orElseThrow(() -> new IllegalStateException("countByStatus(OVERDUE) > 0 pero no se encontró ninguna Invoice OVERDUE"));
             long daysOverdue = ChronoUnit.DAYS.between(oldestOverdue.getDueDate(), today);
-            if (daysOverdue > policy.getWithdrawalAfterDays() || overdueInvoiceCount >= policy.getWithdrawalAfterInvoiceCount()) {
-                meterRegistry.counter("billing_withdrawal_attempt_total").increment();
-                next = EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
-                billable.setBillingStanding(next);
-                withdraw.run();
-                meterRegistry.counter("billing_withdrawal_success_total").increment();
-            } else if (previous == EnrollmentBillingStanding.SUSPENDED
+            if (previous == EnrollmentBillingStanding.SUSPENDED
                     || daysOverdue > policy.getSuspensionAfterDays() || overdueInvoiceCount >= policy.getSuspensionAfterInvoiceCount()) {
                 if (previous != EnrollmentBillingStanding.SUSPENDED) {
                     meterRegistry.counter("billing_suspension_attempt_total").increment();
