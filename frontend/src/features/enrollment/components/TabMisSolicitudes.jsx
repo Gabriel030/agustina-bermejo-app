@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
-import { EstadoSolicitudBadge } from '@/components/EstadoSolicitudBadge';
-import { useMisSolicitudesCarrera, useMisSolicitudesCurso } from '@/hooks/useCatalogo';
+import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
+import { useMisSolicitudesCarrera, useMisSolicitudesCurso } from '@/features/enrollment/hooks/useCatalogo';
 
 // Combina solicitudes de carrera (ProgramEnrollmentApplication, status propio)
 // y de curso (CourseEnrollmentApplication, paymentStatus del PaymentReceipt) en

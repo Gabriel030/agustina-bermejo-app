@@ -3,10 +3,15 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { usePrograma, useProgramaPricing, useOpenProgramCohorts, useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
+import {
+  usePrograma,
+  useProgramaPricing,
+  useOpenProgramCohorts,
+  useProgramaPlanDeEstudio,
+} from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
 import { programSummary } from '@/lib/catalog';
-import { CatalogDetailError } from '@/components/catalogo/CatalogDetailError';
+import { CatalogDetailError } from '@/features/enrollment/components/CatalogDetailError';
 
 // Épica 7 Fase 3. Video introductorio: placeholder visual únicamente (decisión
 // confirmada con el usuario — sin carga real todavía).

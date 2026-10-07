@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
-import { EstadoSolicitudBadge } from '@/components/EstadoSolicitudBadge';
+import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
 import { Skeleton } from '@/components/Skeleton';
 import { apiFetch } from '@/api/client';
 import { formatFecha } from '@/lib/utils';

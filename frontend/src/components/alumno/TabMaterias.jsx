@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InscripcionMaterias } from '@/components/alumno/InscripcionMaterias';
+import { InscripcionMaterias } from '@/features/enrollment';
 import { useMisInscripciones } from '@/hooks/useAlumno';
 import { ESTADOS_EN_CURSO, FINAL_GRADE_TYPE_LABEL } from '@/lib/notas';
 

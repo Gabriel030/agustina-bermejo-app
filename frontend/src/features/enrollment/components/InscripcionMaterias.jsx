@@ -5,7 +5,12 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';
-import { useMisInscripciones, useSeccionesDeMateria, useInscribirmeAMateria, useEstadoMatricula } from '@/hooks/useAlumno';
+import {
+  useMisInscripciones,
+  useSeccionesDeMateria,
+  useInscribirmeAMateria,
+  useEstadoMatricula,
+} from '@/features/enrollment/hooks/useStudentEnrollment';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AvisoMatricula } from './AvisoMatricula';

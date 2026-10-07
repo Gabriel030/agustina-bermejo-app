@@ -8,7 +8,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { ModalMotivo } from '@/components/director/ModalMotivo';
 import { UnavailableRequestState } from '@/components/director/UnavailableRequestState';
-import { useExcepcion, useAprobarExcepcion, useRechazarExcepcion } from '@/hooks/useDirector';
+import {
+  useExcepcion,
+  useAprobarExcepcion,
+  useRechazarExcepcion,
+} from '@/features/enrollment/hooks/useExceptionApprovals';
 import { formatearFecha } from '@/lib/comisiones';
 import { ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL, decisionErrorMessage, isAlreadyDecided } from '@/lib/aprobaciones';
 

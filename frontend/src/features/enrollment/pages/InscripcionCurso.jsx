@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
-import { InscripcionWizard } from '@/components/catalogo/InscripcionWizard';
-import { useCurso, useCursoPricing } from '@/hooks/useCatalogo';
+import { InscripcionWizard } from '@/features/enrollment/components/InscripcionWizard';
+import { useCurso, useCursoPricing } from '@/features/enrollment/hooks/useCatalogo';
 
 export function InscripcionCurso() {
   const { id } = useParams();

@@ -6,7 +6,7 @@ import { Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
+import { DirectorExcepcionDetalle } from '@/features/enrollment/pages/DirectorExcepcionDetalle';
 
 const API = 'http://localhost:8080';
 

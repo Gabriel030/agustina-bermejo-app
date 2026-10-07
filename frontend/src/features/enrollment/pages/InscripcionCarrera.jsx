@@ -1,6 +1,10 @@
 import { useParams } from 'react-router-dom';
-import { InscripcionWizard } from '@/components/catalogo/InscripcionWizard';
-import { usePrograma, useProgramaPricing, useOpenProgramCohorts } from '@/hooks/useCatalogo';
+import { InscripcionWizard } from '@/features/enrollment/components/InscripcionWizard';
+import {
+  usePrograma,
+  useProgramaPricing,
+  useOpenProgramCohorts,
+} from '@/features/enrollment/hooks/useCatalogo';
 
 // Página completa (no modal, feedback explícito del usuario) del wizard de
 // inscripción a una carrera — mismo patrón de página fina que DetalleCarrera.

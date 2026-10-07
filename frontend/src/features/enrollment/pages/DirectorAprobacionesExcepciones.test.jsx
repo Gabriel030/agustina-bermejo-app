@@ -4,7 +4,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExcepciones';
+import { DirectorAprobacionesExcepciones } from '@/features/enrollment/pages/DirectorAprobacionesExcepciones';
 
 const API = 'http://localhost:8080';
 const originalTimeZone = process.env.TZ;

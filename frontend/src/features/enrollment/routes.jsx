@@ -1,13 +1,13 @@
-import { Catalogo } from '@/pages/Catalogo';
-import { DetalleCarrera } from '@/pages/DetalleCarrera';
-import { DetalleCurso } from '@/pages/DetalleCurso';
-import { InscripcionCarrera } from '@/pages/InscripcionCarrera';
-import { InscripcionCurso } from '@/pages/InscripcionCurso';
-import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
+import { Catalogo } from '@/features/enrollment/pages/Catalogo';
+import { DetalleCarrera } from '@/features/enrollment/pages/DetalleCarrera';
+import { DetalleCurso } from '@/features/enrollment/pages/DetalleCurso';
+import { InscripcionCarrera } from '@/features/enrollment/pages/InscripcionCarrera';
+import { InscripcionCurso } from '@/features/enrollment/pages/InscripcionCurso';
+import { DetalleSolicitud } from '@/features/enrollment/pages/DetalleSolicitud';
 import { AlumnoMisCarreras } from '@/pages/AlumnoMisCarreras';
 import { AlumnoMateriaDetalle } from '@/pages/AlumnoMateriaDetalle';
-import { DirectorAprobacionesExcepciones } from '@/pages/DirectorAprobacionesExcepciones';
-import { DirectorExcepcionDetalle } from '@/pages/DirectorExcepcionDetalle';
+import { DirectorAprobacionesExcepciones } from '@/features/enrollment/pages/DirectorAprobacionesExcepciones';
+import { DirectorExcepcionDetalle } from '@/features/enrollment/pages/DirectorExcepcionDetalle';
 import { PadronAlumnos } from '@/features/identity/pages/PadronAlumnos';
 import { Navigate } from 'react-router-dom';
 

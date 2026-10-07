@@ -5,9 +5,9 @@ import { BookOpen } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Stagger } from '@/components/Stagger';
-import { Buscador } from '@/components/catalogo/Buscador';
-import { Paginador } from '@/components/catalogo/Paginador';
-import { useCatalogCourses } from '@/hooks/useCatalogo';
+import { Buscador } from '@/components/Buscador';
+import { Paginador } from '@/components/Paginador';
+import { useCatalogCourses } from '@/features/enrollment/hooks/useCatalogo';
 import { courseSummary, matchesSearch, pageWithinRange } from '@/lib/catalog';
 
 // 2 columnas en vez de 3, POR_PAGINA más chico — cards más grandes con más

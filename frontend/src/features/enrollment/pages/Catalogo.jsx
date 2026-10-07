@@ -1,9 +1,9 @@
 import { useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TabCarreras } from '@/components/catalogo/TabCarreras';
-import { TabCursos } from '@/components/catalogo/TabCursos';
-import { TabMisSolicitudes } from '@/components/catalogo/TabMisSolicitudes';
+import { TabCarreras } from '@/features/enrollment/components/TabCarreras';
+import { TabCursos } from '@/features/enrollment/components/TabCursos';
+import { TabMisSolicitudes } from '@/features/enrollment/components/TabMisSolicitudes';
 import { CATALOG_TABS } from '@/lib/catalog';
 
 // Épica 7 Fase 3: reemplaza el Catálogo de acción-directa de la Fase 2 por un

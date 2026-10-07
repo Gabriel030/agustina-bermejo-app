@@ -3,10 +3,10 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { useCurso, useCursoPricing, useCursoTemario } from '@/hooks/useCatalogo';
+import { useCurso, useCursoPricing, useCursoTemario } from '@/features/enrollment/hooks/useCatalogo';
 import { formatMoney } from '@/lib/utils';
 import { courseSummary } from '@/lib/catalog';
-import { CatalogDetailError } from '@/components/catalogo/CatalogDetailError';
+import { CatalogDetailError } from '@/features/enrollment/components/CatalogDetailError';
 
 export function DetalleCurso() {
   const { id } = useParams();

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
-import { DetalleSolicitud } from '@/pages/DetalleSolicitud';
+import { DetalleSolicitud } from '@/features/enrollment/pages/DetalleSolicitud';
 
 const API = 'http://localhost:8080';
 

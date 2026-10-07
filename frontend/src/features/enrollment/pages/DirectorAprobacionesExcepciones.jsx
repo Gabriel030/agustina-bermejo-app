@@ -3,7 +3,10 @@ import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { BandejaTramites } from '@/components/director/BandejaTramites';
-import { useExcepcionesPendientes, useHistorialExcepciones } from '@/hooks/useDirector';
+import {
+  useExcepcionesPendientes,
+  useHistorialExcepciones,
+} from '@/features/enrollment/hooks/useExceptionApprovals';
 import { formatearFecha } from '@/lib/comisiones';
 import { ESTADO_TRAMITE_LABEL, TIPO_EXCEPCION_LABEL } from '@/lib/aprobaciones';
 

@@ -6,7 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
-import { Paginador } from '@/components/catalogo/Paginador';
+import { Paginador } from '@/components/Paginador';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { EstadoColumnFilter } from '@/components/alumno/EstadoColumnFilter';
 import { AnioColumnFilter } from '@/components/alumno/AnioColumnFilter';

@@ -5,9 +5,9 @@ import { GraduationCap } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Stagger } from '@/components/Stagger';
-import { Buscador } from '@/components/catalogo/Buscador';
-import { Paginador } from '@/components/catalogo/Paginador';
-import { useCatalogPrograms } from '@/hooks/useCatalogo';
+import { Buscador } from '@/components/Buscador';
+import { Paginador } from '@/components/Paginador';
+import { useCatalogPrograms } from '@/features/enrollment/hooks/useCatalogo';
 import { matchesSearch, pageWithinRange, programSummary } from '@/lib/catalog';
 
 // 2 columnas en vez de 3, POR_PAGINA más chico — cards más grandes con más

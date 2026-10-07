@@ -7,8 +7,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '@/test/mocks/server';
 import { AuthProvider } from '@/context/AuthContext';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { DetalleCurso } from '@/pages/DetalleCurso';
-import { InscripcionCurso } from '@/pages/InscripcionCurso';
+import { DetalleCurso } from '@/features/enrollment/pages/DetalleCurso';
+import { InscripcionCurso } from '@/features/enrollment/pages/InscripcionCurso';
 
 const API = 'http://localhost:8080';
 

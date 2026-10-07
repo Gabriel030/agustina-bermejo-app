@@ -13,7 +13,7 @@ import {
   useInscribirmeCurso,
   useActualizarPerfilPropio,
   useAgregarDocumentoSolicitudCarrera,
-} from '@/hooks/useCatalogo';
+} from '@/features/enrollment/hooks/useCatalogo';
 import { BankAccountDetails } from '@/components/catalogo/BankAccountDetails';
 import { formatMoney, cn } from '@/lib/utils';
 
