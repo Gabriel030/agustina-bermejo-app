@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class LatePaymentSettingsServiceTest extends AbstractIntegrationTest {
+class CreateLatePaymentSettingsServiceTest extends AbstractIntegrationTest {
     @Autowired
     private com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository latePaymentSettingsRepository;
 
