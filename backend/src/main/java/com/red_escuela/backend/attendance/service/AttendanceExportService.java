@@ -11,6 +11,7 @@ import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAb
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryUseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -81,7 +82,7 @@ public class AttendanceExportService {
             java.util.function.Supplier<AttendanceHistoryResponse> history,
             java.util.function.Supplier<List<RosterEntryResponse>> absenceReport) {
         return switch (scope) {
-            case "class" -> classTable(history.get(), classDate != null ? classDate : LocalDate.now());
+            case "class" -> classTable(history.get(), classDate != null ? classDate : ApplicationTime.today());
             case "history" -> historyTable(history.get());
             case "absence-report" -> reportTable(absenceReport.get());
             default -> throw new IllegalArgumentException("scope de exportación desconocido: " + scope);

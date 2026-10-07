@@ -6,10 +6,10 @@ import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.notification.SectionEvaluationConfigProposedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class SubmitSectionEvaluationConfigForApprovalService implements SubmitSectionEvaluationConfigForApprovalUseCase {
@@ -34,7 +34,7 @@ public class SubmitSectionEvaluationConfigForApprovalService implements SubmitSe
     public SectionEvaluationConfig submit(SubmitSectionEvaluationConfigForApprovalCommand command) {
         instructorAccess.requireLeadInstructor(command.sectionId(), command.instructorId());
         SectionEvaluationConfig config = configFinder.findOrThrow(command.sectionId());
-        config.submitForApproval(LocalDateTime.now());
+        config.submitForApproval(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
         eventPublisher.publishEvent(new SectionEvaluationConfigProposedEvent(saved));
         return saved;

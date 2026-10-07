@@ -10,11 +10,11 @@ import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.EmailAddress;
 import com.red_escuela.backend.shared.domain.InvalidEmailAddressException;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @UseCase
@@ -71,13 +71,13 @@ public class LoginService implements LoginUseCase {
     }
 
     private boolean isLocked(Person person) {
-        return person.getLockedUntil() != null && person.getLockedUntil().isAfter(LocalDateTime.now());
+        return person.getLockedUntil() != null && person.getLockedUntil().isAfter(ApplicationTime.now());
     }
 
     private void registerFailedAttempt(Person person) {
         int attempts = person.getFailedLoginAttempts() + 1;
         if (attempts >= lockoutMaxAttempts) {
-            person.setLockedUntil(LocalDateTime.now().plusMinutes(lockoutDurationMinutes));
+            person.setLockedUntil(ApplicationTime.now().plusMinutes(lockoutDurationMinutes));
             person.setFailedLoginAttempts(0);
         } else {
             person.setFailedLoginAttempts(attempts);
@@ -97,7 +97,7 @@ public class LoginService implements LoginUseCase {
         attempt.setPerson(person);
         attempt.setSuccessful(successful);
         attempt.setIpAddress(ipAddress);
-        attempt.setAttemptedAt(LocalDateTime.now());
+        attempt.setAttemptedAt(ApplicationTime.now());
         loginAttemptRepository.save(attempt);
     }
 
