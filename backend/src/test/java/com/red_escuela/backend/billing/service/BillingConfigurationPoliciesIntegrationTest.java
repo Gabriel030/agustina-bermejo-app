@@ -172,6 +172,52 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
 
     @Test
     @Tag("D-002")
+    void aTemplateCreatedWithoutConfigurationPersistsTheFirstFeeMonthBeforeTheTermStart() {
+        Career career = newCareer();
+        Long januaryTermId = transactionTemplate.execute(status -> {
+            Term term = new Term();
+            term.setYear(2027);
+            term.setDescription("enero");
+            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            term.setStartDate(LocalDateTime.of(2027, 1, 1, 0, 0));
+            term.setEndDate(LocalDateTime.of(2027, 12, 31, 23, 59));
+            entityManager.persist(term);
+            return term.getId();
+        });
+        authenticateAsNewPerson();
+
+        ProgramYearBillingTemplate januaryTemplate = createTemplate.create(career.programId(), januaryTermId, 10);
+
+        assertThat(januaryTemplate.getEnrollmentFeeCount()).isEqualTo(1);
+        assertThat(januaryTemplate.getFirstEnrollmentFeeMonth()).isEqualTo(12);
+    }
+
+    @Test
+    @Tag("D-002")
+    void theDefaultFirstFeeMonthFollowsTheRequestedLeadMonths() {
+        Career career = newCareer();
+        Year marchYear = newYear(career, 2028, 10, 1, 2, null);
+        authenticateAsNewPerson();
+        Long termId = transactionTemplate.execute(status -> {
+            Term term = new Term();
+            term.setYear(2029);
+            term.setDescription("marzo");
+            term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
+            term.setStartDate(LocalDateTime.of(2029, 3, 1, 0, 0));
+            term.setEndDate(LocalDateTime.of(2029, 12, 31, 23, 59));
+            entityManager.persist(term);
+            return term.getId();
+        });
+
+        ProgramYearBillingTemplate template = createTemplate.create(career.programId(), termId, 10,
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
+
+        assertThat(template.getFirstEnrollmentFeeMonth()).isEqualTo(1);
+        assertThat(marchYear.year()).isEqualTo(2028);
+    }
+
+    @Test
+    @Tag("D-002")
     @Tag("D-096")
     void aConfigurationWithTwoViolationsReportsBothInSetOrder() {
         Career career = newCareer();

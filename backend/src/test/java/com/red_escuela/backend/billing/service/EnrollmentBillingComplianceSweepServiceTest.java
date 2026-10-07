@@ -150,6 +150,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
     @Test
     @Tag("D-147")
+    @Tag("D-175")
     void suspendedStudentUnpaidForTwoMonthsStaysSuspendedAndEnrolled() {
         Person director = persistPerson("director.compliance2." + System.nanoTime());
         persistPolicy(director, 30, 2);
@@ -165,6 +166,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
     @Test
     @Tag("D-147")
+    @Tag("D-175")
     void theNightlySuspensionWorksWithoutALoggedUserAndLeavesFutureInstallmentsPending() {
         Person director = persistPerson("director.compliance9." + System.nanoTime());
         persistPolicy(director, 30, 2);

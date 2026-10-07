@@ -14,6 +14,7 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
 import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationChangeLoader;
+import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationDefaults;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.service.YearBillingConfigurationApplier;
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
@@ -29,11 +30,14 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
     private final ApplicationEventPublisher eventPublisher;
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
+    private final YearBillingConfigurationDefaults configurationDefaults;
 
     public CreateProgramYearBillingTemplateService(ProgramYearBillingTemplateRepository templateRepository, ProgramRepository programRepository,
                                                      TermRepository termRepository, CurrentPersonService currentPersonService,
                                                      YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
-                                                     YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator) {
+                                                     YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
+                                                     YearBillingConfigurationDefaults configurationDefaults) {
+        this.configurationDefaults = configurationDefaults;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
         this.configurationApplier = configurationApplier;
@@ -55,14 +59,15 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
         Term term = termRepository.findById(termId).orElseThrow(() -> new TermNotFoundException(termId));
         Person actor = currentPersonService.resolveCurrentPerson();
-        policyEvaluator.requireCoherentYearConfiguration(changeLoader.loadCreation(term, recurringFeeInvoicesCount, configuration));
+        YearBillingConfigurationRequest effectiveConfiguration = configurationDefaults.completeForCreation(term, configuration);
+        policyEvaluator.requireCoherentYearConfiguration(changeLoader.loadCreation(term, recurringFeeInvoicesCount, effectiveConfiguration));
 
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
         template.setRecurringFeeInvoicesCount(recurringFeeInvoicesCount);
         template.setCreatedBy(actor);
-        configurationApplier.applyYearBillingConfiguration(template, configuration);
+        configurationApplier.applyYearBillingConfiguration(template, effectiveConfiguration);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
         eventPublisher.publishEvent(new YearBillingConfiguredEvent(programId));
         return saved;

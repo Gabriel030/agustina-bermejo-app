@@ -22,9 +22,9 @@ public class BillingPolicyConfiguration {
                 new ReasonFeeTypePolicy(),
                 new DueDateNotBeforeIssueDatePolicy(),
                 new EnrollmentFeeSlotRequiredPolicy(),
-                new EnrollmentFeeSlotWithinTemplateCountPolicy(),
                 new OfferingCurrencyPolicy(),
-                new NotAlreadyIssuedPolicy());
+                new NotAlreadyIssuedPolicy(),
+                new EnrollmentFeeSlotWithinTemplateCountPolicy());
         return PolicySet.named("INVOICE_ISSUING", ordered);
     }
 }
