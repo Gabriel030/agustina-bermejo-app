@@ -51,7 +51,8 @@ public class YearBillingConfigurationChangeLoader {
 
     private ProgramYearBillingTemplateSnapshot snapshotOf(ProgramYearBillingTemplate template, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplateSnapshot current = new ProgramYearBillingTemplateSnapshot(template.getEnrollmentFeeCount(),
-                template.getFirstEnrollmentFeeMonth(), template.getSecondEnrollmentFeeMonth(), template.getRecurringFeeInvoicesCount());
+                template.getFirstEnrollmentFeeMonth(), template.getSecondEnrollmentFeeMonth(), template.getRecurringFeeInvoicesCount(),
+                template.getEnrollmentFeeLeadMonths());
         return request == null ? current : merge(current, request, null);
     }
 
@@ -60,7 +61,8 @@ public class YearBillingConfigurationChangeLoader {
         int first = request != null && request.firstEnrollmentFeeMonth() != null ? request.firstEnrollmentFeeMonth() : base.firstEnrollmentFeeMonth();
         Integer second = request != null && request.secondEnrollmentFeeMonth() != null ? request.secondEnrollmentFeeMonth() : base.secondEnrollmentFeeMonth();
         Integer installments = recurringFeeInvoicesCount != null ? recurringFeeInvoicesCount : base.recurringFeeInvoicesCount();
-        return new ProgramYearBillingTemplateSnapshot(count, first, count == 1 ? null : second, installments);
+        int leadMonths = request != null && request.enrollmentFeeLeadMonths() != null ? request.enrollmentFeeLeadMonths() : base.enrollmentFeeLeadMonths();
+        return new ProgramYearBillingTemplateSnapshot(count, first, count == 1 ? null : second, installments, leadMonths);
     }
 
     private Optional<YearMonth> monthOf(LocalDateTime date) {

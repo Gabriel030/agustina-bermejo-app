@@ -97,6 +97,35 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
     }
 
     @Test
+    @Tag("D-201")
+    void changingTheEnrollmentLeadMonthsIsRejectedOnceAFeeWasIssuedAndAcceptedBefore() {
+        Year issued = yearWithFirstFeeIssued();
+        Year pristine = newYear(newCareer(), 2027, 10, 2, 2, 7);
+
+        assertThatThrownBy(() -> updateYearConfiguration.update(issued.templateId(),
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null)))
+                .isInstanceOfSatisfying(BillingConfigurationFrozenException.class,
+                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("ENROLLMENT_FEE_LEAD_MONTHS_FROZEN"));
+        assertThat(template(issued).getEnrollmentFeeLeadMonths()).isEqualTo(1);
+
+        updateYearConfiguration.update(pristine.templateId(),
+                new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
+        assertThat(template(pristine).getEnrollmentFeeLeadMonths()).isEqualTo(2);
+    }
+
+    @Test
+    @Tag("D-147")
+    void negativeSuspensionDaysAreReportedTogetherWithTheOtherViolations() {
+        authenticateAsNewPerson();
+
+        assertThatThrownBy(() -> createPolicy.create(policyRequest(-1, -5, 0, LocalDate.now().minusDays(1))))
+                .isInstanceOfSatisfying(InvalidLatePaymentSettingsException.class,
+                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly(
+                                "NEGATIVE_GRACE_PERIOD", "NEGATIVE_SUSPENSION_DAYS", "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS",
+                                "SUSPENSION_INVOICE_COUNT_BELOW_ONE", "RETROACTIVE_EFFECTIVE_DATE"));
+    }
+
+    @Test
     @Tag("D-009")
     void movingTheNotYetIssuedSecondFeeIsAccepted() {
         Year year = yearWithFirstFeeIssued();

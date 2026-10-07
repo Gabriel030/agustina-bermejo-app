@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.configuration;
 
 import com.red_escuela.backend.billing.configuration.policy.EffectiveDateNotRetroactivePolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeCountFrozenPolicy;
+import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeLeadMonthsFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeMonthFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.FirstEnrollmentFeeNotAfterTermStartPolicy;
 import com.red_escuela.backend.billing.configuration.policy.GracePeriodNotNegativePolicy;
@@ -11,6 +12,7 @@ import com.red_escuela.backend.billing.configuration.policy.IssuedInstallmentsWi
 import com.red_escuela.backend.billing.configuration.policy.LatePaymentSettingsValues;
 import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeAfterFirstPolicy;
 import com.red_escuela.backend.billing.configuration.policy.SecondEnrollmentFeeWithinTermPolicy;
+import com.red_escuela.backend.billing.configuration.policy.SuspensionDaysNotNegativePolicy;
 import com.red_escuela.backend.billing.configuration.policy.SuspensionInvoiceCountAtLeastOnePolicy;
 import com.red_escuela.backend.billing.configuration.policy.TermHasDatesPolicy;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
@@ -40,6 +42,7 @@ public class ConfigurationPolicySetsConfiguration {
         List<Policy<YearBillingConfigurationChange>> ordered = List.of(
                 new EnrollmentFeeCountFrozenPolicy(),
                 new EnrollmentFeeMonthFrozenPolicy(),
+                new EnrollmentFeeLeadMonthsFrozenPolicy(),
                 new IssuedInstallmentsWithinTermRangePolicy());
         return PolicySet.named("YEAR_BILLING_CONFIGURATION_FREEZE", ordered);
     }
@@ -48,6 +51,7 @@ public class ConfigurationPolicySetsConfiguration {
     public PolicySet<LatePaymentSettingsValues> latePaymentSettingsPolicySet() {
         List<Policy<LatePaymentSettingsValues>> ordered = List.of(
                 new GracePeriodNotNegativePolicy(),
+                new SuspensionDaysNotNegativePolicy(),
                 new GracePeriodWithinSuspensionDaysPolicy(),
                 new SuspensionInvoiceCountAtLeastOnePolicy(),
                 new EffectiveDateNotRetroactivePolicy());
