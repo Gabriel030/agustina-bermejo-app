@@ -1,4 +1,6 @@
 package com.red_escuela.backend.enrollment.entity;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
@@ -12,6 +14,7 @@ import java.util.List;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.academicstructure.entity.Course;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

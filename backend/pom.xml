@@ -32,8 +32,35 @@
 		<jqwik.version>1.9.3</jqwik.version>
 		<pitest.version>1.20.4</pitest.version>
 		<pitest-junit5.version>1.2.3</pitest-junit5.version>
+		<spring-modulith.version>1.4.13</spring-modulith.version>
 	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.modulith</groupId>
+				<artifactId>spring-modulith-bom</artifactId>
+				<version>${spring-modulith.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-starter-core</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.modulith</groupId>
+					<artifactId>spring-modulith-moments</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>net.javacrumbs.shedlock</groupId>
 			<artifactId>shedlock-spring</artifactId>

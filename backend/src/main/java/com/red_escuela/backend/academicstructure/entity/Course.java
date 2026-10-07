@@ -1,4 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
+
+import org.springframework.modulith.NamedInterface;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +21,7 @@ import java.util.Set;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Builder

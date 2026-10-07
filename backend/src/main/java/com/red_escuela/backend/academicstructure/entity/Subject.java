@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import org.springframework.modulith.NamedInterface;
+
 import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
 import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
@@ -10,6 +12,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Builder

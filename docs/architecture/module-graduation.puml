@@ -1,0 +1,53 @@
+@startuml
+set separator none
+title Graduation
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("BackendApplication.BackendApplication_boundary", "BackendApplication", $tags="") {
+  Component(BackendApplication.BackendApplication.Graduation, "Graduation", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Identity, "Identity", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Notification, "Notification", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Shared, "Shared", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Academicstructure, "Academic structure", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Billing, "Billing", $techn="Module", $descr="", $tags="", $link="")
+  Component(BackendApplication.BackendApplication.Enrollment, "Enrollment", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Billing, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Academicstructure, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Billing, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Billing, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Billing, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Billing, BackendApplication.BackendApplication.Notification, "listens to", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Billing, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Billing, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Notification, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Enrollment, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Graduation, BackendApplication.BackendApplication.Billing, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Graduation, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Graduation, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Graduation, BackendApplication.BackendApplication.Notification, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Graduation, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Billing, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Enrollment, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Identity, BackendApplication.BackendApplication.Shared, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Notification, BackendApplication.BackendApplication.Billing, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Notification, BackendApplication.BackendApplication.Enrollment, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Notification, BackendApplication.BackendApplication.Graduation, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Notification, BackendApplication.BackendApplication.Identity, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Notification, BackendApplication.BackendApplication.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Academicstructure, "uses", $techn="", $tags="", $link="")
+Rel(BackendApplication.BackendApplication.Shared, BackendApplication.BackendApplication.Identity, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

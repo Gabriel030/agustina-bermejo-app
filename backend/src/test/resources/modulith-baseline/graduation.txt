@@ -1,0 +1,5 @@
+COUNT billing 25
+COUNT enrollment 45
+Module 'graduation' depends on module 'notification' via com.red_escuela.backend.graduation.usecase.graduationrequest.ApproveGraduationRequestService -> com.red_escuela.backend.notification.GraduationRequestApprovedEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *.
+Module 'graduation' depends on module 'notification' via com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestService -> com.red_escuela.backend.notification.GraduationRequestRejectedEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *.
+Module 'graduation' depends on non-exposed type com.red_escuela.backend.academicstructure.entity.ProgramSubject within module 'academicstructure'! | Method <com.red_escuela.backend.graduation.service.CertificateService.issueApprovedSubjectsCertificate(java.lang.Long)> calls method <com.red_escuela.backend.academicstructure.entity.ProgramSubject.getSubject()> in (CertificateService.java)

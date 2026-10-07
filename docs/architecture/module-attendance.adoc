@@ -1,0 +1,16 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.attendance`
+|Bean references
+|* `c.r.b.a.service.CurrentInstructorService` (in Academic structure)
+* `c.r.b.e.repository.SubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.e.repository.CourseSubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.a.repository.SubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.a.repository.InstructorRepository` (in Academic structure)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.a.repository.CourseSubjectSectionRepository` (in Academic structure)
+* `c.r.b.a.repository.SubjectSectionRepository` (in Academic structure)
+* `c.r.b.a.repository.HolidayRepository` (in Academic structure)
+|===
