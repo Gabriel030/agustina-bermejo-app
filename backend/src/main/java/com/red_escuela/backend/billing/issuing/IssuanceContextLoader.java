@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.entity.IssueReason;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
@@ -21,8 +22,11 @@ public class IssuanceContextLoader {
     private static final Set<FeeType> UNIQUE_PER_PERIOD = Set.of(FeeType.RECURRING_FEE, FeeType.ENROLLMENT_FEE, FeeType.SUBSCRIPTION_FEE);
     private final PriceRevisionService priceRevisionService;
     private final InvoiceRepository invoiceRepository;
+    private final ProgramYearBillingTemplateRepository templateRepository;
 
-    public IssuanceContextLoader(PriceRevisionService priceRevisionService, InvoiceRepository invoiceRepository) {
+    public IssuanceContextLoader(PriceRevisionService priceRevisionService, InvoiceRepository invoiceRepository,
+                                 ProgramYearBillingTemplateRepository templateRepository) {
+        this.templateRepository = templateRepository;
         this.priceRevisionService = priceRevisionService;
         this.invoiceRepository = invoiceRepository;
     }
@@ -40,7 +44,14 @@ public class IssuanceContextLoader {
         Percentage entryDiscount = request.entry() ? entryDiscount(request.target()) : null;
         MonetaryAdjustment upfront = request.reason() == IssueReason.UPFRONT && request.selection() != null
                 ? request.selection().getPaymentPlanOption().getUpfrontDiscount() : null;
-        return new IssuanceContext(request, today, currency, amount, revision.orElse(null), existing, entryDiscount, upfront);
+        return new IssuanceContext(request, today, currency, amount, revision.orElse(null), existing, entryDiscount, upfront, templateEnrollmentFeeCount(request));
+    }
+
+    private Integer templateEnrollmentFeeCount(ChargeRequest request) {
+        if (request.feeType() != FeeType.ENROLLMENT_FEE || request.templateId() == null) {
+            return null;
+        }
+        return templateRepository.findEnrollmentFeeCountForShare(request.templateId()).orElse(null);
     }
 
     private Optional<PriceRevision> findRevision(ChargeRequest request, LocalDate today) {

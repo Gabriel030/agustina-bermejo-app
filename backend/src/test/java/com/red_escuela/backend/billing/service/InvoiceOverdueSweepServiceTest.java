@@ -144,15 +144,14 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private CollectionsPolicy persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        CollectionsPolicy policy = new CollectionsPolicy();
-        policy.setGracePeriodDays(gracePeriodDays);
-        policy.setSurchargeRate(Percentage.ofFraction(surchargePercentage));
-        policy.setSuspensionAfterDays(30);
-        policy.setSuspensionAfterInvoiceCount(2);
-        policy.setWithdrawalAfterDays(60);
-        policy.setWithdrawalAfterInvoiceCount(3);
-        policy.setEffectiveFrom(LocalDate.now().minusYears(1));
-        policy.setCreatedBy(createdBy);
+        CollectionsPolicy policy = CollectionsPolicy.builder()
+                .gracePeriodDays(gracePeriodDays)
+                .surchargeRate(Percentage.ofFraction(surchargePercentage))
+                .suspensionAfterDays(30)
+                .suspensionAfterInvoiceCount(2)
+                .effectiveFrom(LocalDate.now().minusYears(1))
+                .createdBy(createdBy)
+                .build();
         return collectionsPolicyRepository.save(policy);
     }
 

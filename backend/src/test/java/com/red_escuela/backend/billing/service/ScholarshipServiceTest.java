@@ -282,15 +282,14 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse(director, BigDecimal.valueOf(5000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000005", course);
 
-        CollectionsPolicy policy = new CollectionsPolicy();
-        policy.setGracePeriodDays(10);
-        policy.setSurchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)));
-        policy.setSuspensionAfterDays(30);
-        policy.setSuspensionAfterInvoiceCount(2);
-        policy.setWithdrawalAfterDays(60);
-        policy.setWithdrawalAfterInvoiceCount(3);
-        policy.setEffectiveFrom(LocalDate.now().minusYears(1));
-        policy.setCreatedBy(director);
+        CollectionsPolicy policy = CollectionsPolicy.builder()
+                .gracePeriodDays(10)
+                .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
+                .suspensionAfterDays(30)
+                .suspensionAfterInvoiceCount(2)
+                .effectiveFrom(LocalDate.now().minusYears(1))
+                .createdBy(director)
+                .build();
         collectionsPolicyRepository.save(policy);
 
         Invoice invoice = new Invoice();
