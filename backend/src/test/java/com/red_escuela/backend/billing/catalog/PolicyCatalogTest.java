@@ -33,7 +33,7 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
         for (PolicySet set : context.getBeansOfType(PolicySet.class).values()) {
             sets.add(set);
         }
-        return PolicyCatalogRenderer.render(sets);
+        return PolicyCatalogRenderer.render(sets, com.red_escuela.backend.shared.domain.statemachine.StateMachineDiscovery.findTablesDeclaredInMain());
     }
 
     @Test
@@ -56,5 +56,14 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
         assertThat(declared).contains("## Momento INVOICE_ISSUING")
                 .contains("| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |")
                 .contains("| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |");
+    }
+
+    @Test
+    void theCatalogIncludesTheStateMachinesSection() {
+        assertThat(renderDeclaredCatalog()).contains("## Máquinas de estado")
+                .contains("### InvoiceDocumentStatusStateMachine")
+                .contains("### InvoicePaymentStatusStateMachine")
+                .contains("Transiciones válidas: 7 de 25")
+                .contains("Transiciones válidas: 18 de 78");
     }
 }
