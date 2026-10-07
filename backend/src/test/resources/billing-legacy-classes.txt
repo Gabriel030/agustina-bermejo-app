@@ -13,7 +13,6 @@ com.red_escuela.backend.billing.controller.PaymentPlanSelectionController
 com.red_escuela.backend.billing.controller.ProgramYearBillingTemplateController
 com.red_escuela.backend.billing.controller.PromotionController
 com.red_escuela.backend.billing.controller.ScholarshipController
-com.red_escuela.backend.billing.controller.UpfrontRegularizationController
 com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse
 com.red_escuela.backend.billing.dto.AdminInvoicePaymentResponse
 com.red_escuela.backend.billing.dto.AdminInvoiceReceiptResponse
@@ -216,7 +215,6 @@ com.red_escuela.backend.billing.service.ScholarshipGrantSupport
 com.red_escuela.backend.billing.service.ScholarshipService
 com.red_escuela.backend.billing.service.StudentDebtResolutionService
 com.red_escuela.backend.billing.service.SuspendedEnrollmentClosureService
-com.red_escuela.backend.billing.service.UpfrontRegularizationService
 com.red_escuela.backend.billing.service.YearBillingConfigurationApplier
 com.red_escuela.backend.billing.service.YearBillingConfiguredEvent
 com.red_escuela.backend.billing.service.YearBillingConfiguredListener

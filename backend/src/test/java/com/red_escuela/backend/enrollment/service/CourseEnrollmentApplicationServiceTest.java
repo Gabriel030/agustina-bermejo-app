@@ -37,6 +37,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -168,7 +169,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         CourseEnrollmentApplication actualizada = entityManager.find(CourseEnrollmentApplication.class, application.getId());
         assertThat(actualizada.getCourseEnrollment()).isNotNull();
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).hasSize(1);
-        assertThat(actualizada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(actualizada.getPaymentReceipt().getInvoice()).isPaid();
         assertThat(actualizada.getPaymentReceipt().getInvoice().getCourseEnrollment()).isEqualTo(actualizada.getCourseEnrollment());
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());

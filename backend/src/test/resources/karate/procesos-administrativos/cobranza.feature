@@ -23,3 +23,10 @@ Feature: Cobranza — política de mora y webhook de Mercado Pago
     And request {}
     When method post
     Then status 401
+
+  Scenario: La regularizacion de pago anual ya no existe — 404
+    Given path '/billing/upfront-regularization'
+    And header Authorization = 'Bearer ' + directorToken
+    And request {}
+    When method post
+    Then status 404

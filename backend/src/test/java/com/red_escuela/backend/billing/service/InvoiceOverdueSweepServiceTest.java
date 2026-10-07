@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
@@ -43,6 +44,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -133,13 +135,13 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(period);
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(amount);
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoiceRepository.save(invoice);
     }
 
@@ -165,7 +167,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         sweepService.run(LocalDate.now());
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
+        assertThatInvoice(reloaded).isOverdue();
         assertThat(reloaded.getAdjustments()).hasSize(1);
         assertThat(reloaded.getAdjustments().get(0).getType()).isEqualTo(InvoiceAdjustmentType.SURCHARGE);
         assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
@@ -181,7 +183,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         sweepService.run(LocalDate.now());
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(reloaded).isPending();
         assertThat(reloaded.getAdjustments()).isEmpty();
     }
 
@@ -208,7 +210,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         }
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(reloaded).isPending();
         assertThat(reloaded.getAdjustments()).isEmpty();
 
         var logs = batchExecutionLogRepository.findByJobNameOrderByRanAtDesc("InvoiceOverdueSweepService");
@@ -268,7 +270,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         rowProcessor.process(invoice.getId(), policy);
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
+        assertThatInvoice(reloaded).isOverdue();
         assertThat(reloaded.getAdjustments()).hasSize(1);
         assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
     }

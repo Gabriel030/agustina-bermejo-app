@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
@@ -38,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
@@ -118,13 +120,13 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(3));
         invoice.setDueDate(LocalDate.now().minusMonths(3));
         invoice.setBaseAmount(ars(deuda));
-        invoice.setStatus(InvoiceStatus.OVERDUE);
+        BillingTestFixtures.markInvoiceAsOverdue(invoice);
         invoiceRepository.save(invoice);
         return enrollment;
     }
@@ -161,13 +163,13 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = programEnrollmentRepository.save(enrollment);
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now().plusDays(5));
         invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         invoiceRepository.save(invoice);
 
         Program programNuevo = persistProgram();
@@ -221,7 +223,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         Invoice deudaVieja = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow();
-        assertThat(deudaVieja.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatInvoice(deudaVieja).isWaived();
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
@@ -263,8 +265,8 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo1.getId()).get(0).getId()).orElseThrow();
         Invoice deuda2 = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo2.getId()).get(0).getId()).orElseThrow();
-        assertThat(deuda1.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
-        assertThat(deuda2.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatInvoice(deuda1).isWaived();
+        assertThatInvoice(deuda2).isWaived();
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);

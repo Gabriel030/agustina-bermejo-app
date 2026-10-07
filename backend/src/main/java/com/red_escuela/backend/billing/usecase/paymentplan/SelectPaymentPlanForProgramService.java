@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionInvoiceIssuingService;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.exception.PaymentPlanOptionMismatchException;
@@ -17,7 +16,6 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.billing.service.RecurringFeeWindowService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +29,6 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     private final CurrentPersonService currentPersonService;
     private final PaymentPlanSelectionGuard guard;
     private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
-    private final RecurringFeeWindowService recurringFeeWindowService;
     private final PromotionRedeemer promotionRedeemer;
     private final PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService;
     private final Clock clock;
@@ -39,7 +36,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
     public SelectPaymentPlanForProgramService(PaymentPlanSelectionRepository paymentPlanSelectionRepository, PaymentPlanOptionFinder paymentPlanOptionFinder,
                                                ProgramEnrollmentRepository programEnrollmentRepository, CurrentPersonService currentPersonService,
                                                PaymentPlanSelectionGuard guard, ProgramEnrollmentBillingSetup programEnrollmentBillingSetup,
-                                               RecurringFeeWindowService recurringFeeWindowService, PromotionRedeemer promotionRedeemer,
+                                               PromotionRedeemer promotionRedeemer,
                                                PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService,
                                                Clock clock) {
         this.invoiceGenerationService = invoiceGenerationService;
@@ -49,7 +46,6 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         this.currentPersonService = currentPersonService;
         this.guard = guard;
         this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
-        this.recurringFeeWindowService = recurringFeeWindowService;
         this.promotionRedeemer = promotionRedeemer;
         this.clock = clock;
     }
@@ -64,7 +60,7 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         if (option.getProgram() == null || !option.getProgram().getId().equals(programEnrollment.getProgram().getId())) {
             throw new PaymentPlanOptionMismatchException(option.getId());
         }
-        guard.validateUpfrontWindow(option);
+        guard.requireAnnualUpfrontAvailableForProgram(option);
 
         boolean isFirstSelection = paymentPlanSelectionRepository.findByProgramEnrollmentIdOrderByEffectiveFrom(programEnrollmentId).isEmpty();
 
@@ -78,10 +74,6 @@ public class SelectPaymentPlanForProgramService implements SelectPaymentPlanForP
         selection.setProgramEnrollment(programEnrollment);
         selection.setPaymentPlanOption(option);
         selection.setEffectiveFrom(YearMonth.now(clock));
-        if (option.getCadence() == PaymentPlanCadence.ANNUAL_UPFRONT) {
-            guard.validateScope(request.scopeMonths(), recurringFeeWindowService.remainingInvoices(programEnrollment));
-            selection.setScopeMonths(request.scopeMonths());
-        }
         selection.setCreatedBy(currentPersonService.resolveCurrentPerson());
         PaymentPlanSelection saved = paymentPlanSelectionRepository.save(selection);
         if (isFirstSelection) {

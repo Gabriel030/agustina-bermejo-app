@@ -246,7 +246,8 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
         runEveryMonth(JAN_2026, YearMonth.of(2027, 12), () -> assertInvariants(enrollment, y26, y27));
 
-        assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(p -> p.getYear() == 2026)).hasSize(10);
+        assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(p -> p.getYear() == 2026 && p.getMonthValue() < 11)).isEmpty();
+        assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT)).contains(YearMonth.of(2026, 11), YearMonth.of(2026, 12));
         assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT).stream().filter(p -> p.getYear() == 2027)).hasSize(10);
         assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).contains(YearMonth.of(2027, 2));
     }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ReinstateEnrollmentRequest;
@@ -143,13 +144,13 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(3));
         invoice.setDueDate(LocalDate.now().minusMonths(3));
         invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(InvoiceStatus.OVERDUE);
+        BillingTestFixtures.markInvoiceAsOverdue(invoice);
         invoiceRepository.save(invoice);
     }
 

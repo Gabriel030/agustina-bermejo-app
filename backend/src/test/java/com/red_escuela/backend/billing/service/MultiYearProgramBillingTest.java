@@ -20,7 +20,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
+import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -329,12 +329,14 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), templateRepite.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
-        PaymentPlanOption adelantado = upfrontPlan(program, director);
+        PaymentPlanOption mensualRepite = monthlyPlan(program, director);
         authenticateAs(director);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 10));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base);
+        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensualRepite.getId(), null));
+        for (int i = 0; i < 10; i++) {
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
+        }
 
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20);
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(10);
     }
 
     @Test
@@ -366,9 +368,10 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         PaymentPlanOption adelantado = upfrontPlan(program, director);
         authenticateAs(director);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 6));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base);
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(6);
+        Long enrollmentId = enrollment.getId();
+        assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(enrollmentId, new SelectPaymentPlanRequest(adelantado.getId(), 6)))
+                .isInstanceOf(AnnualUpfrontNotAvailableException.class);
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(4);
 
         programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
         enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
@@ -378,11 +381,11 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         for (int i = 0; i < 10; i++) {
             invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(10 + i));
         }
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(16);
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(14);
     }
 
     @Test
-    void requestingMoreThanCurrentYearRemainderIsRejectedEvenAfterACompleteYear() {
+    void annualUpfrontIsRejectedEvenAfterACompleteYear() {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRTOPE" + System.nanoTime());
         Program program = persistProgram("Carrera con tope por año " + System.nanoTime());
@@ -413,7 +416,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(adelantado.getId(), 9)))
-                .isInstanceOf(InvalidPaymentPlanScopeException.class);
+                .isInstanceOf(AnnualUpfrontNotAvailableException.class);
     }
 
     @Test

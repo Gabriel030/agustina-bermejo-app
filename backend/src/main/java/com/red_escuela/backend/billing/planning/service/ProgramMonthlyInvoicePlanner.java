@@ -148,10 +148,6 @@ public final class ProgramMonthlyInvoicePlanner implements MonthlyInvoicePlanner
     private void planRecurringFee(ProgramInvoicePlanningFacts facts, Optional<YearCycle> cuotaCycle, boolean hasCoveringCycle,
                                   List<PlannedInvoice> charges, List<InvoicePlanningDecision> decisions) {
         YearMonth month = facts.month();
-        if (facts.cadenceAtMonth() == PaymentPlanCadence.ANNUAL_UPFRONT) {
-            planUpfront(facts, charges, decisions);
-            return;
-        }
         if (facts.entryMonth() != null && month.isBefore(facts.entryMonth())) {
             decisions.add(new InvoicePlanningDecision(2, "BEFORE_ENTRY", "la cursada del alumno empieza en " + facts.entryMonth()));
             return;
@@ -186,36 +182,5 @@ public final class ProgramMonthlyInvoicePlanner implements MonthlyInvoicePlanner
         charges.add(new PlannedInvoice(FeeType.MONTHLY_INSTALLMENT, month, due, facts.today(), cycle.templateId(), null,
                 "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount() + " del año lectivo", false, false));
         decisions.add(new InvoicePlanningDecision(5, "ISSUE_INSTALLMENT", "cuota " + (issuedInTerm + 1) + " de " + cycle.template().getRecurringFeeInvoicesCount()));
-    }
-
-    private void planUpfront(ProgramInvoicePlanningFacts facts, List<PlannedInvoice> charges, List<InvoicePlanningDecision> decisions) {
-        if (facts.upfrontFrom() == null || facts.upfrontScopeMonths() == null) {
-            decisions.add(new InvoicePlanningDecision(5, "UPFRONT_WITHOUT_SCOPE", "el plan anual no tiene alcance"));
-            return;
-        }
-        if (facts.paused() || facts.onlyFinalExamsLeft()) {
-            decisions.add(new InvoicePlanningDecision(5, facts.paused() ? "PAUSED_NOT_BILLED" : "ONLY_FINAL_EXAMS", "no se emiten cuotas del plan anual"));
-            return;
-        }
-        YearMonth last = facts.upfrontFrom().plusMonths(facts.upfrontScopeMonths() - 1L);
-        java.util.Map<Long, Long> issuedByTemplate = new java.util.HashMap<>();
-        for (YearMonth period = facts.upfrontFrom(); !period.isAfter(last); period = period.plusMonths(1)) {
-            Optional<YearCycle> cycle = facts.cycles().forInstallment(period);
-            if (cycle.isEmpty() || facts.recurringPeriods().contains(period)) {
-                continue;
-            }
-            YearCycle current = cycle.get();
-            long issued = issuedByTemplate.computeIfAbsent(current.templateId(),
-                    id -> facts.recurringPeriods().stream().filter(current::installmentRangeContains).count());
-            if (issued >= current.template().getRecurringFeeInvoicesCount()) {
-                decisions.add(new InvoicePlanningDecision(5, "INSTALLMENT_CAP_REACHED", "plan anual " + period));
-                continue;
-            }
-            issuedByTemplate.put(current.templateId(), issued + 1);
-            LocalDate due = facts.today().plusDays(current.template().getRecurringFeeDueDays());
-            charges.add(new PlannedInvoice(FeeType.MONTHLY_INSTALLMENT, period, due, facts.today(), current.templateId(), null,
-                    "cuota " + (issued + 1) + " del plan anual", false, true));
-            decisions.add(new InvoicePlanningDecision(5, "ISSUE_UPFRONT_INSTALLMENT", "cuota del plan anual " + period));
-        }
     }
 }

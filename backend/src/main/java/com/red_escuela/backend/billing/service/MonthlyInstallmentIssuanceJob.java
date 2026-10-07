@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -91,9 +92,8 @@ public class MonthlyInstallmentIssuanceJob {
                 lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithActivePlan(
                         PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
-        sweep("ProgramEnrollmentWithoutMonthlyPlan",
-                lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithoutActivePlan(
-                        PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
+        sweep("ProgramEnrollmentWithExpiredAnnualPlan",
+                lastId -> findEnrollmentIdsWithExpiredAnnualPlan(activeStatuses, month, lastId),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
         sweep("CourseEnrollment",
                 lastId -> paymentPlanSelectionRepository.findCourseEnrollmentIdsWithActivePlan(
@@ -133,6 +133,26 @@ public class MonthlyInstallmentIssuanceJob {
             alertService.refresh(month);
         } catch (RuntimeException e) {
             log.error("Falló la actualización de alertas de configuración de cobro: mes={}", month, e);
+        }
+    }
+
+    private List<Long> findEnrollmentIdsWithExpiredAnnualPlan(List<ProgramEnrollmentStatus> statuses, YearMonth month, Long lastId) {
+        Long cursor = lastId;
+        while (true) {
+            List<PaymentPlanSelection> selections = paymentPlanSelectionRepository.findAnnualUpfrontSelectionsOfProgramEnrollments(
+                    statuses, month, cursor, PageRequest.of(0, PAGE_SIZE));
+            if (selections.isEmpty()) {
+                return List.of();
+            }
+            List<Long> expired = selections.stream()
+                    .filter(selection -> month.isAfter(selection.getEffectiveFrom().plusMonths(selection.getScopeMonths() - 1L)))
+                    .map(selection -> selection.getProgramEnrollment().getId())
+                    .distinct()
+                    .toList();
+            if (!expired.isEmpty()) {
+                return expired;
+            }
+            cursor = selections.get(selections.size() - 1).getProgramEnrollment().getId();
         }
     }
 

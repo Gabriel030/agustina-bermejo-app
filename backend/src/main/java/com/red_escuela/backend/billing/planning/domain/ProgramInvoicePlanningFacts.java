@@ -27,9 +27,7 @@ public record ProgramInvoicePlanningFacts(
         Map<String, SlotWindow> windows,
         Long entryTemplateId,
         Integer entrySlot,
-        LocalDate cursadaStart,
-        YearMonth upfrontFrom,
-        Integer upfrontScopeMonths) {
+        LocalDate cursadaStart) {
 
     public boolean isEntrySlot(YearCycle cycle, int slot) {
         return entryTemplateId != null && entrySlot != null && entryTemplateId.equals(cycle.templateId()) && entrySlot == slot;

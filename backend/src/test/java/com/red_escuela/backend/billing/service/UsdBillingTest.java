@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -50,6 +51,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static com.red_escuela.backend.shared.domain.TestMoney.usd;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,7 +149,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(1));
@@ -180,7 +182,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
         registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
 
         Invoice reloaded = invoiceRepository.findById(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(reloaded).isPaid();
     }
 
     @Test
@@ -194,7 +196,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
                 .isInstanceOf(GatewayCurrencyNotSupportedException.class);
         registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
                 .singleElement().satisfies(allocation -> assertThat(allocation.getAmountApplied()).isEqualTo(usd(100)));
     }
@@ -209,7 +211,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> registerPaymentUseCase.register(paymentOf(invoice, ars(100)), admin))
                 .isInstanceOf(CurrencyMismatchException.class);
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
         assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
     }
 

@@ -29,6 +29,7 @@ import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -174,6 +175,8 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-039")
+    @Tag("D-191")
     void sixMonthCourseOffersOneInstallmentOrSixInstallmentsAccordingToChosenPlan() {
         Person director = persistPersonBase("DIR4" + System.nanoTime());
 
@@ -307,6 +310,8 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-039")
+    @Tag("D-191")
     void runningTheSameMonthTwiceOverAnUpfrontBlockDoesNotDuplicate() {
         Person director = persistPersonBase("DIR41" + System.nanoTime());
         Course course = persistCourse(6, BigDecimal.valueOf(15000), director);
