@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-class MonthlyInvoicePlannerCorrectionsTest extends AbstractChargeSequenceTest {
+class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     private static final YearMonth JAN_2026 = YearMonth.of(2026, 1);
 

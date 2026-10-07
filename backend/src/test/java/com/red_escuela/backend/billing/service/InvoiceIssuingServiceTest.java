@@ -36,7 +36,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class InvoiceIssuingServiceTest extends AbstractChargeSequenceTest {
+class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private BillingTestTrigger trigger;
     @Autowired

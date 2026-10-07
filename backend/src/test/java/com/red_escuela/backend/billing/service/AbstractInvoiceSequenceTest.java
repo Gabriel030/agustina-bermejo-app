@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
-abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
+abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     private static final AtomicLong DNI = new AtomicLong(700_000_000L + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 90_000_000L));
 
     @Autowired

@@ -12,7 +12,7 @@ const API = 'http://localhost:8080';
 function invoice(overrides) {
   return {
     id: 1,
-    feeType: 'RECURRING_FEE',
+    feeType: 'MONTHLY_INSTALLMENT',
     period: '2026-09',
     dueDate: '2026-09-10',
     baseAmount: { amount: '48000.00', currency: 'ARS' },
@@ -28,7 +28,7 @@ function invoice(overrides) {
 
 function billingStatus(enrollmentType, productName, invoices) {
   return {
-    billingStanding: 'UP_TO_DATE',
+    paymentStatus: 'UP_TO_DATE',
     enrollmentType,
     enrollmentId: 10,
     productName,
@@ -48,7 +48,7 @@ function renderDetail(route) {
 }
 
 function withReceipts(receipts) {
-  server.use(http.get(`${API}/me/payment-receipts`, () => HttpResponse.json(receipts)));
+  server.use(http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json(receipts)));
 }
 
 describe('AlumnoPagoDetalle', () => {

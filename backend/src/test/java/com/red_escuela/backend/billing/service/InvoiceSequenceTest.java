@@ -22,7 +22,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-class InvoiceSequenceTest extends AbstractChargeSequenceTest {
+class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
 
     @Autowired
     private BillingConfigurationAlertService alertService;

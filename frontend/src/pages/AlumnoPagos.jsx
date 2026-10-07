@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { useBillingStanding } from '@/hooks/useBilling';
+import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 
 const STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
@@ -36,12 +36,12 @@ export function AlumnoPagos() {
 
   const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
   const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
-  const { data: standings } = useBillingStanding();
+  const { data: standings } = useEnrollmentPaymentStatus();
 
   const cargando = cargandoCursos || cargandoCarreras;
 
   function findStanding(enrollmentType, id) {
-    return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.billingStanding ?? null;
+    return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.paymentStatus ?? null;
   }
 
   const allEnrollments = useMemo(() => [

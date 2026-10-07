@@ -12,7 +12,7 @@ const API = 'http://localhost:8080';
 
 const overdueBreakdown = {
   invoiceId: 61,
-  feeType: 'RECURRING_FEE',
+  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-09',
   baseAmount: { amount: '48000.00', currency: 'ARS' },
   adjustments: [{ type: 'SURCHARGE', amount: { amount: '4800.00', currency: 'ARS' }, humanLabel: 'Recargo por mora' }],
@@ -25,7 +25,7 @@ const overdueBreakdown = {
 function renderTransfer({ receipts = [] } = {}) {
   server.use(
     http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(overdueBreakdown)),
-    http.get(`${API}/me/payment-receipts`, () => HttpResponse.json(receipts)),
+    http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
   );
   return renderWithProviders(
     <>
@@ -71,7 +71,7 @@ describe('AlumnoPagarTransferencia', () => {
 
     expect(await screen.findByText('El archivo pesa más de 5 MB. Subí uno más liviano.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enviar comprobante' })).toBeDisabled();
-    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/payment-receipts') && !String(url).endsWith('/me/payment-receipts'))).toBe(false);
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/bank-transfer-receipts') && !String(url).endsWith('/me/bank-transfer-receipts'))).toBe(false);
   });
 
   it('rejects a file that is not a PDF, JPG or PNG before uploading it', async () => {
@@ -87,7 +87,7 @@ describe('AlumnoPagarTransferencia', () => {
 
   it('explains that there is already a receipt under review when the backend says so', async () => {
     server.use(
-      http.post(`${API}/me/invoices/61/payment-receipts`, () =>
+      http.post(`${API}/me/invoices/61/bank-transfer-receipts`, () =>
         HttpResponse.json({ code: 'PAYMENT_RECEIPT_ALREADY_PENDING' }, { status: 409 }),
       ),
     );

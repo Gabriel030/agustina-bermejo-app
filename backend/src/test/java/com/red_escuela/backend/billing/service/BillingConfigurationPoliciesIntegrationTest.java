@@ -42,7 +42,7 @@ import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequenceTest {
+class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private UpdateYearBillingConfigurationUseCase updateYearConfiguration;
     @Autowired

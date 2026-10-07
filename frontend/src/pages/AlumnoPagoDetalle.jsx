@@ -18,12 +18,11 @@ import { formatDate, hasInvoiceDetail, invoiceConcept } from '@/lib/billing';
 const PAGE_SIZE = 10;
 
 const FEE_TYPE_LABELS = {
-  RECURRING_FEE: 'Cuota mensual',
+  MONTHLY_INSTALLMENT: 'Cuota mensual',
   ENROLLMENT_FEE: 'Matrícula',
-  SUBSCRIPTION_FEE: 'Cuota anual',
-  EXAM_RIGHT: 'Derecho a examen',
+  EXAM_FEE: 'Derecho a examen',
   RETAKEN_SUBJECT_FEE: 'Recurse',
-  DEGREE_ISSUANCE: 'Emisión de título',
+  DEGREE_ISSUANCE_FEE: 'Emisión de título',
   ADMINISTRATIVE_FEE: 'Gestión administrativa',
 };
 

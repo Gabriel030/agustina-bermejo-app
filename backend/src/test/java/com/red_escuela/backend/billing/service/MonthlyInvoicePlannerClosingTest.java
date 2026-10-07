@@ -57,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
+class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private SubjectSectionEnrollmentService enrollmentService;
     @Autowired

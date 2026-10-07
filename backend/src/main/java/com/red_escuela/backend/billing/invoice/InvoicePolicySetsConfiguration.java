@@ -6,6 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import com.red_escuela.backend.billing.invoice.policy.DueDateNotBeforeIssueDatePolicy;
+import com.red_escuela.backend.billing.invoice.policy.EnrollmentFeeSlotRequiredPolicy;
+import com.red_escuela.backend.billing.invoice.policy.EnrollmentFeeSlotWithinTemplateCountPolicy;
+import com.red_escuela.backend.billing.invoice.policy.NotAlreadyIssuedPolicy;
+import com.red_escuela.backend.billing.invoice.policy.OfferingCurrencyPolicy;
+import com.red_escuela.backend.billing.invoice.policy.ReasonFeeTypePolicy;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingContext;
 
 @Configuration

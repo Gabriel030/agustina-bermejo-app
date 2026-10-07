@@ -41,7 +41,7 @@ function mockGraduation({ graduationBody = () => graduation(), progressBody = pr
     http.get(`${API}/graduation-requests/3`, () => HttpResponse.json(graduationBody())),
     http.get(`${API}/program-enrollments/2/progress`, () => HttpResponse.json(progressBody)),
     http.get(`${API}/program-enrollments/2/attendance-summary`, () => HttpResponse.json([])),
-    http.get(`${API}/students/7/billing-overview`, () => HttpResponse.json([{ billingStanding: 'UP_TO_DATE' }])),
+    http.get(`${API}/students/7/billing-overview`, () => HttpResponse.json([{ paymentStatus: 'UP_TO_DATE' }])),
     http.post(`${API}/graduation-requests/3/approve`, approve ?? (() => HttpResponse.json(graduation({ status: 'APPROVED' })))),
   );
 }

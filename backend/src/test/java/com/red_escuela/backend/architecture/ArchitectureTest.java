@@ -56,8 +56,8 @@ class ArchitectureTest {
 
     @Test
     @Tag("D-051")
-    void invoicesAreIssuedOnlyByChargeIssuer() {
-        ArchitectureRules.invoicesAreIssuedOnlyByChargeIssuer().check(MAIN_CLASSES);
+    void invoicesAreIssuedOnlyByInvoiceIssuingService() {
+        ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(MAIN_CLASSES);
     }
 
     @Test
@@ -77,7 +77,7 @@ class ArchitectureTest {
                 .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
                 .importPackages(ArchitectureRules.ROOT + ".architecture.fixture");
 
-        assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByChargeIssuer().check(fixture))
+        assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(fixture))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("InvoiceIssuingFixture");
         assertThatThrownBy(() -> ArchitectureRules.invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing().check(fixture))
@@ -371,4 +371,25 @@ class ArchitectureTest {
     }
 
     private static final String FIXTURE_LEDGER = ArchitectureRules.ROOT + ".architecture.fixture.billing.ledger";
+
+    private static java.util.Set<String> frozenLegacyBillingClasses() throws java.io.IOException {
+        try (var in = ArchitectureTest.class.getResourceAsStream("/billing-legacy-classes.txt")) {
+            return new java.util.HashSet<>(java.util.Arrays.asList(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\\R")));
+        }
+    }
+
+    @Test
+    @Tag("D-173")
+    void billingClassesLiveInTheirSubdomainFolders() throws java.io.IOException {
+        ArchitectureRules.billingClassesLiveInTheirSubdomainFolders(ArchitectureRules.ROOT + ".billing", frozenLegacyBillingClasses()).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-173")
+    void subdomainFoldersRuleDetectsAMisplacedClassAndANewLegacyClass() {
+        assertThatThrownBy(() -> ArchitectureRules.billingClassesLiveInTheirSubdomainFolders(ArchitectureRules.ROOT + ".architecture.fixture.billing", java.util.Set.of()).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("MisplacedBillingClassFixture")
+                .hasMessageContaining("NewLegacyEntityFixture");
+    }
 }
