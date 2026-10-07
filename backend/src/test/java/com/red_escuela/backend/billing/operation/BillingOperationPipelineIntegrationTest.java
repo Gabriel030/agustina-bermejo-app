@@ -36,11 +36,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import org.awaitility.core.ConditionTimeoutException;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -54,6 +57,8 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -116,6 +121,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        awaitQuiescence();
         List<Long> personIds = List.of(director.getId(), administrative.getId(), teacher.getId());
         for (Long personId : personIds) {
             jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", personId);
@@ -162,12 +168,35 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         return count("select count(*) from notification where recipient_id = ? and type = ?", person.getId(), type);
     }
 
+    private String eventsOfThisTestPattern() {
+        List<Long> personIds = List.of(director.getId(), administrative.getId(), teacher.getId());
+        String persons = String.join("|", personIds.stream().map(String::valueOf).toList());
+        List<Long> requestIds = jdbcTemplate.queryForList(
+                "select id from authorization_request where requested_by_id in (?, ?, ?)", Long.class, personIds.toArray());
+        String pattern = "\"createdByPersonId\":(" + persons + ")[,}]";
+        if (requestIds.isEmpty()) {
+            return pattern;
+        }
+        return pattern + "|\"authorizationRequestId\":(" + String.join("|", requestIds.stream().map(String::valueOf).toList()) + ")[,}]";
+    }
+
     private long incompletePublications() {
-        return count("select count(*) from event_publication where completion_date is null");
+        return count("select count(*) from event_publication where completion_date is null and serialized_event ~ ?", eventsOfThisTestPattern());
     }
 
     private long allPublications() {
-        return count("select count(*) from event_publication");
+        return count("select count(*) from event_publication where serialized_event ~ ?", eventsOfThisTestPattern());
+    }
+
+    private boolean belongsToThisTest(EventPublication publication) {
+        return publication.getEvent() instanceof LatePaymentSettingsCreatedEvent event && administrative.getId().equals(event.createdByPersonId());
+    }
+
+    private void awaitQuiescence() {
+        try {
+            await().atMost(Duration.ofSeconds(10)).until(() -> incompletePublications() == 0);
+        } catch (ConditionTimeoutException ignored) {
+        }
     }
 
     @Test
@@ -205,17 +234,17 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     @Tag("D-183")
     @Tag("D-184")
     void failingPostListenerDoesNotRevertAndIsRetriedWithoutDuplicatingTheNotification() {
-        doThrow(new IllegalStateException("channel down")).when(inAppChannel).send(any(), any());
+        doThrow(new IllegalStateException("channel down")).doCallRealMethod().when(inAppChannel).send(any(), any());
         authenticateAs(administrative);
 
         createPolicy.create(request(3, LocalDate.now()));
 
+        verify(inAppChannel, timeout(5000)).send(any(), any());
         await().until(() -> incompletePublications() == 1);
         assertThat(policiesCreatedBy(administrative)).isEqualTo(1);
         assertThat(notificationsFor(director, "LATE_PAYMENT_SETTINGS_CREATED")).isZero();
 
-        reset(inAppChannel);
-        incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
+        incompleteEventPublications.resubmitIncompletePublications(this::belongsToThisTest);
 
         await().until(() -> allPublications() == 0);
         assertThat(notificationsFor(director, "LATE_PAYMENT_SETTINGS_CREATED")).isEqualTo(1);
