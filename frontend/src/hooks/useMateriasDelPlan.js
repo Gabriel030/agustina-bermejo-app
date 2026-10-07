@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useMisMatriculaciones, useMisInscripciones } from '@/hooks/useAlumno';
+import { useMisMatriculaciones, useMisInscripciones } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { clasificarMateriaDelPlan, inscripcionVigente, ordenarFilasDeMaterias } from '@/lib/notas';
 

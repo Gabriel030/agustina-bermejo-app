@@ -30,3 +30,11 @@ export function useJustificarInasistencia() {
       queryClient.invalidateQueries({ queryKey: ['me', 'section-enrollments', sectionEnrollmentId, 'attendance'] }),
   });
 }
+
+export function useAsistenciaPorMateria(programEnrollmentId) {
+  return useQuery({
+    queryKey: ['program-enrollments', programEnrollmentId, 'attendance-summary'],
+    queryFn: () => apiFetch(`/program-enrollments/${programEnrollmentId}/attendance-summary`),
+    enabled: !!programEnrollmentId,
+  });
+}
