@@ -41,7 +41,7 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
         policyEvaluator.requireUnfrozenYearConfiguration(change);
         configurationApplier.applyYearBillingConfiguration(template, request);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
-        eventPublisher.publishEvent(new YearBillingConfiguredEvent(template.getProgram().getId()));
+        eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return saved;
     }
 }

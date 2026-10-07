@@ -1,25 +1,35 @@
 package com.red_escuela.backend.identity.service;
 
+import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.mail.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 public class IdentityEmailDispatcher {
+    private static final Logger log = LoggerFactory.getLogger(IdentityEmailDispatcher.class);
+
     private final EmailService emailService;
+    private final PersonRepository personRepository;
 
-    public IdentityEmailDispatcher(EmailService emailService) {
+    public IdentityEmailDispatcher(EmailService emailService, PersonRepository personRepository) {
         this.emailService = emailService;
+        this.personRepository = personRepository;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @ApplicationModuleListener
     public void onPasswordResetCodeIssued(PasswordResetCodeIssuedEvent event) {
-        emailService.sendPasswordResetCode(event.person(), event.code());
+        personRepository.findById(event.personId()).ifPresentOrElse(
+                person -> emailService.sendPasswordResetCode(person, event.code()),
+                () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId()));
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @ApplicationModuleListener
     public void onEmailVerificationIssued(EmailVerificationIssuedEvent event) {
-        emailService.sendEmailVerification(event.person(), event.verificationLink());
+        personRepository.findById(event.personId()).ifPresentOrElse(
+                person -> emailService.sendEmailVerification(person, event.verificationLink()),
+                () -> log.warn("Verification email skipped, person not found: personId={}", event.personId()));
     }
 }

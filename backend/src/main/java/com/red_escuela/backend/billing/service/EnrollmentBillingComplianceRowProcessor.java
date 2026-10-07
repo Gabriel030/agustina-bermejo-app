@@ -53,7 +53,7 @@ public class EnrollmentBillingComplianceRowProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processCourseEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(id).orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
-        recalculateStanding(enrollment,
+        recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, id,
                 () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByCourseEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
                 policy, today);
@@ -63,15 +63,15 @@ public class EnrollmentBillingComplianceRowProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processProgramEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(id).orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
-        recalculateStanding(enrollment,
+        recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, id,
                 () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
                 () -> invoiceRepository.countByProgramEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
                 policy, today);
         programEnrollmentRepository.save(enrollment);
     }
 
-    private void recalculateStanding(BillableEnrollment billable, Supplier<Optional<Invoice>> oldestOverdueInvoice,
-                                      LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today) {
+    private void recalculateStanding(BillableEnrollment billable, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId,
+                                      Supplier<Optional<Invoice>> oldestOverdueInvoice, LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today) {
         EnrollmentBillingStanding previous = billable.getBillingStanding();
         LocalDateTime previousUpdatedAt = billable.getBillingStandingUpdatedAt();
         long overdueInvoiceCount = overdueCount.getAsLong();
@@ -104,6 +104,7 @@ public class EnrollmentBillingComplianceRowProcessor {
         if (previous == EnrollmentBillingStanding.SUSPENDED && next == EnrollmentBillingStanding.UP_TO_DATE) {
             YearMonth suspendedSince = previousUpdatedAt != null ? YearMonth.from(previousUpdatedAt) : YearMonth.from(today);
             eventPublisher.publishEvent(new SuspensionLiftedEvent(billable, suspendedSince, YearMonth.from(today)));
+            eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(enrollmentType, enrollmentId, suspendedSince, YearMonth.from(today)));
         }
     }
 }

@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
 
@@ -260,9 +261,9 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
         setStanding(enrollment, EnrollmentBillingStanding.SUSPENDED);
         today(date(2026, 5, 20));
         setStanding(enrollment, EnrollmentBillingStanding.UP_TO_DATE);
-        transactionTemplate.executeWithoutResult(status -> eventPublisher().publishEvent(new com.red_escuela.backend.notification.SuspensionLiftedEvent(
-                entityManager.find(ProgramEnrollment.class, enrollment), YearMonth.of(2026, 3), YearMonth.of(2026, 5))));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher().publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, enrollment, YearMonth.of(2026, 3), YearMonth.of(2026, 5))));
 
+        await().until(() -> !invoices(enrollment, FeeType.ENROLLMENT_FEE).isEmpty());
         Invoice fee = invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0);
         assertThat(fee.getDueDate()).isEqualTo(date(2026, 5, 30));
         assertThat(fee.getEnrollmentFeeSlot()).isEqualTo(1);
