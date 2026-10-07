@@ -229,7 +229,7 @@
 				<configuration>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
-					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -Xshare:auto</argLine>
+					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
 				</configuration>
 			</plugin>
 			<plugin>
