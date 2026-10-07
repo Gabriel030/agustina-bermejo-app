@@ -10,7 +10,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { useMiInscripcion, useNotasDeMateria, useDarmeDeBajaDeMateria } from '@/hooks/useAlumno';
 import { COLUMNAS_NOTAS, mapearNotasAColumnas } from '@/lib/notas';
 import { MateriaContenidoMock } from '@/components/alumno/MateriaContenidoMock';
-import { SeccionAsistencia } from '@/components/alumno/SeccionAsistencia';
+import { SeccionAsistencia } from '@/features/attendance/components/SeccionAsistencia';
 
 const ESTADOS_QUE_ADMITEN_BAJA = new Set(['ENROLLED', 'IN_PROGRESS']);
 

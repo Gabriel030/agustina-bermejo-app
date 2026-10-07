@@ -16,7 +16,7 @@ import {
   useActivateCourse,
   useSetCourseCatalogVisibility,
 } from '@/features/gestion-academica/hooks/useCourses';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { PanelModulo } from './PanelModulo';
 
 const STATUS_CONFIG = {

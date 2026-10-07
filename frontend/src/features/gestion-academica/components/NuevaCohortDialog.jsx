@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useProgramBillingTemplates, useCreateCohort } from '@/features/gestion-academica/hooks/useCohorts';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 
 const INTAKE_LABELS = {
   FIRST: '1er semestre',

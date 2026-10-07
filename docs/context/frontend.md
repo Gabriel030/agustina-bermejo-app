@@ -106,8 +106,13 @@ El front se organiza por módulo de backend, no por rol:
   `Placeholder`). `AppRouter` solo compone: para sumar una pantalla se toca solo el `routes.jsx`
   de su módulo.
 - Un componente que usan dos o más módulos va a `src/components/`, no a una feature.
-- Hasta que F1 mueva las páginas, cada `routes.jsx` importa desde `src/pages/` y desde las
-  carpetas viejas (`gestion-personas`, `gestion-academica`, `oferta-academica`, `avisos`).
+- F1 ya movió identity, academic-structure (solo `oferta-academica`), enrollment, attendance,
+  evaluation, graduation, announcements y notifications: tienen `pages/`, `components/` y `hooks/`
+  propios. Siguen pendientes `gestion-academica` (se suma a academic-structure), billing (V2-14/15/16)
+  y workspace (`src/pages/` y los hooks por rol `useAlumno`, `useDocente`, `useDirector`).
+- Convención "copiar, no borrar": cuando un hook por rol mezcla módulos, cada módulo copia a su
+  carpeta solo sus funciones y el archivo original queda hasta que workspace lo borre.
+- Un módulo expone a los demás solo lo que sale de su `index.js`.
 
 Regla de límites (ESLint, `no-restricted-imports`, en `warn` hasta M6): una feature no importa
 de otra salvo por su `index.js`, y `components/`, `lib/` y `layouts/` no importan de `features/`.

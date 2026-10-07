@@ -18,7 +18,7 @@ import {
   useBillingConfigurationAlerts,
 } from '@/features/gestion-academica/hooks/useCohorts';
 import { MESES, descripcionMatriculas } from '@/features/gestion-academica/lib/aniosLectivos';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 
 const SELECT_CLASS =
   'w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent';

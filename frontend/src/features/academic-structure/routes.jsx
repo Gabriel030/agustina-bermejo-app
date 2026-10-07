@@ -8,11 +8,11 @@ import { CursoWizard } from '@/features/gestion-academica/pages/CursoWizard';
 import { CursoDetalle } from '@/features/gestion-academica/pages/CursoDetalle';
 import { CursoEditarDatos } from '@/features/gestion-academica/pages/CursoEditarDatos';
 import { DirectorSubjectReview } from '@/features/gestion-academica/pages/DirectorSubjectReview';
-import { PreceptorOfertaAcademica } from '@/features/oferta-academica/pages/PreceptorOfertaAcademica';
-import { PreceptorDetalleCarrera } from '@/features/oferta-academica/pages/PreceptorDetalleCarrera';
-import { PreceptorDetalleCurso } from '@/features/oferta-academica/pages/PreceptorDetalleCurso';
-import { PreceptorCalendario } from '@/features/oferta-academica/pages/PreceptorCalendario';
-import { PreceptorNuevoCiclo } from '@/features/oferta-academica/pages/PreceptorNuevoCiclo';
+import { PreceptorOfertaAcademica } from '@/features/academic-structure/pages/PreceptorOfertaAcademica';
+import { PreceptorDetalleCarrera } from '@/features/academic-structure/pages/PreceptorDetalleCarrera';
+import { PreceptorDetalleCurso } from '@/features/academic-structure/pages/PreceptorDetalleCurso';
+import { PreceptorCalendario } from '@/features/academic-structure/pages/PreceptorCalendario';
+import { PreceptorNuevoCiclo } from '@/features/academic-structure/pages/PreceptorNuevoCiclo';
 
 export const routes = {
   public: [],

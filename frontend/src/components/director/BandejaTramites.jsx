@@ -6,8 +6,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Buscador } from '@/components/catalogo/Buscador';
-import { Paginador } from '@/components/catalogo/Paginador';
+import { Buscador } from '@/components/Buscador';
+import { Paginador } from '@/components/Paginador';
 
 const POR_PAGINA = 8;
 

@@ -1,6 +1,6 @@
-import { DocenteComisionDetalle } from '@/features/avisos/pages/DocenteComisionDetalle';
-import { AvisoWizard } from '@/features/avisos/pages/AvisoWizard';
-import { AvisoEditar } from '@/features/avisos/pages/AvisoEditar';
+import { DocenteComisionDetalle } from '@/features/announcements/pages/DocenteComisionDetalle';
+import { AvisoWizard } from '@/features/announcements/pages/AvisoWizard';
+import { AvisoEditar } from '@/features/announcements/pages/AvisoEditar';
 
 export const routes = {
   public: [],
