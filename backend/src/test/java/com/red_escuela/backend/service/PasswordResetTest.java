@@ -104,7 +104,8 @@ class PasswordResetTest extends AbstractIntegrationTest {
 
         requestPasswordResetUseCase.requestReset("resetuser1@example.com");
 
-        List<PasswordResetToken> tokens = passwordResetTokenRepository.findAll();
+        List<PasswordResetToken> tokens = passwordResetTokenRepository.findAll().stream()
+                .filter(token -> token.getPerson().getId().equals(person.getId())).toList();
         assertThat(tokens).hasSize(1);
         assertThat(tokens.get(0).getPerson().getId()).isEqualTo(person.getId());
         assertThat(tokens.get(0).getUsed()).isFalse();
@@ -114,9 +115,11 @@ class PasswordResetTest extends AbstractIntegrationTest {
 
     @Test
     void requestPasswordResetWithNonExistentEmailCreatesNothingAndDoesNotFail() {
+        long before = passwordResetTokenRepository.count();
+
         requestPasswordResetUseCase.requestReset("no-existe@example.com");
 
-        assertThat(passwordResetTokenRepository.findAll()).isEmpty();
+        assertThat(passwordResetTokenRepository.count()).isEqualTo(before);
     }
 
     @Test
