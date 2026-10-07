@@ -23,6 +23,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 4 | SuspensionInvoiceCountAtLeastOnePolicy | SUSPENSION_INVOICE_COUNT_BELOW_ONE | D-147 |
 | 5 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059 |
 
+## Momento PAYMENT_PLAN_SELECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontAvailableForProgramPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE | D-131, D-191 |
+
 ## Momento YEAR_BILLING_CONFIGURATION
 
 | Orden | Policy | Códigos de violación | Decisiones |
