@@ -50,9 +50,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.invoice..", "..billing.account.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.invoice", ROOT + ".billing.account"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -230,6 +230,14 @@ public final class ArchitectureRules {
         return com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods().that().areAnnotatedWith(org.springframework.modulith.events.ApplicationModuleListener.class)
                 .or().areAnnotatedWith(org.springframework.scheduling.annotation.Async.class).should(allowedOwner)
                 .because("payment and enrollment are processed synchronously; async only for idempotent billing post listeners (D-178, D-183)");
+    }
+
+    public static ArchRule domainEventsCarryNoEntities(Class<? extends java.lang.annotation.Annotation> entityAnnotation) {
+        return noFields()
+                .that().areDeclaredInClassesThat().areAssignableTo(com.red_escuela.backend.shared.event.DomainEvent.class)
+                .should().haveRawType(DescribedPredicate.describe("a JPA entity", (JavaClass type) -> type.isAnnotatedWith(entityAnnotation)))
+                .allowEmptyShould(true)
+                .because("domain events are serialized into event_publication and carry ids and plain values, never entities");
     }
 
     public static ArchRule academicStructureDoesNotDependOnBilling() {

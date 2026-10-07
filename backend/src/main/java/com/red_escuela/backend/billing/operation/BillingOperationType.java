@@ -1,0 +1,5 @@
+package com.red_escuela.backend.billing.operation;
+
+public enum BillingOperationType {
+    CREATE_LATE_PAYMENT_SETTINGS
+}

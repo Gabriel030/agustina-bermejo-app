@@ -133,6 +133,17 @@ toda `Policy` declara `@PolicyRule` (códigos de violación y decisiones);
 `academicstructure` no depende de `billing`. `UseCaseBranchingTest` prohíbe
 `if`, `switch` y ternarios en los `*Service` `@UseCase` de esos paquetes.
 
+Pipeline de operación (V2-00c2): toda operación que cambia configuración o
+estado económico implementa `BillingOperation` y corre por
+`BillingOperationPipeline.runOperation` (validación, pre-procesamiento con
+handlers registrados en `OperationPreHandlers`, procesamiento, y publicación de
+eventos de `billing.events` dentro de la misma transacción). Los efectos de post
+son `@ApplicationModuleListener` idempotentes: usan `ProcessedEffectGuard`
+(tabla `processed_effect`, evento `DeduplicableDomainEvent`) porque el registro
+de Spring Modulith entrega al menos una vez. Un handler de pre que pide
+autorización abre un `AuthorizationRequest` (`billing.authorization`) y la
+operación no se procesa hasta que se aprueba.
+
 Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
 `BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
 `implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
