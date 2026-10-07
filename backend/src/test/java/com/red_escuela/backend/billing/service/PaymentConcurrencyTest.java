@@ -30,6 +30,7 @@ import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -188,6 +189,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("contradicts-D-136")
     void twoConcurrentPartialPaymentsDoNotExceedTheBalance() throws Exception {
         Person admin1 = persistPerson("admin.concurrencia3." + System.nanoTime());
         Person admin2 = persistPerson("admin.concurrencia4." + System.nanoTime());

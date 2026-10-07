@@ -26,6 +26,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -139,6 +140,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-065")
     void studentWithOverdueDebtInOneProgramCannotEnrollInADifferentProgram() {
         Student student = persistStudent("88010002");
         Program programConDeuda = persistProgram();
@@ -192,6 +194,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("contradicts-D-136")
     void partialPaymentStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");

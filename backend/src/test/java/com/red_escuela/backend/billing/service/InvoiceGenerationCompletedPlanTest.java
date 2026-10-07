@@ -42,6 +42,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -255,6 +256,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-038")
     void studentWhoCompletedThePlanDoesNotReceiveTheNextMonthlyInstallment() {
         BilledStudent billed = setUpMonthlyBilledStudent("93000001", "93000002");
         invoiceGenerationService.generateNextInstallmentForProgram(billed.enrollment(), FIRST_MONTH);
@@ -295,6 +297,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-038")
     void completedPlanStopsBillingButTheUnpaidInstallmentBlocksGraduationUntilItIsPaid() {
         BilledStudent billed = setUpMonthlyBilledStudent("93000005", "93000006");
         invoiceGenerationService.generateNextInstallmentForProgram(billed.enrollment(), FIRST_MONTH);

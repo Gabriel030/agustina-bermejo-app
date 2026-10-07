@@ -29,6 +29,7 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -139,6 +140,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("contradicts-D-142")
     void voluntaryWithdrawalCancelsPendingInstallments() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000001." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
@@ -152,6 +154,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-141")
     void voluntaryWithdrawalWithFutureInstallmentsAlreadyPaidGeneratesCreditNoteForThatPeriod() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000002." + System.nanoTime());
         persistInvoice(enrollment, ars(1000), InvoiceStatus.PAID, YearMonth.now());
@@ -184,6 +187,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-141")
     void voluntaryWithdrawalWithoutFutureInstallmentsAlreadyPaidGeneratesNoCreditNote() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000005." + System.nanoTime());
         persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
@@ -196,6 +200,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-142")
     void withdrawalForNonPaymentDoesNotCancelInstallmentsOrGenerateCredit() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000003." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));

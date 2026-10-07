@@ -23,6 +23,6 @@ public class BillingPolicyConfiguration {
                 new EnrollmentFeeSlotRequiredPolicy(),
                 new OfferingCurrencyPolicy(),
                 new NotAlreadyIssuedPolicy());
-        return PolicySet.of(ordered);
+        return PolicySet.named("INVOICE_ISSUING", ordered);
     }
 }

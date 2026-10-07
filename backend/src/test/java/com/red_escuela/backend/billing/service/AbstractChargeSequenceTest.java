@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
@@ -31,7 +32,9 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -64,6 +67,16 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
     protected TransactionTemplate transactionTemplate;
     @Autowired
     protected BillingTestTrigger enrollmentBillingTrigger;
+
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    protected BillingInvariantChecker invariantChecker;
+
+    @BeforeEach
+    void startInvariantChecker() {
+        invariantChecker = BillingInvariantChecker.startingNow(jdbcTemplate);
+    }
 
     protected record Year(Long templateId, Long termId, int year) {
     }
@@ -341,6 +354,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
             today(month.atDay(1));
             job.run();
             afterEachMonth.run();
+            invariantChecker.assertAllBillingInvariantsHold(month.atDay(1));
         }
     }
 

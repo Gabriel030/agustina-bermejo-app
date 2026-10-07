@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.issuing.IssuanceContext;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.Percentage;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -34,6 +35,7 @@ class IssuancePoliciesTest {
     }
 
     @Test
+    @Tag("D-057")
     void dueDateEqualToTodayIsAllowedAndYesterdayIsRejected() {
         DueDateNotBeforeIssueDatePolicy policy = new DueDateNotBeforeIssueDatePolicy();
 

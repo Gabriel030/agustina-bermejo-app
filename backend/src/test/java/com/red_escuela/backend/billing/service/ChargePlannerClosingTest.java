@@ -38,6 +38,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
@@ -128,6 +129,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-001")
     void everyInstallmentIsDueTenDaysAfterItsEmissionAndTheLectiveYearHasNoInstallmentsInJanuaryNorFebruary() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -152,6 +154,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-057")
     void anInstallmentEmittedOnTheThirdDayIsDueOnTheThirteenth() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -165,6 +168,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-057")
     void theYearCanConfigureTheDueDaysOfItsInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -228,6 +232,8 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-026")
+    @Tag("contradicts-D-136")
     void completingAPartialPaymentWithAnotherPaymentEnablesTheEnrollment() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -249,6 +255,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-019")
     void theAdmissionFeeFlowLeavesASingleEntryFeeThatIsNeverDiscountedOnceItWasPaid() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -285,6 +292,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-014")
     void examRegistrationsRequireTheFeeOfTheTermTheStudentTookAlsoInFebruaryOfTheNextYear() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 7);
@@ -322,6 +330,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("contradicts-D-157")
     void aScholarshipCanBeConfiguredForTheEnrollmentFeeAndAnotherOnlyForTheInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -352,6 +361,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("contradicts-D-142")
     void aSuspendedStudentWhoDoesNotPayIsWithdrawnWhenTheTermOfTheSuspensionEndsWithTheDebtCancelled() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -410,6 +420,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    @Tag("D-008")
     void noTermTypeIsIrregularByDefault() {
         Set<String> irregular = (Set<String>) ReflectionTestUtils.getField(contextLoader, "irregularTermTypes");
         assertThat(irregular).isEmpty();

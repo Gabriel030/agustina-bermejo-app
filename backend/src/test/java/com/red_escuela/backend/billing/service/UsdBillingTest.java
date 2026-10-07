@@ -12,6 +12,8 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
+import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -35,6 +37,7 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,6 +61,9 @@ class UsdBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private RegisterPaymentUseCase registerPaymentUseCase;
+
+    @Autowired
+    private CreateMpPreferenceUseCase createMpPreferenceUseCase;
 
     @Autowired
     private GetFinancialDashboardUseCase getFinancialDashboardUseCase;
@@ -162,6 +168,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-097")
     void anInstallmentInUsdPaidInUsdIsSettled() {
         Person admin = persistPerson("admin.usd1." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student1." + System.nanoTime()), Currency.USD);
@@ -174,6 +181,23 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-086")
+    void mercadoPagoIsNotOfferedForAnInstallmentInUsdAndStaffRegistersItManually() {
+        Person admin = persistPerson("admin.usd4." + System.nanoTime());
+        Student student = persistStudent("usd.student4." + System.nanoTime());
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoiceStatus.PENDING);
+
+        assertThatThrownBy(() -> createMpPreferenceUseCase.create(invoice.getId(), student.getId()))
+                .isInstanceOf(GatewayCurrencyNotSupportedException.class);
+        registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
+
+        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
+                .singleElement().satisfies(allocation -> assertThat(allocation.getAmountApplied()).isEqualTo(usd(100)));
+    }
+
+    @Test
+    @Tag("D-097")
     void aPaymentInArsIsNotAppliedToAnInstallmentInUsd() {
         Person admin = persistPerson("admin.usd2." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student2." + System.nanoTime()), Currency.USD);
@@ -187,6 +211,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-097")
     void theAccountStatementWithDebtsInBothCurrenciesShowsTwoTotals() {
         FinancialDashboardResponse before = getFinancialDashboardUseCase.execute();
         Student student = persistStudent("usd.student3." + System.nanoTime());

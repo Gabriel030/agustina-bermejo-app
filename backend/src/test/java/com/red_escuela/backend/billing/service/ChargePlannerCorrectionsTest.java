@@ -18,6 +18,7 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermE
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.identity.entity.Person;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -68,6 +69,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-049")
     void lateEnrollmentChoosingThePlanThroughTheUseCaseKeepsTheMonthInstallment() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -93,6 +95,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-009")
     void movingTheSecondFeeMonthOfARunningYearNeverEmitsAThirdFee() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 2, 2, 7);
@@ -131,6 +134,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-015")
     void certificatesDoNotRequireTheFeeFromGraduatesNorEmitOneOnDemand() {
         Career career = newCareer();
         newYear(career, 2026, 10, 1, 2, null);
@@ -174,6 +178,8 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-066")
+    @Tag("contradicts-D-142")
     void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtCancelledWhenTheYearEnds() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -201,6 +207,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-068")
     void pausedEnrollmentsAreBilledOnlyWhenTheYearIsConfiguredToChargeWhilePaused() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -224,6 +231,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-040")
     void upfrontStudentWithoutANewChoiceFallsBackToMonthlyChargesInTheNextYear() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -241,6 +249,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-025")
     void aFeeEmittedAfterTheClosingOfTheWindowIsDueTenDaysLaterAndNeverBornOverdue() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);

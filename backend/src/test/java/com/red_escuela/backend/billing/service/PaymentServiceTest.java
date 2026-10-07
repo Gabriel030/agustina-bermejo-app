@@ -39,6 +39,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -208,6 +209,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-084")
     void payingEnrollmentFeePlusFiveInstallmentsInOnePaymentLeavesAllSixInvoicesPaid() {
         Person admin = persistPerson("admin.pago4." + System.nanoTime());
         Student student = persistStudent("96000004");

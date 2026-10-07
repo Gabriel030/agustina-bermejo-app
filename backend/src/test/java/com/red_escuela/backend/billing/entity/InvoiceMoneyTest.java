@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.entity;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ class InvoiceMoneyTest {
     }
 
     @Test
+    @Tag("D-099")
     void aTenPercentSurchargeOnFortyEightThousandIsFourThousandEightHundredAndTheBalanceFiftyTwoThousandEightHundred() {
         Invoice invoice = pendingInvoice(ars(48000));
 

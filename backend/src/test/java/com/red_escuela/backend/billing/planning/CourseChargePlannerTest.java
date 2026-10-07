@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.planning;
 
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ class CourseChargePlannerTest {
     }
 
     @Test
+    @Tag("D-039")
     void monthlyChargeIsIssuedAtTheEmissionDatePriceWithDueDateTenDaysLater() {
         ChargePlan plan = planner.plan(facts(true, false, true, PaymentPlanCadence.MONTHLY, MARCH, 4, Set.of(), 0, null, null));
 

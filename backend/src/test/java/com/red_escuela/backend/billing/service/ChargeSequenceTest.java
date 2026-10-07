@@ -11,6 +11,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,6 +68,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-018")
     void entryFeeDiscountIsConfigurableAndZeroMeansNoDiscount() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -82,6 +84,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-002")
     void twoEnrollmentFeesMarchIntakeEmitsOnePerSemesterAndTheEntryFeeCountsAsTheFirst() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 2, 2, 7);
@@ -98,6 +101,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-020")
     void twoEnrollmentFeesAugustIntakeEntryFeeCoversTheSecondSemesterSoJulyIsNotCharged() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 2, 2, 7);
@@ -114,6 +118,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-003")
     void secondYearStudentIsBilledAgainstTheNewLectiveYearConfigurationNotTheEntryCohort() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -131,6 +136,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-035")
     void priceChangeInTheMiddleOfTheYearOnlyAffectsWhatIsEmittedAfterTheChange() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -173,6 +179,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-055")
     void jobDoesNotEmitOnDaySixAndTheManualRunCompletesWhatIsPending() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -191,6 +198,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-049")
     void lateEnrollmentThroughThePaymentPlanSelectionIsChargedTheCurrentMonthButNotThePastOnes() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -211,6 +219,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-049")
     void reactivationAfterSuspensionEmitsTheCurrentMonthChargesInTheSameOperation() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -233,6 +242,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-006")
     void withoutAConfiguredLectiveYearNothingIsEmittedAnAlertIsRaisedAndConfiguringItCompletesThePending() {
         Career career = newCareer();
         newYear(career, 2026, 10, 1, 2, null);
@@ -259,6 +269,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-033")
     void aMonthInsideTheInstallmentRangeIssuesTwoInvoicesAndOneOutsideIssuesOnlyTheEnrollmentFee() {
         Career career = newCareer();
         Year inside = newYear(career, 2026, 10, 1, 3, null);
@@ -276,6 +287,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-034")
     void installmentsNeverExceedTheLectiveYearCap() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 4, 1, 2, null);
@@ -288,6 +300,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-007")
     void onlyActiveEnrollmentsAreBilledPausedIncluded() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -328,6 +341,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-016")
     void studentWhoOnlyOwesFinalExamsIsNotChargedUnlessTheYearIsConfiguredToRequireIt() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -349,6 +363,8 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-022")
+    @Tag("D-024")
     void enrollmentFeeIsEmittedFifteenDaysBeforeTheEnrollmentWindowOpensWithDueDateAtWindowCloseAndNotRetroactively() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -370,6 +386,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-026")
     void windowThatClosedBeforeTheYearWasConfiguredIsNotChargedRetroactively() {
         Career career = newCareer();
         newYear(career, 2027, 10, 1, 2, null);
@@ -384,6 +401,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-026")
     void settingUpTheYearEmitsImmediatelyToWhoeverHasAnOpenWindowWithoutEnrollmentFee() {
         Career career = newCareer();
         newSection(career, newCuatrimestre(2027, 3, date(2027, 1, 25), date(2027, 3, 12), "1C"));
@@ -400,6 +418,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-050")
     void mixedFleetKeepsAllInvariantsOverTwoLectiveYears() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 2, 2, 7);
@@ -429,6 +448,7 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-036")
     void alreadyIssuedChargesAreNeverTouchedWhenTheConfigurationChanges() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
@@ -445,6 +465,25 @@ class ChargeSequenceTest extends AbstractChargeSequenceTest {
 
         assertThat(sequence(enrollment)).isEqualTo(before);
         assertThat(invoices(enrollment, FeeType.RECURRING_FEE).get(0).getStatus()).isEqualTo(InvoiceStatus.PAID);
+    }
+
+    @Test
+    @Tag("D-005")
+    void firstAndThirdYearStudentsOfTheSameProgramPayTheSameInstallment() {
+        Career career = newCareer();
+        Year y27 = newYear(career, 2027, 10, 1, 2, null);
+        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
+        today(date(2027, 1, 15));
+        Long firstYear = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 15));
+        Long thirdYear = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2025, 3, 1));
+        issueEntryFee(firstYear);
+
+        runEveryMonth(YearMonth.of(2027, 1), YearMonth.of(2027, 4), () -> { });
+
+        Invoice firstYearApril = invoices(firstYear, FeeType.RECURRING_FEE).stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow();
+        Invoice thirdYearApril = invoices(thirdYear, FeeType.RECURRING_FEE).stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow();
+        assertThat(firstYearApril.getBaseAmount()).isEqualTo(ars(10000));
+        assertThat(thirdYearApril.getBaseAmount()).isEqualTo(firstYearApril.getBaseAmount());
     }
 
     private List<BillingConfigurationAlert> openAlerts(Career career) {

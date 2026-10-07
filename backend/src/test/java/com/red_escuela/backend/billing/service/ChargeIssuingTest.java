@@ -19,6 +19,7 @@ import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.exception.InvoiceAlreadyAttachedException;
 import com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException;
 import com.red_escuela.backend.billing.issuing.ChargeRequests;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -109,6 +110,7 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-018")
     void t03SecondIntakeEntryFeeEmittedByTheJobAlsoCarriesTheDiscount() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 8);
@@ -240,6 +242,7 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-019")
     void t04AdmissionInvoiceIsBornWithTemplateAndSlotWithoutDiscountAndTheLaterPlanSelectionDoesNotIssueAnotherEntryFee() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 8);
@@ -275,6 +278,7 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("contradicts-D-127")
     void t05RejectedAdmissionLeavesTheInvoiceCancelledWithItsReason() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -336,6 +340,7 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-021")
     void entryFeeIssuedBySelectionFirstAndByTheJobAfterwardsIsExactlyOneForTheSameMonth() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
@@ -356,6 +361,7 @@ class ChargeIssuingTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-021")
     void entryFeeIssuedByTheJobFirstAndBySelectionAfterwardsIsExactlyOneForTheSameMonth() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);

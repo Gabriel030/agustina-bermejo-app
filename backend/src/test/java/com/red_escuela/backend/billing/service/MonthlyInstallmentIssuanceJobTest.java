@@ -41,6 +41,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.Grade;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -401,6 +402,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-037")
     void doesNotIssueWhenTheStudentOnlyOwesFinalExams() {
         Fixture fixture = monthlyFixture("94100081");
         addSectionEnrollment(fixture, EnrollmentStatus.REGULAR);
@@ -477,6 +479,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-039")
     void issuesOneInstallmentPerMonthToMonthlyCoursesAndNeverAnEnrollmentFee() {
         CourseEnrollment enrollment = transactionTemplate.execute(tx -> {
             Person director = persistPerson("94100121");
@@ -533,6 +536,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-046")
     void graduatingWithAnAnnualPaymentCoveringFuturePeriodsGeneratesACreditNote() {
         Fixture fixture = monthlyFixture("94100131");
         YearMonth now = YearMonth.now();

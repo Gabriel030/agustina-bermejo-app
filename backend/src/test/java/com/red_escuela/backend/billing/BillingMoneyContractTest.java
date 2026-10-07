@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationResponse;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import com.red_escuela.backend.shared.serialization.ValueObjectJacksonModule;
 import jakarta.validation.Valid;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -71,6 +72,7 @@ class BillingMoneyContractTest {
     }
 
     @Test
+    @Tag("D-098")
     void aRequestWithAnAmountWithoutCurrencyIsRejectedWith400() throws Exception {
         mockMvc.perform(post("/contract/allocation").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"invoiceId\":1,\"amountApplied\":{\"amount\":\"100.00\"}}"))
@@ -85,6 +87,7 @@ class BillingMoneyContractTest {
     }
 
     @Test
+    @Tag("D-099")
     void aSurchargePercentOfTenIsKeptAsTenAndOneHundredFiftyIsRejectedWith400() throws Exception {
         String body = "{\"gracePeriodDays\":10,\"surchargePercent\":%s,\"suspensionAfterDays\":30,"
                 + "\"suspensionAfterInvoiceCount\":2,\"withdrawalAfterDays\":60,\"withdrawalAfterInvoiceCount\":3}";
@@ -105,6 +108,7 @@ class BillingMoneyContractTest {
     }
 
     @Test
+    @Tag("D-099")
     void thePolicyResponseExposesThePercentInPoints() throws Exception {
         String json = objectMapper.writeValueAsString(new CollectionsPolicyResponse(
                 1L, 10, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("10")),
