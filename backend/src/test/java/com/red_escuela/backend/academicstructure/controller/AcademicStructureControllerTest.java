@@ -25,6 +25,7 @@ import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -231,10 +232,13 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subjectA = new Subject();
+
+        subjectA.setStatus(SubjectStatus.ACTIVE);
         subjectA.setCode(TestSubjectCodes.next());
         subjectA.setName("Materia MinGrade A");
         entityManager.persist(subjectA);
         Subject subjectB = new Subject();
+        subjectB.setStatus(SubjectStatus.ACTIVE);
         subjectB.setCode(TestSubjectCodes.next());
         subjectB.setName("Materia MinGrade B");
         entityManager.persist(subjectB);
@@ -454,6 +458,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia ProgramSubject Baja");
         entityManager.persist(subject);
@@ -641,6 +646,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia del grupo en uso");
         entityManager.persist(subject);
@@ -703,6 +709,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Mandatory");
         entityManager.persist(subject);
@@ -727,6 +734,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Elective");
         entityManager.persist(subject);

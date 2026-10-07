@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -84,6 +85,7 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
     void reminderTenDaysBeforeEnrollmentOpensIsActuallyStoredForTheLeadInstructor() {
         inTransaction().executeWithoutResult(status -> {
             Subject subject = new Subject();
+            subject.setStatus(SubjectStatus.ACTIVE);
             subject.setCode(TestSubjectCodes.next());
             subject.setName("MateriaRecordatorio");
             entityManager.persist(subject);

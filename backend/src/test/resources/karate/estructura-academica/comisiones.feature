@@ -271,6 +271,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
@@ -333,6 +334,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -382,6 +384,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -425,6 +428,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken

@@ -5,6 +5,7 @@ import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.academicstructure.exception.IncompleteSubjectException;
 import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -114,8 +115,14 @@ public class Subject {
     }
 
     public void requireAssignableToPlan() {
-        if (status == SubjectStatus.PENDING_APPROVAL || status == SubjectStatus.REJECTED) {
+        if (status == SubjectStatus.DRAFT || status == SubjectStatus.PENDING_APPROVAL || status == SubjectStatus.REJECTED) {
             throw new SubjectNotAssignableToPlanException(id, status);
+        }
+    }
+
+    public void requireOpenableForSections() {
+        if (status == SubjectStatus.DRAFT) {
+            throw new SubjectNotOpenableForSectionsException(id, status);
         }
     }
 

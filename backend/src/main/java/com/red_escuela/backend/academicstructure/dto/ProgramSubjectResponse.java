@@ -13,6 +13,7 @@ public class ProgramSubjectResponse {
     private final Long subjectId;
     private final String subjectCode;
     private final String subjectName;
+    private final String subjectStatus;
     private final Integer weeklyHours;
     private final Integer weeklyHoursLab;
     private final ProgramSubjectCategory category;
@@ -30,6 +31,7 @@ public class ProgramSubjectResponse {
                 .subjectId(ps.getSubject().getId())
                 .subjectCode(ps.getSubject().getCode())
                 .subjectName(ps.getSubject().getName())
+                .subjectStatus(ps.getSubject().getStatus() == null ? null : ps.getSubject().getStatus().name())
                 .weeklyHours(ps.getSubject().getWeeklyHours())
                 .weeklyHoursLab(ps.getSubject().getWeeklyHoursLab())
                 .category(ps.getCategory())

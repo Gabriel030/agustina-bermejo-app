@@ -105,17 +105,26 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
     }
 
     @Test
-    void administrativeCanAlsoApproveAndApprovedConfigCannotBeEditedOrApprovedAgain() throws Exception {
+    void administrativeCannotApproveNorRejectAndDirectorApprovalLocksTheConfig() throws Exception {
         Classroom classroom = classroomWithDraftConfig("cfg3", "7800003");
         Person admin = persistPerson("cfg3.admin", "78000037", "ADMINISTRATIVO");
+        Person director = persistPerson("cfg3.director", "78000038", "DIRECTOR");
         putJson(classroom.teacher(), configPath(classroom), proposal()).andExpect(status().isOk());
         postEmpty(classroom.teacher(), configPath(classroom) + "/submit").andExpect(status().isOk());
 
         postEmpty(admin, "/section-evaluation-configs/" + classroom.section().getId() + "/approve")
+                .andExpect(status().isForbidden());
+        postJson(admin, "/section-evaluation-configs/" + classroom.section().getId() + "/reject",
+                new RejectSectionEvaluationConfigRequest("No corresponde"))
+                .andExpect(status().isForbidden());
+        getAs(director, "/section-evaluation-configs/" + classroom.section().getId())
+                .andExpect(jsonPath("$.status").value("PENDING_APPROVAL"));
+
+        postEmpty(director, "/section-evaluation-configs/" + classroom.section().getId() + "/approve")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
 
-        postEmpty(admin, "/section-evaluation-configs/" + classroom.section().getId() + "/approve")
+        postEmpty(director, "/section-evaluation-configs/" + classroom.section().getId() + "/approve")
                 .andExpect(status().is4xxClientError())
                 .andExpect(jsonPath("$.code").value("INVALID_SECTION_EVALUATION_CONFIG_TRANSITION"));
         putJson(classroom.teacher(), configPath(classroom), proposal())

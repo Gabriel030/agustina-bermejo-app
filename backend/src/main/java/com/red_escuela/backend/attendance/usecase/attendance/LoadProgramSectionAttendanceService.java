@@ -11,11 +11,13 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.repository.AttendanceRepository;
 import com.red_escuela.backend.attendance.service.AttendanceSectionAccess;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
 import com.red_escuela.backend.attendance.service.ClassSessionUpserter;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.shared.UseCase;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -32,19 +34,22 @@ public class LoadProgramSectionAttendanceService implements LoadProgramSectionAt
     private final AttendanceSectionAccess sectionAccess;
     private final ClassSessionUpserter classSessionUpserter;
     private final HolidayRepository holidayRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LoadProgramSectionAttendanceService(AttendanceRepository attendanceRepository,
                                                 SubjectSectionRepository subjectSectionRepository,
                                                 SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
                                                 AttendanceSectionAccess sectionAccess,
                                                 ClassSessionUpserter classSessionUpserter,
-                                                HolidayRepository holidayRepository) {
+                                                HolidayRepository holidayRepository,
+                                                ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.sectionAccess = sectionAccess;
         this.classSessionUpserter = classSessionUpserter;
         this.holidayRepository = holidayRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -77,6 +82,7 @@ public class LoadProgramSectionAttendanceService implements LoadProgramSectionAt
             procesadas.add(attendanceRepository.save(attendance));
         }
         classSessionUpserter.upsertHeldForProgramSection(section, request.classDate(), instructor, request.topic(), request.observations());
+        procesadas.forEach(saved -> eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved)));
         return procesadas;
     }
 }

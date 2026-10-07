@@ -66,16 +66,19 @@ class SectionCreationCharacterizationTest extends AcademicOrgCharacterizationSup
     }
 
     @Test
-    void sectionCanBeCreatedOnASubjectThatIsStillDraftAndAlsoGetsItsDraftConfig() throws Exception {
+    void sectionCannotBeCreatedOnASubjectThatIsStillDraftAndNoConfigDraftIsCreated() throws Exception {
         Person admin = persistPerson("sect.admin3", "73000006", "ADMINISTRATIVO");
         Term term = persistTerm();
         long subjectId = idOf(postJson(admin, "/subjects", completeSubjectRequest("Materia Borrador"))
                 .andExpect(status().isCreated()));
 
-        long sectionId = idOf(postJson(admin, "/subjects/" + subjectId + "/sections",
-                new CreateSectionRequest("Comision Z", term.getId(), null, 10, null)).andExpect(status().isCreated()));
+        postJson(admin, "/subjects/" + subjectId + "/sections",
+                new CreateSectionRequest("Comision Z", term.getId(), null, 10, null))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SUBJECT_NOT_OPENABLE_FOR_SECTIONS"));
 
-        assertThat(countRows("SectionEvaluationConfig", "e.subjectSection.id = " + sectionId)).isEqualTo(1);
+        assertThat(countRows("SubjectSection", "e.subject.id = " + subjectId)).isZero();
+        assertThat(countRows("SectionEvaluationConfig", "e.subjectSection.subject.id = " + subjectId)).isZero();
     }
 
     @Test

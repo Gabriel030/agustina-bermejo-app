@@ -134,21 +134,27 @@ class SubjectApprovalAndPlanCharacterizationTest extends AcademicOrgCharacteriza
     }
 
     @Test
-    void draftSubjectThatWasNeverApprovedCanStillBeAddedToAProgramPlan() throws Exception {
+    void draftSubjectThatWasNeverApprovedCannotBeAddedToAProgramPlan() throws Exception {
         Person admin = persistPerson("acad.admin7", "72000011", "ADMINISTRATIVO");
         long programId = createProgram(admin, "Tecnicatura Academica 3");
         long draftId = idOf(postJson(admin, "/subjects", completeSubjectRequest("Borrador")).andExpect(status().isCreated()));
 
         postJson(admin, "/programs/" + programId + "/subjects", mandatoryEntry(draftId))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.subjectId").value(draftId));
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.code").value("SUBJECT_NOT_ASSIGNABLE_TO_PLAN"));
+        getAs(admin, "/programs/" + programId + "/subjects")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test
     void addingTheSameSubjectTwiceToAPlanIsRejected() throws Exception {
         Person admin = persistPerson("acad.admin8", "72000012", "ADMINISTRATIVO");
         long programId = createProgram(admin, "Tecnicatura Academica 4");
+        Person director = persistPerson("acad.director8", "72000015", "DIRECTOR");
         long subjectId = idOf(postJson(admin, "/subjects", completeSubjectRequest("Repetida")).andExpect(status().isCreated()));
+        postEmpty(admin, "/subjects/" + subjectId + "/submit-for-approval").andExpect(status().isOk());
+        postEmpty(director, "/subjects/" + subjectId + "/approve").andExpect(status().isOk());
         postJson(admin, "/programs/" + programId + "/subjects", mandatoryEntry(subjectId)).andExpect(status().isCreated());
 
         postJson(admin, "/programs/" + programId + "/subjects", mandatoryEntry(subjectId))

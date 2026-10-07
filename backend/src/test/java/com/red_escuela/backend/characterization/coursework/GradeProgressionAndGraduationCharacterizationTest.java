@@ -131,13 +131,16 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
     }
 
     @Test
-    void finalWithApprovingGradeApprovesTheSubjectEvenWhenTheStudentNeverBecameRegular() throws Exception {
+    void finalIsRejectedWhenTheStudentNeverBecameRegularAndTheSubjectIsNotApproved() throws Exception {
         Classroom classroom = withFinal("grade6", "7700006", 10);
 
-        load(classroom, GradeItemType.FINAL, 1, "8");
+        loadAs(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "8")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("FINAL_EXAM_REQUIRES_REGULAR_STUDENT"));
 
-        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(classroom.enrollment().getFinalGradeType()).isEqualTo(FinalGradeType.FINAL_EXAM);
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+        assertThat(classroom.enrollment().getFinalGradeType()).isNull();
+        assertThat(countRows("GradeItem", "e.programSubjectSectionEnrollment.id = " + classroom.enrollment().getId())).isZero();
     }
 
     @Test

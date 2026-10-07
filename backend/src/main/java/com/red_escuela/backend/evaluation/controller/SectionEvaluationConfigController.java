@@ -62,14 +62,14 @@ public class SectionEvaluationConfigController {
     }
 
     @PostMapping("/section-evaluation-configs/{sectionId}/approve")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public SectionEvaluationConfigResponse approve(@PathVariable Long sectionId) {
         Person actor = currentPersonService.resolveCurrentPerson();
         return toResponse(approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(sectionId, actor)));
     }
 
     @PostMapping("/section-evaluation-configs/{sectionId}/reject")
-    @PreAuthorize("hasRole('DIRECTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('DIRECTOR')")
     public SectionEvaluationConfigResponse reject(
             @PathVariable Long sectionId, @Valid @RequestBody RejectSectionEvaluationConfigRequest request) {
         Person actor = currentPersonService.resolveCurrentPerson();
