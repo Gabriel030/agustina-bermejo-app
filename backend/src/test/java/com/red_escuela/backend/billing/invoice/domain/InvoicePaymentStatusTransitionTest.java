@@ -177,11 +177,48 @@ class InvoicePaymentStatusTransitionTest {
             assertThat(last.getToStatus()).isEqualTo(expectation.toState().name());
             assertThat(last.getEvent()).isEqualTo(event.name());
             assertThat(last.getActorProcess()).isEqualTo("TEST");
+            assertResultingAmounts(invoice, event);
         } else {
-            assertThatThrownBy(() -> invoice.changePaymentStatus(event, amounts, BEFORE_DUE, ACTOR, null)).isInstanceOf(expectation.rejection());
+            assertThatThrownBy(() -> applyThroughTheAggregate(invoice, event)).isInstanceOf(rejectionThroughTheAggregate(from, event, expectation));
             assertThat(invoice.getPaymentStatus()).isEqualTo(from);
             assertThat(paymentRows(invoice)).isEqualTo(rows);
             assertThat(invoice.getAmounts()).isEqualTo(amounts);
+        }
+    }
+
+    private static Class<? extends Throwable> rejectionThroughTheAggregate(InvoicePaymentStatus from, InvoicePaymentEvent event, TransitionExpectation expectation) {
+        if (from != null && (event == ISSUED_WITH_AMOUNT_DUE || event == ISSUED_WITH_ZERO_TOTAL)) {
+            return com.red_escuela.backend.billing.invoice.exception.IllegalInvoiceDocumentStatusTransitionException.class;
+        }
+        if (from == PAID && (event == DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE || event == PARTIAL_DEBT_REDUCTION_CREDIT_NOTE_APPLIED)) {
+            return com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException.class;
+        }
+        return expectation.rejection();
+    }
+
+    private static void assertResultingAmounts(Invoice invoice, InvoicePaymentEvent event) {
+        InvoiceAmounts a = invoice.getAmounts();
+        switch (event) {
+            case ISSUED_WITH_AMOUNT_DUE -> assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("0.00"), ars("80000.00"), ars("0.00"), ars("0.00"), ars("80000.00")));
+            case ISSUED_WITH_ZERO_TOTAL -> assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("80000.00"), ars("0.00"), ars("0.00"), ars("0.00"), ars("0.00")));
+            case FULL_PAYMENT_ALLOCATED -> assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("0.00"), ars("80000.00"), ars("80000.00"), ars("0.00"), ars("0.00")));
+            case PAYMENT_ALLOCATION_REVERSED_BEFORE_DUE_DATE_PASSED, PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED,
+                 BANK_TRANSFER_RECEIPT_SUBMITTED_ON_TIME, BANK_TRANSFER_RECEIPT_REJECTED_BEFORE_DUE_DATE_PASSED,
+                 BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED, DUE_DATE_PASSED, CREDIT_NOTE_APPLIED_TO_PAID_INVOICE ->
+                    assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("0.00"), ars("80000.00"), a.paidAmount(), ars("0.00"), a.outstandingAmount()));
+            case CANCELLATION_CREDIT_NOTE_APPLIED, DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE ->
+                    assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("0.00"), ars("80000.00"), ars("0.00"), ars("80000.00"), ars("0.00")));
+            case PARTIAL_DEBT_REDUCTION_CREDIT_NOTE_APPLIED ->
+                    assertThat(a).isEqualTo(new InvoiceAmounts(ars("80000.00"), ars("0.00"), ars("80000.00"), ars("0.00"), ars("30000.00"), ars("50000.00")));
+        }
+        switch (event) {
+            case PAYMENT_ALLOCATION_REVERSED_BEFORE_DUE_DATE_PASSED, PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED ->
+                    assertThat(a.outstandingAmount()).isEqualTo(ars("80000.00"));
+            case BANK_TRANSFER_RECEIPT_SUBMITTED_ON_TIME, BANK_TRANSFER_RECEIPT_REJECTED_BEFORE_DUE_DATE_PASSED,
+                 BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED, DUE_DATE_PASSED -> assertThat(a.outstandingAmount()).isEqualTo(ars("80000.00"));
+            case CREDIT_NOTE_APPLIED_TO_PAID_INVOICE -> assertThat(a.paidAmount()).isEqualTo(ars("80000.00"));
+            default -> {
+            }
         }
     }
 }

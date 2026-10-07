@@ -255,4 +255,37 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
         assertThat(invoiceRepository).isNotSameAs(legacyInvoiceRepository);
         assertThat(Map.of("v", LocalDate.of(2027, 1, 1))).isNotEmpty();
     }
+
+    @Test
+    void eventsRecordedBeforeTheFirstSaveCarryTheAssignedIdWhenPulled() {
+        StudentCurrentAccount account = newAccount();
+        Invoice invoice = draftFor(account, "PE:ev" + System.nanoTime());
+        invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), ISSUE_DATE, DUE_DATE, SNAPSHOT, ACTOR);
+
+        Invoice saved = invoiceRepository.save(invoice);
+
+        assertThat(saved.pullRecordedDomainEvents()).singleElement().satisfies(event ->
+                assertThat(((com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent) event).invoiceId()).isEqualTo(saved.getId()));
+    }
+
+    @Test
+    void freeCreditThenReversalThenFullCancellationWorksAndPersists() {
+        StudentCurrentAccount account = newAccount();
+        Invoice invoice = draftFor(account, "PE:cr" + System.nanoTime());
+        invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), ISSUE_DATE, DUE_DATE, SNAPSHOT, ACTOR);
+        Long id = invoiceRepository.save(invoice).getId();
+        var total = ars("69999.50");
+        var freeCredit = new InvoiceCreditNoteApplication(CreditNoteApplicationKind.DEBT_REDUCTION, ars("0.00"), ars("10000.00"), List.of(new InvoiceLineCredit(1, ars("10000.00"))));
+        var cancellation = new InvoiceCreditNoteApplication(CreditNoteApplicationKind.CANCELLATION, total, ars("0.00"), List.of(new InvoiceLineCredit(1, total)));
+
+        transactionTemplate.executeWithoutResult(s -> invoiceRepository.findInvoiceWithLinesById(id).orElseThrow().allocateFullInvoicePayment(total, DUE_DATE, ACTOR));
+        transactionTemplate.executeWithoutResult(s -> invoiceRepository.findInvoiceWithLinesById(id).orElseThrow().applyCreditNote(freeCredit, DUE_DATE, ACTOR));
+        transactionTemplate.executeWithoutResult(s -> invoiceRepository.findInvoiceWithLinesById(id).orElseThrow().reversePaymentAllocation(DUE_DATE, 0, ACTOR, "contracargo"));
+        transactionTemplate.executeWithoutResult(s -> invoiceRepository.findInvoiceWithLinesById(id).orElseThrow().applyCreditNote(cancellation, DUE_DATE, ACTOR));
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, id)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("69999.50");
+        assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("10000.00");
+        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+    }
 }

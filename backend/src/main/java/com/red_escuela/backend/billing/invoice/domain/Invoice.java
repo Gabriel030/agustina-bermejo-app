@@ -131,7 +131,7 @@ public class Invoice {
 
     @Getter(AccessLevel.NONE)
     @Transient
-    private List<Object> recordedDomainEvents = new ArrayList<>();
+    private List<java.util.function.Function<Long, Object>> recordedDomainEvents = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -228,9 +228,9 @@ public class Invoice {
         boolean zeroTotal = amounts.total().value().isZero();
         changePaymentStatus(zeroTotal ? InvoicePaymentEvent.ISSUED_WITH_ZERO_TOTAL : InvoicePaymentEvent.ISSUED_WITH_AMOUNT_DUE,
                 amounts, issueDate, actor, null);
-        recordedDomainEvents.add(new InvoiceIssuedEvent(id, studentCurrentAccountId, documentType, invoiceType, amounts.total(), issueDate, dueDate));
+        recordedDomainEvents.add(invoiceId -> new InvoiceIssuedEvent(invoiceId, studentCurrentAccountId, documentType, invoiceType, amounts.total(), issueDate, dueDate));
         if (zeroTotal) {
-            recordedDomainEvents.add(new InvoicePaidEvent(id, studentCurrentAccountId, InvoicePaymentEvent.ISSUED_WITH_ZERO_TOTAL, issueDate));
+            recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, InvoicePaymentEvent.ISSUED_WITH_ZERO_TOTAL, issueDate));
         }
     }
 
@@ -243,7 +243,7 @@ public class Invoice {
         changeDocumentStatus(InvoiceDocumentEvent.DRAFT_DISCARDED, actor, reason, null);
         this.discardedReason = reason;
         lines.forEach(InvoiceLine::releaseChargeKey);
-        recordedDomainEvents.add(new InvoiceDiscardedEvent(id, reason));
+        recordedDomainEvents.add(invoiceId -> new InvoiceDiscardedEvent(invoiceId, reason));
     }
 
     public void markPaymentUnderReview(LocalDate businessDate, StatusChangeActor actor, String reason) {
@@ -261,7 +261,7 @@ public class Invoice {
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         changePaymentStatus(event, amounts, businessDate, actor, reason);
         if (event == InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED) {
-            recordedDomainEvents.add(new InvoiceMarkedAsOverdueEvent(id, dueDate, businessDate));
+            recordedDomainEvents.add(invoiceId -> new InvoiceMarkedAsOverdueEvent(invoiceId, dueDate, businessDate));
         }
     }
 
@@ -271,7 +271,7 @@ public class Invoice {
         InvoicePaymentEvent event = InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED;
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         changePaymentStatus(event, amounts.withFullPaymentAllocated(allocatedAmount), businessDate, actor, null);
-        recordedDomainEvents.add(new InvoicePaidEvent(id, studentCurrentAccountId, event, businessDate));
+        recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, event, businessDate));
     }
 
     public void reversePaymentAllocation(LocalDate businessDate, int gracePeriodDays, StatusChangeActor actor, String reason) {
@@ -284,9 +284,10 @@ public class Invoice {
             throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);
         }
         changePaymentStatus(event, amounts.withPaymentAllocationReversed(), businessDate, actor, reason);
-        recordedDomainEvents.add(new InvoicePaymentReversedEvent(id, paymentStatus));
+        InvoicePaymentStatus resultingStatus = paymentStatus;
+        recordedDomainEvents.add(invoiceId -> new InvoicePaymentReversedEvent(invoiceId, resultingStatus));
         if (event == InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED) {
-            recordedDomainEvents.add(new InvoiceMarkedAsOverdueEvent(id, dueDate, businessDate));
+            recordedDomainEvents.add(invoiceId -> new InvoiceMarkedAsOverdueEvent(invoiceId, dueDate, businessDate));
         }
     }
 
@@ -305,11 +306,17 @@ public class Invoice {
                 || (event == InvoicePaymentEvent.PARTIAL_DEBT_REDUCTION_CREDIT_NOTE_APPLIED && offsetsNothing)) {
             throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);
         }
-        for (InvoiceLineCredit lineCredit : application.lineCredits()) {
-            findLine(lineCredit.lineNumber()).requireCreditable(lineCredit.amount());
+        if (event != InvoicePaymentEvent.CREDIT_NOTE_APPLIED_TO_PAID_INVOICE && !application.freeCreditAmount().value().isZero()) {
+            throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);
+        }
+        List<NonNegativeMoney[]> splits = splitLineCredits(application);
+        for (int i = 0; i < splits.size(); i++) {
+            findLine(application.lineCredits().get(i).lineNumber()).requireCreditable(splits.get(i)[0], splits.get(i)[1]);
         }
         InvoiceAmounts newAmounts = amounts.withCreditNoteOffset(offset);
-        application.lineCredits().forEach(lineCredit -> findLine(lineCredit.lineNumber()).recordCreditedAmount(lineCredit.amount()));
+        for (int i = 0; i < splits.size(); i++) {
+            findLine(application.lineCredits().get(i).lineNumber()).recordCredit(splits.get(i)[0], splits.get(i)[1]);
+        }
         changePaymentStatus(event, newAmounts, businessDate, actor, application.kind().name());
         recordCreditNoteEvents(event, businessDate);
     }
@@ -319,11 +326,14 @@ public class Invoice {
         InvoicePaymentEvent event = InvoicePaymentEvent.DUE_DATE_PASSED;
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         changePaymentStatus(event, amounts, businessDate, actor, null);
-        recordedDomainEvents.add(new InvoiceMarkedAsOverdueEvent(id, dueDate, businessDate));
+        recordedDomainEvents.add(invoiceId -> new InvoiceMarkedAsOverdueEvent(invoiceId, dueDate, businessDate));
     }
 
     public List<Object> pullRecordedDomainEvents() {
-        List<Object> pulled = List.copyOf(recordedDomainEvents);
+        if (!recordedDomainEvents.isEmpty() && id == null) {
+            throw new IllegalStateException("The invoice must be persisted before its domain events are pulled");
+        }
+        List<Object> pulled = recordedDomainEvents.stream().map(factory -> factory.apply(id)).toList();
         recordedDomainEvents.clear();
         return pulled;
     }
@@ -440,6 +450,17 @@ public class Invoice {
         return afterEvent;
     }
 
+    private List<NonNegativeMoney[]> splitLineCredits(InvoiceCreditNoteApplication application) {
+        List<NonNegativeMoney[]> splits = new ArrayList<>();
+        NonNegativeMoney offsetLeft = application.offsetAmount();
+        for (InvoiceLineCredit lineCredit : application.lineCredits()) {
+            NonNegativeMoney offsetPart = lineCredit.amount().value().isGreaterThan(offsetLeft.value()) ? offsetLeft : lineCredit.amount();
+            splits.add(new NonNegativeMoney[]{offsetPart, NonNegativeMoney.of(lineCredit.amount().minus(offsetPart))});
+            offsetLeft = NonNegativeMoney.of(offsetLeft.minus(offsetPart));
+        }
+        return splits;
+    }
+
     private InvoicePaymentEvent resolveCreditNoteEvent(InvoiceCreditNoteApplication application) {
         if (application.kind() == CreditNoteApplicationKind.CANCELLATION) {
             return InvoicePaymentEvent.CANCELLATION_CREDIT_NOTE_APPLIED;
@@ -454,9 +475,9 @@ public class Invoice {
 
     private void recordCreditNoteEvents(InvoicePaymentEvent event, LocalDate businessDate) {
         switch (event) {
-            case CANCELLATION_CREDIT_NOTE_APPLIED -> recordedDomainEvents.add(new InvoiceCancelledEvent(id, businessDate));
+            case CANCELLATION_CREDIT_NOTE_APPLIED -> recordedDomainEvents.add(invoiceId -> new InvoiceCancelledEvent(invoiceId, businessDate));
             case DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE ->
-                    recordedDomainEvents.add(new InvoicePaidEvent(id, studentCurrentAccountId, event, businessDate));
+                    recordedDomainEvents.add(invoiceId -> new InvoicePaidEvent(invoiceId, studentCurrentAccountId, event, businessDate));
             default -> {
             }
         }

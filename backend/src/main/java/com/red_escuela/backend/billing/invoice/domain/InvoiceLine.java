@@ -98,6 +98,12 @@ public class InvoiceLine {
             @AttributeOverride(name = "value.currency", column = @Column(name = "credited_amount_currency", nullable = false))})
     private NonNegativeMoney creditedAmount;
 
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "free_credited_amount", nullable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "free_credited_amount_currency", nullable = false))})
+    private NonNegativeMoney freeCreditedAmount;
+
     @OneToOne(mappedBy = "invoiceLine", cascade = CascadeType.ALL, orphanRemoval = true)
     private InvoiceDiscount discount;
 
@@ -118,6 +124,7 @@ public class InvoiceLine {
         this.amount = draft.amount();
         this.discountAmount = NonNegativeMoney.zero(lineCurrency);
         this.creditedAmount = NonNegativeMoney.zero(lineCurrency);
+        this.freeCreditedAmount = NonNegativeMoney.zero(lineCurrency);
     }
 
     void attachDiscount(InvoiceDiscountDraft draft) {
@@ -129,15 +136,17 @@ public class InvoiceLine {
         this.chargeKeyReleasedAt = ApplicationTime.now();
     }
 
-    void requireCreditable(NonNegativeMoney creditAmount) {
-        if (creditAmount.value().isGreaterThan(calculateCreditableAmount().value())) {
+    void requireCreditable(NonNegativeMoney offsetPart, NonNegativeMoney freePart) {
+        if (offsetPart.value().isGreaterThan(calculateCreditableAmount().value())
+                || freePart.value().isGreaterThan(calculateFreeCreditableAmount().value())) {
             throw new CreditNoteExceedsCreditableAmountException();
         }
     }
 
-    void recordCreditedAmount(NonNegativeMoney creditAmount) {
-        requireCreditable(creditAmount);
-        this.creditedAmount = creditedAmount.plus(creditAmount);
+    void recordCredit(NonNegativeMoney offsetPart, NonNegativeMoney freePart) {
+        requireCreditable(offsetPart, freePart);
+        this.creditedAmount = creditedAmount.plus(offsetPart);
+        this.freeCreditedAmount = freeCreditedAmount.plus(freePart);
     }
 
     public NonNegativeMoney calculateNetAmount() {
@@ -146,5 +155,9 @@ public class InvoiceLine {
 
     public NonNegativeMoney calculateCreditableAmount() {
         return NonNegativeMoney.of(calculateNetAmount().minus(creditedAmount));
+    }
+
+    public NonNegativeMoney calculateFreeCreditableAmount() {
+        return NonNegativeMoney.of(calculateNetAmount().minus(freeCreditedAmount));
     }
 }

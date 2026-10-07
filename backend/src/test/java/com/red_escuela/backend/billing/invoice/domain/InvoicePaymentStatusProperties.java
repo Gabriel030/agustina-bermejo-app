@@ -37,6 +37,35 @@ class InvoicePaymentStatusProperties {
                 .findFirst();
     }
 
+    private static final InvoicePaymentEvent[] INTENDED = {
+            InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_SUBMITTED_ON_TIME,
+            InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_BEFORE_DUE_DATE_PASSED,
+            InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED,
+            InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED,
+            InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_BEFORE_DUE_DATE_PASSED,
+            InvoicePaymentEvent.PAYMENT_ALLOCATION_REVERSED_AFTER_DUE_DATE_PASSED,
+            InvoicePaymentEvent.DUE_DATE_PASSED,
+            InvoicePaymentEvent.CANCELLATION_CREDIT_NOTE_APPLIED,
+            InvoicePaymentEvent.DEBT_REDUCTION_CREDIT_NOTE_SETTLED_INVOICE,
+            InvoicePaymentEvent.PARTIAL_DEBT_REDUCTION_CREDIT_NOTE_APPLIED,
+            InvoicePaymentEvent.CREDIT_NOTE_APPLIED_TO_PAID_INVOICE,
+            InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED};
+
+    private static boolean rejectionIsJustified(int operation, InvoicePaymentStatus before, InvoiceAmounts amountsBefore, RuntimeException rejected) {
+        InvoicePaymentEvent intended = INTENDED[operation];
+        if (literalTarget(before, intended).isEmpty()) {
+            return true;
+        }
+        boolean reversal = operation == 4 || operation == 5;
+        if (reversal && !amountsBefore.hasPaidAmount()) {
+            return true;
+        }
+        if (operation == 11 && !amountsBefore.outstandingAmount().equals(ars("1.00"))) {
+            return rejected instanceof com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
+        }
+        return false;
+    }
+
     private static InvoicePaymentEvent apply(Invoice invoice, int operation) {
         switch (operation) {
             case 0 -> invoice.markPaymentUnderReview(BEFORE, ACTOR, "r");
@@ -60,7 +89,7 @@ class InvoicePaymentStatusProperties {
         Invoice invoice = issuedMonthly("80000.00");
         for (int operation : operations) {
             InvoicePaymentStatus before = invoice.getPaymentStatus();
-            var amountsBefore = invoice.getAmounts();
+            InvoiceAmounts amountsBefore = invoice.getAmounts();
             var creditedBefore = invoice.getLines().get(0).getCreditedAmount();
             int rows = invoice.getStatusChanges().size();
             try {
@@ -68,7 +97,8 @@ class InvoicePaymentStatusProperties {
                 assertThat(literalTarget(before, event)).contains(invoice.getPaymentStatus());
                 assertThat(invoice.getStatusChanges()).hasSize(rows + 1);
             } catch (RuntimeException rejected) {
-                assertThat(rejected).isNotInstanceOf(NullPointerException.class);
+                assertThat(rejectionIsJustified(operation, before, amountsBefore, rejected))
+                        .as("operation %s rejected from %s with %s: %s", operation, before, amountsBefore, rejected).isTrue();
                 assertThat(invoice.getPaymentStatus()).isEqualTo(before);
                 assertThat(invoice.getAmounts()).isEqualTo(amountsBefore);
                 assertThat(invoice.getLines().get(0).getCreditedAmount()).isEqualTo(creditedBefore);

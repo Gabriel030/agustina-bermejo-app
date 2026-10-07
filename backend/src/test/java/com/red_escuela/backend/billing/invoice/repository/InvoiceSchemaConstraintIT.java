@@ -194,6 +194,8 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         row.put("discount_amount_currency", "ARS");
         row.put("credited_amount", 0);
         row.put("credited_amount_currency", "ARS");
+        row.put("free_credited_amount", 0);
+        row.put("free_credited_amount_currency", "ARS");
         return row;
     }
 
@@ -227,6 +229,9 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         expectViolation("ck_invoice_discount_currencies", () -> insert("invoice_discount", with(discountRow(insert("invoice_line", line(insert("invoice", draftInvoice(account)))), 10, 5), "base_amount_currency", "USD")));
         expectViolation("ck_invoice_discount_installments", () -> insert("invoice_discount", with(discountRow(insert("invoice_line", line(insert("invoice", draftInvoice(account)))), 10, 5), "installment_number", 4, "installments_total", 3)));
         expectViolation("ck_invoice_discount_installments", () -> insert("invoice_discount", with(discountRow(insert("invoice_line", line(insert("invoice", draftInvoice(account)))), 10, 5), "installments_total", 3)));
+        expectViolation("fk_invoice_discount_line", () -> insert("invoice_discount", with(discountRow(insert("invoice_line", line(insert("invoice", draftInvoice(account)))), 10, 5),
+                "currency", "USD", "base_amount_currency", "USD", "discount_amount_currency", "USD")));
+        expectViolation("ck_invoice_line_free_credited_within_net", () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "free_credited_amount", 101)));
         expectViolation("uk_invoice_discount_line", () -> {
             long line = insert("invoice_line", line(insert("invoice", draftInvoice(account))));
             insert("invoice_discount", discountRow(line, 10, 5));
@@ -256,7 +261,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"amount", "discount_amount", "credited_amount"})
+    @ValueSource(strings = {"amount", "discount_amount", "credited_amount", "free_credited_amount"})
     void aNegativeAmountInAnyLineColumnIsRejected(String column) {
         long account = insertAccount("ARS");
 
@@ -376,5 +381,32 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
                 insert into invoice_status_change (invoice_id, status_kind, to_status, event, actor_person_id, actor_process, occurred_at)
                 values (?, ?, ?, 'E', ?, ?, now())
                 """, invoice, kind, toStatus, personId.length > 0 ? personId[0] : null, process);
+    }
+
+    @Test
+    void anIssuedInvoiceLineAndDiscountAreImmutableExceptForCreditsAndKeyRelease() {
+        long account = insertAccount("ARS");
+        long invoice = insert("invoice", draftInvoice(account));
+        long line = insert("invoice_line", line(invoice));
+        long discount = insert("invoice_discount", discountRow(line, 10, 5));
+        jdbc.update("update invoice set document_status = 'ISSUED', payment_status = 'PENDING', invoice_number = 'F-77777777', issue_date = date '2027-03-03', "
+                + "due_date = date '2027-03-13', student_snapshot = cast('{\"fullName\":\"Ana\"}' as jsonb) where id = ?", invoice);
+
+        assertThatThrownBy(() -> jdbc.update("update invoice_line set amount = 50 where id = ?", line)).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
+        assertThatThrownBy(() -> jdbc.update("update invoice_line set discount_amount = 1 where id = ?", line)).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
+        assertThatThrownBy(() -> jdbc.update("delete from invoice_line where id = ?", line)).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
+        assertThatThrownBy(() -> jdbc.update("update invoice_discount set discount_amount = 6 where id = ?", discount)).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
+        assertThatThrownBy(() -> jdbc.update("delete from invoice_discount where id = ?", discount)).isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("immutable");
+        assertThat(jdbc.update("update invoice_line set credited_amount = 50, free_credited_amount = 10 where id = ?", line)).isEqualTo(1);
+        assertThat(jdbc.update("update invoice_line set charge_key_released_at = now() where id = ?", line)).isEqualTo(1);
+    }
+
+    @Test
+    void aDraftLineStillAcceptsChanges() {
+        long account = insertAccount("ARS");
+        long line = insert("invoice_line", line(insert("invoice", draftInvoice(account))));
+
+        assertThat(jdbc.update("update invoice_line set concept = 'otro' where id = ?", line)).isEqualTo(1);
+        assertThat(jdbc.update("delete from invoice_line where id = ?", line)).isEqualTo(1);
     }
 }
