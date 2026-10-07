@@ -118,4 +118,45 @@ class FinalExamRegularStudentRuleTest extends CourseworkCharacterizationSupport 
 
         load(classroom.teacher(), classroom, GradeItemType.EXAM, 1, "5").andExpect(status().isCreated());
     }
+
+    @Test
+    void correctingAnApprovedFinalToAFailingGradeMakesTheEnrollmentFailedAndClearsTheFinalScore() throws Exception {
+        Classroom classroom = classroom("fin8", "7900008");
+        makeRegular(classroom);
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "8").andExpect(status().isCreated());
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.APPROVED);
+
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "2").andExpect(status().isCreated());
+
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.FAILED);
+        assertThat(classroom.enrollment().getFinalScore()).isNull();
+        assertThat(finalItems(classroom)).isEqualTo(1);
+    }
+
+    @Test
+    void correctingAFailedFinalToAPassingGradeMakesTheEnrollmentApproved() throws Exception {
+        Classroom classroom = classroom("fin9", "7900009");
+        makeRegular(classroom);
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "3").andExpect(status().isCreated());
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.FAILED);
+
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "9").andExpect(status().isCreated());
+
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(classroom.enrollment().getFinalScore().value()).isEqualByComparingTo("9");
+    }
+
+    @Test
+    void correctingAnApprovedFinalToAFailingGradeWithAttemptsLeftReturnsTheStudentToRegular() throws Exception {
+        Classroom classroom = classroom("fin10", "7900010");
+        classroom.subject().setMaxFinalExamAttempts(2);
+        entityManager.flush();
+        makeRegular(classroom);
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "8").andExpect(status().isCreated());
+
+        load(classroom.teacher(), classroom, GradeItemType.FINAL, 1, "2").andExpect(status().isCreated());
+
+        assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(classroom.enrollment().getFinalScore()).isNull();
+    }
 }
