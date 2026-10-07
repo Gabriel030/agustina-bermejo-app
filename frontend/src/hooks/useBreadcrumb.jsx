@@ -1,7 +1,7 @@
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
-import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
-import { useConfiguracionComisionStaff } from '@/hooks/useDirector';
+import { useMiInscripcion, useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
+import { useComisionesDictadas } from '@/features/academic-structure';
+import { useConfiguracionComision, useConfiguracionComisionStaff } from '@/features/evaluation';
 import { useLegajoAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { useLegajoPersonal } from '@/features/identity/hooks/useLegajoPersonal';
 import { Skeleton } from '@/components/Skeleton';

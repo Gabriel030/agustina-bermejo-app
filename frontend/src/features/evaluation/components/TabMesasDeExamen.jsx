@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMisInscripciones } from '@/hooks/useAlumno';
+import { useMisInscripciones } from '@/features/enrollment';
 import {
   useMesasDisponibles,
   useMisInscripcionesAMesas,

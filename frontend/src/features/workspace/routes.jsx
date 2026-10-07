@@ -1,6 +1,6 @@
-import { AlumnoInicio } from '@/pages/AlumnoInicio';
-import { DocenteMisComisiones } from '@/pages/DocenteMisComisiones';
-import { DirectorAprobaciones } from '@/pages/DirectorAprobaciones';
+import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
+import { DocenteMisComisiones } from '@/features/workspace/pages/DocenteMisComisiones';
+import { DirectorAprobaciones } from '@/features/workspace/pages/DirectorAprobaciones';
 
 export const routes = {
   public: [],

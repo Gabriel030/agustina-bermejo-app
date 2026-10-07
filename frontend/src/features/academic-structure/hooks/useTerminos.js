@@ -7,3 +7,7 @@ export function useTerminos() {
     queryFn: () => apiFetch('/terms?status=ACTIVE'),
   });
 }
+
+export function useTerm(termId) {
+  return useQuery({ queryKey: ['terms', termId], queryFn: () => apiFetch(`/terms/${termId}`), enabled: !!termId });
+}

@@ -108,3 +108,7 @@ export function useEnviarComisionAAprobacion(sectionId) {
 export function useHolidays() {
   return useQuery({ queryKey: ['holidays'], queryFn: () => apiFetch('/holidays'), staleTime: 1000 * 60 * 60 });
 }
+
+export function useMisComisiones() {
+  return useQuery({ queryKey: ['me', 'section-evaluation-configs'], queryFn: () => apiFetch('/me/section-evaluation-configs') });
+}
