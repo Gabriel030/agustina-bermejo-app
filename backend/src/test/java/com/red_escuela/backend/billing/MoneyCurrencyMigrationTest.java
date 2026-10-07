@@ -33,7 +33,7 @@ class MoneyCurrencyMigrationTest {
                     + "values ('Seed', 'Person', '30111222', 'seed@example.com', 'seed.person', ?)", addressId);
             Long personId = jdbc.queryForObject("select max(id) from person", Long.class);
             jdbc.update("insert into invoice (fee_type, period, due_date, base_amount, status, created_at, updated_at) "
-                    + "values ('MONTHLY_INSTALLMENT', date '2026-09-01', date '2026-09-10', 48000.00, 'PENDING', now(), now())");
+                    + "values ('RECURRING_FEE', date '2026-09-01', date '2026-09-10', 48000.00, 'PENDING', now(), now())");
             Long invoiceId = jdbc.queryForObject("select max(id) from invoice", Long.class);
             jdbc.update("insert into invoice_adjustment (invoice_id, type, value, resolved_base, reason, applied_at) "
                     + "values (?, 'SURCHARGE', '{\"type\":\"PERCENTAGE\",\"percentage\":0.1000}'::jsonb, 48000.00, 'Mora', now())", invoiceId);
@@ -41,7 +41,7 @@ class MoneyCurrencyMigrationTest {
                     + "values (?, 'DISCOUNT', '{\"type\":\"FIXED\",\"amount\":5000.00}'::jsonb, 48000.00, 'Descuento', now())", invoiceId);
             jdbc.update("insert into payment (amount, method, registered_by_id, paid_at, status, created_at, updated_at) "
                     + "values (1500.50, 'CASH', ?, now(), 'CONFIRMED', now(), now())", personId);
-            jdbc.update("insert into late_payment_settings (grace_period_days, surcharge_percentage, suspension_after_days, "
+            jdbc.update("insert into collections_policy (grace_period_days, surcharge_percentage, suspension_after_days, "
                     + "suspension_after_invoice_count, withdrawal_after_days, withdrawal_after_invoice_count, effective_from, "
                     + "created_by_id, created_at) values (10, 0.1000, 30, 2, 60, 3, date '2026-01-01', ?, now())", personId);
             jdbc.update("insert into institution (name) values ('Instituto sembrado')");
@@ -68,7 +68,7 @@ class MoneyCurrencyMigrationTest {
             assertThat(payment.get("amount_currency")).isEqualTo("ARS");
             assertThat((BigDecimal) payment.get("amount")).isEqualByComparingTo("1500.50");
             assertThat(jdbc.queryForObject("select resolved_base_currency from invoice_adjustment limit 1", String.class)).isEqualTo("ARS");
-            assertThat(jdbc.queryForObject("select surcharge_percentage from late_payment_settings", BigDecimal.class))
+            assertThat(jdbc.queryForObject("select surcharge_percentage from collections_policy", BigDecimal.class))
                     .isEqualByComparingTo("0.1");
             assertThat(jdbc.queryForObject("select currency from course limit 1", String.class)).isNotNull();
 
