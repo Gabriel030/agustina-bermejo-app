@@ -1,5 +1,5 @@
 COUNT billing 2
-COUNT enrollment 70
+COUNT enrollment 67
 Module 'evaluation' depends on module 'graduation' via com.red_escuela.backend.evaluation.service.GradeItemService -> com.red_escuela.backend.graduation.service.GraduationRequestAutoRequester. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *.
 Module 'evaluation' depends on module 'notification' via com.red_escuela.backend.evaluation.service.SectionEvaluationConfigReminderJob -> com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *.
 Module 'evaluation' depends on module 'notification' via com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.ApproveSectionEvaluationConfigService -> com.red_escuela.backend.notification.SectionEvaluationConfigApprovedEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *.

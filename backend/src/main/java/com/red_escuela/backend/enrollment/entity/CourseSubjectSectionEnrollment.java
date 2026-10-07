@@ -74,4 +74,8 @@ public class CourseSubjectSectionEnrollment {
     public boolean isRegular() {
         return status == EnrollmentStatus.REGULAR;
     }
+
+    public EnrollmentStatus statusAssumingRegularWhen(boolean assumeRegular) {
+        return assumeRegular ? EnrollmentStatus.REGULAR : status;
+    }
 }

@@ -123,9 +123,12 @@ public class GradeItemService {
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getSubjectSection().getSubject().getMaxFinalExamAttempts();
-        EnrollmentStatus current = finalCorrection ? EnrollmentStatus.REGULAR : enrollment.getStatus();
-        CourseworkResult result = resolveResult(finalCorrection, holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre()));
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForProgramEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -174,9 +177,12 @@ public class GradeItemService {
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         List<GradeItem> items = gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId);
         Integer maxFinalExamAttempts = enrollment.getCourseSubjectSection().getCourseSubject().getMaxFinalExamAttempts();
-        EnrollmentStatus current = finalCorrection ? EnrollmentStatus.REGULAR : enrollment.getStatus();
-        CourseworkResult result = resolveResult(finalCorrection, holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
-                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre()));
+        var current = enrollment.statusAssumingRegularWhen(finalCorrection);
+        CourseworkResult result = holdWhileFree(calculateResult(scheme, items, current, maxFinalExamAttempts),
+                current, () -> attendanceRiskCalculator.calculateForCourseEnrollment(enrollmentId).libre());
+        if (result == null && finalCorrection) {
+            result = new CourseworkResult(current, null, null);
+        }
         if (result != null) {
             enrollment.setStatus(result.status());
             if (result.finalScore() != null) {
@@ -188,10 +194,6 @@ public class GradeItemService {
             }
             courseSubjectSectionEnrollmentRepository.save(enrollment);
         }
-    }
-
-    private CourseworkResult resolveResult(boolean finalCorrection, CourseworkResult calculated) {
-        return calculated == null && finalCorrection ? new CourseworkResult(EnrollmentStatus.REGULAR, null, null) : calculated;
     }
 
     private CourseworkResult holdWhileFree(CourseworkResult result, EnrollmentStatus currentStatus, BooleanSupplier isFree) {
