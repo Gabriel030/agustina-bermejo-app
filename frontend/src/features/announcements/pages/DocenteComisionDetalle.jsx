@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DocenteConfiguracionEvaluacion } from '@/pages/DocenteConfiguracionEvaluacion';
+import { DocenteConfiguracionEvaluacion } from '@/features/evaluation';
 import { useComisionesDictadas, useConfiguracionComision } from '@/hooks/useDocente';
 import { comisionCerrada, ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL } from '@/lib/comisiones';
 import { TablaAvisos } from '../components/TablaAvisos';

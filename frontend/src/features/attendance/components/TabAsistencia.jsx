@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMisInscripciones } from '@/hooks/useAlumno';
 import { ESTADOS_EN_CURSO } from '@/lib/notas';
-import { SeccionAsistencia } from '@/components/alumno/SeccionAsistencia';
+import { SeccionAsistencia } from '@/features/attendance/components/SeccionAsistencia';
 
 const SUB_TABS = [
   { id: 'en-curso', label: 'En curso' },

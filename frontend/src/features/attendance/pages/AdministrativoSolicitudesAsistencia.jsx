@@ -3,7 +3,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { useAprobarSolicitud, useRechazarSolicitud, useSolicitudesPendientes } from '@/hooks/useSolicitudesAsistencia';
+import { useAprobarSolicitud, useRechazarSolicitud, useSolicitudesPendientes } from '@/features/attendance/hooks/useSolicitudesAsistencia';
 
 const ESTADO_LABEL = { PRESENT: 'Presente', LATE: 'Tarde', ABSENT: 'Ausente', JUSTIFICATION_PENDING: 'Justificación pendiente', JUSTIFIED: 'Justificada' };
 

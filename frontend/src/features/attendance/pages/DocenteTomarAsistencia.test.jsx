@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { TabAsistencia } from '@/pages/DocenteTomarAsistencia';
+import { TabAsistencia } from '@/features/attendance/pages/DocenteTomarAsistencia';
 import { localIsoDate } from '@/lib/calendario';
 
 const API = 'http://localhost:8080';

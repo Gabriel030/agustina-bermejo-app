@@ -7,9 +7,13 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { CalendarioConfiguracion } from '@/components/docente/CalendarioConfiguracion';
-import { useConfiguracionComisionStaff, useAprobarConfig, useRechazarConfig } from '@/hooks/useDirector';
-import { useHolidays } from '@/hooks/useDocente';
+import { CalendarioConfiguracion } from '@/features/evaluation/components/CalendarioConfiguracion';
+import {
+  useConfiguracionComisionStaff,
+  useAprobarConfig,
+  useRechazarConfig,
+} from '@/features/evaluation/hooks/useEvaluationConfig';
+import { useHolidays } from '@/features/evaluation/hooks/useEvaluationConfig';
 import { ESTADO_CONFIG_LABEL, ROL_INSTRUCTOR_LABEL, formatearFecha } from '@/lib/comisiones';
 
 function ValorFecha({ label, valor }) {

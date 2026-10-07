@@ -22,7 +22,7 @@ import {
   useReporteAusencias,
   useSolicitarModificacion,
   exportarAsistencia,
-} from '@/hooks/useDocenteAsistencia';
+} from '@/features/attendance/hooks/useDocenteAsistencia';
 
 const ESTADOS = [
   { value: 'PRESENT', label: 'Presente', filaClass: 'bg-success-bg', chipActivo: 'bg-success text-white' },

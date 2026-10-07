@@ -11,9 +11,9 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TabMaterias } from '@/components/alumno/TabMaterias';
 import { TabPlanDeEstudio } from '@/components/alumno/TabPlanDeEstudio';
-import { TabNotas } from '@/components/alumno/TabNotas';
-import { TabAsistencia } from '@/components/alumno/TabAsistencia';
-import { TabMesasDeExamen } from '@/components/alumno/TabMesasDeExamen';
+import { TabNotas } from '@/features/evaluation/components/TabNotas';
+import { TabAsistencia } from '@/features/attendance/components/TabAsistencia';
+import { TabMesasDeExamen } from '@/features/evaluation/components/TabMesasDeExamen';
 import { useMisMatriculaciones, useMiProgreso } from '@/hooks/useAlumno';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
 import { useMateriasDelPlan } from '@/hooks/useMateriasDelPlan';

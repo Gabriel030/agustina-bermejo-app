@@ -1,7 +1,7 @@
-import { PreceptorMesaExamen } from '@/pages/PreceptorMesaExamen';
-import { DirectorAprobacionesConfigEvaluacion } from '@/pages/DirectorAprobacionesConfigEvaluacion';
-import { DirectorEsquemasEvaluacion } from '@/pages/DirectorEsquemasEvaluacion';
-import { DirectorRevisarConfiguracion } from '@/pages/DirectorRevisarConfiguracion';
+import { PreceptorMesaExamen } from '@/features/evaluation/pages/PreceptorMesaExamen';
+import { DirectorAprobacionesConfigEvaluacion } from '@/features/evaluation/pages/DirectorAprobacionesConfigEvaluacion';
+import { DirectorEsquemasEvaluacion } from '@/features/evaluation/pages/DirectorEsquemasEvaluacion';
+import { DirectorRevisarConfiguracion } from '@/features/evaluation/pages/DirectorRevisarConfiguracion';
 
 export const routes = {
   public: [],

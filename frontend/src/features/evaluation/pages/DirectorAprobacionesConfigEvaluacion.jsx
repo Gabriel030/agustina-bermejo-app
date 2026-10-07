@@ -3,7 +3,10 @@ import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { BandejaTramites } from '@/components/director/BandejaTramites';
-import { useConfigsPendientes, useHistorialAprobaciones } from '@/hooks/useDirector';
+import {
+  useConfigsPendientes,
+  useHistorialAprobaciones,
+} from '@/features/evaluation/hooks/useEvaluationConfig';
 import { ESTADO_CONFIG_LABEL, formatearFecha } from '@/lib/comisiones';
 
 function Fila({ c, esHistorial }) {

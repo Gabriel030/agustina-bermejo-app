@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { formatearFecha } from '@/lib/comisiones';
-import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion } from '@/hooks/useMesasDeExamen';
+import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion } from '@/features/evaluation/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = { SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' } };
 const ESTADO_INSCRIPCION = {

@@ -5,13 +5,13 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMisInscripciones } from '@/hooks/useAlumno';
 import {
-  useMisInscripciones,
   useMesasDisponibles,
   useMisInscripcionesAMesas,
   useInscribirmeAMesa,
   useDarmeDeBajaDeMesa,
-} from '@/hooks/useAlumno';
+} from '@/features/evaluation/hooks/useStudentExams';
 import { TIPOLOGIA_LABEL } from '@/lib/notas';
 
 const SUB_TABS = [

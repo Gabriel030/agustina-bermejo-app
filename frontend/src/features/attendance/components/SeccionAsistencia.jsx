@@ -4,7 +4,11 @@ import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useMiAsistencia, useMiRiesgoDeAsistencia, useJustificarInasistencia } from '@/hooks/useAlumno';
+import {
+  useMiAsistencia,
+  useMiRiesgoDeAsistencia,
+  useJustificarInasistencia,
+} from '@/features/attendance/hooks/useStudentAttendance';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',

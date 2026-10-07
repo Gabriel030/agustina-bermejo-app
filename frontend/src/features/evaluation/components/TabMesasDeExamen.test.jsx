@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
-import { LlamadosDisponibles } from '@/components/alumno/TabMesasDeExamen';
+import { LlamadosDisponibles } from '@/features/evaluation/components/TabMesasDeExamen';
 
 const API = 'http://localhost:8080';
 

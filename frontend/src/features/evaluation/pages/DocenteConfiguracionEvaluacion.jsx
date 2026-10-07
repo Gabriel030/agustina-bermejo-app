@@ -4,8 +4,13 @@ import { Check } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
-import { CalendarioConfiguracion } from '@/components/docente/CalendarioConfiguracion';
-import { useConfiguracionComision, useGuardarBorradorComision, useEnviarComisionAAprobacion, useHolidays } from '@/hooks/useDocente';
+import { CalendarioConfiguracion } from '@/features/evaluation/components/CalendarioConfiguracion';
+import {
+  useConfiguracionComision,
+  useGuardarBorradorComision,
+  useEnviarComisionAAprobacion,
+  useHolidays,
+} from '@/features/evaluation/hooks/useEvaluationConfig';
 import { formatearFecha } from '@/lib/comisiones';
 
 function campoFecha(valor) {

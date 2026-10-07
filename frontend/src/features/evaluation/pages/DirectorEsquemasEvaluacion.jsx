@@ -6,7 +6,11 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEvaluationSchemes, useCrearEsquema, useEditarEsquema } from '@/hooks/useDirector';
+import {
+  useEvaluationSchemes,
+  useCrearEsquema,
+  useEditarEsquema,
+} from '@/features/evaluation/hooks/useEvaluationConfig';
 
 const FORM_INICIAL = { name: '', examCountExpected: 2, hasFinal: true, minRegularGrade: 4, minApprovalGrade: 6, esPromocional: false, promotionMinGrade: '' };
 
