@@ -12,6 +12,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeInUseException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationSchemeException;
@@ -42,6 +43,7 @@ class EvaluationSchemeServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         entityManager.persist(subject);

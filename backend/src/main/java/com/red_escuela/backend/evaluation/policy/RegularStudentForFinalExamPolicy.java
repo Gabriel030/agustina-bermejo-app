@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.policy;
 
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
@@ -12,7 +11,7 @@ public final class RegularStudentForFinalExamPolicy implements Policy<FinalExamL
     }
 
     public PolicyVerdict evaluate(FinalExamLoadRequest request) {
-        return request.enrollmentStatus() == EnrollmentStatus.REGULAR
+        return request.regularInSubject()
                 ? PolicyVerdict.allow(name())
                 : PolicyVerdict.deny(name(), "STUDENT_NOT_REGULAR_FOR_FINAL_EXAM",
                         "Solo un alumno regular en la materia puede rendir el final.");

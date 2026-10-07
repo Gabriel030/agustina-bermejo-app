@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -88,6 +89,7 @@ public class CycleTestFixtures {
         Subject subject = new Subject();
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia " + UUID.randomUUID());
+        subject.setStatus(SubjectStatus.ACTIVE);
         entityManager.persist(subject);
         return subject;
     }

@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.policy;
 
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.exception.FinalExamRequiresRegularStudentException;
 import com.red_escuela.backend.evaluation.service.FinalExamEligibilityEvaluator;
 import org.junit.jupiter.api.Test;
@@ -15,12 +14,12 @@ class FinalExamEligibilityEvaluatorTest {
 
     @Test
     void doesNothingForARegularStudent() {
-        assertThatCode(() -> evaluator.requireEligible(1L, EnrollmentStatus.REGULAR)).doesNotThrowAnyException();
+        assertThatCode(() -> evaluator.requireEligible(1L, true)).doesNotThrowAnyException();
     }
 
     @Test
     void throwsTheBusinessExceptionCarryingTheViolationForANonRegularStudent() {
-        assertThatThrownBy(() -> evaluator.requireEligible(1L, EnrollmentStatus.IN_PROGRESS))
+        assertThatThrownBy(() -> evaluator.requireEligible(1L, false))
                 .isInstanceOfSatisfying(FinalExamRequiresRegularStudentException.class, exception ->
                         assertThat(exception.violations()).extracting("code")
                                 .containsExactly("STUDENT_NOT_REGULAR_FOR_FINAL_EXAM"));

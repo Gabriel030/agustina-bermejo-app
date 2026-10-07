@@ -35,6 +35,7 @@ Feature: Caso de uso — Mis matriculaciones e inscripciones a comisión (MeEnro
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken

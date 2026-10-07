@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.service;
 
-import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.evaluation.exception.FinalExamRequiresRegularStudentException;
 import com.red_escuela.backend.evaluation.policy.FinalExamLoadRequest;
 import com.red_escuela.backend.evaluation.policy.RegularStudentForFinalExamPolicy;
@@ -14,8 +13,8 @@ public class FinalExamEligibilityEvaluator {
     private final PolicySet<FinalExamLoadRequest> finalExamLoadPolicies =
             PolicySet.named("FINAL_EXAM_LOAD", List.of(new RegularStudentForFinalExamPolicy()));
 
-    public void requireEligible(Long enrollmentId, EnrollmentStatus enrollmentStatus) {
-        finalExamLoadPolicies.evaluateUntilFirstDenial(new FinalExamLoadRequest(enrollmentId, enrollmentStatus))
+    public void requireEligible(Long enrollmentId, boolean regularInSubject) {
+        finalExamLoadPolicies.evaluateUntilFirstDenial(new FinalExamLoadRequest(enrollmentId, regularInSubject))
                 .throwIfDenied(FinalExamRequiresRegularStudentException::new);
     }
 }

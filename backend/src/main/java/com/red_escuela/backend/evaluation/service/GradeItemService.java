@@ -90,7 +90,7 @@ public class GradeItemService {
                 () -> subjectSectionInstructorRepository
                         .existsBySectionIdAndInstructorId(enrollment.getSubjectSection().getId(), instructorId),
                 enrollment.getSubjectSection().getId());
-        requireEligibleForFinalExam(request, enrollmentId, enrollment.getStatus());
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular());
 
         GradeItem gradeItem = gradeItemRepository
                 .findByProgramSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
@@ -150,7 +150,7 @@ public class GradeItemService {
                 () -> courseSubjectSectionInstructorRepository
                         .existsBySectionIdAndInstructorId(enrollment.getCourseSubjectSection().getId(), instructorId),
                 enrollment.getCourseSubjectSection().getId());
-        requireEligibleForFinalExam(request, enrollmentId, enrollment.getStatus());
+        requireEligibleForFinalExam(request, enrollmentId, enrollment.isRegular());
 
         GradeItem gradeItem = gradeItemRepository
                 .findByCourseSubjectSectionEnrollmentIdAndTypeAndSequenceNumber(
@@ -227,9 +227,9 @@ public class GradeItemService {
         return examBoard;
     }
 
-    private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, EnrollmentStatus status) {
+    private void requireEligibleForFinalExam(CreateGradeItemRequest request, Long enrollmentId, boolean regular) {
         if (request.type() == GradeItemType.FINAL) {
-            finalExamEligibilityEvaluator.requireEligible(enrollmentId, status);
+            finalExamEligibilityEvaluator.requireEligible(enrollmentId, regular);
         }
     }
 
