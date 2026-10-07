@@ -29,6 +29,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -135,6 +136,7 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-091")
     void aPaidInvoiceDoesNotAcceptAdjustments() {
         Person director = persistPerson("director.adjustment1." + System.nanoTime());
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(director.getId().toString(), null));

@@ -9,7 +9,20 @@ import com.tngtech.archunit.lang.CompositeArchRule;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceDraft;
 
+import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.domain.policy.Policy;
+import com.red_escuela.backend.shared.domain.policy.PolicyRule;
+import com.red_escuela.backend.shared.exception.BadRequestException;
+import com.red_escuela.backend.shared.exception.ConflictException;
+import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+
 import java.math.BigDecimal;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -21,6 +34,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 
 public final class ArchitectureRules {
 
@@ -34,6 +48,12 @@ public final class ArchitectureRules {
             ROOT + ".attendance..", ROOT + ".billing..", ROOT + ".enrollment..", ROOT + ".evaluation..",
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
+
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation.."};
+
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation"};
+
+    private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
     private static final Set<String> PRIMITIVE_NUMBERS = Set.of(
             BigDecimal.class.getName(), Double.class.getName(), Float.class.getName(), "double", "float");
@@ -106,5 +126,109 @@ public final class ArchitectureRules {
         return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..")
                 .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "..repository..")
                 .because("policies and planners are pure domain logic");
+    }
+
+    public static ArchRule businessExceptionsAreThrownOnlyByPolicyEvaluation(String... v2Packages) {
+        return noClasses()
+                .that().resideInAnyPackage(v2Packages)
+                .and().resideOutsideOfPackages("..policy..", "..domain..", ROOT + ".shared.domain.policy..")
+                .and().areNotAssignableTo(BadRequestException.class)
+                .and().areNotAssignableTo(ConflictException.class)
+                .should().callConstructorWhere(target(owner(assignableTo(BadRequestException.class)))
+                        .or(target(owner(assignableTo(ConflictException.class)))))
+                .allowEmptyShould(true)
+                .because("business rejections come out of policy evaluation, never from an if in a use case or service");
+    }
+
+    public static ArchRule useCasesDependOnlyOnPortsRepositoriesAndPolicies(String subdomain) {
+        return classes()
+                .that().resideInAPackage(subdomain + ".usecase..")
+                .should().onlyDependOnClassesThat().resideInAnyPackage(
+                        subdomain + ".repository..", subdomain + ".policy..", subdomain + ".domain..", subdomain + ".service..",
+                        subdomain + ".dto..", subdomain + ".usecase..", ROOT + ".shared..", ROOT + ".billing.operation..",
+                        "java..", "org.springframework..", "jakarta.transaction..", "org.slf4j..")
+                .allowEmptyShould(true)
+                .because("a use case orchestrates ports, repositories and policies of its own subdomain");
+    }
+
+    public static ArchRule subdomainsDoNotUseOtherSubdomainRepositories(String subdomain) {
+        String name = subdomain.substring(subdomain.lastIndexOf('.') + 1);
+        return classes()
+                .that().resideInAPackage(subdomain + "..")
+                .should(notDependOnRepositoryOfAnotherSubdomain(name))
+                .allowEmptyShould(true)
+                .because("a billing subdomain reaches another one through its service or port, never through its repository");
+    }
+
+    private static ArchCondition<JavaClass> notDependOnRepositoryOfAnotherSubdomain(String ownSubdomain) {
+        return new ArchCondition<>("not depend on the repository of another billing subdomain") {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                for (Dependency dependency : origin.getDirectDependenciesFromSelf()) {
+                    Matcher target = BILLING_SUBDOMAIN_REPOSITORY.matcher(dependency.getTargetClass().getPackageName());
+                    if (target.matches() && !target.group(1).equals(ownSubdomain)) {
+                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+                    }
+                }
+            }
+        };
+    }
+
+    public static ArchRule billingV2EntitiesHaveNoPublicSetters(Class<? extends java.lang.annotation.Annotation> entityAnnotation, String... v2Packages) {
+        return noMethods()
+                .that().areDeclaredInClassesThat().resideInAnyPackage(v2Packages)
+                .and().areDeclaredInClassesThat().areAnnotatedWith(entityAnnotation)
+                .and().arePublic()
+                .and().haveNameMatching("set[A-Z].*")
+                .should().haveNameMatching(".*")
+                .allowEmptyShould(true)
+                .because("entities change state through intention-revealing methods, not setters");
+    }
+
+    public static ArchRule everyPolicyDeclaresItsRule() {
+        return classes()
+                .that().implement(Policy.class)
+                .and().areNotInterfaces()
+                .and().areNotAnonymousClasses()
+                .should(declareViolationCodesAndDecisions())
+                .allowEmptyShould(true)
+                .because("the live catalog needs each policy's violation codes and decisions");
+    }
+
+    private static ArchCondition<JavaClass> declareViolationCodesAndDecisions() {
+        return new ArchCondition<>("be annotated with @PolicyRule with at least one violation code and one decision") {
+            @Override
+            public void check(JavaClass policy, ConditionEvents events) {
+                if (!policy.isAnnotatedWith(PolicyRule.class)) {
+                    events.add(SimpleConditionEvent.violated(policy, policy.getName() + " is not annotated with @PolicyRule"));
+                    return;
+                }
+                JavaAnnotation<JavaClass> rule = policy.getAnnotationOfType(PolicyRule.class.getName());
+                if (isEmpty(rule, "violationCodes") || isEmpty(rule, "decisions")) {
+                    events.add(SimpleConditionEvent.violated(policy, policy.getName() + " has an empty @PolicyRule"));
+                }
+            }
+
+            private boolean isEmpty(JavaAnnotation<JavaClass> rule, String property) {
+                return rule.get(property).map(value -> ((Object[]) value).length == 0).orElse(true);
+            }
+        };
+    }
+
+    public static ArchRule academicStructureDoesNotDependOnBilling() {
+        return noClasses()
+                .that().resideInAPackage(ROOT + ".academicstructure..")
+                .should().dependOnClassesThat().resideInAPackage("..billing..")
+                .because("billing plugs into academic structure through ports declared there");
+    }
+
+    public static ArchRule persistedBillingAmountsAreNonNegative(Class<? extends java.lang.annotation.Annotation> entityAnnotation, String... v2Packages) {
+        return noFields()
+                .that().areDeclaredInClassesThat().resideInAnyPackage(v2Packages)
+                .and().areDeclaredInClassesThat().areAnnotatedWith(entityAnnotation)
+                .and().haveRawType(Money.class)
+                .should().haveNameMatching(".*")
+                .allowEmptyShould(true)
+                .because("persisted billing amounts are NonNegativeMoney (D-171)");
     }
 }

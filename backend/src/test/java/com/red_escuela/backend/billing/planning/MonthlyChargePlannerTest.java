@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -101,6 +102,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-050")
     void question1StopsEverythingForIneligibleEnrollmentsWithAReason() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 2, null);
         assertThat(plan(Builder.base(t).inactive(), ym(2026, 3)).charges()).isEmpty();
@@ -111,6 +113,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-033")
     void aMonthCanProduceTheInstallmentAndTheEnrollmentFeeTogether() {
         ChargePlan plan = plan(Builder.base(template(1, 2026, 10, 1, 3, null)), ym(2026, 3));
 
@@ -128,6 +131,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-050")
     void installmentCapAndIdempotencyAreReportedWithTheirOwnCode() {
         ProgramYearBillingTemplate t = template(1, 2026, 2, 1, 2, null);
         ChargePlan capped = plan(Builder.base(t).fees(ym(2026, 2)).installments(ym(2026, 3), ym(2026, 4)), ym(2026, 5));
@@ -179,6 +183,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-022")
     void windowDrivenEmissionHappensInTheMonthBeforeTheWindowOpensAndItIsConfigurable() {
         ProgramYearBillingTemplate t = template(1, 2027, 10, 1, 2, null);
         Builder builder = Builder.base(t).window(1, 1, LocalDate.of(2027, 1, 25), LocalDate.of(2027, 3, 10));
@@ -196,6 +201,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-025")
     void aFeeEmittedAfterTheWindowClosedIsDueTenDaysLaterAndNeverBornOverdueAndTheDaysAreConfigurable() {
         ProgramYearBillingTemplate t = template(1, 2027, 10, 1, 2, null);
         Builder builder = Builder.base(t).window(1, 1, LocalDate.of(2027, 1, 25), LocalDate.of(2027, 3, 10));
@@ -210,6 +216,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-068")
     void pausedEnrollmentsAreNotBilledUnlessTheYearIsConfiguredToChargeWhilePaused() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
         Builder paused = Builder.base(t).isPaused();
@@ -236,6 +243,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-009")
     void movingTheSecondFeeMonthOfARunningYearDoesNotCreateAnotherFeeBecauseSlotsAreTrackedByNumber() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 2, 2, 7);
         YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
@@ -307,6 +315,7 @@ class MonthlyChargePlannerTest {
     }
 
     @Test
+    @Tag("D-002")
     void configurationRejectsInconsistentEnrollmentFeeSetups() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 2, null);
 

@@ -4,8 +4,10 @@ import com.red_escuela.backend.billing.issuing.ChargeTarget;
 import com.red_escuela.backend.billing.issuing.IssuanceContext;
 import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.shared.domain.policy.Policy;
+import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
+@PolicyRule(violationCodes = "ENROLLMENT_FEE_SLOT_REQUIRED", decisions = {"D-002", "D-009"})
 public final class EnrollmentFeeSlotRequiredPolicy implements Policy<IssuanceContext> {
     public String name() {
         return "EnrollmentFeeSlotRequiredPolicy";

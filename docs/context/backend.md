@@ -116,6 +116,37 @@ Antes de agregar una operación nueva a `billing`, mirá si encaja en un
 subdominio existente de `usecase/` o si necesita uno nuevo — no la agregues
 como método suelto a un colaborador de `service/`.
 
+### Motor de facturación v2: subdominio primero (D-173)
+
+El código nuevo de facturación nace con el subdominio como primer nivel del
+paquete (`billing.configuration`, `billing.operation`, y los que cree cada fase
+V2), con la misma estructura interna en todos: `domain/`, `policy/`,
+`operation/`, `usecase/`, `service/`, `repository/`, `controller/`, `dto/`,
+`exception/`. Lo existente en `billing/usecase/<subdominio>/`,
+`billing/service/` y `billing/entity/` se mueve en V2-02; hasta entonces
+conviven los dos mapas. Reglas que ArchUnit hace cumplir en los paquetes V2
+(`ArchitectureRules`): las excepciones de negocio solo salen de la evaluación
+de Policies; los casos de uso dependen solo de repositorios, Policies, dominio,
+servicios y DTO de su subdominio; un subdominio no usa el repositorio de otro;
+las entidades no tienen setters públicos y sus montos son `NonNegativeMoney`;
+toda `Policy` declara `@PolicyRule` (códigos de violación y decisiones);
+`academicstructure` no depende de `billing`. `UseCaseBranchingTest` prohíbe
+`if`, `switch` y ternarios en los `*Service` `@UseCase` de esos paquetes.
+
+Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
+`BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
+`implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
+verdad, columna Implementación); `PolicyCatalogTest` compara
+`docs/billing/policy-catalog.md` con las Policies declaradas (regenerar con
+`./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true`); jqwik para
+propiedades de Value Objects (semilla fija); PIT con
+`./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`,
+umbral 90 % solo en paquetes de dominio puro, exclusiones únicamente en
+`docs/billing/mutation-exclusions.md`. Los tests de integración heredan
+`@Tag("integration")` de `AbstractIntegrationTest` y PIT los excluye.
+Detalle: Obsidian, "Arquitectura y patrones - Motor de facturación v2" (§1, §2,
+§4) y "Estrategia de pruebas - Motor de facturación v2".
+
 ## Paquete por feature: `academicstructure`
 
 Institución/Programa/Curso/Materia/Comisión/Período (`Institution`, `Program`,

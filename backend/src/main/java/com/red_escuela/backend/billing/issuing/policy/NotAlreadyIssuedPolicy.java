@@ -2,8 +2,10 @@ package com.red_escuela.backend.billing.issuing.policy;
 
 import com.red_escuela.backend.billing.issuing.IssuanceContext;
 import com.red_escuela.backend.shared.domain.policy.Policy;
+import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
+@PolicyRule(violationCodes = "ALREADY_ISSUED", decisions = {"D-009"})
 public final class NotAlreadyIssuedPolicy implements Policy<IssuanceContext> {
     public String name() {
         return "NotAlreadyIssuedPolicy";

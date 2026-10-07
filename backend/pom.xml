@@ -29,6 +29,9 @@
 	<properties>
 		<java.version>21</java.version>
 		<shedlock.version>6.10.0</shedlock.version>
+		<jqwik.version>1.9.3</jqwik.version>
+		<pitest.version>1.20.4</pitest.version>
+		<pitest-junit5.version>1.2.3</pitest-junit5.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -158,6 +161,12 @@
 			<version>1.4.2</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.jqwik</groupId>
+			<artifactId>jqwik</artifactId>
+			<version>${jqwik.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<!--
 			QA de contrato HTTP con criterios de aceptación legibles (ver
 			docs/context/testing.md, "QA de contrato HTTP (Karate)") — a diferencia de
@@ -208,5 +217,66 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>mutation</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-maven</artifactId>
+						<version>${pitest.version}</version>
+						<dependencies>
+							<dependency>
+								<groupId>org.pitest</groupId>
+								<artifactId>pitest-junit5-plugin</artifactId>
+								<version>${pitest-junit5.version}</version>
+							</dependency>
+						</dependencies>
+						<configuration>
+							<targetClasses>
+								<param>com.red_escuela.backend.shared.domain.*</param>
+								<param>com.red_escuela.backend.shared.domain.policy.*</param>
+								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
+								<param>com.red_escuela.backend.billing.operation.*</param>
+							</targetClasses>
+							<targetTests>
+								<param>com.red_escuela.backend.shared.domain.*</param>
+								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
+								<param>com.red_escuela.backend.billing.operation.*</param>
+							</targetTests>
+							<excludedGroups>
+								<param>integration</param>
+							</excludedGroups>
+							<excludedMethods>
+								<param>toString</param>
+								<param>hashCode</param>
+							</excludedMethods>
+							<mutationThreshold>90</mutationThreshold>
+							<coverageThreshold>0</coverageThreshold>
+							<failWhenNoMutations>false</failWhenNoMutations>
+							<threads>4</threads>
+							<withHistory>true</withHistory>
+							<outputFormats>
+								<param>HTML</param>
+								<param>XML</param>
+							</outputFormats>
+							<timestampedReports>false</timestampedReports>
+						</configuration>
+						<executions>
+							<execution>
+								<id>mutation-coverage</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>mutationCoverage</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

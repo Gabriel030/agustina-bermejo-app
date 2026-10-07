@@ -34,6 +34,7 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -150,6 +151,8 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-053")
+    @Tag("D-066")
     void suspendedDoesNotGenerateNewInstallmentTheFollowingMonth() {
         ProgramEnrollment enrollment = persistProgramEnrollment("99000201", ProgramEnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
 
@@ -178,6 +181,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-066")
     void payingOffOldDebtResumesGenerationWithoutRecoveringSkippedMonths() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000205", EnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
         Person director = persistStudent("99000206").getPerson();

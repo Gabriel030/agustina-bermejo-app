@@ -34,6 +34,7 @@ import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -406,6 +407,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-032")
     void enrollingWithAnEntryFeeAndAReenrollmentFeeOfTheFollowingYearDoesNotFail() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000021", StatusType.ACTIVE, institution);
@@ -428,6 +430,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-032")
     void enrollingWithAPaidEntryFeeButAnUnpaidReenrollmentFeeIsRejected() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000022", StatusType.ACTIVE, institution);
@@ -449,6 +452,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-007")
     void enrollingWithoutCohortDoesNotRequireFee() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000011", StatusType.ACTIVE, institution);

@@ -35,6 +35,7 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -273,6 +274,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-004")
     void twoCohortsOfTheSameYearHaveIndependentWindowsAndCalendars() {
         Person director = persistPersonBase("DIR139" + System.nanoTime());
         authenticateAsPerson(director);
@@ -442,6 +444,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-065")
     void studentWithSimultaneousProgramAndCourseKeepsIndependentBillingStates() {
         Person director = persistPersonBase("DIR21" + System.nanoTime());
         authenticateAsPerson(director);

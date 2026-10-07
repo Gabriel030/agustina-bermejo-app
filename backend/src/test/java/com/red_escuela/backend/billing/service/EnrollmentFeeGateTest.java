@@ -6,7 +6,11 @@ import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
+import com.red_escuela.backend.notification.entity.Notification;
+import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
@@ -17,6 +21,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -47,6 +52,8 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     private CertificateService certificateService;
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private NotificationRepository notificationRepository;
     @Autowired
     private RoleRepository roleRepository;
     @Autowired
@@ -84,6 +91,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-010")
     void withOneEnrollmentFeeThePaymentOfTheYearEnablesBothSemestersAndAnUnpaidOneBlocksWithTheNewCode() {
         World world = world(1, null, false);
         today(date(2027, 2, 5));
@@ -100,6 +108,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-010")
     void withTwoEnrollmentFeesEachSemesterNeedsItsOwnAndAnnualSubjectsNeedTheFirstOne() {
         World world = world(2, 7, false);
         today(date(2027, 2, 5));
@@ -115,6 +124,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-011")
     void anAnnualSubjectStartingInTheFirstSemesterOnlyNeedsTheFirstEnrollmentFee() {
         World world = world(2, 7, false);
         Term annual = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "ANUAL");
@@ -127,6 +137,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-017")
     void theOnDemandEmissionHasTheWindowCloseAsDueDateAndTheEmissionDayPrice() {
         World world = world(1, null, false);
         newPrice(world.career(), FeeType.ENROLLMENT_FEE, 8000, date(2027, 1, 15));
@@ -170,6 +181,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-013")
     void doesNotBlockWhenTheYearDoesNotBlockEnrollmentOrIsNotConfigured() {
         World world = world(1, null, false);
         configureYear(world.year(), template -> template.setBlocksEnrollment(false));
@@ -186,6 +198,8 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-027")
+    @Tag("D-166")
     void exemptionLetsTheStudentEnrollKeepsTheDebtAndRevokingItBlocksAgain() throws Exception {
         World world = world(1, null, false);
         today(date(2027, 2, 5));
@@ -223,6 +237,8 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-027")
+    @Tag("D-110")
     void exemptionEndpointsEnforceRolesValidationAndTheNotNeededRule() throws Exception {
         World world = world(1, null, false);
         grant(tokenWithRole("PRECEPTOR"), world, 1, "Motivo suficientemente largo").andExpect(status().isForbidden());
@@ -263,6 +279,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-013")
     void examRegistrationAndCertificatesRequireTheLatestStartedEnrollmentFee() {
         World world = world(1, null, false);
         today(date(2027, 5, 10));
@@ -280,6 +297,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-013")
     void certificatesAndExamsOfTheYearThatDoesNotBlockThemAreAllowed() {
         World world = world(1, null, false);
         configureYear(world.year(), template -> {
@@ -295,6 +313,7 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("D-016")
     void studentWhoOnlyOwesFinalsIsExemptFromTheExamGateWithoutOnDemandEmissionUnlessTheYearRequiresIt() {
         World world = world(1, null, false);
         addSectionEnrollment(world.enrollment(), world.career(), world.firstTerm(), EnrollmentStatus.REGULAR);
@@ -317,6 +336,44 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
         today(date(2024, 2, 5));
 
         assertThatCode(() -> enrollIn(world, oldSection)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @Tag("D-028")
+    void grantingAndRevokingAnExemptionNotifiesTheStudentTwice() throws Exception {
+        World world = world(1, null, false);
+        today(date(2027, 2, 5));
+        String director = tokenWithRole("DIRECTOR");
+        Long personId = transactionTemplate.execute(s -> load(world.enrollment()).getStudent().getPerson().getId());
+
+        grant(director, world, 1, "Plan de pago acordado con el alumno").andExpect(status().isCreated());
+        assertThat(notificationTypesOf(personId)).containsExactly(NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED);
+
+        mockMvc.perform(post("/enrollment-fee-exemptions/{id}/revoke", firstExemptionId(world)).contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + director).content("{\"notes\":\"Pagó la matrícula\"}")).andExpect(status().isNoContent());
+
+        assertThat(notificationTypesOf(personId)).containsExactlyInAnyOrder(
+                NotificationType.ENROLLMENT_FEE_EXEMPTION_GRANTED, NotificationType.ENROLLMENT_FEE_EXEMPTION_REVOKED);
+    }
+
+    @Test
+    @Tag("D-029")
+    void changingSectionWithinTheSameTermDoesNotEvaluateTheEnrollmentFee() throws Exception {
+        World world = world(1, null, false);
+        today(date(2027, 2, 5));
+        String director = tokenWithRole("DIRECTOR");
+        grant(director, world, 1, "Plan de pago acordado con el alumno").andExpect(status().isCreated());
+        Long enrollmentId = enrollmentService.enroll(world.enrollment(), new CreateSectionEnrollmentRequest(world.firstSection())).getId();
+        mockMvc.perform(post("/enrollment-fee-exemptions/{id}/revoke", firstExemptionId(world)).contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + director).content("{\"notes\":\"Todavía debe la matrícula\"}")).andExpect(status().isNoContent());
+        Long otherSection = newSection(world.career(), world.firstTerm());
+
+        assertThatCode(() -> enrollmentService.changeSection(enrollmentId, new ChangeSectionRequest(otherSection))).doesNotThrowAnyException();
+        assertThat(invoices(world.enrollment(), FeeType.ENROLLMENT_FEE)).isEmpty();
+    }
+
+    private List<NotificationType> notificationTypesOf(Long personId) {
+        return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(personId).stream().map(Notification::getType).toList();
     }
 
     private ProgramEnrollment load(Long id) {

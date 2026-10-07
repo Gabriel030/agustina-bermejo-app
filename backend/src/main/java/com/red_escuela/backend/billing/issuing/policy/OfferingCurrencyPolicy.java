@@ -2,8 +2,10 @@ package com.red_escuela.backend.billing.issuing.policy;
 
 import com.red_escuela.backend.billing.issuing.IssuanceContext;
 import com.red_escuela.backend.shared.domain.policy.Policy;
+import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
+@PolicyRule(violationCodes = "CURRENCY_MISMATCH", decisions = {"D-097"})
 public final class OfferingCurrencyPolicy implements Policy<IssuanceContext> {
     public String name() {
         return "OfferingCurrencyPolicy";

@@ -45,6 +45,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.persistence.QueryCountAssertions;
 import jakarta.persistence.EntityManagerFactory;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -231,6 +232,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-081")
     void approvingAReceiptLinksItToThePaymentItGeneratedAndTheOverviewExposesTheLink() {
         Person reviewer = persistPerson("admin.detail3." + System.nanoTime(), "Laura", "Gomez");
         Student student = persistStudent();
@@ -252,6 +254,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-081")
     void receiptsInEveryStateAreListedAndARejectedOneKeepsItsReasonWithoutLinkingAPayment() {
         Person reviewer = persistPerson("admin.detail4." + System.nanoTime(), "Laura", "Gomez");
         Student student = persistStudent();

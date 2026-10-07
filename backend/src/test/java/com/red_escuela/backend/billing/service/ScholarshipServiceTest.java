@@ -31,6 +31,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -359,6 +360,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-078")
     void grantingAScholarshipWithTheCurrentMonthsInstallmentAlreadyPaidGeneratesARetroactiveCreditNote() {
         Person director = persistPerson("director.scholarship9." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
@@ -384,6 +386,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-035")
     void t12CoursePriceIncreasedOnDayThreeAppliesToTheInvoiceEmittedOnDayFourAndNotToTheOneEmittedOnDayOne() {
         Person director = persistPerson("director.t12." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
