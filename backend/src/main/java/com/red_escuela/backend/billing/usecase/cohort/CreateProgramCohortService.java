@@ -45,7 +45,7 @@ public class CreateProgramCohortService implements CreateProgramCohortUseCase {
         }
         cohort.setCreatedBy(actor);
         ProgramCohort saved = programCohortRepository.save(cohort);
-        configurationMirror.recordCohortEntryDiscount(saved, actor.getId());
+        configurationMirror.recordCohortEntryDiscount(saved);
         return saved;
     }
 }

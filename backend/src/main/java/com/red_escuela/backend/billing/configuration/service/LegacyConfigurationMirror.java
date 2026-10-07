@@ -12,6 +12,8 @@ import com.red_escuela.backend.billing.configuration.repository.ConfigurationVer
 import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -26,24 +28,34 @@ public class LegacyConfigurationMirror {
 
     private final ConfigurationVersionRepository repository;
     private final ConfigurationVersionActivator activator;
+    private final ProgramYearBillingTemplateRepository templateRepository;
+    private final ProgramCohortRepository cohortRepository;
+    private final BillingActorResolver actorResolver;
     private final Clock clock;
 
-    public LegacyConfigurationMirror(ConfigurationVersionRepository repository, ConfigurationVersionActivator activator, Clock clock) {
+    public LegacyConfigurationMirror(ConfigurationVersionRepository repository, ConfigurationVersionActivator activator,
+                                  ProgramYearBillingTemplateRepository templateRepository, ProgramCohortRepository cohortRepository,
+                                  BillingActorResolver actorResolver, Clock clock) {
+        this.templateRepository = templateRepository;
+        this.cohortRepository = cohortRepository;
+        this.actorResolver = actorResolver;
         this.repository = repository;
         this.activator = activator;
         this.clock = clock;
     }
 
-    public void recordYearTerms(ProgramYearBillingTemplate template, Long actorId) {
+    public void recordYearTerms(ProgramYearBillingTemplate template) {
         YearBillingTerms terms = new YearBillingTerms(template.getRecurringFeeInvoicesCount(), template.getEnrollmentFeeCount(), template.getFirstEnrollmentFeeMonth(),
                 template.getSecondEnrollmentFeeMonth(), template.getEnrollmentFeeLeadMonths(), template.getLateEnrollmentFeeDueDays(), template.getRecurringFeeDueDays(),
                 template.isWithdrawSuspendedAtTermEnd(), template.isPaysWhilePaused(), template.isBlocksEnrollment(), template.isBlocksExamRegistration(),
                 template.isBlocksCertificates(), template.isRequireEnrollmentFeeForFinalExamOnlyStudents());
-        recordIfChanged(ConfigurationTopic.ofYearTerms(template.getProgram().getId(), template.getTerm().getId()), terms, LocalDate.now(clock), actorId);
+        recordIfChanged(ConfigurationTopic.ofYearTerms(templateRepository.findProgramIdById(template.getId()), templateRepository.findTermIdById(template.getId())), terms,
+                LocalDate.now(clock), actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(template.getId())));
     }
 
-    public void recordCohortEntryDiscount(ProgramCohort cohort, Long actorId) {
-        recordIfChanged(ConfigurationTopic.ofCohortEntry(cohort.getId()), new CohortEntryDiscount(cohort.getEntryFeeDiscount()), LocalDate.now(clock), actorId);
+    public void recordCohortEntryDiscount(ProgramCohort cohort) {
+        recordIfChanged(ConfigurationTopic.ofCohortEntry(cohort.getId()), new CohortEntryDiscount(cohort.getEntryFeeDiscount()), LocalDate.now(clock),
+                actorResolver.currentPersonIdOr(cohortRepository.findCreatedByIdById(cohort.getId())));
     }
 
     public void recordLatePayment(LatePaymentSettings settings, Long actorId) {

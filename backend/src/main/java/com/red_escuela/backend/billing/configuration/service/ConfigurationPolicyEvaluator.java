@@ -5,16 +5,13 @@ import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymen
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
-import com.red_escuela.backend.billing.configuration.exception.CancellationReasonRequiredException;
-import com.red_escuela.backend.billing.configuration.exception.ChangeReasonRequiredException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidAnnualUpfrontSettingsException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidIssuanceSettingsException;
 import com.red_escuela.backend.billing.configuration.exception.ProposalAlreadyOpenException;
 import com.red_escuela.backend.billing.configuration.exception.ProposalExpiredException;
-import com.red_escuela.backend.billing.configuration.exception.RetroactiveEffectiveDateException;
-import com.red_escuela.backend.billing.configuration.exception.VersionAlreadyEffectiveException;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.configuration.policy.ConfigurationChangeCheck;
+import com.red_escuela.backend.billing.configuration.policy.ConfigurationViolationExceptions;
 import com.red_escuela.backend.billing.configuration.policy.LatePaymentSettingsValues;
 import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalCheck;
 import com.red_escuela.backend.billing.configuration.policy.ProposalSlot;
@@ -80,8 +77,7 @@ public class ConfigurationPolicyEvaluator {
     }
 
     public void requireValidChange(ConfigurationChangeCheck check) {
-        evaluate(changePolicies, check, violations -> "CHANGE_REASON_REQUIRED".equals(violations.get(0).code())
-                ? new ChangeReasonRequiredException(violations) : new RetroactiveEffectiveDateException(violations));
+        evaluate(changePolicies, check, ConfigurationViolationExceptions::forChangeViolations);
     }
 
     public void requireNoOpenProposal(ProposalSlot slot) {
@@ -93,8 +89,7 @@ public class ConfigurationPolicyEvaluator {
     }
 
     public void requireCancellableVersion(VersionCancellationCheck check) {
-        evaluate(cancellationPolicies, check, violations -> "CANCELLATION_REASON_REQUIRED".equals(violations.get(0).code())
-                ? new CancellationReasonRequiredException(violations) : new VersionAlreadyEffectiveException(violations));
+        evaluate(cancellationPolicies, check, ConfigurationViolationExceptions::forCancellationViolations);
     }
 
     public void requireCoherentLatePaymentTerms(LatePaymentTerms terms) {

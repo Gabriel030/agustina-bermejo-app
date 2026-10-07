@@ -19,6 +19,11 @@ public class BillingActorResolver {
         return currentPersonService.resolveCurrentPerson().getId();
     }
 
+    public Long currentPersonIdOr(Long fallbackPersonId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null || !authentication.isAuthenticated() ? fallbackPersonId : currentPersonId();
+    }
+
     public boolean currentActorIsDirector() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication != null && authentication.getAuthorities().stream().anyMatch(authority -> DIRECTOR_AUTHORITY.equals(authority.getAuthority()));

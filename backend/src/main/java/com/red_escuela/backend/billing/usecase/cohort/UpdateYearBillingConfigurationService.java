@@ -10,7 +10,6 @@ import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFo
 import com.red_escuela.backend.billing.service.YearBillingConfigurationApplier;
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
 import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +22,12 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final LegacyConfigurationMirror configurationMirror;
-    private final CurrentPersonService currentPersonService;
 
     public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateRepository templateRepository,
                                                  YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
                                                  YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
-                                                 LegacyConfigurationMirror configurationMirror, CurrentPersonService currentPersonService) {
+                                                 LegacyConfigurationMirror configurationMirror) {
         this.configurationMirror = configurationMirror;
-        this.currentPersonService = currentPersonService;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
         this.templateRepository = templateRepository;
@@ -48,7 +45,7 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
         policyEvaluator.requireUnfrozenYearConfiguration(change);
         configurationApplier.applyYearBillingConfiguration(template, request);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
-        configurationMirror.recordYearTerms(saved, currentPersonService.resolveCurrentPerson().getId());
+        configurationMirror.recordYearTerms(saved);
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return saved;
     }

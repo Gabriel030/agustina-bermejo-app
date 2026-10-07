@@ -64,7 +64,7 @@ public class BillingOperationNotificationListener {
                 : "El director rechazó tu propuesta de configuración (" + event.topicKey() + "): " + event.reason();
         sendOnce(event, CONFIGURATION_DECIDED_HANDLER, new BillingOperationNotification(
                 approved ? NotificationType.CONFIGURATION_CHANGE_APPROVED : NotificationType.CONFIGURATION_CHANGE_REJECTED,
-                message, List.of(new PersonIdRecipient(event.proposedByPersonId())), "ConfigurationVersion", event.configurationVersionId()));
+                message, List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "ConfigurationVersion", event.configurationVersionId()));
     }
 
     @ApplicationModuleListener

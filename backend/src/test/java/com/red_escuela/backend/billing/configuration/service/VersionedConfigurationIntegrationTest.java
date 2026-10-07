@@ -122,12 +122,17 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+        String people = List.of(director, administrative, teacher).stream().map(person -> person.getId().toString()).collect(java.util.stream.Collectors.joining(","));
+        jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id in (" + people + ")");
         for (Person person : List.of(director, administrative, teacher)) {
+            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)", person.getId());
             jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", person.getId());
             jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", person.getId());
             jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", person.getId());
             jdbcTemplate.update("delete from late_payment_settings where created_by_id = ?", person.getId());
         }
+        jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
         SecurityContextHolder.clearContext();
     }
 
@@ -215,7 +220,6 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     @Test
     @Tag("D-223")
     @Tag("D-095")
-    @Tag("D-113")
     void directorPublishesWithoutAnAuthorizationRequest() {
         authenticateAs(director);
 

@@ -2,14 +2,13 @@ package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
-import com.red_escuela.backend.billing.configuration.exception.ProposalAlreadyOpenException;
 import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
+import com.red_escuela.backend.billing.configuration.policy.ConfigurationViolationExceptions;
 import com.red_escuela.backend.billing.configuration.policy.ProposalSlot;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestObserver;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
-import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -56,7 +54,7 @@ public class ConfigurationProposalObserver implements AuthorizationRequestObserv
             log.info("Configuration proposal PROPOSED: scope={}, topic={}, version={}, effectiveFrom={}, authorizationRequestId={}", proposal.getScope(),
                     topicKey, proposal.getId(), proposal.getEffectiveFrom(), requestId);
         } catch (DataIntegrityViolationException duplicated) {
-            throw new ProposalAlreadyOpenException(List.of(new PolicyViolation("PROPOSAL_ALREADY_OPEN", "Ya hay una propuesta pendiente sobre este tema.")));
+            throw ConfigurationViolationExceptions.proposalAlreadyOpen();
         }
     }
 
