@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.issuing;
 
 import com.red_escuela.backend.billing.issuing.policy.DueDateNotBeforeIssueDatePolicy;
 import com.red_escuela.backend.billing.issuing.policy.EnrollmentFeeSlotRequiredPolicy;
+import com.red_escuela.backend.billing.issuing.policy.EnrollmentFeeSlotWithinTemplateCountPolicy;
 import com.red_escuela.backend.billing.issuing.policy.NotAlreadyIssuedPolicy;
 import com.red_escuela.backend.billing.issuing.policy.OfferingCurrencyPolicy;
 import com.red_escuela.backend.billing.issuing.policy.ReasonFeeTypePolicy;
@@ -21,6 +22,7 @@ public class BillingPolicyConfiguration {
                 new ReasonFeeTypePolicy(),
                 new DueDateNotBeforeIssueDatePolicy(),
                 new EnrollmentFeeSlotRequiredPolicy(),
+                new EnrollmentFeeSlotWithinTemplateCountPolicy(),
                 new OfferingCurrencyPolicy(),
                 new NotAlreadyIssuedPolicy());
         return PolicySet.named("INVOICE_ISSUING", ordered);

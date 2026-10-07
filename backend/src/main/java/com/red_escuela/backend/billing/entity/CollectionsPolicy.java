@@ -4,8 +4,10 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.persistence.PercentageConverter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 
 import java.time.LocalDate;
@@ -13,7 +15,9 @@ import java.time.LocalDateTime;
 import com.red_escuela.backend.identity.entity.Person;
 
 @Getter
-@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "collections_policy")
 public class CollectionsPolicy {
@@ -34,12 +38,6 @@ public class CollectionsPolicy {
 
     @Column(name = "suspension_after_invoice_count", nullable = false)
     private Integer suspensionAfterInvoiceCount;
-
-    @Column(name = "withdrawal_after_days", nullable = false)
-    private Integer withdrawalAfterDays;
-
-    @Column(name = "withdrawal_after_invoice_count", nullable = false)
-    private Integer withdrawalAfterInvoiceCount;
 
     @Column(name = "effective_from", nullable = false)
     private LocalDate effectiveFrom;

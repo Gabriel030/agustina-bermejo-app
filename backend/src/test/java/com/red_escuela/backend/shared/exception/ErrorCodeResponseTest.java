@@ -17,4 +17,12 @@ class ErrorCodeResponseTest {
     void codeOfAJdkExceptionIsAlsoUpperSnakeCase() {
         assertThat(ErrorCodeResponse.of(new IllegalArgumentException()).code()).isEqualTo("ILLEGAL_ARGUMENT");
     }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-096")
+    void anExceptionWithoutViolationsSerializesOnlyTheCode() throws Exception {
+        String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ErrorCodeResponse.of(new CohortAdmissionWindowClosedException(1L)));
+
+        assertThat(json).isEqualTo("{\"code\":\"COHORT_ADMISSION_WINDOW_CLOSED\"}");
+    }
 }

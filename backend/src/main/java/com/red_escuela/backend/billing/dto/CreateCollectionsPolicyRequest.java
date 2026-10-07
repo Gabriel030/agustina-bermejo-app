@@ -10,7 +10,5 @@ public record CreateCollectionsPolicyRequest(
         @NotNull Percentage surchargePercent,
         @NotNull Integer suspensionAfterDays,
         @NotNull Integer suspensionAfterInvoiceCount,
-        @NotNull Integer withdrawalAfterDays,
-        @NotNull Integer withdrawalAfterInvoiceCount,
         LocalDate effectiveFrom) {
 }

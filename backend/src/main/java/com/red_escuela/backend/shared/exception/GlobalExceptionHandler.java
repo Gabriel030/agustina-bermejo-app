@@ -58,7 +58,11 @@ public class GlobalExceptionHandler {
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorCodeResponse handleBadRequest(Exception exception) {
-        return ErrorCodeResponse.of(exception);
+        ErrorCodeResponse response = ErrorCodeResponse.of(exception);
+        if (!response.violations().isEmpty()) {
+            log.warn("Rechazo {} [{}]: violaciones={}", response.code(), correlation(), response.violations().stream().map(v -> v.code()).toList());
+        }
+        return response;
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -77,7 +81,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorCodeResponse handleConflict(ConflictException exception) {
         ErrorCodeResponse response = ErrorCodeResponse.of(exception);
-        log.warn("Conflicto {} [{}]: {}", response.code(), correlation(), exception.getMessage());
+        log.warn("Conflicto {} [{}]: {} violaciones={}", response.code(), correlation(), exception.getMessage(), response.violations().stream().map(v -> v.code()).toList());
         return response;
     }
 

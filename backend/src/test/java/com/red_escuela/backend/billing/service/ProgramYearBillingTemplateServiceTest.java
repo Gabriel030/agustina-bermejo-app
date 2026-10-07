@@ -6,7 +6,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
+import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -90,7 +91,8 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         Term term = persistTerm(base, base.plusMonths(3));
 
         assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), term.getId(), 5))
-                .isInstanceOf(ProgramYearBillingTemplateExceedsTermSpanException.class);
+                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
+                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
     }
 
     @Test
@@ -107,7 +109,8 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void withoutTermDatesNothingIsValidated() {
+    @org.junit.jupiter.api.Tag("D-002")
+    void withoutTermDatesTheTemplateIsRejected() {
         Person director = persistPerson("director.sinfechas." + System.nanoTime());
         authenticateAs(director);
         Program program = persistProgram("Carrera sin fechas " + System.nanoTime());
@@ -116,8 +119,10 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
 
-        var template = createTemplateUseCase.create(program.getId(), term.getId(), 999);
+        Long termId = term.getId();
 
-        assertThat(template.getRecurringFeeInvoicesCount()).isEqualTo(999);
+        assertThatThrownBy(() -> createTemplateUseCase.create(program.getId(), termId, 999))
+                .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
+                        e -> assertThat(e.violations()).extracting(PolicyViolation::code).contains("TERM_WITHOUT_DATES"));
     }
 }

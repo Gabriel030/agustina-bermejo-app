@@ -120,17 +120,15 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         return invoiceRepository.save(invoice);
     }
 
-    private CollectionsPolicy persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount,
-                                             int withdrawalAfterDays, int withdrawalAfterInvoiceCount) {
-        CollectionsPolicy policy = new CollectionsPolicy();
-        policy.setGracePeriodDays(10);
-        policy.setSurchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)));
-        policy.setSuspensionAfterDays(suspensionAfterDays);
-        policy.setSuspensionAfterInvoiceCount(suspensionAfterInvoiceCount);
-        policy.setWithdrawalAfterDays(withdrawalAfterDays);
-        policy.setWithdrawalAfterInvoiceCount(withdrawalAfterInvoiceCount);
-        policy.setEffectiveFrom(LocalDate.now().minusYears(1));
-        policy.setCreatedBy(createdBy);
+    private CollectionsPolicy persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
+        CollectionsPolicy policy = CollectionsPolicy.builder()
+                .gracePeriodDays(10)
+                .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
+                .suspensionAfterDays(suspensionAfterDays)
+                .suspensionAfterInvoiceCount(suspensionAfterInvoiceCount)
+                .effectiveFrom(LocalDate.now().minusYears(1))
+                .createdBy(createdBy)
+                .build();
         return collectionsPolicyRepository.save(policy);
     }
 
@@ -141,7 +139,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void studentWithOneMonthOfNonPaymentIsSuspended() {
         Person director = persistPerson("director.compliance1." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000101");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoiceStatus.OVERDUE);
 
@@ -151,23 +149,25 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    void suspendedStudentUnpaidForTwoMonthsIsAutomaticallyWithdrawn() {
+    @Tag("D-147")
+    void suspendedStudentUnpaidForTwoMonthsStaysSuspendedAndEnrolled() {
         Person director = persistPerson("director.compliance2." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000102");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoiceStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
 
         ProgramEnrollment reloaded = reload(enrollment.getId());
-        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     @Test
-    void theNightlyWithdrawalForNonPaymentWorksWithoutALoggedUserWhenFutureInstallmentsArePending() {
+    @Tag("D-147")
+    void theNightlySuspensionWorksWithoutALoggedUserAndLeavesFutureInstallmentsPending() {
         Person director = persistPerson("director.compliance9." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000120");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoiceStatus.OVERDUE);
         Invoice future = persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(20),
@@ -177,15 +177,15 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         sweepService.run(LocalDate.now());
 
         ProgramEnrollment reloaded = reload(enrollment.getId());
-        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
+        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
         assertThat(invoiceRepository.findById(future.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
     }
 
     @Test
     void suspendedStudentWhoPaysBeforeTwoMonthsReturnsToGoodStandingWithoutBeingWithdrawn() {
         Person director = persistPerson("director.compliance3." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000103");
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoiceStatus.OVERDUE);
 
@@ -204,7 +204,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void twoSimultaneousOverdueInvoicesSuspendEvenIfNoneIsVeryOld() {
         Person director = persistPerson("director.compliance4." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000104");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoiceStatus.OVERDUE);
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
@@ -217,7 +217,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void aSingleVeryOldInvoiceSuspendsEvenIfItIsTheOnlyOverdueOne() {
         Person director = persistPerson("director.compliance5." + System.nanoTime());
-        persistPolicy(director, 30, 5, 60, 6);
+        persistPolicy(director, 30, 5);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000105");
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(35), InvoiceStatus.OVERDUE);
 
@@ -230,7 +230,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Tag("contradicts-D-136")
     void aPartialPaymentOfOneOfTheInstallmentsThatCausedSuspensionDoesNotLiftTheSuspensionAlone() {
         Person director = persistPerson("director.compliance6." + System.nanoTime());
-        persistPolicy(director, 30, 2, 60, 3);
+        persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000106");
         Invoice first = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoiceStatus.OVERDUE);
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
@@ -247,7 +247,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void payingOffAllTheOverdueDebtLiftsTheSuspensionEvenIfThereIsAFutureInstallmentNotYetDue() {
         Person director = persistPerson("director.compliance9." + System.nanoTime());
-        persistPolicy(director, 10, 2, 30, 3);
+        persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000109");
         Invoice overdue = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
         sweepService.run(LocalDate.now());
@@ -264,7 +264,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void studentWhoChangesPaymentPlanMidProgramStaysConsistentlyInGoodStanding() {
         Person director = persistPerson("director.compliance7." + System.nanoTime());
-        persistPolicy(director, 10, 2, 30, 3);
+        persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000107");
 
         YearMonth base = YearMonth.now().minusMonths(6);
@@ -288,7 +288,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     @Test
     void billingStandingStaysUpToDateWhenQueriedAtThreeDifferentMoments() {
         Person director = persistPerson("director.compliance8." + System.nanoTime());
-        persistPolicy(director, 10, 2, 30, 3);
+        persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000108");
 
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(2), InvoiceStatus.PAID);

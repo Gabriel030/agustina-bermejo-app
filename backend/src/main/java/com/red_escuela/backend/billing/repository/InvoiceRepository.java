@@ -18,6 +18,21 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
+    @Query("""
+            select distinct i.enrollmentFeeSlot from Invoice i
+            where i.templateId = :templateId and i.feeType = com.red_escuela.backend.billing.entity.FeeType.ENROLLMENT_FEE and i.enrollmentFeeSlot is not null
+            """)
+    List<Integer> findIssuedEnrollmentFeeSlotsByTemplateId(@Param("templateId") Long templateId);
+
+    @Query("""
+            select distinct i.period from Invoice i
+            where i.programEnrollment.program.id = :programId
+              and i.feeType = com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE
+              and i.status <> com.red_escuela.backend.billing.entity.InvoiceStatus.CANCELLED
+              and i.period between :from and :to
+            """)
+    List<YearMonth> findIssuedInstallmentPeriodsByProgramIdAndPeriodBetween(@Param("programId") Long programId, @Param("from") YearMonth from, @Param("to") YearMonth to);
+
     List<Invoice> findByCourseEnrollmentIdOrderByPeriod(Long courseEnrollmentId);
 
     List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long programEnrollmentId);
