@@ -32,12 +32,12 @@ function messageForStatus(status) {
   return STATUS_MESSAGES[status] ?? 'Ocurrió un error inesperado. Probá de nuevo.';
 }
 
-async function readErrorCode(response) {
+async function readErrorBody(response) {
   try {
     const body = await response.json();
-    return body?.code ?? null;
+    return { code: body?.code ?? null, violations: Array.isArray(body?.violations) ? body.violations : [] };
   } catch {
-    return null;
+    return { code: null, violations: [] };
   }
 }
 
@@ -110,7 +110,9 @@ async function fetchWithAuth(path, options) {
   if (!response.ok) {
     const error = new Error(messageForStatus(response.status));
     error.status = response.status;
-    error.code = await readErrorCode(response);
+    const body = await readErrorBody(response);
+    error.code = body.code;
+    error.violations = body.violations;
     throw error;
   }
 
