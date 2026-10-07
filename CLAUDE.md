@@ -53,6 +53,7 @@ y `~/.claude/instructions/workflow-git.md`):
 |---|---|
 | Programar una feature de **backend** (entidad, servicio, controller, migración) | [docs/context/backend.md](docs/context/backend.md) |
 | Programar una feature de **frontend** (componente, pantalla, hook, ruteo) | [docs/context/frontend.md](docs/context/frontend.md) |
+| Tocar **límites entre módulos** (Spring Modulith: api/events/model, línea base de violaciones) | [docs/context/modules.md](docs/context/modules.md) |
 | Escribir o revisar **tests** (unitarios, integración, frontend) | [docs/context/testing.md](docs/context/testing.md) |
 | **Debuggear** algo que no arranca o falla localmente | [docs/context/debugging.md](docs/context/debugging.md) |
 | **Git / commits / PRs / ramas / CI local / migraciones / Backport** | [docs/context/workflow.md](docs/context/workflow.md) |

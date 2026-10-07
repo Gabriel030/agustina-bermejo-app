@@ -1,5 +1,7 @@
 package com.red_escuela.backend.enrollment.entity;
 
+import org.springframework.modulith.NamedInterface;
+
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.identity.entity.Student;
 
@@ -25,6 +27,7 @@ import com.red_escuela.backend.evaluation.entity.FinalGradeType;
         )
     }
 )
+@NamedInterface("model")
 public class SubjectSectionEnrollment {
     @Id
     @Column(name = "id")

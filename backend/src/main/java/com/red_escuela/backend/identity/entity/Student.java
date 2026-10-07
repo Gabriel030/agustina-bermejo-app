@@ -1,4 +1,6 @@
 package com.red_escuela.backend.identity.entity;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -9,6 +11,7 @@ import lombok.Setter;
 
 import java.util.List;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity

@@ -1,11 +1,14 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import org.springframework.modulith.NamedInterface;
+
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+@NamedInterface("api")
 @Service
 public class CurrentInstructorService {
     private final InstructorRepository instructorRepository;

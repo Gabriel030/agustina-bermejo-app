@@ -1,0 +1,46 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.enrollment`
+|Bean references
+|* `c.r.b.b.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase` (in Billing)
+* `c.r.b.i.service.CurrentStudentService` (in Identity)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.b.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase` (in Billing)
+* `c.r.b.b.service.StudentDebtResolutionService` (in Billing)
+* `c.r.b.i.repository.StudentRepository` (in Identity)
+* `c.r.b.a.repository.CourseRepository` (in Academic structure)
+* `c.r.b.b.issuing.ChargeIssuer` (in Billing)
+* `c.r.b.b.usecase.paymentreceipt.UploadPaymentReceiptUseCase` (in Billing)
+* `c.r.b.a.repository.CourseSubjectRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionRepository` (in Academic structure)
+* `c.r.b.i.service.PersonRoleGranter` (in Identity)
+* `c.r.b.b.service.ScholarshipService` (in Billing)
+* `c.r.b.b.service.EnrollmentWithdrawalCreditService` (in Billing)
+* `c.r.b.a.repository.ProgramRepository` (in Academic structure)
+* `c.r.b.a.repository.ProgramSubjectRepository` (in Academic structure)
+* `c.r.b.a.repository.ProgramElectiveGroupRepository` (in Academic structure)
+* `c.r.b.b.repository.ProgramCohortRepository` (in Billing)
+* `c.r.b.b.repository.ProgramYearBillingTemplateRepository` (in Billing)
+* `c.r.b.a.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase` (in Attendance)
+* `c.r.b.a.repository.InstitutionRepository` (in Academic structure)
+* `c.r.b.i.repository.RoleRepository` (in Identity)
+* `c.r.b.i.service.PersonFactory` (in Identity)
+* `c.r.b.s.storage.FileStorageService` (in Shared)
+* `c.r.b.s.storage.TransactionBoundFileCleanup` (in Shared)
+* `c.r.b.i.usecase.auth.RequestPasswordResetUseCase` (in Identity)
+* `c.r.b.i.usecase.emailverification.SendEmailVerificationUseCase` (in Identity)
+* `c.r.b.a.repository.SubjectSectionRepository` (in Academic structure)
+* `c.r.b.a.repository.ProgramSubjectPrerequisiteRepository` (in Academic structure)
+* `c.r.b.b.repository.InvoiceRepository` (in Billing)
+* `c.r.b.b.service.EnrollmentFeeRequirementService` (in Billing)
+* `c.r.b.a.repository.SubjectRepository` (in Academic structure)
+* `c.r.b.b.usecase.paymentreceipt.ApprovePaymentReceiptUseCase` (in Billing)
+* `c.r.b.b.service.ProgramEnrollmentBillingSetup` (in Billing)
+* `c.r.b.b.service.ProgramCohortService` (in Billing)
+|Aggregate roots
+|* `c.r.b.e.entity.CourseEnrollment`
+* `c.r.b.e.entity.CourseSubjectSectionEnrollment`
+* `c.r.b.e.entity.ProgramEnrollment`
+* `c.r.b.e.entity.SubjectSectionEnrollment`
+|===

@@ -1,0 +1,14 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.academicrecord`
+|Bean references
+|* `c.r.b.i.service.CurrentStudentService` (in Identity)
+* `c.r.b.e.service.SubjectSectionEnrollmentService` (in Enrollment)
+* `c.r.b.a.usecase.attendance.ListProgramEnrollmentAttendanceUseCase` (in Attendance)
+* `c.r.b.a.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase` (in Attendance)
+* `c.r.b.a.usecase.attendance.GetAttendanceUseCase` (in Attendance)
+* `c.r.b.a.usecase.attendance.SubmitAttendanceProofUseCase` (in Attendance)
+* `c.r.b.e.service.GradeItemService` (in Evaluation)
+* `c.r.b.s.storage.FileStorageService` (in Shared)
+|===
