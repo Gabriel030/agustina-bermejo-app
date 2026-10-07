@@ -78,7 +78,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         authenticateAs(persistDirector("director.plan1." + System.nanoTime()));
         Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, null, null);
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, null, null);
 
         assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
@@ -89,7 +89,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         authenticateAs(persistDirector("director.plan2." + System.nanoTime()));
         Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
 
         assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
@@ -102,7 +102,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         LocalDate start = LocalDate.now();
         LocalDate end = LocalDate.now().plusDays(30);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, start, end);
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, start, end);
 
         var option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 

@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.planning.YearCycle;
-import com.red_escuela.backend.billing.planning.YearCycles;
+import com.red_escuela.backend.billing.planning.domain.YearCycle;
+import com.red_escuela.backend.billing.planning.domain.YearCycles;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -62,7 +62,7 @@ public class SuspendedEnrollmentClosureService {
 
     public int closeFinishedCycles() {
         int closed = 0;
-        for (Long id : programEnrollmentRepository.findIdsByBillingStandingAndStatusIn(EnrollmentBillingStanding.SUSPENDED, ACTIVE)) {
+        for (Long id : programEnrollmentRepository.findIdsByPaymentStatusAndStatusIn(EnrollmentPaymentStatus.SUSPENDED, ACTIVE)) {
             try {
                 if (Boolean.TRUE.equals(requiresNew.execute(status -> closeIfCycleEnded(id)))) {
                     closed++;
@@ -78,7 +78,7 @@ public class SuspendedEnrollmentClosureService {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(enrollmentId));
         LocalDate today = LocalDate.now(clock);
-        LocalDate suspendedOn = enrollment.getBillingStandingUpdatedAt() != null ? enrollment.getBillingStandingUpdatedAt().toLocalDate() : today;
+        LocalDate suspendedOn = enrollment.getPaymentStatusUpdatedAt() != null ? enrollment.getPaymentStatusUpdatedAt().toLocalDate() : today;
         YearMonth suspensionMonth = YearMonth.from(suspendedOn);
         YearCycles cycles = new YearCycles(templateRepository.findAllByProgramId(enrollment.getProgram().getId()).stream()
                 .map(t -> YearCycle.of(t, suspensionMonth.getYear())).toList(), null);
@@ -86,9 +86,9 @@ public class SuspendedEnrollmentClosureService {
         if (cycle.isEmpty() || !cycleOrTermEnded(enrollment, cycle.get(), suspendedOn, today)) {
             return false;
         }
-        enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         programEnrollmentService.withdraw(enrollmentId);
-        enrollment.setBillingStandingUpdatedAt(today.atStartOfDay());
+        enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         for (Invoice invoice : invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollmentId, List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {
             invoice.applyAdjustment(InvoiceAdjustmentType.WAIVE_DEBT, new MonetaryAdjustment.Nominal(invoice.getRemainingBalance()), CLOSURE_REASON, null);

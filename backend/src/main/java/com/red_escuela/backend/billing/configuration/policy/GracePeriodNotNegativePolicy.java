@@ -11,6 +11,6 @@ public final class GracePeriodNotNegativePolicy implements Policy<LatePaymentSet
     }
 
     public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
-        return values.gracePeriodDays() >= 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NEGATIVE_GRACE_PERIOD", "El período de gracia no puede ser negativo.");
+        return values.gracePeriodDays() >= 0 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "NEGATIVE_GRACE_PERIOD", "El período de gracia no puede ser negativo.");
     }
 }

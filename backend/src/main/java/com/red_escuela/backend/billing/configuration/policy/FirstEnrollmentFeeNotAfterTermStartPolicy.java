@@ -11,6 +11,6 @@ public final class FirstEnrollmentFeeNotAfterTermStartPolicy implements Policy<Y
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (!change.hasTermDates() || !EnrollmentFeePeriods.firstPeriod(change.termStart().get(), change.proposed().firstEnrollmentFeeMonth()).isAfter(change.termStart().get())) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "FIRST_ENROLLMENT_FEE_AFTER_TERM_START", "La primera matrícula debe ser anterior o igual al inicio del año lectivo.");
+        return (!change.hasTermDates() || !EnrollmentFeePeriods.firstPeriod(change.termStart().get(), change.proposed().firstEnrollmentFeeMonth()).isAfter(change.termStart().get())) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "FIRST_ENROLLMENT_FEE_AFTER_TERM_START", "La primera matrícula debe ser anterior o igual al inicio del año lectivo.");
     }
 }

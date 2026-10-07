@@ -4,13 +4,13 @@ import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.issuing.ChargeIssuer;
-import com.red_escuela.backend.billing.issuing.ChargeRequests;
-import com.red_escuela.backend.billing.issuing.IssueResult;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.exception.ChargeRejectedException;
 import com.red_escuela.backend.billing.service.ProgramCohortService;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -33,7 +33,7 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     private final ProgramEnrollmentApplicationRepository applicationRepository;
     private final ProgramRepository programRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final ChargeIssuer chargeIssuer;
+    private final InvoiceIssuingService invoiceIssuingService;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ProgramCohortService programCohortService;
     private final Clock clock;
@@ -41,14 +41,14 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
     public RequestProgramEnrollmentApplicationService(ProgramEnrollmentApplicationRepository applicationRepository,
                                                         ProgramRepository programRepository,
                                                         ProgramEnrollmentService programEnrollmentService,
-                                                        ChargeIssuer chargeIssuer,
+                                                        InvoiceIssuingService invoiceIssuingService,
                                                         UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase,
                                                         ProgramCohortService programCohortService,
                                                         Clock clock) {
         this.applicationRepository = applicationRepository;
         this.programRepository = programRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.chargeIssuer = chargeIssuer;
+        this.invoiceIssuingService = invoiceIssuingService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.programCohortService = programCohortService;
         this.clock = clock;
@@ -69,12 +69,12 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
                     throw new AlreadyHasPendingApplicationException(student.getId(), command.programId());
                 });
 
-        Invoice invoice = switch (chargeIssuer.issueInCurrentTransaction(ChargeRequests.programAdmission(program, cohort, LocalDate.now(clock)))) {
-            case IssueResult.Issued issued -> issued.invoice();
-            case IssueResult.Rejected rejected -> throw new ChargeRejectedException(rejected.evaluation());
-            case IssueResult.AlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("admission");
+        Invoice invoice = switch (invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(program, cohort, LocalDate.now(clock)))) {
+            case InvoiceIssuingResult.InvoiceIssued issued -> issued.invoice();
+            case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluation());
+            case InvoiceIssuingResult.InvoiceAlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("admission");
         };
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), command.comprobante());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), command.comprobante());
 
         ProgramEnrollmentApplication application = new ProgramEnrollmentApplication();
         application.setStudent(student);

@@ -139,7 +139,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     And match propiaRechazada.status == 'REJECTED'
 
   Scenario: El comprobante de la solicitud llega a la bandeja con nombre y DNI, y administración puede abrirlo
-    Given path '/payment-receipts'
+    Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
@@ -147,7 +147,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     And match comprobante.studentName == 'Ana Karate'
     * def receiptId = comprobante.id
 
-    Given path '/payment-receipts', receiptId, 'file'
+    Given path '/bank-transfer-receipts', receiptId, 'file'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
@@ -155,18 +155,18 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def contenido = new java.lang.String(responseBytes)
     And match contenido == 'contenido de prueba'
 
-    Given path '/payment-receipts', receiptId, 'file'
+    Given path '/bank-transfer-receipts', receiptId, 'file'
     And header Authorization = 'Bearer ' + alumnoToken
     When method get
     Then status 403
 
-    Given path '/payment-receipts', 999999999, 'file'
+    Given path '/bank-transfer-receipts', 999999999, 'file'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 404
 
   Scenario: Rechazar la solicitud saca su comprobante de la bandeja de administración
-    Given path '/payment-receipts'
+    Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
@@ -178,7 +178,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     When method post
     Then status 200
 
-    Given path '/payment-receipts'
+    Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200

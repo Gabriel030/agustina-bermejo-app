@@ -3,10 +3,10 @@ package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -164,7 +164,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
-        assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+        assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
         assertThat(application.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
     }
 
@@ -235,7 +235,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         ProgramEnrollmentApplication aprobada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
         assertThat(aprobada.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
-        assertThat(aprobada.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.APPROVED);
+        assertThat(aprobada.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
 
         assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED)))
@@ -271,7 +271,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         entityManager.clear();
 
         ProgramEnrollmentApplication rechazada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
-        assertThat(rechazada.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
+        assertThat(rechazada.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
         assertThat(rechazada.getPaymentReceipt().getRejectionReason()).isEqualTo("Documentación ilegible");
         assertThat(rechazada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
     }

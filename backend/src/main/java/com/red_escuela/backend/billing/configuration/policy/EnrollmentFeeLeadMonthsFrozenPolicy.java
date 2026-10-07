@@ -11,6 +11,6 @@ public final class EnrollmentFeeLeadMonthsFrozenPolicy implements Policy<YearBil
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (change.issuedEnrollmentFeeSlots().isEmpty() || change.current().enrollmentFeeLeadMonths() == change.proposed().enrollmentFeeLeadMonths()) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENROLLMENT_FEE_LEAD_MONTHS_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar la anticipación de la matrícula.");
+        return (change.issuedEnrollmentFeeSlots().isEmpty() || change.current().enrollmentFeeLeadMonths() == change.proposed().enrollmentFeeLeadMonths()) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "ENROLLMENT_FEE_LEAD_MONTHS_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar la anticipación de la matrícula.");
     }
 }

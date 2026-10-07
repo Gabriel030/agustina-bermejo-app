@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplication
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
@@ -322,7 +322,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
         assertThat(persisted.getPaymentReceipt()).isNotNull();
         assertThat(persisted.getPaymentReceipt().getStatus())
-                .isEqualTo(com.red_escuela.backend.billing.entity.PaymentReceiptStatus.APPROVED);
+                .isEqualTo(com.red_escuela.backend.billing.entity.BankTransferReceiptStatus.APPROVED);
     }
 
     @Test
@@ -397,7 +397,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     void enrollingInACourseStaysUnderReviewAndOnlyGrantsTheRoleOnApprovingTheReceipt() throws Exception {
         Long institutionId = persistInstitution();
         Course course = persistCourse(20);
-        persistPriceRevision(null, course, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000));
+        persistPriceRevision(null, course, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000));
 
         String registerResponse = mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -418,14 +418,14 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.roles").isEmpty());
 
         String tokenAdministrativo = administrativeToken();
-        String pendientesResponse = mockMvc.perform(get("/payment-receipts")
+        String pendientesResponse = mockMvc.perform(get("/bank-transfer-receipts")
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         JsonNode pendientes = objectMapper.readTree(pendientesResponse);
         Long receiptId = pendientes.get(pendientes.size() - 1).get("id").asLong();
 
-        mockMvc.perform(post("/payment-receipts/" + receiptId + "/approve")
+        mockMvc.perform(post("/bank-transfer-receipts/" + receiptId + "/approve")
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));

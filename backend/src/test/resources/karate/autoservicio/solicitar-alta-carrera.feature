@@ -126,7 +126,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match response.roles contains 'ALUMNO'
 
     # El detalle de cuotas de la carrera dice de qué carrera es
-    Given path '/me/billing-standing'
+    Given path '/me/enrollment-payment-status'
     And header Authorization = 'Bearer ' + alumnoToken
     When method get
     Then status 200

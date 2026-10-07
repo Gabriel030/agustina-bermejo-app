@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.controller;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 
-import com.red_escuela.backend.billing.dto.BillingStandingResponse;
+import com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse;
 import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
-import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
+import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -77,17 +77,17 @@ public class MeInvoiceController {
         return createMpPreferenceUseCase.create(id, studentId);
     }
 
-    @PostMapping("/invoices/{id}/payment-receipts")
+    @PostMapping("/invoices/{id}/bank-transfer-receipts")
     @ResponseStatus(HttpStatus.CREATED)
-    public PaymentReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
+    public BankTransferReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return PaymentReceiptResponse.from(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
+        return BankTransferReceiptResponse.from(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
     }
 
-    @GetMapping("/payment-receipts")
-    public List<PaymentReceiptResponse> myReceipts() {
+    @GetMapping("/bank-transfer-receipts")
+    public List<BankTransferReceiptResponse> myReceipts() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return findOwnPaymentReceiptsUseCase.findOwn(studentId).stream().map(PaymentReceiptResponse::from).toList();
+        return findOwnPaymentReceiptsUseCase.findOwn(studentId).stream().map(BankTransferReceiptResponse::from).toList();
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")
@@ -108,23 +108,23 @@ public class MeInvoiceController {
         return getOwnProgramEnrollmentBillingStatusUseCase.get(studentId, id);
     }
 
-    @GetMapping("/billing-standing")
-    public List<BillingStandingResponse> myBillingStanding() {
+    @GetMapping("/enrollment-payment-status")
+    public List<EnrollmentPaymentStatusResponse> myPaymentStatus() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return billingStandingOf(studentId);
+        return paymentStatusOf(studentId);
     }
 
-    private List<BillingStandingResponse> billingStandingOf(Long studentId) {
+    private List<EnrollmentPaymentStatusResponse> paymentStatusOf(Long studentId) {
         return Stream.concat(
                 courseEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> billingStandingResponse("CourseEnrollment", enrollment.getId(), enrollment)),
+                        .map(enrollment -> enrollmentPaymentStatusResponse("CourseEnrollment", enrollment.getId(), enrollment)),
                 programEnrollmentRepository.findByStudentId(studentId).stream()
-                        .map(enrollment -> billingStandingResponse("ProgramEnrollment", enrollment.getId(), enrollment)))
+                        .map(enrollment -> enrollmentPaymentStatusResponse("ProgramEnrollment", enrollment.getId(), enrollment)))
                 .toList();
     }
 
-    private BillingStandingResponse billingStandingResponse(String enrollmentType, Long enrollmentId, BillableEnrollment billable) {
-        return new BillingStandingResponse(enrollmentType, enrollmentId, billable.getBillingStanding().name(), billable.getBillingStandingUpdatedAt());
+    private EnrollmentPaymentStatusResponse enrollmentPaymentStatusResponse(String enrollmentType, Long enrollmentId, BillableEnrollment billable) {
+        return new EnrollmentPaymentStatusResponse(enrollmentType, enrollmentId, billable.getPaymentStatus().name(), billable.getPaymentStatusUpdatedAt());
     }
 
 }

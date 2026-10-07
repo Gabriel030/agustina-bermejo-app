@@ -32,7 +32,7 @@ public class BillingOperationNotificationListener {
         sendOnce(event, LATE_PAYMENT_SETTINGS_HANDLER, new BillingOperationNotification(
                 NotificationType.LATE_PAYMENT_SETTINGS_CREATED,
                 "Se cargó una nueva configuración de mora que rige desde el " + event.effectiveFrom() + ".",
-                List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "CollectionsPolicy", event.collectionsPolicyId()));
+                List.of(NotificationTopic.BILLING_CONFIGURATION_SUPERVISION), "LatePaymentSettings", event.latePaymentSettingsId()));
     }
 
     @ApplicationModuleListener

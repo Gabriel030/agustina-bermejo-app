@@ -44,7 +44,7 @@ public class ConfigurationPolicyEvaluator {
     }
 
     private <C> void evaluate(PolicySet<C> policies, C context, Function<List<PolicyViolation>, ? extends RuntimeException> exceptionFactory) {
-        PolicyEvaluationResult evaluation = policies.evaluateAll(context);
+        PolicyEvaluationResult evaluation = policies.evaluateAllRules(context);
         evaluation.violations().forEach(violation ->
                 meterRegistry.counter("billing_configuration_rejected_total", "moment", policies.moment(), "code", violation.code()).increment());
         evaluation.throwIfDenied(exceptionFactory);

@@ -16,7 +16,7 @@ class PolicySetTest {
             }
 
             public PolicyVerdict evaluateRule(Integer value) {
-                return value > 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_POSITIVE", "debe ser positivo");
+                return value > 0 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "NOT_POSITIVE", "debe ser positivo");
             }
         };
     }
@@ -28,7 +28,7 @@ class PolicySetTest {
             }
 
             public PolicyVerdict evaluateRule(Integer value) {
-                return value % 2 == 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_EVEN", "debe ser par");
+                return value % 2 == 0 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "NOT_EVEN", "debe ser par");
             }
         };
     }

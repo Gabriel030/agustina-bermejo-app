@@ -11,6 +11,6 @@ public final class SecondEnrollmentFeeAfterFirstPolicy implements Policy<YearBil
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (change.proposed().enrollmentFeeCount() != 2 || (change.proposed().secondEnrollmentFeeMonth() != null && change.proposed().secondEnrollmentFeeMonth() > change.proposed().firstEnrollmentFeeMonth())) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST", "Con 2 matrículas, el mes de la segunda debe ser posterior al de la primera.");
+        return (change.proposed().enrollmentFeeCount() != 2 || (change.proposed().secondEnrollmentFeeMonth() != null && change.proposed().secondEnrollmentFeeMonth() > change.proposed().firstEnrollmentFeeMonth())) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST", "Con 2 matrículas, el mes de la segunda debe ser posterior al de la primera.");
     }
 }

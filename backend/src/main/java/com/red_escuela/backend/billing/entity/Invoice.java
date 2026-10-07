@@ -19,6 +19,8 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 
 @Getter
 @Setter
@@ -86,7 +88,7 @@ public class Invoice {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "issue_reason", nullable = false)
-    private IssueReason issueReason = IssueReason.LEGACY;
+    private InvoiceIssuingReason issueReason = InvoiceIssuingReason.LEGACY;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "price_revision_id")
@@ -138,7 +140,7 @@ public class Invoice {
     }
 
     public void attachToEnrollment(ProgramEnrollment enrollment) {
-        requireAttachable(IssueReason.ADMISSION);
+        requireAttachable(InvoiceIssuingReason.PROGRAM_ADMISSION);
         if (enrollment.getProgramCohort() == null || templateId == null
                 || !templateId.equals(enrollment.getProgramCohort().getTemplate().getId())) {
             throw new com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException("invoice " + id + " / program enrollment " + enrollment.getId());
@@ -147,11 +149,11 @@ public class Invoice {
     }
 
     public void attachToEnrollment(CourseEnrollment enrollment) {
-        requireAttachable(IssueReason.COURSE_ADMISSION);
+        requireAttachable(InvoiceIssuingReason.COURSE_ADMISSION);
         this.courseEnrollment = enrollment;
     }
 
-    private void requireAttachable(IssueReason expected) {
+    private void requireAttachable(InvoiceIssuingReason expected) {
         if (issueReason != expected) {
             throw new com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException("invoice " + id + " has reason " + issueReason);
         }

@@ -11,6 +11,6 @@ public final class EnrollmentFeeCountFrozenPolicy implements Policy<YearBillingC
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (change.issuedEnrollmentFeeSlots().isEmpty() || change.current().enrollmentFeeCount() == change.proposed().enrollmentFeeCount()) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENROLLMENT_FEE_COUNT_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar la cantidad de matrículas.");
+        return (change.issuedEnrollmentFeeSlots().isEmpty() || change.current().enrollmentFeeCount() == change.proposed().enrollmentFeeCount()) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "ENROLLMENT_FEE_COUNT_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar la cantidad de matrículas.");
     }
 }

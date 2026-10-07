@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -63,7 +63,7 @@ public class CourseService {
 
         Person actor = currentPersonService.resolveCurrentPerson();
         Money price = Optional.ofNullable(saved.priceAsMoney()).orElseGet(() -> Money.zero(saved.getCurrency()));
-        priceRevisionService.registerForCourse(saved, FeeType.RECURRING_FEE, price, "Precio inicial", actor);
+        priceRevisionService.registerForCourse(saved, FeeType.MONTHLY_INSTALLMENT, price, "Precio inicial", actor);
         return saved;
     }
 
@@ -75,7 +75,7 @@ public class CourseService {
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         if (course.changePrice(request.price())) {
             Person actor = currentPersonService.resolveCurrentPerson();
-            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
+            priceRevisionService.registerForCourse(course, FeeType.MONTHLY_INSTALLMENT, request.price(), "Ajuste de precio", actor);
         }
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);

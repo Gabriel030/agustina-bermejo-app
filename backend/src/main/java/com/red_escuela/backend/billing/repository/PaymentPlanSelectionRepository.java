@@ -86,12 +86,12 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
 
     @Query("""
             select s from PaymentPlanSelection s join s.paymentPlanOption o
-            where o.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.UPFRONT
+            where o.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.ANNUAL_UPFRONT
               and s.programEnrollment is not null
               and s.effectiveTo is null
               and not exists (
                   select i.id from LegacyInvoice i
-                  where i.paymentPlanSelection = s and i.feeType = com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE)
+                  where i.paymentPlanSelection = s and i.feeType = com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT)
             order by s.id
             """)
     List<PaymentPlanSelection> findUpfrontProgramSelectionsWithoutInstallments();

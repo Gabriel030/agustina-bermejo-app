@@ -64,7 +64,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         row.put("currency", "ARS");
         row.put("document_type", "INVOICE");
         row.put("invoice_type", "MONTHLY_INSTALLMENT");
-        row.put("issuing_reason", "MONTHLY_JOB");
+        row.put("issuing_reason", "MONTHLY_RUN");
         row.put("document_status", "ISSUED");
         row.put("payment_status", "PENDING");
         row.put("invoice_number", "F-" + String.format("%08d", System.nanoTime() % 100_000_000L));

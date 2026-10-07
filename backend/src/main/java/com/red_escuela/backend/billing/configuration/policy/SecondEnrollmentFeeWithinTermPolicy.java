@@ -13,7 +13,7 @@ public final class SecondEnrollmentFeeWithinTermPolicy implements Policy<YearBil
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (!change.hasTermDates() || change.proposed().enrollmentFeeCount() != 2 || change.proposed().secondEnrollmentFeeMonth() == null || withinTerm(change)) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "La segunda matrícula debe caer dentro del año lectivo.");
+        return (!change.hasTermDates() || change.proposed().enrollmentFeeCount() != 2 || change.proposed().secondEnrollmentFeeMonth() == null || withinTerm(change)) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "La segunda matrícula debe caer dentro del año lectivo.");
     }
 
     private static boolean withinTerm(YearBillingConfigurationChange change) {

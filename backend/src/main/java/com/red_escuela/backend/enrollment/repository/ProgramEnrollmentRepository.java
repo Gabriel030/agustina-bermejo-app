@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.repository;
 
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import org.springframework.data.domain.Pageable;
@@ -23,11 +23,11 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     List<ProgramEnrollment> findByStatusInAndIdGreaterThanOrderByIdAsc(List<ProgramEnrollmentStatus> statuses, Long lastId, Pageable pageable);
 
-    List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusAndBillingStanding(
-            Long studentId, Long programId, ProgramEnrollmentStatus status, EnrollmentBillingStanding billingStanding);
+    List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusAndPaymentStatus(
+            Long studentId, Long programId, ProgramEnrollmentStatus status, EnrollmentPaymentStatus paymentStatus);
 
-    @Query("select e.id from ProgramEnrollment e where e.billingStanding = :standing and e.status in :statuses order by e.id")
-    List<Long> findIdsByBillingStandingAndStatusIn(@Param("standing") EnrollmentBillingStanding standing,
+    @Query("select e.id from ProgramEnrollment e where e.paymentStatus = :standing and e.status in :statuses order by e.id")
+    List<Long> findIdsByPaymentStatusAndStatusIn(@Param("standing") EnrollmentPaymentStatus standing,
                                                    @Param("statuses") Collection<ProgramEnrollmentStatus> statuses);
 
     @Query("select e.id from ProgramEnrollment e where e.program.id = :programId and e.status in :statuses order by e.id")

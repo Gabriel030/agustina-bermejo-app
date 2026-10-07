@@ -11,6 +11,6 @@ public final class TermHasDatesPolicy implements Policy<YearBillingConfiguration
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return change.hasTermDates() ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "TERM_WITHOUT_DATES", "El año lectivo no tiene fecha de inicio y de fin: definilas antes de configurar la facturación.");
+        return change.hasTermDates() ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "TERM_WITHOUT_DATES", "El año lectivo no tiene fecha de inicio y de fin: definilas antes de configurar la facturación.");
     }
 }

@@ -15,14 +15,14 @@ import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.MeInvoicePaymentResponse;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
@@ -84,7 +84,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     private RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase;
 
     @Autowired
-    private PaymentReceiptRepository paymentReceiptRepository;
+    private BankTransferReceiptRepository bankTransferReceiptRepository;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -160,7 +160,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, int monthOffset) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.of(2030, 1).plusMonths(monthOffset));
         invoice.setDueDate(LocalDate.of(2030, 1, 10).plusMonths(monthOffset));
         invoice.setBaseAmount(amount);
@@ -237,11 +237,11 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Person reviewer = persistPerson("admin.detail3." + System.nanoTime(), "Laura", "Gomez");
         Student student = persistStudent();
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
 
-        PaymentReceipt reloaded = paymentReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
+        BankTransferReceipt reloaded = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
         assertThat(reloaded.getPayment()).isNotNull();
         assertThat(reloaded.getPayment().getId()).isNotNull();
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
@@ -259,7 +259,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Person reviewer = persistPerson("admin.detail4." + System.nanoTime(), "Laura", "Gomez");
         Student student = persistStudent();
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
-        PaymentReceipt rejected = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt rejected = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         rejectPaymentReceiptUseCase.reject(rejected.getId(), "Ilegible", reviewer);
         uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
@@ -267,7 +267,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
         assertThat(response.payments()).isEmpty();
         assertThat(response.receipts()).extracting(r -> r.status())
-                .containsExactlyInAnyOrder(PaymentReceiptStatus.REJECTED.name(), PaymentReceiptStatus.PENDING_REVIEW.name());
+                .containsExactlyInAnyOrder(BankTransferReceiptStatus.REJECTED.name(), BankTransferReceiptStatus.PENDING_REVIEW.name());
         assertThat(response.receipts()).filteredOn(r -> r.status().equals("REJECTED"))
                 .singleElement().satisfies(r -> assertThat(r.rejectionReason()).isEqualTo("Ilegible"));
     }
@@ -278,7 +278,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Student student = persistStudent();
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), 0);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         approvePaymentReceiptUseCase.approve(receipt.getId(), recorder);
 
         JsonNode admin = objectMapper.valueToTree(adminInvoice(student, invoice.getId()));

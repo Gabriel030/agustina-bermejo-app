@@ -1,12 +1,12 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public record PaymentReceiptApprovedEvent(PaymentReceipt receipt) implements DomainNotificationEvent {
+public record PaymentReceiptApprovedEvent(BankTransferReceipt receipt) implements DomainNotificationEvent {
     private static final DateTimeFormatter PERIOD_FORMAT = DateTimeFormatter.ofPattern("MM/yyyy");
 
     @Override

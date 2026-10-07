@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.YearMonth;
-import com.red_escuela.backend.billing.planning.YearCycle;
-import com.red_escuela.backend.billing.planning.YearCycles;
+import com.red_escuela.backend.billing.planning.domain.YearCycle;
+import com.red_escuela.backend.billing.planning.domain.YearCycles;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import java.util.List;
 
@@ -75,7 +75,7 @@ public class RecurringFeeWindowService {
 
     private long generatedInCycle(ProgramEnrollment programEnrollment, YearCycle cycle) {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                 .filter(i -> cycle.installmentRangeContains(i.getPeriod()))
                 .count();
     }
@@ -108,7 +108,7 @@ public class RecurringFeeWindowService {
 
     private long recurringFeeInvoicesGeneratedInWindow(List<Invoice> invoices, Term term) {
         return invoices.stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                 .filter(i -> term.contains(i.getPeriod()))
                 .count();
     }

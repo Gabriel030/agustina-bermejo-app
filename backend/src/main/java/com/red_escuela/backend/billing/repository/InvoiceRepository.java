@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.repository;
 
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import jakarta.persistence.LockModeType;
@@ -22,14 +22,14 @@ import java.util.Optional;
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("""
             select distinct i.enrollmentFeeSlot from LegacyInvoice i
-            where i.templateId = :templateId and i.feeType = com.red_escuela.backend.billing.entity.FeeType.ENROLLMENT_FEE and i.enrollmentFeeSlot is not null
+            where i.templateId = :templateId and i.feeType = com.red_escuela.backend.billing.invoice.domain.FeeType.ENROLLMENT_FEE and i.enrollmentFeeSlot is not null
             """)
     List<Integer> findIssuedEnrollmentFeeSlotsByTemplateId(@Param("templateId") Long templateId);
 
     @Query("""
             select distinct i.period from LegacyInvoice i
             where i.programEnrollment.program.id = :programId
-              and i.feeType = com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE
+              and i.feeType = com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT
               and i.status <> com.red_escuela.backend.billing.entity.InvoiceStatus.CANCELLED
               and i.period between :from and :to
             """)

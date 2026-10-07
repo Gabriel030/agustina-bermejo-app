@@ -7,18 +7,18 @@ import com.red_escuela.backend.academicstructure.usecase.term.UpdateTermUseCase;
 import com.red_escuela.backend.billing.configuration.exception.BillingConfigurationFrozenException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymentSettingsException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
-import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
+import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
+import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationUseCase;
-import com.red_escuela.backend.billing.usecase.collectionspolicy.CreateCollectionsPolicyUseCase;
+import com.red_escuela.backend.billing.usecase.latepaymentsettings.CreateLatePaymentSettingsUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
@@ -50,11 +50,11 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
     @Autowired
     private UpdateTermUseCase updateTerm;
     @Autowired
-    private CreateCollectionsPolicyUseCase createPolicy;
+    private CreateLatePaymentSettingsUseCase createPolicy;
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
     @Autowired
-    private CollectionsPolicyRepository policyRepository;
+    private LatePaymentSettingsRepository policyRepository;
 
     private static YearBillingConfigurationRequest config(Integer count, Integer first, Integer second, Integer dueDays) {
         return new YearBillingConfigurationRequest(count, first, second, null, null, dueDays, null, null, null, null, null, null);
@@ -156,7 +156,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
         issueEntryFee(enrollment);
         today(date(2027, 3, 5));
         job.run();
-        assertThat(periods(enrollment, FeeType.RECURRING_FEE)).contains(YearMonth.of(2027, 3));
+        assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT)).contains(YearMonth.of(2027, 3));
         LocalDateTime oldStart = transactionTemplate.execute(status -> entityManager.find(Term.class, year.termId()).getStartDate());
 
         assertThatThrownBy(() -> updateTerm.update(new UpdateTermCommand(year.termId(),
@@ -278,7 +278,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
         issueEntryFee(enrollment);
         today(date(2027, 4, 1));
         job.run();
-        List<Invoice> beforeChange = invoices(enrollment, FeeType.RECURRING_FEE);
+        List<Invoice> beforeChange = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         LocalDate aprilDue = beforeChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow().getDueDate();
 
         today(date(2027, 4, 10));
@@ -286,7 +286,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
         today(date(2027, 5, 1));
         job.run();
 
-        List<Invoice> afterChange = invoices(enrollment, FeeType.RECURRING_FEE);
+        List<Invoice> afterChange = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow().getDueDate()).isEqualTo(aprilDue);
         assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 16));
     }
@@ -368,8 +368,8 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractChargeSequence
         }
     }
 
-    private CreateCollectionsPolicyRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {
-        return new CreateCollectionsPolicyRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), suspensionDays, invoiceCount, effectiveFrom);
+    private CreateLatePaymentSettingsRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {
+        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), suspensionDays, invoiceCount, effectiveFrom);
     }
 
     private void authenticateAsNewPerson() {

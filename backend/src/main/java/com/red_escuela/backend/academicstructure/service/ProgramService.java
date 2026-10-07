@@ -3,7 +3,7 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -63,7 +63,7 @@ public class ProgramService {
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         if (program.changeRecurringFee(request.getPrice())) {
-            priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, request.getPrice(), "Ajuste de precio", actor);
+            priceRevisionService.registerForProgram(program, FeeType.MONTHLY_INSTALLMENT, request.getPrice(), "Ajuste de precio", actor);
         }
         if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
             priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), "Ajuste de matrícula", actor);
@@ -115,7 +115,7 @@ public class ProgramService {
     private void registerInitialPriceRevisions(Program program) {
         Person actor = currentPersonService.resolveCurrentPerson();
         Money tuition = Optional.ofNullable(program.priceAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
-        priceRevisionService.registerForProgram(program, FeeType.RECURRING_FEE, tuition, "Precio inicial", actor);
+        priceRevisionService.registerForProgram(program, FeeType.MONTHLY_INSTALLMENT, tuition, "Precio inicial", actor);
         Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
         priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, enrollmentFee, "Matrícula inicial", actor);
     }

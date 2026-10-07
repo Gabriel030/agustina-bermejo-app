@@ -23,7 +23,7 @@ class PolicyCatalogRendererTest {
 
         @Override
         public PolicyVerdict evaluateRule(String context) {
-            return PolicyVerdict.allow(name());
+            return PolicyVerdict.allow(ruleName());
         }
     }
 
@@ -35,7 +35,7 @@ class PolicyCatalogRendererTest {
 
         @Override
         public PolicyVerdict evaluateRule(String context) {
-            return PolicyVerdict.allow(name());
+            return PolicyVerdict.allow(ruleName());
         }
     }
 

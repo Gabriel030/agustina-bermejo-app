@@ -11,9 +11,9 @@ import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizatio
 import com.red_escuela.backend.billing.authorization.usecase.RejectAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.authorization.usecase.WithdrawAuthorizationRequestUseCase;
 import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymentSettingsException;
-import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
+import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent;
-import com.red_escuela.backend.billing.usecase.collectionspolicy.CreateCollectionsPolicyUseCase;
+import com.red_escuela.backend.billing.usecase.latepaymentsettings.CreateLatePaymentSettingsUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.AddressRepository;
@@ -74,7 +74,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Autowired
-    private CreateCollectionsPolicyUseCase createPolicy;
+    private CreateLatePaymentSettingsUseCase createPolicy;
     @Autowired
     private ApproveAuthorizationRequestUseCase approveRequest;
     @Autowired
@@ -121,7 +121,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         for (Long personId : personIds) {
             jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", personId);
             jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", personId);
-            jdbcTemplate.update("delete from collections_policy where created_by_id = ?", personId);
+            jdbcTemplate.update("delete from late_payment_settings where created_by_id = ?", personId);
         }
         jdbcTemplate.update("delete from event_publication");
         SecurityContextHolder.clearContext();
@@ -148,8 +148,8 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(person.getId().toString(), null, authority));
     }
 
-    private CreateCollectionsPolicyRequest request(int grace, LocalDate effectiveFrom) {
-        return new CreateCollectionsPolicyRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), 30, 2, effectiveFrom);
+    private CreateLatePaymentSettingsRequest request(int grace, LocalDate effectiveFrom) {
+        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), 30, 2, effectiveFrom);
     }
 
     private long count(String sql, Object... args) {
@@ -157,7 +157,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     }
 
     private long policiesCreatedBy(Person person) {
-        return count("select count(*) from collections_policy where created_by_id = ?", person.getId());
+        return count("select count(*) from late_payment_settings where created_by_id = ?", person.getId());
     }
 
     private long notificationsFor(Person person, String type) {

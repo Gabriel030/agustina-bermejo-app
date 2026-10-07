@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -18,7 +18,7 @@ public class InvoiceOverdueRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void process(Long invoiceId, CollectionsPolicy policy) {
+    public void process(Long invoiceId, LatePaymentSettings policy) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
         if (invoice.markOverdue(new MonetaryAdjustment.Proportional(policy.getSurchargeRate()), "Mora automática")) {
             invoiceRepository.save(invoice);

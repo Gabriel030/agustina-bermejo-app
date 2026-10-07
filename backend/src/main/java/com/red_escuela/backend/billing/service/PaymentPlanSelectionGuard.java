@@ -30,7 +30,7 @@ public class PaymentPlanSelectionGuard {
     }
 
     public void validateUpfrontWindow(PaymentPlanOption option) {
-        if (option.getCadence() != PaymentPlanCadence.UPFRONT) {
+        if (option.getCadence() != PaymentPlanCadence.ANNUAL_UPFRONT) {
             return;
         }
         if (!option.isUpfrontWindowEnabled()) {

@@ -13,7 +13,7 @@ public final class InstallmentCountWithinTermSpanPolicy implements Policy<YearBi
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return (!change.hasTermDates() || change.proposed().recurringFeeInvoicesCount() == null || change.proposed().recurringFeeInvoicesCount() <= spanInMonths(change)) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN", "La cantidad de cuotas no puede superar los meses del año lectivo.");
+        return (!change.hasTermDates() || change.proposed().recurringFeeInvoicesCount() == null || change.proposed().recurringFeeInvoicesCount() <= spanInMonths(change)) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN", "La cantidad de cuotas no puede superar los meses del año lectivo.");
     }
 
     private static long spanInMonths(YearBillingConfigurationChange change) {

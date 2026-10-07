@@ -5,8 +5,8 @@ import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -114,13 +114,13 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
-        enrollment.setBillingStanding(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
 
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(3));
         invoice.setDueDate(LocalDate.now().minusMonths(3));
         invoice.setBaseAmount(ars(deuda));
@@ -163,7 +163,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment = programEnrollmentRepository.save(enrollment);
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now().plusDays(5));
         invoice.setBaseAmount(ars(5000));

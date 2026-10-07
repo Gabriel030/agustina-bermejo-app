@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.repository;
 
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import org.springframework.data.jpa.repository.JpaRepository;
 

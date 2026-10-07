@@ -11,6 +11,6 @@ public final class SuspensionDaysNotNegativePolicy implements Policy<LatePayment
     }
 
     public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
-        return values.suspensionAfterDays() >= 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NEGATIVE_SUSPENSION_DAYS", "Los días para suspender no pueden ser negativos.");
+        return values.suspensionAfterDays() >= 0 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "NEGATIVE_SUSPENSION_DAYS", "Los días para suspender no pueden ser negativos.");
     }
 }

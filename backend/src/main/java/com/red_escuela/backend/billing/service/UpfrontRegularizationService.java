@@ -1,10 +1,10 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.IssueReason;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.planning.ChargePlan;
-import com.red_escuela.backend.billing.planning.ChargeScope;
-import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
+import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
+import com.red_escuela.backend.billing.planning.domain.InvoicePlanningScope;
+import com.red_escuela.backend.billing.planning.service.ProgramMonthlyInvoicePlanner;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import org.slf4j.Logger;
@@ -22,13 +22,13 @@ import java.util.List;
 public class UpfrontRegularizationService {
     private static final Logger log = LoggerFactory.getLogger(UpfrontRegularizationService.class);
     private final PaymentPlanSelectionRepository selectionRepository;
-    private final ChargePlanningContextLoader contextLoader;
-    private final MonthlyChargePlanner planner;
-    private final ChargePlanExecutor executor;
+    private final InvoicePlanningContextLoader contextLoader;
+    private final ProgramMonthlyInvoicePlanner planner;
+    private final PlannedInvoiceIssuingService executor;
     private final Clock clock;
 
-    public UpfrontRegularizationService(PaymentPlanSelectionRepository selectionRepository, ChargePlanningContextLoader contextLoader,
-                                        MonthlyChargePlanner planner, ChargePlanExecutor executor, Clock clock) {
+    public UpfrontRegularizationService(PaymentPlanSelectionRepository selectionRepository, InvoicePlanningContextLoader contextLoader,
+                                        ProgramMonthlyInvoicePlanner planner, PlannedInvoiceIssuingService executor, Clock clock) {
         this.selectionRepository = selectionRepository;
         this.contextLoader = contextLoader;
         this.planner = planner;
@@ -55,9 +55,9 @@ public class UpfrontRegularizationService {
         List<Candidate> result = new ArrayList<>();
         for (PaymentPlanSelection selection : selectionRepository.findUpfrontProgramSelectionsWithoutInstallments()) {
             ProgramEnrollment enrollment = selection.getProgramEnrollment();
-            ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
-            ChargePlan plan = planner.plan(context.facts(), ChargeScope.RECURRING_ONLY, true);
-            int issued = issue ? executor.execute(enrollment, context.selection(), plan, IssueReason.UPFRONT, true) : 0;
+            InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, month, today);
+            MonthlyInvoicePlan plan = planner.planInvoicesForMonth(context.facts(), InvoicePlanningScope.MONTHLY_INSTALLMENT_ONLY, true);
+            int issued = issue ? executor.issuePlannedProgramInvoices(enrollment, context.selection(), plan, InvoiceIssuingReason.UPFRONT, true) : 0;
             log.info("Regularizacion UPFRONT: seleccion={}, inscripcion={}, planificadas={}, emitidas={}, simulacion={}",
                     selection.getId(), enrollment.getId(), plan.charges().size(), issued, !issue);
             result.add(new Candidate(selection.getId(), enrollment.getId(), selection.getEffectiveFrom(), selection.getScopeMonths(), plan.charges().size(), issued));

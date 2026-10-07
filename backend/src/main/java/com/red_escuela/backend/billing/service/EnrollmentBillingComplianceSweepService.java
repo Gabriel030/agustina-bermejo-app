@@ -5,13 +5,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
+import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -37,7 +37,7 @@ public class EnrollmentBillingComplianceSweepService {
 
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CollectionsPolicyRepository collectionsPolicyRepository;
+    private final LatePaymentSettingsRepository latePaymentSettingsRepository;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final EnrollmentBillingComplianceRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
@@ -45,13 +45,13 @@ public class EnrollmentBillingComplianceSweepService {
 
     public EnrollmentBillingComplianceSweepService(CourseEnrollmentRepository courseEnrollmentRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
-                                                     CollectionsPolicyRepository collectionsPolicyRepository,
+                                                     LatePaymentSettingsRepository latePaymentSettingsRepository,
                                                      BatchExecutionLogRepository batchExecutionLogRepository,
                                                      EnrollmentBillingComplianceRowProcessor rowProcessor, ObjectMapper objectMapper,
                                                      Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.collectionsPolicyRepository = collectionsPolicyRepository;
+        this.latePaymentSettingsRepository = latePaymentSettingsRepository;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
@@ -65,7 +65,7 @@ public class EnrollmentBillingComplianceSweepService {
     }
 
     public void run(LocalDate today) {
-        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
+        Optional<LatePaymentSettings> policy = latePaymentSettingsRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
         if (policy.isEmpty()) {
             log.warn("Barrido de cumplimiento de facturación omitido: no hay política de cobranzas vigente al {}", today);
             return;

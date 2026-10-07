@@ -7,14 +7,14 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.ScholarshipScope;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
@@ -77,7 +77,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     @Autowired
     private GrantScholarshipForProgramUseCase grantScholarshipUseCase;
     @Autowired
-    private ChargePlanningContextLoader contextLoader;
+    private InvoicePlanningContextLoader contextLoader;
 
     @AfterEach
     void clearSecurity() {
@@ -145,8 +145,8 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
         job.run();
 
         assertThat(sequence(enrollment)).isEqualTo(expected("M2027-02", "C2027-03", "C2027-04"));
-        assertThat(invoices(enrollment, FeeType.RECURRING_FEE).get(0).getDueDate()).isEqualTo(date(2027, 3, 13));
-        assertThat(invoices(enrollment, FeeType.RECURRING_FEE).get(1).getDueDate()).isEqualTo(date(2027, 4, 12));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getDueDate()).isEqualTo(date(2027, 3, 13));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(1).getDueDate()).isEqualTo(date(2027, 4, 12));
         Invoice reenrollmentFee = onlyFee(enrollment);
         assertThat(reenrollmentFee.getTemplateId()).isEqualTo(y27.templateId());
         assertThat(reenrollmentFee.getEnrollmentFeeSlot()).isEqualTo(1);
@@ -163,7 +163,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
 
         job.run();
 
-        assertThat(invoices(enrollment, FeeType.RECURRING_FEE)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 13));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 13));
         assertInvariants(enrollment, y27);
     }
 
@@ -178,7 +178,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
 
         job.run();
 
-        assertThat(invoices(enrollment, FeeType.RECURRING_FEE)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 7));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 7));
     }
 
     @Test
@@ -187,12 +187,12 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         today(date(2027, 1, 4));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
-        newPrice(career, FeeType.RECURRING_FEE, 12000, date(2027, 5, 1));
+        newPrice(career, FeeType.MONTHLY_INSTALLMENT, 12000, date(2027, 5, 1));
         today(date(2027, 6, 3));
 
         job.run(YearMonth.of(2027, 4));
 
-        List<Invoice> installments = invoices(enrollment, FeeType.RECURRING_FEE);
+        List<Invoice> installments = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(installments).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2027, 4));
         assertThat(installments.get(0).getDueDate()).isEqualTo(date(2027, 6, 13));
         assertThat(installments.get(0).getDueDate()).isAfterOrEqualTo(date(2027, 6, 3));
@@ -220,7 +220,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(fee.getId(), studentOf(enrollment), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(fee.getId(), studentOf(enrollment), receiptFile());
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.IN_REVIEW);
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
@@ -287,7 +287,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
         assertThat(entryFee.getEnrollmentFeeSlot()).isEqualTo(1);
         assertThat(entryFee.getStatus()).isEqualTo(InvoiceStatus.PAID);
         assertThat(amountDue(entryFee)).isEqualTo(ars(5000));
-        assertThat(invoices(enrollment, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2027, 3));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2027, 3));
         assertInvariants(enrollment, y27);
     }
 
@@ -348,9 +348,9 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
         job.run();
 
         assertThat(amountDue(onlyFee(forFee))).isEqualTo(ars(2500));
-        assertThat(amountDue(invoices(forFee, FeeType.RECURRING_FEE).get(0))).isEqualTo(ars(10000));
+        assertThat(amountDue(invoices(forFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
         assertThat(amountDue(onlyFee(forInstallments))).isEqualTo(ars(5000));
-        assertThat(amountDue(invoices(forInstallments, FeeType.RECURRING_FEE).get(0))).isEqualTo(ars(5000));
+        assertThat(amountDue(invoices(forInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));
         assertInvariants(forFee, y27);
         assertInvariants(forInstallments, y27);
     }
@@ -385,7 +385,7 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
 
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
-        assertThat(closed.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isNotEmpty().allMatch(i -> i.getStatus() == InvoiceStatus.WAIVED);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y27);
@@ -414,8 +414,8 @@ class ChargePlannerClosingTest extends AbstractChargeSequenceTest {
     }
 
     private void suspend(Long enrollment, LocalDateTime on) {
-        setStanding(enrollment, EnrollmentBillingStanding.SUSPENDED);
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment).setBillingStandingUpdatedAt(on));
+        setStanding(enrollment, EnrollmentPaymentStatus.SUSPENDED);
+        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollment).setPaymentStatusUpdatedAt(on));
     }
 
     @Test

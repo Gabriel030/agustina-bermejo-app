@@ -59,10 +59,10 @@ class InvoiceValueObjectsTest {
     @Test
     void aDraftHeaderNeedsEveryMandatoryField() {
         var currency = com.red_escuela.backend.shared.domain.Currency.ARS;
-        assertThatThrownBy(() -> new InvoiceDraftHeader(null, currency, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, null, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, currency, null, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, currency, InvoiceDocumentType.INVOICE, null, InvoiceIssuingReason.AD_HOC, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDraftHeader(null, currency, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, null, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, currency, null, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new InvoiceDraftHeader(1L, currency, InvoiceDocumentType.INVOICE, null, InvoiceIssuingReason.AD_HOC_CHARGE, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new InvoiceDraftHeader(1L, currency, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, null, null)).isInstanceOf(NullPointerException.class);
     }
 

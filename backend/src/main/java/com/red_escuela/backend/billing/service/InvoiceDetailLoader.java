@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,11 +14,11 @@ import java.util.stream.Collectors;
 @Service
 public class InvoiceDetailLoader {
     private final InvoiceRepository invoiceRepository;
-    private final PaymentReceiptRepository paymentReceiptRepository;
+    private final BankTransferReceiptRepository bankTransferReceiptRepository;
 
-    public InvoiceDetailLoader(InvoiceRepository invoiceRepository, PaymentReceiptRepository paymentReceiptRepository) {
+    public InvoiceDetailLoader(InvoiceRepository invoiceRepository, BankTransferReceiptRepository bankTransferReceiptRepository) {
         this.invoiceRepository = invoiceRepository;
-        this.paymentReceiptRepository = paymentReceiptRepository;
+        this.bankTransferReceiptRepository = bankTransferReceiptRepository;
     }
 
     @Transactional(readOnly = true)
@@ -37,7 +37,7 @@ public class InvoiceDetailLoader {
         }
         List<Long> ids = invoices.stream().map(Invoice::getId).toList();
         invoiceRepository.fetchAdjustments(ids);
-        Map<Long, List<PaymentReceipt>> receiptsByInvoiceId = paymentReceiptRepository.findByInvoiceIdsWithPeople(ids).stream()
+        Map<Long, List<BankTransferReceipt>> receiptsByInvoiceId = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(ids).stream()
                 .collect(Collectors.groupingBy(receipt -> receipt.getInvoice().getId()));
         return invoices.stream()
                 .map(invoice -> new InvoiceWithReceipts(invoice, receiptsByInvoiceId.getOrDefault(invoice.getId(), List.of())))

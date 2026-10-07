@@ -130,8 +130,8 @@ class InvoiceFactoryTest {
     @Test
     void aDebitNoteNeedsItsOriginInvoiceAndAnInvoiceCannotHaveOne() {
         InvoiceDraftHeader noOrigin = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.LATE_FEE, InvoiceIssuingReason.LATE_FEE, null);
-        InvoiceDraftHeader invoiceWithOrigin = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC, 5L);
-        InvoiceDraftHeader debitNoteOfOtherType = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC, 5L);
+        InvoiceDraftHeader invoiceWithOrigin = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, 5L);
+        InvoiceDraftHeader debitNoteOfOtherType = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, 5L);
         InvoiceDraftHeader lateFeeAsInvoice = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.LATE_FEE, InvoiceIssuingReason.LATE_FEE, null);
 
         assertThatThrownBy(() -> InvoiceFactory.createLateFeeDebitNoteDraft(noOrigin, line(FeeType.LATE_FEE, "10.00", "L"), ACTOR))

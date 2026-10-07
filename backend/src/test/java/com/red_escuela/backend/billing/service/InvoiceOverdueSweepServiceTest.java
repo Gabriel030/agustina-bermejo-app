@@ -6,11 +6,11 @@ import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustment;
@@ -23,7 +23,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
+import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
@@ -62,7 +62,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private CollectionsPolicyRepository collectionsPolicyRepository;
+    private LatePaymentSettingsRepository latePaymentSettingsRepository;
 
     @Autowired
     private BatchExecutionLogRepository batchExecutionLogRepository;
@@ -135,7 +135,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(period);
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(amount);
@@ -143,8 +143,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         return invoiceRepository.save(invoice);
     }
 
-    private CollectionsPolicy persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        CollectionsPolicy policy = CollectionsPolicy.builder()
+    private LatePaymentSettings persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
+        LatePaymentSettings policy = LatePaymentSettings.builder()
                 .gracePeriodDays(gracePeriodDays)
                 .surchargeRate(Percentage.ofFraction(surchargePercentage))
                 .suspensionAfterDays(30)
@@ -152,7 +152,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
                 .effectiveFrom(LocalDate.now().minusYears(1))
                 .createdBy(createdBy)
                 .build();
-        return collectionsPolicyRepository.save(policy);
+        return latePaymentSettingsRepository.save(policy);
     }
 
     @Test
@@ -260,7 +260,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Test
     void processingTheSameOverdueInstallmentTwiceAppliesTheSurchargeOnlyOnce() {
         Person director = persistPerson("director.sweep.twice." + System.nanoTime());
-        CollectionsPolicy policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
+        LatePaymentSettings policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000901");
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
 

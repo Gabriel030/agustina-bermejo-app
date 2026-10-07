@@ -6,7 +6,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -146,7 +146,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(java.time.YearMonth.from(dueDate));
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(ars(100));

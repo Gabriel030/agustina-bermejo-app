@@ -36,6 +36,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
 
 public final class ArchitectureRules {
 
@@ -110,10 +111,10 @@ public final class ArchitectureRules {
     public static ArchRule invoicesAreIssuedOnlyByChargeIssuer() {
         ArchRule issueCalls = noClasses().that().resideOutsideOfPackages("..billing.issuing..")
                 .should().callMethod(Invoice.class, "issue", InvoiceDraft.class, LocalDate.class)
-                .because("every invoice must be issued through ChargeIssuer");
+                .because("every invoice must be issued through InvoiceIssuingService");
         ArchRule constructorCalls = noClasses().that().resideOutsideOfPackages("..billing.entity..")
                 .should().callConstructor(Invoice.class)
-                .because("every invoice must be issued through ChargeIssuer");
+                .because("every invoice must be issued through InvoiceIssuingService");
         return CompositeArchRule.of(issueCalls).and(constructorCalls);
     }
 

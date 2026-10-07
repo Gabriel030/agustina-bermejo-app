@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.planning.CourseChargePlanner;
-import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
+import com.red_escuela.backend.billing.planning.service.CourseMonthlyInvoicePlanner;
+import com.red_escuela.backend.billing.planning.service.ProgramMonthlyInvoicePlanner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,12 +9,12 @@ import org.springframework.context.annotation.Configuration;
 public class BillingPlanningConfiguration {
 
     @Bean
-    public MonthlyChargePlanner monthlyChargePlanner() {
-        return new MonthlyChargePlanner();
+    public ProgramMonthlyInvoicePlanner monthlyChargePlanner() {
+        return new ProgramMonthlyInvoicePlanner();
     }
 
     @Bean
-    public CourseChargePlanner courseChargePlanner() {
-        return new CourseChargePlanner();
+    public CourseMonthlyInvoicePlanner courseMonthlyInvoicePlanner() {
+        return new CourseMonthlyInvoicePlanner();
     }
 }

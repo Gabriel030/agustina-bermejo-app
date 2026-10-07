@@ -9,8 +9,8 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -135,7 +135,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
             programSubject.setCurricularTerm(CurricularTerm.FIRST);
             programSubject.setStatus(StatusType.ACTIVE);
             entityManager.persist(programSubject);
-            addPrice(program, director, FeeType.RECURRING_FEE, 10000, LocalDate.of(2020, 1, 1));
+            addPrice(program, director, FeeType.MONTHLY_INSTALLMENT, 10000, LocalDate.of(2020, 1, 1));
             addPrice(program, director, FeeType.ENROLLMENT_FEE, 5000, enrollmentPriceFrom);
             return new Career(program.getId(), director.getId(), subject.getId(), institution.getId());
         });
@@ -245,8 +245,8 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setStatus(statusValue));
     }
 
-    protected void setStanding(Long enrollmentId, EnrollmentBillingStanding standing) {
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setBillingStanding(standing));
+    protected void setStanding(Long enrollmentId, EnrollmentPaymentStatus standing) {
+        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setPaymentStatus(standing));
     }
 
     protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoiceStatus newStatus) {
@@ -311,7 +311,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
                 loaded.getTerm().getStartDate();
                 return loaded;
             });
-            long installments = all.stream().filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
+            long installments = all.stream().filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                     .filter(i -> year.templateId().equals(i.getTemplateId())).count();
             assertThat(installments).as("cuotas del año lectivo %s", year.year()).isLessThanOrEqualTo(template.getRecurringFeeInvoicesCount());
             List<Invoice> fees = all.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)

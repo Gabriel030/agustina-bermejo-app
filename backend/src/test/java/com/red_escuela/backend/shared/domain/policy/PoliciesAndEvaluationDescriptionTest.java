@@ -17,16 +17,16 @@ class PoliciesAndEvaluationDescriptionTest {
 
             @Override
             public PolicyVerdict evaluateRule(Integer context) {
-                return context > 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_POSITIVE", "no es positivo");
+                return context > 0 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "NOT_POSITIVE", "no es positivo");
             }
         };
     }
 
     @Test
     void composedPoliciesExposeTheirName() {
-        assertThat(Policies.allOf("all", positive()).name()).isEqualTo("all");
-        assertThat(Policies.anyOf("any", positive()).name()).isEqualTo("any");
-        assertThat(Policies.not("negation", "IS_POSITIVE", "es positivo", positive()).name()).isEqualTo("negation");
+        assertThat(Policies.allOf("all", positive()).ruleName()).isEqualTo("all");
+        assertThat(Policies.anyOf("any", positive()).ruleName()).isEqualTo("any");
+        assertThat(Policies.not("negation", "IS_POSITIVE", "es positivo", positive()).ruleName()).isEqualTo("negation");
     }
 
     @Test

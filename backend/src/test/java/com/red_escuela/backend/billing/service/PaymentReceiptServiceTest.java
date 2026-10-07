@@ -6,13 +6,13 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -21,7 +21,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.dto.PaymentReceiptResponse;
+import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateException;
@@ -108,7 +108,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private TermRepository termRepository;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentReceiptRepository paymentReceiptRepository;
+    private com.red_escuela.backend.billing.repository.BankTransferReceiptRepository bankTransferReceiptRepository;
 
     @Autowired
     private ProgramRepository programRepository;
@@ -167,7 +167,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(amount);
@@ -193,7 +193,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(amount);
@@ -212,9 +212,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
 
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        assertThat(receipt.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+        assertThat(receipt.getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
@@ -226,7 +226,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         assertThatThrownBy(() -> uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile()))
                 .isInstanceOf(PaymentReceiptAlreadyPendingException.class);
@@ -240,11 +240,11 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000003");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
 
-        assertThat(approved.getStatus()).isEqualTo(PaymentReceiptStatus.APPROVED);
+        assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
     }
 
@@ -254,14 +254,14 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000004");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceipt rejected = rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin);
-        assertThat(rejected.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
+        BankTransferReceipt rejected = rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin);
+        assertThat(rejected.getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
         assertThat(rejected.getRejectionReason()).isEqualTo("Comprobante ilegible");
 
-        PaymentReceipt retry = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        assertThat(retry.getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+        BankTransferReceipt retry = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        assertThat(retry.getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
 
         rejectPaymentReceiptUseCase.reject(retry.getId(), "Limpieza de test", admin);
     }
@@ -284,31 +284,31 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000008");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         CountDownLatch listos = new CountDownLatch(2);
         CountDownLatch arranca = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        Callable<PaymentReceipt> intentoAprobar = () -> {
+        Callable<BankTransferReceipt> intentoAprobar = () -> {
             listos.countDown();
             arranca.await();
             return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1);
         };
-        Callable<PaymentReceipt> intentoRechazar = () -> {
+        Callable<BankTransferReceipt> intentoRechazar = () -> {
             listos.countDown();
             arranca.await();
             return rejectPaymentReceiptUseCase.reject(receipt.getId(), "Comprobante ilegible", admin2);
         };
 
-        Future<PaymentReceipt> resultadoAprobar = executor.submit(intentoAprobar);
-        Future<PaymentReceipt> resultadoRechazar = executor.submit(intentoRechazar);
+        Future<BankTransferReceipt> resultadoAprobar = executor.submit(intentoAprobar);
+        Future<BankTransferReceipt> resultadoRechazar = executor.submit(intentoRechazar);
         listos.await(5, TimeUnit.SECONDS);
         arranca.countDown();
 
         int exitos = 0;
         int conflictos = 0;
-        for (Future<PaymentReceipt> resultado : List.of(resultadoAprobar, resultadoRechazar)) {
+        for (Future<BankTransferReceipt> resultado : List.of(resultadoAprobar, resultadoRechazar)) {
             try {
                 resultado.get(30, TimeUnit.SECONDS);
                 exitos++;
@@ -324,12 +324,12 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(exitos).isEqualTo(1);
         assertThat(conflictos).isEqualTo(1);
 
-        PaymentReceipt reloaded = paymentReceiptRepository.findById(receipt.getId()).orElseThrow();
+        BankTransferReceipt reloaded = bankTransferReceiptRepository.findById(receipt.getId()).orElseThrow();
         Invoice reloadedInvoice = invoiceRepository.findById(invoice.getId()).orElseThrow();
-        if (reloaded.getStatus() == PaymentReceiptStatus.APPROVED) {
+        if (reloaded.getStatus() == BankTransferReceiptStatus.APPROVED) {
             assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
         } else {
-            assertThat(reloaded.getStatus()).isEqualTo(PaymentReceiptStatus.REJECTED);
+            assertThat(reloaded.getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
             assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
         }
     }
@@ -350,11 +350,11 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000009");
         ProgramEnrollment programEnrollment = persistProgramEnrollment(student);
         Invoice invoice = persistInvoice(programEnrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        List<PaymentReceipt> ownReceipts = findOwnPaymentReceiptsUseCase.findOwn(student.getId());
+        List<BankTransferReceipt> ownReceipts = findOwnPaymentReceiptsUseCase.findOwn(student.getId());
 
-        assertThat(ownReceipts).extracting(PaymentReceipt::getId).contains(receipt.getId());
+        assertThat(ownReceipts).extracting(BankTransferReceipt::getId).contains(receipt.getId());
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
@@ -369,7 +369,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000010");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "El importe no coincide con la cuota", admin);
 
@@ -385,7 +385,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000011");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
 
@@ -400,15 +400,15 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Student student = persistStudent("97000012");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
         Invoice invoice = persistInvoice(enrollment, ars(10000), InvoiceStatus.PENDING);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
         assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin))
                 .isInstanceOf(InvoiceNotPayableException.class);
-        assertThat(paymentReceiptRepository.findById(receipt.getId()).orElseThrow().getStatus())
-                .isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+        assertThat(bankTransferReceiptRepository.findById(receipt.getId()).orElseThrow().getStatus())
+                .isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
@@ -428,9 +428,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         invoice.setBaseAmount(ars(10000));
         invoice.setStatus(InvoiceStatus.PENDING);
         invoice = invoiceRepository.save(invoice);
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        PaymentReceiptResponse response = PaymentReceiptResponse.from(receipt);
+        BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt);
 
         assertThat(response.studentName()).isEqualTo("Ana Comprobante");
         assertThat(response.studentDni()).isEqualTo("97000013");

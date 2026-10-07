@@ -5,10 +5,10 @@ import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.identity.entity.Role;
@@ -116,7 +116,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     private void persistPriceRevision(Course course, BigDecimal amount, Person createdBy) {
         PriceRevision revision = new PriceRevision();
         revision.setCourse(course);
-        revision.setFeeType(FeeType.RECURRING_FEE);
+        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         revision.setDescription("Precio de prueba");
         revision.setMonthlyAmount(ars(amount));
         revision.setEffectiveFrom(LocalDate.now().minusDays(1));
@@ -140,7 +140,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
 
         assertThat(application.getCourseEnrollment()).isNull();
-        assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(PaymentReceiptStatus.PENDING_REVIEW);
+        assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
     }
 

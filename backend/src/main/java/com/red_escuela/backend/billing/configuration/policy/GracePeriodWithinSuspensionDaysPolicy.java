@@ -11,6 +11,6 @@ public final class GracePeriodWithinSuspensionDaysPolicy implements Policy<LateP
     }
 
     public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
-        return values.gracePeriodDays() <= values.suspensionAfterDays() ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS", "El período de gracia no puede superar los días para suspender.");
+        return values.gracePeriodDays() <= values.suspensionAfterDays() ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS", "El período de gracia no puede superar los días para suspender.");
     }
 }

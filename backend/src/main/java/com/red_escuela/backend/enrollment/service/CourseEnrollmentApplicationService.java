@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
@@ -27,9 +27,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
-import com.red_escuela.backend.billing.issuing.ChargeIssuer;
-import com.red_escuela.backend.billing.issuing.ChargeRequests;
-import com.red_escuela.backend.billing.issuing.IssueResult;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.exception.ChargeRejectedException;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
 
@@ -39,7 +39,7 @@ public class CourseEnrollmentApplicationService {
     private final CourseRepository courseRepository;
     private final CourseEnrollmentService courseEnrollmentService;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
-    private final ChargeIssuer chargeIssuer;
+    private final InvoiceIssuingService invoiceIssuingService;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final ObjectMapper objectMapper;
     private final Clock clock;
@@ -47,13 +47,13 @@ public class CourseEnrollmentApplicationService {
     public CourseEnrollmentApplicationService(StudentRepository studentRepository, CourseRepository courseRepository,
             CourseEnrollmentService courseEnrollmentService,
             CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
-            ChargeIssuer chargeIssuer, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper,
+            InvoiceIssuingService invoiceIssuingService, UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, ObjectMapper objectMapper,
             Clock clock) {
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
         this.courseEnrollmentService = courseEnrollmentService;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
-        this.chargeIssuer = chargeIssuer;
+        this.invoiceIssuingService = invoiceIssuingService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.objectMapper = objectMapper;
         this.clock = clock;
@@ -67,16 +67,16 @@ public class CourseEnrollmentApplicationService {
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         courseEnrollmentService.validateCanEnroll(student, course);
         if (courseEnrollmentApplicationRepository.existsByStudentIdAndCourseIdAndPaymentReceiptStatus(
-                studentId, course.getId(), PaymentReceiptStatus.PENDING_REVIEW)) {
+                studentId, course.getId(), BankTransferReceiptStatus.PENDING_REVIEW)) {
             throw new PendingCourseEnrollmentApplicationException(studentId, course.getId());
         }
 
-        Invoice invoice = switch (chargeIssuer.issueInCurrentTransaction(ChargeRequests.courseAdmission(course, LocalDate.now(clock)))) {
-            case IssueResult.Issued issued -> issued.invoice();
-            case IssueResult.Rejected rejected -> throw new ChargeRejectedException(rejected.evaluation());
-            case IssueResult.AlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("course admission");
+        Invoice invoice = switch (invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createCourseAdmissionRequest(course, LocalDate.now(clock)))) {
+            case InvoiceIssuingResult.InvoiceIssued issued -> issued.invoice();
+            case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluation());
+            case InvoiceIssuingResult.InvoiceAlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("course admission");
         };
-        PaymentReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
 
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
@@ -41,8 +41,8 @@ public class StudentDebtResolutionService {
 
     @Transactional
     public void waiveDebtForProgram(Long studentId, Long programId, String reason, Person director) {
-        List<ProgramEnrollment> oldCycles = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusAndBillingStanding(
-                studentId, programId, ProgramEnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        List<ProgramEnrollment> oldCycles = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusAndPaymentStatus(
+                studentId, programId, ProgramEnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         for (ProgramEnrollment cycle : oldCycles) {
             for (Invoice invoice : invoiceRepository.findByProgramEnrollmentIdAndStatusIn(
                     cycle.getId(), List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {
@@ -53,8 +53,8 @@ public class StudentDebtResolutionService {
 
     @Transactional
     public void waiveDebtForCourse(Long studentId, Long courseId, String reason, Person director) {
-        List<CourseEnrollment> oldCycles = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusAndBillingStanding(
-                studentId, courseId, EnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+        List<CourseEnrollment> oldCycles = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusAndPaymentStatus(
+                studentId, courseId, EnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
         for (CourseEnrollment cycle : oldCycles) {
             for (Invoice invoice : invoiceRepository.findByCourseEnrollmentIdAndStatusIn(
                     cycle.getId(), List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {

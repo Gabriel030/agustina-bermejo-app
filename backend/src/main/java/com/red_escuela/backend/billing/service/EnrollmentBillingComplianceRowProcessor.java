@@ -2,9 +2,9 @@ package com.red_escuela.backend.billing.service;
 
 import java.time.Clock;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -51,7 +51,7 @@ public class EnrollmentBillingComplianceRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processCourseEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
+    public void processCourseEnrollment(Long id, LatePaymentSettings policy, LocalDate today) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(id).orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, id,
                 () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
@@ -61,7 +61,7 @@ public class EnrollmentBillingComplianceRowProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processProgramEnrollment(Long id, CollectionsPolicy policy, LocalDate today) {
+    public void processProgramEnrollment(Long id, LatePaymentSettings policy, LocalDate today) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(id).orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, id,
                 () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
@@ -71,37 +71,37 @@ public class EnrollmentBillingComplianceRowProcessor {
     }
 
     private void recalculateStanding(BillableEnrollment billable, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId,
-                                      Supplier<Optional<Invoice>> oldestOverdueInvoice, LongSupplier overdueCount, CollectionsPolicy policy, LocalDate today) {
-        EnrollmentBillingStanding previous = billable.getBillingStanding();
-        LocalDateTime previousUpdatedAt = billable.getBillingStandingUpdatedAt();
+                                      Supplier<Optional<Invoice>> oldestOverdueInvoice, LongSupplier overdueCount, LatePaymentSettings policy, LocalDate today) {
+        EnrollmentPaymentStatus previous = billable.getPaymentStatus();
+        LocalDateTime previousUpdatedAt = billable.getPaymentStatusUpdatedAt();
         long overdueInvoiceCount = overdueCount.getAsLong();
 
-        EnrollmentBillingStanding next;
+        EnrollmentPaymentStatus next;
         if (overdueInvoiceCount == 0) {
-            next = EnrollmentBillingStanding.UP_TO_DATE;
+            next = EnrollmentPaymentStatus.UP_TO_DATE;
         } else {
             Invoice oldestOverdue = oldestOverdueInvoice.get()
                     .orElseThrow(() -> new IllegalStateException("countByStatus(OVERDUE) > 0 pero no se encontró ninguna Invoice OVERDUE"));
             long daysOverdue = ChronoUnit.DAYS.between(oldestOverdue.getDueDate(), today);
-            if (previous == EnrollmentBillingStanding.SUSPENDED
+            if (previous == EnrollmentPaymentStatus.SUSPENDED
                     || daysOverdue > policy.getSuspensionAfterDays() || overdueInvoiceCount >= policy.getSuspensionAfterInvoiceCount()) {
-                if (previous != EnrollmentBillingStanding.SUSPENDED) {
+                if (previous != EnrollmentPaymentStatus.SUSPENDED) {
                     meterRegistry.counter("billing_suspension_attempt_total").increment();
                     meterRegistry.counter("billing_suspension_success_total").increment();
                 }
-                next = EnrollmentBillingStanding.SUSPENDED;
+                next = EnrollmentPaymentStatus.SUSPENDED;
             } else if (daysOverdue > policy.getGracePeriodDays()) {
-                next = EnrollmentBillingStanding.OVERDUE;
+                next = EnrollmentPaymentStatus.OVERDUE;
             } else {
-                next = EnrollmentBillingStanding.UP_TO_DATE;
+                next = EnrollmentPaymentStatus.UP_TO_DATE;
             }
         }
 
         if (next != previous) {
-            billable.setBillingStanding(next);
-            billable.setBillingStandingUpdatedAt(LocalDateTime.now(clock));
+            billable.setPaymentStatus(next);
+            billable.setPaymentStatusUpdatedAt(LocalDateTime.now(clock));
         }
-        if (previous == EnrollmentBillingStanding.SUSPENDED && next == EnrollmentBillingStanding.UP_TO_DATE) {
+        if (previous == EnrollmentPaymentStatus.SUSPENDED && next == EnrollmentPaymentStatus.UP_TO_DATE) {
             YearMonth suspendedSince = previousUpdatedAt != null ? YearMonth.from(previousUpdatedAt) : YearMonth.from(today);
             eventPublisher.publishEvent(new SuspensionLiftedEvent(billable, suspendedSince, YearMonth.from(today)));
             eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(enrollmentType, enrollmentId, suspendedSince, YearMonth.from(today)));

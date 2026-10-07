@@ -42,6 +42,8 @@ import java.util.concurrent.Future;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -96,7 +98,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
 
     private Invoice draftFor(StudentCurrentAccount account, String chargeKey) {
         InvoiceDraftHeader header = new InvoiceDraftHeader(account.getId(), Currency.ARS, InvoiceDocumentType.INVOICE,
-                InvoiceType.ADMINISTRATIVE_FEE, InvoiceIssuingReason.AD_HOC, null);
+                InvoiceType.ADMINISTRATIVE_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, null);
         InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ADMINISTRATIVE_FEE, "Tasa", java.time.YearMonth.of(2027, 3),
                 null, null, null, null, null, chargeKey, ars("80000.00"));
         Invoice invoice = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);

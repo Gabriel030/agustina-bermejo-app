@@ -6,12 +6,12 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -22,7 +22,7 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.AddressRepository;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
+import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
@@ -77,7 +77,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     private InvoiceOverdueSweepService invoiceOverdueSweepService;
 
     @Autowired
-    private CollectionsPolicyRepository collectionsPolicyRepository;
+    private LatePaymentSettingsRepository latePaymentSettingsRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -162,7 +162,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         PriceRevision priceRevision = new PriceRevision();
         priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.RECURRING_FEE);
+        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         priceRevision.setDescription("Cuota mensual de prueba");
         priceRevision.setMonthlyAmount(ars(precio));
         priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
@@ -239,7 +239,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         PriceRevision aumento = new PriceRevision();
         aumento.setCourse(course);
-        aumento.setFeeType(FeeType.RECURRING_FEE);
+        aumento.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         aumento.setDescription("Ajuste inflacionario");
         aumento.setMonthlyAmount(ars(20000));
         aumento.setEffectiveFrom(YearMonth.now().atDay(1));
@@ -261,7 +261,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("88000004", course);
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(5000));
@@ -282,7 +282,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         Course course = persistCourse(director, BigDecimal.valueOf(5000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000005", course);
 
-        CollectionsPolicy policy = CollectionsPolicy.builder()
+        LatePaymentSettings policy = LatePaymentSettings.builder()
                 .gracePeriodDays(10)
                 .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
                 .suspensionAfterDays(30)
@@ -290,11 +290,11 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 .effectiveFrom(LocalDate.now().minusYears(1))
                 .createdBy(director)
                 .build();
-        collectionsPolicyRepository.save(policy);
+        latePaymentSettingsRepository.save(policy);
 
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(1));
         invoice.setDueDate(LocalDate.now().minusDays(20));
         invoice.setBaseAmount(ars(5000));
@@ -399,7 +399,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         PriceRevision increase = new PriceRevision();
         increase.setCourse(course);
-        increase.setFeeType(FeeType.RECURRING_FEE);
+        increase.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         increase.setDescription("Aumento");
         increase.setMonthlyAmount(ars(BigDecimal.valueOf(12000)));
         increase.setEffectiveFrom(LocalDate.of(2026, 6, 3));

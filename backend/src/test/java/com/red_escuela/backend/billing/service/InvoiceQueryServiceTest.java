@@ -11,7 +11,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
@@ -129,7 +129,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.from(dueDate));
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(amount);
@@ -145,7 +145,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
 
         PriceRevision priceRevision = new PriceRevision();
         priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.RECURRING_FEE);
+        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         priceRevision.setDescription("Cuota mensual 2026");
         priceRevision.setMonthlyAmount(ars(10000));
         priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));

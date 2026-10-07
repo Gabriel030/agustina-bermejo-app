@@ -11,6 +11,6 @@ public final class SuspensionInvoiceCountAtLeastOnePolicy implements Policy<Late
     }
 
     public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
-        return values.suspensionAfterInvoiceCount() >= 1 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "SUSPENSION_INVOICE_COUNT_BELOW_ONE", "Las facturas vencidas para suspender deben ser al menos 1.");
+        return values.suspensionAfterInvoiceCount() >= 1 ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "SUSPENSION_INVOICE_COUNT_BELOW_ONE", "Las facturas vencidas para suspender deben ser al menos 1.");
     }
 }

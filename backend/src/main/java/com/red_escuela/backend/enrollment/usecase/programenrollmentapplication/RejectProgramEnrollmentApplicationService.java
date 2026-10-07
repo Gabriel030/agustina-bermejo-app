@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
 import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
 import com.red_escuela.backend.shared.UseCase;
@@ -25,7 +25,7 @@ public class RejectProgramEnrollmentApplicationService implements RejectProgramE
         return application;
     }
 
-    private void discardEnrollmentFeePayment(PaymentReceipt receipt, RejectProgramEnrollmentApplicationCommand command) {
+    private void discardEnrollmentFeePayment(BankTransferReceipt receipt, RejectProgramEnrollmentApplicationCommand command) {
         if (receipt == null) {
             return;
         }

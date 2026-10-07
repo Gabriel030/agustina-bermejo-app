@@ -221,7 +221,7 @@ public class KarateFixtures {
 
         com.red_escuela.backend.billing.entity.Invoice invoice = new com.red_escuela.backend.billing.entity.Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE);
+        invoice.setFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT);
         java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
         invoice.setPeriod(java.time.YearMonth.from(due));
         invoice.setDueDate(due);

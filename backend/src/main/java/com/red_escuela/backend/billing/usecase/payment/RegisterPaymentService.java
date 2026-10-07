@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.usecase.payment;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -149,8 +149,8 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         if (overdueInvoices > 0) {
             return;
         }
-        boolean wasSuspended = enrollment.getBillingStanding() == EnrollmentBillingStanding.SUSPENDED;
-        LocalDateTime suspendedAt = enrollment.getBillingStandingUpdatedAt();
+        boolean wasSuspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED;
+        LocalDateTime suspendedAt = enrollment.getPaymentStatusUpdatedAt();
         if (enrollment.settleArrears() && wasSuspended) {
             YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now(clock);
             eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now(clock)));

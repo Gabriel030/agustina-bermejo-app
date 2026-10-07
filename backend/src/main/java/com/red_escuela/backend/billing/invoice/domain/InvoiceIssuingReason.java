@@ -1,16 +1,18 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
 public enum InvoiceIssuingReason {
-    MONTHLY_JOB,
+    MONTHLY_RUN,
     CATCH_UP,
-    PLAN_SELECTION,
+    PAYMENT_PLAN_SELECTION,
     REACTIVATION,
     ENROLLMENT_FEE_ON_DEMAND,
-    CONFIGURATION_CHANGE,
+    YEAR_CONFIGURATION_CHANGE,
     ANNUAL_UPFRONT_PAYMENT,
-    ADMISSION,
-    COURSE_MONTHLY,
+    PROGRAM_ADMISSION,
+    COURSE_MONTHLY_RUN,
     COURSE_ADMISSION,
-    AD_HOC,
-    LATE_FEE
+    AD_HOC_CHARGE,
+    LATE_FEE,
+    UPFRONT,
+    LEGACY
 }

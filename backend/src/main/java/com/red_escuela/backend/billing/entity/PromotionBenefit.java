@@ -17,6 +17,7 @@ import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 
 @Getter
 @Setter

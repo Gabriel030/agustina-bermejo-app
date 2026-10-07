@@ -13,6 +13,6 @@ public final class EnrollmentFeeMonthFrozenPolicy implements Policy<YearBillingC
     }
 
     public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
-        return change.issuedEnrollmentFeeSlots().stream().allMatch(slot -> slot > change.proposed().enrollmentFeeCount() || Objects.equals(change.current().enrollmentFeeMonthOfSlot(slot), change.proposed().enrollmentFeeMonthOfSlot(slot))) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENROLLMENT_FEE_MONTH_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar su mes.");
+        return change.issuedEnrollmentFeeSlots().stream().allMatch(slot -> slot > change.proposed().enrollmentFeeCount() || Objects.equals(change.current().enrollmentFeeMonthOfSlot(slot), change.proposed().enrollmentFeeMonthOfSlot(slot))) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "ENROLLMENT_FEE_MONTH_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar su mes.");
     }
 }

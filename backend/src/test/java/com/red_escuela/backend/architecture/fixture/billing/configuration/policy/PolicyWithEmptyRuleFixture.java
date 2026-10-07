@@ -14,6 +14,6 @@ public class PolicyWithEmptyRuleFixture implements Policy<String> {
 
     @Override
     public PolicyVerdict evaluateRule(String context) {
-        return PolicyVerdict.allow(name());
+        return PolicyVerdict.allow(ruleName());
     }
 }

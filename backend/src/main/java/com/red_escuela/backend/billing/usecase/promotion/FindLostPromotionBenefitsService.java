@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PromotionBenefitUsage;
 import com.red_escuela.backend.billing.repository.PromotionRedemptionRepository;

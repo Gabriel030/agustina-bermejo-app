@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.repository;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,8 +32,8 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
 
     List<CourseEnrollment> findByStatusAndIdGreaterThanOrderByIdAsc(EnrollmentStatus status, Long lastId, Pageable pageable);
 
-    List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusAndBillingStanding(
-            Long studentId, Long courseId, EnrollmentStatus status, EnrollmentBillingStanding billingStanding);
+    List<CourseEnrollment> findByStudentIdAndCourseIdAndStatusAndPaymentStatus(
+            Long studentId, Long courseId, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus);
 
     @Query("select distinct e.student.id from CourseEnrollment e where e.status in :statuses")
     List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<EnrollmentStatus> statuses);

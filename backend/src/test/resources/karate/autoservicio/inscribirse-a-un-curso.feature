@@ -31,7 +31,7 @@ Feature: Caso de uso — Inscribirse a un curso
     Then status 201
     * def courseId = response.id
 
-    # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(RECURRING_FEE) desde el
+    # Fase 6.1: CourseService.crearCurso ya genera el PriceRevision(MONTHLY_INSTALLMENT) desde el
     # price de arriba — no hace falta un paso aparte.
 
     # Alumno recién registrado
@@ -72,7 +72,7 @@ Feature: Caso de uso — Inscribirse a un curso
     # bandeja es global (sin filtro por alumno, ver spec técnica), así que se toma el de
     # id más alto — el propio, porque ningún otro comprobante se crea entre el paso de
     # arriba y este (ejecución secuencial de Karate, sin @Karate.Test en paralelo).
-    Given path '/payment-receipts'
+    Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
@@ -80,7 +80,7 @@ Feature: Caso de uso — Inscribirse a un curso
     * def maxId = Math.max.apply(null, idsOrdenados)
     * def pendiente = response.filter(function(x){ return x.id == maxId })[0]
 
-    Given path '/payment-receipts', pendiente.id, 'approve'
+    Given path '/bank-transfer-receipts', pendiente.id, 'approve'
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 200

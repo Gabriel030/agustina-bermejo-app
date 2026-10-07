@@ -33,7 +33,7 @@ public final class InvoiceTestData {
     public static InvoiceDraftHeader header(InvoiceType type) {
         boolean debitNote = type == InvoiceType.LATE_FEE;
         return new InvoiceDraftHeader(1L, Currency.ARS, debitNote ? InvoiceDocumentType.DEBIT_NOTE : InvoiceDocumentType.INVOICE, type,
-                InvoiceIssuingReason.MONTHLY_JOB, debitNote ? 99L : null);
+                InvoiceIssuingReason.MONTHLY_RUN, debitNote ? 99L : null);
     }
 
     public static FeeType feeTypeOf(InvoiceType type) {
