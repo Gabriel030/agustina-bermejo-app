@@ -10,7 +10,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useProgramas, useCursos } from '@/hooks/useCatalogo';
-import { useCiclos } from '@/features/oferta-academica/hooks/useCiclos';
+import { useCiclos } from '@/features/academic-structure/hooks/useCiclos';
 import { formatCourseDuration } from '@/lib/courseDuration';
 
 const TABS = [

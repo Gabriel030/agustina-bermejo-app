@@ -6,8 +6,8 @@ import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
-import { useClassroomsAvailability } from '@/features/oferta-academica/hooks/useClassrooms';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
+import { useClassroomsAvailability } from '@/features/academic-structure/hooks/useClassrooms';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 
 const DIAS = [
   { id: 'MONDAY', label: 'Lunes' },

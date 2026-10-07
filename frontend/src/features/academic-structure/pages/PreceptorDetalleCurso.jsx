@@ -7,9 +7,9 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useCurso } from '@/hooks/useCatalogo';
-import { useCiclos, useCicloSecciones } from '@/features/oferta-academica/hooks/useCiclos';
-import { ResumeCycleButton } from '@/features/oferta-academica/components/ResumeCycleButton';
-import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
+import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hooks/useCiclos';
+import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
+import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 import { formatCourseDuration } from '@/lib/courseDuration';
 
 const CICLO_STATUS_CONFIG = {

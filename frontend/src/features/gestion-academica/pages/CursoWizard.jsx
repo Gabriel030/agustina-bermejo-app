@@ -8,7 +8,7 @@ import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateCourse } from '@/features/gestion-academica/hooks/useCourses';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 
 const PASOS = [
   { key: 'datos', label: 'Datos básicos' },

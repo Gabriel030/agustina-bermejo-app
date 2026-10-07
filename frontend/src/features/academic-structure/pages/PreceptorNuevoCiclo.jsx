@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { useProgramas, useCursos, useProgramaPlanDeEstudio, useCursoTemario } from '@/hooks/useCatalogo';
-import { useTerminos } from '@/features/oferta-academica/hooks/useTerminos';
-import { useInstructores } from '@/features/oferta-academica/hooks/useInstructores';
-import { useClassrooms } from '@/features/oferta-academica/hooks/useClassrooms';
+import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
+import { useInstructores } from '@/features/academic-structure/hooks/useInstructores';
+import { useClassrooms } from '@/features/academic-structure/hooks/useClassrooms';
 import {
   useCycle,
   useCicloSecciones,
@@ -19,8 +19,8 @@ import {
   useAddSeccion,
   useAsignarInstructorSeccion,
   useSubmitCiclo,
-} from '@/features/oferta-academica/hooks/useCiclos';
-import { RejectionReasonNotice } from '@/features/oferta-academica/components/RejectionReasonNotice';
+} from '@/features/academic-structure/hooks/useCiclos';
+import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 
 const PASOS = [
   { key: 'periodo', label: 'Período' },
