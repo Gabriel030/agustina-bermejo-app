@@ -31,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
     @Autowired
+    private com.red_escuela.backend.billing.repository.CollectionsPolicyRepository collectionsPolicyRepository;
+
+    @Autowired
     private com.red_escuela.backend.billing.usecase.collectionspolicy.CreateCollectionsPolicyUseCase createCollectionsPolicyUseCase;
 
     @Autowired
@@ -57,6 +60,11 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
         return personRepository.save(person);
     }
 
+    private CollectionsPolicy historicPolicy(Person createdBy, int grace, double surcharge, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {
+        return CollectionsPolicy.builder().gracePeriodDays(grace).surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(surcharge)))
+                .suspensionAfterDays(suspensionDays).suspensionAfterInvoiceCount(invoiceCount).effectiveFrom(effectiveFrom).createdBy(createdBy).build();
+    }
+
     private void authenticateAs(Person person) {
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(person.getId().toString(), null));
@@ -67,10 +75,10 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.policy1." + System.nanoTime());
         authenticateAs(director);
         CollectionsPolicy today = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, 60, 3, LocalDate.now()));
+                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, LocalDate.now()));
 
         createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                5, Percentage.ofFraction(BigDecimal.valueOf(0.20)), 15, 1, 30, 2, LocalDate.now().plusMonths(1)));
+                5, Percentage.ofFraction(BigDecimal.valueOf(0.20)), 15, 1, LocalDate.now().plusMonths(1)));
 
         CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
@@ -82,10 +90,8 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
     void theMostRecentPastOrPresentPolicyWins() {
         Person director = persistPerson("director.policy2." + System.nanoTime());
         authenticateAs(director);
-        createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, 60, 3, LocalDate.now().minusMonths(2)));
-        CollectionsPolicy mostRecent = createCollectionsPolicyUseCase.create(new CreateCollectionsPolicyRequest(
-                7, Percentage.ofFraction(BigDecimal.valueOf(0.15)), 20, 1, 45, 2, LocalDate.now().minusDays(1)));
+        collectionsPolicyRepository.save(historicPolicy(director, 10, 0.10, 30, 2, LocalDate.now().minusMonths(2)));
+        CollectionsPolicy mostRecent = collectionsPolicyRepository.save(historicPolicy(director, 7, 0.15, 20, 1, LocalDate.now().minusDays(1)));
 
         CollectionsPolicy current = findCurrentCollectionsPolicyUseCase.findCurrent();
 
@@ -99,10 +105,10 @@ class CollectionsPolicyServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
 
         assertThatThrownBy(() -> new CreateCollectionsPolicyRequest(
-                10, Percentage.ofPoints(BigDecimal.valueOf(150)), 30, 2, 60, 3, LocalDate.now()))
+                10, Percentage.ofPoints(BigDecimal.valueOf(150)), 30, 2, LocalDate.now()))
                 .isInstanceOf(InvalidPercentageException.class);
         assertThatThrownBy(() -> new CreateCollectionsPolicyRequest(
-                10, Percentage.ofPoints(BigDecimal.valueOf(-10)), 30, 2, 60, 3, LocalDate.now()))
+                10, Percentage.ofPoints(BigDecimal.valueOf(-10)), 30, 2, LocalDate.now()))
                 .isInstanceOf(InvalidPercentageException.class);
     }
 }

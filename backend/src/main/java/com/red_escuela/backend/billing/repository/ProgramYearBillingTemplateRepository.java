@@ -1,7 +1,11 @@
 package com.red_escuela.backend.billing.repository;
 
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,4 +15,13 @@ public interface ProgramYearBillingTemplateRepository extends JpaRepository<Prog
     Optional<ProgramYearBillingTemplate> findByProgramIdAndTermId(Long programId, Long termId);
 
     List<ProgramYearBillingTemplate> findAllByProgramId(Long programId);
+
+    List<ProgramYearBillingTemplate> findAllByTermId(Long termId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from ProgramYearBillingTemplate t where t.id = :id")
+    Optional<ProgramYearBillingTemplate> findByIdForUpdate(@Param("id") Long id);
+
+    @Query(value = "select enrollment_fee_count from program_year_billing_template where id = :id for share", nativeQuery = true)
+    Optional<Integer> findEnrollmentFeeCountForShare(@Param("id") Long id);
 }

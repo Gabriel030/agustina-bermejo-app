@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.entity;
 
 import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateExceedsTermSpanException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -103,19 +102,18 @@ public class ProgramYearBillingTemplate {
         if (this.createdAt == null) {
             this.createdAt = ApplicationTime.now();
         }
-        validateRecurringFeeInvoicesCountAgainstTermSpan();
     }
 
-    @PreUpdate
-    void onUpdate() {
-        validateRecurringFeeInvoicesCountAgainstTermSpan();
+    public LocalDateTime termStartDate() {
+        return term.getStartDate();
     }
 
-    private void validateRecurringFeeInvoicesCountAgainstTermSpan() {
-        Long termSpanMonths = term.spanInMonths();
-        if (termSpanMonths != null && recurringFeeInvoicesCount != null && recurringFeeInvoicesCount > termSpanMonths) {
-            throw new ProgramYearBillingTemplateExceedsTermSpanException(recurringFeeInvoicesCount, termSpanMonths);
-        }
+    public LocalDateTime termEndDate() {
+        return term.getEndDate();
+    }
+
+    public Long programId() {
+        return program.getId();
     }
 
     public boolean canGenerateInvoice(YearMonth period, long invoicesGeneratedInWindow) {

@@ -9,7 +9,13 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import java.time.LocalDate;
 
 public record IssuanceContext(ChargeRequest request, LocalDate today, Currency offeringCurrency, Money amount, PriceRevision priceRevision,
-                              Long existingInvoiceId, Percentage entryFeeDiscount, MonetaryAdjustment upfrontDiscount) {
+                              Long existingInvoiceId, Percentage entryFeeDiscount, MonetaryAdjustment upfrontDiscount,
+                              Integer templateEnrollmentFeeCount) {
+
+    public IssuanceContext(ChargeRequest request, LocalDate today, Currency offeringCurrency, Money amount, PriceRevision priceRevision,
+                           Long existingInvoiceId, Percentage entryFeeDiscount, MonetaryAdjustment upfrontDiscount) {
+        this(request, today, offeringCurrency, amount, priceRevision, existingInvoiceId, entryFeeDiscount, upfrontDiscount, null);
+    }
 
     public boolean alreadyIssued() {
         return existingInvoiceId != null;

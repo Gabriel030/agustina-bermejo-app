@@ -63,6 +63,21 @@ describe('AniosLectivosSection', () => {
     }));
   });
 
+  it('lists every violation message returned by a rejected configuration', async () => {
+    mockApi();
+    server.use(http.patch(`${API}/year-billing-templates/3/configuration`, () => HttpResponse.json({
+      code: 'BILLING_CONFIGURATION_FROZEN',
+      violations: [{ code: 'ENROLLMENT_FEE_COUNT_FROZEN', message: 'Ya se emitió una matrícula de este año: no se puede cambiar la cantidad de matrículas.' }],
+    }, { status: 409 })));
+    const user = userEvent.setup();
+    renderWithProviders(<AniosLectivosSection programId={12} canEdit />);
+
+    await user.click(await screen.findByRole('button', { name: /Configurar cobro de Año lectivo 2027/ }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ya se emitió una matrícula de este año');
+  });
+
   it('shows the configuration read-only, with no save button, when the user cannot edit', async () => {
     mockApi();
     renderWithProviders(<AniosLectivosSection programId={12} />);

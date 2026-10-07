@@ -90,7 +90,7 @@ class BillingMoneyContractTest {
     @Tag("D-099")
     void aSurchargePercentOfTenIsKeptAsTenAndOneHundredFiftyIsRejectedWith400() throws Exception {
         String body = "{\"gracePeriodDays\":10,\"surchargePercent\":%s,\"suspensionAfterDays\":30,"
-                + "\"suspensionAfterInvoiceCount\":2,\"withdrawalAfterDays\":60,\"withdrawalAfterInvoiceCount\":3}";
+                + "\"suspensionAfterInvoiceCount\":2}";
         mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(body.formatted("10")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.surchargePercent").value(10));
@@ -112,7 +112,7 @@ class BillingMoneyContractTest {
     void thePolicyResponseExposesThePercentInPoints() throws Exception {
         String json = objectMapper.writeValueAsString(new CollectionsPolicyResponse(
                 1L, 10, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("10")),
-                30, 2, 60, 3, java.time.LocalDate.of(2026, 1, 1)));
+                30, 2, java.time.LocalDate.of(2026, 1, 1)));
         org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(json).get("surchargePercent").decimalValue())
                 .isEqualByComparingTo("10");
     }
