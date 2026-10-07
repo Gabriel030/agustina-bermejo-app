@@ -22,7 +22,7 @@ class GracePeriodNotNegativePolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(values(-1, 30, 2, TODAY));
+        PolicyVerdict denial = policy.evaluateRule(values(-1, 30, 2, TODAY));
         assertThat(denial.allowed()).isFalse();
         assertThat(GracePeriodNotNegativePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("NEGATIVE_GRACE_PERIOD");
@@ -31,7 +31,7 @@ class GracePeriodNotNegativePolicyTest {
 
     @Test
     void allowsZeroAndPositiveGrace() {
-        assertThat(policy.evaluate(values(0, 30, 2, TODAY)).allowed()).isTrue();
-        assertThat(policy.evaluate(values(5, 30, 2, TODAY)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(0, 30, 2, TODAY)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(5, 30, 2, TODAY)).allowed()).isTrue();
     }
 }

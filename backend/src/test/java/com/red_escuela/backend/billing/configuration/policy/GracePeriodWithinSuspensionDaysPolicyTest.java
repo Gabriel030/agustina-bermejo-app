@@ -22,7 +22,7 @@ class GracePeriodWithinSuspensionDaysPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(values(40, 30, 2, TODAY));
+        PolicyVerdict denial = policy.evaluateRule(values(40, 30, 2, TODAY));
         assertThat(denial.allowed()).isFalse();
         assertThat(GracePeriodWithinSuspensionDaysPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS");
@@ -31,11 +31,11 @@ class GracePeriodWithinSuspensionDaysPolicyTest {
 
     @Test
     void allowsGraceEqualToSuspensionDays() {
-        assertThat(policy.evaluate(values(30, 30, 2, TODAY)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(30, 30, 2, TODAY)).allowed()).isTrue();
     }
 
     @Test
     void deniesGraceOneDayAboveSuspensionDays() {
-        assertThat(policy.evaluate(values(31, 30, 2, TODAY)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(values(31, 30, 2, TODAY)).allowed()).isFalse();
     }
 }

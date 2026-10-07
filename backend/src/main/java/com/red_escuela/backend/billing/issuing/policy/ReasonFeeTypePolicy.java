@@ -14,11 +14,11 @@ public final class ReasonFeeTypePolicy implements Policy<IssuanceContext> {
     private static final Set<FeeType> AD_HOC_TYPES = Set.of(FeeType.EXAM_RIGHT, FeeType.RETAKEN_SUBJECT_FEE, FeeType.DEGREE_ISSUANCE, FeeType.ADMINISTRATIVE_FEE);
     private static final Set<FeeType> REGULAR_TYPES = Set.of(FeeType.RECURRING_FEE, FeeType.ENROLLMENT_FEE, FeeType.SUBSCRIPTION_FEE);
 
-    public String name() {
+    public String ruleName() {
         return "ReasonFeeTypePolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         IssueReason reason = ctx.request().reason();
         FeeType type = ctx.request().feeType();
         boolean allowed = switch (reason) {

@@ -9,11 +9,11 @@ public final class PromotionBenefitCapPolicy implements Policy<PromotionBenefitC
     public record Usage(Integer scopeCount, long alreadyApplied) {
     }
 
-    public String name() {
+    public String ruleName() {
         return "PromotionBenefitCapPolicy";
     }
 
-    public PolicyVerdict evaluate(Usage usage) {
+    public PolicyVerdict evaluateRule(Usage usage) {
         return usage.scopeCount() == null || usage.alreadyApplied() < usage.scopeCount()
                 ? PolicyVerdict.allow(name())
                 : PolicyVerdict.deny(name(), "PROMOTION_BENEFIT_EXHAUSTED", "El beneficio de la promoción ya se aplicó el máximo de veces");

@@ -8,11 +8,11 @@ import java.util.Objects;
 
 @PolicyRule(violationCodes = "ENROLLMENT_FEE_MONTH_FROZEN", decisions = {"D-036"})
 public final class EnrollmentFeeMonthFrozenPolicy implements Policy<YearBillingConfigurationChange> {
-    public String name() {
+    public String ruleName() {
         return "EnrollmentFeeMonthFrozenPolicy";
     }
 
-    public PolicyVerdict evaluate(YearBillingConfigurationChange change) {
+    public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
         return change.issuedEnrollmentFeeSlots().stream().allMatch(slot -> slot > change.proposed().enrollmentFeeCount() || Objects.equals(change.current().enrollmentFeeMonthOfSlot(slot), change.proposed().enrollmentFeeMonthOfSlot(slot))) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENROLLMENT_FEE_MONTH_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar su mes.");
     }
 }

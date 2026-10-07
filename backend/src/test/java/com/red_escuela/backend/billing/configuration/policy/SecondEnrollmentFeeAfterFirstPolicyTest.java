@@ -17,7 +17,7 @@ class SecondEnrollmentFeeAfterFirstPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(creation(snapshot(2, 7, 7, 10)));
+        PolicyVerdict denial = policy.evaluateRule(creation(snapshot(2, 7, 7, 10)));
         assertThat(denial.allowed()).isFalse();
         assertThat(SecondEnrollmentFeeAfterFirstPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("SECOND_ENROLLMENT_FEE_NOT_AFTER_FIRST");
@@ -26,13 +26,13 @@ class SecondEnrollmentFeeAfterFirstPolicyTest {
 
     @Test
     void allowsSecondMonthStrictlyAfterFirstAndIgnoresSingleEnrollment() {
-        assertThat(policy.evaluate(creation(snapshot(2, 2, 3, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(1, 7, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(2, 2, 3, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 7, null, 10))).allowed()).isTrue();
     }
 
     @Test
     void deniesMissingSecondMonthAndEarlierSecondMonth() {
-        assertThat(policy.evaluate(creation(snapshot(2, 2, null, 10))).allowed()).isFalse();
-        assertThat(policy.evaluate(creation(snapshot(2, 7, 2, 10))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(creation(snapshot(2, 2, null, 10))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(creation(snapshot(2, 7, 2, 10))).allowed()).isFalse();
     }
 }

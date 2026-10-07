@@ -7,11 +7,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "CURRENCY_MISMATCH", decisions = {"D-097"})
 public final class OfferingCurrencyPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "OfferingCurrencyPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         boolean matches = ctx.amount() == null || ctx.amount().currency() == ctx.offeringCurrency();
         return matches ? PolicyVerdict.allow(name())
                 : PolicyVerdict.deny(name(), "CURRENCY_MISMATCH", "La moneda del monto no coincide con la de la oferta");

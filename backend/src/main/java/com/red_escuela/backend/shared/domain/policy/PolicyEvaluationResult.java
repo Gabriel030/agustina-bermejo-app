@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-public record PolicyEvaluation(List<PolicyVerdict> verdicts) {
+public record PolicyEvaluationResult(List<PolicyVerdict> verdicts) {
 
-    public PolicyEvaluation {
+    public PolicyEvaluationResult {
         verdicts = List.copyOf(verdicts);
     }
 

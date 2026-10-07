@@ -8,11 +8,11 @@ import java.time.temporal.ChronoUnit;
 
 @PolicyRule(violationCodes = "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN", decisions = {"D-034"})
 public final class InstallmentCountWithinTermSpanPolicy implements Policy<YearBillingConfigurationChange> {
-    public String name() {
+    public String ruleName() {
         return "InstallmentCountWithinTermSpanPolicy";
     }
 
-    public PolicyVerdict evaluate(YearBillingConfigurationChange change) {
+    public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
         return (!change.hasTermDates() || change.proposed().recurringFeeInvoicesCount() == null || change.proposed().recurringFeeInvoicesCount() <= spanInMonths(change)) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN", "La cantidad de cuotas no puede superar los meses del año lectivo.");
     }
 

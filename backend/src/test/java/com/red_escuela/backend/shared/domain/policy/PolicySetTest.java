@@ -11,11 +11,11 @@ class PolicySetTest {
 
     private static Policy<Integer> positive() {
         return new Policy<>() {
-            public String name() {
+            public String ruleName() {
                 return "positive";
             }
 
-            public PolicyVerdict evaluate(Integer value) {
+            public PolicyVerdict evaluateRule(Integer value) {
                 return value > 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_POSITIVE", "debe ser positivo");
             }
         };
@@ -23,11 +23,11 @@ class PolicySetTest {
 
     private static Policy<Integer> even() {
         return new Policy<>() {
-            public String name() {
+            public String ruleName() {
                 return "even";
             }
 
-            public PolicyVerdict evaluate(Integer value) {
+            public PolicyVerdict evaluateRule(Integer value) {
                 return value % 2 == 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_EVEN", "debe ser par");
             }
         };
@@ -37,7 +37,7 @@ class PolicySetTest {
     void untilFirstDenialStopsAtTheFirstRejectionAndKeepsOrder() {
         PolicySet<Integer> set = PolicySet.of(List.of(positive(), even()));
 
-        PolicyEvaluation evaluation = set.evaluateUntilFirstDenial(-3);
+        PolicyEvaluationResult evaluation = set.evaluateRulesUntilFirstViolation(-3);
 
         assertThat(evaluation.allowed()).isFalse();
         assertThat(evaluation.verdicts()).extracting(PolicyVerdict::policy).containsExactly("positive");
@@ -48,7 +48,7 @@ class PolicySetTest {
     void evaluateAllCollectsEveryDenial() {
         PolicySet<Integer> set = PolicySet.of(List.of(positive(), even()));
 
-        PolicyEvaluation evaluation = set.evaluateAll(-3);
+        PolicyEvaluationResult evaluation = set.evaluateAllRules(-3);
 
         assertThat(evaluation.verdicts()).hasSize(2);
         assertThat(evaluation.denials()).extracting(PolicyVerdict::code).containsExactly("NOT_POSITIVE", "NOT_EVEN");
@@ -56,7 +56,7 @@ class PolicySetTest {
 
     @Test
     void anAllowedValuePassesEveryPolicy() {
-        PolicyEvaluation evaluation = PolicySet.of(List.of(positive(), even())).evaluateUntilFirstDenial(4);
+        PolicyEvaluationResult evaluation = PolicySet.of(List.of(positive(), even())).evaluateRulesUntilFirstViolation(4);
 
         assertThat(evaluation.allowed()).isTrue();
         assertThat(evaluation.firstDenial()).isEmpty();
@@ -65,7 +65,7 @@ class PolicySetTest {
 
     @Test
     void anEmptySetAllowsEverything() {
-        assertThat(PolicySet.<Integer>of(List.of()).evaluateAll(1).allowed()).isTrue();
+        assertThat(PolicySet.<Integer>of(List.of()).evaluateAllRules(1).allowed()).isTrue();
     }
 
     @Test
@@ -75,11 +75,11 @@ class PolicySetTest {
 
     @Test
     void combinatorsAllOfAnyOfAndNot() {
-        assertThat(Policies.allOf("both", positive(), even()).evaluate(3).code()).isEqualTo("NOT_EVEN");
-        assertThat(Policies.allOf("both", positive(), even()).evaluate(4).allowed()).isTrue();
-        assertThat(Policies.anyOf("either", positive(), even()).evaluate(-2).allowed()).isTrue();
-        assertThat(Policies.anyOf("either", positive(), even()).evaluate(-3).code()).isEqualTo("NOT_EVEN");
-        assertThat(Policies.not("notEven", "IS_EVEN", "es par", even()).evaluate(2).code()).isEqualTo("IS_EVEN");
-        assertThat(Policies.not("notEven", "IS_EVEN", "es par", even()).evaluate(3).allowed()).isTrue();
+        assertThat(Policies.allOf("both", positive(), even()).evaluateRule(3).code()).isEqualTo("NOT_EVEN");
+        assertThat(Policies.allOf("both", positive(), even()).evaluateRule(4).allowed()).isTrue();
+        assertThat(Policies.anyOf("either", positive(), even()).evaluateRule(-2).allowed()).isTrue();
+        assertThat(Policies.anyOf("either", positive(), even()).evaluateRule(-3).code()).isEqualTo("NOT_EVEN");
+        assertThat(Policies.not("notEven", "IS_EVEN", "es par", even()).evaluateRule(2).code()).isEqualTo("IS_EVEN");
+        assertThat(Policies.not("notEven", "IS_EVEN", "es par", even()).evaluateRule(3).allowed()).isTrue();
     }
 }

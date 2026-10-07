@@ -11,12 +11,12 @@ class PoliciesAndEvaluationDescriptionTest {
     private static Policy<Integer> positive() {
         return new Policy<>() {
             @Override
-            public String name() {
+            public String ruleName() {
                 return "positive";
             }
 
             @Override
-            public PolicyVerdict evaluate(Integer context) {
+            public PolicyVerdict evaluateRule(Integer context) {
                 return context > 0 ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "NOT_POSITIVE", "no es positivo");
             }
         };
@@ -31,12 +31,12 @@ class PoliciesAndEvaluationDescriptionTest {
 
     @Test
     void describeDenialsListsTheCodesOfTheDeniedVerdictsOnly() {
-        PolicyEvaluation evaluation = new PolicyEvaluation(List.of(
+        PolicyEvaluationResult evaluation = new PolicyEvaluationResult(List.of(
                 PolicyVerdict.allow("a"),
                 PolicyVerdict.deny("b", "CODE_B", "motivo b"),
                 PolicyVerdict.deny("c", "CODE_C", "motivo c")));
 
         assertThat(evaluation.describeDenials()).isEqualTo("[CODE_B, CODE_C]");
-        assertThat(new PolicyEvaluation(List.of(PolicyVerdict.allow("a"))).describeDenials()).isEqualTo("[]");
+        assertThat(new PolicyEvaluationResult(List.of(PolicyVerdict.allow("a"))).describeDenials()).isEqualTo("[]");
     }
 }

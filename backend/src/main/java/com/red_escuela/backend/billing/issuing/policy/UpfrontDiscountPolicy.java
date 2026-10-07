@@ -8,11 +8,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "UPFRONT_DISCOUNT_NOT_APPLICABLE", decisions = {"D-044"})
 public final class UpfrontDiscountPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "UpfrontDiscountPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         boolean applies = ctx.request().reason() == IssueReason.UPFRONT && ctx.upfrontDiscount() != null;
         return applies ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "UPFRONT_DISCOUNT_NOT_APPLICABLE", "No corresponde descuento por pago anual");
     }

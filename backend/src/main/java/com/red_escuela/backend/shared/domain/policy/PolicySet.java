@@ -35,19 +35,19 @@ public final class PolicySet<C> {
         return ordered;
     }
 
-    public PolicyEvaluation evaluateUntilFirstDenial(C context) {
+    public PolicyEvaluationResult evaluateRulesUntilFirstViolation(C context) {
         List<PolicyVerdict> verdicts = new ArrayList<>();
         for (Policy<C> policy : ordered) {
-            PolicyVerdict verdict = policy.evaluate(context);
+            PolicyVerdict verdict = policy.evaluateRule(context);
             verdicts.add(verdict);
             if (!verdict.allowed()) {
                 break;
             }
         }
-        return new PolicyEvaluation(verdicts);
+        return new PolicyEvaluationResult(verdicts);
     }
 
-    public PolicyEvaluation evaluateAll(C context) {
-        return new PolicyEvaluation(ordered.stream().map(policy -> policy.evaluate(context)).toList());
+    public PolicyEvaluationResult evaluateAllRules(C context) {
+        return new PolicyEvaluationResult(ordered.stream().map(policy -> policy.evaluateRule(context)).toList());
     }
 }

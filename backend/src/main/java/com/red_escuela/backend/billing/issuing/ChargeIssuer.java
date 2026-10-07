@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.shared.domain.policy.PolicyEvaluation;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public class ChargeIssuer {
         ChargeRequest locked = lockTarget(request);
         LocalDate today = LocalDate.now(clock);
         IssuanceContext context = contextLoader.load(locked, today);
-        PolicyEvaluation evaluation = issuancePolicies.evaluateUntilFirstDenial(context);
+        PolicyEvaluationResult evaluation = issuancePolicies.evaluateRulesUntilFirstViolation(context);
         if (!evaluation.allowed()) {
             if (context.alreadyIssued() && evaluation.firstDenial().map(v -> "ALREADY_ISSUED".equals(v.code())).orElse(false)) {
                 log.info("Cargo ya emitido: factura={}, tipo={}, periodo={}, motivo={}", context.existingInvoiceId(), request.feeType(), request.period(), request.reason());

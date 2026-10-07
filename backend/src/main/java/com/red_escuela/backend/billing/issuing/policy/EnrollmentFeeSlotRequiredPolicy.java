@@ -9,11 +9,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "ENROLLMENT_FEE_SLOT_REQUIRED", decisions = {"D-002", "D-009"})
 public final class EnrollmentFeeSlotRequiredPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "EnrollmentFeeSlotRequiredPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         boolean programFee = ctx.request().feeType() == FeeType.ENROLLMENT_FEE
                 && (ctx.request().target() instanceof ChargeTarget.ProgramStudent || ctx.request().target() instanceof ChargeTarget.ProgramApplicant);
         if (programFee && (ctx.request().templateId() == null || ctx.request().slot() == null)) {

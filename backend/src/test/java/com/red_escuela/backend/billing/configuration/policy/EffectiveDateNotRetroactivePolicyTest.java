@@ -22,7 +22,7 @@ class EffectiveDateNotRetroactivePolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(values(5, 30, 2, TODAY.minusDays(1)));
+        PolicyVerdict denial = policy.evaluateRule(values(5, 30, 2, TODAY.minusDays(1)));
         assertThat(denial.allowed()).isFalse();
         assertThat(EffectiveDateNotRetroactivePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("RETROACTIVE_EFFECTIVE_DATE");
@@ -31,7 +31,7 @@ class EffectiveDateNotRetroactivePolicyTest {
 
     @Test
     void allowsTodayAndFuture() {
-        assertThat(policy.evaluate(values(5, 30, 2, TODAY)).allowed()).isTrue();
-        assertThat(policy.evaluate(values(5, 30, 2, TODAY.plusDays(1))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(5, 30, 2, TODAY)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(5, 30, 2, TODAY.plusDays(1))).allowed()).isTrue();
     }
 }

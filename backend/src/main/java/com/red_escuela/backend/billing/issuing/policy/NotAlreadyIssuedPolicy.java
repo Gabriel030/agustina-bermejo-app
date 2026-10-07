@@ -7,11 +7,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "ALREADY_ISSUED", decisions = {"D-009"})
 public final class NotAlreadyIssuedPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "NotAlreadyIssuedPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         return !ctx.alreadyIssued() ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ALREADY_ISSUED", "El cargo ya fue emitido");
     }
 }

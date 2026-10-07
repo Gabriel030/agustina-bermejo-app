@@ -7,11 +7,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "ENROLLMENT_FEE_SLOT_NOT_CONFIGURED", decisions = {"D-009", "D-036"})
 public final class EnrollmentFeeSlotWithinTemplateCountPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "EnrollmentFeeSlotWithinTemplateCountPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         Integer configuredCount = ctx.templateEnrollmentFeeCount();
         Integer slot = ctx.request().slot();
         boolean outsideConfiguration = configuredCount != null && slot != null && slot > configuredCount;

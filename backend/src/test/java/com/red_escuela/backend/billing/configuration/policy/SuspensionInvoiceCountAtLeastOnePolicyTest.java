@@ -22,7 +22,7 @@ class SuspensionInvoiceCountAtLeastOnePolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(values(5, 30, 0, TODAY));
+        PolicyVerdict denial = policy.evaluateRule(values(5, 30, 0, TODAY));
         assertThat(denial.allowed()).isFalse();
         assertThat(SuspensionInvoiceCountAtLeastOnePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("SUSPENSION_INVOICE_COUNT_BELOW_ONE");
@@ -31,6 +31,6 @@ class SuspensionInvoiceCountAtLeastOnePolicyTest {
 
     @Test
     void allowsExactlyOne() {
-        assertThat(policy.evaluate(values(5, 30, 1, TODAY)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(5, 30, 1, TODAY)).allowed()).isTrue();
     }
 }

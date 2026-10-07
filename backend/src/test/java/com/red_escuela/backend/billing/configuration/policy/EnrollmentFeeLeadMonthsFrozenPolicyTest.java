@@ -20,7 +20,7 @@ class EnrollmentFeeLeadMonthsFrozenPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(update(withLead(1), withLead(2), Set.of(1), Set.of()));
+        PolicyVerdict denial = policy.evaluateRule(update(withLead(1), withLead(2), Set.of(1), Set.of()));
 
         assertThat(denial.allowed()).isFalse();
         assertThat(denial.code()).isEqualTo("ENROLLMENT_FEE_LEAD_MONTHS_FROZEN");
@@ -30,7 +30,7 @@ class EnrollmentFeeLeadMonthsFrozenPolicyTest {
 
     @Test
     void allowsTheSameLeadWithIssuedFeesAndAnyLeadWithNoneIssued() {
-        assertThat(policy.evaluate(update(withLead(1), withLead(1), Set.of(1), Set.of())).allowed()).isTrue();
-        assertThat(policy.evaluate(update(withLead(1), withLead(3), Set.of(), Set.of())).allowed()).isTrue();
+        assertThat(policy.evaluateRule(update(withLead(1), withLead(1), Set.of(1), Set.of())).allowed()).isTrue();
+        assertThat(policy.evaluateRule(update(withLead(1), withLead(3), Set.of(), Set.of())).allowed()).isTrue();
     }
 }

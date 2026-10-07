@@ -17,7 +17,7 @@ class IssuedInstallmentsWithinTermRangePolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 11))));
+        PolicyVerdict denial = policy.evaluateRule(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 11))));
         assertThat(denial.allowed()).isFalse();
         assertThat(IssuedInstallmentsWithinTermRangePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE");
@@ -26,16 +26,16 @@ class IssuedInstallmentsWithinTermRangePolicyTest {
 
     @Test
     void allowsIssuedPeriodsOnTheExactBounds() {
-        assertThat(policy.evaluate(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 3), YearMonth.of(2027, 10)))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 3), YearMonth.of(2027, 10)))).allowed()).isTrue();
     }
 
     @Test
     void deniesAnIssuedPeriodBeforeTheNewStart() {
-        assertThat(policy.evaluate(termRange(YearMonth.of(2027, 4), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 3)))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(termRange(YearMonth.of(2027, 4), YearMonth.of(2027, 10), Set.of(YearMonth.of(2027, 3)))).allowed()).isFalse();
     }
 
     @Test
     void allowsWhenNothingIsIssued() {
-        assertThat(policy.evaluate(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 4), Set.of())).allowed()).isTrue();
+        assertThat(policy.evaluateRule(termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 4), Set.of())).allowed()).isTrue();
     }
 }

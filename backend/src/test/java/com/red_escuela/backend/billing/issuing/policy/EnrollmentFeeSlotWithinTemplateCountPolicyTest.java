@@ -30,7 +30,7 @@ class EnrollmentFeeSlotWithinTemplateCountPolicyTest {
 
     @Test
     void deniesASlotBeyondTheCountConfiguredInTheTemplate() {
-        var denial = policy.evaluate(context(2, 1));
+        var denial = policy.evaluateRule(context(2, 1));
 
         assertThat(denial.allowed()).isFalse();
         assertThat(policy.getClass().getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
@@ -38,9 +38,9 @@ class EnrollmentFeeSlotWithinTemplateCountPolicyTest {
 
     @Test
     void allowsASlotEqualToTheConfiguredCountAndWhenNothingIsKnown() {
-        assertThat(policy.evaluate(context(2, 2)).allowed()).isTrue();
-        assertThat(policy.evaluate(context(1, 2)).allowed()).isTrue();
-        assertThat(policy.evaluate(context(2, null)).allowed()).isTrue();
-        assertThat(policy.evaluate(context(null, 1)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(context(2, 2)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(context(1, 2)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(context(2, null)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(context(null, 1)).allowed()).isTrue();
     }
 }

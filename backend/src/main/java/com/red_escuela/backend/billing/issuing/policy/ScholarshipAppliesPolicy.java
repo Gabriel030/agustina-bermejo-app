@@ -11,11 +11,11 @@ public final class ScholarshipAppliesPolicy implements Policy<ScholarshipApplies
     public record Candidate(Scholarship scholarship, FeeType feeType, boolean programCharge) {
     }
 
-    public String name() {
+    public String ruleName() {
         return "ScholarshipAppliesPolicy";
     }
 
-    public PolicyVerdict evaluate(Candidate candidate) {
+    public PolicyVerdict evaluateRule(Candidate candidate) {
         boolean covered = !candidate.programCharge() || candidate.scholarship().getAppliesTo().covers(candidate.feeType());
         return covered ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "SCHOLARSHIP_NOT_COVERING_FEE_TYPE", "La beca no cubre este tipo de cargo");
     }

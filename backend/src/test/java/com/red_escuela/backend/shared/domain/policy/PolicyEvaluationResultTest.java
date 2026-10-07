@@ -14,7 +14,7 @@ class PolicyEvaluationTest {
     @Test
     @Tag("D-096")
     void throwIfDeniedCarriesEveryViolationInOrder() {
-        PolicyEvaluation evaluation = new PolicyEvaluation(List.of(
+        PolicyEvaluationResult evaluation = new PolicyEvaluationResult(List.of(
                 PolicyVerdict.deny("A", "FIRST", "primera"),
                 PolicyVerdict.allow("B"),
                 PolicyVerdict.deny("C", "SECOND", "segunda")));
@@ -26,7 +26,7 @@ class PolicyEvaluationTest {
 
     @Test
     void throwIfDeniedDoesNothingWhenEverythingIsAllowed() {
-        PolicyEvaluation evaluation = new PolicyEvaluation(List.of(PolicyVerdict.allow("A")));
+        PolicyEvaluationResult evaluation = new PolicyEvaluationResult(List.of(PolicyVerdict.allow("A")));
 
         assertThatCode(() -> evaluation.throwIfDenied(CarryingException::new)).doesNotThrowAnyException();
         assertThat(evaluation.violations()).isEmpty();

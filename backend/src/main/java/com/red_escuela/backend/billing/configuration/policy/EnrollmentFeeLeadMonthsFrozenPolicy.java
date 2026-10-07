@@ -6,11 +6,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "ENROLLMENT_FEE_LEAD_MONTHS_FROZEN", decisions = {"D-201"})
 public final class EnrollmentFeeLeadMonthsFrozenPolicy implements Policy<YearBillingConfigurationChange> {
-    public String name() {
+    public String ruleName() {
         return "EnrollmentFeeLeadMonthsFrozenPolicy";
     }
 
-    public PolicyVerdict evaluate(YearBillingConfigurationChange change) {
+    public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
         return (change.issuedEnrollmentFeeSlots().isEmpty() || change.current().enrollmentFeeLeadMonths() == change.proposed().enrollmentFeeLeadMonths()) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENROLLMENT_FEE_LEAD_MONTHS_FROZEN", "Ya se emitió una matrícula de este año: no se puede cambiar la anticipación de la matrícula.");
     }
 }

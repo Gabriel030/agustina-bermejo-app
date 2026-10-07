@@ -8,12 +8,12 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 public class PolicyWithEmptyRuleFixture implements Policy<String> {
 
     @Override
-    public String name() {
+    public String ruleName() {
         return "PolicyWithEmptyRuleFixture";
     }
 
     @Override
-    public PolicyVerdict evaluate(String context) {
+    public PolicyVerdict evaluateRule(String context) {
         return PolicyVerdict.allow(name());
     }
 }

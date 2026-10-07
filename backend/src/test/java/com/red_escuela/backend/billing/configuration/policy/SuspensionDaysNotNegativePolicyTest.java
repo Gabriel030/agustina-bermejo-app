@@ -22,7 +22,7 @@ class SuspensionDaysNotNegativePolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(values(-1));
+        PolicyVerdict denial = policy.evaluateRule(values(-1));
 
         assertThat(denial.allowed()).isFalse();
         assertThat(denial.code()).isEqualTo("NEGATIVE_SUSPENSION_DAYS");
@@ -32,7 +32,7 @@ class SuspensionDaysNotNegativePolicyTest {
 
     @Test
     void allowsZeroAndPositive() {
-        assertThat(policy.evaluate(values(0)).allowed()).isTrue();
-        assertThat(policy.evaluate(values(30)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(0)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(values(30)).allowed()).isTrue();
     }
 }

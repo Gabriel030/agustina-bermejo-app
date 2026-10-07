@@ -17,24 +17,24 @@ class PolicyCatalogRendererTest {
     @PolicyRule(violationCodes = {"CODE_A", "CODE_B"}, decisions = {"D-001", "D-002"})
     static class DeclaredPolicy implements Policy<String> {
         @Override
-        public String name() {
+        public String ruleName() {
             return "declared";
         }
 
         @Override
-        public PolicyVerdict evaluate(String context) {
+        public PolicyVerdict evaluateRule(String context) {
             return PolicyVerdict.allow(name());
         }
     }
 
     static class UndeclaredPolicy implements Policy<String> {
         @Override
-        public String name() {
+        public String ruleName() {
             return "undeclared";
         }
 
         @Override
-        public PolicyVerdict evaluate(String context) {
+        public PolicyVerdict evaluateRule(String context) {
             return PolicyVerdict.allow(name());
         }
     }

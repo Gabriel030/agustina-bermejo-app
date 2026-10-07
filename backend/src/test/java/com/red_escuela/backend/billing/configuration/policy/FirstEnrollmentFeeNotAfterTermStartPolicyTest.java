@@ -17,7 +17,7 @@ class FirstEnrollmentFeeNotAfterTermStartPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(creation(snapshot(1, 4, null, 10)));
+        PolicyVerdict denial = policy.evaluateRule(creation(snapshot(1, 4, null, 10)));
         assertThat(denial.allowed()).isFalse();
         assertThat(FirstEnrollmentFeeNotAfterTermStartPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("FIRST_ENROLLMENT_FEE_AFTER_TERM_START");
@@ -26,18 +26,18 @@ class FirstEnrollmentFeeNotAfterTermStartPolicyTest {
 
     @Test
     void allowsFirstFeeInTheSameMonthAsTermStartOrBefore() {
-        assertThat(policy.evaluate(creation(snapshot(1, 3, null, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 3, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
     }
 
     @Test
     void anAutumnMonthBelongsToThePreviousYearWhenSixOrMoreMonthsBeforeTermStart() {
-        assertThat(policy.evaluate(creation(snapshot(1, 9, null, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(1, 8, null, 10))).allowed()).isFalse();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 9, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 8, null, 10))).allowed()).isFalse();
     }
 
     @Test
     void skipsWhenTheTermHasNoDates() {
-        assertThat(policy.evaluate(withoutDates(snapshot(1, 4, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(withoutDates(snapshot(1, 4, null, 10))).allowed()).isTrue();
     }
 }

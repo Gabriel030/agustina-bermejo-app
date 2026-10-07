@@ -38,12 +38,12 @@ public class ChargeAdjustmentApplier {
         if (request.selection() != null) {
             applyPromotion(invoice, request.selection());
         }
-        if (entryFeeDiscountPolicy.evaluate(context).allowed()) {
+        if (entryFeeDiscountPolicy.evaluateRule(context).allowed()) {
             var discount = context.entryFeeDiscount();
             invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(discount),
                     "Matrícula de ingreso con descuento de " + discount.points().stripTrailingZeros().toPlainString() + "%", null);
         }
-        if (upfrontDiscountPolicy.evaluate(context).allowed()) {
+        if (upfrontDiscountPolicy.evaluateRule(context).allowed()) {
             invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, context.upfrontDiscount(), "Descuento por pago anual", null);
         }
         invoiceRepository.save(invoice);
@@ -57,7 +57,7 @@ public class ChargeAdjustmentApplier {
         };
         scholarship.ifPresent(s -> {
             boolean programCharge = target instanceof ChargeTarget.ProgramStudent;
-            if (!scholarshipAppliesPolicy.evaluate(new ScholarshipAppliesPolicy.Candidate(s, invoice.getFeeType(), programCharge)).allowed()) {
+            if (!scholarshipAppliesPolicy.evaluateRule(new ScholarshipAppliesPolicy.Candidate(s, invoice.getFeeType(), programCharge)).allowed()) {
                 return;
             }
             s.consumeOne(invoice);
@@ -75,7 +75,7 @@ public class ChargeAdjustmentApplier {
                 }
                 long alreadyApplied = invoiceRepository.countByPaymentPlanSelectionAndFeeTypeAndPromotionBenefit(
                         selection.getId(), invoice.getFeeType(), benefit.getId());
-                if (promotionBenefitCapPolicy.evaluate(new PromotionBenefitCapPolicy.Usage(benefit.getInvoiceScopeCount(), alreadyApplied)).allowed()) {
+                if (promotionBenefitCapPolicy.evaluateRule(new PromotionBenefitCapPolicy.Usage(benefit.getInvoiceScopeCount(), alreadyApplied)).allowed()) {
                     invoice.applyAdjustment(InvoiceAdjustmentType.PROMOTION, benefit.getValue(), "Promoción: " + promotion.getDescription(), null, benefit);
                 }
             }

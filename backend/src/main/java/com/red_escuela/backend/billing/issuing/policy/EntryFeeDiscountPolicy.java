@@ -8,11 +8,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "ENTRY_DISCOUNT_NOT_APPLICABLE", decisions = {"D-018"})
 public final class EntryFeeDiscountPolicy implements Policy<IssuanceContext> {
-    public String name() {
+    public String ruleName() {
         return "EntryFeeDiscountPolicy";
     }
 
-    public PolicyVerdict evaluate(IssuanceContext ctx) {
+    public PolicyVerdict evaluateRule(IssuanceContext ctx) {
         boolean applies = ctx.request().entry() && ctx.request().reason() != IssueReason.ADMISSION
                 && ctx.entryFeeDiscount() != null && ctx.entryFeeDiscount().fraction().signum() > 0;
         return applies ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "ENTRY_DISCOUNT_NOT_APPLICABLE", "No corresponde descuento de ingreso");

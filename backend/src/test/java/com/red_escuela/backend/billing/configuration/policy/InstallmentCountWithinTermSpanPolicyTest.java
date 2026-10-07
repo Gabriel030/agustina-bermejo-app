@@ -17,7 +17,7 @@ class InstallmentCountWithinTermSpanPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(creation(snapshot(1, 2, null, 11)));
+        PolicyVerdict denial = policy.evaluateRule(creation(snapshot(1, 2, null, 11)));
         assertThat(denial.allowed()).isFalse();
         assertThat(InstallmentCountWithinTermSpanPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN");
@@ -26,13 +26,13 @@ class InstallmentCountWithinTermSpanPolicyTest {
 
     @Test
     void allowsCountEqualToTheSpanAndBelow() {
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, 1))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, 1))).allowed()).isTrue();
     }
 
     @Test
     void skipsWhenTheTermHasNoDatesOrTheCountIsMissing() {
-        assertThat(policy.evaluate(withoutDates(snapshot(1, 2, null, 50))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, null))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(withoutDates(snapshot(1, 2, null, 50))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, null))).allowed()).isTrue();
     }
 }
