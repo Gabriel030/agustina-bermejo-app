@@ -207,6 +207,21 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-178")
+    void domainEventsCarryNoEntities() {
+        ArchitectureRules.domainEventsCarryNoEntities(Entity.class).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-178")
+    void domainEventRuleDetectsEntityFields() {
+        assertThatThrownBy(() -> ArchitectureRules.domainEventsCarryNoEntities(FixtureEntity.class).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("EntityCarryingEventFixture")
+                .hasMessageNotContaining("FlatEventFixture");
+    }
+
+    @Test
     @Tag("D-051")
     void academicStructureDoesNotDependOnBilling() {
         FreezingArchRule.freeze(ArchitectureRules.academicStructureDoesNotDependOnBilling()).check(MAIN_CLASSES);

@@ -1,0 +1,7 @@
+package com.red_escuela.backend.billing.authorization.usecase;
+
+import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
+
+public interface WithdrawAuthorizationRequestUseCase {
+    AuthorizationRequest withdraw(Long id);
+}

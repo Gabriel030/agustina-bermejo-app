@@ -1,6 +1,7 @@
 package com.red_escuela.backend.identity.service;
 
 import com.red_escuela.backend.identity.repository.PersonRepository;
+import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,23 +14,27 @@ public class IdentityEmailDispatcher {
 
     private final EmailService emailService;
     private final PersonRepository personRepository;
+    private final ProcessedEffectGuard effectGuard;
 
-    public IdentityEmailDispatcher(EmailService emailService, PersonRepository personRepository) {
+    public IdentityEmailDispatcher(EmailService emailService, PersonRepository personRepository, ProcessedEffectGuard effectGuard) {
         this.emailService = emailService;
         this.personRepository = personRepository;
+        this.effectGuard = effectGuard;
     }
 
     @ApplicationModuleListener
     public void onPasswordResetCodeIssued(PasswordResetCodeIssuedEvent event) {
-        personRepository.findById(event.personId()).ifPresentOrElse(
-                person -> emailService.sendPasswordResetCode(person, event.code()),
-                () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId()));
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onPasswordResetCodeIssued", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(
+                        person -> emailService.sendPasswordResetCode(person, event.code()),
+                        () -> log.warn("Password reset email skipped, person not found: personId={}", event.personId())));
     }
 
     @ApplicationModuleListener
     public void onEmailVerificationIssued(EmailVerificationIssuedEvent event) {
-        personRepository.findById(event.personId()).ifPresentOrElse(
-                person -> emailService.sendEmailVerification(person, event.verificationLink()),
-                () -> log.warn("Verification email skipped, person not found: personId={}", event.personId()));
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onEmailVerificationIssued", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(
+                        person -> emailService.sendEmailVerification(person, event.verificationLink()),
+                        () -> log.warn("Verification email skipped, person not found: personId={}", event.personId())));
     }
 }
