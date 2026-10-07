@@ -10,6 +10,7 @@ import jakarta.persistence.Entity;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ArchitectureTest {
@@ -293,4 +294,80 @@ class ArchitectureTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("LegacyBillingDependingFixture");
     }
+
+    private static final String ENTRY_CLASS = "com.red_escuela.backend.billing.account.domain.CurrentAccountEntry";
+    private static final String ENTRY_REPOSITORY_CLASS = "com.red_escuela.backend.billing.account.repository.CurrentAccountEntryRepository";
+    private static final String ACCOUNT_REPOSITORY_CLASS = "com.red_escuela.backend.billing.account.repository.StudentCurrentAccountRepository";
+    private static final String ACCOUNT_SERVICE_CLASS = "com.red_escuela.backend.billing.account.service.StudentCurrentAccountService";
+    private static final String INVOICE_REPOSITORY_CLASS = "com.red_escuela.backend.billing.invoice.repository.InvoiceRepository";
+    private static final String BILLING_OPERATION_TYPE = "com.red_escuela.backend.billing.operation.BillingOperation";
+    private static final String FIXTURE_OPERATION_TYPE = "com.red_escuela.backend.architecture.fixture.billing.ledger.FixtureOperation";
+
+    @Test
+    @Tag("D-144")
+    void currentAccountEntriesAreAppendOnly() {
+        ArchitectureRules.currentAccountEntriesAreAppendOnly(ENTRY_CLASS, ENTRY_REPOSITORY_CLASS, ACCOUNT_REPOSITORY_CLASS, "insertStudentCurrentAccountIfAbsent").check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-144")
+    void appendOnlyRuleDetectsMutationAndDeletion() {
+        assertThatThrownBy(() -> ArchitectureRules.currentAccountEntriesAreAppendOnly(
+                FIXTURE_LEDGER + ".MutableEntryFixture", FIXTURE_LEDGER + ".DeletingEntryRepositoryFixture", FIXTURE_LEDGER + ".ModifyingAccountRepositoryFixture",
+                "insertStudentCurrentAccountIfAbsent").check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("MutableEntryFixture.changeConcept")
+                .hasMessageContaining("DeletingEntryRepositoryFixture.deleteById")
+                .hasMessageContaining("ModifyingAccountRepositoryFixture.resetBalance")
+                .hasMessageNotContaining("getConcept")
+                .hasMessageNotContaining("insertStudentCurrentAccountIfAbsent");
+    }
+
+    @Test
+    @Tag("D-144")
+    void economicStateIsPersistedOnlyByOperations() {
+        ArchitectureRules.economicStateIsPersistedOnlyByOperations(INVOICE_REPOSITORY_CLASS, BILLING_OPERATION_TYPE).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-144")
+    void currentAccountIsWrittenOnlyThroughItsService() {
+        ArchitectureRules.currentAccountIsWrittenOnlyThroughItsService(ACCOUNT_SERVICE_CLASS, ACCOUNT_REPOSITORY_CLASS, ENTRY_REPOSITORY_CLASS).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-144")
+    void currentAccountServiceIsCalledOnlyByOperations() {
+        ArchitectureRules.currentAccountServiceIsCalledOnlyByOperations(ACCOUNT_SERVICE_CLASS, BILLING_OPERATION_TYPE).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-144")
+    void writeRulesDetectCallersThatAreNotOperations() {
+        assertThatThrownBy(() -> ArchitectureRules.economicStateIsPersistedOnlyByOperations(INVOICE_REPOSITORY_CLASS, FIXTURE_OPERATION_TYPE).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnauthorizedInvoiceSaverFixture")
+                .hasMessageNotContaining("AuthorizedOperationFixture");
+        assertThatThrownBy(() -> ArchitectureRules.currentAccountIsWrittenOnlyThroughItsService(ACCOUNT_SERVICE_CLASS, ACCOUNT_REPOSITORY_CLASS, ENTRY_REPOSITORY_CLASS).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnauthorizedAccountWriterFixture")
+                .hasMessageNotContaining("AuthorizedOperationFixture");
+        assertThatThrownBy(() -> ArchitectureRules.currentAccountServiceIsCalledOnlyByOperations(ACCOUNT_SERVICE_CLASS, FIXTURE_OPERATION_TYPE).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnauthorizedRecorderFixture")
+                .hasMessageNotContaining("AuthorizedOperationFixture");
+    }
+
+    @Test
+    @Tag("D-144")
+    void theBillingOperationTypeExistsOnceTheOperationPackageHasClasses() {
+        boolean operationPackageHasClasses = MAIN_CLASSES.stream().anyMatch(javaClass -> javaClass.getPackageName().equals(ArchitectureRules.ROOT + ".billing.operation"));
+        boolean typeExists = MAIN_CLASSES.contain(BILLING_OPERATION_TYPE);
+
+        assertThat(!operationPackageHasClasses || typeExists)
+                .as("rules 12a and 12c are bound to " + BILLING_OPERATION_TYPE + " by name: it must exist once billing.operation has classes")
+                .isTrue();
+    }
+
+    private static final String FIXTURE_LEDGER = ArchitectureRules.ROOT + ".architecture.fixture.billing.ledger";
 }
