@@ -184,12 +184,16 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-178")
+    @Tag("D-183")
     void asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners() {
         ArchitectureRules.asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners(ArchitectureRules.ROOT + ".enrollment", ArchitectureRules.ROOT + ".billing")
                 .check(MAIN_CLASSES);
     }
 
     @Test
+    @Tag("D-178")
+    @Tag("D-183")
     void asyncRuleDetectsEnrollmentAndNonListenerBillingClasses() {
         String fixtureRoot = ArchitectureRules.ROOT + ".architecture.fixture";
 
