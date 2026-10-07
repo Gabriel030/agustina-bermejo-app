@@ -22,7 +22,6 @@ class EventPublicationResubmissionJobTest {
     private final EventPublicationResubmissionJob job = new EventPublicationResubmissionJob(incompleteEventPublications, jdbcTemplate);
 
     @Test
-    @Tag("D-178")
     void itResubmitsOnlyPublicationsOlderThanFiveMinutes() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), any(Object[].class))).thenReturn(0L);
 
@@ -32,7 +31,6 @@ class EventPublicationResubmissionJobTest {
     }
 
     @Test
-    @Tag("D-178")
     void itChecksForPublicationsStuckForMoreThanAnHour() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), anyLong())).thenReturn(2L);
 

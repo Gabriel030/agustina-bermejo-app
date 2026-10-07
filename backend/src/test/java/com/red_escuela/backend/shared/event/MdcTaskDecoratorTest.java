@@ -19,7 +19,6 @@ class MdcTaskDecoratorTest {
     }
 
     @Test
-    @Tag("D-178")
     void itCopiesRequestIdAndUserIdToTheTaskThread() throws InterruptedException {
         MDC.put(CorrelationIds.REQUEST_ID_KEY, "request-1");
         MDC.put(CorrelationIds.USER_ID_KEY, "7");
@@ -43,7 +42,6 @@ class MdcTaskDecoratorTest {
     }
 
     @Test
-    @Tag("D-178")
     void itRestoresThePreviousContextOfTheExecutingThread() {
         MDC.put(CorrelationIds.REQUEST_ID_KEY, "captured");
         Runnable decorated = decorator.decorate(() -> {
@@ -56,7 +54,6 @@ class MdcTaskDecoratorTest {
     }
 
     @Test
-    @Tag("D-178")
     void itLeavesAnEmptyContextWhenTheExecutingThreadHadNone() {
         MDC.put(CorrelationIds.REQUEST_ID_KEY, "captured");
         Runnable decorated = decorator.decorate(() -> {
@@ -69,7 +66,6 @@ class MdcTaskDecoratorTest {
     }
 
     @Test
-    @Tag("D-178")
     void correlationIdFallsBackToAGeneratedValueWithoutARequest() {
         assertThat(CorrelationIds.current()).isNotBlank();
 

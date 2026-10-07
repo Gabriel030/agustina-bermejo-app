@@ -134,8 +134,6 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-178")
-    @Tag("D-183")
     void aListenerFailureDoesNotRollBackTheBusinessTransactionAndTheRegistryRedeliversIt() {
         doThrow(new EmailDeliveryException("smtp down", new RuntimeException())).when(emailService).sendPasswordResetCode(any(), anyString());
 
@@ -154,8 +152,6 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-178")
-    @Tag("D-183")
     void resubmittingACompletedPublicationDoesNotDeliverTheEventAgain() {
         transactionTemplate.executeWithoutResult(status -> requestPasswordResetUseCase.requestReset(email));
         verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
@@ -169,7 +165,6 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-178")
     void anAsyncListenerKeepsTheRequestContextAndAddsTheEventCorrelationId() {
         MDC.put(CorrelationIds.REQUEST_ID_KEY, "request-7");
         MDC.put(CorrelationIds.USER_ID_KEY, "42");
@@ -186,7 +181,6 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-178")
     void anEventPublishedWithoutARequestCarriesItsOwnCorrelationIdInTheListener() {
         transactionTemplate.executeWithoutResult(status ->
                 eventPublisher.publishEvent(new ProbeEvent("job-correlation", Instant.now(), "payload")));
@@ -198,7 +192,6 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-178")
     void incompletePublicationsAreExposedAsGauges() {
         jdbcTemplate.update("insert into event_publication (id, listener_id, event_type, serialized_event, publication_date) values (gen_random_uuid(), 'l', 't', '{}', now() - interval '10 minutes')");
 

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.shared.time;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -18,6 +19,10 @@ public final class ApplicationTime {
 
     public static LocalDateTime now() {
         return LocalDateTime.now(clock);
+    }
+
+    public static Instant instant() {
+        return Instant.now(clock);
     }
 
     public static LocalDate today() {

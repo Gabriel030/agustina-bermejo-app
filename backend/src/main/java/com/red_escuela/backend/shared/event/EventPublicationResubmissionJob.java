@@ -24,7 +24,7 @@ public class EventPublicationResubmissionJob {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    @Scheduled(fixedDelayString = "PT5M", initialDelayString = "PT5M")
+    @Scheduled(fixedDelayString = "PT5M", initialDelayString = "PT5M", zone = "${app.timezone}")
     @SchedulerLock(name = "EventPublicationResubmissionJob", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void resubmitIncompletePublications() {
         incompleteEventPublications.resubmitIncompletePublicationsOlderThan(MINIMUM_AGE);

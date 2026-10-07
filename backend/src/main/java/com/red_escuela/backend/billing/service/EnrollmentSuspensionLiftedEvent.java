@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.shared.event.CorrelationIds;
 import com.red_escuela.backend.shared.event.DomainEvent;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
 import java.time.Instant;
 import java.time.YearMonth;
@@ -16,7 +17,7 @@ public record EnrollmentSuspensionLiftedEvent(String correlationId, Instant occu
 
     public static EnrollmentSuspensionLiftedEvent liftedFor(EnrollmentType enrollmentType, Long enrollmentId, YearMonth suspendedSince,
                                                             YearMonth suspendedUntil) {
-        return new EnrollmentSuspensionLiftedEvent(CorrelationIds.current(), Instant.now(), enrollmentType, enrollmentId, suspendedSince, suspendedUntil);
+        return new EnrollmentSuspensionLiftedEvent(CorrelationIds.current(), ApplicationTime.instant(), enrollmentType, enrollmentId, suspendedSince, suspendedUntil);
     }
 
     public boolean concernsProgramEnrollment() {
