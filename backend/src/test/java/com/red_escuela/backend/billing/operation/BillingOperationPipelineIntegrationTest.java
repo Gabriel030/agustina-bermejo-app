@@ -52,7 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 
@@ -127,7 +126,6 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         SecurityContextHolder.clearContext();
         AUTHORIZATION_DEMAND.set(null);
         reset(inAppChannel);
-        doCallRealMethod().when(inAppChannel).send(any(), any());
     }
 
     private Person persistPerson(String prefix, String roleName) {
@@ -216,7 +214,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         assertThat(policiesCreatedBy(administrative)).isEqualTo(1);
         assertThat(notificationsFor(director, "LATE_PAYMENT_SETTINGS_CREATED")).isZero();
 
-        doCallRealMethod().when(inAppChannel).send(any(), any());
+        reset(inAppChannel);
         incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
 
         await().until(() -> allPublications() == 0);
