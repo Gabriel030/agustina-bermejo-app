@@ -277,11 +277,13 @@
 								<param>com.red_escuela.backend.shared.domain.policy.*</param>
 								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
 								<param>com.red_escuela.backend.billing.operation.*</param>
+								<param>com.red_escuela.backend.billing.authorization.domain.*</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
 								<param>com.red_escuela.backend.billing.configuration.policy.*</param>
 								<param>com.red_escuela.backend.billing.operation.*</param>
+								<param>com.red_escuela.backend.billing.authorization.domain.*</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>

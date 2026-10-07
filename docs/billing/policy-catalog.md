@@ -41,3 +41,10 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | EnrollmentFeeMonthFrozenPolicy | ENROLLMENT_FEE_MONTH_FROZEN | D-036 |
 | 3 | EnrollmentFeeLeadMonthsFrozenPolicy | ENROLLMENT_FEE_LEAD_MONTHS_FROZEN | D-201 |
 | 4 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
+
+## Operación CREATE_LATE_PAYMENT_SETTINGS
+
+- Validaciones (momentos): LATE_PAYMENT_SETTINGS
+- Pre-procesamiento (en orden): —
+- Eventos que publica: LatePaymentSettingsCreatedEvent
+- Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated

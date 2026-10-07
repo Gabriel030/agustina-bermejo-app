@@ -1,6 +1,17 @@
 package com.red_escuela.backend.billing.catalog;
 
+import com.red_escuela.backend.billing.operation.BillingOperation;
+import com.red_escuela.backend.billing.operation.BillingOperations;
+import com.red_escuela.backend.billing.operation.OperationHandlerRegistry;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.shared.event.DomainEvent;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import java.lang.reflect.Method;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,13 +38,51 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
     @Autowired
     private ApplicationContext context;
 
+    @Autowired
+    private BillingOperations billingOperations;
+    @Autowired
+    private OperationHandlerRegistry handlerRegistry;
+
+    private List<OperationCatalogEntry> declaredOperations() {
+        List<OperationCatalogEntry> entries = new ArrayList<>();
+        for (BillingOperation<?, ?> operation : billingOperations.listAll()) {
+            List<String> events = operation.publishedEventTypes().stream().map(Class::getSimpleName).toList();
+            Map<String, List<String>> listeners = new LinkedHashMap<>();
+            for (Class<? extends DomainEvent> eventType : operation.publishedEventTypes()) {
+                listeners.put(eventType.getSimpleName(), listenersOf(eventType));
+            }
+            entries.add(new OperationCatalogEntry(operation.type().name(), operation.validationMoments(),
+                    handlerRegistry.listPreHandlersFor(operation.type()).stream().map(handler -> AopUtils.getTargetClass(handler).getSimpleName()).toList(),
+                    events, listeners));
+        }
+        return entries;
+    }
+
+    private List<String> listenersOf(Class<? extends DomainEvent> eventType) {
+        List<String> listeners = new ArrayList<>();
+        for (String name : context.getBeanDefinitionNames()) {
+            Class<?> beanType = context.getType(name);
+            if (beanType == null || !beanType.getPackageName().startsWith("com.red_escuela")) {
+                continue;
+            }
+            for (Method method : AopUtils.getTargetClass(context.getBean(name)).getDeclaredMethods()) {
+                if (AnnotatedElementUtils.hasAnnotation(method, ApplicationModuleListener.class)
+                        && method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(eventType)) {
+                    listeners.add(method.getDeclaringClass().getSimpleName() + "#" + method.getName());
+                }
+            }
+        }
+        listeners.sort(Comparator.naturalOrder());
+        return listeners;
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private String renderDeclaredCatalog() {
         List<PolicySet<?>> sets = new ArrayList<>();
         for (PolicySet set : context.getBeansOfType(PolicySet.class).values()) {
             sets.add(set);
         }
-        return PolicyCatalogRenderer.render(sets);
+        return PolicyCatalogRenderer.render(sets, declaredOperations());
     }
 
     @Test
@@ -47,6 +96,18 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
         assertThat(Files.readString(CATALOG))
                 .as("docs/billing/policy-catalog.md is out of date: run ./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true and commit")
                 .isEqualTo(declared);
+    }
+
+    @Test
+    @Tag("D-178")
+    void everyOperationListsItsValidationsHandlersEventsAndPostListeners() {
+        String declared = renderDeclaredCatalog();
+
+        assertThat(declared).contains("## Operación CREATE_LATE_PAYMENT_SETTINGS")
+                .contains("- Validaciones (momentos): LATE_PAYMENT_SETTINGS")
+                .contains("- Pre-procesamiento (en orden): —")
+                .contains("- Eventos que publica: LatePaymentSettingsCreatedEvent")
+                .contains("- Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated");
     }
 
     @Test

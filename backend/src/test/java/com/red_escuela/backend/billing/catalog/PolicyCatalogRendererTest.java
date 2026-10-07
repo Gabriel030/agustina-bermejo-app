@@ -57,4 +57,20 @@ class PolicyCatalogRendererTest {
                 .startsWith("# Catálogo de validaciones de facturación")
                 .contains("-Dpolicy-catalog.write=true");
     }
+
+    @Test
+    void rendersEachOperationWithItsHandlersEventsAndListeners() {
+        OperationCatalogEntry withHandlers = new OperationCatalogEntry("B_OPERATION", List.of("MOMENT_X", "MOMENT_Y"), List.of("FirstHandler", "SecondHandler"),
+                List.of("DoneEvent"), java.util.Map.of("DoneEvent", List.of("ListenerA#on", "ListenerB#on")));
+        OperationCatalogEntry bare = new OperationCatalogEntry("A_OPERATION", List.of(), List.of(), List.of("OtherEvent"), java.util.Map.of());
+
+        String rendered = PolicyCatalogRenderer.render(List.of(), List.of(withHandlers, bare));
+
+        assertThat(rendered.indexOf("## Operación A_OPERATION")).isPositive().isLessThan(rendered.indexOf("## Operación B_OPERATION"));
+        assertThat(rendered).contains("- Validaciones (momentos): MOMENT_X, MOMENT_Y")
+                .contains("- Pre-procesamiento (en orden): FirstHandler, SecondHandler")
+                .contains("- Post-procesamiento de DoneEvent: ListenerA#on, ListenerB#on")
+                .contains("- Validaciones (momentos): —")
+                .contains("- Post-procesamiento de OtherEvent: —");
+    }
 }
