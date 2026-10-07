@@ -20,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -46,6 +47,11 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
     @MockBean
     private EmailService emailService;
 
+    private long incompletePublicationsOf(UUID eventId) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from event_publication where completion_date is null and serialized_event like ?", Long.class, "%" + eventId + "%");
+    }
+
     private Long persistPerson() {
         String username = "dedupe-" + System.nanoTime();
         return transactionTemplate.execute(status -> {
@@ -71,8 +77,7 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
         verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), eq("123456"));
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
-        await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() ->
-                jdbcTemplate.queryForObject("select count(*) from event_publication where completion_date is null", Long.class) == 0);
+        await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() -> incompletePublicationsOf(event.eventId()) == 0);
         verify(emailService, times(1)).sendPasswordResetCode(any(Person.class), eq("123456"));
     }
 
@@ -85,8 +90,7 @@ class IdentityEmailDispatcherDedupeIntegrationTest extends AbstractIntegrationTe
         verify(emailService, timeout(5000)).sendEmailVerification(any(Person.class), eq("https://example.test/verify"));
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
 
-        await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() ->
-                jdbcTemplate.queryForObject("select count(*) from event_publication where completion_date is null", Long.class) == 0);
+        await().during(Duration.ofSeconds(1)).atMost(Duration.ofSeconds(10)).until(() -> incompletePublicationsOf(event.eventId()) == 0);
         verify(emailService, times(1)).sendEmailVerification(any(Person.class), eq("https://example.test/verify"));
     }
 }
