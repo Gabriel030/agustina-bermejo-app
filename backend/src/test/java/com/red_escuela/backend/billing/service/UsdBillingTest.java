@@ -66,6 +66,9 @@ class UsdBillingTest extends AbstractIntegrationTest {
     private CreateMpPreferenceUseCase createMpPreferenceUseCase;
 
     @Autowired
+    private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
+
+    @Autowired
     private GetFinancialDashboardUseCase getFinancialDashboardUseCase;
 
     @Autowired
@@ -187,7 +190,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("usd.student4." + System.nanoTime());
         Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoiceStatus.PENDING);
 
-        assertThatThrownBy(() -> createMpPreferenceUseCase.create(invoice.getId(), student.getId()))
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
                 .isInstanceOf(GatewayCurrencyNotSupportedException.class);
         registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
 

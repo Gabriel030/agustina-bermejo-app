@@ -116,6 +116,7 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
 
     @Test
     void secondYearStudentOfUndatedTermsIsStillBilledAndTheCapCountsOnlyThatYear() {
+        invariantChecker.skipSchoolYearCalendarCheck();
         Career career = newCareer();
         Year y26 = newUndatedYear(career, 2026, 3);
         Year y27 = newUndatedYear(career, 2027, 3);

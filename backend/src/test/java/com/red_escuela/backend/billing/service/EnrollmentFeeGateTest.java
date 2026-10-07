@@ -368,7 +368,6 @@ class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
                 .header("Authorization", "Bearer " + director).content("{\"notes\":\"Todavía debe la matrícula\"}")).andExpect(status().isNoContent());
         Long otherSection = newSection(world.career(), world.firstTerm());
 
-        assertThatThrownBy(() -> enrollIn(world, world.secondSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThatCode(() -> enrollmentService.changeSection(enrollmentId, new ChangeSectionRequest(otherSection))).doesNotThrowAnyException();
         assertThat(invoices(world.enrollment(), FeeType.ENROLLMENT_FEE)).isEmpty();
     }

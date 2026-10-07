@@ -354,7 +354,7 @@ abstract class AbstractChargeSequenceTest extends AbstractIntegrationTest {
             today(month.atDay(1));
             job.run();
             afterEachMonth.run();
-            invariantChecker.assertAllBillingInvariantsHold(month.atDay(1));
+            invariantChecker.assertAllBillingInvariantsHold();
         }
     }
 
