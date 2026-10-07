@@ -1,0 +1,101 @@
+package com.red_escuela.backend.billing.account.service;
+
+import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
+import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
+import com.red_escuela.backend.billing.account.repository.CurrentAccountEntryRepository;
+import com.red_escuela.backend.billing.account.repository.StudentCurrentAccountRepository;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.time.ApplicationTime;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class StudentCurrentAccountService {
+
+    private final StudentCurrentAccountRepository accountRepository;
+    private final CurrentAccountEntryRepository entryRepository;
+    private final EntityManager entityManager;
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StudentCurrentAccount findOrOpenAndLockStudentCurrentAccount(Long studentId, Currency currency) {
+        accountRepository.insertStudentCurrentAccountIfAbsent(studentId, currency.name(), ApplicationTime.now());
+        Long accountId = accountRepository.findIdByStudentIdAndCurrency(studentId, currency).orElseThrow();
+        return lockStudentCurrentAccount(accountId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StudentCurrentAccount lockStudentCurrentAccount(Long studentCurrentAccountId) {
+        StudentCurrentAccount account = accountRepository.findByIdForUpdate(studentCurrentAccountId).orElseThrow();
+        entityManager.refresh(account, LockModeType.PESSIMISTIC_WRITE);
+        return account;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<CurrentAccountEntry> recordInvoiceIssuedDebit(StudentCurrentAccount lockedAccount, Invoice issuedInvoice, LocalDate effectiveDate) {
+        requireLocked(lockedAccount);
+        return persist(lockedAccount, lockedAccount.recordInvoiceIssuedDebit(issuedInvoice, effectiveDate));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<CurrentAccountEntry> recordDebitNoteIssuedDebit(StudentCurrentAccount lockedAccount, Invoice issuedDebitNote, LocalDate effectiveDate) {
+        requireLocked(lockedAccount);
+        return persist(lockedAccount, lockedAccount.recordDebitNoteIssuedDebit(issuedDebitNote, effectiveDate));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CurrentAccountEntry recordPaymentReceivedCredit(StudentCurrentAccount lockedAccount, Long paymentId, NonNegativeMoney amount,
+                                                           LocalDate paidOn, String concept) {
+        requireLocked(lockedAccount);
+        return persist(lockedAccount, lockedAccount.recordPaymentReceivedCredit(paymentId, amount, paidOn, concept));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CurrentAccountEntry recordCreditNoteIssuedCredit(StudentCurrentAccount lockedAccount, Long creditNoteId, NonNegativeMoney offsetAmount,
+                                                            NonNegativeMoney freeCreditAmount, LocalDate effectiveDate, String concept) {
+        requireLocked(lockedAccount);
+        return persist(lockedAccount, lockedAccount.recordCreditNoteIssuedCredit(creditNoteId, offsetAmount, freeCreditAmount, effectiveDate, concept));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CurrentAccountEntry recordPaymentReversalDebit(StudentCurrentAccount lockedAccount, CurrentAccountEntry originalPaymentCredit,
+                                                          LocalDate effectiveDate, String reason) {
+        requireLocked(lockedAccount);
+        if (originalPaymentCredit.getId() != null && entryRepository.existsByCompensatesEntryId(originalPaymentCredit.getId())) {
+            lockedAccount.rememberReversedCreditEntry(originalPaymentCredit.getId());
+        }
+        return persist(lockedAccount, lockedAccount.recordPaymentReversalDebit(originalPaymentCredit, effectiveDate, reason));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CurrentAccountEntry recordRefundPaidDebit(StudentCurrentAccount lockedAccount, Long refundId, NonNegativeMoney amount,
+                                                     LocalDate effectiveDate, String concept) {
+        requireLocked(lockedAccount);
+        return persist(lockedAccount, lockedAccount.recordRefundPaidDebit(refundId, amount, effectiveDate, concept));
+    }
+
+    private void requireLocked(StudentCurrentAccount account) {
+        if (!entityManager.contains(account) || entityManager.getLockMode(account) != LockModeType.PESSIMISTIC_WRITE) {
+            throw new IllegalStateException("The student current account must be locked in the current transaction before recording an entry");
+        }
+    }
+
+    private CurrentAccountEntry persist(StudentCurrentAccount account, CurrentAccountEntry entry) {
+        accountRepository.save(account);
+        return entryRepository.save(entry);
+    }
+
+    private Optional<CurrentAccountEntry> persist(StudentCurrentAccount account, Optional<CurrentAccountEntry> entry) {
+        entry.ifPresent(recorded -> persist(account, recorded));
+        return entry;
+    }
+}
