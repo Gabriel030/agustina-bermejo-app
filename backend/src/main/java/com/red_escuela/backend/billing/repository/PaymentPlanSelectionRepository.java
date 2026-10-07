@@ -55,7 +55,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
                                                        @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
 
     @Query("""
-            select s from PaymentPlanSelection s
+            select s.programEnrollment.id, s.effectiveFrom, s.scopeMonths from PaymentPlanSelection s
             where s.programEnrollment is not null
               and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.ANNUAL_UPFRONT
               and s.programEnrollment.status in :statuses
@@ -65,7 +65,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and s.programEnrollment.id > :lastId
             order by s.programEnrollment.id
             """)
-    List<PaymentPlanSelection> findAnnualUpfrontSelectionsOfProgramEnrollments(@Param("statuses") List<ProgramEnrollmentStatus> statuses,
+    List<Object[]> findAnnualUpfrontSelectionsOfProgramEnrollments(@Param("statuses") List<ProgramEnrollmentStatus> statuses,
                                                                               @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
 
     @Query("""

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
-import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -93,7 +92,9 @@ public class MonthlyInstallmentIssuanceJob {
                         PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
         sweep("ProgramEnrollmentWithExpiredAnnualPlan",
-                lastId -> findEnrollmentIdsWithExpiredAnnualPlan(activeStatuses, month, lastId),
+                lastId -> findEnrollmentIdsWithExpiredAnnualPlan(
+                        cursor -> paymentPlanSelectionRepository.findAnnualUpfrontSelectionsOfProgramEnrollments(activeStatuses, month, cursor, PageRequest.of(0, PAGE_SIZE)),
+                        month, lastId),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
         sweep("CourseEnrollment",
                 lastId -> paymentPlanSelectionRepository.findCourseEnrollmentIdsWithActivePlan(
@@ -136,23 +137,22 @@ public class MonthlyInstallmentIssuanceJob {
         }
     }
 
-    private List<Long> findEnrollmentIdsWithExpiredAnnualPlan(List<ProgramEnrollmentStatus> statuses, YearMonth month, Long lastId) {
+    private List<Long> findEnrollmentIdsWithExpiredAnnualPlan(Function<Long, List<Object[]>> nextPage, YearMonth month, Long lastId) {
         Long cursor = lastId;
         while (true) {
-            List<PaymentPlanSelection> selections = paymentPlanSelectionRepository.findAnnualUpfrontSelectionsOfProgramEnrollments(
-                    statuses, month, cursor, PageRequest.of(0, PAGE_SIZE));
+            List<Object[]> selections = nextPage.apply(cursor);
             if (selections.isEmpty()) {
                 return List.of();
             }
             List<Long> expired = selections.stream()
-                    .filter(selection -> month.isAfter(selection.getEffectiveFrom().plusMonths(selection.getScopeMonths() - 1L)))
-                    .map(selection -> selection.getProgramEnrollment().getId())
+                    .filter(row -> month.isAfter(((YearMonth) row[1]).plusMonths((Integer) row[2] - 1L)))
+                    .map(row -> (Long) row[0])
                     .distinct()
                     .toList();
             if (!expired.isEmpty()) {
                 return expired;
             }
-            cursor = selections.get(selections.size() - 1).getProgramEnrollment().getId();
+            cursor = (Long) selections.get(selections.size() - 1)[0];
         }
     }
 
