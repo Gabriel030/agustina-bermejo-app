@@ -50,9 +50,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.invoice..", "..billing.account.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.invoice", ROOT + ".billing.account"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -232,6 +232,14 @@ public final class ArchitectureRules {
                 .because("payment and enrollment are processed synchronously; async only for idempotent billing post listeners (D-178, D-183)");
     }
 
+    public static ArchRule domainEventsCarryNoEntities(Class<? extends java.lang.annotation.Annotation> entityAnnotation) {
+        return noFields()
+                .that().areDeclaredInClassesThat().areAssignableTo(com.red_escuela.backend.shared.event.DomainEvent.class)
+                .should().haveRawType(DescribedPredicate.describe("a JPA entity", (JavaClass type) -> type.isAnnotatedWith(entityAnnotation)))
+                .allowEmptyShould(true)
+                .because("domain events are serialized into event_publication and carry ids and plain values, never entities");
+    }
+
     public static ArchRule academicStructureDoesNotDependOnBilling() {
         return noClasses()
                 .that().resideInAPackage(ROOT + ".academicstructure..")
@@ -299,5 +307,67 @@ public final class ArchitectureRules {
                         ROOT + ".billing.issuing..", ROOT + ".billing.usecase..")
                 .allowEmptyShould(true)
                 .because("the V2 billing model must not depend on the legacy billing code that V2-02 replaces");
+    }
+
+    public static ArchRule currentAccountEntriesAreAppendOnly(String entryClassName, String entryRepositoryClassName,
+                                                              String accountRepositoryClassName, String allowedModifyingMethod) {
+        return classes()
+                .should(new ArchCondition<JavaClass>("be append-only") {
+                    @Override
+                    public void check(JavaClass origin, ConditionEvents events) {
+                        if (origin.getName().equals(entryClassName)) {
+                            origin.getMethods().stream()
+                                    .filter(method -> method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC))
+                                    .filter(method -> !method.getName().startsWith("get"))
+                                    .forEach(method -> events.add(SimpleConditionEvent.violated(method, method.getFullName() + " is a public non-getter of an append-only entry")));
+                        }
+                        if (origin.getName().equals(entryRepositoryClassName)) {
+                            origin.getMethods().stream()
+                                    .filter(method -> method.getName().startsWith("delete") || method.getName().startsWith("remove")
+                                            || method.isAnnotatedWith(org.springframework.data.jpa.repository.Modifying.class))
+                                    .forEach(method -> events.add(SimpleConditionEvent.violated(method, method.getFullName() + " modifies entries")));
+                        }
+                        if (origin.getName().equals(accountRepositoryClassName)) {
+                            origin.getMethods().stream()
+                                    .filter(method -> method.isAnnotatedWith(org.springframework.data.jpa.repository.Modifying.class))
+                                    .filter(method -> !method.getName().equals(allowedModifyingMethod))
+                                    .forEach(method -> events.add(SimpleConditionEvent.violated(method, method.getFullName() + " is an unexpected modifying query")));
+                        }
+                    }
+                })
+                .because("current account entries are never updated nor deleted (D-144)");
+    }
+
+    public static ArchRule methodIsCalledOnlyBy(String ownerClassName, java.util.function.Predicate<String> methodNameFilter,
+                                                String allowedCallerClassName, Class<?> allowedCallerType, String description) {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ownerClassName)
+                .and().doNotHaveFullyQualifiedName(allowedCallerClassName)
+                .and(DescribedPredicate.not(assignableTo(allowedCallerType)))
+                .should().callCodeUnitWhere(DescribedPredicate.describe("a " + description + " on " + ownerClassName,
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ownerClassName)
+                                && methodNameFilter.test(call.getTarget().getName())))
+                .allowEmptyShould(true)
+                .because(description + " is allowed only to " + allowedCallerType.getSimpleName() + " implementations");
+    }
+
+    public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
+        return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationType,
+                "save of the invoice");
+    }
+
+    public static ArchRule currentAccountIsWrittenOnlyThroughItsService(String serviceClassName, String... repositoryClassNames) {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(serviceClassName)
+                .should().callCodeUnitWhere(DescribedPredicate.describe("a save of the current account repositories",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) -> java.util.Arrays.asList(repositoryClassNames).contains(call.getTargetOwner().getName())
+                                && call.getTarget().getName().equals("save")))
+                .allowEmptyShould(true)
+                .because("the current account is written only through StudentCurrentAccountService");
+    }
+
+    public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, Class<?> operationType) {
+        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record"), serviceClassName, operationType,
+                "recording of an account entry");
     }
 }

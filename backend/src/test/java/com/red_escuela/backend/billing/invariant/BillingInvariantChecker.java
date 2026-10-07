@@ -196,6 +196,55 @@ public final class BillingInvariantChecker {
         return found;
     }
 
+    public List<String> accountBalanceEqualsCreditsMinusDebits() {
+        return violations("I-01 account balance differs from credits minus debits", """
+                select 'account ' || a.id
+                from student_current_account a
+                where (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
+                    <> coalesce((select sum(case e.direction when 'CREDIT' then e.amount else -e.amount end)
+                                 from current_account_entry e where e.student_current_account_id = a.id), 0)
+                """);
+    }
+
+    public List<String> runningBalancesFollowTheEntrySequence() {
+        List<String> found = new ArrayList<>(violations("I-02 running balance is not the previous one moved by the amount", """
+                select 'entry ' || id || ' account ' || student_current_account_id
+                from (select e.id, e.student_current_account_id,
+                             (case e.running_balance_side when 'OWES' then -e.running_balance_amount else e.running_balance_amount end) as running,
+                             coalesce(lag(case e.running_balance_side when 'OWES' then -e.running_balance_amount else e.running_balance_amount end)
+                                 over (partition by e.student_current_account_id order by e.sequence_number), 0) as previous,
+                             (case e.direction when 'CREDIT' then e.amount else -e.amount end) as moved
+                      from current_account_entry e) steps
+                where running <> previous + moved
+                """));
+        found.addAll(violations("I-02 sequence is not contiguous or last_entry_sequence differs from the maximum", """
+                select 'account ' || a.id
+                from student_current_account a
+                where a.last_entry_sequence <> coalesce((select max(e.sequence_number) from current_account_entry e where e.student_current_account_id = a.id), 0)
+                   or a.last_entry_sequence <> (select count(*) from current_account_entry e where e.student_current_account_id = a.id)
+                """));
+        return found;
+    }
+
+    public List<String> accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices() {
+        List<String> found = new ArrayList<>(violations("I-19 balance differs from unallocated credit minus outstanding", """
+                select 'account ' || a.id
+                from student_current_account a
+                where a.last_entry_sequence > 0
+                  and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
+                    <> a.unallocated_credit_amount - coalesce((select sum(i.outstanding_amount) from invoice i
+                        where i.student_current_account_id = a.id and i.document_status = 'ISSUED'), 0)
+                """));
+        found.addAll(violations("I-19 issued invoice without exactly one debit (or a zero total invoice with one)", """
+                select 'invoice ' || i.id
+                from invoice i
+                where i.document_status = 'ISSUED'
+                  and exists (select 1 from student_current_account a where a.id = i.student_current_account_id and a.last_entry_sequence > 0)
+                  and (select count(*) from current_account_entry e where e.invoice_id = i.id) <> (case when i.total > 0 then 1 else 0 end)
+                """));
+        return found;
+    }
+
     public void assertAllBillingInvariantsHold() {
         List<String> all = new ArrayList<>();
         all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlotOnLegacyInvoices());
@@ -211,6 +260,9 @@ public final class BillingInvariantChecker {
         all.addAll(thereIsNoWaivedNorPartiallyPaidStatus());
         all.addAll(v2RowsHaveTheCurrencyOfTheirInvoiceOrAccount());
         all.addAll(theLatestStatusChangeMatchesTheCurrentStatus());
+        all.addAll(accountBalanceEqualsCreditsMinusDebits());
+        all.addAll(runningBalancesFollowTheEntrySequence());
+        all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

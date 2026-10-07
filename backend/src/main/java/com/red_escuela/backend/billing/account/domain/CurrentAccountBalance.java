@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.account.domain;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
@@ -33,5 +34,32 @@ public record CurrentAccountBalance(
 
     public static CurrentAccountBalance zero(Currency currency) {
         return new CurrentAccountBalance(NonNegativeMoney.zero(currency), CurrentAccountBalanceSide.ZERO);
+    }
+
+    public static CurrentAccountBalance fromSignedAmount(Money signedAmount) {
+        Objects.requireNonNull(signedAmount, "signedAmount");
+        Currency currency = signedAmount.currency();
+        if (signedAmount.isZero()) {
+            return zero(currency);
+        }
+        if (signedAmount.isNegative()) {
+            return new CurrentAccountBalance(NonNegativeMoney.of(Money.zero(currency).minus(signedAmount)), CurrentAccountBalanceSide.OWES);
+        }
+        return new CurrentAccountBalance(NonNegativeMoney.of(signedAmount), CurrentAccountBalanceSide.IN_FAVOR);
+    }
+
+    public Money toSignedAmount() {
+        return switch (side) {
+            case OWES -> Money.zero(amount.value().currency()).minus(amount.value());
+            case ZERO, IN_FAVOR -> amount.value();
+        };
+    }
+
+    public CurrentAccountBalance applyEntry(CurrentAccountEntryDirection direction, NonNegativeMoney entryAmount) {
+        Objects.requireNonNull(direction, "direction");
+        Objects.requireNonNull(entryAmount, "entryAmount");
+        Money signed = toSignedAmount();
+        Money next = direction == CurrentAccountEntryDirection.CREDIT ? signed.plus(entryAmount.value()) : signed.minus(entryAmount.value());
+        return fromSignedAmount(next);
     }
 }
