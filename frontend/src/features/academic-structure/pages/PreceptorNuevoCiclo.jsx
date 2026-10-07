@@ -49,6 +49,7 @@ const DAY_NAMES = {
 
 const SECTION_ERROR_MESSAGES = {
   SECTION_SCHEDULE_CONFLICT: 'El aula ya está ocupada ese día y en ese horario durante este período.',
+  SUBJECT_NOT_OPENABLE_FOR_SECTIONS: 'La materia todavía es un borrador: el director tiene que aprobarla antes de abrir comisiones.',
   SECTION_CAPACITY_EXCEEDS_CLASSROOM: 'El cupo supera la capacidad del aula.',
   CYCLE_NOT_EDITABLE: 'Este ciclo ya fue enviado a aprobación y no admite comisiones nuevas.',
 };
@@ -277,7 +278,7 @@ function Paso1Periodo({ state, dispatch, onCycleCreated }) {
   );
 }
 
-function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, tipoCiclo }) {
+function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectName, cicloId, tipoCiclo }) {
   const fieldId = useId();
   const [nombre, setNombre] = useState('');
   const [cupo, setCupo] = useState('');
@@ -329,6 +330,14 @@ function SeccionFormInline({ subjectId, courseSubjectId, subjectName, cicloId, t
       },
       onError: (err) => setError(SECTION_ERROR_MESSAGES[err.code] ?? 'No se pudo agregar la comisión. Probá de nuevo.'),
     });
+  }
+
+  if (subjectStatus === 'DRAFT') {
+    return (
+      <p className="rounded-xl bg-warning-bg px-3 py-2 text-[12.5px] text-warning">
+        {SECTION_ERROR_MESSAGES.SUBJECT_NOT_OPENABLE_FOR_SECTIONS}
+      </p>
+    );
   }
 
   if (!abierto) {
@@ -479,6 +488,7 @@ function Paso2Comisiones({ state, dispatch }) {
 
                 <SeccionFormInline
                   subjectId={subjectId}
+                  subjectStatus={esProgramaCiclo ? m.subjectStatus : null}
                   courseSubjectId={courseSubjectId}
                   subjectName={subjectName}
                   cicloId={state.cicloId}
