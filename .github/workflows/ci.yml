@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches: [develop, master]
-    paths-ignore: ['**.md', 'docs/**']
+    paths-ignore: ['*.md', 'docs/context/**', 'docs/*.png']
   pull_request:
     branches: [develop, master]
-    paths-ignore: ['**.md', 'docs/**']
+    paths-ignore: ['*.md', 'docs/context/**', 'docs/*.png']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -30,6 +30,48 @@ jobs:
       - name: Run backend test suite
         working-directory: backend
         run: ./mvnw clean verify
+
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect backend changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            if git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -q '^backend/'; then
+              echo "backend=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "backend=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Set up JDK 21
+        if: steps.changes.outputs.backend == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            21
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Run mutation testing
+        if: steps.changes.outputs.backend == 'true'
+        working-directory: backend
+        run: ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage
+
+      - name: Upload PIT report
+        if: always() && steps.changes.outputs.backend == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pit-report
+          path: backend/target/pit-reports
+          if-no-files-found: ignore
 
   frontend:
     runs-on: ubuntu-latest
