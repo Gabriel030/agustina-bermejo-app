@@ -3,6 +3,7 @@ package com.red_escuela.backend.shared.event;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.service.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.usecase.auth.RequestPasswordResetUseCase;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -23,6 +24,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
@@ -40,8 +42,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -125,19 +127,28 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
         jdbcTemplate.update("delete from address where id = ?", addressId);
     }
 
+    private String personEventPattern() {
+        return "\"personId\":" + personId + "[,}]";
+    }
+
     private long incompletePublications() {
-        return jdbcTemplate.queryForObject("select count(*) from event_publication where completion_date is null", Long.class);
+        return jdbcTemplate.queryForObject(
+                "select count(*) from event_publication where completion_date is null and serialized_event ~ ?", Long.class, personEventPattern());
     }
 
     private long allPublications() {
-        return jdbcTemplate.queryForObject("select count(*) from event_publication", Long.class);
+        return jdbcTemplate.queryForObject("select count(*) from event_publication where serialized_event ~ ?", Long.class, personEventPattern());
+    }
+
+    private boolean belongsToThisPerson(EventPublication publication) {
+        return publication.getEvent() instanceof PasswordResetCodeIssuedEvent event && personId.equals(event.personId());
     }
 
     @Test
     @Tag("D-178")
     @Tag("D-183")
     void aListenerFailureDoesNotRollBackTheBusinessTransactionAndTheRegistryRedeliversIt() {
-        doThrow(new EmailDeliveryException("smtp down", new RuntimeException())).when(emailService).sendPasswordResetCode(any(), anyString());
+        doThrow(new EmailDeliveryException("smtp down", new RuntimeException())).doNothing().when(emailService).sendPasswordResetCode(any(), anyString());
 
         transactionTemplate.executeWithoutResult(status -> requestPasswordResetUseCase.requestReset(email));
 
@@ -145,11 +156,9 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
         await().until(() -> incompletePublications() == 1);
         assertThat(jdbcTemplate.queryForObject("select count(*) from password_reset_token where person_id = ?", Long.class, personId)).isEqualTo(1);
 
-        reset(emailService);
-        doNothing().when(emailService).sendPasswordResetCode(any(), anyString());
-        incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
+        incompleteEventPublications.resubmitIncompletePublications(this::belongsToThisPerson);
 
-        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000).times(2)).sendPasswordResetCode(any(Person.class), anyString());
         await().until(() -> allPublications() == 0);
     }
 
@@ -160,12 +169,11 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> requestPasswordResetUseCase.requestReset(email));
         verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
         await().until(() -> allPublications() == 0);
-        reset(emailService);
 
-        incompleteEventPublications.resubmitIncompletePublicationsOlderThan(Duration.ZERO);
+        incompleteEventPublications.resubmitIncompletePublications(this::belongsToThisPerson);
 
         await().during(Duration.ofSeconds(1)).until(() -> allPublications() == 0);
-        org.mockito.Mockito.verifyNoInteractions(emailService);
+        verify(emailService, times(1)).sendPasswordResetCode(any(Person.class), anyString());
     }
 
     @Test
@@ -200,9 +208,10 @@ class EventPublicationRegistryTest extends AbstractIntegrationTest {
     @Test
     @Tag("D-178")
     void incompletePublicationsAreExposedAsGauges() {
+        double incompleteBefore = meterRegistry.get("modulith.events.incomplete").gauge().value();
         jdbcTemplate.update("insert into event_publication (id, listener_id, event_type, serialized_event, publication_date) values (gen_random_uuid(), 'l', 't', '{}', now() - interval '10 minutes')");
 
-        assertThat(meterRegistry.get("modulith.events.incomplete").gauge().value()).isEqualTo(1.0);
+        assertThat(meterRegistry.get("modulith.events.incomplete").gauge().value()).isEqualTo(incompleteBefore + 1.0);
         assertThat(meterRegistry.get("modulith.events.oldest.incomplete.seconds").gauge().value()).isGreaterThanOrEqualTo(600.0);
     }
 }
