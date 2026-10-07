@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
+import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
 import { useBillingStanding } from '@/hooks/useBilling';
 
 const STANDING_CONFIG = {

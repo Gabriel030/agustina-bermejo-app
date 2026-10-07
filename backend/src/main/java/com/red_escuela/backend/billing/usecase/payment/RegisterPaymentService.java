@@ -19,6 +19,7 @@ import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
+import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
@@ -136,15 +137,15 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
     private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {
         if (invoice.getCourseEnrollment() != null) {
-            restoreStanding(invoice.getCourseEnrollment(),
+            restoreStanding(invoice.getCourseEnrollment(), EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, invoice.getCourseEnrollment().getId(),
                     invoiceRepository.countByCourseEnrollmentIdAndStatus(invoice.getCourseEnrollment().getId(), InvoiceStatus.OVERDUE));
         } else if (invoice.getProgramEnrollment() != null) {
-            restoreStanding(invoice.getProgramEnrollment(),
+            restoreStanding(invoice.getProgramEnrollment(), EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, invoice.getProgramEnrollment().getId(),
                     invoiceRepository.countByProgramEnrollmentIdAndStatus(invoice.getProgramEnrollment().getId(), InvoiceStatus.OVERDUE));
         }
     }
 
-    private void restoreStanding(BillableEnrollment enrollment, long overdueInvoices) {
+    private void restoreStanding(BillableEnrollment enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId, long overdueInvoices) {
         if (overdueInvoices > 0) {
             return;
         }
@@ -153,6 +154,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         if (enrollment.settleArrears() && wasSuspended) {
             YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now(clock);
             eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now(clock)));
+            eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(enrollmentType, enrollmentId, suspendedSince, YearMonth.now(clock)));
         }
     }
 

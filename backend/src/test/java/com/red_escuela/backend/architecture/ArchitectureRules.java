@@ -216,6 +216,22 @@ public final class ArchitectureRules {
         };
     }
 
+    public static ArchRule asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners(String enrollmentPackage, String billingPackage) {
+        ArchCondition<com.tngtech.archunit.core.domain.JavaMethod> allowedOwner = new ArchCondition<>("be declared outside enrollment and, in billing, only in a post listener") {
+            @Override
+            public void check(com.tngtech.archunit.core.domain.JavaMethod method, ConditionEvents events) {
+                JavaClass owner = method.getOwner();
+                boolean inEnrollment = owner.getPackageName().startsWith(enrollmentPackage);
+                boolean inBilling = owner.getPackageName().startsWith(billingPackage);
+                boolean allowed = !inEnrollment && !(inBilling && !owner.getSimpleName().endsWith("Listener"));
+                events.add(new SimpleConditionEvent(method, allowed, method.getFullName() + " is async processing in a forbidden place"));
+            }
+        };
+        return com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods().that().areAnnotatedWith(org.springframework.modulith.events.ApplicationModuleListener.class)
+                .or().areAnnotatedWith(org.springframework.scheduling.annotation.Async.class).should(allowedOwner)
+                .because("payment and enrollment are processed synchronously; async only for idempotent billing post listeners (D-178, D-183)");
+    }
+
     public static ArchRule academicStructureDoesNotDependOnBilling() {
         return noClasses()
                 .that().resideInAPackage(ROOT + ".academicstructure..")

@@ -19,7 +19,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -76,7 +78,7 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
             verify(emailService, never()).sendPasswordResetCode(any(), anyString());
         });
 
-        verify(emailService).sendPasswordResetCode(any(Person.class), anyString());
+        verify(emailService, timeout(5000)).sendPasswordResetCode(any(Person.class), anyString());
     }
 
     @Test
@@ -86,6 +88,6 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
             status.setRollbackOnly();
         });
 
-        verify(emailService, never()).sendPasswordResetCode(any(), anyString());
+        verify(emailService, after(1000).never()).sendPasswordResetCode(any(), anyString());
     }
 }

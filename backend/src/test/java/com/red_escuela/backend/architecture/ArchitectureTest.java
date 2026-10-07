@@ -184,6 +184,28 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-178")
+    @Tag("D-183")
+    void asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners() {
+        ArchitectureRules.asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners(ArchitectureRules.ROOT + ".enrollment", ArchitectureRules.ROOT + ".billing")
+                .check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-178")
+    @Tag("D-183")
+    void asyncRuleDetectsEnrollmentAndNonListenerBillingClasses() {
+        String fixtureRoot = ArchitectureRules.ROOT + ".architecture.fixture";
+
+        assertThatThrownBy(() -> ArchitectureRules.asyncProcessingIsNotUsedInEnrollmentAndOnlyInBillingPostListeners(fixtureRoot + ".enrollment", fixtureRoot + ".billing.operation")
+                .check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("AsyncEnrollmentFixture")
+                .hasMessageContaining("AsyncBillingServiceFixture")
+                .hasMessageNotContaining("AllowedPostListener");
+    }
+
+    @Test
     @Tag("D-051")
     void academicStructureDoesNotDependOnBilling() {
         FreezingArchRule.freeze(ArchitectureRules.academicStructureDoesNotDependOnBilling()).check(MAIN_CLASSES);

@@ -7,7 +7,7 @@ import { StatCard } from '@/components/StatCard';
 import { Stagger } from '@/components/Stagger';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
-import { useFinancialDashboard, useDebtors } from '@/hooks/useDirector';
+import { useFinancialDashboard, useDebtors } from '@/features/billing/hooks/useFinancialDashboard';
 import { formatMoney } from '@/lib/utils';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 

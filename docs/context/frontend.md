@@ -106,11 +106,17 @@ El front se organiza por módulo de backend, no por rol:
   `Placeholder`). `AppRouter` solo compone: para sumar una pantalla se toca solo el `routes.jsx`
   de su módulo.
 - Un componente que usan dos o más módulos va a `src/components/`, no a una feature.
-- F1 ya movió identity, academic-structure (solo `oferta-academica`), enrollment, attendance,
-  evaluation, graduation, announcements y notifications: tienen `pages/`, `components/` y `hooks/`
-  propios. Siguen pendientes `gestion-academica` (se suma a academic-structure), billing (V2-14/15/16)
-  y workspace (`src/pages/` y los hooks por rol `useAlumno`, `useDocente`, `useDirector`).
-- Convención "copiar, no borrar": cuando un hook por rol mezcla módulos, cada módulo copia a su
+- F1 ya movió identity, academic-structure (incluye lo que era `gestion-academica` y `oferta-academica`),
+  enrollment, attendance, evaluation, graduation, announcements, notifications y workspace: tienen
+  `pages/`, `components/` y `hooks/` propios. Sigue pendiente billing (V2-14/15/16): sus páginas viven
+  todavía en `src/pages/`, y `features/billing/` solo tiene `routes.jsx`, `index.js` y los hooks
+  `usePaymentStanding` y `useFinancialDashboard` que salieron de los hooks por rol.
+- Los hooks por rol `useAlumno`, `useDocente` y `useDirector` ya no existen: cada hook vive en el
+  módulo cuyo endpoint llama y se consume desde el `index.js` de ese módulo.
+- `workspace` guarda las pantallas que combinan varios módulos (`AlumnoInicio`, `AlumnoMisCarreras`,
+  `AlumnoMateriaDetalle`, `DirectorAprobaciones`, `DocenteMisComisiones`) y compone hooks y componentes
+  de cada módulo a través de sus `index.js`.
+- Convención "copiar, no borrar": mientras un hook por rol mezcla módulos, cada módulo copia a su
   carpeta solo sus funciones y el archivo original queda hasta que workspace lo borre.
 - Un módulo expone a los demás solo lo que sale de su `index.js`.
 

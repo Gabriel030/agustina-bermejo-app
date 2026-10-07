@@ -16,7 +16,6 @@ const FEATURES = [
   'announcements',
   'notifications',
   'workspace',
-  'gestion-academica',
 ]
 
 const boundaryMessage = 'Una feature solo puede importar de otra a través de su index.js.'

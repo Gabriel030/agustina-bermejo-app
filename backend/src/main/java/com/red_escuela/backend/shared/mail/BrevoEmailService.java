@@ -47,6 +47,7 @@ public class BrevoEmailService implements EmailService {
             log.info("Código de recuperación enviado a person {}", person.getId());
         } catch (MessagingException | RuntimeException e) {
             log.error("No se pudo enviar el email de recuperación a person {}", person.getId(), e);
+            throw new EmailDeliveryException("No se pudo enviar el email de recuperación", e);
         }
     }
 
@@ -68,6 +69,7 @@ public class BrevoEmailService implements EmailService {
             log.info("Email de verificación enviado a person {}", person.getId());
         } catch (MessagingException | RuntimeException e) {
             log.error("No se pudo enviar el email de verificación a person {}", person.getId(), e);
+            throw new EmailDeliveryException("No se pudo enviar el email de verificación", e);
         }
     }
 

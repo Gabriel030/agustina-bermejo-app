@@ -29,3 +29,11 @@ export function useDarmeDeBajaDeMesa() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me', 'exam-board-registrations'] }),
   });
 }
+
+export function useNotasDeMateria(sectionEnrollmentId) {
+  return useQuery({
+    queryKey: ['me', 'section-enrollments', sectionEnrollmentId, 'grade-items'],
+    queryFn: () => apiFetch(`/me/section-enrollments/${sectionEnrollmentId}/grade-items`),
+    enabled: !!sectionEnrollmentId,
+  });
+}

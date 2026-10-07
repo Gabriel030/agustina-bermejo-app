@@ -57,7 +57,7 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
         resetToken.setCreatedAt(LocalDateTime.now());
         passwordResetTokenRepository.save(resetToken);
 
-        eventPublisher.publishEvent(new PasswordResetCodeIssuedEvent(person, code));
+        eventPublisher.publishEvent(PasswordResetCodeIssuedEvent.issuedFor(person.getId(), code));
         log.info("Código de recuperación de password generado para person {}", person.getId());
     }
 
