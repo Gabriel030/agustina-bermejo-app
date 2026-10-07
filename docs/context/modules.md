@@ -52,6 +52,18 @@ Leer un fallo:
 - `cycles: new dependency cycle between a<->b`: apareció una dependencia circular nueva.
 - Entradas sobrantes: el test pasa y las imprime por stderr; el PR que elimina violaciones tiene que borrarlas o bajarlas regenerando con `./mvnw -f backend/pom.xml test -Dtest=ModularityTest -DargLine=-Dmodulith.baseline.update=true`.
 
+## Inversión de dependencia: enrollment consulta a billing (D-185)
+
+El estado de cobranza de la inscripción vive en billing, pero billing está por encima de enrollment en las capas y ya depende de él (billing -> enrollment). Si enrollment llamara a billing se formaría un ciclo. Se resuelve con un puerto:
+
+1. enrollment declara en su interfaz `api` (paquete `enrollment.usecase`) un puerto con nombre de dominio, por ejemplo `EnrollmentPaymentEligibilityPort` con `isEligibleToEnroll(studentId)`.
+2. billing lo implementa (`billing -> enrollment :: api`, dirección permitida) y Spring lo inyecta donde enrollment lo use.
+3. enrollment solo conoce el puerto, nunca un tipo de billing.
+
+El puerto todavía no existe: se crea en V2-09 junto con el caso de uso que lo necesita. Se verificó que `ModularityTest` no prohíbe el patrón (una interfaz en `enrollment.usecase` implementada por un componente de billing no agrega violaciones).
+
+Deuda a invertir en V2-09 / M3b: hoy hay accesos enrollment -> billing (72 violaciones en `COUNT billing 72` de `modulith-baseline/enrollment.txt`, en 22 clases): el gate de matrícula (`EnrollmentFeeRequirementService`, `GetEnrollmentFeeStatusService`, `GrantEnrollmentFeeExemptionService`), `EnrollmentBillingStanding`, `StudentDebtResolutionService`, la alta de cohortes y plantillas (`ProgramCohort`, `ProgramYearBillingTemplate`), la emisión de cargos (`ChargeIssuer`) y los comprobantes (`PaymentReceipt`, `UploadPaymentReceiptUseCase`). Cada reemplazo por un puerto o un evento debe bajar ese conteo.
+
 ## Documentación generada
 
-`ModuleDocumentationTest` escribe el diagrama de módulos y los canvases en `docs/architecture/` (`components.puml`, `module-*.puml`, `module-*.adoc`).
+`ModuleDocumentationTest` escribe por defecto en `backend/target/modulith-docs/` (no ensucia el árbol). Para regenerar lo versionado en `docs/architecture/` (`components.puml`, `module-*.puml`, `module-*.adoc`) correr `./mvnw -f backend/pom.xml test -Dtest=ModuleDocumentationTest -DargLine=-Dmodulith.docs.update=true`. La salida es determinista (aristas ordenadas): si no cambió la arquitectura, no hay diff.
