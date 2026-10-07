@@ -115,8 +115,9 @@ class ChargePlannerCorrectionsTest extends AbstractChargeSequenceTest {
     }
 
     @Test
+    @Tag("contradicts-D-001")
     void secondYearStudentOfUndatedTermsIsStillBilledAndTheCapCountsOnlyThatYear() {
-        invariantChecker.skipSchoolYearCalendarCheck();
+        invariantChecker.tolerate(com.red_escuela.backend.billing.invariant.KnownInvariantViolation.UNDATED_TERMS_BILL_JANUARY_AND_FEBRUARY);
         Career career = newCareer();
         Year y26 = newUndatedYear(career, 2026, 3);
         Year y27 = newUndatedYear(career, 2027, 3);
