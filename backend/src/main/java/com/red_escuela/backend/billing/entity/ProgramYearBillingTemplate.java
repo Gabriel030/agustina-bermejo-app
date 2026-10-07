@@ -104,6 +104,18 @@ public class ProgramYearBillingTemplate {
         }
     }
 
+    public LocalDateTime termStartDate() {
+        return term.getStartDate();
+    }
+
+    public LocalDateTime termEndDate() {
+        return term.getEndDate();
+    }
+
+    public Long programId() {
+        return program.getId();
+    }
+
     public boolean canGenerateInvoice(YearMonth period, long invoicesGeneratedInWindow) {
         return term.contains(period) && invoicesGeneratedInWindow < recurringFeeInvoicesCount;
     }

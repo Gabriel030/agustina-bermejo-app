@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.configuration.service;
 
-import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.service.TermScheduleChangeValidator;
+import com.red_escuela.backend.academicstructure.api.TermScheduleChangeValidator;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import org.springframework.stereotype.Service;
@@ -24,11 +23,11 @@ public class BillingTermScheduleChangeValidator implements TermScheduleChangeVal
     }
 
     @Override
-    public void validateScheduleChange(Term term, LocalDateTime proposedStart, LocalDateTime proposedEnd) {
-        if (Objects.equals(proposedStart, term.getStartDate()) && Objects.equals(proposedEnd, term.getEndDate())) {
+    public void validateScheduleChange(Long termId, LocalDateTime currentStart, LocalDateTime currentEnd, LocalDateTime proposedStart, LocalDateTime proposedEnd) {
+        if (Objects.equals(proposedStart, currentStart) && Objects.equals(proposedEnd, currentEnd)) {
             return;
         }
-        List<YearBillingConfigurationChange> changes = templateRepository.findAllByTermId(term.getId()).stream()
+        List<YearBillingConfigurationChange> changes = templateRepository.findAllByTermId(termId).stream()
                 .map(template -> changeLoader.loadTermScheduleChange(template, proposedStart, proposedEnd))
                 .toList();
         changes.forEach(policyEvaluator::requireCoherentYearConfiguration);

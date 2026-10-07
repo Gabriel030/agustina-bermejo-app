@@ -18,9 +18,10 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | GracePeriodNotNegativePolicy | NEGATIVE_GRACE_PERIOD | D-147 |
-| 2 | GracePeriodWithinSuspensionDaysPolicy | GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS | D-147 |
-| 3 | SuspensionInvoiceCountAtLeastOnePolicy | SUSPENSION_INVOICE_COUNT_BELOW_ONE | D-147 |
-| 4 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059 |
+| 2 | SuspensionDaysNotNegativePolicy | NEGATIVE_SUSPENSION_DAYS | D-147 |
+| 3 | GracePeriodWithinSuspensionDaysPolicy | GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS | D-147 |
+| 4 | SuspensionInvoiceCountAtLeastOnePolicy | SUSPENSION_INVOICE_COUNT_BELOW_ONE | D-147 |
+| 5 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059 |
 
 ## Momento YEAR_BILLING_CONFIGURATION
 
@@ -38,4 +39,5 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | EnrollmentFeeCountFrozenPolicy | ENROLLMENT_FEE_COUNT_FROZEN | D-009, D-036 |
 | 2 | EnrollmentFeeMonthFrozenPolicy | ENROLLMENT_FEE_MONTH_FROZEN | D-036 |
-| 3 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |
+| 3 | EnrollmentFeeLeadMonthsFrozenPolicy | ENROLLMENT_FEE_LEAD_MONTHS_FROZEN | D-201 |
+| 4 | IssuedInstallmentsWithinTermRangePolicy | INSTALLMENTS_OUTSIDE_NEW_TERM_RANGE | D-036 |

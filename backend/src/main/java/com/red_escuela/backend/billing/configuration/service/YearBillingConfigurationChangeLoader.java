@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.configuration.service;
 
-import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.configuration.policy.ProgramYearBillingTemplateSnapshot;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
@@ -23,28 +22,26 @@ public class YearBillingConfigurationChangeLoader {
     }
 
     public YearBillingConfigurationChange loadConfigurationUpdate(ProgramYearBillingTemplate template, YearBillingConfigurationRequest request) {
-        Term term = template.getTerm();
-        return loadChange(template, snapshotOf(template, request), term.getStartDate(), term.getEndDate());
+        return loadChange(template, snapshotOf(template, request), template.termStartDate(), template.termEndDate());
     }
 
     public YearBillingConfigurationChange loadTermScheduleChange(ProgramYearBillingTemplate template, LocalDateTime proposedStart, LocalDateTime proposedEnd) {
         return loadChange(template, snapshotOf(template, null), proposedStart, proposedEnd);
     }
 
-    public YearBillingConfigurationChange loadCreation(Term term, Integer recurringFeeInvoicesCount, YearBillingConfigurationRequest request) {
+    public YearBillingConfigurationChange loadCreation(LocalDateTime termStart, LocalDateTime termEnd, Integer recurringFeeInvoicesCount, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate defaults = new ProgramYearBillingTemplate();
         ProgramYearBillingTemplateSnapshot proposed = merge(snapshotOf(defaults, null), request, recurringFeeInvoicesCount);
-        return YearBillingConfigurationChange.forCreation(proposed, monthOf(term.getStartDate()), monthOf(term.getEndDate()));
+        return YearBillingConfigurationChange.forCreation(proposed, monthOf(termStart), monthOf(termEnd));
     }
 
     private YearBillingConfigurationChange loadChange(ProgramYearBillingTemplate template, ProgramYearBillingTemplateSnapshot proposed,
                                                       LocalDateTime proposedStart, LocalDateTime proposedEnd) {
-        Term term = template.getTerm();
         Set<Integer> issuedSlots = new HashSet<>(invoiceRepository.findIssuedEnrollmentFeeSlotsByTemplateId(template.getId()));
         Set<YearMonth> issuedPeriods = new HashSet<>();
-        if (term.getStartDate() != null && term.getEndDate() != null) {
+        if (template.termStartDate() != null && template.termEndDate() != null) {
             issuedPeriods.addAll(invoiceRepository.findIssuedInstallmentPeriodsByProgramIdAndPeriodBetween(
-                    template.getProgram().getId(), YearMonth.from(term.getStartDate()), YearMonth.from(term.getEndDate())));
+                    template.programId(), YearMonth.from(template.termStartDate()), YearMonth.from(template.termEndDate())));
         }
         return new YearBillingConfigurationChange(snapshotOf(template, null), proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods);
     }
