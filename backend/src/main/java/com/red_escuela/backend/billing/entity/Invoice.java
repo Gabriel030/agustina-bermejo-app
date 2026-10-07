@@ -22,8 +22,8 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "invoice")
+@Entity(name = "LegacyInvoice")
+@Table(name = "legacy_invoice")
 public class Invoice {
     @Id
     @Column(name = "id")

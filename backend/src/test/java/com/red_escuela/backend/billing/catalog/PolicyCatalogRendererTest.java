@@ -64,7 +64,7 @@ class PolicyCatalogRendererTest {
                 List.of("DoneEvent"), java.util.Map.of("DoneEvent", List.of("ListenerA#on", "ListenerB#on")));
         OperationCatalogEntry bare = new OperationCatalogEntry("A_OPERATION", List.of(), List.of(), List.of("OtherEvent"), java.util.Map.of());
 
-        String rendered = PolicyCatalogRenderer.render(List.of(), List.of(withHandlers, bare));
+        String rendered = PolicyCatalogRenderer.render(List.of(), java.util.Map.of(), List.of(withHandlers, bare));
 
         assertThat(rendered.indexOf("## Operación A_OPERATION")).isPositive().isLessThan(rendered.indexOf("## Operación B_OPERATION"));
         assertThat(rendered).contains("- Validaciones (momentos): MOMENT_X, MOMENT_Y")

@@ -90,7 +90,7 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and s.programEnrollment is not null
               and s.effectiveTo is null
               and not exists (
-                  select i.id from Invoice i
+                  select i.id from LegacyInvoice i
                   where i.paymentPlanSelection = s and i.feeType = com.red_escuela.backend.billing.entity.FeeType.RECURRING_FEE)
             order by s.id
             """)

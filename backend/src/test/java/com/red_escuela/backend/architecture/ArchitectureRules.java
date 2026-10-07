@@ -15,6 +15,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.exception.BadRequestException;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaFieldAccess;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -49,9 +50,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -123,7 +124,7 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule policiesArePure() {
-        return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..")
+        return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..", "..statemachine..")
                 .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "..repository..")
                 .because("policies and planners are pure domain logic");
     }
@@ -254,5 +255,57 @@ public final class ArchitectureRules {
                 .should().haveNameMatching(".*")
                 .allowEmptyShould(true)
                 .because("persisted billing amounts are NonNegativeMoney (D-171)");
+    }
+    public static ArchRule invoicesAreCreatedOnlyByInvoiceFactory(String invoiceClassName, String factoryClassName) {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(factoryClassName)
+                .and().doNotHaveFullyQualifiedName(invoiceClassName)
+                .should().callCodeUnitWhere(DescribedPredicate.describe("a creator of " + invoiceClassName,
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(invoiceClassName)
+                                && (call.getTarget().getName().equals("createDraftInvoice") || call.getTarget().getName().equals("<init>"))))
+                .because("every V2 invoice draft is created by InvoiceFactory");
+    }
+
+    public static ArchRule statusFieldIsWrittenOnlyThroughItsTransitionTable(String aggregateClassName, String fieldName,
+                                                                           String transitionMethodName, String machineClassName) {
+        return classes()
+                .should(writeTheFieldOnlyInTheTransitionMethodThatCallsTheMachine(aggregateClassName, fieldName, transitionMethodName, machineClassName))
+                .because("the status " + fieldName + " changes only through its state transition table");
+    }
+
+    private static ArchCondition<JavaClass> writeTheFieldOnlyInTheTransitionMethodThatCallsTheMachine(
+            String aggregateClassName, String fieldName, String transitionMethodName, String machineClassName) {
+        return new ArchCondition<>("write " + fieldName + " only inside " + transitionMethodName + ", which must call " + machineClassName) {
+            @Override
+            public void check(JavaClass origin, ConditionEvents events) {
+                for (JavaFieldAccess access : origin.getFieldAccessesFromSelf()) {
+                    boolean isWrite = access.getAccessType() == JavaFieldAccess.AccessType.SET;
+                    boolean isTheField = access.getTargetOwner().getName().equals(aggregateClassName) && access.getTarget().getName().equals(fieldName);
+                    boolean insideTransitionMethod = access.getOrigin().getName().equals(transitionMethodName);
+                    if (isWrite && isTheField && !insideTransitionMethod) {
+                        events.add(SimpleConditionEvent.violated(access, access.getDescription()));
+                    }
+                }
+                if (origin.getName().equals(aggregateClassName)) {
+                    boolean callsTheMachine = origin.getMethods().stream()
+                            .filter(method -> method.getName().equals(transitionMethodName))
+                            .flatMap(method -> method.getMethodCallsFromSelf().stream())
+                            .anyMatch(call -> call.getTargetOwner().getName().equals(machineClassName));
+                    if (!callsTheMachine) {
+                        events.add(SimpleConditionEvent.violated(origin, origin.getName() + "." + transitionMethodName + " does not call " + machineClassName));
+                    }
+                }
+            }
+        };
+    }
+
+    public static ArchRule billingV2DoesNotDependOnLegacyBilling(String... v2Packages) {
+        return noClasses()
+                .that().resideInAnyPackage(v2Packages)
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        ROOT + ".billing.entity..", ROOT + ".billing.repository..", ROOT + ".billing.service..",
+                        ROOT + ".billing.issuing..", ROOT + ".billing.usecase..")
+                .allowEmptyShould(true)
+                .because("the V2 billing model must not depend on the legacy billing code that V2-02 replaces");
     }
 }
