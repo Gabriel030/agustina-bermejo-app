@@ -1,20 +1,20 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PaymentReceiptFinder {
 
-    private final PaymentReceiptRepository paymentReceiptRepository;
+    private final BankTransferReceiptRepository bankTransferReceiptRepository;
 
-    public PaymentReceiptFinder(PaymentReceiptRepository paymentReceiptRepository) {
-        this.paymentReceiptRepository = paymentReceiptRepository;
+    public PaymentReceiptFinder(BankTransferReceiptRepository bankTransferReceiptRepository) {
+        this.bankTransferReceiptRepository = bankTransferReceiptRepository;
     }
 
-    public PaymentReceipt findOrThrow(Long id) {
-        return paymentReceiptRepository.findById(id).orElseThrow(() -> new PaymentReceiptNotFoundException(id));
+    public BankTransferReceipt findOrThrow(Long id) {
+        return bankTransferReceiptRepository.findById(id).orElseThrow(() -> new PaymentReceiptNotFoundException(id));
     }
 }

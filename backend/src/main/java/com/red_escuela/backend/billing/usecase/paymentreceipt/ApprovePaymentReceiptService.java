@@ -8,9 +8,9 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
@@ -33,7 +33,7 @@ import java.util.Map;
 @UseCase
 public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCase {
     private static final Logger log = LoggerFactory.getLogger(ApprovePaymentReceiptService.class);
-    private final PaymentReceiptRepository paymentReceiptRepository;
+    private final BankTransferReceiptRepository bankTransferReceiptRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
@@ -42,11 +42,11 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
-    public ApprovePaymentReceiptService(PaymentReceiptRepository paymentReceiptRepository, InvoiceRepository invoiceRepository,
+    public ApprovePaymentReceiptService(BankTransferReceiptRepository bankTransferReceiptRepository, InvoiceRepository invoiceRepository,
                                          PaymentReceiptFinder paymentReceiptFinder, CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
                                          CourseEnrollmentService courseEnrollmentService, RegisterPaymentUseCase registerPaymentUseCase,
                                          ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
-        this.paymentReceiptRepository = paymentReceiptRepository;
+        this.bankTransferReceiptRepository = bankTransferReceiptRepository;
         this.invoiceRepository = invoiceRepository;
         this.paymentReceiptFinder = paymentReceiptFinder;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
@@ -58,8 +58,8 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
 
     @Override
     @Transactional
-    public PaymentReceipt approve(Long id, Person decidedBy) {
-        PaymentReceipt receipt = paymentReceiptFinder.findOrThrow(id);
+    public BankTransferReceipt approve(Long id, Person decidedBy) {
+        BankTransferReceipt receipt = paymentReceiptFinder.findOrThrow(id);
         receipt.approve(decidedBy);
 
         Invoice invoice = receipt.getInvoice();
@@ -72,7 +72,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
                 .filter(application -> application.getCourseEnrollment() == null)
                 .ifPresent(this::enrollInCourse);
 
-        PaymentReceipt saved = paymentReceiptRepository.save(receipt);
+        BankTransferReceipt saved = bankTransferReceiptRepository.save(receipt);
         eventPublisher.publishEvent(new PaymentReceiptApprovedEvent(saved));
         log.info("Comprobante de pago aprobado: comprobante={}, factura={}", id, invoice.getId());
         return saved;

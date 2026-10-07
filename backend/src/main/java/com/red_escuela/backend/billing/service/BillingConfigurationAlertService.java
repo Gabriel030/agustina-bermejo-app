@@ -2,8 +2,8 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
-import com.red_escuela.backend.billing.planning.YearCycle;
-import com.red_escuela.backend.billing.planning.YearCycles;
+import com.red_escuela.backend.billing.planning.domain.YearCycle;
+import com.red_escuela.backend.billing.planning.domain.YearCycles;
 import com.red_escuela.backend.billing.repository.BillingConfigurationAlertRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;

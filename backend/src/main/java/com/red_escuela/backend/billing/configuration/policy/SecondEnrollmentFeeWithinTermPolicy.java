@@ -8,12 +8,12 @@ import java.time.YearMonth;
 
 @PolicyRule(violationCodes = "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", decisions = {"D-002"})
 public final class SecondEnrollmentFeeWithinTermPolicy implements Policy<YearBillingConfigurationChange> {
-    public String name() {
+    public String ruleName() {
         return "SecondEnrollmentFeeWithinTermPolicy";
     }
 
-    public PolicyVerdict evaluate(YearBillingConfigurationChange change) {
-        return (!change.hasTermDates() || change.proposed().enrollmentFeeCount() != 2 || change.proposed().secondEnrollmentFeeMonth() == null || withinTerm(change)) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "La segunda matrícula debe caer dentro del año lectivo.");
+    public PolicyVerdict evaluateRule(YearBillingConfigurationChange change) {
+        return (!change.hasTermDates() || change.proposed().enrollmentFeeCount() != 2 || change.proposed().secondEnrollmentFeeMonth() == null || withinTerm(change)) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "La segunda matrícula debe caer dentro del año lectivo.");
     }
 
     private static boolean withinTerm(YearBillingConfigurationChange change) {

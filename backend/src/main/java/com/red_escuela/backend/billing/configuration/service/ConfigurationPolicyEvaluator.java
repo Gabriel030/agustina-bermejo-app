@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymen
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
 import com.red_escuela.backend.billing.configuration.policy.LatePaymentSettingsValues;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
-import com.red_escuela.backend.shared.domain.policy.PolicyEvaluation;
+import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -44,7 +44,7 @@ public class ConfigurationPolicyEvaluator {
     }
 
     private <C> void evaluate(PolicySet<C> policies, C context, Function<List<PolicyViolation>, ? extends RuntimeException> exceptionFactory) {
-        PolicyEvaluation evaluation = policies.evaluateAll(context);
+        PolicyEvaluationResult evaluation = policies.evaluateAllRules(context);
         evaluation.violations().forEach(violation ->
                 meterRegistry.counter("billing_configuration_rejected_total", "moment", policies.moment(), "code", violation.code()).increment());
         evaluation.throwIfDenied(exceptionFactory);

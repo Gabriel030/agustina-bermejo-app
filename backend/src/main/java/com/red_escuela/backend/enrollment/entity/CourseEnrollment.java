@@ -11,7 +11,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 
 @NamedInterface("model")
@@ -49,11 +49,11 @@ public class CourseEnrollment implements BillableEnrollment {
     private LocalDateTime completionDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "billing_standing", nullable = false)
-    private EnrollmentBillingStanding billingStanding = EnrollmentBillingStanding.UP_TO_DATE;
+    @Column(name = "payment_status", nullable = false)
+    private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
 
-    @Column(name = "billing_standing_updated_at")
-    private LocalDateTime billingStandingUpdatedAt;
+    @Column(name = "payment_status_updated_at")
+    private LocalDateTime paymentStatusUpdatedAt;
 
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;

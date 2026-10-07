@@ -6,11 +6,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "RETROACTIVE_EFFECTIVE_DATE", decisions = {"D-059"})
 public final class EffectiveDateNotRetroactivePolicy implements Policy<LatePaymentSettingsValues> {
-    public String name() {
+    public String ruleName() {
         return "EffectiveDateNotRetroactivePolicy";
     }
 
-    public PolicyVerdict evaluate(LatePaymentSettingsValues values) {
-        return !values.effectiveFrom().isBefore(values.today()) ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "RETROACTIVE_EFFECTIVE_DATE", "La vigencia de la política de mora no puede ser anterior a hoy.");
+    public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
+        return !values.effectiveFrom().isBefore(values.today()) ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "RETROACTIVE_EFFECTIVE_DATE", "La vigencia de la política de mora no puede ser anterior a hoy.");
     }
 }

@@ -49,8 +49,9 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   Clean Architecture*). Cada operación de negocio real (algo que un actor
   pide hacer, con su propio endpoint) es una interfaz `XxxUseCase` + una
   clase `XxxService implements XxxUseCase` anotada `@UseCase`. El método de
-  la interfaz tiene nombre de dominio (`login`, `withdraw`, `create`), nunca
-  un `execute()` genérico.
+  la interfaz es igual al nombre de la interfaz sin el sufijo, en minúscula
+  inicial (`ApproveBankTransferPaymentUseCase.approveBankTransferPayment(command)`),
+  nunca un `execute()` genérico. Los casos de uso existentes no se renombran.
 - **`Command`** solo cuando el caso de uso necesita 2+ parámetros — un solo
   `Long id` o un DTO existente que ya calza (`CreateStaffRequest`,
   `RegisterRequest`) se pasa directo, sin wrapper artificial.
@@ -85,7 +86,7 @@ estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
 ## Paquete por feature: `billing`
 
 El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
-`Promotion`, `CollectionsPolicy`, `ProgramCohort`, `ProgramYearBillingTemplate`,
+`Promotion`, `LatePaymentSettings`, `ProgramCohort`, `ProgramYearBillingTemplate`,
 etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
 `com.red_escuela.backend.billing.*`. Es ~25% de todo el backend, bastante
 autocontenido — si otro dominio (ej. evaluación y asistencia) llega a crecer
@@ -97,7 +98,7 @@ cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
 (`invoice`, `payment`, `paymentreceipt`, `creditnote`, `scholarship`,
-`promotion`, `paymentplan`, `billingperiod`, `collectionspolicy`, `cohort`)
+`promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:

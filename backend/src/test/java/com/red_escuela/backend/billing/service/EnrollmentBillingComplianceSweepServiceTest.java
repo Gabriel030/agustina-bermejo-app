@@ -4,9 +4,9 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -18,7 +18,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.AddressRepository;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
+import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -50,7 +50,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private CollectionsPolicyRepository collectionsPolicyRepository;
+    private LatePaymentSettingsRepository latePaymentSettingsRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -112,7 +112,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period, InvoiceStatus status) {
         Invoice invoice = new Invoice();
         invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(period);
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(amount);
@@ -120,8 +120,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         return invoiceRepository.save(invoice);
     }
 
-    private CollectionsPolicy persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
-        CollectionsPolicy policy = CollectionsPolicy.builder()
+    private LatePaymentSettings persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
+        LatePaymentSettings policy = LatePaymentSettings.builder()
                 .gracePeriodDays(10)
                 .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
                 .suspensionAfterDays(suspensionAfterDays)
@@ -129,7 +129,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
                 .effectiveFrom(LocalDate.now().minusYears(1))
                 .createdBy(createdBy)
                 .build();
-        return collectionsPolicyRepository.save(policy);
+        return latePaymentSettingsRepository.save(policy);
     }
 
     private ProgramEnrollment reload(Long id) {
@@ -145,7 +145,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
         sweepService.run(LocalDate.now());
 
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
     }
 
     @Test
@@ -160,7 +160,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         sweepService.run(LocalDate.now());
 
         ProgramEnrollment reloaded = reload(enrollment.getId());
-        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reloaded.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -179,7 +179,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         sweepService.run(LocalDate.now());
 
         ProgramEnrollment reloaded = reload(enrollment.getId());
-        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reloaded.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
         assertThat(invoiceRepository.findById(future.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
     }
@@ -192,14 +192,14 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoiceStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
         invoice.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(invoice);
         sweepService.run(LocalDate.now());
 
         ProgramEnrollment reloaded = reload(enrollment.getId());
-        assertThat(reloaded.getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reloaded.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
         assertThat(reloaded.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -213,7 +213,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
         sweepService.run(LocalDate.now());
 
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
     }
 
     @Test
@@ -225,7 +225,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
         sweepService.run(LocalDate.now());
 
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
     }
 
     @Test
@@ -237,13 +237,13 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Invoice first = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoiceStatus.OVERDUE);
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
         first.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(first);
         sweepService.run(LocalDate.now());
 
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
     }
 
     @Test
@@ -253,14 +253,14 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         ProgramEnrollment enrollment = persistProgramEnrollment("99000109");
         Invoice overdue = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.SUSPENDED);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
         overdue.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(overdue);
         persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(20), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
 
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }
 
     @Test
@@ -274,35 +274,35 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
             persistInvoice(enrollment, ars(1000), base.plusMonths(i).atDay(1), InvoiceStatus.PAID);
         }
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
         Invoice monthlyInvoice = persistInvoice(enrollment, ars(1000), YearMonth.now().atDay(15), YearMonth.now(), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
         monthlyInvoice.setStatus(InvoiceStatus.PAID);
         invoiceRepository.save(monthlyInvoice);
         persistInvoice(enrollment, ars(1000), YearMonth.now().plusMonths(1).atDay(15), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now().plusMonths(1));
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }
 
     @Test
-    void billingStandingStaysUpToDateWhenQueriedAtThreeDifferentMoments() {
+    void paymentStatusStaysUpToDateWhenQueriedAtThreeDifferentMoments() {
         Person director = persistPerson("director.compliance8." + System.nanoTime());
         persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000108");
 
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(2), InvoiceStatus.PAID);
         sweepService.run(LocalDate.now().minusMonths(2));
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
         persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(1), InvoiceStatus.PAID);
         sweepService.run(LocalDate.now().minusMonths(1));
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
         persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(5), InvoiceStatus.PENDING);
         sweepService.run(LocalDate.now());
-        assertThat(reload(enrollment.getId()).getBillingStanding()).isEqualTo(EnrollmentBillingStanding.UP_TO_DATE);
+        assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }
 }

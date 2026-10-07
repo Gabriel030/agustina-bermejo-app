@@ -7,7 +7,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
@@ -135,7 +135,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(amount));

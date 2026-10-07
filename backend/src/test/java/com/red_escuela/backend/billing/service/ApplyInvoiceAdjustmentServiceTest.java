@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.repository.InstitutionRepositor
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.CreateInvoiceAdjustmentRequest;
 import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -122,7 +122,7 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(10000));

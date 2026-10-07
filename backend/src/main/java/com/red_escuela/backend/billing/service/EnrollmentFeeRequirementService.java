@@ -1,20 +1,20 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.planning.ChargePlanningFacts;
-import com.red_escuela.backend.billing.planning.ChargePlan;
-import com.red_escuela.backend.billing.planning.ChargeScope;
-import com.red_escuela.backend.billing.planning.IssuedEnrollmentFee;
-import com.red_escuela.backend.billing.planning.MonthlyChargePlanner;
-import com.red_escuela.backend.billing.planning.PlannedCharge;
-import com.red_escuela.backend.billing.planning.YearCycle;
+import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
+import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
+import com.red_escuela.backend.billing.planning.domain.InvoicePlanningScope;
+import com.red_escuela.backend.billing.planning.domain.IssuedEnrollmentFee;
+import com.red_escuela.backend.billing.planning.service.ProgramMonthlyInvoicePlanner;
+import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
+import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
@@ -43,22 +43,22 @@ public class EnrollmentFeeRequirementService {
                              LocalDate dueDate, Money remainingBalance, boolean satisfied) {
     }
 
-    private final ChargePlanningContextLoader contextLoader;
+    private final InvoicePlanningContextLoader contextLoader;
     private final InvoiceRepository invoiceRepository;
-    private final PaymentReceiptRepository receiptRepository;
+    private final BankTransferReceiptRepository receiptRepository;
     private final EnrollmentFeeExemptionRepository exemptionRepository;
-    private final ChargePlanExecutor planExecutor;
-    private final MonthlyChargePlanner planner;
+    private final PlannedInvoiceIssuingService plannedInvoiceIssuingService;
+    private final ProgramMonthlyInvoicePlanner planner;
     private final Clock clock;
 
-    public EnrollmentFeeRequirementService(ChargePlanningContextLoader contextLoader, InvoiceRepository invoiceRepository,
-                                           PaymentReceiptRepository receiptRepository, EnrollmentFeeExemptionRepository exemptionRepository,
-                                           ChargePlanExecutor planExecutor, MonthlyChargePlanner planner, Clock clock) {
+    public EnrollmentFeeRequirementService(InvoicePlanningContextLoader contextLoader, InvoiceRepository invoiceRepository,
+                                           BankTransferReceiptRepository receiptRepository, EnrollmentFeeExemptionRepository exemptionRepository,
+                                           PlannedInvoiceIssuingService plannedInvoiceIssuingService, ProgramMonthlyInvoicePlanner planner, Clock clock) {
         this.contextLoader = contextLoader;
         this.invoiceRepository = invoiceRepository;
         this.receiptRepository = receiptRepository;
         this.exemptionRepository = exemptionRepository;
-        this.planExecutor = planExecutor;
+        this.plannedInvoiceIssuingService = plannedInvoiceIssuingService;
         this.planner = planner;
         this.clock = clock;
     }
@@ -73,7 +73,7 @@ public class EnrollmentFeeRequirementService {
         LocalDate today = LocalDate.now(clock);
         YearMonth reference = term.getStartDate() != null ? YearMonth.from(term.getStartDate())
                 : (term.getEnrollmentStart() != null ? YearMonth.from(term.getEnrollmentStart()) : YearMonth.from(today));
-        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
+        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
         Optional<YearCycle> cycle = context.facts().cycles().covering(reference);
         if (cycle.isEmpty()) {
             return;
@@ -84,8 +84,8 @@ public class EnrollmentFeeRequirementService {
     @Transactional
     public void requireForCurrentPeriod(ProgramEnrollment enrollment, Scope scope) {
         LocalDate today = LocalDate.now(clock);
-        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
-        ChargePlanningFacts facts = context.facts();
+        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
+        ProgramInvoicePlanningFacts facts = context.facts();
         if (scope == Scope.CERTIFICATE && (!facts.academicallyActive() || facts.planCompleted())) {
             return;
         }
@@ -108,8 +108,8 @@ public class EnrollmentFeeRequirementService {
     @Transactional(readOnly = true)
     public List<Obligation> statusOf(ProgramEnrollment enrollment) {
         LocalDate today = LocalDate.now(clock);
-        ChargePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
-        ChargePlanningFacts facts = context.facts();
+        InvoicePlanningContextLoader.PlanningContext context = contextLoader.load(enrollment, YearMonth.from(today), today);
+        ProgramInvoicePlanningFacts facts = context.facts();
         List<YearCycle> relevant = new ArrayList<>();
         facts.cycles().latestStartedOn(YearMonth.from(today)).ifPresent(relevant::add);
         facts.cycles().all().stream().filter(c -> c.start().isAfter(YearMonth.from(today))).findFirst().ifPresent(relevant::add);
@@ -125,8 +125,8 @@ public class EnrollmentFeeRequirementService {
         return result;
     }
 
-    private void check(ProgramEnrollment enrollment, ChargePlanningContextLoader.PlanningContext context, YearCycle cycle, int slot, Scope scope) {
-        ChargePlanningFacts facts = context.facts();
+    private void check(ProgramEnrollment enrollment, InvoicePlanningContextLoader.PlanningContext context, YearCycle cycle, int slot, Scope scope) {
+        ProgramInvoicePlanningFacts facts = context.facts();
         ProgramYearBillingTemplate template = cycle.template();
         boolean blocks = switch (scope) {
             case SUBJECT_ENROLLMENT -> template.isBlocksEnrollment();
@@ -157,20 +157,20 @@ public class EnrollmentFeeRequirementService {
         throw new EnrollmentFeeNotPaidForTermException(enrollment.getId(), cycle.templateId(), slot);
     }
 
-    private boolean issueOnDemand(ProgramEnrollment enrollment, ChargePlanningContextLoader.PlanningContext context, YearCycle cycle, int slot) {
-        ChargePlan plan = planner.plan(context.facts(), ChargeScope.ENROLLMENT_FEE_ONLY, true);
-        Optional<PlannedCharge> charge = plan.charges().stream()
+    private boolean issueOnDemand(ProgramEnrollment enrollment, InvoicePlanningContextLoader.PlanningContext context, YearCycle cycle, int slot) {
+        MonthlyInvoicePlan plan = planner.planInvoicesForMonth(context.facts(), InvoicePlanningScope.ENROLLMENT_FEE_ONLY, true);
+        Optional<PlannedInvoice> charge = plan.charges().stream()
                 .filter(c -> cycle.templateId().equals(c.templateId()) && c.slot() != null && c.slot() == slot).findFirst();
         if (charge.isEmpty()) {
             return false;
         }
         log.info("Matrícula emitida a demanda: inscripcion={}, plantilla={}, matricula={}, periodo={}",
                 enrollment.getId(), cycle.templateId(), slot, charge.get().period());
-        planExecutor.issue(enrollment, context.selection(), charge.get(), com.red_escuela.backend.billing.entity.IssueReason.ENROLLMENT_FEE_ON_DEMAND, false);
+        plannedInvoiceIssuingService.issuePlannedProgramInvoice(enrollment, context.selection(), charge.get(), com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason.ENROLLMENT_FEE_ON_DEMAND, false);
         return true;
     }
 
-    private Obligation describe(ProgramEnrollment enrollment, ChargePlanningFacts facts, YearCycle cycle, int slot) {
+    private Obligation describe(ProgramEnrollment enrollment, ProgramInvoicePlanningFacts facts, YearCycle cycle, int slot) {
         boolean exempted = exemptionRepository
                 .findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(enrollment.getId(), cycle.templateId(), slot).isPresent();
         Invoice invoice = facts.feeOf(cycle, slot).flatMap(f -> invoiceRepository.findById(f.invoiceId())).orElse(null);
@@ -185,7 +185,7 @@ public class EnrollmentFeeRequirementService {
             status = Status.EXEMPTED;
         } else if (invoice.getStatus() == InvoiceStatus.CANCELLED) {
             status = Status.CANCELLED;
-        } else if (receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), PaymentReceiptStatus.PENDING_REVIEW)) {
+        } else if (receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW)) {
             status = Status.IN_REVIEW;
         } else if (invoice.getRemainingBalance().isGreaterThan(invoice.getAmountDue()) || invoice.getRemainingBalance().equals(invoice.getAmountDue())) {
             status = Status.PENDING;

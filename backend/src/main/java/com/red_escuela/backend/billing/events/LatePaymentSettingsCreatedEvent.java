@@ -8,11 +8,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-public record LatePaymentSettingsCreatedEvent(UUID eventId, String correlationId, Instant occurredAt, Long collectionsPolicyId,
+public record LatePaymentSettingsCreatedEvent(UUID eventId, String correlationId, Instant occurredAt, Long latePaymentSettingsId,
                                               LocalDate effectiveFrom, Long createdByPersonId) implements DeduplicableDomainEvent {
 
-    public static LatePaymentSettingsCreatedEvent createdFor(Long collectionsPolicyId, LocalDate effectiveFrom, Long createdByPersonId) {
-        return new LatePaymentSettingsCreatedEvent(UUID.randomUUID(), CorrelationIds.current(), ApplicationTime.instant(), collectionsPolicyId,
+    public static LatePaymentSettingsCreatedEvent createdFor(Long latePaymentSettingsId, LocalDate effectiveFrom, Long createdByPersonId) {
+        return new LatePaymentSettingsCreatedEvent(UUID.randomUUID(), CorrelationIds.current(), ApplicationTime.instant(), latePaymentSettingsId,
                 effectiveFrom, createdByPersonId);
     }
 }

@@ -92,7 +92,7 @@ function paymentAmountsError(payableInvoices, amounts) {
 async function openReceiptFile(receiptId) {
   const preview = window.open('', '_blank');
   try {
-    const { blob } = await apiFetchBlob(`/payment-receipts/${receiptId}/file`);
+    const { blob } = await apiFetchBlob(`/bank-transfer-receipts/${receiptId}/file`);
     const url = URL.createObjectURL(blob);
     if (preview) {
       preview.location.href = url;
@@ -340,8 +340,8 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [showModal, setShowModal] = useState(false);
 
-  const standingInfo = BILLING_STANDING_CONFIG[enrollment.billingStanding] ?? {
-    label: enrollment.billingStanding,
+  const standingInfo = BILLING_STANDING_CONFIG[enrollment.paymentStatus] ?? {
+    label: enrollment.paymentStatus,
     tone: 'neutral',
   };
 
@@ -365,9 +365,9 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
       >
         <div className="flex-1 min-w-0">
           <p className="truncate font-semibold text-ink">{productLabel}</p>
-          {enrollment.billingStandingUpdatedAt && (
+          {enrollment.paymentStatusUpdatedAt && (
             <p className="text-xs text-ink-faint">
-              Desde {formatDate(enrollment.billingStandingUpdatedAt)}
+              Desde {formatDate(enrollment.paymentStatusUpdatedAt)}
             </p>
           )}
         </div>

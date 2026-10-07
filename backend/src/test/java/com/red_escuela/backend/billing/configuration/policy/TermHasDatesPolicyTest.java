@@ -17,7 +17,7 @@ class TermHasDatesPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(withoutDates(snapshot(1, 2, null, 10)));
+        PolicyVerdict denial = policy.evaluateRule(withoutDates(snapshot(1, 2, null, 10)));
         assertThat(denial.allowed()).isFalse();
         assertThat(TermHasDatesPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("TERM_WITHOUT_DATES");
@@ -26,6 +26,6 @@ class TermHasDatesPolicyTest {
 
     @Test
     void allowsATermWithStartAndEnd() {
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
     }
 }

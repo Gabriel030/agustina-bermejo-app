@@ -7,7 +7,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -140,7 +140,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
         PriceRevision revision = new PriceRevision();
         revision.setCourse(course);
-        revision.setFeeType(FeeType.RECURRING_FEE);
+        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         revision.setDescription("Precio de prueba");
         revision.setMonthlyAmount(ars(price));
         revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
@@ -162,7 +162,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     private PaymentPlanOption persistUpfrontOption(Course course, boolean windowEnabled, LocalDate start, LocalDate end, Person director) {
         authenticateAsPerson(director);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, windowEnabled, start, end);
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, windowEnabled, start, end);
         return createPaymentPlanOptionForCourseUseCase.create(course.getId(), request);
     }
 
@@ -415,7 +415,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
 
         PriceRevision revision = new PriceRevision();
         revision.setCourse(course);
-        revision.setFeeType(FeeType.RECURRING_FEE);
+        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         revision.setDescription("Precio de prueba");
         revision.setMonthlyAmount(ars(12000));
         revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));

@@ -68,7 +68,7 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>(violations("I-15 more installments than configured", """
                 select 'enrollment ' || i.program_enrollment_id || ' template ' || i.template_id
                 from legacy_invoice i join program_year_billing_template t on t.id = i.template_id
-                where i.program_enrollment_id > ? and i.fee_type = 'RECURRING_FEE' and i.status <> 'CANCELLED'
+                where i.program_enrollment_id > ? and i.fee_type = 'MONTHLY_INSTALLMENT' and i.status <> 'CANCELLED'
                 group by i.program_enrollment_id, i.template_id, t.recurring_fee_invoices_count
                 having count(*) > t.recurring_fee_invoices_count
                 """, baselineEnrollmentId));
@@ -76,7 +76,7 @@ public final class BillingInvariantChecker {
             found.addAll(violations("I-15 installment in January or February", """
                 select 'invoice ' || id || ' period ' || period
                 from legacy_invoice
-                where program_enrollment_id > ? and fee_type = 'RECURRING_FEE' and extract(month from period) in (1, 2)
+                where program_enrollment_id > ? and fee_type = 'MONTHLY_INSTALLMENT' and extract(month from period) in (1, 2)
                 """, baselineEnrollmentId));
         }
         return found;
@@ -86,9 +86,9 @@ public final class BillingInvariantChecker {
         return violations("I-16 invoice emitted for a suspended enrollment", """
                 select 'invoice ' || i.id || ' enrollment ' || e.id
                 from legacy_invoice i join program_enrollment e on e.id = i.program_enrollment_id
-                where e.id > ? and e.billing_standing = 'SUSPENDED'
-                  and i.status <> 'CANCELLED' and i.issue_reason = 'MONTHLY_JOB'
-                  and i.created_at > e.billing_standing_updated_at
+                where e.id > ? and e.payment_status = 'SUSPENDED'
+                  and i.status <> 'CANCELLED' and i.issue_reason = 'MONTHLY_RUN'
+                  and i.created_at > e.payment_status_updated_at
                 """, baselineEnrollmentId);
     }
 

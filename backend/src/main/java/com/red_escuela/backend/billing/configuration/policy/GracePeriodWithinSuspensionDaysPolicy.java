@@ -6,11 +6,11 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 @PolicyRule(violationCodes = "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS", decisions = {"D-147"})
 public final class GracePeriodWithinSuspensionDaysPolicy implements Policy<LatePaymentSettingsValues> {
-    public String name() {
+    public String ruleName() {
         return "GracePeriodWithinSuspensionDaysPolicy";
     }
 
-    public PolicyVerdict evaluate(LatePaymentSettingsValues values) {
-        return values.gracePeriodDays() <= values.suspensionAfterDays() ? PolicyVerdict.allow(name()) : PolicyVerdict.deny(name(), "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS", "El período de gracia no puede superar los días para suspender.");
+    public PolicyVerdict evaluateRule(LatePaymentSettingsValues values) {
+        return values.gracePeriodDays() <= values.suspensionAfterDays() ? PolicyVerdict.allow(ruleName()) : PolicyVerdict.deny(ruleName(), "GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS", "El período de gracia no puede superar los días para suspender.");
     }
 }

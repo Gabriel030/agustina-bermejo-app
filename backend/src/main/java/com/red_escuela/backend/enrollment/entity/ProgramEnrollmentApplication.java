@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.Program;
 
@@ -58,7 +58,7 @@ public class ProgramEnrollmentApplication {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_receipt_id")
-    private PaymentReceipt paymentReceipt;
+    private BankTransferReceipt paymentReceipt;
 
     public void approve(Person decidedBy) {
         requirePending();

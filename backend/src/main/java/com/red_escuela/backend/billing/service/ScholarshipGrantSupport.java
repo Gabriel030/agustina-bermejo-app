@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.service;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.Scholarship;
 import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException;
@@ -53,7 +53,7 @@ public class ScholarshipGrantSupport {
     public void applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(Scholarship scholarship, List<Invoice> paidInvoices, Student student) {
         YearMonth currentPeriod = YearMonth.now(clock);
         paidInvoices.stream()
-                .filter(invoice -> invoice.getFeeType() == FeeType.RECURRING_FEE && currentPeriod.equals(invoice.getPeriod()))
+                .filter(invoice -> invoice.getFeeType() == FeeType.MONTHLY_INSTALLMENT && currentPeriod.equals(invoice.getPeriod()))
                 .findFirst()
                 .ifPresent(invoice -> {
                     scholarship.consumeOne(invoice);

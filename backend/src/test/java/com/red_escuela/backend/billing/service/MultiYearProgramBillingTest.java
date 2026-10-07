@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -199,7 +199,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
     private long tuitionInvoiceCount(Long programEnrollmentId) {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                 .count();
     }
 
@@ -212,7 +212,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     private PaymentPlanOption upfrontPlan(Program program, Person director) {
         authenticateAs(director);
         return createPaymentPlanOptionForProgramUseCase.create(program.getId(),
-                new CreatePaymentPlanOptionRequest("Adelantado", PaymentPlanCadence.UPFRONT, null, true,
+                new CreatePaymentPlanOptionRequest("Adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true,
                         LocalDate.now().minusDays(1), LocalDate.now().plusDays(60)));
     }
 
@@ -221,7 +221,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIR2Y" + System.nanoTime());
         Program program = persistProgram("Carrera 2 años " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term termAño1 = persistTerm(1, base, base.plusMonths(9));
@@ -261,7 +261,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIR25Y" + System.nanoTime());
         Program program = persistProgram("Carrera 2.5 años " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(8000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(8000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term1 = persistTerm(1, base, base.plusMonths(9));
@@ -305,7 +305,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRREP" + System.nanoTime());
         Program program = persistProgram("Carrera con repitente " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(9000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(9000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term1 = persistTerm(1, base.plusMonths(10), base.plusMonths(19));
@@ -342,7 +342,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRINT" + System.nanoTime());
         Program program = persistProgram("Carrera intercalada " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(7000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(7000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term1 = persistTerm(1, base, base.plusMonths(9));
@@ -386,7 +386,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRTOPE" + System.nanoTime());
         Program program = persistProgram("Carrera con tope por año " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(6000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(6000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term1 = persistTerm(1, base, base.plusMonths(9));
@@ -421,7 +421,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRTOPEMENS" + System.nanoTime());
         Program program = persistProgram("Carrera con tope mensual " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(5000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(5000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term = persistTerm(1, base, base.plusMonths(9));
@@ -448,7 +448,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         YearMonth base = YearMonth.now();
         Person director = persistPerson("DIRVENTMENS" + System.nanoTime());
         Program program = persistProgram("Carrera con ventana mensual " + System.nanoTime());
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(5000), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(5000), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), director);
 
         Term term = persistTerm(1, base, base.plusMonths(4));

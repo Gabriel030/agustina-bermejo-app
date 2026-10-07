@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -203,7 +203,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(Student student, Money amount) {
         Invoice invoice = new Invoice();
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(amount);

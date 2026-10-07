@@ -2,8 +2,8 @@ package com.red_escuela.backend.billing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.red_escuela.backend.billing.dto.CollectionsPolicyResponse;
-import com.red_escuela.backend.billing.dto.CreateCollectionsPolicyRequest;
+import com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse;
+import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationResponse;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
@@ -41,7 +41,7 @@ class BillingMoneyContractTest {
         }
 
         @PostMapping("/contract/policy")
-        CreateCollectionsPolicyRequest policy(@Valid @RequestBody CreateCollectionsPolicyRequest request) {
+        CreateLatePaymentSettingsRequest policy(@Valid @RequestBody CreateLatePaymentSettingsRequest request) {
             return request;
         }
     }
@@ -110,7 +110,7 @@ class BillingMoneyContractTest {
     @Test
     @Tag("D-099")
     void thePolicyResponseExposesThePercentInPoints() throws Exception {
-        String json = objectMapper.writeValueAsString(new CollectionsPolicyResponse(
+        String json = objectMapper.writeValueAsString(new LatePaymentSettingsResponse(
                 1L, 10, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("10")),
                 30, 2, java.time.LocalDate.of(2026, 1, 1)));
         org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(json).get("surchargePercent").decimalValue())

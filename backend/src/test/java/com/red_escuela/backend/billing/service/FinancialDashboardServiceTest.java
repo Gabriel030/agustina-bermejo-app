@@ -14,7 +14,7 @@ import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
@@ -130,7 +130,7 @@ class FinancialDashboardServiceTest extends AbstractIntegrationTest {
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status, YearMonth period) {
         Invoice invoice = new Invoice();
         invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
+        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(period);
         invoice.setDueDate(period.atDay(10));
         invoice.setBaseAmount(amount);

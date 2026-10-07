@@ -11,8 +11,8 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -180,12 +180,12 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             cohort.setCreatedBy(director);
             entityManager.persist(cohort);
 
-            for (FeeType feeType : List.of(FeeType.RECURRING_FEE, FeeType.ENROLLMENT_FEE)) {
+            for (FeeType feeType : List.of(FeeType.MONTHLY_INSTALLMENT, FeeType.ENROLLMENT_FEE)) {
                 PriceRevision price = new PriceRevision();
                 price.setProgram(program);
                 price.setFeeType(feeType);
                 price.setDescription("Precio");
-                price.setMonthlyAmount(ars(feeType == FeeType.RECURRING_FEE ? 10000 : 5000));
+                price.setMonthlyAmount(ars(feeType == FeeType.MONTHLY_INSTALLMENT ? 10000 : 5000));
                 price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
                 price.setCreatedBy(director);
                 entityManager.persist(price);
@@ -244,9 +244,9 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         });
     }
 
-    private void setBillingStanding(Fixture fixture, EnrollmentBillingStanding standing) {
+    private void setPaymentStatus(Fixture fixture, EnrollmentPaymentStatus standing) {
         transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setBillingStanding(standing));
+                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setPaymentStatus(standing));
     }
 
     private List<Invoice> invoicesOf(Fixture fixture, FeeType feeType) {
@@ -292,7 +292,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
 
         assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(MARCH);
     }
 
     @Test
@@ -313,7 +313,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
 
         assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).hasSize(1);
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(MARCH);
     }
 
     @Test
@@ -323,7 +323,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
         job.run(MARCH);
 
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(MARCH);
     }
 
     @Test
@@ -332,7 +332,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
         job.run(MARCH);
 
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(MARCH);
     }
 
     @Test
@@ -342,7 +342,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
         job.run(MARCH);
 
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).hasSize(1);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).hasSize(1);
     }
 
     @Test
@@ -352,12 +352,12 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH);
         job.run(MARCH.plusMonths(1));
 
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(MARCH);
     }
 
     @Test
     void issuesAllTheInstallmentsOfTheScopeToUpfrontEnrollmentsOnceAndNeverRepeatsThem() {
-        Fixture fixture = setUpProgramEnrollment("94100031", PaymentPlanCadence.UPFRONT, 10, CohortIntake.FIRST, YearMonth.of(2026, 1));
+        Fixture fixture = setUpProgramEnrollment("94100031", PaymentPlanCadence.ANNUAL_UPFRONT, 10, CohortIntake.FIRST, YearMonth.of(2026, 1));
 
         job.run(MARCH);
         int issued = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(fixture.enrollment().getId()).size();
@@ -371,8 +371,8 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     void doesNotIssueToWithdrawnForNonPaymentNorSuspendedEnrollments() {
         Fixture withdrawn = monthlyFixture("94100041");
         Fixture suspended = monthlyFixture("94100051");
-        setBillingStanding(withdrawn, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
-        setBillingStanding(suspended, EnrollmentBillingStanding.SUSPENDED);
+        setPaymentStatus(withdrawn, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
+        setPaymentStatus(suspended, EnrollmentPaymentStatus.SUSPENDED);
 
         job.run(MARCH);
 
@@ -419,7 +419,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
 
         job.run(MARCH);
 
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).hasSize(1);
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).hasSize(1);
     }
 
     @Test
@@ -432,7 +432,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(YearMonth.of(2026, 7));
 
         assertThat(invoicesOf(fixture, FeeType.ENROLLMENT_FEE)).extracting(Invoice::getPeriod).containsExactly(MARCH);
-        assertThat(invoicesOf(fixture, FeeType.RECURRING_FEE)).extracting(Invoice::getPeriod)
+        assertThat(invoicesOf(fixture, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod)
                 .containsExactly(MARCH, YearMonth.of(2026, 7));
     }
 
@@ -497,7 +497,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             entityManager.persist(course);
             PriceRevision price = new PriceRevision();
             price.setCourse(course);
-            price.setFeeType(FeeType.RECURRING_FEE);
+            price.setFeeType(FeeType.MONTHLY_INSTALLMENT);
             price.setDescription("Precio");
             price.setMonthlyAmount(ars(7000));
             price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
@@ -531,7 +531,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         job.run(MARCH.plusMonths(1));
 
         List<Invoice> invoices = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId());
-        assertThat(invoices).extracting(Invoice::getFeeType).containsOnly(FeeType.RECURRING_FEE);
+        assertThat(invoices).extracting(Invoice::getFeeType).containsOnly(FeeType.MONTHLY_INSTALLMENT);
         assertThat(invoices).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2026, 2), MARCH);
     }
 
@@ -544,7 +544,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             for (YearMonth period : List.of(now, now.plusMonths(1), now.plusMonths(2))) {
                 Invoice invoice = new Invoice();
                 invoice.setProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId()));
-                invoice.setFeeType(FeeType.RECURRING_FEE);
+                invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
                 invoice.setPeriod(period);
                 invoice.setDueDate(period.atDay(10));
                 invoice.setBaseAmount(ars(10000));

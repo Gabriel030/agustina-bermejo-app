@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 
 @Getter
 @Setter

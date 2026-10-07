@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.usecase.paymentreceipt;
 
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 
 import java.util.List;
 
 public interface ListPendingPaymentReceiptsUseCase {
-    List<PaymentReceipt> list();
+    List<BankTransferReceipt> list();
 }

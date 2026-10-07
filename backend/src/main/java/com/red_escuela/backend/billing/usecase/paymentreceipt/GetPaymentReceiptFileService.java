@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentreceipt;
 
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
 import com.red_escuela.backend.shared.storage.FileStorageService;
@@ -31,7 +31,7 @@ public class GetPaymentReceiptFileService implements GetPaymentReceiptFileUseCas
 
     @Override
     public PaymentReceiptFile get(Long receiptId) {
-        PaymentReceipt receipt = paymentReceiptFinder.findOrThrow(receiptId);
+        BankTransferReceipt receipt = paymentReceiptFinder.findOrThrow(receiptId);
         String fileName = Path.of(receipt.getFilePath()).getFileName().toString();
         try {
             return new PaymentReceiptFile(fileName, contentTypeOf(fileName), fileStorageService.readBytes(receipt.getFilePath()));

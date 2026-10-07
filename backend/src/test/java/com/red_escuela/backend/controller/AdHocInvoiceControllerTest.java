@@ -2,7 +2,7 @@ package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -119,7 +119,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenPreceptor = tokenWithRole("preceptor.adhoc.test", "PRECEPTOR");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, ars(1500), LocalDate.now(), "Derecho de examen", null, null);
+                FeeType.EXAM_FEE, ars(1500), LocalDate.now(), "Derecho de examen", null, null);
         String body = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
@@ -141,7 +141,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenAdministrativo = tokenWithRole("administrativo.adhoc.test", "ADMINISTRATIVO");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.DEGREE_ISSUANCE, ars(3000), LocalDate.now(), "Emisión de título", null, null);
+                FeeType.DEGREE_ISSUANCE_FEE, ars(3000), LocalDate.now(), "Emisión de título", null, null);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import java.time.Clock;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;

@@ -14,7 +14,7 @@ public class FinalExamEligibilityEvaluator {
             PolicySet.named("FINAL_EXAM_LOAD", List.of(new RegularStudentForFinalExamPolicy()));
 
     public void requireEligible(Long enrollmentId, boolean regularInSubject) {
-        finalExamLoadPolicies.evaluateUntilFirstDenial(new FinalExamLoadRequest(enrollmentId, regularInSubject))
+        finalExamLoadPolicies.evaluateRulesUntilFirstViolation(new FinalExamLoadRequest(enrollmentId, regularInSubject))
                 .throwIfDenied(FinalExamRequiresRegularStudentException::new);
     }
 }

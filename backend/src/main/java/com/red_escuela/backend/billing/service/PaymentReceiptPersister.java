@@ -4,48 +4,48 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.entity.PaymentReceipt;
-import com.red_escuela.backend.billing.entity.PaymentReceiptStatus;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentReceiptRepository;
+import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentReceiptPersister {
     private final InvoiceRepository invoiceRepository;
-    private final PaymentReceiptRepository paymentReceiptRepository;
+    private final BankTransferReceiptRepository bankTransferReceiptRepository;
     private final StudentRepository studentRepository;
 
-    public PaymentReceiptPersister(InvoiceRepository invoiceRepository, PaymentReceiptRepository paymentReceiptRepository,
+    public PaymentReceiptPersister(InvoiceRepository invoiceRepository, BankTransferReceiptRepository bankTransferReceiptRepository,
                                     StudentRepository studentRepository) {
         this.invoiceRepository = invoiceRepository;
-        this.paymentReceiptRepository = paymentReceiptRepository;
+        this.bankTransferReceiptRepository = bankTransferReceiptRepository;
         this.studentRepository = studentRepository;
     }
 
     @Transactional
-    public PaymentReceipt persist(Long invoiceId, Long studentId, String filePath) {
+    public BankTransferReceipt persist(Long invoiceId, Long studentId, String filePath) {
         Invoice invoice = invoiceRepository.findByIdForUpdate(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
         validateOwnership(invoice, studentId);
         if (invoice.getStatus() != InvoiceStatus.PENDING && invoice.getStatus() != InvoiceStatus.OVERDUE) {
             throw new InvoiceNotPayableException(invoiceId, invoice.getStatus().name());
         }
-        if (paymentReceiptRepository.existsByInvoiceIdAndStatus(invoiceId, PaymentReceiptStatus.PENDING_REVIEW)) {
+        if (bankTransferReceiptRepository.existsByInvoiceIdAndStatus(invoiceId, BankTransferReceiptStatus.PENDING_REVIEW)) {
             throw new PaymentReceiptAlreadyPendingException(invoiceId);
         }
 
-        PaymentReceipt receipt = new PaymentReceipt();
+        BankTransferReceipt receipt = new BankTransferReceipt();
         receipt.setInvoice(invoice);
         receipt.setFilePath(filePath);
-        receipt.setStatus(PaymentReceiptStatus.PENDING_REVIEW);
+        receipt.setStatus(BankTransferReceiptStatus.PENDING_REVIEW);
         receipt.setUploadedBy(studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId)).getPerson());
-        return paymentReceiptRepository.save(receipt);
+        return bankTransferReceiptRepository.save(receipt);
     }
 
     private void validateOwnership(Invoice invoice, Long studentId) {

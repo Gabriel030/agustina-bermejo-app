@@ -12,7 +12,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -167,7 +167,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
 
         PriceRevision price = new PriceRevision();
         price.setProgram(program);
-        price.setFeeType(FeeType.RECURRING_FEE);
+        price.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         price.setDescription("Cuota mensual");
         price.setMonthlyAmount(ars(10000));
         price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
@@ -251,7 +251,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
 
     private List<Invoice> recurringInvoices(ProgramEnrollment enrollment) {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(invoice -> invoice.getFeeType() == FeeType.RECURRING_FEE)
+                .filter(invoice -> invoice.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                 .toList();
     }
 

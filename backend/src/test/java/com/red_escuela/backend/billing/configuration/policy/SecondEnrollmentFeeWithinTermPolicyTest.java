@@ -17,7 +17,7 @@ class SecondEnrollmentFeeWithinTermPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(creation(snapshot(2, 2, 3, 10)));
+        PolicyVerdict denial = policy.evaluateRule(creation(snapshot(2, 2, 3, 10)));
         assertThat(denial.allowed()).isFalse();
         assertThat(SecondEnrollmentFeeWithinTermPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("SECOND_ENROLLMENT_FEE_OUTSIDE_TERM");
@@ -26,8 +26,8 @@ class SecondEnrollmentFeeWithinTermPolicyTest {
 
     @Test
     void allowsSecondFeeAfterTermStartUpToTermEndMonthInclusive() {
-        assertThat(policy.evaluate(creation(snapshot(2, 2, 4, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(creation(snapshot(2, 2, 12, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(2, 2, 4, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(2, 2, 12, 10))).allowed()).isTrue();
     }
 
     @Test
@@ -35,12 +35,12 @@ class SecondEnrollmentFeeWithinTermPolicyTest {
         YearBillingConfigurationChange shortTerm = termRange(YearMonth.of(2027, 3), YearMonth.of(2027, 6), Set.of());
         YearBillingConfigurationChange change = new YearBillingConfigurationChange(shortTerm.current(), snapshot(2, 2, 7, 3),
                 shortTerm.termStart(), shortTerm.termEnd(), Set.of(), Set.of());
-        assertThat(policy.evaluate(change).allowed()).isFalse();
+        assertThat(policy.evaluateRule(change).allowed()).isFalse();
     }
 
     @Test
     void ignoresSingleEnrollmentAndTermsWithoutDates() {
-        assertThat(policy.evaluate(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
-        assertThat(policy.evaluate(withoutDates(snapshot(2, 2, 3, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(creation(snapshot(1, 2, null, 10))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(withoutDates(snapshot(2, 2, 3, 10))).allowed()).isTrue();
     }
 }

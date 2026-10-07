@@ -50,7 +50,7 @@ public final class AccountTestData {
 
     public static Invoice issuedInvoice(long invoiceId, long accountId, Currency currency, String amount, String chargeKey) {
         InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, currency, InvoiceDocumentType.INVOICE, InvoiceType.ADMINISTRATIVE_FEE,
-                InvoiceIssuingReason.AD_HOC, null);
+                InvoiceIssuingReason.AD_HOC_CHARGE, null);
         Invoice invoice = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line(FeeType.ADMINISTRATIVE_FEE, currency, amount, chargeKey), ACTOR);
         issue(invoice, invoiceId);
         return invoice;
@@ -62,7 +62,7 @@ public final class AccountTestData {
 
     public static Invoice issuedDebitNote(long invoiceId, String amount) {
         InvoiceDraftHeader header = new InvoiceDraftHeader(ACCOUNT_ID, Currency.ARS, InvoiceDocumentType.DEBIT_NOTE, InvoiceType.LATE_FEE,
-                InvoiceIssuingReason.MONTHLY_JOB, 99L);
+                InvoiceIssuingReason.MONTHLY_RUN, 99L);
         Invoice debitNote = InvoiceFactory.createLateFeeDebitNoteDraft(header,
                 line(FeeType.LATE_FEE, Currency.ARS, amount, "LF:" + invoiceId), ACTOR);
         issue(debitNote, invoiceId);
@@ -77,7 +77,7 @@ public final class AccountTestData {
 
     public static Invoice draftInvoice(long invoiceId, String amount) {
         InvoiceDraftHeader header = new InvoiceDraftHeader(ACCOUNT_ID, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ADMINISTRATIVE_FEE,
-                InvoiceIssuingReason.AD_HOC, null);
+                InvoiceIssuingReason.AD_HOC_CHARGE, null);
         Invoice invoice = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header,
                 line(FeeType.ADMINISTRATIVE_FEE, Currency.ARS, amount, "DR:" + invoiceId), ACTOR);
         ReflectionTestUtils.setField(invoice, "id", invoiceId);

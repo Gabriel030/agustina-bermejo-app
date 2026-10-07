@@ -105,7 +105,7 @@ abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
 
     protected Long newIssuedInvoiceId(Long accountId, Currency currency, String amount) {
         InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, currency, InvoiceDocumentType.INVOICE, InvoiceType.ADMINISTRATIVE_FEE,
-                InvoiceIssuingReason.AD_HOC, null);
+                InvoiceIssuingReason.AD_HOC_CHARGE, null);
         InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ADMINISTRATIVE_FEE, "Tasa", YearMonth.of(2027, 3), null, null, null, null, null,
                 "PE:acc" + System.nanoTime(), NonNegativeMoney.of(new BigDecimal(amount), currency));
         Invoice invoice = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);

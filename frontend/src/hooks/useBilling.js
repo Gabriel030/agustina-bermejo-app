@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useBillingStanding() {
+export function useEnrollmentPaymentStatus() {
   return useQuery({
-    queryKey: ['me', 'billing-standing'],
-    queryFn: () => apiFetch('/me/billing-standing'),
+    queryKey: ['me', 'enrollment-payment-status'],
+    queryFn: () => apiFetch('/me/enrollment-payment-status'),
   });
 }
 
@@ -26,8 +26,8 @@ export function useFacturasDeMatricula(programEnrollmentId) {
 
 export function useMisComprobantes() {
   return useQuery({
-    queryKey: ['me', 'payment-receipts'],
-    queryFn: () => apiFetch('/me/payment-receipts'),
+    queryKey: ['me', 'bank-transfer-receipts'],
+    queryFn: () => apiFetch('/me/bank-transfer-receipts'),
   });
 }
 
@@ -45,10 +45,10 @@ export function useSubirComprobante() {
     mutationFn: ({ invoiceId, file }) => {
       const body = new FormData();
       body.append('comprobante', file);
-      return apiFetch(`/me/invoices/${invoiceId}/payment-receipts`, { method: 'POST', body });
+      return apiFetch(`/me/invoices/${invoiceId}/bank-transfer-receipts`, { method: 'POST', body });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['me', 'payment-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['me', 'bank-transfer-receipts'] });
     },
   });
 }
@@ -87,17 +87,17 @@ export function useRegistrarPago() {
 
 export function useComprobantesAdmin() {
   return useQuery({
-    queryKey: ['admin', 'payment-receipts'],
-    queryFn: () => apiFetch('/payment-receipts'),
+    queryKey: ['admin', 'bank-transfer-receipts'],
+    queryFn: () => apiFetch('/bank-transfer-receipts'),
   });
 }
 
 export function useAprobarComprobante() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id) => apiFetch(`/payment-receipts/${id}/approve`, { method: 'POST' }),
+    mutationFn: (id) => apiFetch(`/bank-transfer-receipts/${id}/approve`, { method: 'POST' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'bank-transfer-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
   });
@@ -107,7 +107,7 @@ export function useRechazarComprobante() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, rejectionReason }) =>
-      apiFetch(`/payment-receipts/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason }) }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'payment-receipts'] }),
+      apiFetch(`/bank-transfer-receipts/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason }) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'bank-transfer-receipts'] }),
   });
 }

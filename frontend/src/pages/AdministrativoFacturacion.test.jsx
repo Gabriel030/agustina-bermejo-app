@@ -18,7 +18,7 @@ const pendingReceipt = {
   studentName: 'Martina Acosta',
   studentDni: '28016166',
   invoicePeriod: '2026-09',
-  invoiceFeeType: 'RECURRING_FEE',
+  invoiceFeeType: 'MONTHLY_INSTALLMENT',
   productName: 'Profesorado de Educación Inicial',
 };
 
@@ -27,7 +27,7 @@ function renderPage(route = '/', receipts = [pendingReceipt]) {
     http.get(`${API}/students`, () =>
       HttpResponse.json([{ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }]),
     ),
-    http.get(`${API}/payment-receipts`, () => HttpResponse.json(receipts)),
+    http.get(`${API}/bank-transfer-receipts`, () => HttpResponse.json(receipts)),
   );
   return renderWithProviders(
     <>
@@ -51,9 +51,9 @@ async function openRegisterPaymentModal(user) {
           enrollmentType: 'PROGRAM',
           enrollmentId: 2,
           productName: 'Profesorado de Educación Inicial',
-          billingStanding: 'OVERDUE',
+          paymentStatus: 'OVERDUE',
           invoices: [
-            { id: 61, feeType: 'RECURRING_FEE', period: '2026-09', dueDate: '2026-09-10', remainingBalance: { amount: '52800.00', currency: 'ARS' }, status: 'OVERDUE' },
+            { id: 61, feeType: 'MONTHLY_INSTALLMENT', period: '2026-09', dueDate: '2026-09-10', remainingBalance: { amount: '52800.00', currency: 'ARS' }, status: 'OVERDUE' },
           ],
         },
       ]),
@@ -84,7 +84,7 @@ describe('AdministrativoFacturacion — comprobantes', () => {
     vi.spyOn(window, 'open').mockReturnValue(preview);
     URL.createObjectURL = vi.fn(() => 'blob:comprobante-7');
     server.use(
-      http.get(`${API}/payment-receipts/7/file`, () =>
+      http.get(`${API}/bank-transfer-receipts/7/file`, () =>
         new HttpResponse('contenido', {
           headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'inline; filename="comprobantes_1.pdf"' },
         }),
@@ -102,7 +102,7 @@ describe('AdministrativoFacturacion — comprobantes', () => {
 
   it('explains why a receipt cannot be approved when its installment was already paid at the counter', async () => {
     server.use(
-      http.post(`${API}/payment-receipts/7/approve`, () =>
+      http.post(`${API}/bank-transfer-receipts/7/approve`, () =>
         HttpResponse.json({ code: 'INVOICE_NOT_PAYABLE' }, { status: 409 }),
       ),
     );
@@ -169,7 +169,7 @@ const money = (amount) => ({ amount, currency: 'ARS' });
 
 const paidInvoice = {
   id: 70,
-  feeType: 'RECURRING_FEE',
+  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-03',
   dueDate: '2026-03-10',
   baseAmount: money('52000.00'),
@@ -209,7 +209,7 @@ const paidInvoice = {
 
 const partialInvoice = {
   id: 71,
-  feeType: 'RECURRING_FEE',
+  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-04',
   dueDate: '2026-04-10',
   baseAmount: money('52000.00'),
@@ -227,7 +227,7 @@ const partialInvoice = {
 
 const untouchedInvoice = {
   id: 72,
-  feeType: 'RECURRING_FEE',
+  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-05',
   dueDate: '2026-05-10',
   baseAmount: money('52000.00'),
@@ -252,7 +252,7 @@ async function openAccountOf(invoices, user) {
   server.use(
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([
-        { enrollmentType: 'PROGRAM', enrollmentId: 2, productName: 'Profesorado de Educación Inicial', billingStanding: 'UP_TO_DATE', invoices },
+        { enrollmentType: 'PROGRAM', enrollmentId: 2, productName: 'Profesorado de Educación Inicial', paymentStatus: 'UP_TO_DATE', invoices },
       ]),
     ),
   );
@@ -356,7 +356,7 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
     vi.spyOn(window, 'open').mockReturnValue(preview);
     URL.createObjectURL = vi.fn(() => 'blob:comprobante-55');
     server.use(
-      http.get(`${API}/payment-receipts/55/file`, () =>
+      http.get(`${API}/bank-transfer-receipts/55/file`, () =>
         new HttpResponse('contenido', { headers: { 'Content-Type': 'application/pdf' } }),
       ),
     );

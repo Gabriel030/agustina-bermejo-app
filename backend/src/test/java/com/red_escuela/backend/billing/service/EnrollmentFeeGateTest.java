@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureMockMvc
-class EnrollmentFeeGateTest extends AbstractChargeSequenceTest {
+class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     @Autowired
     private SubjectSectionEnrollmentService enrollmentService;
     @Autowired

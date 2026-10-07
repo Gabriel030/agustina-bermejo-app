@@ -5,7 +5,7 @@ public enum KnownInvariantViolation {
             "I-15",
             "D-001",
             "V2-10",
-            "ChargePlannerCorrectionsTest#secondYearStudentOfUndatedTermsIsStillBilledAndTheCapCountsOnlyThatYear",
+            "MonthlyInvoicePlannerCorrectionsTest#secondYearStudentOfUndatedTermsIsStillBilledAndTheCapCountsOnlyThatYear",
             "A school year whose Term has no dates emits installments in January");
 
     private final String invariant;

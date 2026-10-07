@@ -1,7 +1,7 @@
 package com.red_escuela.backend.shared.domain.policy;
 
 public interface Policy<C> {
-    String name();
+    String ruleName();
 
-    PolicyVerdict evaluate(C context);
+    PolicyVerdict evaluateRule(C context);
 }

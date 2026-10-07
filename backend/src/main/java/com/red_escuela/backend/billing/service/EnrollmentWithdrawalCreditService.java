@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.entity.Student;
 
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.repository.InvoiceRepository;
@@ -63,7 +63,7 @@ public class EnrollmentWithdrawalCreditService {
     }
 
     private boolean isNonPaymentWithdrawal(BillableEnrollment enrollment) {
-        return enrollment.getBillingStanding() == EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT;
+        return enrollment.getPaymentStatus() == EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT;
     }
 
     private void process(Student student, List<Invoice> pending, List<Invoice> paid, String reason, String creditNoteDescription) {

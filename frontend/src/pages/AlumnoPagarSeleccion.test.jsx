@@ -25,7 +25,7 @@ function renderSelection(breakdown) {
 
 const baseBreakdown = {
   invoiceId: 61,
-  feeType: 'RECURRING_FEE',
+  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-09',
   baseAmount: { amount: '48000.00', currency: 'ARS' },
   adjustments: [{ type: 'SCHOLARSHIP', amount: { amount: '-24000.00', currency: 'ARS' }, humanLabel: 'Beca 50%' }],

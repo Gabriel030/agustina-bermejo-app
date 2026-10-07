@@ -68,7 +68,7 @@ class MoneyCurrencyMigrationTest {
             assertThat(payment.get("amount_currency")).isEqualTo("ARS");
             assertThat((BigDecimal) payment.get("amount")).isEqualByComparingTo("1500.50");
             assertThat(jdbc.queryForObject("select resolved_base_currency from invoice_adjustment limit 1", String.class)).isEqualTo("ARS");
-            assertThat(jdbc.queryForObject("select surcharge_percentage from collections_policy", BigDecimal.class))
+            assertThat(jdbc.queryForObject("select surcharge_percentage from late_payment_settings", BigDecimal.class))
                     .isEqualByComparingTo("0.1");
             assertThat(jdbc.queryForObject("select currency from course limit 1", String.class)).isNotNull();
 

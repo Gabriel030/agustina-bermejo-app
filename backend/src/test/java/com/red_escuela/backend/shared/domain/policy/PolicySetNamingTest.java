@@ -15,12 +15,12 @@ class PolicySetNamingTest {
     void aNamedSetExposesItsMomentAndItsOrderedPolicies() {
         Policy<String> policy = new Policy<>() {
             @Override
-            public String name() {
+            public String ruleName() {
                 return "p";
             }
 
             @Override
-            public PolicyVerdict evaluate(String context) {
+            public PolicyVerdict evaluateRule(String context) {
                 return PolicyVerdict.allow("p");
             }
         };

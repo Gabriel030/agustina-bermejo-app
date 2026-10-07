@@ -66,7 +66,7 @@ public class SelectPaymentPlanForCourseService implements SelectPaymentPlanForCo
         selection.setCourseEnrollment(courseEnrollment);
         selection.setPaymentPlanOption(option);
         selection.setEffectiveFrom(YearMonth.now(clock));
-        if (option.getCadence() == PaymentPlanCadence.UPFRONT) {
+        if (option.getCadence() == PaymentPlanCadence.ANNUAL_UPFRONT) {
             guard.validateScope(request.scopeMonths(), recurringFeeWindowService.remainingInvoices(courseEnrollment));
             selection.setScopeMonths(request.scopeMonths());
         }

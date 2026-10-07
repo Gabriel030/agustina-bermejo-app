@@ -18,7 +18,7 @@ class EnrollmentFeeCountFrozenPolicyTest {
 
     @Test
     void everyReturnedCodeIsDeclaredInThePolicyRule() {
-        PolicyVerdict denial = policy.evaluate(update(snapshot(2, 2, 7, 10), snapshot(1, 2, null, 10), Set.of(1), Set.of()));
+        PolicyVerdict denial = policy.evaluateRule(update(snapshot(2, 2, 7, 10), snapshot(1, 2, null, 10), Set.of(1), Set.of()));
         assertThat(denial.allowed()).isFalse();
         assertThat(EnrollmentFeeCountFrozenPolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(denial.code());
         assertThat(denial.code()).isEqualTo("ENROLLMENT_FEE_COUNT_FROZEN");
@@ -27,7 +27,7 @@ class EnrollmentFeeCountFrozenPolicyTest {
 
     @Test
     void allowsTheSameCountWithIssuedFeesAndAnyCountWithNoneIssued() {
-        assertThat(policy.evaluate(update(snapshot(2, 2, 7, 10), snapshot(2, 2, 8, 10), Set.of(1), Set.of())).allowed()).isTrue();
-        assertThat(policy.evaluate(update(snapshot(2, 2, 7, 10), snapshot(1, 2, null, 10), Set.of(), Set.of())).allowed()).isTrue();
+        assertThat(policy.evaluateRule(update(snapshot(2, 2, 7, 10), snapshot(2, 2, 8, 10), Set.of(1), Set.of())).allowed()).isTrue();
+        assertThat(policy.evaluateRule(update(snapshot(2, 2, 7, 10), snapshot(1, 2, null, 10), Set.of(), Set.of())).allowed()).isTrue();
     }
 }

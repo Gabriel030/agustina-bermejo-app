@@ -11,13 +11,13 @@ public final class Policies {
     public static <C> Policy<C> allOf(String name, Policy<C>... policies) {
         List<Policy<C>> list = List.of(policies);
         return new Policy<>() {
-            public String name() {
+            public String ruleName() {
                 return name;
             }
 
-            public PolicyVerdict evaluate(C context) {
+            public PolicyVerdict evaluateRule(C context) {
                 for (Policy<C> policy : list) {
-                    PolicyVerdict verdict = policy.evaluate(context);
+                    PolicyVerdict verdict = policy.evaluateRule(context);
                     if (!verdict.allowed()) {
                         return verdict;
                     }
@@ -31,14 +31,14 @@ public final class Policies {
     public static <C> Policy<C> anyOf(String name, Policy<C>... policies) {
         List<Policy<C>> list = List.of(policies);
         return new Policy<>() {
-            public String name() {
+            public String ruleName() {
                 return name;
             }
 
-            public PolicyVerdict evaluate(C context) {
+            public PolicyVerdict evaluateRule(C context) {
                 PolicyVerdict last = null;
                 for (Policy<C> policy : list) {
-                    PolicyVerdict verdict = policy.evaluate(context);
+                    PolicyVerdict verdict = policy.evaluateRule(context);
                     if (verdict.allowed()) {
                         return PolicyVerdict.allow(name);
                     }
@@ -51,12 +51,12 @@ public final class Policies {
 
     public static <C> Policy<C> not(String name, String code, String reason, Policy<C> policy) {
         return new Policy<>() {
-            public String name() {
+            public String ruleName() {
                 return name;
             }
 
-            public PolicyVerdict evaluate(C context) {
-                return policy.evaluate(context).allowed() ? PolicyVerdict.deny(name, code, reason) : PolicyVerdict.allow(name);
+            public PolicyVerdict evaluateRule(C context) {
+                return policy.evaluateRule(context).allowed() ? PolicyVerdict.deny(name, code, reason) : PolicyVerdict.allow(name);
             }
         };
     }

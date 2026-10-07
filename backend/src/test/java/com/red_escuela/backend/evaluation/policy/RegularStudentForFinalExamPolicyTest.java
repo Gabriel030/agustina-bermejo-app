@@ -11,14 +11,14 @@ class RegularStudentForFinalExamPolicyTest {
 
     @Test
     void allowsARegularStudent() {
-        PolicyVerdict verdict = policy.evaluate(new FinalExamLoadRequest(1L, true));
+        PolicyVerdict verdict = policy.evaluateRule(new FinalExamLoadRequest(1L, true));
 
         assertThat(verdict.allowed()).isTrue();
     }
 
     @Test
     void deniesAStudentWhoIsNotRegularWithTheViolationCode() {
-        PolicyVerdict verdict = policy.evaluate(new FinalExamLoadRequest(1L, false));
+        PolicyVerdict verdict = policy.evaluateRule(new FinalExamLoadRequest(1L, false));
 
         assertThat(verdict.allowed()).isFalse();
         assertThat(verdict.code()).isEqualTo("STUDENT_NOT_REGULAR_FOR_FINAL_EXAM");

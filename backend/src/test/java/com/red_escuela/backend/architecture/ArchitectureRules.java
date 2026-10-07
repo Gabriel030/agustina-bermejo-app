@@ -54,6 +54,15 @@ public final class ArchitectureRules {
 
     static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
 
+    static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
+            + "|service\\.(?:InvoiceIssuingService|InvoiceIssuingRequestFactory|InvoiceIssuingContextLoader|ChargeAdjustmentApplier)"
+            + "|domain\\.(?:InvoiceIssuingRequest|InvoiceRecipient|InvoiceIssuingContext|InvoiceIssuingResult)"
+            + "|policy\\.(?:DueDateNotBeforeIssueDatePolicy|EnrollmentFeeSlotRequiredPolicy|EnrollmentFeeSlotWithinTemplateCountPolicy|EntryFeeDiscountPolicy|NotAlreadyIssuedPolicy|OfferingCurrencyPolicy|PromotionBenefitCapPolicy|ReasonFeeTypePolicy|ScholarshipAppliesPolicy|UpfrontDiscountPolicy))(?:\\$.*)?";
+
+    static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure", "events");
+
+    static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
+
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
     private static final Set<String> PRIMITIVE_NUMBERS = Set.of(
@@ -107,18 +116,18 @@ public final class ArchitectureRules {
                 .because("@UseCase is reserved for classes in a usecase package");
     }
 
-    public static ArchRule invoicesAreIssuedOnlyByChargeIssuer() {
-        ArchRule issueCalls = noClasses().that().resideOutsideOfPackages("..billing.issuing..")
+    public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
+        ArchRule issueCalls = noClasses().that().resideOutsideOfPackages("..billing.invoice.service..")
                 .should().callMethod(Invoice.class, "issue", InvoiceDraft.class, LocalDate.class)
-                .because("every invoice must be issued through ChargeIssuer");
+                .because("every invoice must be issued through InvoiceIssuingService");
         ArchRule constructorCalls = noClasses().that().resideOutsideOfPackages("..billing.entity..")
                 .should().callConstructor(Invoice.class)
-                .because("every invoice must be issued through ChargeIssuer");
+                .because("every invoice must be issued through InvoiceIssuingService");
         return CompositeArchRule.of(issueCalls).and(constructorCalls);
     }
 
     public static ArchRule invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
-        return noClasses().that().resideOutsideOfPackages("..billing.entity..", "..billing.issuing..")
+        return noClasses().that().resideOutsideOfPackages("..billing.entity..", "..billing.invoice.service..")
                 .should().callMethodWhere(target(nameStartingWith("set")).and(target(owner(assignableTo(Invoice.class)))))
                 .because("invoice state changes through aggregate methods, not setters");
     }
@@ -132,6 +141,7 @@ public final class ArchitectureRules {
     public static ArchRule businessExceptionsAreThrownOnlyByPolicyEvaluation(String... v2Packages) {
         return noClasses()
                 .that().resideInAnyPackage(v2Packages)
+                .and().haveNameNotMatching(LEGACY_COUPLED_ISSUING)
                 .and().resideOutsideOfPackages("..policy..", "..domain..", ROOT + ".shared.domain.policy..")
                 .and().areNotAssignableTo(BadRequestException.class)
                 .and().areNotAssignableTo(ConflictException.class)
@@ -302,9 +312,10 @@ public final class ArchitectureRules {
     public static ArchRule billingV2DoesNotDependOnLegacyBilling(String... v2Packages) {
         return noClasses()
                 .that().resideInAnyPackage(v2Packages)
+                .and().haveNameNotMatching(LEGACY_COUPLED_ISSUING)
                 .should().dependOnClassesThat().resideInAnyPackage(
                         ROOT + ".billing.entity..", ROOT + ".billing.repository..", ROOT + ".billing.service..",
-                        ROOT + ".billing.issuing..", ROOT + ".billing.usecase..")
+                        ROOT + ".billing.usecase..")
                 .allowEmptyShould(true)
                 .because("the V2 billing model must not depend on the legacy billing code that V2-02 replaces");
     }
@@ -369,5 +380,36 @@ public final class ArchitectureRules {
     public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, Class<?> operationType) {
         return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record"), serviceClassName, operationType,
                 "recording of an account entry");
+    }
+
+    public static ArchRule billingClassesLiveInTheirSubdomainFolders(String billingRoot, Set<String> frozenLegacyClasses) {
+        return classes()
+                .that().resideInAPackage(billingRoot + "..")
+                .should(new ArchCondition<JavaClass>("live in billing/<subdomain>/{" + String.join(",", new java.util.TreeSet<>(BILLING_SUBDOMAIN_FOLDERS)) + "} or be a frozen legacy class") {
+                    @Override
+                    public void check(JavaClass javaClass, ConditionEvents events) {
+                        JavaClass top = javaClass;
+                        while (top.getEnclosingClass().isPresent()) {
+                            top = top.getEnclosingClass().get();
+                        }
+                        String pkg = top.getPackageName();
+                        String relative = pkg.length() > billingRoot.length() ? pkg.substring(billingRoot.length() + 1) : "";
+                        String[] segments = relative.isEmpty() ? new String[0] : relative.split("\\.");
+                        boolean allowed;
+                        if (segments.length == 0 || top.getSimpleName().equals("package-info")) {
+                            allowed = true;
+                        } else if (BILLING_LEGACY_FLAT_PACKAGES.contains(segments[0])) {
+                            allowed = frozenLegacyClasses.contains(top.getName());
+                        } else if (segments.length == 1) {
+                            allowed = true;
+                        } else {
+                            allowed = BILLING_SUBDOMAIN_FOLDERS.contains(segments[1]);
+                        }
+                        if (!allowed) {
+                            events.add(SimpleConditionEvent.violated(javaClass, javaClass.getName() + " is outside the subdomain folders and not a frozen legacy class"));
+                        }
+                    }
+                })
+                .because("billing packages put the subdomain first and legacy flat packages cannot grow (D-173)");
     }
 }
