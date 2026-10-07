@@ -117,6 +117,13 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        List<Long> personIds = List.of(director.getId(), administrative.getId(), teacher.getId());
+        for (Long personId : personIds) {
+            jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", personId);
+            jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", personId);
+            jdbcTemplate.update("delete from collections_policy where created_by_id = ?", personId);
+        }
+        jdbcTemplate.update("delete from event_publication");
         SecurityContextHolder.clearContext();
         AUTHORIZATION_DEMAND.set(null);
         reset(inAppChannel);
