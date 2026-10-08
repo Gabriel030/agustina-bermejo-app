@@ -141,6 +141,43 @@ class PersonControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void putMeWithExistingEmailReportsEmailConflictAndNotDniConflict() throws Exception {
+        persistPersonWithRole("emailowner", "60111444", "ALUMNO");
+        Person propio = persistPersonWithRole("emailrequester", "60222555", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                "emailowner@example.com", null, null, null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void putMeWithBlankDniKeepsTheCurrentDni() throws Exception {
+        Person propio = persistPersonWithRole("blankdni", "60333666", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                null, null, null, "   ", null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dni").value("60333666"));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(personRepository.findById(propio.getId()).orElseThrow().getDni()).isEqualTo("60333666");
+    }
+
+    @Test
     void getMeReturnsOwnProfileWithRoles() throws Exception {
         Person propio = persistPersonWithRole("propio2", "60555666", "PRECEPTOR");
         String token = jwtService.generateAccessToken(propio);
