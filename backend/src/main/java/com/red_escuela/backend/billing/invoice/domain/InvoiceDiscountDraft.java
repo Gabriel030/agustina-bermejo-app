@@ -11,7 +11,14 @@ public record InvoiceDiscountDraft(
         NonNegativeMoney baseAmount,
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
-        Integer installmentsTotal) {
+        Integer installmentsTotal,
+        Long sourceInstallmentId) {
+
+    public InvoiceDiscountDraft(DiscountType discountType, String concept, Long studentDiscountId, NonNegativeMoney baseAmount,
+                                NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
+        this(discountType, concept, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, null);
+    }
+
 
     private static final int MAX_CONCEPT_LENGTH = 200;
 

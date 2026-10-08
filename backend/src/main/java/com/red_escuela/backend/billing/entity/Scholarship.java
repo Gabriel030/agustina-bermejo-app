@@ -102,6 +102,18 @@ public class Scholarship {
         return next;
     }
 
+    public ScholarshipInstallment consumeInstallmentWithoutLegacyInvoice(Long installmentId) {
+        ScholarshipInstallment installment = installments.stream()
+                .filter(candidate -> candidate.getId().equals(installmentId) && candidate.getStatus() == InstallmentStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Scholarship " + id + " has no PENDING installment " + installmentId));
+        installment.markApplied(null);
+        if (installments.stream().noneMatch(candidate -> candidate.getStatus() == InstallmentStatus.PENDING)) {
+            status = ScholarshipStatus.INACTIVE;
+        }
+        return installment;
+    }
+
     public void cancelRemaining(String reason) {
         installments.stream()
                 .filter(installment -> installment.getStatus() == InstallmentStatus.PENDING)

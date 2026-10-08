@@ -70,6 +70,9 @@ public class InvoiceDiscount {
     @Column(name = "installments_total")
     private Integer installmentsTotal;
 
+    @Column(name = "source_installment_id")
+    private Long sourceInstallmentId;
+
     InvoiceDiscount(InvoiceLine invoiceLine, InvoiceDiscountDraft draft) {
         this.invoiceLine = invoiceLine;
         this.studentDiscountId = draft.studentDiscountId();
@@ -80,6 +83,7 @@ public class InvoiceDiscount {
         this.discountAmount = draft.discountAmount();
         this.installmentNumber = draft.installmentNumber();
         this.installmentsTotal = draft.installmentsTotal();
+        this.sourceInstallmentId = draft.sourceInstallmentId();
     }
 
     public Optional<String> describeInstallmentProgress() {
