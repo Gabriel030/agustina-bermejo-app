@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.service;
 
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import java.time.Clock;
 import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
@@ -69,10 +70,10 @@ public class ExamBoardRegistrationService {
     private void requireEnrollmentFeeOfCourseTerm(SubjectSectionEnrollment enrollment) {
         Term term = enrollment.getSubjectSection().getTerm();
         if (term == null) {
-            enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
+            enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
             return;
         }
-        enrollmentFeeRequirementService.requireForTerm(enrollment.getProgramEnrollment(), term, EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION);
+        enrollmentFeeRequirementService.requireForTerm(enrollment.getProgramEnrollment(), term, EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
     }
 
     @Transactional

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
@@ -112,7 +114,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         return new MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido".getBytes());
     }
 
-    private EnrollmentFeeRequirementService.Status feeStatus(Long enrollmentId, int slot) {
+    private EnrollmentFeeObligationStatus feeStatus(Long enrollmentId, int slot) {
         return transactionTemplate.execute(status -> requirementService.statusOf(entityManager.find(ProgramEnrollment.class, enrollmentId))
                 .stream().filter(o -> o.slot() == slot).findFirst().orElseThrow().status());
     }
@@ -214,20 +216,20 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         Invoice fee = onlyFee(enrollment);
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.PENDING);
+        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PENDING);
 
         pay(career, fee, 2000);
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.PARTIAL);
+        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PARTIAL);
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(fee.getId(), studentOf(enrollment), receiptFile());
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.IN_REVIEW);
+        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.IN_REVIEW);
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), director(career));
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.PAID);
+        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
         assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
         assertInvariants(enrollment, y27);
     }
@@ -250,7 +252,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         pay(career, fee, 2000);
         pay(career, fee, 3000);
 
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeRequirementService.Status.PAID);
+        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
         assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
         assertInvariants(enrollment, y27);
     }
@@ -327,7 +329,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     private void requireForTerm(Long enrollmentId, Term term) {
         transactionTemplate.executeWithoutResult(status -> requirementService.requireForTerm(
                 entityManager.find(ProgramEnrollment.class, enrollmentId), entityManager.find(Term.class, term.getId()),
-                EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION));
+                EnrollmentFeeRequirementScope.EXAM_REGISTRATION));
     }
 
     @Test

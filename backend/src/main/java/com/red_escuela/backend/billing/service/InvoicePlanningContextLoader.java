@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.billing.planning.domain.PaymentPlanCoverage;
 import com.red_escuela.backend.billing.planning.domain.ProgramInvoicePlanningFacts;
 import com.red_escuela.backend.billing.planning.domain.IssuedEnrollmentFee;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
@@ -74,12 +74,9 @@ public class InvoicePlanningContextLoader {
         }
         List<PaymentPlanSelection> selections = selectionRepository.findByProgramEnrollmentIdOrderByEffectiveFrom(enrollmentId);
         PaymentPlanSelection selectionAtMonth = selectionRepository.findActiveForProgramEnrollment(enrollmentId, month).orElse(null);
-        boolean upfrontExpired = selectionAtMonth != null && selectionAtMonth.getPaymentPlanOption().getCadence() == PaymentPlanCadence.ANNUAL_UPFRONT
-                && selectionAtMonth.getScopeMonths() != null
-                && month.isAfter(selectionAtMonth.getEffectiveFrom().plusMonths(selectionAtMonth.getScopeMonths() - 1L));
-        PaymentPlanSelection selection = selectionAtMonth == null || upfrontExpired ? null : selectionAtMonth;
-        PaymentPlanCadence cadence = selection != null ? selection.getPaymentPlanOption().getCadence()
-                : (upfrontExpired ? PaymentPlanCadence.MONTHLY : null);
+        PaymentPlanCoverage coverage = selectionAtMonth == null ? PaymentPlanCoverage.none()
+                : new PaymentPlanCoverage(selectionAtMonth.getPaymentPlanOption().getCadence(), selectionAtMonth.getEffectiveFrom(), selectionAtMonth.getScopeMonths());
+        PaymentPlanSelection selection = selectionAtMonth == null || coverage.isAnnualScopeExpiredAt(month) ? null : selectionAtMonth;
 
         Long hint = enrollment.getCurrentBillingTemplate() != null ? enrollment.getCurrentBillingTemplate().getId() : null;
         List<YearCycle> cycleList = templateRepository.findAllByProgramId(enrollment.getProgram().getId()).stream().map(t -> YearCycle.of(t, month.getYear())).toList();
@@ -103,7 +100,7 @@ public class InvoicePlanningContextLoader {
             cursadaStart = cohort.getCursadaStart();
         }
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
-                cadence, !selections.isEmpty(),
+                coverage, !selections.isEmpty(),
                 cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList),
                 entryTemplateId, entrySlot, cursadaStart);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
