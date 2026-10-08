@@ -313,7 +313,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         ProgramCohort cohort1 = persistCohort(template1, CohortIntake.FIRST,
                 LocalDate.now().minusDays(60), LocalDate.now().minusDays(1), LocalDate.now().plusMonths(10), director);
 
-        Term termRepite = persistTerm(2, base.minusMonths(1), base.plusMonths(9));
+        Term termRepite = persistTerm(2, base.plusMonths(20), base.plusMonths(29));
         ProgramYearBillingTemplate templateRepite = persistTemplate(program, termRepite, 10, director);
 
         Student student = persistStudent("83000003");
@@ -333,10 +333,10 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         authenticateAs(director);
         selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(mensualRepite.getId(), null));
         for (int i = 0; i < 10; i++) {
-            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(i));
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, base.plusMonths(20 + i));
         }
 
-        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(10);
+        assertThat(tuitionInvoiceCount(enrollment.getId())).isEqualTo(20);
     }
 
     @Test
