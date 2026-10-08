@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequestNotFoundException;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeOutcome;
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestObservers;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -29,16 +30,18 @@ public class AuthorizationRequestDecider {
     private final AuthorizedOperationResumer resumer;
     private final TransactionTemplate decisionTransaction;
     private final TransactionTemplate resumeTransaction;
+    private final AuthorizationRequestObservers observers;
     private final Clock clock;
 
     public AuthorizationRequestDecider(AuthorizationRequestRepository repository, CurrentPersonService currentPersonService,
-                                       AuthorizedOperationResumer resumer, PlatformTransactionManager transactionManager, Clock clock) {
+                                       AuthorizedOperationResumer resumer, PlatformTransactionManager transactionManager, AuthorizationRequestObservers observers, Clock clock) {
         this.repository = repository;
         this.currentPersonService = currentPersonService;
         this.resumer = resumer;
         this.decisionTransaction = new TransactionTemplate(transactionManager);
         this.resumeTransaction = new TransactionTemplate(transactionManager);
         this.resumeTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.observers = observers;
         this.clock = clock;
     }
 
@@ -47,7 +50,7 @@ public class AuthorizationRequestDecider {
         try {
             resumeTransaction.executeWithoutResult(status -> resumeApprovedOperation(id));
         } catch (BadRequestException | ConflictException rejection) {
-            decisionTransaction.executeWithoutResult(status -> recordRejectedOnResume(id));
+            decisionTransaction.executeWithoutResult(status -> recordRejectedOnResume(id, rejection.getMessage()));
             throw rejection;
         }
         return findRequest(id);
@@ -59,6 +62,7 @@ public class AuthorizationRequestDecider {
             Person decider = currentPersonService.resolveCurrentPerson();
             requireAuthorizedDecider(request, decider);
             request.reject(decider, decisionReason, Instant.now(clock));
+            observers.afterRejected(id, request.getOperationType(), decider.getId(), decisionReason);
             return repository.save(request);
         });
     }
@@ -69,6 +73,7 @@ public class AuthorizationRequestDecider {
             Person requester = currentPersonService.resolveCurrentPerson();
             requireRequester(request, requester);
             request.withdraw(requester, Instant.now(clock));
+            observers.afterWithdrawn(id, request.getOperationType(), requester.getId());
             return repository.save(request);
         });
     }
@@ -87,9 +92,10 @@ public class AuthorizationRequestDecider {
         repository.save(request);
     }
 
-    private void recordRejectedOnResume(Long id) {
+    private void recordRejectedOnResume(Long id, String rejectionMessage) {
         AuthorizationRequest request = findRequest(id);
         request.recordResumeOutcome(AuthorizationResumeOutcome.REJECTED_ON_RESUME);
+        observers.afterResumeRejected(id, request.getOperationType(), request.getDecidedBy().getId(), rejectionMessage);
         repository.save(request);
     }
 
