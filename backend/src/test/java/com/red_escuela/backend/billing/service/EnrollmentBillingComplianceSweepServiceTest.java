@@ -227,8 +227,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     }
 
     @Test
-    @Tag("contradicts-D-136")
-    void aPartialPaymentOfOneOfTheInstallmentsThatCausedSuspensionDoesNotLiftTheSuspensionAlone() {
+    void payingInFullOneOfTheTwoOverdueInvoicesThatCausedTheSuspensionDoesNotLiftTheSuspensionAlone() {
         Person director = persistPerson("director.compliance6." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000106");

@@ -119,6 +119,15 @@ como método suelto a un colaborador de `service/`.
 
 ### Motor de facturación v2: subdominio primero (D-173)
 
+**Corte al modelo nuevo de facturas (V2-02d)**: la factura es el agregado
+`billing.invoice.domain.Invoice` (renglones, descuentos, historial de estados);
+la entidad vieja, los ajustes manuales y la condonación ya no existen. Toda
+factura se emite con `billing.invoice.service.InvoiceIssuingService` (la
+operación `ISSUE_INVOICE`); las lecturas con el JSON de siempre pasan por
+`InvoiceView`/`InvoiceViewLoader`, que es también el único punto de `billing`
+que carga inscripciones. Una factura se paga completa o no se paga (D-136):
+`RegisterPaymentService` es el puente de cobro hasta la fase de pagos.
+
 El código nuevo de facturación nace con el subdominio como primer nivel del
 paquete (`billing.configuration`, `billing.operation`, y los que cree cada fase
 V2), con la misma estructura interna en todos: `domain/`, `policy/`,

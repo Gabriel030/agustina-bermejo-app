@@ -139,7 +139,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("contradicts-D-142")
+    @Tag("D-142")
     void voluntaryWithdrawalLeavesPendingInstallmentsAsLiveDebt() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000001." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));

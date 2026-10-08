@@ -165,8 +165,8 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-066")
-    @Tag("contradicts-D-142")
-    void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtCancelledWhenTheYearEnds() {
+    @Tag("D-142")
+    void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtStillOwedWhenTheYearEnds() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         today(date(2026, 1, 5));

@@ -29,7 +29,6 @@ import com.red_escuela.backend.billing.exception.InvalidPaymentReceiptStateExcep
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
-import org.springframework.transaction.annotation.Transactional;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException;
@@ -407,7 +406,6 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Transactional
     void receiptOfAnInvoiceWithoutEnrollmentShowsTheUploaderNameAndDni() {
         Student student = persistStudent("97000013");
         student.getPerson().setName("Ana");

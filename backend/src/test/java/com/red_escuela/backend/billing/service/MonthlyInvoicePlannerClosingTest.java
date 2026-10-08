@@ -336,8 +336,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    @Tag("contradicts-D-142")
-    void aSuspendedStudentWhoDoesNotPayIsWithdrawnWhenTheTermOfTheSuspensionEndsWithTheDebtCancelled() {
+    @Tag("D-142")
+    void aSuspendedStudentWhoDoesNotPayIsWithdrawnWhenTheTermOfTheSuspensionEndsWithTheDebtStillOwed() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");

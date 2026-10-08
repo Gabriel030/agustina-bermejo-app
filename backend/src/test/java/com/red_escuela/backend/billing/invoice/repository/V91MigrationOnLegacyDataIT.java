@@ -25,8 +25,8 @@ class V91MigrationOnLegacyDataIT {
             jdbc.update("insert into invoice (fee_type, period, due_date, base_amount, base_amount_currency, status, created_at, updated_at, issue_reason) "
                     + "values ('RECURRING_FEE', date '2026-09-01', date '2026-09-10', 48000.00, 'ARS', 'PENDING', now(), now(), 'LEGACY')");
             Long invoiceId = jdbc.queryForObject("select max(id) from invoice", Long.class);
-            jdbc.update("insert into invoice_adjustment (invoice_id, type, value, resolved_base, reason, applied_at) "
-                    + "values (?, 'SURCHARGE', '{\"type\":\"PERCENTAGE\",\"percentage\":0.1000}'::jsonb, 48000.00, 'Mora', now())", invoiceId);
+            jdbc.update("insert into invoice_adjustment (invoice_id, type, value, resolved_base, resolved_base_currency, reason, applied_at) "
+                    + "values (?, 'SURCHARGE', '{\"type\":\"PERCENTAGE\",\"percentage\":0.1000}'::jsonb, 48000.00, 'ARS', 'Mora', now())", invoiceId);
             Integer incomingBefore = jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'invoice'::regclass", Integer.class);
 
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("95").load().migrate();
