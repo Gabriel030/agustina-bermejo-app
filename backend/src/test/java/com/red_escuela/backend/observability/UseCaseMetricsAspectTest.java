@@ -58,14 +58,19 @@ class UseCaseMetricsAspectTest extends AbstractIntegrationTest {
 
     @Test
     void tagsNeverCarryParameterValues() {
+        listProgramEnrollmentAttendance.list(-4L);
+        int seriesBefore = seriesOfListUseCase();
+
         listProgramEnrollmentAttendance.list(-2L);
         listProgramEnrollmentAttendance.list(-3L);
 
-        int distinctSeries = meterRegistry.find("usecase.duration")
+        assertThat(seriesOfListUseCase()).isEqualTo(seriesBefore);
+    }
+
+    private int seriesOfListUseCase() {
+        return meterRegistry.find("usecase.duration")
                 .tag("usecase", "ListProgramEnrollmentAttendanceUseCase")
                 .timers()
                 .size();
-
-        assertThat(distinctSeries).isEqualTo(1);
     }
 }
