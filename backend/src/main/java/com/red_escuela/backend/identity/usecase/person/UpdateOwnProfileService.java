@@ -3,10 +3,11 @@ package com.red_escuela.backend.identity.usecase.person;
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
+import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -26,7 +27,13 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         Person person = currentPersonService.resolveCurrentPerson();
 
         if (request.email() != null) {
-            person.setEmail(request.email());
+            EmailAddress newEmail = EmailAddress.of(request.email());
+            personRepository.findByEmail(newEmail)
+                    .filter(owner -> !owner.getId().equals(person.getId()))
+                    .ifPresent(owner -> {
+                        throw new EmailAlreadyExistsException(request.email());
+                    });
+            person.setEmail(newEmail);
         }
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());
@@ -34,8 +41,14 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         if (request.sexo() != null) {
             person.setSex(request.sexo());
         }
-        if (request.dni() != null) {
-            person.changeDni(request.dni());
+        if (request.dni() != null && !request.dni().isBlank()) {
+            String newDni = request.dni().trim();
+            personRepository.findByDni(newDni)
+                    .filter(owner -> !owner.getId().equals(person.getId()))
+                    .ifPresent(owner -> {
+                        throw new DniAlreadyExistsException(newDni);
+                    });
+            person.changeDni(newDni);
         }
 
         var address = person.getAddress();
@@ -61,10 +74,6 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
             address.setCountry(request.country());
         }
 
-        try {
-            return personRepository.saveAndFlush(person);
-        } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
-        }
+        return personRepository.saveAndFlush(person);
     }
 }
