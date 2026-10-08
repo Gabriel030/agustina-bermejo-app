@@ -23,8 +23,6 @@ import java.util.stream.Stream;
 
 @Component
 public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssuingContextLoader {
-    private static final String MISSING_DOCUMENT_NUMBER = "Sin DNI cargado";
-
     private final JdbcTemplate jdbcTemplate;
     private final PriceRevisionService priceRevisionService;
     private final ProgramYearBillingTemplateRepository templateRepository;
@@ -95,12 +93,8 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
                 select p.name, p.last_name, p.dni, a.street, a.number, a.city, a.state
                 from student s join person p on p.id = s.person_id left join address a on a.id = p.address_id
                 where s.id = ?
-                """, (row, index) -> new StudentSnapshot(joinNonBlank(row.getString("name"), row.getString("last_name")), documentNumberOrPlaceholder(row.getString("dni")),
+                """, (row, index) -> new StudentSnapshot(joinNonBlank(row.getString("name"), row.getString("last_name")), row.getString("dni"),
                 nullIfBlank(joinNonBlank(row.getString("street"), row.getString("number"), row.getString("city"), row.getString("state")))), studentId);
-    }
-
-    private static String documentNumberOrPlaceholder(String documentNumber) {
-        return documentNumber == null || documentNumber.isBlank() ? MISSING_DOCUMENT_NUMBER : documentNumber;
     }
 
     private static String joinNonBlank(String... parts) {

@@ -52,12 +52,11 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def alumnoDni = '' + (40000000 + java.lang.System.nanoTime() % 50000000)
     * def alumnoToken = fixtures.createConfirmedStudentWithIdentity(institutionId, 'Ana', 'Karate', alumnoDni).accessToken
 
-    # Solicitar — multipart desde Épica 7 Fase 3, comprobante bloqueante.
+    # Solicitar — D-227: sin pago ni comprobante, la matrícula se factura al aprobar.
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And multipart field programId = programId
-    And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And param programId = programId
+    And param cohortId = cohortId
     When method post
     Then status 201
     * def applicationId = response.id
@@ -138,52 +137,48 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def propiaRechazada = response.filter(function(x){ return x.id == applicationId })[0]
     And match propiaRechazada.status == 'REJECTED'
 
-  Scenario: El comprobante de la solicitud llega a la bandeja con nombre y DNI, y administración puede abrirlo
+  Scenario: Solicitar no genera comprobante ni factura, y aprobar emite la factura de matrícula que ve el alumno
     Given path '/bank-transfer-receipts'
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 200
-    * def comprobante = response.filter(function(x){ return x.studentDni == alumnoDni })[0]
-    And match comprobante.studentName == 'Ana Karate'
-    * def receiptId = comprobante.id
+    * def comprobantes = response.filter(function(x){ return x.studentDni == alumnoDni })
+    And match comprobantes == '#[0]'
 
-    Given path '/bank-transfer-receipts', receiptId, 'file'
-    And header Authorization = 'Bearer ' + adminToken
-    When method get
-    Then status 200
-    And match header Content-Type contains 'application/pdf'
-    * def contenido = new java.lang.String(responseBytes)
-    And match contenido == 'contenido de prueba'
-
-    Given path '/bank-transfer-receipts', receiptId, 'file'
+    Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
     When method get
-    Then status 403
+    Then status 200
+    * def sinFactura = response.filter(function(x){ return x.id == applicationId })[0]
+    And match sinFactura.admissionInvoice == null
 
-    Given path '/bank-transfer-receipts', 999999999, 'file'
-    And header Authorization = 'Bearer ' + adminToken
-    When method get
-    Then status 404
+    Given path '/program-enrollment-applications', applicationId, 'approve'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 200
 
-  Scenario: Rechazar la solicitud saca su comprobante de la bandeja de administración
-    Given path '/bank-transfer-receipts'
-    And header Authorization = 'Bearer ' + adminToken
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
     When method get
     Then status 200
-    * def receiptId = response.filter(function(x){ return x.studentDni == alumnoDni })[0].id
+    * def conFactura = response.filter(function(x){ return x.id == applicationId })[0]
+    And match conFactura.admissionInvoice.paymentStatus == 'PENDING'
+    And match conFactura.admissionInvoice.total.amount == '50000.00'
 
+  Scenario: Rechazar la solicitud no deja ninguna factura de matrícula
     Given path '/program-enrollment-applications', applicationId, 'reject'
     And header Authorization = 'Bearer ' + preceptorToken
     And request { reason: 'Documentación ilegible' }
     When method post
     Then status 200
 
-    Given path '/bank-transfer-receipts'
-    And header Authorization = 'Bearer ' + adminToken
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
     When method get
     Then status 200
-    * def sigueEnBandeja = response.filter(function(x){ return x.id == receiptId })
-    And match sigueEnBandeja == '#[0]'
+    * def rechazada = response.filter(function(x){ return x.id == applicationId })[0]
+    And match rechazada.status == 'REJECTED'
+    And match rechazada.admissionInvoice == null
 
   Scenario: El alumno ve los documentos que ya subió, y solo los propios
     Given path '/me/documents'

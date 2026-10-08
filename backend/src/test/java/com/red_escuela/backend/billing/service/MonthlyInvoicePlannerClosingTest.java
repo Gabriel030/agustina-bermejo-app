@@ -247,8 +247,11 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         });
 
         ProgramEnrollmentApplication application = requestApplicationUseCase.request(
-                new RequestProgramEnrollmentApplicationCommand(student, career.programId(), cohort, receiptFile()));
-        approveApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
+                new RequestProgramEnrollmentApplicationCommand(student, career.programId(), cohort));
+        ProgramEnrollmentApplication approved = approveApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
+        Long admissionInvoiceId = approved.getAdmissionInvoice().getId();
+        registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(admissionInvoiceId, ars(5000))),
+                PaymentMethod.CASH, false, null, null, null, null), preceptor);
         Long enrollment = transactionTemplate.execute(status -> entityManager.createQuery(
                 "select e.id from ProgramEnrollment e where e.student.id = :id", Long.class).setParameter("id", student.getId()).getSingleResult());
         authenticateAs(career);

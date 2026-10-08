@@ -74,11 +74,10 @@ export function useMisSolicitudesCurso() {
 export function useSolicitarCarrera() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ programId, cohortId, comprobante }) => {
+    mutationFn: ({ programId, cohortId }) => {
       const formData = new FormData();
       formData.append('programId', programId);
       formData.append('cohortId', cohortId);
-      formData.append('comprobante', comprobante);
       return apiFetch('/me/program-enrollment-applications', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-carrera'] }),

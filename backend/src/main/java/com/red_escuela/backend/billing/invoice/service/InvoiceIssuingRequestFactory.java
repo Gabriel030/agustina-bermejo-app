@@ -29,7 +29,7 @@ public final class InvoiceIssuingRequestFactory {
         ProgramYearBillingTemplate template = cohort.getTemplate();
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
         int slot = YearCycle.of(template, entryMonth.getYear()).slotOf(entryMonth);
-        return new InvoiceIssuingRequest(studentId, null, null, program.getId(), null, cohort.getId(), FeeType.ENROLLMENT_FEE, entryMonth, today, today,
+        return new InvoiceIssuingRequest(studentId, null, null, program.getId(), null, cohort.getId(), FeeType.ENROLLMENT_FEE, entryMonth, today.plusDays(template.getLateEnrollmentFeeDueDays()), today,
                 InvoiceIssuingReason.PROGRAM_ADMISSION, null, template.getId(), slot, true, null, null, null, null, null, actor());
     }
 

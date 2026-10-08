@@ -38,6 +38,7 @@ const MENSAJES_ERROR_INSCRIPCION = {
   COHORT_ADMISSION_WINDOW_CLOSED: 'La inscripción a esta cohorte está cerrada.',
   ADMISSION_WINDOW_CLOSED: 'La inscripción a este curso está cerrada.',
   STUDENT_NOT_CONFIRMED: 'Tu cuenta todavía no está habilitada para inscribirte. Consultá en Secretaría.',
+  DNI_REQUIRED: 'Cargá tu DNI para poder enviar la solicitud.',
   DNI_ALREADY_EXISTS: 'Ese DNI ya está registrado en otra cuenta. Revisalo en tus datos personales.',
   STUDENT_IN_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
@@ -48,7 +49,6 @@ function pasosDe(tipo) {
     ? [
         { key: 'cohorte', label: 'Cohorte' },
         { key: 'documentacion', label: 'Documentación' },
-        { key: 'pago', label: 'Pago' },
       ]
     : [
         { key: 'documentacion', label: 'Documentación' },
@@ -150,7 +150,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   // avanzar de paso, para que el botón de confirmar nunca se habilite con
   // datos a medio cargar (ej. volviendo atrás y borrando algo).
   function solicitudCompleta() {
-    return documentacionCompleta() && !!state.comprobante;
+    return documentacionCompleta() && (tipo === 'carrera' || !!state.comprobante);
   }
 
   async function confirmarSolicitud() {
@@ -184,7 +184,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
 
       const resultado =
         tipo === 'carrera'
-          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId, comprobante: state.comprobante })
+          ? await solicitarCarrera.mutateAsync({ programId: target.id, cohortId: state.cohortId })
           : await inscribirmeCurso.mutateAsync({ courseId: target.id, comprobante: state.comprobante });
 
       if (tipo === 'carrera') {
@@ -209,7 +209,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
         <div className="font-heading text-xl font-bold text-ink">Solicitud enviada</div>
         <div className="max-w-[420px] text-[13.5px] text-ink-soft">
           {tipo === 'carrera'
-            ? 'Tu comprobante y tu documentación quedan en revisión. Cuando los aprueben, vas a quedar inscripto.'
+            ? 'Tu documentación queda en revisión. Cuando la aprueben, vas a recibir la factura de la matrícula en Mis pagos; al pagarla queda confirmada tu inscripción.'
             : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
         <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
@@ -381,6 +381,10 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             </div>
           )}
 
+          {tipo === 'carrera' && state.error && (
+            <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{state.error}</div>
+          )}
+
           <div className="flex justify-between">
             {tipo === 'carrera' ? (
               <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'cohorte' })} className="rounded-xl">
@@ -389,14 +393,25 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             ) : (
               <span />
             )}
-            <Button
-              onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
-              disabled={!documentacionCompleta()}
-              variant="gradient"
-              className="px-6"
-            >
-              Continuar →
-            </Button>
+            {tipo === 'carrera' ? (
+              <Button
+                onClick={() => setModalConfirmarAbierto(true)}
+                disabled={!solicitudCompleta() || state.enviando}
+                variant="gradient"
+                className="px-6"
+              >
+                {state.enviando ? 'Enviando…' : 'Confirmar solicitud'}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
+                disabled={!documentacionCompleta()}
+                variant="gradient"
+                className="px-6"
+              >
+                Continuar →
+              </Button>
+            )}
           </div>
         </GlassCard>
       )}
@@ -475,9 +490,18 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="font-heading text-base font-bold text-ink">Confirmar solicitud</div>
           </DialogHeader>
           <div className="text-[13px] text-ink-soft">
-            Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong> por{' '}
-            <strong className="text-ink">{formatMoney(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
-            modificarla hasta que la revisen.
+            {tipo === 'carrera' ? (
+              <>
+                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong>. No pagás nada ahora: si la aprueban,
+                recibís la factura de la matrícula ({formatMoney(montoAPagar) || 'monto a definir'}) para pagarla.
+              </>
+            ) : (
+              <>
+                Vas a enviar tu solicitud para <strong className="text-ink">{target.name}</strong> por{' '}
+                <strong className="text-ink">{formatMoney(montoAPagar) || 'el monto informado'}</strong>. Una vez enviada, no vas a poder
+                modificarla hasta que la revisen.
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalConfirmarAbierto(false)} className="rounded-xl">

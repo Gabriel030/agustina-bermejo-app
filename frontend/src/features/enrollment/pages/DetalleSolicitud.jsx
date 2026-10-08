@@ -5,7 +5,8 @@ import { PageContainer } from '@/components/PageContainer';
 import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
 import { Skeleton } from '@/components/Skeleton';
 import { apiFetch } from '@/api/client';
-import { formatFecha } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { formatFecha, formatMoney } from '@/lib/utils';
 
 // DocumentType del backend (entity.DocumentType) — mismos 3 tipos que pide el
 // wizard de inscripción (InscripcionWizard.jsx): DNI frente/dorso, analítico.
@@ -128,9 +129,33 @@ export function DetalleSolicitud() {
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && (
+      {solicitud.status === 'APPROVED' && !solicitud.admissionInvoice && (
         <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
-          <span className="font-bold">Solicitud aprobada.</span> Tu inscripción a la carrera ya está confirmada; no tenés que subir nada más.
+          <span className="font-bold">Solicitud aprobada.</span> No tenés que subir nada más.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && (
+        <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
+          <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso: tu inscripción a la carrera está confirmada.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice && solicitud.admissionInvoice.paymentStatus !== 'PAID' && (
+        <GlassCard className="flex flex-col gap-3 p-5">
+          <div className="text-[13px] text-ink-soft">
+            <span className="font-bold text-ink">Solicitud aprobada.</span> Para confirmar tu inscripción, pagá la matrícula de ingreso.
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-3">
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula de ingreso</div>
+              <div className="font-heading text-lg font-bold text-ink">{formatMoney(solicitud.admissionInvoice.total)}</div>
+              <div className="text-xs text-ink-faint">Vence el {formatFecha(solicitud.admissionInvoice.dueDate)}</div>
+            </div>
+            <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`)}>
+              Pagar matrícula
+            </Button>
+          </div>
         </GlassCard>
       )}
 

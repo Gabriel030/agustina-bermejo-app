@@ -15,4 +15,6 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
 
     Optional<ProgramEnrollmentApplication> findByStudentIdAndProgramIdAndStatus(
             Long studentId, Long programId, ProgramEnrollmentApplicationStatus status);
+
+    Optional<ProgramEnrollmentApplication> findByAdmissionInvoiceIdAndStatus(Long admissionInvoiceId, ProgramEnrollmentApplicationStatus status);
 }

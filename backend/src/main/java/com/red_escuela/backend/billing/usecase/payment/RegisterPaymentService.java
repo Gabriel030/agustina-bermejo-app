@@ -12,6 +12,8 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.CreditApplication;
 import com.red_escuela.backend.billing.entity.CreditNote;
@@ -168,6 +170,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             accountService.allocateUnallocatedCreditToInvoicePayment(account, appliedAmount);
         }
 
+        lockedInvoices.forEach(this::publishAdmissionPaidIfApplicable);
         lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
         log.info("Pago registrado: pago={}, metodo={}, monto={}, facturas={}",
                 payment.getId(), request.method(), total.amount(), ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
@@ -222,6 +225,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             allocation.setAmountApplied(outstanding);
             payment.getAllocations().add(allocation);
             accountService.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(outstanding));
+            publishAdmissionPaidIfApplicable(invoice);
             restoreStandingIfNoOverdueDebtLeft(invoice);
         }
         log.info("Pago por debajo del saldo acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}",
@@ -242,6 +246,12 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             NonNegativeMoney availableCredit = NonNegativeMoney.of(creditNote.getRemainingAmount().plus(consumedNow));
             accountService.recordCreditNoteIssuedCredit(account, creditNote.getId(), NonNegativeMoney.zero(account.getCurrency()), availableCredit,
                     today, "Nota de crédito " + creditNote.getId());
+        }
+    }
+
+    private void publishAdmissionPaidIfApplicable(Invoice invoice) {
+        if (invoice.getIssuingReason() == InvoiceIssuingReason.PROGRAM_ADMISSION && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+            eventPublisher.publishEvent(AdmissionInvoicePaidEvent.paidFor(invoice.getId()));
         }
     }
 

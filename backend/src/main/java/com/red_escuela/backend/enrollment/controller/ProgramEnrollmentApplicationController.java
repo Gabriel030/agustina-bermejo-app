@@ -24,7 +24,6 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -75,13 +74,13 @@ public class ProgramEnrollmentApplicationController {
         this.studentDocumentRepository = studentDocumentRepository;
     }
 
-    @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/me/program-enrollment-applications")
     @ResponseStatus(HttpStatus.CREATED)
     public ProgramEnrollmentApplicationResponse request(
-            @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
+            @RequestParam Long programId, @RequestParam Long cohortId) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
-                new RequestProgramEnrollmentApplicationCommand(student, programId, cohortId, comprobante));
+                new RequestProgramEnrollmentApplicationCommand(student, programId, cohortId));
         return ProgramEnrollmentApplicationResponse.from(application);
     }
 

@@ -96,10 +96,19 @@ public class ProgramEnrollmentService {
 
     @Transactional
     public ProgramEnrollment enroll(Long studentId, CreateProgramEnrollmentRequest request) {
+        studentDebtResolutionService.verifyNoDebt(studentId);
+        return createEnrollment(studentId, request, true);
+    }
+
+    @Transactional
+    public ProgramEnrollment enrollAfterAdmissionPayment(Long studentId, CreateProgramEnrollmentRequest request) {
+        return createEnrollment(studentId, request, false);
+    }
+
+    private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         validateStudentEligible(student);
-        studentDebtResolutionService.verifyNoDebt(studentId);
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
@@ -108,7 +117,9 @@ public class ProgramEnrollmentService {
         if (request.cohortId() != null) {
             cohort = programCohortRepository.findById(request.cohortId())
                     .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
-            validateAdmissionWindow(cohort);
+            if (validateAdmissionWindow) {
+                validateAdmissionWindow(cohort);
+            }
         }
 
         LocalDateTime now = LocalDateTime.now(clock);

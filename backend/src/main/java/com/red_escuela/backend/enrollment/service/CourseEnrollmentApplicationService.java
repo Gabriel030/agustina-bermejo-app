@@ -14,6 +14,7 @@ import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentAppli
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
+import com.red_escuela.backend.identity.exception.DniRequiredException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -63,6 +64,10 @@ public class CourseEnrollmentApplicationService {
     public CourseEnrollmentApplication requestWithPayment(Long studentId, CreateCourseEnrollmentRequest request, MultipartFile comprobante) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
+        String dni = student.getPerson().getDni();
+        if (dni == null || dni.isBlank()) {
+            throw new DniRequiredException(student.getPerson().getId());
+        }
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         courseEnrollmentService.validateCanEnroll(student, course);
