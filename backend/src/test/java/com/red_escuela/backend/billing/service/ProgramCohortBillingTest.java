@@ -7,7 +7,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
@@ -25,7 +25,7 @@ import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedExce
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
@@ -251,13 +251,13 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         billingTrigger.issueEntryFee(enrollment);
 
-        var invoices = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollment.getId());
+        var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
         Invoice invoice = invoices.get(0);
-        assertThat(invoice.getBaseAmount()).isEqualTo(ars(50000));
-        assertThat(invoice.getAmountDue()).isEqualTo(ars(25000));
-        assertThat(invoice.getAdjustments()).hasSize(1);
-        assertThat(invoice.getAdjustments().get(0).getAppliedBy()).isNull();
+        assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(25000));
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).hasSize(1);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).get(0).getAppliedBy()).isNull();
     }
 
     @Test
@@ -296,8 +296,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         billingTrigger.issueEntryFee(enrollmentA);
         billingTrigger.issueEntryFee(enrollmentB);
 
-        var invoicesA = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentA.getId());
-        var invoicesB = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentB.getId());
+        var invoicesA = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentA.getId());
+        var invoicesB = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentB.getId());
 
         assertThat(invoicesA.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
         assertThat(invoicesA.get(0).getAdjustments()).isEmpty();
@@ -323,16 +323,16 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 1));
         Invoice invoiceVieja = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
-        assertThat(invoiceVieja.getBaseAmount()).isEqualTo(ars(10000));
+        assertThat(invoiceVieja.getAmounts().linesTotal().value()).isEqualTo(ars(10000));
 
         persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
 
         com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 7, 1));
         Invoice invoiceNueva = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
-        assertThat(invoiceNueva.getBaseAmount()).isEqualTo(ars(15000));
+        assertThat(invoiceNueva.getAmounts().linesTotal().value()).isEqualTo(ars(15000));
 
         Invoice recargada = invoiceRepository.findById(invoiceVieja.getId()).orElseThrow();
-        assertThat(recargada.getBaseAmount()).isEqualTo(ars(10000));
+        assertThat(recargada.getAmounts().linesTotal().value()).isEqualTo(ars(10000));
     }
 
     @Test
@@ -422,7 +422,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         assertThat(invoicesCarrera).extracting("feeType").containsExactlyInAnyOrder(FeeType.ENROLLMENT_FEE, FeeType.MONTHLY_INSTALLMENT);
         assertThat(invoicesCurso).extracting("feeType").containsExactly(FeeType.MONTHLY_INSTALLMENT);
-        assertThat(invoicesCurso.get(0).getBaseAmount()).isEqualTo(ars(5000));
+        assertThat(invoicesCurso.get(0).getAmounts().linesTotal().value()).isEqualTo(ars(5000));
         assertThat(invoicesCarrera).noneMatch(i -> i.getCourseEnrollment() != null);
         assertThat(invoicesCurso).noneMatch(i -> i.getProgramEnrollment() != null);
     }

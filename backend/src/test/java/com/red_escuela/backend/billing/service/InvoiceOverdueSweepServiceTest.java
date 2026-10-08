@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
-import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -13,10 +12,8 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustment;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -28,7 +25,7 @@ import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -135,14 +132,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(period);
-        invoice.setDueDate(dueDate);
-        invoice.setBaseAmount(amount);
-        BillingTestFixtures.markInvoiceAsPending(invoice);
-        return invoiceRepository.save(invoice);
+        return BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(period).dueOn(dueDate).withBaseAmount(amount).build();
     }
 
     private LatePaymentSettings persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
@@ -158,7 +148,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void installmentOverdueForMoreThanTenDaysBecomesOverdueWithTheCurrentSurcharge() {
+    void installmentOverdueForMoreThanTenDaysBecomesOverdueWithoutAnySurcharge() {
         Person director = persistPerson("director.sweep1." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000001");
@@ -166,11 +156,10 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
 
         sweepService.run(LocalDate.now());
 
-        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
+        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isOverdue();
-        assertThat(reloaded.getAdjustments()).hasSize(1);
-        assertThat(reloaded.getAdjustments().get(0).getType()).isEqualTo(InvoiceAdjustmentType.SURCHARGE);
-        assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
+        assertThat(reloaded.getAmounts().total().value()).isEqualTo(ars(1000));
+        assertThat(invoiceRepository.count()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -182,9 +171,9 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
 
         sweepService.run(LocalDate.now());
 
-        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
+        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isPending();
-        assertThat(reloaded.getAdjustments()).isEmpty();
+        assertThat(reloaded.getAmounts().total().value()).isEqualTo(ars(1000));
     }
 
     @Test
@@ -194,24 +183,24 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("99000003");
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
         jdbcTemplate.execute("""
-                create or replace function fail_invoice_adjustment_insert() returns trigger as $$
+                create or replace function fail_invoice_overdue_update() returns trigger as $$
                 begin
-                    raise exception 'simulated crash while applying the surcharge';
+                    raise exception 'simulated crash while marking the invoice as overdue';
                 end;
                 $$ language plpgsql
                 """);
-        jdbcTemplate.execute("create trigger fail_invoice_adjustment_insert before insert on invoice_adjustment "
-                + "for each row execute function fail_invoice_adjustment_insert()");
+        jdbcTemplate.execute("create trigger fail_invoice_overdue_update before update on invoice "
+                + "for each row execute function fail_invoice_overdue_update()");
         try {
             sweepService.run(LocalDate.now());
         } finally {
-            jdbcTemplate.execute("drop trigger fail_invoice_adjustment_insert on invoice_adjustment");
-            jdbcTemplate.execute("drop function fail_invoice_adjustment_insert()");
+            jdbcTemplate.execute("drop trigger fail_invoice_overdue_update on invoice");
+            jdbcTemplate.execute("drop function fail_invoice_overdue_update()");
         }
 
-        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
+        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isPending();
-        assertThat(reloaded.getAdjustments()).isEmpty();
+        assertThat(reloaded.getAmounts().total().value()).isEqualTo(ars(1000));
 
         var logs = batchExecutionLogRepository.findByJobNameOrderByRanAtDesc("InvoiceOverdueSweepService");
         assertThat(logs).isNotEmpty();
@@ -234,49 +223,28 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         sweepService.run(LocalDate.now());
 
         long overdueCount = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getStatus() == InvoiceStatus.OVERDUE)
+                .filter(i -> i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE)
                 .count();
         assertThat(overdueCount).isEqualTo(total);
     }
 
     @Test
-    void lateSurchargeIsCalculatedOnTheAmountWithDiscountAlreadyAppliedNotOnTheListPrice() {
-        Person director = persistPerson("director.sweep4." + System.nanoTime());
-        persistPolicy(director, 10, BigDecimal.valueOf(0.10));
-        CourseEnrollment enrollment = persistCourseEnrollment("99000004");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(11));
-        invoice.applyAdjustment(InvoiceAdjustmentType.DISCOUNT, new MonetaryAdjustment.Proportional(Percentage.ofFraction(BigDecimal.valueOf(0.90))),
-                "Beca 90%", director);
-        invoiceRepository.save(invoice);
-
-        sweepService.run(LocalDate.now());
-
-        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        List<InvoiceAdjustment> adjustments = reloaded.getAdjustments();
-        assertThat(adjustments).hasSize(2);
-        var surcharge = adjustments.stream().filter(a -> a.getType() == InvoiceAdjustmentType.SURCHARGE).findFirst().orElseThrow();
-        assertThat(surcharge.getResolvedBase()).isEqualTo(ars(100));
-        assertThat(surcharge.signedAmount()).isEqualTo(ars(10.00));
-    }
-
-    @Test
-    void processingTheSameOverdueInstallmentTwiceAppliesTheSurchargeOnlyOnce() {
+    void processingTheSameOverdueInstallmentTwiceLeavesItOverdueAndUnchanged() {
         Person director = persistPerson("director.sweep.twice." + System.nanoTime());
-        LatePaymentSettings policy = persistPolicy(director, 10, BigDecimal.valueOf(0.10));
+        persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000901");
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
 
-        rowProcessor.process(invoice.getId(), policy);
-        rowProcessor.process(invoice.getId(), policy);
+        rowProcessor.process(invoice.getId(), LocalDate.now());
+        rowProcessor.process(invoice.getId(), LocalDate.now());
 
-        Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
+        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isOverdue();
-        assertThat(reloaded.getAdjustments()).hasSize(1);
-        assertThat(reloaded.getAmountDue()).isEqualTo(ars(1100));
+        assertThat(reloaded.getAmounts().total().value()).isEqualTo(ars(1000));
     }
 
     @Test
-    void runningTheDailyJobTwiceTheSameDayAppliesTheSurchargeOnlyOnce() {
+    void runningTheDailyJobTwiceTheSameDayLeavesTheInvoiceOverdueWithoutChangingItsTotal() {
         Person director = persistPerson("director.sweep.rerun." + System.nanoTime());
         persistPolicy(director, 10, BigDecimal.valueOf(0.10));
         CourseEnrollment enrollment = persistCourseEnrollment("99000902");
@@ -285,6 +253,6 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         sweepService.run(LocalDate.now());
         sweepService.run(LocalDate.now());
 
-        assertThat(invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow().getAdjustments()).hasSize(1);
+        assertThat(invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow().getAmounts().total().value()).isEqualTo(ars(1000));
     }
 }

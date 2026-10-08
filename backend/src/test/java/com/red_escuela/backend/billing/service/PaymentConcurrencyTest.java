@@ -11,8 +11,8 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -26,7 +26,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -130,13 +130,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(amount);
-        BillingTestFixtures.markInvoiceAsPending(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).build();
         return invoiceRepository.save(invoice);
     }
 

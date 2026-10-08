@@ -9,8 +9,8 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -22,7 +22,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -120,12 +120,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now().minusMonths(3));
-        invoice.setDueDate(LocalDate.now().minusMonths(3));
-        invoice.setBaseAmount(ars(deuda));
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(3)).dueOn(LocalDate.now().minusMonths(3)).withBaseAmount(ars(deuda)).build();
         BillingTestFixtures.markInvoiceAsOverdue(invoice);
         invoiceRepository.save(invoice);
         return enrollment;
@@ -163,13 +158,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = programEnrollmentRepository.save(enrollment);
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now().plusDays(5));
-        invoice.setBaseAmount(ars(5000));
-        BillingTestFixtures.markInvoiceAsPending(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now().plusDays(5)).withBaseAmount(ars(5000)).build();
         invoiceRepository.save(invoice);
 
         Program programNuevo = persistProgram();
@@ -221,7 +210,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
 
-        Invoice deudaVieja = invoiceRepository.findByIdWithAdjustments(
+        Invoice deudaVieja = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow();
         assertThatInvoice(deudaVieja).isWaived();
 
@@ -261,9 +250,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
 
-        Invoice deuda1 = invoiceRepository.findByIdWithAdjustments(
+        Invoice deuda1 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo1.getId()).get(0).getId()).orElseThrow();
-        Invoice deuda2 = invoiceRepository.findByIdWithAdjustments(
+        Invoice deuda2 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo2.getId()).get(0).getId()).orElseThrow();
         assertThatInvoice(deuda1).isWaived();
         assertThatInvoice(deuda2).isWaived();

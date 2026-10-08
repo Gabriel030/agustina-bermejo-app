@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.planning.service;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import org.junit.jupiter.api.Tag;
@@ -98,7 +98,7 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramInvoicePlanningFacts at(YearMonth month, LocalDate today) {
             YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
             return new ProgramInvoicePlanningFacts(1L, month, today, active, suspended, completed, paused, onlyFinals, entry, cadence, hasPlan, cycles,
-                    fees.stream().map(p -> new IssuedEnrollmentFee(null, null, null, p, InvoiceStatus.PENDING, p.atDay(1))).toList(), installments, windows,
+                    fees.stream().map(p -> new IssuedEnrollmentFee(null, null, null, p, InvoicePaymentStatus.PENDING, p.atDay(1))).toList(), installments, windows,
                     null, null, null);
         }
     }
@@ -242,7 +242,7 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
         YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 3), LocalDate.of(2026, 3, 1), true, false, false, false, false, null,
-                PaymentPlanCadence.MONTHLY, true, cycles, List.of(new IssuedEnrollmentFee(9L, 1L, 1, ym(2026, 3), InvoiceStatus.CANCELLED, LocalDate.of(2026, 3, 1))),
+                PaymentPlanCadence.MONTHLY, true, cycles, List.of(new IssuedEnrollmentFee(9L, 1L, 1, ym(2026, 3), InvoicePaymentStatus.CANCELLED, LocalDate.of(2026, 3, 1))),
                 Set.of(), Map.of(), null, null, null);
 
         MonthlyInvoicePlan plan = planner.planInvoicesForMonth(facts, InvoicePlanningScope.ENROLLMENT_FEE_ONLY);
@@ -257,8 +257,8 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 2, 2, 7);
         YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
         List<IssuedEnrollmentFee> issued = List.of(
-                new IssuedEnrollmentFee(1L, 1L, 1, ym(2026, 2), InvoiceStatus.PAID, LocalDate.of(2026, 2, 1)),
-                new IssuedEnrollmentFee(2L, 1L, 2, ym(2026, 7), InvoiceStatus.PENDING, LocalDate.of(2026, 7, 1)));
+                new IssuedEnrollmentFee(1L, 1L, 1, ym(2026, 2), InvoicePaymentStatus.PAID, LocalDate.of(2026, 2, 1)),
+                new IssuedEnrollmentFee(2L, 1L, 2, ym(2026, 7), InvoicePaymentStatus.PENDING, LocalDate.of(2026, 7, 1)));
         t.configureEnrollmentFees(2, 2, 8);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 9), LocalDate.of(2026, 9, 1), true, false, false, false, false, null,
                 PaymentPlanCadence.MONTHLY, true, cycles, issued, Set.of(), Map.of(), null, null, null);

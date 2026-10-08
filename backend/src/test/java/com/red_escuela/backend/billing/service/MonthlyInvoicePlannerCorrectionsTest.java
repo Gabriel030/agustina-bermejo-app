@@ -7,8 +7,8 @@ import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -173,7 +173,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
 
-        markAllEnrollmentFees(enrollment, InvoiceStatus.CANCELLED);
+        markAllEnrollmentFees(enrollment, InvoicePaymentStatus.CANCELLED);
         assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         job.run();
 
@@ -204,7 +204,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
         assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).allMatch(i -> i.getStatus() == InvoiceStatus.WAIVED);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).allMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.WAIVED);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y26);
     }

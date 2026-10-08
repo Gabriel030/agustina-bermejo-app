@@ -2,19 +2,19 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingRequest;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceRecipient;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
+import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.exception.InvoiceAlreadyAttachedException;
 import com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException;
@@ -49,15 +49,15 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
     }
 
     private com.red_escuela.backend.shared.domain.Money firstFeeDue(Long enrollmentId) {
-        return transactionTemplate.execute(status -> invoices(enrollmentId, FeeType.ENROLLMENT_FEE).get(0).getAmountDue());
+        return transactionTemplate.execute(status -> invoices(enrollmentId, FeeType.ENROLLMENT_FEE).get(0).getAmounts().total().value());
     }
 
     private List<Invoice> loaded(Long enrollmentId, FeeType type) {
         return transactionTemplate.execute(status -> {
             List<Invoice> list = invoices(enrollmentId, type);
             list.forEach(i -> {
-                i.getAdjustments().size();
-                i.getPriceRevision();
+                com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(i).size();
+                i.getPrimaryLine().getPriceRevisionId();
             });
             return list;
         });
@@ -65,7 +65,10 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
 
     private InvoiceIssuingRequest installmentRequest(Long enrollmentId, YearMonth period, LocalDate due, InvoiceIssuingReason reason, FeeType type) {
         ProgramEnrollment reference = transactionTemplate.execute(status -> entityManager.find(ProgramEnrollment.class, enrollmentId));
-        return new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(reference), type, period, due, reason, null, null, null, false, ars(100), null, null, null);
+        if (reason == InvoiceIssuingReason.AD_HOC_CHARGE) {
+            return InvoiceIssuingRequestFactory.createProgramAdHocRequest(reference, type, due, com.red_escuela.backend.shared.domain.NonNegativeMoney.of(ars(100)), null, null, null, "key-" + period + type);
+        }
+        return InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(reference, null, new PlannedInvoice(type, period, due, due, null, null, null, false, false), reason);
     }
 
     @Test
@@ -84,11 +87,11 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         Invoice fee = fees.get(0);
         assertThat(fee.getPeriod()).isEqualTo(YearMonth.of(2027, 3));
         assertThat(fee.getDueDate()).isEqualTo(date(2027, 3, 1));
-        assertThat(fee.getIssueReason()).isEqualTo(InvoiceIssuingReason.PAYMENT_PLAN_SELECTION);
+        assertThat(fee.getIssuingReason()).isEqualTo(InvoiceIssuingReason.PAYMENT_PLAN_SELECTION);
         assertThat(fee.getEnrollmentFeeSlot()).isEqualTo(1);
         assertThat(fee.getTemplateId()).isEqualTo(y27.templateId());
-        assertThat(fee.getAdjustments()).isEmpty();
-        assertThat(fee.getPriceRevision()).isNotNull();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(fee)).isEmpty();
+        assertThat(fee.getPrimaryLine().getPriceRevisionId()).isNotNull();
     }
 
     @Test
@@ -103,7 +106,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
 
         Invoice fee = loaded(enrollment, FeeType.ENROLLMENT_FEE).get(0);
         assertThat(fee.getPeriod()).isEqualTo(YearMonth.of(2027, 8));
-        assertThat(fee.getAdjustments()).hasSize(1);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(fee)).hasSize(1);
         assertThat(firstFeeDue(enrollment)).isEqualTo(ars(2500));
     }
 
@@ -120,8 +123,8 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         job.run();
 
         Invoice fee = loaded(enrollment, FeeType.ENROLLMENT_FEE).get(0);
-        assertThat(fee.getIssueReason()).isEqualTo(InvoiceIssuingReason.MONTHLY_RUN);
-        assertThat(fee.getAdjustments()).hasSize(1);
+        assertThat(fee.getIssuingReason()).isEqualTo(InvoiceIssuingReason.MONTHLY_RUN);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(fee)).hasSize(1);
         assertThat(firstFeeDue(enrollment)).isEqualTo(ars(2500));
     }
 
@@ -136,7 +139,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         InvoiceIssuingResult result = issuer.issueInvoiceInNewTransaction(installmentRequest(enrollment, YearMonth.of(2027, 3), date(2027, 3, 2), InvoiceIssuingReason.AD_HOC_CHARGE, FeeType.MONTHLY_INSTALLMENT));
 
         assertThat(result).isInstanceOf(InvoiceIssuingResult.InvoiceIssuingRejected.class);
-        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) result).evaluation().firstDenial().orElseThrow().code()).isEqualTo("FEE_TYPE_NOT_ALLOWED_FOR_REASON");
+        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) result).evaluationResult().firstDenial().orElseThrow().code()).isEqualTo("FEE_TYPE_NOT_ALLOWED_FOR_REASON");
         assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isEmpty();
     }
 
@@ -152,8 +155,8 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         InvoiceIssuingResult noSlot = issuer.issueInvoiceInNewTransaction(installmentRequest(enrollment, YearMonth.of(2027, 3), date(2027, 3, 2), InvoiceIssuingReason.MONTHLY_RUN, FeeType.ENROLLMENT_FEE));
         InvoiceIssuingResult dueToday = issuer.issueInvoiceInNewTransaction(installmentRequest(enrollment, YearMonth.of(2027, 3), date(2027, 3, 2), InvoiceIssuingReason.MONTHLY_RUN, FeeType.MONTHLY_INSTALLMENT));
 
-        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) pastDue).evaluation().firstDenial().orElseThrow().code()).isEqualTo("DUE_DATE_BEFORE_ISSUE_DATE");
-        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) noSlot).evaluation().firstDenial().orElseThrow().code()).isEqualTo("ENROLLMENT_FEE_SLOT_REQUIRED");
+        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) pastDue).evaluationResult().firstDenial().orElseThrow().code()).isEqualTo("DUE_DATE_BEFORE_ISSUE_DATE");
+        assertThat(((InvoiceIssuingResult.InvoiceIssuingRejected) noSlot).evaluationResult().firstDenial().orElseThrow().code()).isEqualTo("ENROLLMENT_FEE_SLOT_REQUIRED");
         assertThat(dueToday).isInstanceOf(InvoiceIssuingResult.InvoiceIssued.class);
     }
 
@@ -192,7 +195,12 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         return transactionTemplate.execute(status -> {
             Program program = entityManager.find(Program.class, career.programId());
             ProgramCohort cohort = entityManager.find(ProgramCohort.class, cohortId);
-            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(program, cohort, java.time.LocalDate.now(clockOf())));
+            var student = new com.red_escuela.backend.identity.entity.Student();
+            student.setPerson(newPerson());
+            student.setInstitution(entityManager.getReference(com.red_escuela.backend.academicstructure.entity.Institution.class, career.institutionId()));
+            student.setOnboardingStatus(com.red_escuela.backend.identity.entity.StudentOnboardingStatus.CONFIRMADO);
+            entityManager.persist(student);
+            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, java.time.LocalDate.now(clockOf())));
             return ((InvoiceIssuingResult.InvoiceIssued) result).invoice();
         });
     }
@@ -213,15 +221,15 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
 
         Invoice reloaded = transactionTemplate.execute(status -> {
             Invoice i = invoiceRepository.findById(admission.getId()).orElseThrow();
-            i.getAdjustments().size();
+            com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(i).size();
             return i;
         });
-        assertThat(reloaded.getIssueReason()).isEqualTo(InvoiceIssuingReason.PROGRAM_ADMISSION);
+        assertThat(reloaded.getIssuingReason()).isEqualTo(InvoiceIssuingReason.PROGRAM_ADMISSION);
         assertThat(reloaded.getTemplateId()).isEqualTo(y27.templateId());
         assertThat(reloaded.getEnrollmentFeeSlot()).isEqualTo(2);
         assertThat(reloaded.getPeriod()).isEqualTo(YearMonth.of(2027, 8));
         assertThat(reloaded.getDueDate()).isEqualTo(date(2027, 7, 10));
-        assertThat(reloaded.getAdjustments()).isEmpty();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(reloaded)).isEmpty();
         assertThat(reloaded.getProgramEnrollment()).isNull();
 
         today(date(2027, 7, 20));
@@ -294,7 +302,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
         assertThat(fees).hasSize(1);
         assertThat(fees.get(0).getPeriod()).isEqualTo(YearMonth.of(2027, 3));
-        assertThat(fees.get(0).getIssueReason()).isEqualTo(InvoiceIssuingReason.PAYMENT_PLAN_SELECTION);
+        assertThat(fees.get(0).getIssuingReason()).isEqualTo(InvoiceIssuingReason.PAYMENT_PLAN_SELECTION);
     }
 
     @Test
@@ -315,6 +323,6 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
         assertThat(fees).hasSize(1);
         assertThat(fees.get(0).getPeriod()).isEqualTo(YearMonth.of(2027, 3));
-        assertThat(fees.get(0).getIssueReason()).isEqualTo(InvoiceIssuingReason.MONTHLY_RUN);
+        assertThat(fees.get(0).getIssuingReason()).isEqualTo(InvoiceIssuingReason.MONTHLY_RUN);
     }
 }

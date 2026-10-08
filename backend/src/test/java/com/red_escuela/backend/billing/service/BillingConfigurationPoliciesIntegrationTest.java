@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;

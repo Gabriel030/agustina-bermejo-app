@@ -1,10 +1,10 @@
 package com.red_escuela.backend.architecture.fixture.billing.invoice;
 
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.entity.PaymentStatus;
 
 public class LegacyBillingDependingFixture {
 
-    public InvoiceStatus legacyStatus() {
-        return InvoiceStatus.PAID;
+    public PaymentStatus legacyStatus() {
+        return PaymentStatus.CONFIRMED;
     }
 }

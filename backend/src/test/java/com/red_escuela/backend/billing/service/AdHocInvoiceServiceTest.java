@@ -2,9 +2,9 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -200,8 +200,8 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
 
         Invoice created = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request);
 
-        assertThat(created.getDescription()).isEqualTo("Recursada informal");
-        assertThat(created.getSubject()).isNull();
-        assertThat(created.getExamBoardRegistration()).isNull();
+        assertThat(created.getPrimaryLine().getConcept()).isEqualTo("Recursada informal");
+        assertThat(created.getPrimaryLine().getSubjectId()).isNull();
+        assertThat(created.getPrimaryLine().getExamBoardRegistrationId()).isNull();
     }
 }

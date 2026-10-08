@@ -11,8 +11,8 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
@@ -35,7 +35,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -150,18 +150,12 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoiceStatus status) {
+    private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoicePaymentStatus status) {
         return persistInvoice(enrollment, feeType, amount, status, YearMonth.now());
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoiceStatus status, YearMonth period) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(feeType);
-        invoice.setPeriod(period);
-        invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(amount);
-        invoice.setStatus(status);
+    private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoicePaymentStatus status, YearMonth period) {
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(feeType).forPeriod(period).dueOn(LocalDate.now()).withBaseAmount(amount).inState(status).build();
         return invoiceRepository.save(invoice);
     }
 
@@ -170,7 +164,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago1." + System.nanoTime());
         Student student = persistStudent("96000001");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
@@ -185,7 +179,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago2." + System.nanoTime());
         Student student = persistStudent("96000002");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.CANCELLED);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.CANCELLED);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
@@ -198,7 +192,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago3." + System.nanoTime());
         Student student = persistStudent("96000003");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
@@ -218,13 +212,13 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
 
         YearMonth base = YearMonth.now();
-        Invoice enrollmentFee = persistInvoice(enrollment, FeeType.ENROLLMENT_FEE, ars(5000), InvoiceStatus.PENDING, base);
+        Invoice enrollmentFee = persistInvoice(enrollment, FeeType.ENROLLMENT_FEE, ars(5000), InvoicePaymentStatus.PENDING, base);
         List<Invoice> installments = List.of(
-                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING, base),
-                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING, base.plusMonths(1)),
-                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING, base.plusMonths(2)),
-                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING, base.plusMonths(3)),
-                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING, base.plusMonths(4)));
+                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, base),
+                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, base.plusMonths(1)),
+                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, base.plusMonths(2)),
+                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, base.plusMonths(3)),
+                persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, base.plusMonths(4)));
 
         List<PaymentAllocationRequest> allocations = new java.util.ArrayList<>();
         allocations.add(new PaymentAllocationRequest(enrollmentFee.getId(), ars(5000)));
@@ -244,7 +238,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago5." + System.nanoTime());
         Student student = persistStudent("96000005");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(15000))),
@@ -257,7 +251,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago9." + System.nanoTime());
         Student student = persistStudent("96000009");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(-100))),
@@ -270,7 +264,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago10." + System.nanoTime());
         Student student = persistStudent("96000010");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(0))),
@@ -282,7 +276,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     void aStudentCanPayTheirOwnInvoice() {
         Student student = persistStudent("96000006");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         authenticateAs(student.getPerson());
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
@@ -297,7 +291,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Student owner = persistStudent("96000007");
         Student intruder = persistStudent("96000008");
         CourseEnrollment enrollment = persistCourseEnrollment(owner);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
 
         authenticateAs(intruder.getPerson());
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
@@ -311,7 +305,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago11." + System.nanoTime());
         Student student = persistStudent("96000011");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
         creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
 
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
@@ -329,7 +323,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago12." + System.nanoTime());
         Student student = persistStudent("96000012");
         CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
         creditNoteService.createFor(student, ars(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
@@ -349,7 +343,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
     private void payInFull(Invoice invoice, Person admin) {
         registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getBaseAmount())),
+                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().linesTotal().value())),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
     }
 
@@ -358,8 +352,8 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago.standing1." + System.nanoTime());
         Student student = persistStudent("96000101");
         CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentPaymentStatus.OVERDUE);
-        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.OVERDUE);
-        persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.PENDING, YearMonth.now().plusMonths(1));
+        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.OVERDUE);
+        persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));
 
         payInFull(overdue, admin);
 
@@ -372,8 +366,8 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago.standing2." + System.nanoTime());
         Student student = persistStudent("96000102");
         CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentPaymentStatus.OVERDUE);
-        Invoice first = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(2));
-        persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.OVERDUE, YearMonth.now().minusMonths(1));
+        Invoice first = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.OVERDUE, YearMonth.now().minusMonths(2));
+        persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.OVERDUE, YearMonth.now().minusMonths(1));
 
         payInFull(first, admin);
 
@@ -386,7 +380,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago.standing3." + System.nanoTime());
         Student student = persistStudent("96000103");
         CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentPaymentStatus.SUSPENDED);
-        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.OVERDUE);
+        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.OVERDUE);
 
         payInFull(overdue, admin);
 
@@ -402,7 +396,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.pago.standing4." + System.nanoTime());
         Student student = persistStudent("96000104");
         CourseEnrollment enrollment = persistCourseEnrollmentWithStanding(student, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoiceStatus.OVERDUE);
+        Invoice overdue = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.OVERDUE);
 
         payInFull(overdue, admin);
 

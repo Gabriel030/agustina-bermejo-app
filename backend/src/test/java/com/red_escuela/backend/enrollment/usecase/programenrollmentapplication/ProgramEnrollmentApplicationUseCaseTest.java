@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
@@ -23,7 +23,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
@@ -166,7 +166,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
         assertThat(application.getPaymentReceipt()).isNotNull();
         assertThat(application.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
-        assertThat(application.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
+        assertThat(application.getPaymentReceipt().getInvoice().getAmounts().linesTotal().value()).isEqualTo(ars(50000));
     }
 
     @Test
@@ -243,7 +243,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 .isNotEmpty();
 
         assertThatInvoice(aprobada.getPaymentReceipt().getInvoice()).isPaid();
-        assertThat(aprobada.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
+        assertThat(aprobada.getPaymentReceipt().getInvoice().getAmounts().linesTotal().value()).isEqualTo(ars(50000));
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
         assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

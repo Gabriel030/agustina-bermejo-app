@@ -10,31 +10,35 @@ public final class BillingInvariantChecker {
 
     private final JdbcTemplate jdbc;
     private final long baselineEnrollmentId;
+    private final long baselineInvoiceId;
+    private final long baselineAllocationId;
 
-    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId) {
+    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId) {
         this.jdbc = jdbc;
         this.baselineEnrollmentId = baselineEnrollmentId;
+        this.baselineInvoiceId = baselineInvoiceId;
+        this.baselineAllocationId = baselineAllocationId;
     }
 
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
         Long max = jdbc.queryForObject("select coalesce(max(id), 0) from program_enrollment", Long.class);
-        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max));
+        Long maxInvoice = jdbc.queryForObject("select coalesce(max(id), 0) from invoice", Long.class);
+        Long maxAllocation = jdbc.queryForObject("select coalesce(max(id), 0) from payment_allocation", Long.class);
+        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation);
     }
 
-    public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlotOnLegacyInvoices() {
+    public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlot() {
         return violations("I-05 enrollment fee issued twice for the same slot", """
                 select 'enrollment ' || program_enrollment_id || ' template ' || template_id || ' slot ' || enrollment_fee_slot
-                from legacy_invoice
-                where program_enrollment_id > ? and fee_type = 'ENROLLMENT_FEE' and enrollment_fee_slot is not null and status <> 'CANCELLED'
+                from invoice_line
+                where program_enrollment_id > ? and fee_type = 'ENROLLMENT_FEE' and enrollment_fee_slot is not null and charge_key_released_at is null
                 group by program_enrollment_id, template_id, enrollment_fee_slot
                 having count(*) > 1
                 """, baselineEnrollmentId);
     }
 
-    public List<String> noNegativeAmountIsPersistedOnLegacyInvoices() {
+    public List<String> noNegativeAmountIsPersisted() {
         List<String> found = new ArrayList<>();
-        found.addAll(violations("I-06 negative invoice base amount", "select 'invoice ' || id from legacy_invoice where base_amount < 0"));
-        found.addAll(violations("I-06 negative adjustment", "select 'adjustment ' || id from invoice_adjustment where resolved_base < 0"));
         found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount_applied < 0"));
         found.addAll(violations("I-06 negative payment", "select 'payment ' || id from payment where amount < 0"));
         found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where amount < 0"));
@@ -43,44 +47,44 @@ public final class BillingInvariantChecker {
         return found;
     }
 
-    public List<String> allocationsHaveTheCurrencyOfTheirInvoiceOnLegacyInvoices() {
+    public List<String> allocationsHaveTheCurrencyOfTheirInvoice() {
         return violations("I-13 allocation in a different currency than its invoice", """
                 select 'allocation ' || a.id
-                from payment_allocation a join legacy_invoice i on i.id = a.invoice_id
-                where i.program_enrollment_id > ? and a.amount_applied_currency <> i.base_amount_currency
-                """, baselineEnrollmentId);
+                from payment_allocation a join invoice i on i.id = a.invoice_id
+                where a.id > ? and a.amount_applied_currency <> i.currency
+                """, baselineAllocationId);
     }
 
-    public List<String> invoicesAreNotDueBeforeTheyWereIssuedOnLegacyInvoices() {
+    public List<String> invoicesAreNotDueBeforeTheyWereIssued() {
         return violations("I-14 invoice due before its issue date", """
-                select 'invoice ' || id || ' due ' || due_date || ' created ' || created_at
-                from legacy_invoice
-                where program_enrollment_id > ? and due_date < cast(created_at as date)
-                """, baselineEnrollmentId);
+                select 'invoice ' || id || ' due ' || due_date || ' issued ' || issue_date
+                from invoice
+                where id > ? and due_date < issue_date
+                """, baselineInvoiceId);
     }
 
-    public List<String> installmentsStayWithinTheConfiguredCountAndSchoolYearOnLegacyInvoices() {
+    public List<String> installmentsStayWithinTheConfiguredCountAndSchoolYear() {
         List<String> found = new ArrayList<>(violations("I-15 more installments than configured", """
                 select 'enrollment ' || i.program_enrollment_id || ' template ' || i.template_id
-                from legacy_invoice i join program_year_billing_template t on t.id = i.template_id
-                where i.program_enrollment_id > ? and i.fee_type = 'MONTHLY_INSTALLMENT' and i.status <> 'CANCELLED'
+                from invoice_line i join program_year_billing_template t on t.id = i.template_id
+                where i.program_enrollment_id > ? and i.fee_type = 'MONTHLY_INSTALLMENT' and i.charge_key_released_at is null
                 group by i.program_enrollment_id, i.template_id, t.recurring_fee_invoices_count
                 having count(*) > t.recurring_fee_invoices_count
                 """, baselineEnrollmentId));
         found.addAll(violations("I-15 installment in January or February", """
                 select 'invoice ' || id || ' period ' || period
-                from legacy_invoice
+                from invoice_line
                 where program_enrollment_id > ? and fee_type = 'MONTHLY_INSTALLMENT' and extract(month from period) in (1, 2)
                 """, baselineEnrollmentId));
         return found;
     }
 
-    public List<String> suspendedEnrollmentsReceiveNoNewInvoicesOnLegacyInvoices() {
+    public List<String> suspendedEnrollmentsReceiveNoNewInvoices() {
         return violations("I-16 invoice emitted for a suspended enrollment", """
                 select 'invoice ' || i.id || ' enrollment ' || e.id
-                from legacy_invoice i join program_enrollment e on e.id = i.program_enrollment_id
+                from invoice i join invoice_line l on l.invoice_id = i.id join program_enrollment e on e.id = l.program_enrollment_id
                 where e.id > ? and e.payment_status = 'SUSPENDED'
-                  and i.status <> 'CANCELLED' and i.issue_reason = 'MONTHLY_RUN'
+                  and i.issuing_reason = 'MONTHLY_RUN'
                   and i.created_at > e.payment_status_updated_at
                 """, baselineEnrollmentId);
     }
@@ -240,12 +244,12 @@ public final class BillingInvariantChecker {
 
     public void assertAllBillingInvariantsHold() {
         List<String> all = new ArrayList<>();
-        all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlotOnLegacyInvoices());
-        all.addAll(noNegativeAmountIsPersistedOnLegacyInvoices());
-        all.addAll(allocationsHaveTheCurrencyOfTheirInvoiceOnLegacyInvoices());
-        all.addAll(invoicesAreNotDueBeforeTheyWereIssuedOnLegacyInvoices());
-        all.addAll(installmentsStayWithinTheConfiguredCountAndSchoolYearOnLegacyInvoices());
-        all.addAll(suspendedEnrollmentsReceiveNoNewInvoicesOnLegacyInvoices());
+        all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlot());
+        all.addAll(noNegativeAmountIsPersisted());
+        all.addAll(allocationsHaveTheCurrencyOfTheirInvoice());
+        all.addAll(invoicesAreNotDueBeforeTheyWereIssued());
+        all.addAll(installmentsStayWithinTheConfiguredCountAndSchoolYear());
+        all.addAll(suspendedEnrollmentsReceiveNoNewInvoices());
         all.addAll(aChargeKeyIsHeldByAtMostOneLiveLine());
         all.addAll(noNegativeAmountIsPersistedInTheV2Tables());
         all.addAll(invoiceTotalsMatchTheirLinesAndDiscounts());

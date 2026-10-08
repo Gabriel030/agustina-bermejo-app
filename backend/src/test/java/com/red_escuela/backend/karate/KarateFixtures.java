@@ -237,7 +237,7 @@ public class KarateFixtures {
         invoice.setPeriod(java.time.YearMonth.from(due));
         invoice.setDueDate(due);
         invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(com.red_escuela.backend.billing.entity.InvoiceStatus.PENDING);
+        invoice.setStatus(com.red_escuela.backend.billing.entity.InvoicePaymentStatus.PENDING);
         return invoiceRepository.save(invoice).getId();
     }
 }

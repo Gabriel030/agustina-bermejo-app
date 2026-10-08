@@ -11,15 +11,15 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -249,13 +249,13 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setPaymentStatus(standing));
     }
 
-    protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoiceStatus newStatus) {
+    protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoicePaymentStatus newStatus) {
         transactionTemplate.executeWithoutResult(status -> invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
                 .filter(i -> i.getFeeType() == type && i.getPeriod().equals(period))
                 .forEach(i -> i.setStatus(newStatus)));
     }
 
-    protected void markAllEnrollmentFees(Long enrollmentId, InvoiceStatus newStatus) {
+    protected void markAllEnrollmentFees(Long enrollmentId, InvoicePaymentStatus newStatus) {
         transactionTemplate.executeWithoutResult(status -> invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
                 .filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
                 .forEach(i -> i.setStatus(newStatus)));
@@ -303,7 +303,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
         for (Invoice invoice : all) {
             assertThat(seen.add(invoice.getFeeType() + "@" + invoice.getPeriod()))
                     .as("sin dos cargos del mismo tipo y período: %s %s", invoice.getFeeType(), invoice.getPeriod()).isTrue();
-            assertThat(invoice.getBaseAmount().currency()).isEqualTo(Currency.ARS);
+            assertThat(invoice.getAmounts().linesTotal().value().currency()).isEqualTo(Currency.ARS);
         }
         for (Year year : years) {
             ProgramYearBillingTemplate template = transactionTemplate.execute(status -> {
@@ -323,7 +323,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     }
 
     protected com.red_escuela.backend.shared.domain.Money amountDue(Invoice invoice) {
-        return transactionTemplate.execute(status -> invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow().getAmountDue());
+        return transactionTemplate.execute(status -> invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow().getAmounts().total().value());
     }
 
     protected List<String> sequence(Long enrollmentId) {

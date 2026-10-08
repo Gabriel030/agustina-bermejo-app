@@ -9,8 +9,8 @@ import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -21,7 +21,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -107,18 +107,12 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         return programEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, LocalDate dueDate, InvoiceStatus status) {
+    private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, LocalDate dueDate, InvoicePaymentStatus status) {
         return persistInvoice(enrollment, amount, dueDate, YearMonth.from(dueDate), status);
     }
 
-    private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period, InvoiceStatus status) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(period);
-        invoice.setDueDate(dueDate);
-        invoice.setBaseAmount(amount);
-        invoice.setStatus(status);
+    private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, LocalDate dueDate, YearMonth period, InvoicePaymentStatus status) {
+        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(period).dueOn(dueDate).withBaseAmount(amount).inState(status).build();
         return invoiceRepository.save(invoice);
     }
 
@@ -143,7 +137,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance1." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000101");
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoicePaymentStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
 
@@ -157,7 +151,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance2." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000102");
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoicePaymentStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
 
@@ -173,9 +167,9 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance9." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000120");
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(61), InvoicePaymentStatus.OVERDUE);
         Invoice future = persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(20),
-                YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
+                YearMonth.now().plusMonths(1), InvoicePaymentStatus.PENDING);
         SecurityContextHolder.clearContext();
 
         sweepService.run(LocalDate.now());
@@ -191,7 +185,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance3." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000103");
-        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoiceStatus.OVERDUE);
+        Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(31), InvoicePaymentStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
@@ -210,8 +204,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance4." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000104");
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoiceStatus.OVERDUE);
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoicePaymentStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoicePaymentStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
 
@@ -223,7 +217,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance5." + System.nanoTime());
         persistPolicy(director, 30, 5);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000105");
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(35), InvoiceStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(35), InvoicePaymentStatus.OVERDUE);
 
         sweepService.run(LocalDate.now());
 
@@ -236,8 +230,8 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance6." + System.nanoTime());
         persistPolicy(director, 30, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000106");
-        Invoice first = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoiceStatus.OVERDUE);
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
+        Invoice first = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(10), YearMonth.now(), InvoicePaymentStatus.OVERDUE);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoicePaymentStatus.OVERDUE);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
@@ -253,13 +247,13 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         Person director = persistPerson("director.compliance9." + System.nanoTime());
         persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000109");
-        Invoice overdue = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoiceStatus.OVERDUE);
+        Invoice overdue = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15), YearMonth.now().minusMonths(1), InvoicePaymentStatus.OVERDUE);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
 
         BillingTestFixtures.payInvoiceInFull(overdue);
         invoiceRepository.save(overdue);
-        persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(20), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(20), YearMonth.now().plusMonths(1), InvoicePaymentStatus.PENDING);
         sweepService.run(LocalDate.now());
 
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
@@ -273,18 +267,18 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
         YearMonth base = YearMonth.now().minusMonths(6);
         for (int i = 0; i < 5; i++) {
-            persistInvoice(enrollment, ars(1000), base.plusMonths(i).atDay(1), InvoiceStatus.PAID);
+            persistInvoice(enrollment, ars(1000), base.plusMonths(i).atDay(1), InvoicePaymentStatus.PAID);
         }
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
-        Invoice monthlyInvoice = persistInvoice(enrollment, ars(1000), YearMonth.now().atDay(15), YearMonth.now(), InvoiceStatus.PENDING);
+        Invoice monthlyInvoice = persistInvoice(enrollment, ars(1000), YearMonth.now().atDay(15), YearMonth.now(), InvoicePaymentStatus.PENDING);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
         BillingTestFixtures.payInvoiceInFull(monthlyInvoice);
         invoiceRepository.save(monthlyInvoice);
-        persistInvoice(enrollment, ars(1000), YearMonth.now().plusMonths(1).atDay(15), YearMonth.now().plusMonths(1), InvoiceStatus.PENDING);
+        persistInvoice(enrollment, ars(1000), YearMonth.now().plusMonths(1).atDay(15), YearMonth.now().plusMonths(1), InvoicePaymentStatus.PENDING);
         sweepService.run(LocalDate.now().plusMonths(1));
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }
@@ -295,15 +289,15 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         persistPolicy(director, 10, 2);
         ProgramEnrollment enrollment = persistProgramEnrollment("99000108");
 
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(2), InvoiceStatus.PAID);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(2), InvoicePaymentStatus.PAID);
         sweepService.run(LocalDate.now().minusMonths(2));
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
-        persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(1), InvoiceStatus.PAID);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().minusMonths(1), InvoicePaymentStatus.PAID);
         sweepService.run(LocalDate.now().minusMonths(1));
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
 
-        persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(5), InvoiceStatus.PENDING);
+        persistInvoice(enrollment, ars(1000), LocalDate.now().plusDays(5), InvoicePaymentStatus.PENDING);
         sweepService.run(LocalDate.now());
         assertThat(reload(enrollment.getId()).getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.UP_TO_DATE);
     }

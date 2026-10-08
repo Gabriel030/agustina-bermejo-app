@@ -6,8 +6,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.base.DescribedPredicate;
 
 import com.tngtech.archunit.lang.CompositeArchRule;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceDraft;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -29,6 +28,7 @@ import java.util.Set;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
+import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameStartingWith;
 import static com.tngtech.archunit.core.domain.properties.HasOwner.Predicates.With.owner;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -56,9 +56,7 @@ public final class ArchitectureRules {
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"
-            + "|service\\.(?:InvoiceIssuingService|InvoiceIssuingRequestFactory|InvoiceIssuingContextLoader|ChargeAdjustmentApplier)"
-            + "|domain\\.(?:InvoiceIssuingRequest|InvoiceRecipient|InvoiceIssuingContext|InvoiceIssuingResult)"
-            + "|policy\\.(?:DueDateNotBeforeIssueDatePolicy|EnrollmentFeeSlotRequiredPolicy|EnrollmentFeeSlotWithinTemplateCountPolicy|EntryFeeDiscountPolicy|NotAlreadyIssuedPolicy|OfferingCurrencyPolicy|PromotionBenefitCapPolicy|ReasonFeeTypePolicy|ScholarshipAppliesPolicy|UpfrontDiscountPolicy))(?:\\$.*)?";
+            + "|service\\.InvoiceIssuingRequestFactory)(?:\\$.*)?";
 
     static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure", "events");
 
@@ -118,19 +116,15 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
-        ArchRule issueCalls = noClasses().that().resideOutsideOfPackages("..billing.invoice.service..")
-                .should().callMethod(Invoice.class, "issue", InvoiceDraft.class, LocalDate.class)
-                .because("every invoice must be issued through InvoiceIssuingService");
-        ArchRule constructorCalls = noClasses().that().resideOutsideOfPackages("..billing.entity..")
-                .should().callConstructor(Invoice.class)
-                .because("every invoice must be issued through InvoiceIssuingService");
-        return CompositeArchRule.of(issueCalls).and(constructorCalls);
+        return noClasses().that().resideOutsideOfPackages("..billing.invoice.operation..", "..billing.invoice.domain..")
+                .should().callMethodWhere(target(name("issueInvoice")).and(target(owner(assignableTo(Invoice.class)))))
+                .because("every invoice must be issued through the ISSUE_INVOICE operation");
     }
 
     public static ArchRule invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
-        return noClasses().that().resideOutsideOfPackages("..billing.entity..", "..billing.invoice.service..")
-                .should().callMethodWhere(target(nameStartingWith("set")).and(target(owner(assignableTo(Invoice.class)))))
-                .because("invoice state changes through aggregate methods, not setters");
+        return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..")
+                .should().callMethodWhere(target(name("allocateFullInvoicePayment")).and(target(owner(assignableTo(Invoice.class)))))
+                .because("a payment allocation must be registered together with its credit in the current account");
     }
 
     public static ArchRule policiesArePure() {

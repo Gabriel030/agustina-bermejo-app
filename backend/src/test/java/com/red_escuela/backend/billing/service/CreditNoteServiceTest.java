@@ -10,8 +10,8 @@ import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
@@ -22,7 +22,7 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -203,12 +203,7 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(Student student, Money amount) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(amount);
-        BillingTestFixtures.markInvoiceAsPending(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).build();
         return invoiceRepository.save(invoice);
     }
 

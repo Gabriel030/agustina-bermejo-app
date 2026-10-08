@@ -23,7 +23,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;

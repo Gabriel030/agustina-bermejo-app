@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.planning.service;
 
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.planning.domain.CourseInvoicePlanningFacts;
@@ -227,13 +227,13 @@ class PlanningCollaboratorsTest {
 
         assertThat(classify.apply(true, null)).isEqualTo(EnrollmentFeeObligationStatus.EXEMPTED);
         assertThat(classify.apply(false, null)).isEqualTo(EnrollmentFeeObligationStatus.NOT_ISSUED);
-        assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoiceStatus.PAID, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PAID);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoiceStatus.WAIVED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.WAIVED);
-        assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoiceStatus.CANCELLED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.EXEMPTED);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoiceStatus.CANCELLED, true, true))).isEqualTo(EnrollmentFeeObligationStatus.CANCELLED);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoiceStatus.PENDING, true, true))).isEqualTo(EnrollmentFeeObligationStatus.IN_REVIEW);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoiceStatus.PENDING, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PENDING);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoiceStatus.PENDING, false, false))).isEqualTo(EnrollmentFeeObligationStatus.PARTIAL);
+        assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoicePaymentStatus.PAID, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PAID);
+        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.WAIVED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.WAIVED);
+        assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoicePaymentStatus.CANCELLED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.EXEMPTED);
+        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.CANCELLED, true, true))).isEqualTo(EnrollmentFeeObligationStatus.CANCELLED);
+        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, true, true))).isEqualTo(EnrollmentFeeObligationStatus.IN_REVIEW);
+        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PENDING);
+        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, false, false))).isEqualTo(EnrollmentFeeObligationStatus.PARTIAL);
         assertThat(EnrollmentFeeObligationStatus.PAID.isSatisfied()).isTrue();
         assertThat(EnrollmentFeeObligationStatus.WAIVED.isSatisfied()).isTrue();
         assertThat(EnrollmentFeeObligationStatus.EXEMPTED.isSatisfied()).isTrue();

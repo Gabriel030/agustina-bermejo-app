@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.planning.equivalence;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.planning.domain.CourseInvoicePlanningFacts;
@@ -94,7 +94,7 @@ public final class PlanningEquivalenceMatrix {
                 new PaymentPlanCoverage(PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2026, 3), 12));
         YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), pick(random, null, 1L));
         List<IssuedEnrollmentFee> fees = new ArrayList<>();
-        InvoiceStatus feeStatus = pick(random, null, InvoiceStatus.PENDING, InvoiceStatus.PAID, InvoiceStatus.CANCELLED);
+        InvoicePaymentStatus feeStatus = pick(random, null, InvoicePaymentStatus.PENDING, InvoicePaymentStatus.PAID, InvoicePaymentStatus.CANCELLED);
         if (feeStatus != null) {
             YearCycle first = cycles.all().get(0);
             fees.add(new IssuedEnrollmentFee(10L, first.templateId(), pick(random, 1, 2), first.slotPeriod(1), feeStatus, first.slotPeriod(1).atDay(1)));

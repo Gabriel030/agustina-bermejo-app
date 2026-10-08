@@ -4,8 +4,8 @@ import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementS
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
@@ -102,7 +102,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
                 .isInstanceOf(EnrollmentFeeNotPaidException.class);
         assertThat(periods(world.enrollment(), FeeType.ENROLLMENT_FEE)).containsExactly(YearMonth.of(2027, 2));
 
-        markAllEnrollmentFees(world.enrollment(), InvoiceStatus.PAID);
+        markAllEnrollmentFees(world.enrollment(), InvoicePaymentStatus.PAID);
         enrollIn(world, world.firstSection());
         leaveSection(world, world.firstSection());
         today(date(2027, 7, 3));
@@ -115,13 +115,13 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         World world = world(2, 7, false);
         today(date(2027, 2, 5));
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.PAID);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.PAID);
 
         enrollIn(world, world.firstSection());
         leaveSection(world, world.firstSection());
         today(date(2027, 7, 3));
         assertThatThrownBy(() -> enrollIn(world, world.secondSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 7), InvoiceStatus.PAID);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 7), InvoicePaymentStatus.PAID);
         assertThatCode(() -> enrollIn(world, world.secondSection())).doesNotThrowAnyException();
     }
 
@@ -133,7 +133,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         Long annualSection = newSection(world.career(), annual);
         today(date(2027, 2, 5));
         assertThatThrownBy(() -> enrollIn(world, annualSection)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.PAID);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.PAID);
 
         assertThatCode(() -> enrollIn(world, annualSection)).doesNotThrowAnyException();
     }
@@ -150,7 +150,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
 
         Invoice fee = invoices(world.enrollment(), FeeType.ENROLLMENT_FEE).get(0);
         assertThat(fee.getDueDate()).isEqualTo(date(2027, 3, 10));
-        assertThat(fee.getBaseAmount().amount().compareTo(java.math.BigDecimal.valueOf(8000))).isZero();
+        assertThat(fee.getAmounts().linesTotal().value().amount().compareTo(java.math.BigDecimal.valueOf(8000))).isZero();
         assertThatInvoice(fee).isPending();
     }
 
@@ -160,10 +160,10 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         today(date(2027, 2, 5));
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.OVERDUE);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.OVERDUE);
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.WAIVED);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.WAIVED);
         assertThatCode(() -> enrollIn(world, world.firstSection())).doesNotThrowAnyException();
     }
 
@@ -174,7 +174,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         issueEntryFee(world.enrollment());
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThat(periods(world.enrollment(), FeeType.ENROLLMENT_FEE)).containsExactly(YearMonth.of(2027, 3));
-        markAllEnrollmentFees(world.enrollment(), InvoiceStatus.PAID);
+        markAllEnrollmentFees(world.enrollment(), InvoicePaymentStatus.PAID);
 
         enrollIn(world, world.firstSection());
         today(date(2027, 7, 3));
@@ -274,9 +274,9 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         assertThat(requirementService.statusOf(load(world.enrollment()))).extracting(o -> o.status().name()).containsExactly("NOT_ISSUED", "NOT_ISSUED");
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThat(requirementService.statusOf(load(world.enrollment())).get(0).status().name()).isEqualTo("PENDING");
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.WAIVED);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.WAIVED);
         assertThat(requirementService.statusOf(load(world.enrollment())).get(0).status().name()).isEqualTo("WAIVED");
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoiceStatus.PAID);
+        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.PAID);
         assertThat(requirementService.statusOf(load(world.enrollment())).get(0).satisfied()).isTrue();
     }
 
@@ -292,7 +292,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> certificateService.issueApprovedSubjectsCertificate(world.enrollment()))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
-        markAllEnrollmentFees(world.enrollment(), InvoiceStatus.PAID);
+        markAllEnrollmentFees(world.enrollment(), InvoicePaymentStatus.PAID);
         assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
         assertThat(certificateService.issueApprovedSubjectsCertificate(world.enrollment())).isNotEmpty();

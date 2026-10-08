@@ -62,7 +62,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     private InvoiceNumberGenerator numberGenerator;
     @Autowired
     @Qualifier("legacyInvoiceRepository")
-    private com.red_escuela.backend.billing.repository.InvoiceRepository legacyInvoiceRepository;
+    private com.red_escuela.backend.billing.invoice.repository.InvoiceRepository legacyInvoiceRepository;
     @Autowired
     private TransactionTemplate transactionTemplate;
     @Autowired
