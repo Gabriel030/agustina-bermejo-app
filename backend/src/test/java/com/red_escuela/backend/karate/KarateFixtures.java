@@ -224,20 +224,19 @@ public class KarateFixtures {
     public static Long createPendingInvoice(Long programEnrollmentId, String dueDate) {
         com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository programEnrollmentRepository =
                 context().getBean(com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository.class);
-        com.red_escuela.backend.billing.repository.InvoiceRepository invoiceRepository =
-                context().getBean(com.red_escuela.backend.billing.repository.InvoiceRepository.class);
 
         var enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
 
-        com.red_escuela.backend.billing.entity.Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT);
         java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
-        invoice.setPeriod(java.time.YearMonth.from(due));
-        invoice.setDueDate(due);
-        invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(com.red_escuela.backend.billing.entity.InvoicePaymentStatus.PENDING);
-        return invoiceRepository.save(invoice).getId();
+        return BillingTestFixtures.invoice()
+                .forProgramEnrollment(enrollment)
+                .ofType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT)
+                .forPeriod(java.time.YearMonth.from(due))
+                .dueOn(due)
+                .withBaseAmount(ars(5000))
+                .pending()
+                .build()
+                .getId();
     }
 }

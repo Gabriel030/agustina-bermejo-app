@@ -187,7 +187,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
         assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).allMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.WAIVED);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PAID);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y26);
     }

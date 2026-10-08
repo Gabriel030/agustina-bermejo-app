@@ -153,11 +153,11 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.EXAM_FEE, ars(1500), LocalDate.now(), "Derecho de examen final", null, null);
 
-        Invoice created = createAdHocInvoiceForProgramEnrollmentUseCase.create(enrollment.getId(), request);
+        Invoice created = createAdHocInvoiceForProgramEnrollmentUseCase.create(enrollment.getId(), request).invoice();
 
         assertThat(created.getId()).isNotNull();
         assertThat(created.getFeeType()).isEqualTo(FeeType.EXAM_FEE);
-        assertThat(created.getProgramEnrollment().getId()).isEqualTo(enrollment.getId());
+        assertThat(created.findProgramEnrollmentId()).contains(enrollment.getId());
 
         List<Invoice> invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
@@ -174,8 +174,8 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest segundo = new CreateAdHocInvoiceRequest(
                 FeeType.EXAM_FEE, ars(1000), dueDate, "Derecho de examen — Física", null, null);
 
-        Invoice invoiceUno = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), primero);
-        Invoice invoiceDos = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), segundo);
+        Invoice invoiceUno = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), primero).invoice();
+        Invoice invoiceDos = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), segundo).invoice();
 
         assertThat(invoiceUno.getId()).isNotEqualTo(invoiceDos.getId());
         assertThat(invoiceUno.getPeriod()).isEqualTo(YearMonth.from(dueDate));
@@ -198,7 +198,7 @@ class AdHocInvoiceServiceTest extends AbstractIntegrationTest {
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
                 FeeType.RETAKEN_SUBJECT_FEE, ars(800), LocalDate.now(), "Recursada informal", null, null);
 
-        Invoice created = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request);
+        Invoice created = createAdHocInvoiceForCourseEnrollmentUseCase.create(enrollment.getId(), request).invoice();
 
         assertThat(created.getPrimaryLine().getConcept()).isEqualTo("Recursada informal");
         assertThat(created.getPrimaryLine().getSubjectId()).isNull();
