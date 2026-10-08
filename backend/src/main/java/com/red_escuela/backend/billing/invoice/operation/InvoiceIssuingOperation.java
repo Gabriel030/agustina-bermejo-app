@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
-import com.red_escuela.backend.billing.events.InvoiceIssuedEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedDomainEvent;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -59,7 +59,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
 
     @Override
     public List<Class<? extends DomainEvent>> publishedEventTypes() {
-        return List.of(InvoiceIssuedEvent.class);
+        return List.of(InvoiceIssuedDomainEvent.class);
     }
 
     @Override
@@ -82,9 +82,9 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
     }
 
     @Override
-    public List<InvoiceIssuedEvent> domainEventsOf(InvoiceIssuingContext context, InvoiceIssued result) {
+    public List<InvoiceIssuedDomainEvent> domainEventsOf(InvoiceIssuingContext context, InvoiceIssued result) {
         Invoice invoice = result.invoice();
-        return List.of(InvoiceIssuedEvent.issuedFor(invoice.getId(), invoice.getStudentCurrentAccountId(), invoice.getInvoiceNumber().value(),
+        return List.of(InvoiceIssuedDomainEvent.issuedFor(invoice.getId(), invoice.getStudentCurrentAccountId(), invoice.getInvoiceNumber().value(),
                 invoice.getInvoiceType().name(), invoice.getAmounts().total(), invoice.getIssueDate(), invoice.getDueDate()));
     }
 

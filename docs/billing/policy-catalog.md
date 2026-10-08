@@ -2,15 +2,22 @@
 
 Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true` y commitear.
 
+## Momento INVOICE_DISCOUNT_SELECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | DiscountMatchesInvoiceTypePolicy | DISCOUNT_NOT_APPLICABLE_TO_INVOICE_TYPE | D-129 |
+| 2 | BestDiscountPerInvoiceTypePolicy | DISCOUNT_OUTBID_BY_A_BETTER_ONE | D-073, D-074, D-129 |
+
 ## Momento INVOICE_ISSUING
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
+| 1 | InvoiceIssuingReasonMatchesFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
 | 2 | DueDateNotBeforeIssueDatePolicy | DUE_DATE_BEFORE_ISSUE_DATE | D-057 |
 | 3 | EnrollmentFeeSlotRequiredPolicy | ENROLLMENT_FEE_SLOT_REQUIRED | D-002, D-009 |
 | 4 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
-| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |
+| 5 | ChargeKeyNotAlreadyUsedPolicy | ALREADY_ISSUED | D-009, D-021 |
 | 6 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
 
 ## Momento LATE_PAYMENT_SETTINGS
@@ -22,6 +29,17 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | GracePeriodWithinSuspensionDaysPolicy | GRACE_PERIOD_EXCEEDS_SUSPENSION_DAYS | D-147 |
 | 4 | SuspensionInvoiceCountAtLeastOnePolicy | SUSPENSION_INVOICE_COUNT_BELOW_ONE | D-147 |
 | 5 | EffectiveDateNotRetroactivePolicy | RETROACTIVE_EFFECTIVE_DATE | D-059 |
+
+## Momento LEGACY_INVOICE_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
+| 2 | DueDateNotBeforeIssueDatePolicy | DUE_DATE_BEFORE_ISSUE_DATE | D-057 |
+| 3 | EnrollmentFeeSlotRequiredPolicy | ENROLLMENT_FEE_SLOT_REQUIRED | D-002, D-009 |
+| 4 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
+| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |
+| 6 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
 
 ## Momento PAYMENT_PLAN_SELECTION
 
@@ -94,3 +112,10 @@ Transiciones válidas: 18 de 78. Pares inválidos: (sin estado) × BANK_TRANSFER
 - Pre-procesamiento (en orden): —
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
+
+## Operación ISSUE_INVOICE
+
+- Validaciones (momentos): INVOICE_ISSUING
+- Pre-procesamiento (en orden): InvoiceDiscountEnrichmentHandler
+- Eventos que publica: InvoiceIssuedDomainEvent
+- Post-procesamiento de InvoiceIssuedDomainEvent: —

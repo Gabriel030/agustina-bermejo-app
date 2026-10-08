@@ -6,19 +6,13 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFact
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.operation.InvoiceIssuingContextLoader;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.service.PriceRevisionService;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -30,26 +24,15 @@ import java.util.stream.Stream;
 @Component
 public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssuingContextLoader {
 
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramRepository programRepository;
-    private final CourseRepository courseRepository;
-    private final StudentRepository studentRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final PriceRevisionService priceRevisionService;
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final InvoiceRepository invoiceRepository;
     private final Clock clock;
 
-    public EnrollmentBackedInvoiceIssuingContextLoader(ProgramEnrollmentRepository programEnrollmentRepository,
-                                                       CourseEnrollmentRepository courseEnrollmentRepository, ProgramRepository programRepository,
-                                                       CourseRepository courseRepository, StudentRepository studentRepository,
-                                                       PriceRevisionService priceRevisionService, ProgramYearBillingTemplateRepository templateRepository,
-                                                       InvoiceRepository invoiceRepository, Clock clock) {
-        this.programEnrollmentRepository = programEnrollmentRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programRepository = programRepository;
-        this.courseRepository = courseRepository;
-        this.studentRepository = studentRepository;
+    public EnrollmentBackedInvoiceIssuingContextLoader(JdbcTemplate jdbcTemplate, PriceRevisionService priceRevisionService,
+                                                       ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, Clock clock) {
+        this.jdbcTemplate = jdbcTemplate;
         this.priceRevisionService = priceRevisionService;
         this.templateRepository = templateRepository;
         this.invoiceRepository = invoiceRepository;
@@ -59,9 +42,9 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     @Override
     public InvoiceIssuingContext loadContextLockingRecipient(InvoiceIssuingRequest request) {
         lockEnrollmentOf(request);
-        Currency offeringCurrency = request.belongsToProgram()
-                ? programRepository.findById(request.programId()).orElseThrow().getCurrency()
-                : courseRepository.findById(request.courseId()).orElseThrow().getCurrency();
+        Currency offeringCurrency = Currency.valueOf(request.belongsToProgram()
+                ? jdbcTemplate.queryForObject("select currency from program where id = ?", String.class, request.programId())
+                : jdbcTemplate.queryForObject("select currency from course where id = ?", String.class, request.courseId()));
         Optional<PriceRevision> revision = request.isAdHocCharge() ? Optional.empty() : findRevision(request);
         NonNegativeMoney chargeAmount = request.isAdHocCharge()
                 ? request.explicitAmount()
@@ -76,10 +59,10 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
 
     private void lockEnrollmentOf(InvoiceIssuingRequest request) {
         if (request.programEnrollmentId() != null) {
-            programEnrollmentRepository.findByIdForUpdate(request.programEnrollmentId()).orElseThrow();
+            jdbcTemplate.queryForObject("select id from program_enrollment where id = ? for update", Long.class, request.programEnrollmentId());
         }
         if (request.courseEnrollmentId() != null) {
-            courseEnrollmentRepository.findByIdForUpdate(request.courseEnrollmentId()).orElseThrow();
+            jdbcTemplate.queryForObject("select id from course_enrollment where id = ? for update", Long.class, request.courseEnrollmentId());
         }
     }
 
@@ -94,17 +77,19 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     }
 
     private StudentSnapshot snapshotOf(Long studentId) {
-        Person person = studentRepository.findById(studentId).orElseThrow().getPerson();
-        String fullName = Stream.of(person.getName(), person.getLastname()).filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
-        return new StudentSnapshot(fullName, person.getDni(), formatAddress(person.getAddress()));
+        return jdbcTemplate.queryForObject("""
+                select p.name, p.last_name, p.dni, a.street, a.number, a.city, a.state
+                from student s join person p on p.id = s.person_id left join address a on a.id = p.address_id
+                where s.id = ?
+                """, (row, index) -> new StudentSnapshot(joinNonBlank(row.getString("name"), row.getString("last_name")), row.getString("dni"),
+                nullIfBlank(joinNonBlank(row.getString("street"), row.getString("number"), row.getString("city"), row.getString("state")))), studentId);
     }
 
-    private String formatAddress(Address address) {
-        if (address == null) {
-            return null;
-        }
-        String formatted = Stream.of(address.getStreet(), address.getNumber(), address.getCity(), address.getState())
-                .filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
-        return formatted.isBlank() ? null : formatted;
+    private static String joinNonBlank(String... parts) {
+        return Stream.of(parts).filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
+    }
+
+    private static String nullIfBlank(String value) {
+        return value.isBlank() ? null : value;
     }
 }
