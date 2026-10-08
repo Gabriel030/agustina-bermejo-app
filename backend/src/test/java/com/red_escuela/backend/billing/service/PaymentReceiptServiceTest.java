@@ -413,7 +413,8 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         student.getPerson().setDni("97000013");
         personRepository.save(student.getPerson());
         Invoice invoice = BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(10000)).build();
-                BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        BankTransferReceipt receipt = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
 
         BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt, null);
 

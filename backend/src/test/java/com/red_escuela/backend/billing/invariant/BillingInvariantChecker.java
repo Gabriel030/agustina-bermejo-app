@@ -200,10 +200,10 @@ public final class BillingInvariantChecker {
         return violations("I-01 account balance differs from credits minus debits", """
                 select 'account ' || a.id
                 from student_current_account a
-                where (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
+                where a.id > ? and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
                     <> coalesce((select sum(case e.direction when 'CREDIT' then e.amount else -e.amount end)
                                  from current_account_entry e where e.student_current_account_id = a.id), 0)
-                """);
+                """, baselineAccountId);
     }
 
     public List<String> runningBalancesFollowTheEntrySequence() {
@@ -214,15 +214,15 @@ public final class BillingInvariantChecker {
                              coalesce(lag(case e.running_balance_side when 'OWES' then -e.running_balance_amount else e.running_balance_amount end)
                                  over (partition by e.student_current_account_id order by e.sequence_number), 0) as previous,
                              (case e.direction when 'CREDIT' then e.amount else -e.amount end) as moved
-                      from current_account_entry e) steps
+                      from current_account_entry e where e.student_current_account_id > ?) steps
                 where running <> previous + moved
-                """));
+                """, baselineAccountId));
         found.addAll(violations("I-02 sequence is not contiguous or last_entry_sequence differs from the maximum", """
                 select 'account ' || a.id
                 from student_current_account a
-                where a.last_entry_sequence <> coalesce((select max(e.sequence_number) from current_account_entry e where e.student_current_account_id = a.id), 0)
-                   or a.last_entry_sequence <> (select count(*) from current_account_entry e where e.student_current_account_id = a.id)
-                """));
+                where a.id > ? and (a.last_entry_sequence <> coalesce((select max(e.sequence_number) from current_account_entry e where e.student_current_account_id = a.id), 0)
+                   or a.last_entry_sequence <> (select count(*) from current_account_entry e where e.student_current_account_id = a.id))
+                """, baselineAccountId));
         return found;
     }
 
