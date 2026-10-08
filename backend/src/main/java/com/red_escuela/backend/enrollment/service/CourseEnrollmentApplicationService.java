@@ -14,7 +14,7 @@ import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentAppli
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
-import com.red_escuela.backend.identity.exception.DniRequiredException;
+import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;

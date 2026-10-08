@@ -210,6 +210,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
 
     @Test
     @Tag("D-019")
+    @Tag("D-227")
     void t04AdmissionInvoiceIsBornWithTemplateAndSlotWithoutDiscountAndTheLaterPlanSelectionDoesNotIssueAnotherEntryFee() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 2, 2, 8);
@@ -227,7 +228,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         assertThat(reloaded.getTemplateId()).isEqualTo(y27.templateId());
         assertThat(reloaded.getEnrollmentFeeSlot()).isEqualTo(2);
         assertThat(reloaded.getPeriod()).isEqualTo(YearMonth.of(2027, 8));
-        assertThat(reloaded.getDueDate()).isEqualTo(date(2027, 7, 10));
+        assertThat(reloaded.getDueDate()).isEqualTo(date(2027, 7, 20));
         assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(reloaded)).isEmpty();
         assertThat(reloaded.findProgramEnrollmentId()).isEmpty();
 

@@ -56,7 +56,7 @@ public final class ArchitectureRules {
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"
-            + "|service\\.(?:InvoiceIssuingRequestFactory|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
+            + "|service\\.(?:InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
     static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService";
 

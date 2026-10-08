@@ -1,7 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -24,18 +23,15 @@ public class ProgramEnrollmentAdmissionPaymentListener {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
-    private final InvoiceRepository invoiceRepository;
 
     public ProgramEnrollmentAdmissionPaymentListener(ProgramEnrollmentApplicationRepository applicationRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
                                                      ProgramEnrollmentService programEnrollmentService,
-                                                     ProgramEnrollmentBillingSetup programEnrollmentBillingSetup,
-                                                     InvoiceRepository invoiceRepository) {
+                                                     ProgramEnrollmentBillingSetup programEnrollmentBillingSetup) {
         this.applicationRepository = applicationRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
         this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
-        this.invoiceRepository = invoiceRepository;
     }
 
     @EventListener
@@ -50,7 +46,7 @@ public class ProgramEnrollmentAdmissionPaymentListener {
             Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
             ProgramEnrollment enrollment = programEnrollmentService.enrollAfterAdmissionPayment(studentId,
                     new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
-            programEnrollmentBillingSetup.attachAdmissionFee(enrollment, invoiceRepository.findById(event.invoiceId()).orElseThrow());
+            programEnrollmentBillingSetup.attachAdmissionFee(enrollment, event.invoiceId());
             log.info("Inscripción a carrera confirmada por el pago de la matrícula de ingreso: solicitud={}, inscripcion={}, factura={}",
                     application.getId(), enrollment.getId(), event.invoiceId());
         });

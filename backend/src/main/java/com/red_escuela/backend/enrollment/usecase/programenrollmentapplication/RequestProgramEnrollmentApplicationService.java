@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplication
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.exception.DniRequiredException;
+import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
