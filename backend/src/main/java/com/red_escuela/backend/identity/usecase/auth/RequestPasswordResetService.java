@@ -9,13 +9,13 @@ import com.red_escuela.backend.identity.service.PasswordResetCodeIssuedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @UseCase
@@ -51,10 +51,10 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
         PasswordResetToken resetToken = new PasswordResetToken();
         resetToken.setPerson(person);
         resetToken.setTokenHash(TokenHashUtil.sha256Hex(code));
-        resetToken.setExpiresAt(LocalDateTime.now().plusMinutes(passwordResetCodeExpirationMinutes));
+        resetToken.setExpiresAt(ApplicationTime.now().plusMinutes(passwordResetCodeExpirationMinutes));
         resetToken.setUsed(false);
         resetToken.setAttempts(0);
-        resetToken.setCreatedAt(LocalDateTime.now());
+        resetToken.setCreatedAt(ApplicationTime.now());
         passwordResetTokenRepository.save(resetToken);
 
         eventPublisher.publishEvent(PasswordResetCodeIssuedEvent.issuedFor(person.getId(), code));

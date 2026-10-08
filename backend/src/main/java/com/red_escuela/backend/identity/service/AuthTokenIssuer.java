@@ -6,11 +6,11 @@ import com.red_escuela.backend.identity.infrastructure.JwtService;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 
 @Service
 public class AuthTokenIssuer {
@@ -41,9 +41,9 @@ public class AuthTokenIssuer {
         RefreshToken entity = new RefreshToken();
         entity.setPerson(person);
         entity.setTokenHash(TokenHashUtil.sha256Hex(rawToken));
-        entity.setExpiresAt(LocalDateTime.now().plusDays(refreshTokenExpirationDays));
+        entity.setExpiresAt(ApplicationTime.now().plusDays(refreshTokenExpirationDays));
         entity.setRevoked(false);
-        entity.setCreatedAt(LocalDateTime.now());
+        entity.setCreatedAt(ApplicationTime.now());
         refreshTokenRepository.save(entity);
 
         return rawToken;

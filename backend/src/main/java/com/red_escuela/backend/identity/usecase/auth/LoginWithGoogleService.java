@@ -9,9 +9,9 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class LoginWithGoogleService implements LoginWithGoogleUseCase {
@@ -47,7 +47,7 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
     }
 
     private void requireAllowedToLogIn(Person person) {
-        boolean locked = person.getLockedUntil() != null && person.getLockedUntil().isAfter(LocalDateTime.now());
+        boolean locked = person.getLockedUntil() != null && person.getLockedUntil().isAfter(ApplicationTime.now());
         if (locked || person.getStatus() != StatusType.ACTIVE) {
             throw new InvalidCredentialsException();
         }

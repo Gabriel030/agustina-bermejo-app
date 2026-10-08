@@ -10,13 +10,13 @@ import com.red_escuela.backend.identity.service.EmailVerificationIssuedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.Base64;
 
 @UseCase
@@ -58,7 +58,7 @@ public class SendEmailVerificationService implements SendEmailVerificationUseCas
         EmailVerificationToken token = new EmailVerificationToken();
         token.setPerson(person);
         token.setTokenHash(TokenHashUtil.sha256Hex(clearToken));
-        token.setExpiresAt(LocalDateTime.now().plusHours(EXPIRATION_HOURS));
+        token.setExpiresAt(ApplicationTime.now().plusHours(EXPIRATION_HOURS));
         tokenRepository.save(token);
 
         String link = frontendBaseUrl + "/verificar-email?token=" + clearToken;

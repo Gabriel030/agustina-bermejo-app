@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
@@ -299,6 +300,47 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId())))
                 .isInstanceOf(SubmissionWindowClosedException.class);
+    }
+
+    @Test
+    void submissionWindowClosesWhenTheClockReachesTheTermStart() {
+        Subject subject = persistSubject("MateriaVentanaPorReloj");
+        LocalDateTime termStart = LocalDateTime.now().plusDays(30);
+        Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000015");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        entityManager.flush();
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
+
+        MutableClock.INSTANCE.setDateTime(termStart.plusMinutes(1));
+
+        assertThatThrownBy(() -> submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId())))
+                .isInstanceOf(SubmissionWindowClosedException.class);
+    }
+
+    @Test
+    void submissionIsAcceptedWhileTheClockIsBeforeTheTermStart() {
+        Subject subject = persistSubject("MateriaVentanaAbiertaPorReloj");
+        LocalDateTime termStart = LocalDateTime.now().plusDays(30);
+        Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000016");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        entityManager.flush();
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
+
+        MutableClock.INSTANCE.setDateTime(termStart.minusMinutes(1));
+
+        SectionEvaluationConfig submitted = submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+        assertThat(submitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
+        assertThat(submitted.getSubmittedAt()).isEqualTo(termStart.minusMinutes(1).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
     }
 
     @Test

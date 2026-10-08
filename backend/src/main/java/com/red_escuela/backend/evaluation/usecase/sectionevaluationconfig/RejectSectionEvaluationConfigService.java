@@ -9,10 +9,10 @@ import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstruc
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.SectionEvaluationConfigRejectedEvent;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class RejectSectionEvaluationConfigService implements RejectSectionEvaluationConfigUseCase {
@@ -42,7 +42,7 @@ public class RejectSectionEvaluationConfigService implements RejectSectionEvalua
         config.setStatus(SectionEvaluationConfigStatus.REJECTED);
         config.setRejectionReason(command.request().reason());
         config.setReviewedBy(command.actor());
-        config.setReviewedAt(LocalDateTime.now());
+        config.setReviewedAt(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
 
         Person leadInstructorPerson = instructorAccess.leadInstructorPerson(config.getSubjectSection());

@@ -5,11 +5,11 @@ import com.red_escuela.backend.identity.exception.InvalidEmailVerificationTokenE
 import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class VerifyEmailService implements VerifyEmailUseCase {
@@ -32,7 +32,7 @@ public class VerifyEmailService implements VerifyEmailUseCase {
                     return new InvalidEmailVerificationTokenException();
                 });
 
-        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (token.getExpiresAt().isBefore(ApplicationTime.now())) {
             log.warn("Token de verificación de email expirado para person {}", token.getPerson().getId());
             throw new InvalidEmailVerificationTokenException();
         }

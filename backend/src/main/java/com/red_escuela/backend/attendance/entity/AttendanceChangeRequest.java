@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
 @Getter
 @Setter
@@ -57,7 +58,7 @@ public class AttendanceChangeRequest {
     @PrePersist
     private void onCreate() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
+            this.createdAt = ApplicationTime.now();
         }
         if (this.status == null) {
             this.status = AttendanceChangeRequestStatus.PENDING;

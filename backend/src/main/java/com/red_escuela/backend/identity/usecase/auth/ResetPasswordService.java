@@ -9,10 +9,10 @@ import com.red_escuela.backend.identity.service.PasswordPolicyValidator;
 import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class ResetPasswordService implements ResetPasswordUseCase {
@@ -39,7 +39,7 @@ public class ResetPasswordService implements ResetPasswordUseCase {
 
         String hash = TokenHashUtil.sha256Hex(command.exchangeToken());
         PasswordResetToken resetToken = passwordResetTokenRepository
-                .findByExchangeTokenHashAndExchangeExpiresAtAfter(hash, LocalDateTime.now())
+                .findByExchangeTokenHashAndExchangeExpiresAtAfter(hash, ApplicationTime.now())
                 .orElseThrow(InvalidPasswordResetTokenException::new);
 
         Person person = resetToken.getPerson();
