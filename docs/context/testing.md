@@ -16,7 +16,7 @@ prueba encuentra bugs que los demás no ven.
 |---|---|---|---|
 | JUnit 5 | Unitario | ¿Esta regla puntual (Policy, Value Object, cálculo) funciona con sus bordes? | En uso |
 | JUnit 5 + Testcontainers (Postgres real) | Integración | ¿Funciona contra la base real, con transacciones, CHECKs, triggers e índices únicos? | En uso |
-| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso |
+| PIT (Pitest, perfil `-P mutation`) | Mutation testing | ¿Mis tests detectarían un bug si alguien lo introduce? (umbral 90% en el dominio puro de billing) | En uso, **solo local** |
 | jqwik | Tests de propiedades | ¿Se cumplen los invariantes con cualquier combinación de datos, no solo con los casos que se me ocurrieron? | En uso |
 | `MutableClock` + `BillingInvariantChecker` | Escenarios temporales | ¿Funciona con el paso del tiempo (días, meses, años lectivos) y los invariantes se sostienen en cada paso? | En uso |
 | Hilos reales contra Postgres | Concurrencia | ¿Dos operaciones simultáneas (pagos, emisiones, imputaciones) no duplican ni corrompen nada? | En uso |
@@ -56,12 +56,18 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 | Combina varios valores en un invariante (saldos, imputaciones, descuentos) | jqwik | ¿Se cumple con combinaciones que no se me ocurrieron? |
 | Puede ejecutarse dos veces o en paralelo (pagos, webhooks, jobs, eventos reintentados) | Hilos reales contra Postgres y un test de **idempotencia**: la misma entrada dos veces produce un solo efecto | ¿Un reintento duplica o pierde algo? |
 | Es asíncrono (evento, listener, notificación) | Awaitility esperando por el **propio** id de evento | ¿El efecto ocurrió, sin depender de otros tests? |
-| Es lógica de dominio de facturación | PIT (corre en CI, umbral 90%) | Si alguien rompe esto, ¿algún test se entera? |
+| Es lógica de dominio de facturación | PIT en local (umbral 90%) y su fila en `docs/testing/local-test-log.md` | Si alguien rompe esto, ¿algún test se entera? |
 | Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
 | Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
 | Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (propuesto) | ¿Un usuario real lo completa en el navegador? |
 | Cambia la forma de una respuesta que consume el front | Contrato OpenAPI (propuesto) | ¿El cambio rompe al front sin que nadie se entere? |
 | Procesa volumen (corrida mensual, pipeline nocturno) | k6 o Gatling (propuesto) | ¿Aguanta miles de alumnos en el tiempo disponible? |
+
+### Dónde corre cada cosa y cómo queda constancia
+
+GitHub Actions tiene un tope de minutos, así que en el CI solo corre lo barato: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
+
+Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca el dominio de billing o el `pom.xml` y no agrega su fila de PIT, el job `local-tests-log` del CI falla.
 
 ### Paso 3: un test que nunca falló no prueba nada
 
