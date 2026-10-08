@@ -174,7 +174,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     @Tag("D-226")
     void creatingAnOnlinePaymentPreferenceIsRejectedWhileTheGatewayIsDisabled() {
         Student student = persistStudent("gateway.student." + System.nanoTime());
-        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
                 .isInstanceOf(PaymentGatewayUnavailableException.class);
