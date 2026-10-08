@@ -140,7 +140,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
+        return new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
@@ -166,7 +166,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
                 id -> Optional.of(new MercadoPagoApprovedPayment(
                         new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6,
                         com.red_escuela.backend.billing.entity.CardType.CREDIT)),
@@ -209,7 +209,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void anInvalidSignatureLogsWarnWithoutLeakingTheSecretOrTheSignature(CapturedOutput output) {
         String secret = "super-secret-webhook-key";
         String signature = "ts=1,v1=deadbeefdeadbeef";
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
 
         assertThatThrownBy(() -> service.process(signature, "request-1", "123456"))

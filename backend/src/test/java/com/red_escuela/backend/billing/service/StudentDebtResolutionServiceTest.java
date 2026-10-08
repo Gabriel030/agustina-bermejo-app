@@ -185,37 +185,21 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("contradicts-D-136")
-    void partialPaymentStillBlocks() {
+    @Tag("D-136")
+    void aPartialPaymentIsRejectedAndTheDebtStillBlocks() {
         Person admin = persistPerson("admin.debt2." + System.nanoTime());
         Student student = persistStudent("88010005");
         Program program = persistProgram();
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
 
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
                 List.of(new PaymentAllocationRequest(deudaVieja.getId(), ars(2000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin);
+                PaymentMethod.CASH, false, null, null, null, null), admin))
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException.class);
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
-    }
-
-    @Test
-    void waivingWithDirectorRoleReleasesTheDebtWithoutPaymentAndAllowsImmediateEnrollment() {
-        Person director = persistPerson("director.debt3." + System.nanoTime());
-        Student student = persistStudent("88010006");
-        Program program = persistProgram();
-        ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
-
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
-
-        Invoice deudaVieja = invoiceRepository.findInvoiceWithLinesById(
-                invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow();
-        assertThatInvoice(deudaVieja).isWaived();
-
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
-        assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
     @Test
@@ -233,7 +217,7 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         scholarship.addInstallments(3);
         scholarshipRepository.save(scholarship);
 
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
+        payInFull(director, invoiceRepository.findInvoiceWithLinesById(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow());
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
 
         assertThat(scholarshipRepository.findByProgramEnrollmentId(nuevaMatricula.getId())).isEmpty();
@@ -248,14 +232,16 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         ProgramEnrollment ciclo1 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(3000));
         ProgramEnrollment ciclo2 = persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(4000));
 
-        studentDebtResolutionService.waiveDebtForProgram(student.getId(), program.getId(), "Condonado por Director", director);
-
         Invoice deuda1 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo1.getId()).get(0).getId()).orElseThrow();
         Invoice deuda2 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo2.getId()).get(0).getId()).orElseThrow();
-        assertThatInvoice(deuda1).isWaived();
-        assertThatInvoice(deuda2).isWaived();
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+                .isInstanceOf(StudentInDebtException.class);
+        payInFull(director, deuda1);
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+                .isInstanceOf(StudentInDebtException.class);
+        payInFull(director, deuda2);
 
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
@@ -289,5 +275,11 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
                 .isInstanceOf(StudentInDebtException.class);
+    }
+
+    private void payInFull(Person registrant, Invoice debt) {
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(debt.getId(), debt.getAmounts().outstandingAmount().value())),
+                PaymentMethod.CASH, false, null, null, null, null), registrant);
     }
 }

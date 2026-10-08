@@ -137,7 +137,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("contradicts-D-142")
-    void voluntaryWithdrawalCancelsPendingInstallments() {
+    void voluntaryWithdrawalLeavesPendingInstallmentsAsLiveDebt() {
         CourseEnrollment enrollment = persistCourseEnrollment("99000001." + System.nanoTime());
         Invoice pendiente = persistInvoice(enrollment, ars(1000), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));
 
@@ -145,8 +145,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         courseEnrollmentService.withdraw(enrollment.getId());
 
         Invoice reloaded = invoiceRepository.findById(pendiente.getId()).orElseThrow();
-        assertThatInvoice(reloaded).isCancelled();
-        assertThat(reloaded.getCancelledReason()).isNotBlank();
+        assertThat(reloaded.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PENDING);
     }
 
     @Test

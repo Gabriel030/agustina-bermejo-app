@@ -16,8 +16,7 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.exception.InvoiceAlreadyAttachedException;
-import com.red_escuela.backend.billing.exception.InvoiceAttachmentMismatchException;
+import com.red_escuela.backend.billing.invoice.exception.InvoiceLinesEnrollmentMismatchException;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -220,7 +219,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         Invoice admission = admissionInvoice(career, cohort);
 
         Invoice reloaded = transactionTemplate.execute(status -> {
-            Invoice i = invoiceRepository.findById(admission.getId()).orElseThrow();
+            Invoice i = invoiceRepository.findInvoiceWithLinesById(admission.getId()).orElseThrow();
             com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(i).size();
             return i;
         });
@@ -230,37 +229,19 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         assertThat(reloaded.getPeriod()).isEqualTo(YearMonth.of(2027, 8));
         assertThat(reloaded.getDueDate()).isEqualTo(date(2027, 7, 10));
         assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(reloaded)).isEmpty();
-        assertThat(reloaded.getProgramEnrollment()).isNull();
+        assertThat(reloaded.findProgramEnrollmentId()).isEmpty();
 
         today(date(2027, 7, 20));
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 7), date(2027, 7, 20));
         transactionTemplate.executeWithoutResult(status -> {
-            Invoice i = invoiceRepository.findById(admission.getId()).orElseThrow();
-            i.attachToEnrollment(entityManager.find(ProgramEnrollment.class, enrollment));
+            Invoice i = invoiceRepository.findInvoiceWithLinesById(admission.getId()).orElseThrow();
+            i.assignInvoiceToProgramEnrollment(enrollment);
         });
         planSelectionCharges(enrollment, YearMonth.of(2027, 7), date(2027, 7, 20));
 
         List<Invoice> fees = invoices(enrollment, FeeType.ENROLLMENT_FEE);
         assertThat(fees).hasSize(1);
         assertThat(fees.get(0).getId()).isEqualTo(admission.getId());
-    }
-
-    @Test
-    @Tag("contradicts-D-127")
-    void t05RejectedAdmissionLeavesTheInvoiceCancelledWithItsReason() {
-        Career career = newCareer();
-        Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
-        today(date(2027, 2, 10));
-        Invoice admission = admissionInvoice(career, cohort);
-
-        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findById(admission.getId()).orElseThrow()
-                .cancel(entityManager.find(com.red_escuela.backend.identity.entity.Person.class, career.directorId()), "Solicitud rechazada"));
-
-        Invoice reloaded = invoiceRepository.findById(admission.getId()).orElseThrow();
-        assertThatInvoice(reloaded).isCancelled();
-        assertThat(reloaded.getCancelledReason()).isEqualTo("Solicitud rechazada");
-        assertThat(reloaded.getCancelledAt()).isNotNull();
     }
 
     @Test
@@ -271,17 +252,17 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         today(date(2027, 2, 10));
         Invoice admission = admissionInvoice(career, cohort);
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 2), date(2027, 2, 10));
-        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findById(admission.getId()).orElseThrow()
-                .attachToEnrollment(entityManager.find(ProgramEnrollment.class, enrollment)));
+        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findInvoiceWithLinesById(admission.getId()).orElseThrow()
+                .assignInvoiceToProgramEnrollment(enrollment));
 
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> invoiceRepository.findById(admission.getId()).orElseThrow()
-                .attachToEnrollment(entityManager.find(ProgramEnrollment.class, enrollment)))).isInstanceOf(InvoiceAlreadyAttachedException.class);
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> invoiceRepository.findInvoiceWithLinesById(admission.getId()).orElseThrow()
+                .assignInvoiceToProgramEnrollment(enrollment))).isInstanceOf(InvoiceLinesEnrollmentMismatchException.class);
 
         InvoiceIssuingResult regular = issuer.issueInvoiceInNewTransaction(installmentRequest(enrollment, YearMonth.of(2027, 3), date(2027, 3, 12), InvoiceIssuingReason.MONTHLY_RUN, FeeType.MONTHLY_INSTALLMENT));
         Long regularId = ((InvoiceIssuingResult.InvoiceIssued) regular).invoice().getId();
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> invoiceRepository.findById(regularId).orElseThrow()
-                .attachToEnrollment(entityManager.find(ProgramEnrollment.class, enrollment)))).isInstanceOf(InvoiceAttachmentMismatchException.class);
-        assertThat(invoiceRepository.findById(admission.getId()).orElseThrow().getProgramEnrollment().getId()).isEqualTo(enrollment);
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> invoiceRepository.findInvoiceWithLinesById(regularId).orElseThrow()
+                .assignInvoiceToProgramEnrollment(enrollment))).isInstanceOf(InvoiceLinesEnrollmentMismatchException.class);
+        assertThat(invoiceRepository.findInvoiceWithLinesById(admission.getId()).orElseThrow().findProgramEnrollmentId()).contains(enrollment);
     }
 
     @Test

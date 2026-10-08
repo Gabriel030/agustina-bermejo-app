@@ -228,14 +228,11 @@ class PlanningCollaboratorsTest {
         assertThat(classify.apply(true, null)).isEqualTo(EnrollmentFeeObligationStatus.EXEMPTED);
         assertThat(classify.apply(false, null)).isEqualTo(EnrollmentFeeObligationStatus.NOT_ISSUED);
         assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoicePaymentStatus.PAID, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PAID);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.WAIVED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.WAIVED);
         assertThat(classify.apply(true, new ObligationInvoiceFacts(InvoicePaymentStatus.CANCELLED, false, true))).isEqualTo(EnrollmentFeeObligationStatus.EXEMPTED);
         assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.CANCELLED, true, true))).isEqualTo(EnrollmentFeeObligationStatus.CANCELLED);
         assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, true, true))).isEqualTo(EnrollmentFeeObligationStatus.IN_REVIEW);
         assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, false, true))).isEqualTo(EnrollmentFeeObligationStatus.PENDING);
-        assertThat(classify.apply(false, new ObligationInvoiceFacts(InvoicePaymentStatus.PENDING, false, false))).isEqualTo(EnrollmentFeeObligationStatus.PARTIAL);
         assertThat(EnrollmentFeeObligationStatus.PAID.isSatisfied()).isTrue();
-        assertThat(EnrollmentFeeObligationStatus.WAIVED.isSatisfied()).isTrue();
         assertThat(EnrollmentFeeObligationStatus.EXEMPTED.isSatisfied()).isTrue();
         assertThat(EnrollmentFeeObligationStatus.PENDING.isSatisfied()).isFalse();
     }

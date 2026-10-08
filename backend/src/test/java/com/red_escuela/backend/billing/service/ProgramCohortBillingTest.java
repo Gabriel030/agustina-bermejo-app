@@ -257,7 +257,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
         assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(25000));
         assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).hasSize(1);
-        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).get(0).getAppliedBy()).isNull();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).get(0).getDiscountType()).isEqualTo(com.red_escuela.backend.billing.invoice.domain.DiscountType.COHORT_ENTRY);
     }
 
     @Test
@@ -300,10 +300,10 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         var invoicesB = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentB.getId());
 
         assertThat(invoicesA.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
-        assertThat(invoicesA.get(0).getAdjustments()).isEmpty();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoicesA.get(0))).isEmpty();
 
         assertThat(invoicesB.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 8));
-        assertThat(invoicesB.get(0).getAdjustments()).hasSize(1);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoicesB.get(0))).hasSize(1);
     }
 
     @Test
@@ -423,8 +423,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         assertThat(invoicesCarrera).extracting("feeType").containsExactlyInAnyOrder(FeeType.ENROLLMENT_FEE, FeeType.MONTHLY_INSTALLMENT);
         assertThat(invoicesCurso).extracting("feeType").containsExactly(FeeType.MONTHLY_INSTALLMENT);
         assertThat(invoicesCurso.get(0).getAmounts().linesTotal().value()).isEqualTo(ars(5000));
-        assertThat(invoicesCarrera).noneMatch(i -> i.getCourseEnrollment() != null);
-        assertThat(invoicesCurso).noneMatch(i -> i.getProgramEnrollment() != null);
+        assertThat(invoicesCarrera).noneMatch(i -> i.findCourseEnrollmentId().isPresent());
+        assertThat(invoicesCurso).noneMatch(i -> i.findProgramEnrollmentId().isPresent());
     }
 
     @Autowired

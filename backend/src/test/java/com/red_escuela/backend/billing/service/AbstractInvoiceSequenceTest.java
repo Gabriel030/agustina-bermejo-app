@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -250,15 +251,23 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     }
 
     protected void markInvoices(Long enrollmentId, FeeType type, YearMonth period, InvoicePaymentStatus newStatus) {
-        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
+        invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
                 .filter(i -> i.getFeeType() == type && i.getPeriod().equals(period))
-                .forEach(i -> i.setStatus(newStatus)));
+                .forEach(i -> applyPaymentStatus(i, newStatus));
     }
 
     protected void markAllEnrollmentFees(Long enrollmentId, InvoicePaymentStatus newStatus) {
-        transactionTemplate.executeWithoutResult(status -> invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
+        invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId).stream()
                 .filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
-                .forEach(i -> i.setStatus(newStatus)));
+                .forEach(i -> applyPaymentStatus(i, newStatus));
+    }
+
+    private void applyPaymentStatus(Invoice invoice, InvoicePaymentStatus newStatus) {
+        switch (newStatus) {
+            case PAID -> BillingTestFixtures.payInvoiceInFull(invoice);
+            case OVERDUE -> BillingTestFixtures.markInvoiceAsOverdue(invoice);
+            default -> throw new UnsupportedOperationException(newStatus.name());
+        }
     }
 
     protected List<Invoice> invoices(Long enrollmentId, FeeType type) {

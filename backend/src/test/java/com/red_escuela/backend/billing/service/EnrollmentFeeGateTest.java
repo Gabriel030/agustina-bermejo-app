@@ -155,16 +155,13 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    void pendingOverdueAndWaivedBehaveAsExpected() {
+    void pendingAndOverdueBlockTheGate() {
         World world = world(1, null, false);
         today(date(2027, 2, 5));
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.OVERDUE);
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.WAIVED);
-        assertThatCode(() -> enrollIn(world, world.firstSection())).doesNotThrowAnyException();
     }
 
     @Test
@@ -274,8 +271,6 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         assertThat(requirementService.statusOf(load(world.enrollment()))).extracting(o -> o.status().name()).containsExactly("NOT_ISSUED", "NOT_ISSUED");
         assertThatThrownBy(() -> enrollIn(world, world.firstSection())).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThat(requirementService.statusOf(load(world.enrollment())).get(0).status().name()).isEqualTo("PENDING");
-        markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.WAIVED);
-        assertThat(requirementService.statusOf(load(world.enrollment())).get(0).status().name()).isEqualTo("WAIVED");
         markInvoices(world.enrollment(), FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 2), InvoicePaymentStatus.PAID);
         assertThat(requirementService.statusOf(load(world.enrollment())).get(0).satisfied()).isTrue();
     }

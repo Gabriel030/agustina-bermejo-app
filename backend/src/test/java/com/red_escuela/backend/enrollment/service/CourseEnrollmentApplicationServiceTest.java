@@ -170,7 +170,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         assertThat(actualizada.getCourseEnrollment()).isNotNull();
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).hasSize(1);
         assertThatInvoice(actualizada.getPaymentReceipt().getInvoice()).isPaid();
-        assertThat(actualizada.getPaymentReceipt().getInvoice().getCourseEnrollment()).isEqualTo(actualizada.getCourseEnrollment());
+        assertThat(invoiceRepository.findInvoiceWithLinesById(actualizada.getPaymentReceipt().getInvoice().getId()).orElseThrow().findCourseEnrollmentId()).contains(actualizada.getCourseEnrollment().getId());
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
         assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

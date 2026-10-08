@@ -194,7 +194,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void hundredPercentScholarshipMakesTheInvoiceBornDirectlyWaived() {
+    void hundredPercentScholarshipMakesTheInvoiceBornPaidWithZeroTotal() {
         Person director = persistPerson("director.scholarship1." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000001", course);
@@ -207,7 +207,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
-        assertThatInvoice(invoice).isWaived();
+        assertThatInvoice(invoice).isPaid();
         assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(0));
     }
 
@@ -254,49 +254,6 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
         assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(20000));
         assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(15000));
-    }
-
-    @Test
-    void aManualAdjustmentThatSettlesTheTotalLeavesTheInvoiceWaived() {
-        Person director = persistPerson("director.scholarship4." + System.nanoTime());
-        Course course = persistCourse(director, BigDecimal.valueOf(5000));
-        CourseEnrollment enrollment = persistCourseEnrollment("88000004", course);
-        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(5000)).build();
-        invoice = invoiceRepository.save(invoice);
-
-        invoice.applyAdjustment(com.red_escuela.backend.billing.entity.DiscountType.DISCOUNT,
-                new MonetaryAdjustment.Proportional(Percentage.ofFraction(BigDecimal.ONE)), "Condonación total", director);
-        invoiceRepository.save(invoice);
-
-        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
-        assertThatInvoice(reloaded).isWaived();
-    }
-
-    @Test
-    void aWaivedInstallmentNeverReceivesASurchargeEvenIfItBecomesOverdue() {
-        Person director = persistPerson("director.scholarship5." + System.nanoTime());
-        Course course = persistCourse(director, BigDecimal.valueOf(5000));
-        CourseEnrollment enrollment = persistCourseEnrollment("88000005", course);
-
-        LatePaymentSettings policy = LatePaymentSettings.builder()
-                .gracePeriodDays(10)
-                .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
-                .suspensionAfterDays(30)
-                .suspensionAfterInvoiceCount(2)
-                .effectiveFrom(LocalDate.now().minusYears(1))
-                .createdBy(director)
-                .build();
-        latePaymentSettingsRepository.save(policy);
-
-        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(1)).dueOn(LocalDate.now().minusDays(20)).withBaseAmount(ars(5000)).build();
-        BillingTestFixtures.waiveInvoice(invoice);
-        invoice = invoiceRepository.save(invoice);
-
-        invoiceOverdueSweepService.run(LocalDate.now());
-
-        Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
-        assertThatInvoice(reloaded).isWaived();
-        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(reloaded)).isEmpty();
     }
 
     @Test

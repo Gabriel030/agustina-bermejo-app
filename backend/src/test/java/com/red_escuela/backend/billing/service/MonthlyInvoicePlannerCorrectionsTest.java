@@ -164,23 +164,6 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    void aCancelledFeeBlocksTheGateAndIsNeverIssuedAgain() {
-        Career career = newCareer();
-        newYear(career, 2026, 10, 1, 2, null);
-        today(date(2026, 3, 10));
-        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 10));
-
-        assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
-
-        markAllEnrollmentFees(enrollment, InvoicePaymentStatus.CANCELLED);
-        assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        job.run();
-
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
-    }
-
-    @Test
     @Tag("D-066")
     @Tag("contradicts-D-142")
     void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtCancelledWhenTheYearEnds() {

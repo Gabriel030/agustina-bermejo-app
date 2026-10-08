@@ -167,7 +167,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         } catch (RuntimeException ignored) {
         }
 
-        List<com.red_escuela.backend.billing.entity.Invoice> invoices =
+        List<com.red_escuela.backend.billing.invoice.domain.Invoice> invoices =
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).isEmpty();
     }

@@ -3,7 +3,6 @@ package com.red_escuela.backend.enrollment.controller;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.enrollment.dto.ReinstateEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -14,7 +13,6 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.entity.ReinstatementDecision;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -150,18 +148,17 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void waiveWithAdministrativeRoleIsRejected() throws Exception {
+    void waiveDecisionIsNoLongerAcceptedAndTheDebtIsNeverForgiven() throws Exception {
         Student student = persistStudent("88020001");
         Program program = persistProgram();
         persistOldWithdrawnCycleWithDebt(student, program);
 
         String token = tokenWithRole("administrativo.reenrollment." + System.nanoTime(), "ADMINISTRATIVO");
-        ReinstateEnrollmentRequest request = new ReinstateEnrollmentRequest(ReinstatementDecision.WAIVE);
 
         mockMvc.perform(post("/students/{studentId}/reenrollment/program/{programId}", student.getId(), program.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                        .content("{\"decision\":\"WAIVE\"}"))
+                .andExpect(status().isBadRequest());
     }
 }

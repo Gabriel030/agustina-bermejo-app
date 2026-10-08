@@ -204,7 +204,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    void aPartialPaymentAndAReceiptUnderReviewDoNotEnableTheEnrollmentButCompletingThePaymentDoes() {
+    void aReceiptUnderReviewDoesNotEnableTheEnrollmentButApprovingItDoes() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
@@ -218,40 +218,12 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Invoice fee = onlyFee(enrollment);
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PENDING);
 
-        pay(career, fee, 2000);
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PARTIAL);
-        assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
-                .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(fee.getId(), studentOf(enrollment), receiptFile());
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.IN_REVIEW);
         assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         approvePaymentReceiptUseCase.approve(receipt.getId(), director(career));
-        assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
-        assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
-        assertInvariants(enrollment, y27);
-    }
-
-    @Test
-    @Tag("D-026")
-    @Tag("contradicts-D-136")
-    void completingAPartialPaymentWithAnotherPaymentEnablesTheEnrollment() {
-        Career career = newCareer();
-        Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
-        Long section = newSection(career, first);
-        today(date(2027, 2, 5));
-        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
-        authenticateAs(career);
-        assertThatThrownBy(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section)))
-                .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        Invoice fee = onlyFee(enrollment);
-
-        pay(career, fee, 2000);
-        pay(career, fee, 3000);
-
         assertThat(feeStatus(enrollment, 1)).isEqualTo(EnrollmentFeeObligationStatus.PAID);
         assertThatCode(() -> enrollmentService.enroll(enrollment, new CreateSectionEnrollmentRequest(section))).doesNotThrowAnyException();
         assertInvariants(enrollment, y27);
@@ -389,7 +361,9 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
         assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isNotEmpty().allMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.WAIVED);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).isNotEmpty()
+                .noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.CANCELLED)
+                .anyMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y27);
     }

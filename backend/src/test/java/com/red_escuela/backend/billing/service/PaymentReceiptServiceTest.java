@@ -415,7 +415,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         invoice = invoiceRepository.save(invoice);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
-        BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt);
+        BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt, null);
 
         assertThat(response.studentName()).isEqualTo("Ana Comprobante");
         assertThat(response.studentDni()).isEqualTo("97000013");
