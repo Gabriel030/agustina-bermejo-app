@@ -43,8 +43,7 @@ public class PlannedInvoiceIssuingService {
 
     public InvoiceIssuingResult issuePlannedProgramInvoice(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuingReason reason, boolean inCurrentTransaction) {
         FeeType feeType = charge.kind();
-        InvoiceIssuingReason effectiveReason = charge.upfront() ? InvoiceIssuingReason.UPFRONT : reason;
-        InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(enrollment), feeType, charge.period(), charge.dueDate(), effectiveReason,
+        InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(enrollment), feeType, charge.period(), charge.dueDate(), reason,
                 selection, charge.templateId(), charge.slot(), charge.entry(), null, null, null, null);
         InvoiceIssuingResult result = inCurrentTransaction ? invoiceIssuingService.issueInvoiceInCallerTransaction(request) : invoiceIssuingService.issueInvoiceInNewTransaction(request);
         if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {

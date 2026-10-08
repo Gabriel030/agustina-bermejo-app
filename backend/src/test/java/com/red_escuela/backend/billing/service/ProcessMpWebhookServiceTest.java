@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -51,6 +52,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Optional;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -133,13 +135,13 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = courseEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(amount));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoiceRepository.save(invoice);
     }
 
@@ -162,7 +164,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
                 .extracting(PaymentAllocation::getAmountApplied)
                 .singleElement()
                 .satisfies(amount -> assertThat(amount).isEqualTo(ars(4000)));
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
     }
 
     @Test
@@ -238,6 +240,6 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
             SecurityContextHolder.clearContext();
         }
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
     }
 }

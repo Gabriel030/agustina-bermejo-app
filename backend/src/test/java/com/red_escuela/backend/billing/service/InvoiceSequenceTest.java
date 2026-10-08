@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -330,18 +331,6 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    void upfrontStudentsAreChargedTheEnrollmentFeeAndTheInstallmentsOfTheirScopeUpFront() {
-        Career career = newCareer();
-        Year y26 = newYear(career, 2026, 10, 1, 2, null);
-        today(date(2026, 1, 10));
-        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.ANNUAL_UPFRONT, JAN_2026, date(2026, 1, 10));
-
-        runEveryMonth(JAN_2026, YearMonth.of(2026, 6), () -> assertInvariants(enrollment, y26));
-
-        assertThat(sequence(enrollment)).containsExactly("M2026-02", "C2026-03", "C2026-04", "C2026-05", "C2026-06", "C2026-07", "C2026-08", "C2026-09", "C2026-10");
-    }
-
-    @Test
     @Tag("D-016")
     void studentWhoOnlyOwesFinalExamsIsNotChargedUnlessTheYearIsConfiguredToRequireIt() {
         Career career = newCareer();
@@ -440,7 +429,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
             assertInvariants(c, y26, y27);
         });
 
-        assertThat(periods(b, FeeType.MONTHLY_INSTALLMENT)).startsWith(YearMonth.of(2026, 3), YearMonth.of(2026, 4));
+        assertThat(periods(b, FeeType.MONTHLY_INSTALLMENT)).doesNotContain(YearMonth.of(2026, 3), YearMonth.of(2026, 4));
         assertThat(periods(b, FeeType.MONTHLY_INSTALLMENT)).contains(YearMonth.of(2026, 11), YearMonth.of(2026, 12), YearMonth.of(2027, 3));
         assertThat(periods(a, FeeType.ENROLLMENT_FEE)).containsExactly(
                 YearMonth.of(2026, 3), YearMonth.of(2026, 7), YearMonth.of(2027, 2));
@@ -465,7 +454,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         });
 
         assertThat(sequence(enrollment)).isEqualTo(before);
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0)).isPaid();
     }
 
     @Test

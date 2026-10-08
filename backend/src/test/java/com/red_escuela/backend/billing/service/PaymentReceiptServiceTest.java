@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -61,6 +62,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -165,7 +167,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
@@ -191,7 +193,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, InvoiceStatus status) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
@@ -215,7 +217,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         assertThat(receipt.getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
 
         rejectPaymentReceiptUseCase.reject(receipt.getId(), "Limpieza de test", admin);
     }
@@ -245,7 +247,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
     }
 
     @Test
@@ -327,10 +329,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         BankTransferReceipt reloaded = bankTransferReceiptRepository.findById(receipt.getId()).orElseThrow();
         Invoice reloadedInvoice = invoiceRepository.findById(invoice.getId()).orElseThrow();
         if (reloaded.getStatus() == BankTransferReceiptStatus.APPROVED) {
-            assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
+            assertThatInvoice(reloadedInvoice).isPaid();
         } else {
             assertThat(reloaded.getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
-            assertThat(reloadedInvoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+            assertThatInvoice(reloadedInvoice).isPending();
         }
     }
 
@@ -421,12 +423,12 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         student.getPerson().setLastname("Comprobante");
         student.getPerson().setDni("97000013");
         personRepository.save(student.getPerson());
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setFeeType(FeeType.ENROLLMENT_FEE);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(10000));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         invoice = invoiceRepository.save(invoice);
         BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 

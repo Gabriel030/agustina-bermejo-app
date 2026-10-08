@@ -91,9 +91,10 @@ public class MonthlyInstallmentIssuanceJob {
                 lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithActivePlan(
                         PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
-        sweep("ProgramEnrollmentWithoutMonthlyPlan",
-                lastId -> paymentPlanSelectionRepository.findProgramEnrollmentIdsWithoutActivePlan(
-                        PaymentPlanCadence.MONTHLY, activeStatuses, month, lastId, PageRequest.of(0, PAGE_SIZE)),
+        sweep("ProgramEnrollmentWithExpiredAnnualPlan",
+                lastId -> findEnrollmentIdsWithExpiredAnnualPlan(
+                        cursor -> paymentPlanSelectionRepository.findAnnualUpfrontSelectionsOfProgramEnrollments(activeStatuses, month, cursor, PageRequest.of(0, PAGE_SIZE)),
+                        month, lastId),
                 id -> rowProcessor.issueForProgramEnrollment(id, month), counters, errors);
         sweep("CourseEnrollment",
                 lastId -> paymentPlanSelectionRepository.findCourseEnrollmentIdsWithActivePlan(
@@ -133,6 +134,25 @@ public class MonthlyInstallmentIssuanceJob {
             alertService.refresh(month);
         } catch (RuntimeException e) {
             log.error("Falló la actualización de alertas de configuración de cobro: mes={}", month, e);
+        }
+    }
+
+    private List<Long> findEnrollmentIdsWithExpiredAnnualPlan(Function<Long, List<Object[]>> nextPage, YearMonth month, Long lastId) {
+        Long cursor = lastId;
+        while (true) {
+            List<Object[]> selections = nextPage.apply(cursor);
+            if (selections.isEmpty()) {
+                return List.of();
+            }
+            List<Long> expired = selections.stream()
+                    .filter(row -> month.isAfter(((YearMonth) row[1]).plusMonths((Integer) row[2] - 1L)))
+                    .map(row -> (Long) row[0])
+                    .distinct()
+                    .toList();
+            if (!expired.isEmpty()) {
+                return expired;
+            }
+            cursor = (Long) selections.get(selections.size() - 1)[0];
         }
     }
 

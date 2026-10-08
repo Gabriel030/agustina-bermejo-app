@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -241,7 +242,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED)))
                 .isNotEmpty();
 
-        assertThat(aprobada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(aprobada.getPaymentReceipt().getInvoice()).isPaid();
         assertThat(aprobada.getPaymentReceipt().getInvoice().getBaseAmount()).isEqualTo(ars(50000));
 
         Student estudianteActualizado = entityManager.find(Student.class, student.getId());
@@ -273,7 +274,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication rechazada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
         assertThat(rechazada.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
         assertThat(rechazada.getPaymentReceipt().getRejectionReason()).isEqualTo("Documentación ilegible");
-        assertThat(rechazada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
+        assertThatInvoice(rechazada.getPaymentReceipt().getInvoice()).isCancelled();
     }
 
     @Test
@@ -289,6 +290,6 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         ProgramEnrollmentApplication aprobada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
         assertThat(aprobada.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
-        assertThat(aprobada.getPaymentReceipt().getInvoice().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(aprobada.getPaymentReceipt().getInvoice()).isPaid();
     }
 }

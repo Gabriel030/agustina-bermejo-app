@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.config.TestSubjectCodes;
@@ -193,13 +194,13 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     }
 
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(java.time.YearMonth.from(dueDate));
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(ars(100));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         entityManager.persist(invoice);
     }
 

@@ -336,7 +336,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void scopeMonthsGreaterThanWhatRemainsOfTheYearIsRejected() {
+    void annualUpfrontOfAProgramIsRejectedAndNothingIsIssued() {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
         authenticateAsPerson(director);
 
@@ -357,90 +357,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
-                .isInstanceOf(InvalidPaymentPlanScopeException.class);
-    }
-
-    @Test
-    void oneFullUpfrontYearAndTheNextMonthlyWithoutCarryover() {
-        Person director = persistPersonBase("DIR39" + System.nanoTime());
-        authenticateAsPerson(director);
-
-        Program program = persistProgram("Carrera upfront luego mensual " + System.nanoTime());
-        YearMonth mesInicial = YearMonth.now();
-        Term term = persistTerm(2026);
-        term.setStartDate(mesInicial.atDay(1).atStartOfDay());
-        term.setEndDate(mesInicial.plusMonths(9).atEndOfMonth().atTime(23, 59));
-        termRepository.save(term);
-        ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
-        ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
-        persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), LocalDate.of(2020, 1, 1), director);
-
-        Student student = persistStudent("81100007");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
-
-        CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 10));
-
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)).hasSize(10);
-
-        Term term2 = persistTerm(2027);
-        term2.setStartDate(mesInicial.plusMonths(10).atDay(1).atStartOfDay());
-        term2.setEndDate(mesInicial.plusMonths(19).atEndOfMonth().atTime(23, 59));
-        termRepository.save(term2);
-        ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 10, director);
-        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
-        enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
-
-        CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
-                "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(10));
-
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)).hasSize(11);
-    }
-
-    @Test
-    void switchingFromMonthlyToUpfrontMidYearAlsoWorks() {
-        Person director = persistPersonBase("DIR40" + System.nanoTime());
-        authenticateAsPerson(director);
-
-        Program program = persistProgram("Carrera mensual a upfront " + System.nanoTime());
-        Term term = persistTerm(2026);
-        ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
-        ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
-        persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), LocalDate.of(2020, 1, 1), director);
-
-        Student student = persistStudent("81100008");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
-
-        CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
-                "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
-
-        YearMonth mesInicial = YearMonth.now();
-        for (int i = 0; i < 3; i++) {
-            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(i));
-        }
-
-        CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 7));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
-
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)).hasSize(7);
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException.class);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 
     @Test

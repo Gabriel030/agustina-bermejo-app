@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -355,7 +356,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoiceStatus status, YearMonth period) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.ENROLLMENT_FEE);
         invoice.setPeriod(period);

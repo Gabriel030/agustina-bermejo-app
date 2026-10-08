@@ -58,6 +58,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -307,7 +308,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         List<Invoice> invoices = recurringInvoices(billed.enrollment());
         assertThat(invoices).hasSize(1);
         Invoice unpaid = invoices.get(0);
-        assertThat(unpaid.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(unpaid).isPending();
         Money balance = transactionTemplate.execute(status ->
                 invoiceRepository.findById(unpaid.getId()).orElseThrow().getRemainingBalance());
 

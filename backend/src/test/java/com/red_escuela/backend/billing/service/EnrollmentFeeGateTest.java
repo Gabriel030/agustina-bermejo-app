@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -149,7 +150,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         Invoice fee = invoices(world.enrollment(), FeeType.ENROLLMENT_FEE).get(0);
         assertThat(fee.getDueDate()).isEqualTo(date(2027, 3, 10));
         assertThat(fee.getBaseAmount().amount().compareTo(java.math.BigDecimal.valueOf(8000))).isZero();
-        assertThat(fee.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(fee).isPending();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -205,7 +207,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatInvoice(invoice).isWaived();
         assertThat(invoice.getAmountDue()).isEqualTo(ars(0));
     }
 
@@ -223,7 +225,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = invoiceRepository.findByIdWithAdjustments(
                 invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0).getId()).orElseThrow();
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoice).isPending();
         assertThat(invoice.getAmountDue()).isEqualTo(ars(7000));
     }
 
@@ -259,13 +261,13 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.scholarship4." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(5000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000004", course);
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         invoice = invoiceRepository.save(invoice);
 
         invoice.applyAdjustment(com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.DISCOUNT,
@@ -273,7 +275,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         invoiceRepository.save(invoice);
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatInvoice(reloaded).isWaived();
     }
 
     @Test
@@ -292,19 +294,19 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 .build();
         latePaymentSettingsRepository.save(policy);
 
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now().minusMonths(1));
         invoice.setDueDate(LocalDate.now().minusDays(20));
         invoice.setBaseAmount(ars(5000));
-        invoice.setStatus(InvoiceStatus.WAIVED);
+        BillingTestFixtures.waiveInvoice(invoice);
         invoice = invoiceRepository.save(invoice);
 
         invoiceOverdueSweepService.run(LocalDate.now());
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.WAIVED);
+        assertThatInvoice(reloaded).isWaived();
         assertThat(reloaded.getAdjustments()).isEmpty();
     }
 
@@ -368,7 +370,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         Invoice cuotaDelMes = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0);
-        cuotaDelMes.setStatus(InvoiceStatus.PAID);
+        BillingTestFixtures.payInvoiceInFull(cuotaDelMes);
         invoiceRepository.save(cuotaDelMes);
 
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
