@@ -112,6 +112,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.repository.BankTransferReceiptRepository bankTransferReceiptRepository;
 
     @Autowired
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    @Autowired
     private ProgramRepository programRepository;
 
     @Autowired
@@ -414,9 +417,10 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         personRepository.save(student.getPerson());
         Invoice invoice = BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(10000)).build();
         uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
-        BankTransferReceipt receipt = bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoice.getId())).get(0);
+        Long invoiceId = invoice.getId();
 
-        BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt, null);
+        BankTransferReceiptResponse response = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(status ->
+                BankTransferReceiptResponse.from(bankTransferReceiptRepository.findByInvoiceIdsWithPeople(List.of(invoiceId)).get(0), null));
 
         assertThat(response.studentName()).isEqualTo("Ana Comprobante");
         assertThat(response.studentDni()).isEqualTo("97000013");
