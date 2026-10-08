@@ -1,23 +1,17 @@
 meta {
-  name: 20. Solicitar alta de nuevo tras el rechazo (setup, 201)
+  name: 22. Solicitar alta de nuevo tras el rechazo (setup, 201)
   type: http
-  seq: 20
+  seq: 22
 }
 
 post {
-  url: {{baseUrl}}/me/program-enrollment-applications
-  body: multipartForm
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdDocAlta}}&cohortId={{cohortIdDocAlta}}
+  body: none
   auth: none
 }
 
 headers {
   Authorization: Bearer {{alumnoAccessTokenDocAlta}}
-}
-
-body:multipart-form {
-  programId: {{programIdDocAlta}}
-  cohortId: {{cohortIdDocAlta}}
-  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 
 script:post-response {

@@ -1,11 +1,12 @@
 meta {
-  name: 8. Alumno no tiene rol todavia (200)
+  name: 8. Cargar DNI del alumno (setup, 200)
   type: http
   seq: 8
 }
 
-get {
+put {
   url: {{baseUrl}}/me
+  body: json
   auth: none
 }
 
@@ -13,11 +14,14 @@ headers {
   Authorization: Bearer {{alumnoAccessToken}}
 }
 
+body:json {
+  {
+    "dni": "30112233"
+  }
+}
+
 tests {
   test("status 200", function () {
     expect(res.getStatus()).to.equal(200);
-  });
-  test("roles vacío — solicitar alta por sí solo no otorga nada", function () {
-    expect(res.getBody().roles).to.be.an("array").that.is.empty;
   });
 }

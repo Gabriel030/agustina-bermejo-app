@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -20,14 +21,21 @@ public record ProgramEnrollmentApplicationResponse(
         String rejectionReason,
         AdmissionInvoiceSummary admissionInvoice) {
 
-    public record AdmissionInvoiceSummary(Long id, Money total, LocalDate dueDate, String paymentStatus) {
-        static AdmissionInvoiceSummary from(Invoice invoice) {
+    public record AdmissionInvoiceSummary(Long id, Money total, LocalDate dueDate, String paymentStatus, String receiptStatus,
+                                          LocalDateTime receiptUploadedAt) {
+        static AdmissionInvoiceSummary from(Invoice invoice, BankTransferReceipt latestReceipt) {
             return new AdmissionInvoiceSummary(invoice.getId(), invoice.getAmounts().total().value(), invoice.getDueDate(),
-                    invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name());
+                    invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name(),
+                    latestReceipt == null ? null : latestReceipt.getStatus().name(),
+                    latestReceipt == null ? null : latestReceipt.getUploadedAt());
         }
     }
 
     public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application) {
+        return from(application, null);
+    }
+
+    public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, BankTransferReceipt latestAdmissionReceipt) {
         return new ProgramEnrollmentApplicationResponse(
                 application.getId(),
                 application.getStudent().getId(),
@@ -38,6 +46,6 @@ public record ProgramEnrollmentApplicationResponse(
                 application.getRequestedAt(),
                 application.getDecidedAt(),
                 application.getRejectionReason(),
-                application.getAdmissionInvoice() == null ? null : AdmissionInvoiceSummary.from(application.getAdmissionInvoice()));
+                application.getAdmissionInvoice() == null ? null : AdmissionInvoiceSummary.from(application.getAdmissionInvoice(), latestAdmissionReceipt));
     }
 }

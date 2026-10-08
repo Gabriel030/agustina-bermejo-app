@@ -1,23 +1,17 @@
 meta {
-  name: 7. Solicitar alta - happy path (201)
+  name: 9. Solicitar alta - happy path (201)
   type: http
-  seq: 7
+  seq: 9
 }
 
 post {
-  url: {{baseUrl}}/me/program-enrollment-applications
-  body: multipartForm
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdQA}}&cohortId={{cohortIdQA}}
+  body: none
   auth: none
 }
 
 headers {
   Authorization: Bearer {{alumnoAccessToken}}
-}
-
-body:multipart-form {
-  programId: {{programIdQA}}
-  cohortId: {{cohortIdQA}}
-  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 
 script:post-response {

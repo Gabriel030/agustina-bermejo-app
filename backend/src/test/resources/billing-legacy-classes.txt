@@ -104,9 +104,6 @@ com.red_escuela.backend.billing.entity.Scholarship
 com.red_escuela.backend.billing.entity.ScholarshipInstallment
 com.red_escuela.backend.billing.entity.ScholarshipScope
 com.red_escuela.backend.billing.entity.ScholarshipStatus
-com.red_escuela.backend.billing.events.AuthorizationRequestExpiredEvent
-com.red_escuela.backend.billing.events.AuthorizationRequestedEvent
-com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent
 com.red_escuela.backend.billing.exception.ChargeRejectedException
 com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException
 com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException
@@ -298,6 +295,3 @@ com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseSer
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramService
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase
-com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent
-com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent
-com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent

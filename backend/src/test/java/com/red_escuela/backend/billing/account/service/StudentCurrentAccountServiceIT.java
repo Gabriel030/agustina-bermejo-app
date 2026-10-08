@@ -20,8 +20,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -226,6 +229,29 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
             StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
             return service.recordPaymentReceivedCredit(unlocked, nextExternalId(), ars("10.00"), DAY, "Pago");
         })).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @Tag("D-144")
+    @Timeout(60)
+    void anAccountLockedByTheOuterTransactionIsNotConsideredLockedInANestedRequiresNewTransactionAndRemainsLockedAfterwards() {
+        Long accountId = newAccountId(newStudentId(), Currency.ARS);
+        TransactionTemplate nestedTransaction = new TransactionTemplate(transactionTemplate.getTransactionManager());
+        nestedTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        inTransaction(() -> {
+            StudentCurrentAccount lockedByOuter = service.lockStudentCurrentAccount(accountId);
+
+            assertThatThrownBy(() -> nestedTransaction.execute(status -> {
+                StudentCurrentAccount unlockedInNested = accountRepository.findById(accountId).orElseThrow();
+                return service.recordPaymentReceivedCredit(unlockedInNested, nextExternalId(), ars("10.00"), DAY, "Pago anidado");
+            })).isInstanceOf(IllegalStateException.class).hasMessageContaining("must be locked");
+
+            return service.recordPaymentReceivedCredit(lockedByOuter, nextExternalId(), ars("10.00"), DAY, "Pago externo");
+        });
+
+        assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId))
+                .extracting(CurrentAccountEntry::getConcept).containsExactly("Pago externo");
     }
 
     @Test

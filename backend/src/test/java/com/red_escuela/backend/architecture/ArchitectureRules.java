@@ -63,7 +63,9 @@ public final class ArchitectureRules {
     static final Set<String> PAYMENT_BRIDGE_ACCOUNT_METHODS = Set.of(
             "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "allocateUnallocatedCreditToInvoicePayment");
 
-    static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure", "events");
+    static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure");
+
+    static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener");
 
     static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
 
@@ -241,7 +243,8 @@ public final class ArchitectureRules {
                 JavaClass owner = method.getOwner();
                 boolean inEnrollment = owner.getPackageName().startsWith(enrollmentPackage);
                 boolean inBilling = owner.getPackageName().startsWith(billingPackage);
-                boolean allowed = !inEnrollment && !(inBilling && !owner.getSimpleName().endsWith("Listener"));
+                boolean enrollmentPostListener = inEnrollment && ENROLLMENT_POST_LISTENERS.contains(owner.getSimpleName());
+                boolean allowed = enrollmentPostListener || (!inEnrollment && !(inBilling && !owner.getSimpleName().endsWith("Listener")));
                 events.add(new SimpleConditionEvent(method, allowed, method.getFullName() + " is async processing in a forbidden place"));
             }
         };

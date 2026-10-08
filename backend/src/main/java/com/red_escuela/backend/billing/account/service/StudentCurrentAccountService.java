@@ -117,6 +117,16 @@ public class StudentCurrentAccountService {
         TransactionSynchronizationManager.bindResource(LOCKED_ACCOUNT_IDS_RESOURCE, created);
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            public void suspend() {
+                TransactionSynchronizationManager.unbindResourceIfPossible(LOCKED_ACCOUNT_IDS_RESOURCE);
+            }
+
+            @Override
+            public void resume() {
+                TransactionSynchronizationManager.bindResource(LOCKED_ACCOUNT_IDS_RESOURCE, created);
+            }
+
+            @Override
             public void afterCompletion(int status) {
                 TransactionSynchronizationManager.unbindResourceIfPossible(LOCKED_ACCOUNT_IDS_RESOURCE);
             }

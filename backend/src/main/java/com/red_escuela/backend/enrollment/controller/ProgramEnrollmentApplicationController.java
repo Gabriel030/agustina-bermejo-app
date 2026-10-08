@@ -20,6 +20,9 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.enrollment.service.AdmissionInvoiceReceiptFinder;
+import java.util.Map;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import jakarta.validation.Valid;
@@ -50,6 +53,7 @@ public class ProgramEnrollmentApplicationController {
     private final ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase;
     private final RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
     private final StudentDocumentRepository studentDocumentRepository;
+    private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
 
     public ProgramEnrollmentApplicationController(
             CurrentStudentService currentStudentService,
@@ -61,7 +65,8 @@ public class ProgramEnrollmentApplicationController {
             AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase,
             ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase,
             RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase,
-            StudentDocumentRepository studentDocumentRepository) {
+            StudentDocumentRepository studentDocumentRepository,
+            AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder) {
         this.currentStudentService = currentStudentService;
         this.currentPersonService = currentPersonService;
         this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
@@ -72,6 +77,7 @@ public class ProgramEnrollmentApplicationController {
         this.approveProgramEnrollmentApplicationUseCase = approveProgramEnrollmentApplicationUseCase;
         this.rejectProgramEnrollmentApplicationUseCase = rejectProgramEnrollmentApplicationUseCase;
         this.studentDocumentRepository = studentDocumentRepository;
+        this.admissionInvoiceReceiptFinder = admissionInvoiceReceiptFinder;
     }
 
     @PostMapping("/me/program-enrollment-applications")
@@ -87,8 +93,12 @@ public class ProgramEnrollmentApplicationController {
     @GetMapping("/me/program-enrollment-applications")
     public List<ProgramEnrollmentApplicationResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
-                .map(ProgramEnrollmentApplicationResponse::from).toList();
+        List<ProgramEnrollmentApplication> applications = listMyProgramEnrollmentApplicationsUseCase.list(student.getId());
+        Map<Long, BankTransferReceipt> latestReceipts = admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(applications);
+        return applications.stream()
+                .map(application -> ProgramEnrollmentApplicationResponse.from(application,
+                        application.getAdmissionInvoice() == null ? null : latestReceipts.get(application.getAdmissionInvoice().getId())))
+                .toList();
     }
 
     @PostMapping("/me/program-enrollment-applications/{id}/documents")

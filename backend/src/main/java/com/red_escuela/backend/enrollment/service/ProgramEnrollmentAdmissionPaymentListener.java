@@ -10,7 +10,7 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicatio
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public class ProgramEnrollmentAdmissionPaymentListener {
         this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
     }
 
-    @EventListener
+    @ApplicationModuleListener
     public void confirmEnrollmentOfPaidAdmission(AdmissionInvoicePaidEvent event) {
         applicationRepository.findByAdmissionInvoiceIdAndStatus(event.invoiceId(), ProgramEnrollmentApplicationStatus.APPROVED).ifPresent(application -> {
             Long studentId = application.getStudent().getId();

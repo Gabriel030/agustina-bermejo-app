@@ -1,0 +1,24 @@
+meta {
+  name: 25. Solicitar de nuevo con la matricula impaga (409)
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdDocAlta}}&cohortId={{cohortIdDocAlta}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+  test("código ADMISSION_FEE_AWAITING_PAYMENT", function () {
+    expect(res.getBody().code).to.equal("ADMISSION_FEE_AWAITING_PAYMENT");
+  });
+}

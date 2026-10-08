@@ -13,6 +13,8 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicatio
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
+import com.red_escuela.backend.enrollment.exception.AdmissionFeeAwaitingPaymentException;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,10 @@ public class RequestProgramEnrollmentApplicationService implements RequestProgra
                 .ifPresent(existing -> {
                     throw new AlreadyHasPendingApplicationException(student.getId(), command.programId());
                 });
+
+        if (applicationRepository.existsApprovedWithUnpaidAdmissionInvoice(student.getId(), command.programId(), InvoicePaymentStatus.PAID)) {
+            throw new AdmissionFeeAwaitingPaymentException(student.getId(), command.programId());
+        }
 
         requireDni(student);
 

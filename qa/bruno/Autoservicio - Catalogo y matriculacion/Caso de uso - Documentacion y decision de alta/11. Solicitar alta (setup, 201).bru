@@ -1,23 +1,17 @@
 meta {
-  name: 9. Solicitar alta (setup, 201)
+  name: 11. Solicitar alta (setup, 201)
   type: http
-  seq: 9
+  seq: 11
 }
 
 post {
-  url: {{baseUrl}}/me/program-enrollment-applications
-  body: multipartForm
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdDocAlta}}&cohortId={{cohortIdDocAlta}}
+  body: none
   auth: none
 }
 
 headers {
   Authorization: Bearer {{alumnoAccessTokenDocAlta}}
-}
-
-body:multipart-form {
-  programId: {{programIdDocAlta}}
-  cohortId: {{cohortIdDocAlta}}
-  comprobante: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 
 script:post-response {

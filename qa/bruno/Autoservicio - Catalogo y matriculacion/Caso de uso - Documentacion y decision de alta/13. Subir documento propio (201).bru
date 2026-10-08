@@ -1,7 +1,7 @@
 meta {
-  name: 10. Subir documento sin sesion (403)
+  name: 13. Subir documento propio (201)
   type: http
-  seq: 10
+  seq: 13
 }
 
 post {
@@ -10,12 +10,16 @@ post {
   auth: none
 }
 
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
 body:multipart-form {
   file: @file(Gestion de personas/fixtures/dni-dummy.pdf)
 }
 
 tests {
-  test("status 403", function () {
-    expect(res.getStatus()).to.equal(403);
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
   });
 }

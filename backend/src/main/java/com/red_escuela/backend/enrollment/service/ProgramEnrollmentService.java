@@ -290,6 +290,15 @@ public class ProgramEnrollmentService {
         return programEnrollmentRepository.save(enrollment);
     }
 
+    public void validateStudentCanEnrollInProgram(Student student, Program program) {
+        validateStudentEligible(student);
+        boolean alreadyEnrolled = !programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
+                student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)).isEmpty();
+        if (alreadyEnrolled) {
+            throw new AlreadyEnrolledInProgramException(student.getId(), program.getId());
+        }
+    }
+
     private void validateStudentEligible(Student student) {
         if (student.getOnboardingStatus() != StudentOnboardingStatus.CONFIRMADO) {
             throw new StudentNotConfirmedException(student.getId());

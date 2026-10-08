@@ -12,7 +12,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -156,7 +155,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
+        return new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
@@ -209,7 +208,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
                 id -> Optional.of(new MercadoPagoApprovedPayment(
                         new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6,
                         com.red_escuela.backend.billing.entity.CardType.CREDIT)),
@@ -225,15 +224,80 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aMercadoPagoAmountAboveTheBalanceKeepsTheOverpaymentRule() {
+    @Tag("D-139")
+    @Tag("D-144")
+    void aMercadoPagoAmountAboveTheBalanceSettlesTheInvoiceAndKeepsTheExcessAsAccountCredit() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(15000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
 
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(
-                status -> service.process("", "request-1", String.valueOf(System.nanoTime()))))
-                .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("5000");
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(15000))));
+        invariants.assertAllBillingInvariantsHold();
     }
+
+    @Test
+    @Tag("D-139")
+    @Tag("D-144")
+    void aMercadoPagoPaymentOnAnAlreadyPaidInvoiceIsCreditedToTheAccountInsteadOfBeingIgnored() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        String secondPaymentId = "second-" + System.nanoTime();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-2", secondPaymentId));
+
+        assertThat(paymentRepository.findAll()).filteredOn(p -> secondPaymentId.equals(p.getExternalReference())).hasSize(1);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("10000");
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    @Tag("D-144")
+    void twoConcurrentWebhooksWithDifferentIdsOnTheSameInvoiceLoseNoMoneyAndAllocateOnce() throws Exception {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String mpPaymentId = "concurrent-" + i + "-" + System.nanoTime();
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                            .process("", "request-" + mpPaymentId, mpPaymentId));
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (java.util.concurrent.Future<?> future : futures) {
+                future.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        assertThat(jdbc.queryForObject("select coalesce(sum(amount), 0) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", BigDecimal.class, accountId))
+                .isEqualByComparingTo("20000");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("10000");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
     @Test
     void anApprovedPaymentLogsInfoWithPaymentAndInvoiceIds(CapturedOutput output) {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
@@ -252,7 +316,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void anInvalidSignatureLogsWarnWithoutLeakingTheSecretOrTheSignature(CapturedOutput output) {
         String secret = "super-secret-webhook-key";
         String signature = "ts=1,v1=deadbeefdeadbeef";
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
 
         assertThatThrownBy(() -> service.process(signature, "request-1", "123456"))

@@ -35,6 +35,8 @@ import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -59,12 +61,13 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final CreditNoteService creditNoteService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final EntityManager entityManager;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
                                    StudentCurrentAccountService accountService, InvoiceViewLoader invoiceViewLoader,
                                    CurrentStudentService currentStudentService, CreditNoteService creditNoteService,
                                    ApplicationEventPublisher eventPublisher,
-                                   Clock clock) {
+                                   Clock clock, EntityManager entityManager) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.accountService = accountService;
@@ -73,6 +76,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         this.creditNoteService = creditNoteService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -180,26 +184,19 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
     @Override
     @Transactional
-    public Payment registerPaymentShortOfInvoiceBalance(RegisterPaymentRequest request, Person registeredBy) {
+    public Payment creditPaymentToAccountAndSettleInvoiceIfCovered(RegisterPaymentRequest request, Person registeredBy) {
         if (request.rejected() || request.allocations().size() != 1) {
-            throw new IllegalArgumentException("a payment short of the invoice balance must carry exactly one reported allocation");
+            throw new IllegalArgumentException("a gateway payment must carry exactly one reported allocation");
         }
         PaymentAllocationRequest reported = request.allocations().get(0);
         Money received = reported.amountApplied();
         if (received.isNegative() || received.isZero()) {
             throw new IllegalArgumentException("amountApplied debe ser mayor a cero (invoice " + reported.invoiceId() + ")");
         }
-        Invoice invoice = invoiceRepository.findByIdForUpdate(reported.invoiceId())
-                .orElseThrow(() -> new InvoiceNotFoundException(reported.invoiceId()));
+        Invoice invoice = lockFreshInvoice(reported.invoiceId());
         validateOwnershipIfStudent(invoice);
-        if (!invoice.isPayable()) {
-            throw new InvoiceNotPayableException(invoice.getId(), invoice.getPaymentStatus() == null ? invoice.getDocumentStatus().name() : invoice.getPaymentStatus().name());
-        }
         if (received.currency() != invoice.currency()) {
             throw new CurrencyMismatchException(invoice.currency(), received.currency());
-        }
-        if (!invoice.getAmounts().outstandingAmount().value().isGreaterThan(received)) {
-            throw new IllegalArgumentException("the received amount covers the invoice balance (invoice " + invoice.getId() + ")");
         }
 
         Payment payment = new Payment();
@@ -216,21 +213,32 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         LocalDate today = LocalDate.now(clock);
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
         accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
-        Money outstanding = invoice.getAmounts().outstandingAmount().value();
-        if (!outstanding.isGreaterThan(account.getUnallocatedCreditAmount().value())) {
-            invoice.allocateFullInvoicePayment(NonNegativeMoney.of(outstanding), today, new StatusChangeActor(registeredBy.getId(), null));
-            PaymentAllocation allocation = new PaymentAllocation();
-            allocation.setPayment(payment);
-            allocation.setInvoice(invoice);
-            allocation.setAmountApplied(outstanding);
-            payment.getAllocations().add(allocation);
-            accountService.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(outstanding));
-            publishAdmissionPaidIfApplicable(invoice);
-            restoreStandingIfNoOverdueDebtLeft(invoice);
+        boolean settled = false;
+        if (invoice.isPayable()) {
+            Money outstanding = invoice.getAmounts().outstandingAmount().value();
+            if (!outstanding.isGreaterThan(account.getUnallocatedCreditAmount().value())) {
+                invoice.allocateFullInvoicePayment(NonNegativeMoney.of(outstanding), today, new StatusChangeActor(registeredBy.getId(), null));
+                PaymentAllocation allocation = new PaymentAllocation();
+                allocation.setPayment(payment);
+                allocation.setInvoice(invoice);
+                allocation.setAmountApplied(outstanding);
+                payment.getAllocations().add(allocation);
+                accountService.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(outstanding));
+                publishAdmissionPaidIfApplicable(invoice);
+                restoreStandingIfNoOverdueDebtLeft(invoice);
+                settled = true;
+            }
         }
-        log.info("Pago por debajo del saldo acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}",
-                payment.getId(), request.method(), received.amount(), invoice.getId());
+        log.info("Pago acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}, factura saldada={}",
+                payment.getId(), request.method(), received.amount(), invoice.getId(), settled);
         return payment;
+    }
+
+    private Invoice lockFreshInvoice(Long invoiceId) {
+        Invoice invoice = invoiceRepository.findByIdForUpdate(invoiceId)
+                .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        entityManager.refresh(invoice, LockModeType.PESSIMISTIC_WRITE);
+        return invoice;
     }
 
     private void bookConsumedLegacyCreditNotes(StudentCurrentAccount account, List<CreditApplication> applications, LocalDate today) {

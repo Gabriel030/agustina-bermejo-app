@@ -4,6 +4,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -66,6 +67,18 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
+
+    @Autowired
+    private com.red_escuela.backend.enrollment.service.ProgramEnrollmentService programEnrollmentService;
+
+    @Autowired
+    private com.red_escuela.backend.billing.repository.PaymentRepository paymentRepository;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -263,29 +276,6 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-227")
-    void payingTheAdmissionInvoiceConfirmsTheEnrollment() {
-        ProgramEnrollmentApplication application = requestApplication("81000007");
-        Person preceptor = persistPreceptor();
-        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
-        Invoice invoice = application.getAdmissionInvoice();
-        assertThat(isEnrolled(application.getStudent(), application.getProgram())).isFalse();
-
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
-                PaymentMethod.TRANSFER, false, null, null, null, null), preceptor);
-
-        entityManager.flush();
-        entityManager.clear();
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(isEnrolled(application.getStudent(), application.getProgram())).isTrue();
-        assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
-                application.getStudent().getId(), application.getProgram().getId(), List.of(ProgramEnrollmentStatus.ENROLLED)))
-                .singleElement().satisfies(enrollment -> assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().findProgramEnrollmentId())
-                        .contains(enrollment.getId()));
-    }
-
-    @Test
-    @Tag("D-227")
     void rejectingTheApplicationLeavesNoInvoiceNorDebt() {
         ProgramEnrollmentApplication application = requestApplication("81000006");
 
@@ -313,5 +303,126 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor())))
                 .isInstanceOf(PriceRevisionNotFoundException.class);
+    }
+
+    @Test
+    @Tag("D-227")
+    void aMercadoPagoPaymentPaysTheAdmissionInvoiceWhichHasNoEnrollmentYet() {
+        ProgramEnrollmentApplication application = requestApplication("81900001");
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()));
+        Invoice invoice = application.getAdmissionInvoice();
+        entityManager.flush();
+        String mpPaymentId = "mp-" + System.nanoTime();
+        var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(invoiceRepository, paymentRepository,
+                registerPaymentUseCase,
+                id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
+                        new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
+                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));
+
+        service.process("", "req", mpPaymentId);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingABankTransferReceiptPaysTheAdmissionInvoice() {
+        ProgramEnrollmentApplication application = requestApplication("81900002");
+        Person preceptor = persistPreceptor();
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), preceptor));
+        Invoice invoice = application.getAdmissionInvoice();
+        entityManager.flush();
+        var receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+        entityManager.flush();
+
+        approvePaymentReceiptUseCase.approve(receipt.getId(), preceptor);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+    }
+
+    @Test
+    @Tag("D-227")
+    void requestingAgainWhileAnApprovedApplicationHasTheAdmissionInvoiceUnpaidIsRejected() {
+        ProgramEnrollmentApplication application = requestApplication("81900003");
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> requestProgramEnrollmentApplicationUseCase.request(new RequestProgramEnrollmentApplicationCommand(
+                application.getStudent(), application.getProgram().getId(), application.getProgramCohort().getId())))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.AdmissionFeeAwaitingPaymentException.class);
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingForAStudentWhoIsNotEligibleIsRejectedBeforeIssuingTheAdmissionInvoice() {
+        ProgramEnrollmentApplication application = requestApplication("81900004");
+        application.getStudent().setOnboardingStatus(StudentOnboardingStatus.PROSPECTO);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor())))
+                .isInstanceOf(com.red_escuela.backend.identity.exception.StudentNotConfirmedException.class);
+        assertThat(admissionInvoicesOf(application.getStudent())).isZero();
+        assertThat(application.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.PENDING);
+    }
+
+    @Test
+    @Tag("D-227")
+    void approvingForAStudentAlreadyEnrolledInTheProgramIsRejectedBeforeIssuingTheAdmissionInvoice() {
+        ProgramEnrollmentApplication application = requestApplication("81900005");
+        programEnrollmentService.enrollAfterAdmissionPayment(application.getStudent().getId(),
+                new com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest(application.getProgram().getId(), application.getProgramCohort().getId()));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor())))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException.class);
+        assertThat(admissionInvoicesOf(application.getStudent())).isZero();
+    }
+
+    @Autowired
+    private com.red_escuela.backend.notification.repository.NotificationRepository notificationRepository;
+
+    @Test
+    @Tag("D-227")
+    void approvingNotifiesTheStudentToPayTheAdmissionFeeLinkedToTheApplication() {
+        ProgramEnrollmentApplication application = requestApplication("81900006");
+
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()));
+        entityManager.flush();
+
+        assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(application.getStudent().getPerson().getId()))
+                .singleElement().satisfies(notification -> {
+                    assertThat(notification.getType()).isEqualTo(com.red_escuela.backend.notification.entity.NotificationType.PROGRAM_APPLICATION_APPROVED);
+                    assertThat(notification.getRelatedEntityType()).isEqualTo("ProgramEnrollmentApplication");
+                    assertThat(notification.getRelatedEntityId()).isEqualTo(application.getId());
+                });
+    }
+
+    @Autowired
+    private com.red_escuela.backend.enrollment.service.AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
+
+    @Test
+    @Tag("D-227")
+    void theAdmissionInvoiceSummaryExposesTheLatestReceiptStatusWhileItIsUnderReview() {
+        ProgramEnrollmentApplication application = requestApplication("81900007");
+        approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()));
+        Invoice invoice = application.getAdmissionInvoice();
+        entityManager.flush();
+        assertThat(ProgramEnrollmentApplicationResponse.from(application,
+                admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(List.of(application)).get(invoice.getId())).admissionInvoice().receiptStatus()).isNull();
+
+        uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
+        entityManager.flush();
+
+        ProgramEnrollmentApplicationResponse response = ProgramEnrollmentApplicationResponse.from(application,
+                admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(List.of(application)).get(invoice.getId()));
+        assertThat(response.admissionInvoice().receiptStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(response.admissionInvoice().receiptUploadedAt()).isNotNull();
     }
 }

@@ -1,7 +1,7 @@
 meta {
-  name: 24. Rechazar la segunda solicitud (200)
+  name: 26. No se puede rechazar una solicitud ya aprobada (409)
   type: http
-  seq: 24
+  seq: 26
 }
 
 post {
@@ -21,7 +21,7 @@ body:json {
 }
 
 tests {
-  test("status 200", function () {
-    expect(res.getStatus()).to.equal(200);
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
   });
 }
