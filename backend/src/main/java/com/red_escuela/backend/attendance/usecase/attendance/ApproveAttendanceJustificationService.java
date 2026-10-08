@@ -10,9 +10,9 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class ApproveAttendanceJustificationService implements ApproveAttendanceJustificationUseCase {
@@ -44,7 +44,7 @@ public class ApproveAttendanceJustificationService implements ApproveAttendanceJ
 
         attendance.setStatus(AttendanceStatus.JUSTIFIED);
         attendance.setJustifiedBy(justifiedBy);
-        attendance.setJustifiedAt(LocalDateTime.now());
+        attendance.setJustifiedAt(ApplicationTime.now());
         Attendance saved = attendanceRepository.save(attendance);
         eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
         return saved;

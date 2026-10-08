@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
 @UseCase
 public class ApproveSectionEvaluationConfigService implements ApproveSectionEvaluationConfigUseCase {
@@ -61,7 +62,7 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
         }
         config.setStatus(SectionEvaluationConfigStatus.APPROVED);
         config.setReviewedBy(command.actor());
-        config.setReviewedAt(LocalDateTime.now());
+        config.setReviewedAt(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
 
         SubjectSection section = config.getSubjectSection();
