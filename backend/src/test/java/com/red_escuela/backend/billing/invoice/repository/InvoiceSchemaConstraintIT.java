@@ -175,7 +175,8 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         });
         expectViolation("fk_invoice_line_invoice", () -> {
             long invoice = insert("invoice", draftInvoice(arsAccount));
-            insert("invoice_line", with(line(invoice), "currency", "USD", "amount_currency", "USD", "discount_amount_currency", "USD", "credited_amount_currency", "USD"));
+            insert("invoice_line", with(line(invoice), "currency", "USD", "amount_currency", "USD", "discount_amount_currency", "USD", "credited_amount_currency", "USD",
+                    "free_credited_amount_currency", "USD"));
         });
     }
 

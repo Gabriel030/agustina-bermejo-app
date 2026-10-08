@@ -305,8 +305,8 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    @Tag("contradicts-D-157")
-    void aScholarshipCanBeConfiguredForTheEnrollmentFeeAndAnotherOnlyForTheInstallments() {
+    @Tag("D-157")
+    void aScholarshipNeverDiscountsTheEnrollmentFeeAndOnlyDiscountsTheInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
         today(date(2027, 1, 4));
@@ -322,7 +322,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         today(date(2027, 3, 2));
         job.run();
 
-        assertThat(amountDue(onlyFee(forFee))).isEqualTo(ars(2500));
+        assertThat(amountDue(onlyFee(forFee))).isEqualTo(ars(5000));
         assertThat(amountDue(invoices(forFee, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(10000));
         assertThat(amountDue(onlyFee(forInstallments))).isEqualTo(ars(5000));
         assertThat(amountDue(invoices(forInstallments, FeeType.MONTHLY_INSTALLMENT).get(0))).isEqualTo(ars(5000));

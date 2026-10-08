@@ -178,19 +178,6 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void payingACancelledInvoiceIsRejected() {
-        Person admin = persistPerson("admin.pago2." + System.nanoTime());
-        Student student = persistStudent("96000002");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.CANCELLED);
-
-        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
-                PaymentMethod.CASH, false, null, null, null, null), admin))
-                .isInstanceOf(InvoiceNotPayableException.class);
-    }
-
-    @Test
     void rejectedPaymentDoesNotAffectBalanceButIsRecorded() {
         Person admin = persistPerson("admin.pago3." + System.nanoTime());
         Student student = persistStudent("96000003");

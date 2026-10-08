@@ -303,7 +303,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(tx -> {
             Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId())).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.of(2026, 1)).dueOn(LocalDate.of(2026, 1, 1)).withBaseAmount(ars(5000)).build();
             BillingTestFixtures.payInvoiceInFull(invoice);
-            entityManager.persist(invoice);
         });
 
         job.run(MARCH);
@@ -438,7 +437,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(tx -> {
             Invoice entryFee = BillingTestFixtures.invoice().forProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId())).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.of(2026, 8)).dueOn(LocalDate.of(2026, 8, 1)).withBaseAmount(ars(2500)).build();
             BillingTestFixtures.payInvoiceInFull(entryFee);
-            entityManager.persist(entryFee);
         });
 
         persistNextYearTemplate(fixture);
@@ -456,7 +454,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(tx -> {
             Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId())).ofType(FeeType.ENROLLMENT_FEE).forPeriod(MARCH).dueOn(MARCH.atDay(1)).withBaseAmount(ars(5000)).build();
             BillingTestFixtures.payInvoiceInFull(invoice);
-            entityManager.persist(invoice);
         });
 
         job.run(YearMonth.of(2026, 2));
@@ -530,7 +527,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             for (YearMonth period : List.of(now, now.plusMonths(1), now.plusMonths(2))) {
                 Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId())).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(period).dueOn(period.atDay(10)).withBaseAmount(ars(10000)).build();
                 BillingTestFixtures.payInvoiceInFull(invoice);
-                entityManager.persist(invoice);
             }
         });
         addSectionEnrollment(fixture, EnrollmentStatus.APPROVED);

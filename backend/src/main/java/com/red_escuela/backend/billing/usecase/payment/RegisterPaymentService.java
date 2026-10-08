@@ -40,6 +40,8 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @UseCase
 public class RegisterPaymentService implements RegisterPaymentUseCase {
@@ -133,6 +135,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         payment = paymentRepository.save(payment);
 
         LocalDate today = LocalDate.now(clock);
+        Map<Long, Money> appliedByAccount = new TreeMap<>();
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
             Money amountApplied = ordered.get(i).amountApplied();
@@ -143,12 +146,17 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             allocation.setInvoice(invoice);
             allocation.setAmountApplied(amountApplied);
             payment.getAllocations().add(allocation);
-            StudentCurrentAccount account = accountService.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
-            accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amountApplied), today,
-                    "Pago factura " + invoice.getInvoiceNumber().value());
+            appliedByAccount.merge(invoice.getStudentCurrentAccountId(), amountApplied, Money::plus);
             if (request.method() == PaymentMethod.CREDIT_BALANCE) {
                 creditNoteService.consumeForInvoice(resolveOwnerStudentId(invoice), amountApplied, invoice, payment);
             }
+        }
+
+        for (Map.Entry<Long, Money> applied : appliedByAccount.entrySet()) {
+            StudentCurrentAccount account = accountService.lockStudentCurrentAccount(applied.getKey());
+            NonNegativeMoney creditedAmount = NonNegativeMoney.of(applied.getValue());
+            accountService.recordPaymentReceivedCredit(account, payment.getId(), creditedAmount, today, "Pago " + payment.getId());
+            accountService.allocateUnallocatedCreditToInvoicePayment(account, creditedAmount);
         }
 
         lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);

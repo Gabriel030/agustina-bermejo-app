@@ -65,7 +65,8 @@ public final class BillingTestFixtures {
             if (managed.getPaymentStatus() == InvoicePaymentStatus.PENDING) {
                 managed.markInvoiceAsOverdue(overdueDate, ACTOR);
             }
-            return bean(InvoiceRepository.class).save(managed);
+            bean(InvoiceRepository.class).flush();
+            return managed;
         });
     }
 
@@ -101,7 +102,9 @@ public final class BillingTestFixtures {
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
         accounts.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
-        return bean(InvoiceRepository.class).save(invoice);
+        accounts.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(amount));
+        bean(InvoiceRepository.class).flush();
+        return invoice;
     }
 
     private static Invoice reload(Invoice invoice) {
@@ -193,9 +196,9 @@ public final class BillingTestFixtures {
         }
 
         private Invoice issue() {
-            com.red_escuela.backend.identity.entity.Student owner = student != null ? student : programEnrollment != null ? programEnrollment.getStudent() : courseEnrollment.getStudent();
-            Long studentId = owner.getId();
-            var person = owner.getPerson();
+            bean(jakarta.persistence.EntityManager.class).flush();
+            Long studentId = (student != null ? student : programEnrollment != null ? programEnrollment.getStudent() : courseEnrollment.getStudent()).getId();
+            var person = bean(com.red_escuela.backend.identity.repository.StudentRepository.class).findById(studentId).orElseThrow().getPerson();
             StudentCurrentAccount account = bean(StudentCurrentAccountService.class).findOrOpenAndLockStudentCurrentAccount(studentId, baseAmount.currency());
             Long priceRevisionId = priceRevisionId(person.getId());
             ChargeKey key = new ChargeKey("FX:" + UUID.randomUUID());
@@ -229,7 +232,8 @@ public final class BillingTestFixtures {
                 throw new UnsupportedOperationException("The new billing model has no direct " + status + " state (D-165, D-136)");
             }
             customization.accept(result);
-            return bean(InvoiceRepository.class).save(result);
+            bean(InvoiceRepository.class).flush();
+            return result;
         }
 
         private Long priceRevisionId(Long createdById) {

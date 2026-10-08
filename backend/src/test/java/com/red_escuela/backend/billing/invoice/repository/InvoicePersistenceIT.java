@@ -20,7 +20,6 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -60,9 +59,6 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     private StudentCurrentAccountRepository accountRepository;
     @Autowired
     private InvoiceNumberGenerator numberGenerator;
-    @Autowired
-    @Qualifier("legacyInvoiceRepository")
-    private com.red_escuela.backend.billing.invoice.repository.InvoiceRepository legacyInvoiceRepository;
     @Autowired
     private TransactionTemplate transactionTemplate;
     @Autowired
@@ -252,12 +248,10 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void bothInvoiceEntitiesAndRepositoriesCoexistAndTheLegacyOneStillWorks() {
-        assertThat(legacyInvoiceRepository.count()).isGreaterThanOrEqualTo(0);
-        assertThat(jdbc.queryForObject("select count(*) from legacy_invoice", Integer.class)).isNotNull();
-        assertThat(jdbc.queryForObject("select count(*) from pg_constraint where confrelid = 'legacy_invoice'::regclass", Integer.class)).isGreaterThan(0);
-        assertThat(jdbc.queryForObject("select count(*) from payment_allocation a join legacy_invoice i on i.id = a.invoice_id", Integer.class)).isNotNull();
-        assertThat(invoiceRepository).isNotSameAs(legacyInvoiceRepository);
+    void theLegacyInvoiceTablesNoLongerExistAndIncomingForeignKeysPointToTheNewInvoice() {
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name in ('legacy_invoice', 'invoice_adjustment')", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'invoice'::regclass "
+                + "and conrelid = 'payment_allocation'::regclass", Integer.class)).isGreaterThan(0);
         assertThat(Map.of("v", LocalDate.of(2027, 1, 1))).isNotEmpty();
     }
 

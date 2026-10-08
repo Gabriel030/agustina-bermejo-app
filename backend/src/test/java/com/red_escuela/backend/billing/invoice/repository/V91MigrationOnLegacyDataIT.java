@@ -22,14 +22,14 @@ class V91MigrationOnLegacyDataIT {
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
             Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("90").load().migrate();
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-            jdbc.update("insert into invoice (fee_type, period, due_date, base_amount, status, created_at, updated_at, issue_reason) "
-                    + "values ('RECURRING_FEE', date '2026-09-01', date '2026-09-10', 48000.00, 'PENDING', now(), now(), 'LEGACY')");
+            jdbc.update("insert into invoice (fee_type, period, due_date, base_amount, base_amount_currency, status, created_at, updated_at, issue_reason) "
+                    + "values ('RECURRING_FEE', date '2026-09-01', date '2026-09-10', 48000.00, 'ARS', 'PENDING', now(), now(), 'LEGACY')");
             Long invoiceId = jdbc.queryForObject("select max(id) from invoice", Long.class);
             jdbc.update("insert into invoice_adjustment (invoice_id, type, value, resolved_base, reason, applied_at) "
                     + "values (?, 'SURCHARGE', '{\"type\":\"PERCENTAGE\",\"percentage\":0.1000}'::jsonb, 48000.00, 'Mora', now())", invoiceId);
             Integer incomingBefore = jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'invoice'::regclass", Integer.class);
 
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("95").load().migrate();
 
             assertThat(incomingBefore).isGreaterThan(3);
             assertThat(jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'legacy_invoice'::regclass", Integer.class))

@@ -60,6 +60,13 @@ public class StudentCurrentAccountService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    public void allocateUnallocatedCreditToInvoicePayment(StudentCurrentAccount lockedAccount, NonNegativeMoney amount) {
+        requireLocked(lockedAccount);
+        lockedAccount.allocateUnallocatedCreditToInvoicePayment(amount);
+        accountRepository.save(lockedAccount);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public CurrentAccountEntry recordCreditNoteIssuedCredit(StudentCurrentAccount lockedAccount, Long creditNoteId, NonNegativeMoney offsetAmount,
                                                             NonNegativeMoney freeCreditAmount, LocalDate effectiveDate, String concept) {
         requireLocked(lockedAccount);

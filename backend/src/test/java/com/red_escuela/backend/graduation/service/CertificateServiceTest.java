@@ -145,8 +145,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
-        Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(100)).build();
-        entityManager.persist(invoice);
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(100)).build();
     }
 
     private void authenticateAsPerson(String dni) {

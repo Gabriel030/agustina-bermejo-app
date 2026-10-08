@@ -152,18 +152,15 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theWebhookRecordsTheAmountReportedByMercadoPagoNotTheInvoiceBalance() {
+    @Tag("D-136")
+    void aMercadoPagoAmountBelowTheBalanceIsRejectedBecauseThereAreNoPartialPayments() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
-        String mpPaymentId = String.valueOf(System.nanoTime());
-
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
 
-        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
-
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
-                .extracting(PaymentAllocation::getAmountApplied)
-                .singleElement()
-                .satisfies(amount -> assertThat(amount).isEqualTo(ars(4000)));
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(
+                status -> service.process("", "request-1", String.valueOf(System.nanoTime()))))
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException.class);
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
     }
 
@@ -201,7 +198,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void anApprovedPaymentLogsInfoWithPaymentAndInvoiceIds(CapturedOutput output) {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
+        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(10000));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 

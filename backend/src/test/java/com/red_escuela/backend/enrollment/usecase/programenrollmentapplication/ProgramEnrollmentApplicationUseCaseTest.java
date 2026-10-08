@@ -27,6 +27,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -261,7 +262,8 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void rejectingTheRequestAlsoRejectsItsReceiptAndCancelsTheEnrollmentFeeInvoice() {
+    @Tag("D-165")
+    void rejectingTheRequestRejectsItsReceiptAndLeavesTheAdmissionInvoiceForItsCreditNote() {
         ProgramEnrollmentApplication application = requestApplication("81000006");
         Person preceptor = persistPersonBase("PREC" + System.nanoTime());
 
@@ -274,7 +276,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollmentApplication rechazada = entityManager.find(ProgramEnrollmentApplication.class, application.getId());
         assertThat(rechazada.getPaymentReceipt().getStatus()).isEqualTo(BankTransferReceiptStatus.REJECTED);
         assertThat(rechazada.getPaymentReceipt().getRejectionReason()).isEqualTo("Documentación ilegible");
-        assertThatInvoice(rechazada.getPaymentReceipt().getInvoice()).isCancelled();
+        assertThatInvoice(rechazada.getPaymentReceipt().getInvoice()).isPending();
     }
 
     @Test

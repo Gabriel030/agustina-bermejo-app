@@ -21,7 +21,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
+import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -173,7 +173,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
                 resultado.get(30, TimeUnit.SECONDS);
                 exitos++;
             } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
+                assertThat(e.getCause()).isInstanceOf(InvoiceNotPayableException.class);
                 rechazosPorSaldo++;
             }
         }
@@ -188,8 +188,8 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("contradicts-D-136")
-    void twoConcurrentPartialPaymentsDoNotExceedTheBalance() throws Exception {
+    @Tag("D-136")
+    void twoConcurrentFullPaymentsOfTheSameInvoiceLeaveOnlyOneAllocation() throws Exception {
         Person admin1 = persistPerson("admin.concurrencia3." + System.nanoTime());
         Person admin2 = persistPerson("admin.concurrencia4." + System.nanoTime());
         Student student = persistStudent("98000002");
@@ -200,8 +200,8 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         CountDownLatch arranca = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        Callable<Payment> intento1 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(600), admin1, listos, arranca);
-        Callable<Payment> intento2 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(600), admin2, listos, arranca);
+        Callable<Payment> intento1 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(1000), admin1, listos, arranca);
+        Callable<Payment> intento2 = () -> ejecutarPagoConcurrente(invoice.getId(), BigDecimal.valueOf(1000), admin2, listos, arranca);
 
         Future<Payment> resultado1 = executor.submit(intento1);
         Future<Payment> resultado2 = executor.submit(intento2);
@@ -215,7 +215,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
                 resultado.get(30, TimeUnit.SECONDS);
                 exitos++;
             } catch (ExecutionException e) {
-                assertThat(e.getCause()).isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
+                assertThat(e.getCause()).isInstanceOf(InvoiceNotPayableException.class);
                 rechazosPorSaldo++;
             }
         }
@@ -223,9 +223,9 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
 
         assertThat(exitos).isEqualTo(1);
         assertThat(rechazosPorSaldo).isEqualTo(1);
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
-        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(600));
+        assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(1000));
     }
 }
