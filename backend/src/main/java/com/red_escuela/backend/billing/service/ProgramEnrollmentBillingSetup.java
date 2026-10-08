@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class ProgramEnrollmentBillingSetup {
 
     @Transactional
     public void attachAdmissionFee(ProgramEnrollment enrollment, Invoice admissionInvoice) {
-        admissionInvoice.attachToEnrollment(enrollment);
+        admissionInvoice.assignInvoiceToProgramEnrollment(enrollment.getId());
         invoiceRepository.save(admissionInvoice);
         assignTemplateIfMissing(enrollment);
     }

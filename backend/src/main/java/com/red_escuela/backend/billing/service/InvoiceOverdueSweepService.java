@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.billing.entity.LatePaymentSettings;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
 import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,15 +73,15 @@ public class InvoiceOverdueSweepService {
 
         Long lastId = 0L;
         while (true) {
-            List<Invoice> batch = invoiceRepository.findByStatusAndDueDateBeforeAndIdGreaterThanOrderByIdAsc(
-                    InvoiceStatus.PENDING, cutoff, lastId, PageRequest.of(0, PAGE_SIZE));
+            List<Invoice> batch = invoiceRepository.findByPaymentStatusAndDueDateBeforeAndIdGreaterThanOrderByIdAsc(
+                    InvoicePaymentStatus.PENDING, cutoff, lastId, PageRequest.of(0, PAGE_SIZE));
             if (batch.isEmpty()) {
                 break;
             }
             candidates += batch.size();
             for (Invoice invoice : batch) {
                 try {
-                    rowProcessor.process(invoice.getId(), policy.get());
+                    rowProcessor.process(invoice.getId(), today);
                     processed++;
                 } catch (Exception e) {
                     failed++;

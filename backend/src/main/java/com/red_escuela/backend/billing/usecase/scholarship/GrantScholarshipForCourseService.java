@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.usecase.scholarship;
 
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Scholarship;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import com.red_escuela.backend.billing.service.ScholarshipGrantSupport;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -47,7 +47,7 @@ public class GrantScholarshipForCourseService implements GrantScholarshipForCour
         scholarship.setCourseEnrollment(enrollment);
         scholarship = scholarshipRepository.save(scholarship);
         support.applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(scholarship,
-                invoiceRepository.findByCourseEnrollmentIdAndStatusIn(courseEnrollmentId, List.of(InvoiceStatus.PAID)),
+                invoiceRepository.findByCourseEnrollmentIdAndPaymentStatusIn(courseEnrollmentId, List.of(InvoicePaymentStatus.PAID)),
                 enrollment.getStudent());
         return scholarship;
     }

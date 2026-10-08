@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
+import com.red_escuela.backend.billing.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.GetPaymentReceiptFileUseCase;
@@ -32,22 +33,25 @@ public class BankTransferReceiptController {
     private final RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase;
     private final GetPaymentReceiptFileUseCase getPaymentReceiptFileUseCase;
     private final CurrentPersonService currentPersonService;
+    private final BankTransferReceiptResponseAssembler receiptResponseAssembler;
 
     public BankTransferReceiptController(ListPendingPaymentReceiptsUseCase listPendingPaymentReceiptsUseCase,
                                      ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase, RejectPaymentReceiptUseCase rejectPaymentReceiptUseCase,
                                      GetPaymentReceiptFileUseCase getPaymentReceiptFileUseCase,
-                                     CurrentPersonService currentPersonService) {
+                                     CurrentPersonService currentPersonService,
+                                     BankTransferReceiptResponseAssembler receiptResponseAssembler) {
         this.listPendingPaymentReceiptsUseCase = listPendingPaymentReceiptsUseCase;
         this.approvePaymentReceiptUseCase = approvePaymentReceiptUseCase;
         this.rejectPaymentReceiptUseCase = rejectPaymentReceiptUseCase;
         this.getPaymentReceiptFileUseCase = getPaymentReceiptFileUseCase;
         this.currentPersonService = currentPersonService;
+        this.receiptResponseAssembler = receiptResponseAssembler;
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public List<BankTransferReceiptResponse> listPending() {
-        return listPendingPaymentReceiptsUseCase.list().stream().map(BankTransferReceiptResponse::from).toList();
+        return receiptResponseAssembler.assembleBankTransferReceiptResponses(listPendingPaymentReceiptsUseCase.list());
     }
 
     @GetMapping("/{id}/file")
@@ -63,13 +67,13 @@ public class BankTransferReceiptController {
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BankTransferReceiptResponse approve(@PathVariable Long id) {
-        return BankTransferReceiptResponse.from(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
+        return receiptResponseAssembler.assembleBankTransferReceiptResponse(approvePaymentReceiptUseCase.approve(id, currentPersonService.resolveCurrentPerson()));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public BankTransferReceiptResponse reject(@PathVariable Long id, @Valid @RequestBody RejectPaymentReceiptRequest request) {
-        return BankTransferReceiptResponse.from(
+        return receiptResponseAssembler.assembleBankTransferReceiptResponse(
                 rejectPaymentReceiptUseCase.reject(id, request.rejectionReason(), currentPersonService.resolveCurrentPerson()));
     }
 }

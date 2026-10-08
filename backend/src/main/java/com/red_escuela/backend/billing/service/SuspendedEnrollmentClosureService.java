@@ -2,12 +2,11 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.planning.domain.YearCycles;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -33,7 +32,6 @@ import java.util.Optional;
 @Service
 public class SuspendedEnrollmentClosureService {
 
-    static final String CLOSURE_REASON = "Baja por falta de pago al cierre del cuatrimestre en que se suspendió: deuda del cohorte cancelada";
 
     private static final Logger log = LoggerFactory.getLogger(SuspendedEnrollmentClosureService.class);
     private static final List<ProgramEnrollmentStatus> ACTIVE = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
@@ -90,10 +88,6 @@ public class SuspendedEnrollmentClosureService {
         programEnrollmentService.withdraw(enrollmentId);
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
-        for (Invoice invoice : invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollmentId, List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {
-            invoice.applyAdjustment(InvoiceAdjustmentType.WAIVE_DEBT, new MonetaryAdjustment.Nominal(invoice.getRemainingBalance()), CLOSURE_REASON, null);
-            invoiceRepository.save(invoice);
-        }
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());
         return true;
     }

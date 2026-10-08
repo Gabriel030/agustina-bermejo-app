@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
@@ -20,7 +20,7 @@ import com.red_escuela.backend.billing.planning.service.EnrollmentFeeRequirement
 import com.red_escuela.backend.billing.planning.service.EnrollmentFeeSlotReference;
 import com.red_escuela.backend.billing.planning.service.ProgramMonthlyInvoicePlanner;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
@@ -168,12 +168,12 @@ public class EnrollmentFeeRequirementService {
                 new EnrollmentFeeObligationStatusClassifier.Evidence(exempted, invoice.map(this::invoiceFactsOf)));
         return new Obligation(cycle.templateId(), slot, cycle.slotCount(), cycle.slotFrom(slot), cycle.slotTo(slot), status,
                 invoice.map(Invoice::getId).orElse(null), invoice.map(Invoice::getDueDate).orElse(null),
-                invoice.filter(found -> !status.isSatisfied()).map(Invoice::getRemainingBalance).orElse(null), status.isSatisfied());
+                invoice.filter(found -> !status.isSatisfied()).map(found -> found.getAmounts().outstandingAmount().value()).orElse(null), status.isSatisfied());
     }
 
     private ObligationInvoiceFacts invoiceFactsOf(Invoice invoice) {
-        return new ObligationInvoiceFacts(invoice.getStatus(),
+        return new ObligationInvoiceFacts(invoice.getPaymentStatus(),
                 receiptRepository.existsByInvoiceIdAndStatus(invoice.getId(), BankTransferReceiptStatus.PENDING_REVIEW),
-                invoice.getRemainingBalance().isGreaterThan(invoice.getAmountDue()) || invoice.getRemainingBalance().equals(invoice.getAmountDue()));
+                !invoice.getAmounts().hasPaidAmount());
     }
 }

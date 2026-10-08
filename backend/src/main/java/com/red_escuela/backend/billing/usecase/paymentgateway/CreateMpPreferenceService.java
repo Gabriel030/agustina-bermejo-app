@@ -9,12 +9,12 @@ import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
 import com.mercadopago.resources.preference.Preference;
 import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.shared.UseCase;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -62,16 +62,14 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
             throw new InvoiceNotFoundException(invoiceId);
         }
 
-        if (invoice.getStatus() == InvoiceStatus.PAID
-                || invoice.getStatus() == InvoiceStatus.CANCELLED
-                || invoice.getStatus() == InvoiceStatus.WAIVED) {
-            throw new InvoiceNotPayableException(invoiceId, invoice.getStatus().name());
+        if (!invoice.isPayable()) {
+            throw new InvoiceNotPayableException(invoiceId, invoice.getPaymentStatus() == null ? invoice.getDocumentStatus().name() : invoice.getPaymentStatus().name());
         }
 
         if (invoice.currency() != Currency.ARS) {
             throw new GatewayCurrencyNotSupportedException(invoiceId, invoice.currency());
         }
-        BigDecimal amount = invoice.getRemainingBalance().amount();
+        BigDecimal amount = invoice.getAmounts().outstandingAmount().value().amount();
         String title = invoice.getFeeType().name() + " " + invoice.getPeriod();
 
         PreferenceRequest request = PreferenceRequest.builder()
@@ -101,12 +99,6 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
     }
 
     private Long resolveOwnerStudentId(Invoice invoice) {
-        if (invoice.getCourseEnrollment() != null) {
-            return invoice.getCourseEnrollment().getStudent().getId();
-        }
-        if (invoice.getProgramEnrollment() != null) {
-            return invoice.getProgramEnrollment().getStudent().getId();
-        }
-        return null;
+        return invoiceRepository.findOwnerStudentIdByInvoiceId(invoice.getId()).orElse(null);
     }
 }

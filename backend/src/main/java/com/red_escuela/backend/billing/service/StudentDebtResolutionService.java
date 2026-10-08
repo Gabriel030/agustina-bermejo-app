@@ -3,16 +3,15 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.exception.StudentInDebtException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,38 +33,8 @@ public class StudentDebtResolutionService {
     }
 
     public void verifyNoDebt(Long studentId) {
-        if (invoiceRepository.existsByStudentIdAndStatus(studentId, InvoiceStatus.OVERDUE)) {
+        if (invoiceRepository.existsByStudentIdAndPaymentStatus(studentId, InvoicePaymentStatus.OVERDUE)) {
             throw new StudentInDebtException(studentId);
         }
-    }
-
-    @Transactional
-    public void waiveDebtForProgram(Long studentId, Long programId, String reason, Person director) {
-        List<ProgramEnrollment> oldCycles = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusAndPaymentStatus(
-                studentId, programId, ProgramEnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        for (ProgramEnrollment cycle : oldCycles) {
-            for (Invoice invoice : invoiceRepository.findByProgramEnrollmentIdAndStatusIn(
-                    cycle.getId(), List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {
-                waive(invoice, reason, director);
-            }
-        }
-    }
-
-    @Transactional
-    public void waiveDebtForCourse(Long studentId, Long courseId, String reason, Person director) {
-        List<CourseEnrollment> oldCycles = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusAndPaymentStatus(
-                studentId, courseId, EnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        for (CourseEnrollment cycle : oldCycles) {
-            for (Invoice invoice : invoiceRepository.findByCourseEnrollmentIdAndStatusIn(
-                    cycle.getId(), List.of(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE))) {
-                waive(invoice, reason, director);
-            }
-        }
-    }
-
-    private void waive(Invoice invoice, String reason, Person director) {
-        invoice.applyAdjustment(InvoiceAdjustmentType.WAIVE_DEBT,
-                new MonetaryAdjustment.Nominal(invoice.getRemainingBalance()), reason, director);
-        invoiceRepository.save(invoice);
     }
 }

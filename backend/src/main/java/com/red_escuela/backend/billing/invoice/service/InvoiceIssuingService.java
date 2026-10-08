@@ -1,14 +1,16 @@
 package com.red_escuela.backend.billing.invoice.service;
 
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceDraft;
-import com.red_escuela.backend.billing.exception.DuplicateChargeException;
-import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
+import com.red_escuela.backend.billing.invoice.exception.DuplicateInvoiceChargeException;
+import com.red_escuela.backend.billing.invoice.operation.InvoiceIssuingContextLoader;
+import com.red_escuela.backend.billing.invoice.operation.InvoiceIssuingOperation;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.shared.domain.policy.PolicyEvaluationResult;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
+import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,118 +22,102 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.SQLException;
-import java.time.Clock;
-import java.time.LocalDate;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingRequest;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceRecipient;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingContext;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
+import java.util.List;
 
 @Service
 public class InvoiceIssuingService {
+
     private static final Logger log = LoggerFactory.getLogger(InvoiceIssuingService.class);
     private static final String UNIQUE_VIOLATION = "23505";
-    private final PolicySet<InvoiceIssuingContext> issuancePolicies;
+    private static final String CHARGE_KEY_CONSTRAINT = "uk_invoice_line_charge_key";
+    private static final String ALREADY_ISSUED_CODE = "ALREADY_ISSUED";
+
     private final InvoiceIssuingContextLoader contextLoader;
-    private final ChargeAdjustmentApplier adjustmentApplier;
+    private final PolicySet<InvoiceIssuingContext> issuingPolicies;
+    private final BillingOperationPipeline pipeline;
+    private final InvoiceIssuingOperation operation;
     private final InvoiceRepository invoiceRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final TransactionTemplate ownTransaction;
     private final MeterRegistry meterRegistry;
-    private final Clock clock;
 
-    public InvoiceIssuingService(PolicySet<InvoiceIssuingContext> issuancePolicies, InvoiceIssuingContextLoader contextLoader,
-                        ChargeAdjustmentApplier adjustmentApplier, InvoiceRepository invoiceRepository,
-                        ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                        PlatformTransactionManager transactionManager, MeterRegistry meterRegistry, Clock clock) {
-        this.issuancePolicies = issuancePolicies;
+    public InvoiceIssuingService(InvoiceIssuingContextLoader contextLoader, PolicySet<InvoiceIssuingContext> issuingPolicies,
+                                         BillingOperationPipeline pipeline, InvoiceIssuingOperation operation, InvoiceRepository invoiceRepository,
+                                         PlatformTransactionManager transactionManager, MeterRegistry meterRegistry) {
         this.contextLoader = contextLoader;
-        this.adjustmentApplier = adjustmentApplier;
+        this.issuingPolicies = issuingPolicies;
+        this.pipeline = pipeline;
+        this.operation = operation;
         this.invoiceRepository = invoiceRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.ownTransaction = new TransactionTemplate(transactionManager);
         this.ownTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
         this.meterRegistry = meterRegistry;
-        this.clock = clock;
     }
 
     public InvoiceIssuingResult issueInvoiceInNewTransaction(InvoiceIssuingRequest request) {
         try {
-            return ownTransaction.execute(status -> doIssue(request));
+            return ownTransaction.execute(status -> issueInvoice(request));
         } catch (DataIntegrityViolationException e) {
-            if (!isDuplicateViolation(e)) {
+            if (!violatesChargeKeyUniqueness(e)) {
                 throw e;
             }
-            log.warn("Cargo duplicado detectado por la base: tipo={}, periodo={}, motivo={}", request.feeType(), request.period(), request.reason());
-            return new InvoiceIssuingResult.InvoiceAlreadyIssued(null);
+            log.warn("Cargo duplicado detectado por la base: tipo={}, periodo={}, motivo={}", request.feeType(), request.period(), request.issuingReason());
+            return invoiceRepository.findLiveInvoiceIdByChargeKey(request.chargeKey().value())
+                    .<InvoiceIssuingResult>map(InvoiceIssuingResult.InvoiceAlreadyIssued::new)
+                    .orElseThrow(() -> e);
         }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public InvoiceIssuingResult issueInvoiceInCallerTransaction(InvoiceIssuingRequest request) {
         try {
-            return doIssue(request);
+            return issueInvoice(request);
         } catch (DataIntegrityViolationException e) {
-            if (isDuplicateViolation(e)) {
-                throw new DuplicateChargeException(request.feeType() + " " + request.period());
+            if (!violatesChargeKeyUniqueness(e)) {
+                throw e;
             }
+            duplicateChargeEvaluation().throwIfDenied(DuplicateInvoiceChargeException::new);
             throw e;
         }
     }
 
-    private InvoiceIssuingResult doIssue(InvoiceIssuingRequest request) {
-        InvoiceIssuingRequest locked = lockTarget(request);
-        LocalDate today = LocalDate.now(clock);
-        InvoiceIssuingContext context = contextLoader.load(locked, today);
-        PolicyEvaluationResult evaluation = issuancePolicies.evaluateRulesUntilFirstViolation(context);
+    private InvoiceIssuingResult issueInvoice(InvoiceIssuingRequest request) {
+        InvoiceIssuingContext context = contextLoader.loadContextLockingRecipient(request);
+        PolicyEvaluationResult evaluation = issuingPolicies.evaluateRulesUntilFirstViolation(context);
         if (!evaluation.allowed()) {
-            if (context.alreadyIssued() && evaluation.firstDenial().map(v -> "ALREADY_ISSUED".equals(v.code())).orElse(false)) {
-                log.info("Cargo ya emitido: factura={}, tipo={}, periodo={}, motivo={}", context.existingInvoiceId(), request.feeType(), request.period(), request.reason());
-                return new InvoiceIssuingResult.InvoiceAlreadyIssued(context.existingInvoiceId());
-            }
-            log.warn("Cargo rechazado: tipo={}, periodo={}, motivo={}, codigos={}", request.feeType(), request.period(), request.reason(), evaluation.describeDenials());
-            evaluation.denials().forEach(v -> meterRegistry.counter("billing_charge_rejected_total", "reason", request.reason().name(), "code", v.code()).increment());
-            return new InvoiceIssuingResult.InvoiceIssuingRejected(evaluation);
+            return resultOfRejection(context, evaluation);
         }
-        if (context.amount() == null) {
-            throw new PriceRevisionNotFoundException("No PriceRevision found for " + request.feeType() + " " + request.target().getClass().getSimpleName());
+        InvoiceIssuingResult.InvoiceIssued issued = pipeline.runOperation(operation, context)
+                .resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException("Invoice issuing does not wait for authorization: " + requestId));
+        log.info("Factura emitida: factura={}, numero={}, tipo={}, periodo={}, vencimiento={}, motivo={}", issued.invoice().getId(),
+                issued.invoice().getInvoiceNumber().value(), issued.invoice().getInvoiceType(), request.period(), request.dueDate(), request.issuingReason());
+        meterRegistry.counter("billing_invoice_issued_total", "reason", request.issuingReason().name(), "invoiceType", request.invoiceType().name()).increment();
+        return issued;
+    }
+
+    private InvoiceIssuingResult resultOfRejection(InvoiceIssuingContext context, PolicyEvaluationResult evaluation) {
+        InvoiceIssuingRequest request = context.request();
+        boolean alreadyIssued = context.chargeKeyAlreadyUsed()
+                && evaluation.firstDenial().map(verdict -> ALREADY_ISSUED_CODE.equals(verdict.code())).orElse(false);
+        if (alreadyIssued) {
+            log.info("Cargo ya emitido: factura={}, tipo={}, periodo={}, motivo={}", context.facts().existingInvoiceId(), request.feeType(), request.period(),
+                    request.issuingReason());
+            return new InvoiceIssuingResult.InvoiceAlreadyIssued(context.facts().existingInvoiceId());
         }
-        Invoice invoice = invoiceRepository.saveAndFlush(Invoice.issue(draftOf(context), today));
-        adjustmentApplier.apply(invoice, context);
-        log.info("Factura emitida: factura={}, tipo={}, periodo={}, vencimiento={}, motivo={}, priceRevision={}", invoice.getId(), invoice.getFeeType(),
-                invoice.getPeriod(), invoice.getDueDate(), request.reason(), invoice.getPriceRevision() == null ? null : invoice.getPriceRevision().getId());
-        meterRegistry.counter("billing_charge_issued_total", "reason", request.reason().name(), "feeType", request.feeType().name()).increment();
-        return new InvoiceIssuingResult.InvoiceIssued(invoice);
+        log.warn("Cargo rechazado: tipo={}, periodo={}, motivo={}, codigos={}", request.feeType(), request.period(), request.issuingReason(),
+                evaluation.describeDenials());
+        evaluation.denials().forEach(verdict -> meterRegistry.counter("billing_invoice_rejected_total", "reason", request.issuingReason().name(),
+                "code", verdict.code()).increment());
+        return new InvoiceIssuingResult.InvoiceIssuingRejected(evaluation);
     }
 
-    private InvoiceDraft draftOf(InvoiceIssuingContext context) {
-        InvoiceIssuingRequest r = context.request();
-        var program = r.target() instanceof InvoiceRecipient.ProgramEnrollmentRecipient t ? t.enrollment() : null;
-        var course = r.target() instanceof InvoiceRecipient.CourseEnrollmentRecipient t ? t.enrollment() : null;
-        return new InvoiceDraft(program, course, r.selection(), r.feeType(), r.period(), r.dueDate(), context.amount(), r.reason(),
-                context.priceRevision(), r.templateId(), r.slot(), r.description(), r.subject(), r.examBoardRegistration());
+    private PolicyEvaluationResult duplicateChargeEvaluation() {
+        return new PolicyEvaluationResult(List.of(PolicyVerdict.deny("ChargeKeyNotAlreadyUsedPolicy", ALREADY_ISSUED_CODE, "El cargo ya fue emitido")));
     }
 
-    private InvoiceIssuingRequest lockTarget(InvoiceIssuingRequest request) {
-        return switch (request.target()) {
-            case InvoiceRecipient.ProgramEnrollmentRecipient t -> withTarget(request, new InvoiceRecipient.ProgramEnrollmentRecipient(
-                    programEnrollmentRepository.findByIdForUpdate(t.enrollment().getId()).orElseThrow()));
-            case InvoiceRecipient.CourseEnrollmentRecipient t -> withTarget(request, new InvoiceRecipient.CourseEnrollmentRecipient(
-                    courseEnrollmentRepository.findByIdForUpdate(t.enrollment().getId()).orElseThrow()));
-            default -> request;
-        };
-    }
-
-    private InvoiceIssuingRequest withTarget(InvoiceIssuingRequest r, InvoiceRecipient target) {
-        return new InvoiceIssuingRequest(target, r.feeType(), r.period(), r.dueDate(), r.reason(), r.selection(), r.templateId(), r.slot(), r.entry(),
-                r.explicitAmount(), r.description(), r.subject(), r.examBoardRegistration());
-    }
-
-    private static boolean isDuplicateViolation(DataIntegrityViolationException e) {
+    private static boolean violatesChargeKeyUniqueness(DataIntegrityViolationException e) {
         for (Throwable cause = e; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && UNIQUE_VIOLATION.equals(sql.getSQLState())) {
+            if (cause instanceof SQLException sql && UNIQUE_VIOLATION.equals(sql.getSQLState())
+                    && sql.getMessage() != null && sql.getMessage().contains(CHARGE_KEY_CONSTRAINT)) {
                 return true;
             }
             if (cause.getCause() == cause) {

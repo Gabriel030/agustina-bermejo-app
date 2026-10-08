@@ -34,7 +34,7 @@ import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.identity.exception.StudentNotConfirmedException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;

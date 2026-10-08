@@ -1,9 +1,10 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
+import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
@@ -11,7 +12,7 @@ import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.identity.entity.Person;
@@ -28,6 +29,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     private static final Logger log = LoggerFactory.getLogger(ProcessMpWebhookService.class);
 
     private final InvoiceRepository invoiceRepository;
+    private final StudentRepository studentRepository;
     private final PaymentRepository paymentRepository;
     private final RegisterPaymentUseCase registerPaymentUseCase;
     private final MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher;
@@ -35,11 +37,13 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
 
     public ProcessMpWebhookService(
             InvoiceRepository invoiceRepository,
+            StudentRepository studentRepository,
             PaymentRepository paymentRepository,
             RegisterPaymentUseCase registerPaymentUseCase,
             MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher,
             MpWebhookSignatureVerifier signatureVerifier) {
         this.invoiceRepository = invoiceRepository;
+        this.studentRepository = studentRepository;
         this.paymentRepository = paymentRepository;
         this.registerPaymentUseCase = registerPaymentUseCase;
         this.mercadoPagoPaymentFetcher = mercadoPagoPaymentFetcher;
@@ -72,7 +76,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
 
-        if (invoice.getStatus() == InvoiceStatus.PAID) {
+        if (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
             log.warn("Webhook de Mercado Pago ignorado, la factura ya estaba pagada: pagoMp={}, factura={}", mpPaymentId, invoiceId);
             return;
         }
@@ -93,12 +97,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     }
 
     private Person resolveOwnerPerson(Invoice invoice) {
-        if (invoice.getCourseEnrollment() != null) {
-            return invoice.getCourseEnrollment().getStudent().getPerson();
-        }
-        if (invoice.getProgramEnrollment() != null) {
-            return invoice.getProgramEnrollment().getStudent().getPerson();
-        }
-        throw new IllegalStateException("Invoice sin enrollment asociado: " + invoice.getId());
+        Long studentId = invoiceRepository.findOwnerStudentIdByInvoiceId(invoice.getId())
+                .orElseThrow(() -> new IllegalStateException("Invoice sin alumno asociado: " + invoice.getId()));
+        return studentRepository.findById(studentId).orElseThrow().getPerson();
     }
 }

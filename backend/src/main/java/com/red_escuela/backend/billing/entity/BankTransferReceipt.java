@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -64,16 +65,7 @@ public class BankTransferReceipt {
     }
 
     public Person payer() {
-        if (uploadedBy != null) {
-            return uploadedBy;
-        }
-        if (invoice.getCourseEnrollment() != null) {
-            return invoice.getCourseEnrollment().getStudent().getPerson();
-        }
-        if (invoice.getProgramEnrollment() != null) {
-            return invoice.getProgramEnrollment().getStudent().getPerson();
-        }
-        return null;
+        return uploadedBy;
     }
 
     public boolean isPendingReview() {
@@ -83,7 +75,7 @@ public class BankTransferReceipt {
     public void approve(Person reviewer) {
         requirePendingReview();
         if (!invoice.isPayable()) {
-            throw new InvoiceNotPayableException(invoice.getId(), invoice.getStatus().name());
+            throw new InvoiceNotPayableException(invoice.getId(), invoice.getPaymentStatus().name());
         }
         markReviewed(BankTransferReceiptStatus.APPROVED, reviewer);
     }

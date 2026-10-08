@@ -1,56 +1,60 @@
 package com.red_escuela.backend.billing.service;
 
-import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustment;
-import com.red_escuela.backend.billing.entity.InvoiceAdjustmentType;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.billing.entity.PriceRevision;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDiscount;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class InvoiceQueryService {
+
     private final InvoiceRepository invoiceRepository;
+    private final InvoiceViewLoader invoiceViewLoader;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final PriceRevisionService priceRevisionService;
     private final Clock clock;
 
-    public InvoiceQueryService(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService,
-                                Clock clock) {
+    public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader, CourseEnrollmentRepository courseEnrollmentRepository,
+                               ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService, Clock clock) {
         this.invoiceRepository = invoiceRepository;
+        this.invoiceViewLoader = invoiceViewLoader;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.priceRevisionService = priceRevisionService;
         this.clock = clock;
     }
 
-    public List<Invoice> byCourse(Long courseEnrollmentId) {
-        return invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollmentId);
+    @Transactional(readOnly = true)
+    public List<InvoiceView> byCourse(Long courseEnrollmentId) {
+        return invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollmentId));
     }
 
-    public List<Invoice> byProgram(Long programEnrollmentId) {
-        return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId);
+    @Transactional(readOnly = true)
+    public List<InvoiceView> byProgram(Long programEnrollmentId) {
+        return invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId));
     }
 
     public CourseEnrollment courseBillable(Long courseEnrollmentId) {
@@ -63,93 +67,48 @@ public class InvoiceQueryService {
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
     }
 
-    public List<Invoice> byOwnCourse(Long studentId, Long courseEnrollmentId) {
+    @Transactional(readOnly = true)
+    public List<InvoiceView> byOwnCourse(Long studentId, Long courseEnrollmentId) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, courseEnrollmentId);
         }
-        return invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollmentId);
+        return byCourse(courseEnrollmentId);
     }
 
     @Transactional(readOnly = true)
-    public PriceBreakdownResponse priceBreakdown(Long invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-        List<PriceBreakdownLineResponse> lines = invoice.getAdjustments().stream()
-                .sorted((a, b) -> Integer.compare(pipelineOrder(a.getType()), pipelineOrder(b.getType())))
-                .map(this::toLine)
-                .toList();
-        List<PriceBreakdownPaymentResponse> payments = invoice.getAllocations().stream()
-                .map(this::toPayment)
-                .toList();
-        return new PriceBreakdownResponse(
-                invoice.getId(), invoice.getFeeType().name(), invoice.getPeriod().toString(), invoice.getBaseAmount(),
-                resolvePriceRevisionDescription(invoice),
-                lines, invoice.getAmountDue(), payments, invoice.getRemainingBalance(), invoice.getStatus().name());
-    }
-
-    private String resolvePriceRevisionDescription(Invoice invoice) {
-        if (invoice.getCourseEnrollment() != null) {
-            return priceRevisionService.findRevisionForCourse(
-                            invoice.getCourseEnrollment().getCourse().getId(), invoice.getFeeType(), invoice.getDueDate())
-                    .map(PriceRevision::getDescription).orElse(null);
-        }
-        if (invoice.getProgramEnrollment() != null) {
-            return priceRevisionService.findRevisionForProgram(
-                            invoice.getProgramEnrollment().getProgram().getId(), invoice.getFeeType(), invoice.getDueDate())
-                    .map(PriceRevision::getDescription).orElse(null);
-        }
-        return null;
-    }
-
-    public PriceBreakdownResponse ownPriceBreakdown(Long studentId, Long invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-        Long ownerId = invoice.getCourseEnrollment() != null ? invoice.getCourseEnrollment().getStudent().getId()
-                : invoice.getProgramEnrollment() != null ? invoice.getProgramEnrollment().getStudent().getId()
-                : null;
-        if (!studentId.equals(ownerId)) {
-            throw new InvoiceNotFoundException(invoiceId);
-        }
-        return priceBreakdown(invoiceId);
-    }
-
-    private int pipelineOrder(InvoiceAdjustmentType type) {
-        return switch (type) {
-            case SCHOLARSHIP -> 0;
-            case PROMOTION -> 1;
-            case DISCOUNT, WAIVE_DEBT -> 2;
-            case SURCHARGE -> 3;
-        };
-    }
-
-    private PriceBreakdownLineResponse toLine(InvoiceAdjustment adjustment) {
-        Person appliedBy = adjustment.getAppliedBy();
-        String source = appliedBy != null ? appliedBy.getName() + " " + appliedBy.getLastname() : "Sistema (mora automática)";
-        String humanLabel = adjustment.getReason();
-        if (adjustment.getType() == InvoiceAdjustmentType.PROMOTION) {
-            humanLabel = humanLabel + " — " + describeEnablingSelection(adjustment.getInvoice().getPaymentPlanSelection());
-        }
-        return new PriceBreakdownLineResponse(
-                adjustment.getType().name(), adjustment.signedAmount(), humanLabel, source, adjustment.getAppliedAt());
-    }
-
-    private String describeEnablingSelection(PaymentPlanSelection selection) {
-        return "plan \"" + selection.getPaymentPlanOption().getDescription() + "\" elegido " + selection.getEffectiveFrom();
-    }
-
-    private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
-        return new PriceBreakdownPaymentResponse(
-                allocation.getPayment().getId(), allocation.getAmountApplied(),
-                allocation.getPayment().getMethod().name(), allocation.getPayment().getPaidAt());
-    }
-
-    public List<Invoice> byOwnProgram(Long studentId, Long programEnrollmentId) {
+    public List<InvoiceView> byOwnProgram(Long studentId, Long programEnrollmentId) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, programEnrollmentId);
         }
-        return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollmentId);
+        return byProgram(programEnrollmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public PriceBreakdownResponse priceBreakdown(Long invoiceId) {
+        Invoice invoice = invoiceRepository.findInvoiceWithLinesById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        InvoiceLine line = invoice.getPrimaryLine();
+        List<PriceBreakdownLineResponse> lines = invoice.getLines().stream()
+                .filter(l -> l.getDiscount() != null)
+                .map(l -> toLine(l.getDiscount()))
+                .toList();
+        List<PriceBreakdownPaymentResponse> payments = invoiceViewLoader.loadInvoiceView(invoice).allocations().stream().map(this::toPayment).toList();
+        return new PriceBreakdownResponse(
+                invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getAmounts().linesTotal().value(),
+                resolvePriceRevisionDescription(invoice),
+                lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice));
+    }
+
+    @Transactional(readOnly = true)
+    public PriceBreakdownResponse ownPriceBreakdown(Long studentId, Long invoiceId) {
+        Long ownerId = invoiceRepository.findOwnerStudentIdByInvoiceId(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+        if (!studentId.equals(ownerId)) {
+            throw new InvoiceNotFoundException(invoiceId);
+        }
+        return priceBreakdown(invoiceId);
     }
 
     public boolean hasDebt(Long studentId) {
@@ -181,12 +140,42 @@ public class InvoiceQueryService {
         return false;
     }
 
+    private String resolvePriceRevisionDescription(Invoice invoice) {
+        InvoiceLine line = invoice.getPrimaryLine();
+        if (invoice.findCourseEnrollmentId().isPresent()) {
+            CourseEnrollment enrollment = courseEnrollmentRepository.findById(invoice.findCourseEnrollmentId().get()).orElse(null);
+            return enrollment == null ? null : priceRevisionService.findRevisionForCourse(enrollment.getCourse().getId(), line.getFeeType(), invoice.getDueDate())
+                    .map(PriceRevision::getDescription).orElse(null);
+        }
+        if (invoice.findProgramEnrollmentId().isPresent()) {
+            ProgramEnrollment enrollment = programEnrollmentRepository.findById(invoice.findProgramEnrollmentId().get()).orElse(null);
+            return enrollment == null ? null : priceRevisionService.findRevisionForProgram(enrollment.getProgram().getId(), line.getFeeType(), invoice.getDueDate())
+                    .map(PriceRevision::getDescription).orElse(null);
+        }
+        return null;
+    }
+
+    private static String statusNameOf(Invoice invoice) {
+        return invoice.getDocumentStatus() == InvoiceDocumentStatus.DISCARDED ? "CANCELLED" : invoice.getPaymentStatus().name();
+    }
+
+    private PriceBreakdownLineResponse toLine(InvoiceDiscount discount) {
+        Money amount = discount.getDiscountAmount().value();
+        return new PriceBreakdownLineResponse(discount.getDiscountType().name(), Money.zero(amount.currency()).minus(amount), discount.getConcept(), "Sistema", null);
+    }
+
+    private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
+        return new PriceBreakdownPaymentResponse(
+                allocation.getPayment().getId(), allocation.getAmountApplied(),
+                allocation.getPayment().getMethod().name(), allocation.getPayment().getPaidAt());
+    }
+
     private boolean hasAnyUnpaidInstallment(List<Invoice> invoices) {
-        return invoices.stream().anyMatch(i -> i.getStatus() == InvoiceStatus.PENDING || i.getStatus() == InvoiceStatus.OVERDUE);
+        return invoices.stream().anyMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PENDING || i.getPaymentStatus() == InvoicePaymentStatus.OVERDUE);
     }
 
     private boolean isOverdue(Invoice invoice, LocalDate today) {
-        return invoice.getStatus() == InvoiceStatus.OVERDUE
-                || (invoice.getStatus() == InvoiceStatus.PENDING && invoice.getDueDate().isBefore(today));
+        return invoice.getPaymentStatus() == InvoicePaymentStatus.OVERDUE
+                || (invoice.getPaymentStatus() == InvoicePaymentStatus.PENDING && invoice.getDueDate().isBefore(today));
     }
 }

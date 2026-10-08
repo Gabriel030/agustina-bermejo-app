@@ -1,6 +1,5 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
@@ -31,10 +30,6 @@ public class RejectProgramEnrollmentApplicationService implements RejectProgramE
         }
         if (receipt.isPendingReview()) {
             receipt.reject(command.decidedBy(), command.reason());
-        }
-        Invoice invoice = receipt.getInvoice();
-        if (invoice.isPayable()) {
-            invoice.cancel(command.decidedBy(), command.reason());
         }
     }
 }

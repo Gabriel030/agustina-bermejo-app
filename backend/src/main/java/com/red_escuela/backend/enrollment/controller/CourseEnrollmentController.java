@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,7 +65,9 @@ public class CourseEnrollmentController {
     @PostMapping("/course-enrollments/{id}/invoices/ad-hoc")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMINISTRATIVO')")
-    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request) {
-        return InvoiceResponse.from(createAdHocInvoiceUseCase.create(id, request));
+    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request,
+                                          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return InvoiceResponse.from(idempotencyKey == null || idempotencyKey.isBlank()
+                ? createAdHocInvoiceUseCase.create(id, request) : createAdHocInvoiceUseCase.create(id, request, idempotencyKey));
     }
 }

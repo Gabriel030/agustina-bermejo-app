@@ -1,9 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.ReinstateEnrollmentRequest;
-import com.red_escuela.backend.enrollment.entity.ReinstatementDecision;
-import com.red_escuela.backend.identity.service.CurrentPersonService;
-import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,33 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/students/{studentId}/reenrollment")
 public class ReenrollmentController {
 
-    private final StudentDebtResolutionService studentDebtResolutionService;
-    private final CurrentPersonService currentPersonService;
-
-    public ReenrollmentController(StudentDebtResolutionService studentDebtResolutionService, CurrentPersonService currentPersonService) {
-        this.studentDebtResolutionService = studentDebtResolutionService;
-        this.currentPersonService = currentPersonService;
-    }
-
     @PostMapping("/program/{programId}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('DIRECTOR') or (#request.decision().name() == 'SETTLE' and hasRole('ADMINISTRATIVO'))")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public void reinstateForProgram(@PathVariable Long studentId, @PathVariable Long programId,
                                      @Valid @RequestBody ReinstateEnrollmentRequest request) {
-        if (request.decision() == ReinstatementDecision.WAIVE) {
-            studentDebtResolutionService.waiveDebtForProgram(
-                    studentId, programId, "Waived on reinstatement", currentPersonService.resolveCurrentPerson());
-        }
     }
 
     @PostMapping("/course/{courseId}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('DIRECTOR') or (#request.decision().name() == 'SETTLE' and hasRole('ADMINISTRATIVO'))")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public void reinstateForCourse(@PathVariable Long studentId, @PathVariable Long courseId,
                                     @Valid @RequestBody ReinstateEnrollmentRequest request) {
-        if (request.decision() == ReinstatementDecision.WAIVE) {
-            studentDebtResolutionService.waiveDebtForCourse(
-                    studentId, courseId, "Waived on reinstatement", currentPersonService.resolveCurrentPerson());
-        }
     }
 }

@@ -4,7 +4,7 @@ import java.time.Clock;
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Scholarship;
 import com.red_escuela.backend.billing.exception.ScholarshipExceedsCohortSpanException;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
@@ -58,7 +58,7 @@ public class ScholarshipGrantSupport {
                 .ifPresent(invoice -> {
                     scholarship.consumeOne(invoice);
                     scholarshipRepository.save(scholarship);
-                    Money creditAmount = scholarship.getValue().applyTo(invoice.getBaseAmount());
+                    Money creditAmount = scholarship.getValue().applyTo(invoice.getAmounts().linesTotal().value());
                     if (!creditAmount.isZero() && !creditAmount.isNegative()) {
                         var creditNote = creditNoteService.createFor(student, creditAmount, CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP,
                                 scholarship.getReason(), scholarship.getGrantedBy());

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
+import com.red_escuela.backend.billing.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 public class MeInvoiceController {
 
     private final InvoiceQueryService invoiceQueryService;
+    private final BankTransferReceiptResponseAssembler receiptResponseAssembler;
     private final CurrentStudentService currentStudentService;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
@@ -51,8 +53,10 @@ public class MeInvoiceController {
                                 ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
                                 CreateMpPreferenceUseCase createMpPreferenceUseCase,
                                 GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase,
-                                GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase) {
+                                GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase,
+                                BankTransferReceiptResponseAssembler receiptResponseAssembler) {
         this.invoiceQueryService = invoiceQueryService;
+        this.receiptResponseAssembler = receiptResponseAssembler;
         this.currentStudentService = currentStudentService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.findOwnPaymentReceiptsUseCase = findOwnPaymentReceiptsUseCase;
@@ -81,13 +85,13 @@ public class MeInvoiceController {
     @ResponseStatus(HttpStatus.CREATED)
     public BankTransferReceiptResponse uploadReceipt(@PathVariable Long id, @RequestPart MultipartFile comprobante) {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return BankTransferReceiptResponse.from(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
+        return receiptResponseAssembler.assembleBankTransferReceiptResponse(uploadPaymentReceiptUseCase.upload(id, studentId, comprobante));
     }
 
     @GetMapping("/bank-transfer-receipts")
     public List<BankTransferReceiptResponse> myReceipts() {
         Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return findOwnPaymentReceiptsUseCase.findOwn(studentId).stream().map(BankTransferReceiptResponse::from).toList();
+        return receiptResponseAssembler.assembleBankTransferReceiptResponses(findOwnPaymentReceiptsUseCase.findOwn(studentId));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

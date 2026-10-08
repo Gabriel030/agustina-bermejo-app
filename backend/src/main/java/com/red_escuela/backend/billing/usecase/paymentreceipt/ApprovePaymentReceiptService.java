@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
@@ -64,7 +64,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
 
         Invoice invoice = receipt.getInvoice();
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getRemainingBalance())),
+                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
                 PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
         receipt.setPayment(payment);
 
@@ -86,7 +86,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         courseEnrollmentApplicationRepository.save(application);
 
         Invoice invoice = application.getPaymentReceipt().getInvoice();
-        invoice.attachToEnrollment(enrollment);
+        invoice.assignInvoiceToCourseEnrollment(enrollment.getId());
         invoiceRepository.save(invoice);
     }
 

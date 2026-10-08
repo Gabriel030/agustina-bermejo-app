@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.service.InvoiceView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
@@ -12,14 +12,14 @@ public record EnrollmentBillingStatusResponse(String paymentStatus, LocalDateTim
                                               String enrollmentType, Long enrollmentId,
                                               String productName, Long productId) {
 
-    public static EnrollmentBillingStatusResponse of(CourseEnrollment enrollment, List<Invoice> invoices) {
+    public static EnrollmentBillingStatusResponse of(CourseEnrollment enrollment, List<InvoiceView> invoices) {
         return new EnrollmentBillingStatusResponse(
                 enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
                 invoices.stream().map(InvoiceResponse::from).toList(),
                 "COURSE", enrollment.getId(), enrollment.getCourse().getName(), enrollment.getCourse().getId());
     }
 
-    public static EnrollmentBillingStatusResponse of(ProgramEnrollment enrollment, List<Invoice> invoices) {
+    public static EnrollmentBillingStatusResponse of(ProgramEnrollment enrollment, List<InvoiceView> invoices) {
         return new EnrollmentBillingStatusResponse(
                 enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
                 invoices.stream().map(InvoiceResponse::from).toList(),

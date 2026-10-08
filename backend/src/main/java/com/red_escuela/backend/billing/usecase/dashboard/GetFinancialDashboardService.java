@@ -2,8 +2,8 @@ package com.red_escuela.backend.billing.usecase.dashboard;
 
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
@@ -43,8 +43,7 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
     @Override
     @Transactional(readOnly = true)
     public FinancialDashboardResponse execute() {
-        Set<Long> debtorIds = new HashSet<>(invoiceRepository.findCourseStudentIdsByStatus(InvoiceStatus.OVERDUE));
-        debtorIds.addAll(invoiceRepository.findProgramStudentIdsByStatus(InvoiceStatus.OVERDUE));
+        Set<Long> debtorIds = new HashSet<>(invoiceRepository.findStudentIdsByPaymentStatus(InvoicePaymentStatus.OVERDUE));
         int studentsInDebt = debtorIds.size();
 
         Set<Long> activeStudentIds = new HashSet<>(courseEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_COURSE_STATUSES));
@@ -53,9 +52,9 @@ public class GetFinancialDashboardService implements GetFinancialDashboardUseCas
         int studentsUpToDate = activeStudentIds.size();
 
         YearMonth currentPeriod = YearMonth.now(clock);
-        Map<Currency, Money> totalDebt = byCurrency(invoiceRepository.sumOutstandingBalanceByStatus(InvoiceStatus.OVERDUE.name()));
-        Map<Currency, Money> monthlyProjected = byCurrency(invoiceRepository.sumAmountDueByPeriod(currentPeriod.atDay(1)));
-        Map<Currency, Money> monthlyCollected = byCurrency(invoiceRepository.sumAllocatedByPeriod(currentPeriod.atDay(1)));
+        Map<Currency, Money> totalDebt = byCurrency(invoiceRepository.sumOutstandingAmountByPaymentStatus(InvoicePaymentStatus.OVERDUE.name()));
+        Map<Currency, Money> monthlyProjected = byCurrency(invoiceRepository.sumTotalByPeriod(currentPeriod.atDay(1)));
+        Map<Currency, Money> monthlyCollected = byCurrency(invoiceRepository.sumPaidByPeriod(currentPeriod.atDay(1)));
 
         List<FinancialDashboardResponse.CurrencyTotals> totals = Arrays.stream(Currency.values())
                 .filter(currency -> currency == Currency.ARS || totalDebt.containsKey(currency)
