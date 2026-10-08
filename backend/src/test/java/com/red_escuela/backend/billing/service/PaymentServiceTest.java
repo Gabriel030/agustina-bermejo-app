@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
@@ -53,6 +54,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -153,7 +155,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoiceStatus status, YearMonth period) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(feeType);
         invoice.setPeriod(period);
@@ -174,7 +176,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
                 PaymentMethod.CASH, false, null, null, null, null), admin);
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         assertThat(payment.getAllocations()).hasSize(1);
     }
 
@@ -205,7 +207,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         assertThat(payment.getStatus().name()).isEqualTo("REJECTED");
         assertThat(payment.getAllocations()).isEmpty();
         Invoice reloaded = invoiceRepository.findById(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(reloaded).isPending();
     }
 
     @Test
@@ -232,9 +234,9 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 new RegisterPaymentRequest(allocations, PaymentMethod.TRANSFER, false, null, null, null, null), admin);
 
         assertThat(payment.getAllocations()).hasSize(6);
-        assertThat(invoiceRepository.findById(enrollmentFee.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(enrollmentFee.getId()).orElseThrow()).isPaid();
         installments.forEach(invoice ->
-                assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID));
+                assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid());
     }
 
     @Test
@@ -316,7 +318,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 List.of(new PaymentAllocationRequest(invoice.getId(), ars(1000))),
                 PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         CreditNote reloaded = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).get(0);
         assertThat(reloaded.getStatus().name()).isEqualTo("PARTIALLY_CONSUMED");
         assertThat(payment.getAllocations()).hasSize(1);
@@ -335,7 +337,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin))
                 .isInstanceOf(InsufficientCreditBalanceException.class);
 
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
     }
 
     private CourseEnrollment persistCourseEnrollmentWithStanding(Student student, EnrollmentPaymentStatus standing) {

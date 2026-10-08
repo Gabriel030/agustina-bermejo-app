@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -144,13 +145,13 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(java.time.YearMonth.from(dueDate));
         invoice.setDueDate(dueDate);
         invoice.setBaseAmount(ars(100));
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         entityManager.persist(invoice);
     }
 

@@ -99,7 +99,7 @@ class ProgramMonthlyInvoicePlannerTest {
             YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
             return new ProgramInvoicePlanningFacts(1L, month, today, active, suspended, completed, paused, onlyFinals, entry, cadence, hasPlan, cycles,
                     fees.stream().map(p -> new IssuedEnrollmentFee(null, null, null, p, InvoiceStatus.PENDING, p.atDay(1))).toList(), installments, windows,
-                    null, null, null, cadence == PaymentPlanCadence.ANNUAL_UPFRONT ? month : null, cadence == PaymentPlanCadence.ANNUAL_UPFRONT ? 10 : null);
+                    null, null, null);
         }
     }
 
@@ -154,23 +154,22 @@ class ProgramMonthlyInvoicePlannerTest {
     }
 
     @Test
+    @Tag("D-131")
+    void anAnnualUpfrontSelectionPlansNothingAndDecidesThePlanIsNotMonthly() {
+        ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
+        MonthlyInvoicePlan plan = plan(Builder.base(t).cadence(PaymentPlanCadence.ANNUAL_UPFRONT), ym(2026, 3));
+
+        assertThat(plan.charges()).filteredOn(c -> c.kind() == FeeType.MONTHLY_INSTALLMENT).isEmpty();
+        assertThat(plan.decisions()).extracting(InvoicePlanningDecision::code).contains("PLAN_NOT_MONTHLY").doesNotContain("ISSUE_UPFRONT_INSTALLMENT", "UPFRONT_WITHOUT_SCOPE");
+    }
+
+    @Test
     void onlyFinalsSuppressesInstallmentsAndEnrollmentFeesUnlessTheYearRequiresThem() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
         assertThat(plan(Builder.base(t).isOnlyFinals(), ym(2026, 3)).charges()).isEmpty();
 
         t.setRequireEnrollmentFeeForFinalExamOnlyStudents(true);
         assertThat(plan(Builder.base(t).isOnlyFinals(), ym(2026, 3)).charges()).extracting(PlannedInvoice::kind).containsExactly(FeeType.ENROLLMENT_FEE);
-    }
-
-    @Test
-    void upfrontStudentsReceiveTheEnrollmentFeeAndEveryInstallmentOfTheirScopeTogether() {
-        MonthlyInvoicePlan plan = plan(Builder.base(template(1, 2026, 10, 1, 3, null)).cadence(PaymentPlanCadence.ANNUAL_UPFRONT), ym(2026, 3));
-
-        assertThat(plan.charges()).filteredOn(c -> c.kind() == FeeType.ENROLLMENT_FEE).hasSize(1);
-        assertThat(plan.charges()).filteredOn(c -> c.kind() == FeeType.MONTHLY_INSTALLMENT).hasSize(10).allMatch(PlannedInvoice::upfront);
-        assertThat(plan.charges()).filteredOn(c -> c.kind() == FeeType.MONTHLY_INSTALLMENT).extracting(PlannedInvoice::period)
-                .first().isEqualTo(ym(2026, 3));
-        assertThat(plan.decisions()).extracting(InvoicePlanningDecision::code).contains("ISSUE_UPFRONT_INSTALLMENT");
     }
 
     @Test
@@ -244,7 +243,7 @@ class ProgramMonthlyInvoicePlannerTest {
         YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 3), LocalDate.of(2026, 3, 1), true, false, false, false, false, null,
                 PaymentPlanCadence.MONTHLY, true, cycles, List.of(new IssuedEnrollmentFee(9L, 1L, 1, ym(2026, 3), InvoiceStatus.CANCELLED, LocalDate.of(2026, 3, 1))),
-                Set.of(), Map.of(), null, null, null, null, null);
+                Set.of(), Map.of(), null, null, null);
 
         MonthlyInvoicePlan plan = planner.planInvoicesForMonth(facts, InvoicePlanningScope.ENROLLMENT_FEE_ONLY);
 
@@ -262,7 +261,7 @@ class ProgramMonthlyInvoicePlannerTest {
                 new IssuedEnrollmentFee(2L, 1L, 2, ym(2026, 7), InvoiceStatus.PENDING, LocalDate.of(2026, 7, 1)));
         t.configureEnrollmentFees(2, 2, 8);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 9), LocalDate.of(2026, 9, 1), true, false, false, false, false, null,
-                PaymentPlanCadence.MONTHLY, true, cycles, issued, Set.of(), Map.of(), null, null, null, null, null);
+                PaymentPlanCadence.MONTHLY, true, cycles, issued, Set.of(), Map.of(), null, null, null);
 
         assertThat(planner.planInvoicesForMonth(facts, InvoicePlanningScope.ENROLLMENT_FEE_ONLY).charges()).isEmpty();
     }

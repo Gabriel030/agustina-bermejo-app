@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,9 +47,6 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         transactionTemplate.executeWithoutResult(status -> trigger.issueInvoicesForNewPaymentPlan(
                 entityManager.find(ProgramEnrollment.class, enrollmentId), month, today));
     }
-
-    @Autowired
-    private UpfrontRegularizationService regularizationService;
 
     private com.red_escuela.backend.shared.domain.Money firstFeeDue(Long enrollmentId) {
         return transactionTemplate.execute(status -> invoices(enrollmentId, FeeType.ENROLLMENT_FEE).get(0).getAmountDue());
@@ -125,44 +123,6 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         assertThat(fee.getIssueReason()).isEqualTo(InvoiceIssuingReason.MONTHLY_RUN);
         assertThat(fee.getAdjustments()).hasSize(1);
         assertThat(firstFeeDue(enrollment)).isEqualTo(ars(2500));
-    }
-
-    @Test
-    void t08t09t10UpfrontIssuesEveryInstallmentOfTheScopeTogetherAndTheJobNeverRepeatsThem() {
-        Career career = newCareer();
-        Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
-        today(date(2027, 3, 2));
-        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2027, 3), date(2027, 3, 2));
-        transactionTemplate.executeWithoutResult(status -> {
-            PaymentPlanOption option = entityManager.createQuery("select s.paymentPlanOption from PaymentPlanSelection s where s.programEnrollment.id = :id",
-                    PaymentPlanOption.class).setParameter("id", enrollment).getSingleResult();
-            option.setUpfrontDiscount(new MonetaryAdjustment.Proportional(Percentage.ofPoints(BigDecimal.TEN)));
-        });
-
-        planSelectionCharges(enrollment, YearMonth.of(2027, 3), date(2027, 3, 2));
-
-        List<Invoice> installments = loaded(enrollment, FeeType.MONTHLY_INSTALLMENT);
-        assertThat(installments).hasSize(10);
-        assertThat(installments.stream().map(Invoice::getPeriod).toList()).containsExactly(
-                YearMonth.of(2027, 3), YearMonth.of(2027, 4), YearMonth.of(2027, 5), YearMonth.of(2027, 6), YearMonth.of(2027, 7),
-                YearMonth.of(2027, 8), YearMonth.of(2027, 9), YearMonth.of(2027, 10), YearMonth.of(2027, 11), YearMonth.of(2027, 12));
-        assertThat(installments).allSatisfy(i -> {
-            assertThat(i.getIssueReason()).isEqualTo(InvoiceIssuingReason.UPFRONT);
-            assertThat(i.getDueDate()).isEqualTo(date(2027, 3, 12));
-            assertThat(i.getBaseAmount()).isEqualTo(ars(10000));
-            assertThat(i.getAdjustments()).hasSize(1);
-        });
-
-        newPrice(career, FeeType.MONTHLY_INSTALLMENT, 15000, date(2027, 3, 15));
-        runEveryMonth(YearMonth.of(2027, 4), YearMonth.of(2027, 5), () -> {
-        });
-        runEveryMonth(YearMonth.of(2027, 12), YearMonth.of(2027, 12), () -> {
-        });
-
-        List<Invoice> after = loaded(enrollment, FeeType.MONTHLY_INSTALLMENT);
-        assertThat(after).hasSize(10);
-        assertThat(after).allSatisfy(i -> assertThat(i.getBaseAmount()).isEqualTo(ars(10000)));
     }
 
     @Test
@@ -290,7 +250,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
                 .cancel(entityManager.find(com.red_escuela.backend.identity.entity.Person.class, career.directorId()), "Solicitud rechazada"));
 
         Invoice reloaded = invoiceRepository.findById(admission.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
+        assertThatInvoice(reloaded).isCancelled();
         assertThat(reloaded.getCancelledReason()).isEqualTo("Solicitud rechazada");
         assertThat(reloaded.getCancelledAt()).isNotNull();
     }
@@ -314,29 +274,6 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> invoiceRepository.findById(regularId).orElseThrow()
                 .attachToEnrollment(entityManager.find(ProgramEnrollment.class, enrollment)))).isInstanceOf(InvoiceAttachmentMismatchException.class);
         assertThat(invoiceRepository.findById(admission.getId()).orElseThrow().getProgramEnrollment().getId()).isEqualTo(enrollment);
-    }
-
-    @Test
-    void q3UpfrontRegularizationDryRunListsWithoutIssuingAndTheRealRunIssuesWithTenDaysDue() {
-        Career career = newCareer();
-        Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        Long cohort = newCohort(y27, CohortIntake.FIRST, date(2027, 3, 1));
-        today(date(2027, 3, 2));
-        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2027, 3), date(2027, 3, 2));
-
-        var dry = regularizationService.dryRun().stream().filter(c -> c.enrollmentId().equals(enrollment)).toList();
-
-        assertThat(dry).hasSize(1);
-        assertThat(dry.get(0).plannedCharges()).isEqualTo(10);
-        assertThat(dry.get(0).issuedCharges()).isZero();
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).isEmpty();
-
-        var real = regularizationService.regularize().stream().filter(c -> c.enrollmentId().equals(enrollment)).toList();
-
-        assertThat(real.get(0).issuedCharges()).isEqualTo(10);
-        List<Invoice> issued = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
-        assertThat(issued).hasSize(10).allSatisfy(i -> assertThat(i.getDueDate()).isEqualTo(date(2027, 3, 12)));
-        assertThat(regularizationService.dryRun().stream().filter(c -> c.enrollmentId().equals(enrollment))).isEmpty();
     }
 
     @Test

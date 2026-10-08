@@ -52,6 +52,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Set;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -285,7 +286,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Invoice entryFee = onlyFee(enrollment);
         assertThat(entryFee.getTemplateId()).isEqualTo(y27.templateId());
         assertThat(entryFee.getEnrollmentFeeSlot()).isEqualTo(1);
-        assertThat(entryFee.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(entryFee).isPaid();
         assertThat(amountDue(entryFee)).isEqualTo(ars(5000));
         assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2027, 3));
         assertInvariants(enrollment, y27);
@@ -319,7 +320,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         assertThatCode(() -> requireForTerm(enrollment, second)).doesNotThrowAnyException();
         List<Invoice> next = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> y28.templateId().equals(i.getTemplateId())).toList();
         assertThat(next).hasSize(1);
-        assertThat(next.get(0).getStatus()).isNotEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(next.get(0)).isNotPaid();
         assertInvariants(enrollment, y27, y28);
     }
 

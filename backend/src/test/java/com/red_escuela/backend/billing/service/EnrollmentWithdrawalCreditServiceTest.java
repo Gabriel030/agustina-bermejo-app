@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -129,7 +131,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status, YearMonth period) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(period);
@@ -149,7 +151,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
         courseEnrollmentService.withdraw(enrollment.getId());
 
         Invoice reloaded = invoiceRepository.findById(pendiente.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.CANCELLED);
+        assertThatInvoice(reloaded).isCancelled();
         assertThat(reloaded.getCancelledReason()).isNotBlank();
     }
 
@@ -210,7 +212,7 @@ class EnrollmentWithdrawalCreditServiceTest extends AbstractIntegrationTest {
 
         courseEnrollmentService.withdraw(enrollment.getId());
 
-        assertThat(invoiceRepository.findById(pendiente.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(pendiente.getId()).orElseThrow()).isPending();
         assertThat(creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId())).isEmpty();
     }
 }

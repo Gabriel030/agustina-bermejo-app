@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.entity.Course;
@@ -158,13 +159,13 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, int monthOffset) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.of(2030, 1).plusMonths(monthOffset));
         invoice.setDueDate(LocalDate.of(2030, 1, 10).plusMonths(monthOffset));
         invoice.setBaseAmount(amount);
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoiceRepository.save(invoice);
     }
 

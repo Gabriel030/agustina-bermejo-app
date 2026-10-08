@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -202,12 +203,12 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(Student student, Money amount) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(amount);
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoiceRepository.save(invoice);
     }
 

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.karate;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import java.math.BigDecimal;
@@ -229,7 +230,7 @@ public class KarateFixtures {
         var enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new IllegalStateException("ProgramEnrollment no encontrado: " + programEnrollmentId));
 
-        com.red_escuela.backend.billing.entity.Invoice invoice = new com.red_escuela.backend.billing.entity.Invoice();
+        com.red_escuela.backend.billing.entity.Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setProgramEnrollment(enrollment);
         invoice.setFeeType(com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT);
         java.time.LocalDate due = java.time.LocalDate.parse(dueDate);

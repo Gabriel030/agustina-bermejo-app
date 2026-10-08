@@ -13,6 +13,7 @@ import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSe
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -88,6 +88,6 @@ public class MeSectionEvaluationConfigController {
         boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
         return SectionEvaluationConfigResponse.from(
                 config, instructorAccess.listInstructors(sectionId),
-                isLead && config.isEditable(), isLead && config.canBeSubmitted(LocalDateTime.now()));
+                isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()));
     }
 }

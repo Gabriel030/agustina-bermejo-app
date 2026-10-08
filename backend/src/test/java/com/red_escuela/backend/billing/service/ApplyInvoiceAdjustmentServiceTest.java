@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -42,6 +43,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -120,7 +122,7 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = courseEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
@@ -146,7 +148,7 @@ class ApplyInvoiceAdjustmentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvoiceNotPayableException.class);
 
         Invoice reloaded = invoiceRepository.findByIdWithAdjustments(invoice.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(reloaded).isPaid();
         assertThat(reloaded.getAdjustments()).isEmpty();
     }
 

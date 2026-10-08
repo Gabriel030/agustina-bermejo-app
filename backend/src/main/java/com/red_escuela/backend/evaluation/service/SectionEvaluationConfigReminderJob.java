@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.notification.SectionEvaluationConfigReminderEvent;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class SectionEvaluationConfigReminderJob {
     @SchedulerLock(name = "SectionEvaluationConfigReminderJob", lockAtMostFor = "PT30M")
     @Transactional
     public void sendReminders() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = ApplicationTime.today();
         log.info("Recordatorios de configuración de evaluación iniciados: fecha={}", today);
         long start = System.currentTimeMillis();
         int sent = 0;

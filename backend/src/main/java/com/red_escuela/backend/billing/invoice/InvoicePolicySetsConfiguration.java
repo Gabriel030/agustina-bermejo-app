@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import com.red_escuela.backend.billing.invoice.policy.AnnualUpfrontAvailableForProgramPolicy;
+import com.red_escuela.backend.billing.invoice.policy.PaymentPlanChoice;
 import com.red_escuela.backend.billing.invoice.policy.DueDateNotBeforeIssueDatePolicy;
 import com.red_escuela.backend.billing.invoice.policy.EnrollmentFeeSlotRequiredPolicy;
 import com.red_escuela.backend.billing.invoice.policy.EnrollmentFeeSlotWithinTemplateCountPolicy;
@@ -27,5 +29,10 @@ public class InvoicePolicySetsConfiguration {
                 new NotAlreadyIssuedPolicy(),
                 new EnrollmentFeeSlotWithinTemplateCountPolicy());
         return PolicySet.named("INVOICE_ISSUING", ordered);
+    }
+
+    @Bean
+    public PolicySet<PaymentPlanChoice> paymentPlanSelectionPolicySet() {
+        return PolicySet.named("PAYMENT_PLAN_SELECTION", List.of(new AnnualUpfrontAvailableForProgramPolicy()));
     }
 }

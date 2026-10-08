@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static com.red_escuela.backend.shared.domain.TestMoney.usd;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,9 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class InvoiceMoneyTest {
 
     private Invoice pendingInvoice(com.red_escuela.backend.shared.domain.Money base) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setBaseAmount(base);
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoice;
     }
 
@@ -32,7 +34,7 @@ class InvoiceMoneyTest {
         assertThat(invoice.getAdjustments()).singleElement()
                 .satisfies(adjustment -> assertThat(adjustment.signedAmount()).isEqualTo(ars("4800.00")));
         assertThat(invoice.getRemainingBalance()).isEqualTo(ars("52800.00"));
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
+        assertThatInvoice(invoice).isOverdue();
     }
 
     @Test

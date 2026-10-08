@@ -67,6 +67,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
 
+## Momento PAYMENT_PLAN_SELECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AnnualUpfrontAvailableForProgramPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE | D-131, D-191 |
+
 ## Momento YEAR_BILLING_CONFIGURATION
 
 | Orden | Policy | Códigos de violación | Decisiones |

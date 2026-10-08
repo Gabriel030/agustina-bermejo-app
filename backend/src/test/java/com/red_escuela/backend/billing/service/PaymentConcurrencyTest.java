@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
@@ -49,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -128,13 +130,13 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount) {
-        Invoice invoice = new Invoice();
+        Invoice invoice = BillingTestFixtures.invoice().build();
         invoice.setCourseEnrollment(enrollment);
         invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
         invoice.setPeriod(YearMonth.now());
         invoice.setDueDate(LocalDate.now());
         invoice.setBaseAmount(amount);
-        invoice.setStatus(InvoiceStatus.PENDING);
+        BillingTestFixtures.markInvoiceAsPending(invoice);
         return invoiceRepository.save(invoice);
     }
 
@@ -182,7 +184,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
 
         assertThat(exitos).isEqualTo(1);
         assertThat(rechazosPorSaldo).isEqualTo(1);
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
         assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(10000));
@@ -224,7 +226,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
 
         assertThat(exitos).isEqualTo(1);
         assertThat(rechazosPorSaldo).isEqualTo(1);
-        assertThat(invoiceRepository.findById(invoice.getId()).orElseThrow().getStatus()).isEqualTo(InvoiceStatus.PENDING);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
         assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(600));

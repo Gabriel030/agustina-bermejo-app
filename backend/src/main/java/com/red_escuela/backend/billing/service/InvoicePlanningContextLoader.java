@@ -102,12 +102,10 @@ public class InvoicePlanningContextLoader {
             entrySlot = YearCycle.of(cohort.getTemplate(), YearMonth.from(cohort.getCursadaStart()).getYear()).slotOf(YearMonth.from(cohort.getCursadaStart()));
             cursadaStart = cohort.getCursadaStart();
         }
-        boolean upfront = selection != null && cadence == PaymentPlanCadence.ANNUAL_UPFRONT;
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 cadence, !selections.isEmpty(),
                 cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList),
-                entryTemplateId, entrySlot, cursadaStart,
-                upfront ? selection.getEffectiveFrom() : null, upfront ? selection.getScopeMonths() : null);
+                entryTemplateId, entrySlot, cursadaStart);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
 
