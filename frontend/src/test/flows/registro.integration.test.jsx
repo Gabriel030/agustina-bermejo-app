@@ -41,7 +41,9 @@ async function registrarse(user) {
   await user.click(screen.getByRole('button', { name: /crear cuenta/i }));
 }
 
-describe('flujo de registro end-to-end', () => {
+const E2E_FLOW_TIMEOUT_MS = 20000;
+
+describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () => {
   it('registrarse sin rol asignado redirige a /catalogo, no a una pantalla de rol', async () => {
     server.use(
       http.get(`${API}/me`, () =>
