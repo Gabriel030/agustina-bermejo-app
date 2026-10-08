@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.shared.domain.Currency;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +30,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
 
     private static final LocalDate DAY = LocalDate.of(2027, 3, 10);
+
+    private BillingInvariantChecker invariants;
+
+    @BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = BillingInvariantChecker.startingNow(jdbc);
+    }
 
     private static final class Outcome {
         Object value;
@@ -81,7 +89,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
         assertThat(entries).extracting(CurrentAccountEntry::getSequenceNumber).containsExactly(1L, 2L);
         assertThat(entries.get(1).getRunningBalance().amount().value().amount())
                 .isEqualByComparingTo(entries.get(0).getRunningBalance().amount().value().amount().add(entries.get(1).getAmount().value().amount()));
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -130,7 +138,7 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
         assertThat(outcomes).allMatch(outcome -> outcome.failure == null);
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId))
                 .extracting(CurrentAccountEntry::getSequenceNumber).containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -189,6 +197,6 @@ class CurrentAccountLockConcurrencyIT extends AbstractCurrentAccountIT {
         assertThat(failure).isInstanceOf(DataIntegrityViolationException.class);
         assertThat(failure.getMessage()).contains("uk_current_account_entry_invoice_debit");
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).hasSize(1);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 }

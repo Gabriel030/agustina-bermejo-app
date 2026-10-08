@@ -87,6 +87,23 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
     @Autowired
     private TermRepository termRepository;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants;
+
+    @org.junit.jupiter.api.BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbc);
+    }
+
+    private void assertTheLedgerHoldsExactlyOneReceivedPaymentFor(Invoice invoice) {
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
+                .isEqualTo(1L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -185,6 +202,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
         assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(10000));
+        assertTheLedgerHoldsExactlyOneReceivedPaymentFor(invoice);
     }
 
     @Test
@@ -227,5 +245,6 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         List<PaymentAllocation> allocations = paymentAllocationRepository.findByInvoiceId(invoice.getId());
         assertThat(allocations).hasSize(1);
         assertThat(allocations.get(0).getAmountApplied()).isEqualTo(ars(1000));
+        assertTheLedgerHoldsExactlyOneReceivedPaymentFor(invoice);
     }
 }

@@ -100,6 +100,16 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants;
+
+    @org.junit.jupiter.api.BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbc);
+    }
+
     private Invoice persistPendingInvoice(BigDecimal amount) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
@@ -152,16 +162,46 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-139")
     @Tag("D-136")
-    void aMercadoPagoAmountBelowTheBalanceIsRejectedBecauseThereAreNoPartialPayments() {
+    @Tag("D-144")
+    void aMercadoPagoAmountBelowTheBalanceIsCreditedToTheAccountAndTheInvoiceStaysPending() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
 
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(
-                status -> service.process("", "request-1", String.valueOf(System.nanoTime()))))
-                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException.class);
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
         assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(4000))));
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForList("select entry_type, direction, amount from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
+                .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((BigDecimal) row.get("amount")).setScale(0))
+                .containsExactly("INVOICE_ISSUED:DEBIT:10000", "PAYMENT_RECEIVED:CREDIT:4000");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("4000");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    void aSecondMercadoPagoAmountThatCompletesTheBalanceSettlesTheInvoiceWithoutLeftovers() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(6000))
+                .process("", "request-2", "second-" + System.nanoTime()));
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("0");
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
+                .isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test

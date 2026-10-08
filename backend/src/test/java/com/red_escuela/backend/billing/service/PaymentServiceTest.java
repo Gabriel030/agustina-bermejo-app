@@ -98,6 +98,16 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants;
+
+    @org.junit.jupiter.api.BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbc);
+    }
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
@@ -175,6 +185,52 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
         assertThat(payment.getAllocations()).hasSize(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-144")
+    @Tag("D-139")
+    void aFullPaymentIsRecordedAsAReceivedCreditAndItsAllocationLeavesNoUnallocatedCredit() {
+        Person admin = persistPerson("admin.ledger." + System.nanoTime());
+        Student student = persistStudent("96009901");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
+                PaymentMethod.CASH, false, null, null, null, null), admin);
+
+        assertThat(jdbc.queryForList("select entry_type, direction, amount, payment_id from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
+                .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((java.math.BigDecimal) row.get("amount")).setScale(0) + ":" + row.get("payment_id"))
+                .containsExactly("INVOICE_ISSUED:DEBIT:10000:null", "PAYMENT_RECEIVED:CREDIT:10000:" + payment.getId());
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
+                .isEqualByComparingTo("0");
+        assertThat(jdbc.queryForObject("select balance_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
+                .isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-091")
+    @Tag("D-127")
+    void payingACancelledInvoiceIsRejectedAndNothingIsRecorded() {
+        Person admin = persistPerson("admin.cancelled." + System.nanoTime());
+        Student student = persistStudent("96009902");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
+        jdbc.update("update invoice set payment_status = 'CANCELLED', paid_amount = 0, outstanding_amount = 0, credited_amount = total where id = ?", invoice.getId());
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+
+        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), ars(10000))),
+                PaymentMethod.CASH, false, null, null, null, null), admin))
+                .isInstanceOf(InvoiceNotPayableException.class);
+
+        assertThat(jdbc.queryForObject("select count(*) from payment_allocation where invoice_id = ?", Long.class, invoice.getId())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
+                .isZero();
     }
 
     @Test
@@ -306,6 +362,52 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         CreditNote reloaded = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).get(0);
         assertThat(reloaded.getStatus().name()).isEqualTo("PARTIALLY_CONSUMED");
         assertThat(payment.getAllocations()).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-144")
+    void aCreditBalancePaymentIsNeverRecordedAsMoneyReceivedAndBooksTheConsumedCreditNoteInTheLedger() {
+        Person admin = persistPerson("admin.creditbalance." + System.nanoTime());
+        Student student = persistStudent("96009903");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
+        creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(invoice.getId(), ars(1000))),
+                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
+
+        assertThat(jdbc.queryForList("select entry_type, direction, amount from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
+                .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((java.math.BigDecimal) row.get("amount")).setScale(0))
+                .containsExactly("INVOICE_ISSUED:DEBIT:1000", "CREDIT_NOTE_ISSUED:CREDIT:1500");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
+                .isEqualByComparingTo("500");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-144")
+    void consumingTheSameCreditNoteTwiceBooksItInTheLedgerOnlyOnce() {
+        Person admin = persistPerson("admin.creditbalance2." + System.nanoTime());
+        Student student = persistStudent("96009904");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice first = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, YearMonth.now());
+        Invoice second = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(400), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));
+        creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
+        Long accountId = invoiceRepository.findById(first.getId()).orElseThrow().getStudentCurrentAccountId();
+
+        for (Invoice invoice : List.of(first, second)) {
+            registerPaymentUseCase.register(new RegisterPaymentRequest(
+                    List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
+                    PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
+        }
+
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'CREDIT_NOTE_ISSUED'", Long.class, accountId))
+                .isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
+                .isEqualByComparingTo("100");
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test

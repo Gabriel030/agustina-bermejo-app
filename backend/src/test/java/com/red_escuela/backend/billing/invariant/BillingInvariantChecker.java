@@ -13,13 +13,22 @@ public final class BillingInvariantChecker {
     private final long baselineInvoiceId;
     private final long baselineAllocationId;
     private final long baselineAccountId;
+    private final long baselineEntryId;
 
-    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId) {
+    private static final String ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES =
+            "(a.id > ? or exists (select 1 from current_account_entry x where x.student_current_account_id = a.id and x.id > ?))";
+
+    private static final String INVOICE_IS_NEW_OR_ITS_ACCOUNT_HAS_NEW_ENTRIES =
+            "(i.id > ? or exists (select 1 from student_current_account a where a.id = i.student_current_account_id and "
+                    + ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES + "))";
+
+    private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId, long baselineInvoiceId, long baselineAllocationId, long baselineAccountId, long baselineEntryId) {
         this.jdbc = jdbc;
         this.baselineEnrollmentId = baselineEnrollmentId;
         this.baselineInvoiceId = baselineInvoiceId;
         this.baselineAllocationId = baselineAllocationId;
         this.baselineAccountId = baselineAccountId;
+        this.baselineEntryId = baselineEntryId;
     }
 
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
@@ -27,7 +36,8 @@ public final class BillingInvariantChecker {
         Long maxInvoice = jdbc.queryForObject("select coalesce(max(id), 0) from invoice", Long.class);
         Long maxAllocation = jdbc.queryForObject("select coalesce(max(id), 0) from payment_allocation", Long.class);
         Long maxAccount = jdbc.queryForObject("select coalesce(max(id), 0) from student_current_account", Long.class);
-        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount);
+        Long maxEntry = jdbc.queryForObject("select coalesce(max(id), 0) from current_account_entry", Long.class);
+        return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max), maxInvoice, maxAllocation, maxAccount, maxEntry);
     }
 
     public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlot() {
@@ -60,10 +70,11 @@ public final class BillingInvariantChecker {
 
     public List<String> invoicesAreNotDueBeforeTheyWereIssued() {
         return violations("I-14 invoice due before its issue date", """
-                select 'invoice ' || id || ' due ' || due_date || ' issued ' || issue_date
-                from invoice
-                where id > ? and due_date < issue_date
-                """, baselineInvoiceId);
+                select 'invoice ' || i.id || ' due ' || i.due_date || ' issued ' || i.issue_date
+                from invoice i
+                where @INVOICES@
+                  and i.due_date < i.issue_date
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
     public List<String> installmentsStayWithinTheConfiguredCountAndSchoolYear() {
@@ -88,7 +99,7 @@ public final class BillingInvariantChecker {
                 from invoice i join invoice_line l on l.invoice_id = i.id join program_enrollment e on e.id = l.program_enrollment_id
                 where e.id > ? and e.payment_status = 'SUSPENDED'
                   and i.issuing_reason = 'MONTHLY_RUN'
-                  and i.issue_date > cast(e.payment_status_updated_at as date)
+                  and i.created_at > e.payment_status_updated_at
                 """, baselineEnrollmentId);
     }
 
@@ -123,25 +134,25 @@ public final class BillingInvariantChecker {
         return violations("I-07 invoice totals do not match their lines and discounts", """
                 select 'invoice ' || i.id
                 from invoice i
-                where i.id > ? and (i.lines_total <> coalesce((select sum(l.amount) from invoice_line l where l.invoice_id = i.id), 0)
+                where @INVOICES@ and (i.lines_total <> coalesce((select sum(l.amount) from invoice_line l where l.invoice_id = i.id), 0)
                    or i.discounts_total <> coalesce((select sum(d.discount_amount) from invoice_line l
                         join invoice_discount d on d.invoice_line_id = l.id where l.invoice_id = i.id), 0)
                    or exists (select 1 from invoice_line l left join invoice_discount d on d.invoice_line_id = l.id
                         where l.invoice_id = i.id and l.discount_amount <> coalesce(d.discount_amount, 0))
                    or i.total <> i.lines_total - i.discounts_total
                    or i.total < 0)
-                """, baselineInvoiceId);
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
     public List<String> paymentStatusIsConsistentWithAmounts() {
         return violations("I-08 payment status inconsistent with the amounts", """
-                select 'invoice ' || id || ' ' || payment_status
-                from invoice
-                where id > ? and ((payment_status in ('PENDING', 'PAYMENT_UNDER_REVIEW', 'OVERDUE') and not (paid_amount = 0 and outstanding_amount > 0))
-                   or (payment_status = 'PAID' and outstanding_amount <> 0)
-                   or (payment_status = 'CANCELLED' and not (paid_amount = 0 and outstanding_amount = 0 and credited_amount = total))
-                   or (payment_status is null and (paid_amount <> 0 or credited_amount <> 0)))
-                """, baselineInvoiceId);
+                select 'invoice ' || i.id || ' ' || i.payment_status
+                from invoice i
+                where @INVOICES@ and ((i.payment_status in ('PENDING', 'PAYMENT_UNDER_REVIEW', 'OVERDUE') and not (i.paid_amount = 0 and i.outstanding_amount > 0))
+                   or (i.payment_status = 'PAID' and i.outstanding_amount <> 0)
+                   or (i.payment_status = 'CANCELLED' and not (i.paid_amount = 0 and i.outstanding_amount = 0 and i.credited_amount = i.total))
+                   or (i.payment_status is null and (i.paid_amount <> 0 or i.credited_amount <> 0)))
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
     public List<String> thereIsNoWaivedNorPartiallyPaidStatus() {
@@ -177,22 +188,22 @@ public final class BillingInvariantChecker {
         found.addAll(violations("I-17 document history does not end in the current document status", """
                 select 'invoice ' || i.id
                 from invoice i
-                where i.id > ? and coalesce((select c.to_status from invoice_status_change c
+                where @INVOICES@ and coalesce((select c.to_status from invoice_status_change c
                         where c.invoice_id = i.id and c.status_kind = 'DOCUMENT' order by c.id desc limit 1), '') <> i.document_status
-                """, baselineInvoiceId));
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         found.addAll(violations("I-17 payment history does not end in the current payment status", """
                 select 'invoice ' || i.id
                 from invoice i
-                where i.id > ? and coalesce((select c.to_status from invoice_status_change c
+                where @INVOICES@ and coalesce((select c.to_status from invoice_status_change c
                         where c.invoice_id = i.id and c.status_kind = 'PAYMENT' order by c.id desc limit 1), '')
                       <> coalesce(i.payment_status, '')
-                """, baselineInvoiceId));
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         found.addAll(violations("I-17 invoice without its initial history row", """
                 select 'invoice ' || i.id
                 from invoice i
-                where i.id > ? and not exists (select 1 from invoice_status_change c
+                where @INVOICES@ and not exists (select 1 from invoice_status_change c
                         where c.invoice_id = i.id and c.status_kind = 'DOCUMENT' and c.from_status is null and c.to_status = 'DRAFT')
-                """, baselineInvoiceId));
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         return found;
     }
 
@@ -200,10 +211,10 @@ public final class BillingInvariantChecker {
         return violations("I-01 account balance differs from credits minus debits", """
                 select 'account ' || a.id
                 from student_current_account a
-                where a.id > ? and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
+                where @ACCOUNTS@ and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
                     <> coalesce((select sum(case e.direction when 'CREDIT' then e.amount else -e.amount end)
                                  from current_account_entry e where e.student_current_account_id = a.id), 0)
-                """, baselineAccountId);
+                """, baselineAccountId, baselineEntryId);
     }
 
     public List<String> runningBalancesFollowTheEntrySequence() {
@@ -214,15 +225,15 @@ public final class BillingInvariantChecker {
                              coalesce(lag(case e.running_balance_side when 'OWES' then -e.running_balance_amount else e.running_balance_amount end)
                                  over (partition by e.student_current_account_id order by e.sequence_number), 0) as previous,
                              (case e.direction when 'CREDIT' then e.amount else -e.amount end) as moved
-                      from current_account_entry e where e.student_current_account_id > ?) steps
+                      from current_account_entry e where e.student_current_account_id in (select a.id from student_current_account a where @ACCOUNTS@)) steps
                 where running <> previous + moved
-                """, baselineAccountId));
+                """, baselineAccountId, baselineEntryId));
         found.addAll(violations("I-02 sequence is not contiguous or last_entry_sequence differs from the maximum", """
                 select 'account ' || a.id
                 from student_current_account a
-                where a.id > ? and (a.last_entry_sequence <> coalesce((select max(e.sequence_number) from current_account_entry e where e.student_current_account_id = a.id), 0)
+                where @ACCOUNTS@ and (a.last_entry_sequence <> coalesce((select max(e.sequence_number) from current_account_entry e where e.student_current_account_id = a.id), 0)
                    or a.last_entry_sequence <> (select count(*) from current_account_entry e where e.student_current_account_id = a.id))
-                """, baselineAccountId));
+                """, baselineAccountId, baselineEntryId));
         return found;
     }
 
@@ -230,18 +241,18 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>(violations("I-19 balance differs from unallocated credit minus outstanding", """
                 select 'account ' || a.id
                 from student_current_account a
-                where a.id > ? and a.last_entry_sequence > 0
+                where @ACCOUNTS@ and a.last_entry_sequence > 0
                   and (case a.balance_side when 'OWES' then -a.balance_amount when 'IN_FAVOR' then a.balance_amount else 0 end)
                     <> a.unallocated_credit_amount - coalesce((select sum(i.outstanding_amount) from invoice i
                         where i.student_current_account_id = a.id and i.document_status = 'ISSUED'), 0)
-                """, baselineAccountId));
+                """, baselineAccountId, baselineEntryId));
         found.addAll(violations("I-19 issued invoice without exactly one debit (or a zero total invoice with one)", """
                 select 'invoice ' || i.id
                 from invoice i
-                where i.id > ? and i.document_status = 'ISSUED'
+                where @INVOICES@ and i.document_status = 'ISSUED'
                   and exists (select 1 from student_current_account a where a.id = i.student_current_account_id and a.last_entry_sequence > 0)
                   and (select count(*) from current_account_entry e where e.invoice_id = i.id) <> (case when i.total > 0 then 1 else 0 end)
-                """, baselineInvoiceId));
+                """, baselineInvoiceId, baselineAccountId, baselineEntryId));
         return found;
     }
 
@@ -269,6 +280,7 @@ public final class BillingInvariantChecker {
     }
 
     private List<String> violations(String invariant, String sql, Object... args) {
-        return jdbc.queryForList(sql, String.class, args).stream().map(row -> invariant + ": " + row).toList();
+        String resolved = sql.replace("@INVOICES@", INVOICE_IS_NEW_OR_ITS_ACCOUNT_HAS_NEW_ENTRIES).replace("@ACCOUNTS@", ACCOUNT_IS_NEW_OR_HAS_NEW_ENTRIES);
+        return jdbc.queryForList(resolved, String.class, args).stream().map(row -> invariant + ": " + row).toList();
     }
 }

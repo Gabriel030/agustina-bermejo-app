@@ -15,4 +15,6 @@ public interface CurrentAccountEntryRepository extends Repository<CurrentAccount
     List<CurrentAccountEntry> findByStudentCurrentAccountIdOrderBySequenceNumberAsc(Long studentCurrentAccountId);
 
     boolean existsByCompensatesEntryId(Long compensatesEntryId);
+
+    boolean existsByCreditNoteId(Long creditNoteId);
 }

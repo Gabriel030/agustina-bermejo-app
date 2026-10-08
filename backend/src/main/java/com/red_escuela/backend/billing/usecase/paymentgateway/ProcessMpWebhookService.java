@@ -91,7 +91,10 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
                 null
         );
 
-        Payment payment = registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
+        boolean fallsShortOfTheBalance = invoice.getAmounts().outstandingAmount().value().isGreaterThan(reportedAllocation.amountApplied());
+        Payment payment = fallsShortOfTheBalance
+                ? registerPaymentUseCase.registerPaymentShortOfInvoiceBalance(request, resolveOwnerPerson(invoice))
+                : registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
         payment.setCardType(approved.get().cardType());
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
     }

@@ -58,7 +58,10 @@ public final class ArchitectureRules {
             + "|service\\.legacy\\.[A-Za-z]+"
             + "|service\\.(?:InvoiceIssuingRequestFactory|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
-    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT.replace(".", "\\.") + "\\.billing\\.usecase\\.payment\\.RegisterPaymentService(?:\\$.*)?";
+    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService";
+
+    static final Set<String> PAYMENT_BRIDGE_ACCOUNT_METHODS = Set.of(
+            "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "allocateUnallocatedCreditToInvoicePayment");
 
     static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure", "events");
 
@@ -123,7 +126,7 @@ public final class ArchitectureRules {
                 .because("every invoice must be issued through the ISSUE_INVOICE operation");
     }
 
-    public static ArchRule invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
+    public static ArchRule invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages() {
         return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..")
                 .should().callMethodWhere(target(name("allocateFullInvoicePayment")).and(target(owner(assignableTo(Invoice.class)))))
                 .because("a payment allocation must be registered together with its credit in the current account");
@@ -356,16 +359,27 @@ public final class ArchitectureRules {
 
     public static ArchRule methodIsCalledOnlyBy(String ownerClassName, java.util.function.Predicate<String> methodNameFilter,
                                                 String allowedCallerClassName, Class<?> allowedCallerType, String description) {
+        return methodIsCalledOnlyBy(ownerClassName, methodNameFilter, allowedCallerClassName, allowedCallerType, description, "", Set.of());
+    }
+
+    public static ArchRule methodIsCalledOnlyBy(String ownerClassName, java.util.function.Predicate<String> methodNameFilter,
+                                                String allowedCallerClassName, Class<?> allowedCallerType, String description,
+                                                String bridgeCallerClassName, Set<String> bridgeMethodNames) {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ownerClassName)
                 .and().doNotHaveFullyQualifiedName(allowedCallerClassName)
-                .and().haveNameNotMatching(PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION)
                 .and(DescribedPredicate.not(assignableTo(allowedCallerType)))
                 .should().callCodeUnitWhere(DescribedPredicate.describe("a " + description + " on " + ownerClassName,
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ownerClassName)
-                                && methodNameFilter.test(call.getTarget().getName())))
+                                && methodNameFilter.test(call.getTarget().getName())
+                                && !(isTheBridge(call.getOriginOwner().getName(), bridgeCallerClassName)
+                                && bridgeMethodNames.contains(call.getTarget().getName()))))
                 .allowEmptyShould(true)
                 .because(description + " is allowed only to " + allowedCallerType.getSimpleName() + " implementations");
+    }
+
+    private static boolean isTheBridge(String callerClassName, String bridgeCallerClassName) {
+        return !bridgeCallerClassName.isEmpty() && (callerClassName.equals(bridgeCallerClassName) || callerClassName.startsWith(bridgeCallerClassName + "$"));
     }
 
     public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
@@ -384,8 +398,8 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, Class<?> operationType) {
-        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record"), serviceClassName, operationType,
-                "recording of an account entry");
+        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record") || name.startsWith("allocate"), serviceClassName, operationType,
+                "recording of an account entry or allocation of its credit", PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION, PAYMENT_BRIDGE_ACCOUNT_METHODS);
     }
 
     public static ArchRule billingClassesLiveInTheirSubdomainFolders(String billingRoot, Set<String> frozenLegacyClasses) {

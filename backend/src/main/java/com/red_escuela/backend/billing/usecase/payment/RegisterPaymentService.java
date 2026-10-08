@@ -13,6 +13,8 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.entity.CreditApplication;
+import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -38,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -136,6 +139,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
         LocalDate today = LocalDate.now(clock);
         Map<Long, Money> appliedByAccount = new TreeMap<>();
+        Map<Long, List<CreditApplication>> creditApplicationsByAccount = new TreeMap<>();
         for (int i = 0; i < ordered.size(); i++) {
             Invoice invoice = lockedInvoices.get(i);
             Money amountApplied = ordered.get(i).amountApplied();
@@ -148,15 +152,20 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
             payment.getAllocations().add(allocation);
             appliedByAccount.merge(invoice.getStudentCurrentAccountId(), amountApplied, Money::plus);
             if (request.method() == PaymentMethod.CREDIT_BALANCE) {
-                creditNoteService.consumeForInvoice(resolveOwnerStudentId(invoice), amountApplied, invoice, payment);
+                creditApplicationsByAccount.computeIfAbsent(invoice.getStudentCurrentAccountId(), accountId -> new ArrayList<>())
+                        .addAll(creditNoteService.consumeForInvoice(resolveOwnerStudentId(invoice), amountApplied, invoice, payment));
             }
         }
 
         for (Map.Entry<Long, Money> applied : appliedByAccount.entrySet()) {
             StudentCurrentAccount account = accountService.lockStudentCurrentAccount(applied.getKey());
-            NonNegativeMoney creditedAmount = NonNegativeMoney.of(applied.getValue());
-            accountService.recordPaymentReceivedCredit(account, payment.getId(), creditedAmount, today, "Pago " + payment.getId());
-            accountService.allocateUnallocatedCreditToInvoicePayment(account, creditedAmount);
+            NonNegativeMoney appliedAmount = NonNegativeMoney.of(applied.getValue());
+            if (request.method() == PaymentMethod.CREDIT_BALANCE) {
+                bookConsumedLegacyCreditNotes(account, creditApplicationsByAccount.get(applied.getKey()), today);
+            } else {
+                accountService.recordPaymentReceivedCredit(account, payment.getId(), appliedAmount, today, "Pago " + payment.getId());
+            }
+            accountService.allocateUnallocatedCreditToInvoicePayment(account, appliedAmount);
         }
 
         lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
@@ -164,6 +173,76 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
                 payment.getId(), request.method(), total.amount(), ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
 
         return payment;
+    }
+
+    @Override
+    @Transactional
+    public Payment registerPaymentShortOfInvoiceBalance(RegisterPaymentRequest request, Person registeredBy) {
+        if (request.rejected() || request.allocations().size() != 1) {
+            throw new IllegalArgumentException("a payment short of the invoice balance must carry exactly one reported allocation");
+        }
+        PaymentAllocationRequest reported = request.allocations().get(0);
+        Money received = reported.amountApplied();
+        if (received.isNegative() || received.isZero()) {
+            throw new IllegalArgumentException("amountApplied debe ser mayor a cero (invoice " + reported.invoiceId() + ")");
+        }
+        Invoice invoice = invoiceRepository.findByIdForUpdate(reported.invoiceId())
+                .orElseThrow(() -> new InvoiceNotFoundException(reported.invoiceId()));
+        validateOwnershipIfStudent(invoice);
+        if (!invoice.isPayable()) {
+            throw new InvoiceNotPayableException(invoice.getId(), invoice.getPaymentStatus() == null ? invoice.getDocumentStatus().name() : invoice.getPaymentStatus().name());
+        }
+        if (received.currency() != invoice.currency()) {
+            throw new CurrencyMismatchException(invoice.currency(), received.currency());
+        }
+        if (!invoice.getAmounts().outstandingAmount().value().isGreaterThan(received)) {
+            throw new IllegalArgumentException("the received amount covers the invoice balance (invoice " + invoice.getId() + ")");
+        }
+
+        Payment payment = new Payment();
+        payment.setAmount(received);
+        payment.setMethod(request.method());
+        payment.setStatus(PaymentStatus.CONFIRMED);
+        payment.setRegisteredBy(registeredBy);
+        payment.setPaidAt(LocalDateTime.now(clock));
+        payment.setExternalReference(request.externalReference());
+        payment.setCardInstallments(request.cardInstallments());
+        payment.setNotes(request.notes());
+        payment = paymentRepository.save(payment);
+
+        LocalDate today = LocalDate.now(clock);
+        StudentCurrentAccount account = accountService.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
+        accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
+        Money outstanding = invoice.getAmounts().outstandingAmount().value();
+        if (!outstanding.isGreaterThan(account.getUnallocatedCreditAmount().value())) {
+            invoice.allocateFullInvoicePayment(NonNegativeMoney.of(outstanding), today, new StatusChangeActor(registeredBy.getId(), null));
+            PaymentAllocation allocation = new PaymentAllocation();
+            allocation.setPayment(payment);
+            allocation.setInvoice(invoice);
+            allocation.setAmountApplied(outstanding);
+            payment.getAllocations().add(allocation);
+            accountService.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(outstanding));
+            restoreStandingIfNoOverdueDebtLeft(invoice);
+        }
+        log.info("Pago por debajo del saldo acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}",
+                payment.getId(), request.method(), received.amount(), invoice.getId());
+        return payment;
+    }
+
+    private void bookConsumedLegacyCreditNotes(StudentCurrentAccount account, List<CreditApplication> applications, LocalDate today) {
+        Map<Long, List<CreditApplication>> applicationsByCreditNote = new TreeMap<>();
+        applications.forEach(application -> applicationsByCreditNote
+                .computeIfAbsent(application.getCreditNote().getId(), creditNoteId -> new ArrayList<>()).add(application));
+        for (Map.Entry<Long, List<CreditApplication>> consumed : applicationsByCreditNote.entrySet()) {
+            if (accountService.isCreditNoteBookedInLedger(consumed.getKey())) {
+                continue;
+            }
+            CreditNote creditNote = consumed.getValue().get(0).getCreditNote();
+            Money consumedNow = consumed.getValue().stream().map(CreditApplication::getAmountApplied).reduce(Money::plus).orElseThrow();
+            NonNegativeMoney availableCredit = NonNegativeMoney.of(creditNote.getRemainingAmount().plus(consumedNow));
+            accountService.recordCreditNoteIssuedCredit(account, creditNote.getId(), NonNegativeMoney.zero(account.getCurrency()), availableCredit,
+                    today, "Nota de crédito " + creditNote.getId());
+        }
     }
 
     private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {

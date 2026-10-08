@@ -13,7 +13,11 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceLineCredit;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -47,8 +51,35 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         ApplicationTime.useClock(Clock.systemDefaultZone());
     }
 
-    private BillingInvariantChecker checker() {
-        return BillingInvariantChecker.startingNow(jdbc);
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    private BillingInvariantChecker invariants;
+
+    @BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = BillingInvariantChecker.startingNow(jdbc);
+    }
+
+    @Test
+    @Tag("D-144")
+    void theInvariantCheckerFailsWhenTheUnallocatedCreditIsCorrupted() {
+        Long accountId = newAccountId(newStudentId(), Currency.ARS);
+        Long invoiceId = newIssuedInvoiceId(accountId, Currency.ARS, "80000.00");
+        inTransaction(() -> {
+            StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
+            service.recordInvoiceIssuedDebit(account, invoiceRepository.findById(invoiceId).orElseThrow(), DAY);
+            service.recordPaymentReceivedCredit(account, nextExternalId(), ars("30000.00"), DAY, "Pago");
+            return null;
+        });
+        invariants.assertAllBillingInvariantsHold();
+
+        jdbc.update("update student_current_account set unallocated_credit_amount = unallocated_credit_amount + 1 where id = ?", accountId);
+
+        assertThatThrownBy(invariants::assertAllBillingInvariantsHold)
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("I-19 balance differs from unallocated credit minus outstanding")
+                .hasMessageContaining("account " + accountId);
     }
 
     @Test
@@ -71,7 +102,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId)).isEqualTo("PENDING");
         assertThat(amount("select outstanding_amount from invoice where id = ?", invoiceId)).isEqualByComparingTo("80000.00");
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).hasSize(2);
-        checker().assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -102,7 +133,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
 
         assertThat(loadAccount(accountId).getUnallocatedCreditAmount()).isEqualTo(ars("40000.00"));
         assertThat(loadAccount(accountId).calculateSignedBalance().amount()).isEqualByComparingTo("-40000.00");
-        checker().assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -128,7 +159,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         assertThat(jdbc.queryForObject("select count(*) from student_current_account where student_id = ?", Integer.class, studentId)).isEqualTo(2);
         assertThat(loadAccount(arsAccountId).getBalance().amount()).isEqualTo(ars("1250.50"));
         assertThat(loadAccount(usdAccountId).getBalance().amount()).isEqualTo(com.red_escuela.backend.billing.account.domain.AccountTestData.usd("30.00"));
-        checker().assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -156,7 +187,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
             return service.recordPaymentReversalDebit(account, entryRepository.findById(paymentEntryId).orElseThrow(), DAY, "Otra vez");
         })).isInstanceOf(CurrentAccountEntrySourceMismatchException.class);
         assertThat(jdbc.queryForObject("select count(*) from current_account_entry where compensates_entry_id = ?", Integer.class, paymentEntryId)).isEqualTo(1);
-        checker().assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -171,6 +202,30 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         assertThatThrownBy(() -> service.recordPaymentReceivedCredit(detached, 1L, ars("10.00"), DAY, "Pago")).isInstanceOf(IllegalTransactionStateException.class);
 
         assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-144")
+    void recordingOnAnAccountWrittenButNotLockedInTheTransactionFails() {
+        Long accountId = newAccountId(newStudentId(), Currency.ARS);
+
+        assertThatThrownBy(() -> inTransaction(() -> {
+            StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
+            entityManager.lock(unlocked, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
+            return service.recordPaymentReceivedCredit(unlocked, nextExternalId(), ars("10.00"), DAY, "Pago");
+        })).isInstanceOf(IllegalStateException.class).hasMessageContaining("must be locked");
+        assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).isEmpty();
+    }
+
+    @Test
+    void anAccountLockedInAnEarlierTransactionIsNotConsideredLockedInALaterOne() {
+        Long accountId = newAccountId(newStudentId(), Currency.ARS);
+        inTransaction(() -> service.lockStudentCurrentAccount(accountId));
+
+        assertThatThrownBy(() -> inTransaction(() -> {
+            StudentCurrentAccount unlocked = accountRepository.findById(accountId).orElseThrow();
+            return service.recordPaymentReceivedCredit(unlocked, nextExternalId(), ars("10.00"), DAY, "Pago");
+        })).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -239,7 +294,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
                         }
                     }
                 }
-                checker().assertAllBillingInvariantsHold();
+                invariants.assertAllBillingInvariantsHold();
             }
             assertThat(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId)).isNotEmpty();
         }
