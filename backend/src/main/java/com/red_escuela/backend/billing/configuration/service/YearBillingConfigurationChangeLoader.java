@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.policy.ProgramYearBillingTemplateSnapshot;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -23,6 +24,12 @@ public class YearBillingConfigurationChangeLoader {
 
     public YearBillingConfigurationChange loadConfigurationUpdate(ProgramYearBillingTemplate template, YearBillingConfigurationRequest request) {
         return loadChange(template, snapshotOf(template, request), template.termStartDate(), template.termEndDate());
+    }
+
+    public YearBillingConfigurationChange loadVersionedChange(ProgramYearBillingTemplate template, YearBillingTerms proposed) {
+        ProgramYearBillingTemplateSnapshot snapshot = new ProgramYearBillingTemplateSnapshot(proposed.enrollmentFeeCount(), proposed.firstEnrollmentFeeMonth(),
+                proposed.secondEnrollmentFeeMonth(), proposed.recurringFeeInvoicesCount(), proposed.enrollmentFeeLeadMonths());
+        return loadChange(template, snapshot, template.termStartDate(), template.termEndDate());
     }
 
     public YearBillingConfigurationChange loadTermScheduleChange(ProgramYearBillingTemplate template, LocalDateTime proposedStart, LocalDateTime proposedEnd) {

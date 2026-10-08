@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest
 import com.red_escuela.backend.billing.authorization.repository.AuthorizationRequestRepository;
 import com.red_escuela.backend.billing.events.AuthorizationRequestedEvent;
 import com.red_escuela.backend.billing.operation.AuthorizationRequestPort;
+import com.red_escuela.backend.billing.operation.AuthorizationRequestObservers;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -23,14 +24,16 @@ public class AuthorizationRequestOpener implements AuthorizationRequestPort {
     private final CurrentPersonService currentPersonService;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuthorizationRequestObservers observers;
     private final Clock clock;
 
     public AuthorizationRequestOpener(AuthorizationRequestRepository repository, CurrentPersonService currentPersonService,
-                                      ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, Clock clock) {
+                                      ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher, AuthorizationRequestObservers observers, Clock clock) {
         this.repository = repository;
         this.currentPersonService = currentPersonService;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
+        this.observers = observers;
         this.clock = clock;
     }
 
@@ -40,6 +43,7 @@ public class AuthorizationRequestOpener implements AuthorizationRequestPort {
         AuthorizationRequest request = repository.save(AuthorizationRequest.open(type, serialize(context), requiredRole, reason,
                 currentPersonService.resolveCurrentPerson(), expiresOn, Instant.now(clock)));
         eventPublisher.publishEvent(AuthorizationRequestedEvent.requestedFor(request.getId(), type.name(), requiredRole.name(), reason));
+        observers.afterOpened(request.getId(), type, context);
         return request.getId();
     }
 

@@ -308,3 +308,5 @@ com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseSer
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramService
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase
+com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent
+com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent
