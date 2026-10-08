@@ -19,7 +19,7 @@ public record ProgramInvoicePlanningFacts(
         boolean paused,
         boolean onlyFinalExamsLeft,
         YearMonth entryMonth,
-        PaymentPlanCadence cadenceAtMonth,
+        PaymentPlanCoverage paymentPlan,
         boolean hasAnyPaymentPlan,
         YearCycles cycles,
         List<IssuedEnrollmentFee> enrollmentFees,
@@ -28,6 +28,20 @@ public record ProgramInvoicePlanningFacts(
         Long entryTemplateId,
         Integer entrySlot,
         LocalDate cursadaStart) {
+
+    public ProgramInvoicePlanningFacts(Long enrollmentId, YearMonth month, LocalDate today, boolean academicallyActive, boolean suspendedOrWithdrawn,
+                                       boolean planCompleted, boolean paused, boolean onlyFinalExamsLeft, YearMonth entryMonth,
+                                       PaymentPlanCadence cadence, boolean hasAnyPaymentPlan, YearCycles cycles, List<IssuedEnrollmentFee> enrollmentFees,
+                                       Set<YearMonth> recurringPeriods, Map<String, SlotWindow> windows, Long entryTemplateId, Integer entrySlot,
+                                       LocalDate cursadaStart) {
+        this(enrollmentId, month, today, academicallyActive, suspendedOrWithdrawn, planCompleted, paused, onlyFinalExamsLeft, entryMonth,
+                PaymentPlanCoverage.ofCadence(cadence), hasAnyPaymentPlan, cycles, enrollmentFees, recurringPeriods, windows, entryTemplateId, entrySlot,
+                cursadaStart);
+    }
+
+    public PaymentPlanCadence cadenceAtMonth() {
+        return paymentPlan.effectiveCadenceForMonth(month);
+    }
 
     public boolean isEntrySlot(YearCycle cycle, int slot) {
         return entryTemplateId != null && entrySlot != null && entryTemplateId.equals(cycle.templateId()) && entrySlot == slot;

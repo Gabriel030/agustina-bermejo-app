@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -286,13 +287,13 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         today(date(2027, 5, 10));
         authenticateAs(world.career());
 
-        assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION))
+        assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
         assertThatThrownBy(() -> certificateService.issueApprovedSubjectsCertificate(world.enrollment()))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         markAllEnrollmentFees(world.enrollment(), InvoiceStatus.PAID);
-        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION))
+        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
         assertThat(certificateService.issueApprovedSubjectsCertificate(world.enrollment())).isNotEmpty();
     }
@@ -308,7 +309,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         today(date(2027, 5, 10));
         authenticateAs(world.career());
 
-        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION))
+        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
         assertThat(certificateService.issueApprovedSubjectsCertificate(world.enrollment())).isNotEmpty();
     }
@@ -320,12 +321,12 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
         addSectionEnrollment(world.enrollment(), world.career(), world.firstTerm(), EnrollmentStatus.REGULAR);
         today(date(2027, 5, 10));
 
-        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION))
+        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
         assertThat(invoices(world.enrollment(), FeeType.ENROLLMENT_FEE)).isEmpty();
 
         configureYear(world.year(), template -> template.setRequireEnrollmentFeeForFinalExamOnlyStudents(true));
-        assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementService.Scope.EXAM_REGISTRATION))
+        assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
     }
 

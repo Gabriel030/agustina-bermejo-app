@@ -1,6 +1,21 @@
 package com.red_escuela.backend.billing.configuration;
 
+import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
+import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontSettingsCoherencePolicy;
+import com.red_escuela.backend.billing.configuration.policy.CancellationReasonRequiredPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ConfigurationChangeCheck;
+import com.red_escuela.backend.billing.configuration.policy.ConfigurationChangeReasonRequiredPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EffectiveDateNotRetroactivePolicy;
+import com.red_escuela.backend.billing.configuration.policy.IssuanceSettingsCoherencePolicy;
+import com.red_escuela.backend.billing.configuration.policy.LateFeeSettingsCoherencePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ProposalApprovalCheck;
+import com.red_escuela.backend.billing.configuration.policy.ProposalNotExpiredPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ProposalSlot;
+import com.red_escuela.backend.billing.configuration.policy.ScheduledVersionCancellablePolicy;
+import com.red_escuela.backend.billing.configuration.policy.SingleOpenProposalPerTopicPolicy;
+import com.red_escuela.backend.billing.configuration.policy.VersionCancellationCheck;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeCountFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeLeadMonthsFrozenPolicy;
 import com.red_escuela.backend.billing.configuration.policy.EnrollmentFeeMonthFrozenPolicy;
@@ -54,7 +69,53 @@ public class ConfigurationPolicySetsConfiguration {
                 new SuspensionDaysNotNegativePolicy(),
                 new GracePeriodWithinSuspensionDaysPolicy(),
                 new SuspensionInvoiceCountAtLeastOnePolicy(),
-                new EffectiveDateNotRetroactivePolicy());
+                new EffectiveDateNotRetroactivePolicy<>());
         return PolicySet.named("LATE_PAYMENT_SETTINGS", ordered);
+    }
+
+    @Bean
+    public PolicySet<ConfigurationChangeCheck> billingConfigurationChangePolicySet() {
+        List<Policy<ConfigurationChangeCheck>> ordered = List.of(
+                new ConfigurationChangeReasonRequiredPolicy(),
+                new EffectiveDateNotRetroactivePolicy<>());
+        return PolicySet.named("BILLING_CONFIGURATION_CHANGE", ordered);
+    }
+
+    @Bean
+    public PolicySet<ProposalSlot> billingConfigurationProposalPolicySet() {
+        List<Policy<ProposalSlot>> ordered = List.of(new SingleOpenProposalPerTopicPolicy());
+        return PolicySet.named("BILLING_CONFIGURATION_PROPOSAL", ordered);
+    }
+
+    @Bean
+    public PolicySet<ProposalApprovalCheck> configurationProposalApprovalPolicySet() {
+        List<Policy<ProposalApprovalCheck>> ordered = List.of(new ProposalNotExpiredPolicy());
+        return PolicySet.named("CONFIGURATION_PROPOSAL_APPROVAL", ordered);
+    }
+
+    @Bean
+    public PolicySet<VersionCancellationCheck> configurationVersionCancellationPolicySet() {
+        List<Policy<VersionCancellationCheck>> ordered = List.of(
+                new CancellationReasonRequiredPolicy(),
+                new ScheduledVersionCancellablePolicy());
+        return PolicySet.named("CONFIGURATION_VERSION_CANCELLATION", ordered);
+    }
+
+    @Bean
+    public PolicySet<LatePaymentTerms> latePaymentTermsPolicySet() {
+        List<Policy<LatePaymentTerms>> ordered = List.of(new LateFeeSettingsCoherencePolicy());
+        return PolicySet.named("LATE_PAYMENT_TERMS", ordered);
+    }
+
+    @Bean
+    public PolicySet<IssuanceSettings> issuanceSettingsPolicySet() {
+        List<Policy<IssuanceSettings>> ordered = List.of(new IssuanceSettingsCoherencePolicy());
+        return PolicySet.named("ISSUANCE_SETTINGS", ordered);
+    }
+
+    @Bean
+    public PolicySet<AnnualUpfrontCheck> annualUpfrontSettingsPolicySet() {
+        List<Policy<AnnualUpfrontCheck>> ordered = List.of(new AnnualUpfrontSettingsCoherencePolicy());
+        return PolicySet.named("ANNUAL_UPFRONT_SETTINGS", ordered);
     }
 }

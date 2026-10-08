@@ -67,6 +67,15 @@ class ArchitectureTest {
 
     @Test
     @Tag("D-051")
+    void monthlyInvoicePlannersDependOnlyOnPlanningPoliciesAndDomain() {
+        ArchitectureRules.monthlyInvoicePlannersDependOnlyOnPlanningPoliciesAndDomain().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.monthlyInvoicePlannersDependOnlyOnPlanningPoliciesAndDomain().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LoggingFixtureMonthlyInvoicePlanner");
+    }
+
+    @Test
+    @Tag("D-051")
     void policiesAndPlannersArePure() {
         ArchitectureRules.policiesArePure().check(MAIN_CLASSES);
     }

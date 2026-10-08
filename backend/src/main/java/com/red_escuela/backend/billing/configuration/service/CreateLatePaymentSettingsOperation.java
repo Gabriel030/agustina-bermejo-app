@@ -22,10 +22,12 @@ public class CreateLatePaymentSettingsOperation implements BillingOperation<Crea
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final LatePaymentSettingsRepository latePaymentSettingsRepository;
     private final EntityManager entityManager;
+    private final LegacyConfigurationMirror configurationMirror;
     private final Clock clock;
 
     public CreateLatePaymentSettingsOperation(ConfigurationPolicyEvaluator policyEvaluator, LatePaymentSettingsRepository latePaymentSettingsRepository,
-                                              EntityManager entityManager, Clock clock) {
+                                              EntityManager entityManager, LegacyConfigurationMirror configurationMirror, Clock clock) {
+        this.configurationMirror = configurationMirror;
         this.policyEvaluator = policyEvaluator;
         this.latePaymentSettingsRepository = latePaymentSettingsRepository;
         this.entityManager = entityManager;
@@ -61,7 +63,7 @@ public class CreateLatePaymentSettingsOperation implements BillingOperation<Crea
 
     @Override
     public LatePaymentSettings processOperation(CreateLatePaymentSettingsCommand command) {
-        return latePaymentSettingsRepository.save(LatePaymentSettings.builder()
+        LatePaymentSettings saved = latePaymentSettingsRepository.save(LatePaymentSettings.builder()
                 .gracePeriodDays(command.gracePeriodDays())
                 .surchargeRate(command.surchargeRate())
                 .suspensionAfterDays(command.suspensionAfterDays())
@@ -69,6 +71,8 @@ public class CreateLatePaymentSettingsOperation implements BillingOperation<Crea
                 .effectiveFrom(effectiveFromOf(command, LocalDate.now(clock)))
                 .createdBy(entityManager.getReference(Person.class, command.requestedByPersonId()))
                 .build());
+        configurationMirror.recordLatePayment(saved, command.requestedByPersonId());
+        return saved;
     }
 
     @Override

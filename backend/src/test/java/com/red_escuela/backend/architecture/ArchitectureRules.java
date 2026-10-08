@@ -139,6 +139,14 @@ public final class ArchitectureRules {
                 .because("policies and planners are pure domain logic");
     }
 
+    public static ArchRule monthlyInvoicePlannersDependOnlyOnPlanningPoliciesAndDomain() {
+        return classes().that().haveSimpleNameEndingWith("MonthlyInvoicePlanner").and().areNotInterfaces()
+                .should().onlyDependOnClassesThat().resideInAnyPackage("..billing.planning..", "..billing.invoice.domain..", "..billing.entity..",
+                        "..shared.domain..", "java..")
+                .allowEmptyShould(true)
+                .because("planners only orchestrate policies over planning facts");
+    }
+
     public static ArchRule businessExceptionsAreThrownOnlyByPolicyEvaluation(String... v2Packages) {
         return noClasses()
                 .that().resideInAnyPackage(v2Packages)

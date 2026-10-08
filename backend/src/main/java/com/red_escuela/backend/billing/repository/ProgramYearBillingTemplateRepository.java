@@ -24,4 +24,13 @@ public interface ProgramYearBillingTemplateRepository extends JpaRepository<Prog
 
     @Query(value = "select enrollment_fee_count from program_year_billing_template where id = :id for share", nativeQuery = true)
     Optional<Integer> findEnrollmentFeeCountForShare(@Param("id") Long id);
+
+    @Query(value = "select program_id from program_year_billing_template where id = :id", nativeQuery = true)
+    Long findProgramIdById(@Param("id") Long id);
+
+    @Query(value = "select term_id from program_year_billing_template where id = :id", nativeQuery = true)
+    Long findTermIdById(@Param("id") Long id);
+
+    @Query(value = "select created_by_id from program_year_billing_template where id = :id", nativeQuery = true)
+    Long findCreatedByIdById(@Param("id") Long id);
 }
