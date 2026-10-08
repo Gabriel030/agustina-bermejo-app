@@ -32,6 +32,41 @@ prueba encuentra bugs que los demás no ven.
 | Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
 | OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Propuesto (parcial) |
 
+## Criterio: qué tests escribir para un cambio
+
+Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada **señal de riesgo** que tenga el cambio suma su herramienta. Un PR que no cubre lo que piden estas dos tablas se devuelve en la revisión.
+
+### Paso 1: base obligatoria según qué cambiaste
+
+| Cambiaste… | Mínimo obligatorio | Por qué |
+|---|---|---|
+| Una regla de negocio pura (Policy, Value Object, cálculo, máquina de estados) | JUnit puro con bordes (cero, negativo, límite, redondeo) y **cada transición válida e inválida** | Es barato y ahí viven la mayoría de los bugs de lógica |
+| Algo que guarda o lee de la base (servicio, repository) | Integración con Testcontainers (Postgres real) | Constraints, triggers, índices únicos y cascadas solo aparecen contra la base real |
+| Un endpoint (controller, DTO, código de error) | MockMvc con status, JSON y `code` de error; un escenario de Karate si es un flujo de punta a punta | El front depende del contrato exacto |
+| Una pantalla o un componente | Vitest + RTL + MSW con cada respuesta posible del backend: ok, error, vacío y cargando | Testea lo que ve el usuario, no la implementación |
+| Una migración que transforma datos existentes | Integración que carga datos con la forma vieja, migra y verifica el resultado | Un esquema vacío no prueba una migración de datos |
+| Un refactor grande de algo que ya funciona | Caracterización **antes** de tocar, y que siga verde después | Cualquier diferencia de comportamiento sale a la luz |
+
+### Paso 2: señales de riesgo (cada una suma su herramienta)
+
+| Si el cambio… | Sumá | Pregunta que responde |
+|---|---|---|
+| Mueve plata o toca la cuenta corriente | `BillingInvariantChecker` construido **antes** de escribir, `@Tag("D-xxx")` de la decisión y revisión independiente del PR | ¿Los saldos cierran después de cada operación? |
+| Depende de fechas (vencimiento, mora, corrida mensual, año lectivo) | `MutableClock` con escenarios que **avanzan el tiempo** y bordes de fecha (fin de mes, febrero, 31 de diciembre) | ¿Sigue funcionando el día después y el mes que viene? |
+| Combina varios valores en un invariante (saldos, imputaciones, descuentos) | jqwik | ¿Se cumple con combinaciones que no se me ocurrieron? |
+| Puede ejecutarse dos veces o en paralelo (pagos, webhooks, jobs, eventos reintentados) | Hilos reales contra Postgres y un test de **idempotencia**: la misma entrada dos veces produce un solo efecto | ¿Un reintento duplica o pierde algo? |
+| Es asíncrono (evento, listener, notificación) | Awaitility esperando por el **propio** id de evento | ¿El efecto ocurrió, sin depender de otros tests? |
+| Es lógica de dominio de facturación | PIT (corre en CI, umbral 90%) | Si alguien rompe esto, ¿algún test se entera? |
+| Agrega clases, paquetes o dependencias entre módulos | ArchUnit y Modulith (corren en CI) | ¿La estructura se degrada? |
+| Cambia permisos o roles | Matriz rol × endpoint: 403 para cada rol que no corresponde | ¿Un rol puede hacer algo que no debería? |
+| Es un flujo crítico del usuario (inscribirse, pagar, aprobar) | Playwright (propuesto) | ¿Un usuario real lo completa en el navegador? |
+| Cambia la forma de una respuesta que consume el front | Contrato OpenAPI (propuesto) | ¿El cambio rompe al front sin que nadie se entere? |
+| Procesa volumen (corrida mensual, pipeline nocturno) | k6 o Gatling (propuesto) | ¿Aguanta miles de alumnos en el tiempo disponible? |
+
+### Paso 3: un test que nunca falló no prueba nada
+
+Todo test de una regla crítica se ve fallar al menos una vez: romper el código o corromper el dato a propósito y comprobar que se pone rojo; recién después se arregla. PIT lo automatiza para el dominio puro, pero no cubre los tests de integración: ahí se hace a mano (por ejemplo, un test que corrompe `unallocated_credit_amount` y exige que `BillingInvariantChecker` falle).
+
 ## Backend (ya establecido, verificado contra el repo real)
 
 **No se mockea la base de datos.** Todo test que toca un repository corre contra
