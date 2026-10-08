@@ -91,7 +91,7 @@ class ConfigurationPoliciesTest {
     @Tag("D-149")
     @ParameterizedTest(name = "gracia {0} tope {1} dias {2} facturas {3} ND {4} permitido={5}")
     @CsvSource({"0,12,30,1,10,true", "-1,12,30,1,10,false", "31,12,30,1,10,false", "30,12,30,1,10,true", "0,0,30,1,10,false", "0,1,30,1,10,true",
-            "0,12,-1,1,10,false", "0,12,30,0,10,false", "0,12,30,1,-1,false", "0,12,30,1,0,true"})
+            "0,12,-1,1,10,false", "0,12,30,0,10,false", "0,12,30,1,-1,false", "0,12,30,1,0,true", "0,12,0,1,10,true"})
     void lateFeeSettingsCoherence(int grace, int capMonths, int suspendDays, int invoices, int ndDays, boolean allowed) {
         PolicyVerdict verdict = new LateFeeSettingsCoherencePolicy().evaluateRule(late(grace, capMonths, null, suspendDays, invoices, ndDays));
         assertThat(verdict.allowed()).isEqualTo(allowed);
