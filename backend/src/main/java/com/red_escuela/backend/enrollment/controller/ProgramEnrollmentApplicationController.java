@@ -20,9 +20,7 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.enrollment.service.AdmissionInvoiceReceiptFinder;
-import java.util.Map;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import jakarta.validation.Valid;
@@ -93,11 +91,9 @@ public class ProgramEnrollmentApplicationController {
     @GetMapping("/me/program-enrollment-applications")
     public List<ProgramEnrollmentApplicationResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
-        List<ProgramEnrollmentApplication> applications = listMyProgramEnrollmentApplicationsUseCase.list(student.getId());
-        Map<Long, BankTransferReceipt> latestReceipts = admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(applications);
-        return applications.stream()
+        return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
                 .map(application -> ProgramEnrollmentApplicationResponse.from(application,
-                        application.getAdmissionInvoice() == null ? null : latestReceipts.get(application.getAdmissionInvoice().getId())))
+                        admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId))
                 .toList();
     }
 

@@ -341,10 +341,8 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
-                student.getId(), program.getId(),
-                java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
-                .isNotEmpty();
+        assertThat(entityManager.find(com.red_escuela.backend.billing.invoice.domain.Invoice.class, persisted.getAdmissionInvoice().getId()).getPaymentStatus())
+                .isEqualTo(com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAID);
     }
 
     @Test

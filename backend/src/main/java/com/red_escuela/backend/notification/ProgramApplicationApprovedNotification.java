@@ -1,11 +1,11 @@
 package com.red_escuela.backend.notification;
 
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record ProgramApplicationApprovedEvent(ProgramEnrollmentApplication application) implements DomainNotificationEvent {
+public record ProgramApplicationApprovedNotification(Long applicationId, Person student, String programName) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.PROGRAM_APPLICATION_APPROVED;
@@ -13,13 +13,12 @@ public record ProgramApplicationApprovedEvent(ProgramEnrollmentApplication appli
 
     @Override
     public String message() {
-        return "Aprobamos tu solicitud para " + application.getProgram().getName()
-                + ". Pagá la matrícula de ingreso para confirmar tu inscripción.";
+        return "Aprobamos tu solicitud para " + programName + ". Pagá la matrícula de ingreso para confirmar tu inscripción.";
     }
 
     @Override
     public List<NotificationRecipient> recipients() {
-        return List.of(new PersonRecipient(application.getStudent().getPerson()));
+        return List.of(new PersonRecipient(student));
     }
 
     @Override
@@ -29,6 +28,6 @@ public record ProgramApplicationApprovedEvent(ProgramEnrollmentApplication appli
 
     @Override
     public Long relatedEntityId() {
-        return application.getId();
+        return applicationId;
     }
 }

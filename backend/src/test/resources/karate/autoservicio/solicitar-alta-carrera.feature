@@ -146,9 +146,11 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method post
     Then status 201
 
-    # El detalle de cuotas de la carrera dice de qué carrera es
+    # La inscripción se confirma después del commit del pago, de forma asíncrona
+    * configure retry = { count: 30, interval: 500 }
     Given path '/me/enrollment-payment-status'
     And header Authorization = 'Bearer ' + alumnoToken
+    And retry until response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' }).length > 0
     When method get
     Then status 200
     * def matricula = response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' })[0]

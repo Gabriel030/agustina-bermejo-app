@@ -11,7 +11,7 @@ import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.service.PersonRoleGranter;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.notification.ProgramApplicationApprovedEvent;
+import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,7 +54,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
         Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
         application.approve(command.decidedBy(), admissionInvoice);
         personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
-        eventPublisher.publishEvent(new ProgramApplicationApprovedEvent(application));
+        eventPublisher.publishEvent(new ProgramApplicationApprovedEvent(application.getId(), student.getPerson(), application.getProgram().getName()));
         return application;
     }
 }

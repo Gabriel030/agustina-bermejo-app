@@ -1,38 +1,21 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.billing.api.AdmissionReceiptLookup;
+import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 @Service
 public class AdmissionInvoiceReceiptFinder {
 
-    private final BankTransferReceiptRepository receiptRepository;
+    private final AdmissionReceiptLookup receiptLookup;
 
-    public AdmissionInvoiceReceiptFinder(BankTransferReceiptRepository receiptRepository) {
-        this.receiptRepository = receiptRepository;
+    public AdmissionInvoiceReceiptFinder(AdmissionReceiptLookup receiptLookup) {
+        this.receiptLookup = receiptLookup;
     }
 
-    @Transactional(readOnly = true)
-    public Map<Long, BankTransferReceipt> findLatestReceiptByAdmissionInvoiceId(List<ProgramEnrollmentApplication> applications) {
-        List<Long> invoiceIds = applications.stream()
-                .map(ProgramEnrollmentApplication::getAdmissionInvoice)
-                .filter(Objects::nonNull)
-                .map(invoice -> invoice.getId())
-                .toList();
-        Map<Long, BankTransferReceipt> latestByInvoiceId = new HashMap<>();
-        if (invoiceIds.isEmpty()) {
-            return latestByInvoiceId;
-        }
-        receiptRepository.findByInvoiceIdsWithPeople(invoiceIds)
-                .forEach(receipt -> latestByInvoiceId.putIfAbsent(receipt.getInvoice().getId(), receipt));
-        return latestByInvoiceId;
+    public AdmissionReceiptSummary findLatestReceiptByAdmissionInvoiceId(Long admissionInvoiceId) {
+        return receiptLookup.findLatestReceiptByInvoiceIds(List.of(admissionInvoiceId)).get(admissionInvoiceId);
     }
 }

@@ -414,14 +414,14 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = application.getAdmissionInvoice();
         entityManager.flush();
         assertThat(ProgramEnrollmentApplicationResponse.from(application,
-                admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(List.of(application)).get(invoice.getId())).admissionInvoice().receiptStatus()).isNull();
+                admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId).admissionInvoice().receiptStatus()).isNull();
 
         uploadPaymentReceiptUseCase.upload(invoice.getId(), application.getStudent().getId(),
                 new org.springframework.mock.web.MockMultipartFile("comprobante", "c.pdf", "application/pdf", new byte[]{1, 2, 3}));
         entityManager.flush();
 
         ProgramEnrollmentApplicationResponse response = ProgramEnrollmentApplicationResponse.from(application,
-                admissionInvoiceReceiptFinder.findLatestReceiptByAdmissionInvoiceId(List.of(application)).get(invoice.getId()));
+                admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId);
         assertThat(response.admissionInvoice().receiptStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(response.admissionInvoice().receiptUploadedAt()).isNotNull();
     }

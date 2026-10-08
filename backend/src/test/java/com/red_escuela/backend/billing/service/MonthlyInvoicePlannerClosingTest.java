@@ -252,8 +252,9 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         Long admissionInvoiceId = approved.getAdmissionInvoice().getId();
         registerPaymentUseCase.register(new RegisterPaymentRequest(List.of(new PaymentAllocationRequest(admissionInvoiceId, ars(5000))),
                 PaymentMethod.CASH, false, null, null, null, null), preceptor);
-        Long enrollment = transactionTemplate.execute(status -> entityManager.createQuery(
-                "select e.id from ProgramEnrollment e where e.student.id = :id", Long.class).setParameter("id", student.getId()).getSingleResult());
+        Long enrollment = org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(30)).until(() -> transactionTemplate.execute(status ->
+                entityManager.createQuery("select e.id from ProgramEnrollment e where e.student.id = :id", Long.class)
+                        .setParameter("id", student.getId()).getResultList().stream().findFirst().orElse(null)), java.util.Objects::nonNull);
         authenticateAs(career);
         selectPaymentPlanUseCase.select(enrollment, new SelectPaymentPlanRequest(monthlyOption(career), null));
         job.run();
