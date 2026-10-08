@@ -153,9 +153,9 @@ class PlanningCollaboratorsTest {
     void theSelectorKeepsOnlyTheSlotsDueThisMonthAndNotBeforeTheEntry() {
         EnrollmentFeeSlotCandidateSelector selector = new EnrollmentFeeSlotCandidateSelector();
 
-        assertThat(selector.selectEnrollmentFeeSlots(facts(MARCH, MARCH.atDay(1), null, Map.of(), null, null, null), false)).extracting(EnrollmentFeeSlotPlanningContext::slot).containsExactly(1);
+        assertThat(selector.selectEnrollmentFeeSlots(facts(YearMonth.of(2026, 2), LocalDate.of(2026, 2, 1), null, Map.of(), null, null, null), false)).extracting(EnrollmentFeeSlotPlanningContext::slot).containsExactly(1);
         assertThat(selector.selectEnrollmentFeeSlots(facts(YearMonth.of(2026, 5), MARCH.atDay(1), null, Map.of(), null, null, null), false)).isEmpty();
-        assertThat(selector.selectEnrollmentFeeSlots(facts(MARCH, MARCH.atDay(1), YearMonth.of(2027, 1), Map.of(), null, null, null), false)).isEmpty();
+        assertThat(selector.selectEnrollmentFeeSlots(facts(YearMonth.of(2026, 2), LocalDate.of(2026, 2, 1), YearMonth.of(2027, 1), Map.of(), null, null, null), false)).isEmpty();
     }
 
     @Test
