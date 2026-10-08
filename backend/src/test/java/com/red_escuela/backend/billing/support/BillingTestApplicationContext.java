@@ -1,17 +1,15 @@
 package com.red_escuela.backend.billing.support;
 
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
-@Component
-public class BillingTestApplicationContext implements ApplicationContextAware {
+public final class BillingTestApplicationContext {
 
     private static volatile ApplicationContext context;
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    private BillingTestApplicationContext() {
+    }
+
+    static void useContextOfTheRunningTest(ApplicationContext applicationContext) {
         context = applicationContext;
     }
 
