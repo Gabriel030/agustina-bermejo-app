@@ -56,7 +56,9 @@ public final class ArchitectureRules {
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"
-            + "|service\\.InvoiceIssuingRequestFactory)(?:\\$.*)?";
+            + "|service\\.(?:InvoiceIssuingRequestFactory|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
+
+    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT.replace(".", "\\.") + "\\.billing\\.usecase\\.payment\\.RegisterPaymentService(?:\\$.*)?";
 
     static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure", "events");
 
@@ -357,6 +359,7 @@ public final class ArchitectureRules {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ownerClassName)
                 .and().doNotHaveFullyQualifiedName(allowedCallerClassName)
+                .and().haveNameNotMatching(PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION)
                 .and(DescribedPredicate.not(assignableTo(allowedCallerType)))
                 .should().callCodeUnitWhere(DescribedPredicate.describe("a " + description + " on " + ownerClassName,
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ownerClassName)

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.dto;
 
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.service.InvoiceView;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.PaymentStatus;
 import com.red_escuela.backend.shared.domain.Money;

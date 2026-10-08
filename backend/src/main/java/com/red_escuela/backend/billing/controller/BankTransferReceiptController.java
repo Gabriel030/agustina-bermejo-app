@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.controller;
 
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
-import com.red_escuela.backend.billing.service.BankTransferReceiptResponseAssembler;
+import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.GetPaymentReceiptFileUseCase;

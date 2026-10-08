@@ -91,6 +91,9 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -131,7 +134,7 @@ class PaymentConcurrencyTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount) {
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private Payment ejecutarPagoConcurrente(Long invoiceId, BigDecimal monto, Person admin,

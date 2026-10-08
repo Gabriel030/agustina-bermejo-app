@@ -118,6 +118,9 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -317,7 +320,6 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         Invoice cuotaDelMes = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).get(0);
         BillingTestFixtures.payInvoiceInFull(cuotaDelMes);
-        invoiceRepository.save(cuotaDelMes);
 
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), "Beca 20% tardía", 3));

@@ -112,6 +112,9 @@ class UsdBillingTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -150,7 +153,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoicePaymentStatus status) {
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(1)).dueOn(LocalDate.now().minusDays(20)).withBaseAmount(amount).inState(status).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private RegisterPaymentRequest paymentOf(Invoice invoice, Money amount) {

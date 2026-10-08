@@ -99,6 +99,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(dni);
+        person.setName("Alumno");
+        person.setLastname("Prueba");
+        person.setDni(dni);
         person.setEmail(dni + "@example.com");
         person.setAddress(addressRepository.save(new Address()));
         person.setStatus(StatusType.ACTIVE);

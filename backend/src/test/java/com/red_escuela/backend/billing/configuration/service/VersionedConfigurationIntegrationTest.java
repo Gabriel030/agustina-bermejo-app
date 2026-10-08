@@ -141,6 +141,9 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
             Person person = new Person();
             String username = prefix + "." + System.nanoTime();
             person.setUsername(username);
+            person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+            person.setName("Persona");
+            person.setLastname("Prueba");
             person.setEmail(username + "@example.com");
             person.setAddress(addressRepository.save(new Address()));
             person.setStatus(StatusType.ACTIVE);

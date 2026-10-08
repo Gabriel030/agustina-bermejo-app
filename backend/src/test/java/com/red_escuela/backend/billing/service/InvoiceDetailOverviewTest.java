@@ -121,6 +121,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
         person.setEmail(username + "@example.com");
         person.setName(name);
         person.setLastname(lastname);
@@ -160,7 +161,7 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, int monthOffset) {
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.of(2030, 1).plusMonths(monthOffset)).dueOn(LocalDate.of(2030, 1, 10).plusMonths(monthOffset)).withBaseAmount(amount).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private MockMultipartFile receiptFile() {

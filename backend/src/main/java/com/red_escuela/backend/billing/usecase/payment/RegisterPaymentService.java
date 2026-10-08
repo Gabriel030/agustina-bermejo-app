@@ -1,8 +1,7 @@
 package com.red_escuela.backend.billing.usecase.payment;
 
 import java.time.LocalDate;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
@@ -48,24 +47,21 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
     private final StudentCurrentAccountService accountService;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final InvoiceViewLoader invoiceViewLoader;
     private final CurrentStudentService currentStudentService;
     private final CreditNoteService creditNoteService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
-                                   StudentCurrentAccountService accountService, CourseEnrollmentRepository courseEnrollmentRepository,
-                                   ProgramEnrollmentRepository programEnrollmentRepository,
+                                   StudentCurrentAccountService accountService, InvoiceViewLoader invoiceViewLoader,
                                    CurrentStudentService currentStudentService, CreditNoteService creditNoteService,
                                    ApplicationEventPublisher eventPublisher,
                                    Clock clock) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.accountService = accountService;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.invoiceViewLoader = invoiceViewLoader;
         this.currentStudentService = currentStudentService;
         this.creditNoteService = creditNoteService;
         this.eventPublisher = eventPublisher;
@@ -163,10 +159,10 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     }
 
     private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {
-        invoice.findCourseEnrollmentId().flatMap(courseEnrollmentRepository::findById).ifPresent(enrollment ->
+        invoice.findCourseEnrollmentId().flatMap(invoiceViewLoader::findCourseEnrollment).ifPresent(enrollment ->
                 restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, enrollment.getId(),
                         invoiceRepository.countByCourseEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
-        invoice.findProgramEnrollmentId().flatMap(programEnrollmentRepository::findById).ifPresent(enrollment ->
+        invoice.findProgramEnrollmentId().flatMap(invoiceViewLoader::findProgramEnrollment).ifPresent(enrollment ->
                 restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, enrollment.getId(),
                         invoiceRepository.countByProgramEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
     }

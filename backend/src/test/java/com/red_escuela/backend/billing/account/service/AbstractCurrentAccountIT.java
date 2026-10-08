@@ -85,6 +85,9 @@ abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
         Person person = new Person();
         String username = "acc" + System.nanoTime();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);

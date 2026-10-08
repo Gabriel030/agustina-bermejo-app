@@ -107,6 +107,9 @@ class PaymentServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -156,7 +159,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(CourseEnrollment enrollment, FeeType feeType, Money amount, InvoicePaymentStatus status, YearMonth period) {
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(feeType).forPeriod(period).dueOn(LocalDate.now()).withBaseAmount(amount).inState(status).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     @Test

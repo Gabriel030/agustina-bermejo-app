@@ -96,6 +96,9 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -203,8 +206,8 @@ class CreditNoteServiceTest extends AbstractIntegrationTest {
     }
 
     private Invoice persistInvoice(Student student, Money amount) {
-        Invoice invoice = BillingTestFixtures.invoice().ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).build();
-        return invoiceRepository.save(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).build();
+        return invoice;
     }
 
     private Payment persistPayment(Person registeredBy) {

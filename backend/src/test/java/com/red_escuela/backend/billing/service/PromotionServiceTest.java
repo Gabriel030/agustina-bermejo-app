@@ -154,6 +154,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         person.setName("Persona");
         person.setLastname(username);
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);

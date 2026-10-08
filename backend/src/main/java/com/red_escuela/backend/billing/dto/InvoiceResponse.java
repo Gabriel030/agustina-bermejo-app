@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
-import com.red_escuela.backend.billing.service.InvoiceView;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.shared.domain.Money;

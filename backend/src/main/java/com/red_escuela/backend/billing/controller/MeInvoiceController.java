@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
-import com.red_escuela.backend.billing.service.BankTransferReceiptResponseAssembler;
+import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;

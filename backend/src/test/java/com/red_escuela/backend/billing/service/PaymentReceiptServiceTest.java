@@ -128,6 +128,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -168,7 +171,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoicePaymentStatus status) {
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).inState(status).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student) {
@@ -188,7 +191,7 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
     private Invoice persistInvoice(ProgramEnrollment enrollment, Money amount, InvoicePaymentStatus status) {
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(amount).inState(status).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private MockMultipartFile receiptFile() {
@@ -411,9 +414,8 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         student.getPerson().setLastname("Comprobante");
         student.getPerson().setDni("97000013");
         personRepository.save(student.getPerson());
-        Invoice invoice = BillingTestFixtures.invoice().ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(10000)).build();
-        invoice = invoiceRepository.save(invoice);
-        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        Invoice invoice = BillingTestFixtures.invoice().forStudent(student).ofType(FeeType.ENROLLMENT_FEE).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(10000)).build();
+                BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
 
         BankTransferReceiptResponse response = BankTransferReceiptResponse.from(receipt, null);
 

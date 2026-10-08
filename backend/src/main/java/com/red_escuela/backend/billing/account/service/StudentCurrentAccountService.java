@@ -84,9 +84,13 @@ public class StudentCurrentAccountService {
     }
 
     private void requireLocked(StudentCurrentAccount account) {
-        if (!entityManager.contains(account) || entityManager.getLockMode(account) != LockModeType.PESSIMISTIC_WRITE) {
+        if (!entityManager.contains(account) || !isPessimisticallyLocked(entityManager.getLockMode(account))) {
             throw new IllegalStateException("The student current account must be locked in the current transaction before recording an entry");
         }
+    }
+
+    private static boolean isPessimisticallyLocked(LockModeType mode) {
+        return mode == LockModeType.PESSIMISTIC_WRITE || mode == LockModeType.PESSIMISTIC_FORCE_INCREMENT;
     }
 
     private CurrentAccountEntry persist(StudentCurrentAccount account, CurrentAccountEntry entry) {

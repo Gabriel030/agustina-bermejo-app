@@ -119,6 +119,7 @@ public final class BillingTestFixtures {
     public static final class InvoiceFixture {
         private ProgramEnrollment programEnrollment;
         private CourseEnrollment courseEnrollment;
+        private com.red_escuela.backend.identity.entity.Student student;
         private FeeType feeType = FeeType.MONTHLY_INSTALLMENT;
         private YearMonth period = YearMonth.now();
         private LocalDate dueDate = LocalDate.now();
@@ -137,6 +138,11 @@ public final class BillingTestFixtures {
 
         public InvoiceFixture forCourseEnrollment(CourseEnrollment enrollment) {
             this.courseEnrollment = enrollment;
+            return this;
+        }
+
+        public InvoiceFixture forStudent(com.red_escuela.backend.identity.entity.Student student) {
+            this.student = student;
             return this;
         }
 
@@ -187,8 +193,9 @@ public final class BillingTestFixtures {
         }
 
         private Invoice issue() {
-            Long studentId = programEnrollment != null ? programEnrollment.getStudent().getId() : courseEnrollment.getStudent().getId();
-            var person = programEnrollment != null ? programEnrollment.getStudent().getPerson() : courseEnrollment.getStudent().getPerson();
+            com.red_escuela.backend.identity.entity.Student owner = student != null ? student : programEnrollment != null ? programEnrollment.getStudent() : courseEnrollment.getStudent();
+            Long studentId = owner.getId();
+            var person = owner.getPerson();
             StudentCurrentAccount account = bean(StudentCurrentAccountService.class).findOrOpenAndLockStudentCurrentAccount(studentId, baseAmount.currency());
             Long priceRevisionId = priceRevisionId(person.getId());
             ChargeKey key = new ChargeKey("FX:" + UUID.randomUUID());
@@ -209,7 +216,7 @@ public final class BillingTestFixtures {
                 default -> throw new IllegalStateException("Unsupported fixture type " + invoiceType);
             };
             draft.issueInvoice(bean(InvoiceNumberGenerator.class).nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.isAfter(LocalDate.now()) ? LocalDate.now() : dueDate,
-                    dueDate, new StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), null), ACTOR);
+                    dueDate, new StudentSnapshot(person.getName() == null ? "Alumno de prueba" : person.getName() + " " + person.getLastname(), person.getDni() == null ? "00000000" : person.getDni(), null), ACTOR);
             Invoice saved = bean(InvoiceRepository.class).save(draft);
             bean(InvoiceRepository.class).flush();
             bean(StudentCurrentAccountService.class).recordInvoiceIssuedDebit(account, saved, saved.getIssueDate());
@@ -237,8 +244,8 @@ public final class BillingTestFixtures {
             if (!found.isEmpty()) {
                 return found.get(0);
             }
-            return jdbc.queryForObject("insert into price_revision (program_id, course_id, fee_type, description, monthly_amount, effective_from, created_by_id, created_at) "
-                    + "values (?, ?, ?, 'Fixture', ?, date '2000-01-01', ?, now()) returning id", Long.class, programId, courseId, feeType.name(), baseAmount.amount(), createdById);
+            return jdbc.queryForObject("insert into price_revision (program_id, course_id, fee_type, description, monthly_amount, monthly_amount_currency, effective_from, created_by_id, created_at) "
+                    + "values (?, ?, ?, 'Fixture', ?, ?, date '2000-01-01', ?, now()) returning id", Long.class, programId, courseId, feeType.name(), baseAmount.amount(), baseAmount.currency().name(), createdById);
         }
     }
 }

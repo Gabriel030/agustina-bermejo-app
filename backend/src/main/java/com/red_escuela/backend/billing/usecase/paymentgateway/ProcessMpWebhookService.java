@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.usecase.paymentgateway;
 
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -29,7 +29,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     private static final Logger log = LoggerFactory.getLogger(ProcessMpWebhookService.class);
 
     private final InvoiceRepository invoiceRepository;
-    private final StudentRepository studentRepository;
+    private final InvoiceViewLoader invoiceViewLoader;
     private final PaymentRepository paymentRepository;
     private final RegisterPaymentUseCase registerPaymentUseCase;
     private final MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher;
@@ -37,13 +37,13 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
 
     public ProcessMpWebhookService(
             InvoiceRepository invoiceRepository,
-            StudentRepository studentRepository,
+            InvoiceViewLoader invoiceViewLoader,
             PaymentRepository paymentRepository,
             RegisterPaymentUseCase registerPaymentUseCase,
             MercadoPagoPaymentFetcher mercadoPagoPaymentFetcher,
             MpWebhookSignatureVerifier signatureVerifier) {
         this.invoiceRepository = invoiceRepository;
-        this.studentRepository = studentRepository;
+        this.invoiceViewLoader = invoiceViewLoader;
         this.paymentRepository = paymentRepository;
         this.registerPaymentUseCase = registerPaymentUseCase;
         this.mercadoPagoPaymentFetcher = mercadoPagoPaymentFetcher;
@@ -97,8 +97,13 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
     }
 
     private Person resolveOwnerPerson(Invoice invoice) {
-        Long studentId = invoiceRepository.findOwnerStudentIdByInvoiceId(invoice.getId())
-                .orElseThrow(() -> new IllegalStateException("Invoice sin alumno asociado: " + invoice.getId()));
-        return studentRepository.findById(studentId).orElseThrow().getPerson();
+        var view = invoiceViewLoader.loadInvoiceView(invoice);
+        if (view.courseEnrollment() != null) {
+            return view.courseEnrollment().getStudent().getPerson();
+        }
+        if (view.programEnrollment() != null) {
+            return view.programEnrollment().getStudent().getPerson();
+        }
+        throw new IllegalStateException("Invoice sin enrollment asociado: " + invoice.getId());
     }
 }

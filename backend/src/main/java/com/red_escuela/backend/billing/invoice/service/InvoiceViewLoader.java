@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.invoice.service;
 
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,5 +54,25 @@ public class InvoiceViewLoader {
                 .map(invoice -> new InvoiceView(invoice, invoice.findProgramEnrollmentId().map(programs::get).orElse(null),
                         invoice.findCourseEnrollmentId().map(courses::get).orElse(null), allocations.getOrDefault(invoice.getId(), List.of())))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ProgramEnrollment> findProgramEnrollment(Long programEnrollmentId) {
+        return programEnrollmentRepository.findById(programEnrollmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CourseEnrollment> findCourseEnrollment(Long courseEnrollmentId) {
+        return courseEnrollmentRepository.findById(courseEnrollmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProgramEnrollment> findProgramEnrollmentsOfStudent(Long studentId) {
+        return programEnrollmentRepository.findByStudentId(studentId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseEnrollment> findCourseEnrollmentsOfStudent(Long studentId) {
+        return courseEnrollmentRepository.findByStudentId(studentId);
     }
 }

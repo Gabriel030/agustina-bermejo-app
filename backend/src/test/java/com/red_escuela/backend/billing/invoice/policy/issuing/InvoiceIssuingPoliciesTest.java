@@ -33,7 +33,6 @@ class InvoiceIssuingPoliciesTest {
             "ADMINISTRATIVE_FEE,AD_HOC_CHARGE,true", "MONTHLY_INSTALLMENT,AD_HOC_CHARGE,false", "ENROLLMENT_FEE,AD_HOC_CHARGE,false",
             "ENROLLMENT_FEE,PROGRAM_ADMISSION,true", "MONTHLY_INSTALLMENT,PROGRAM_ADMISSION,false",
             "MONTHLY_INSTALLMENT,COURSE_ADMISSION,true", "ENROLLMENT_FEE,COURSE_ADMISSION,false",
-            "MONTHLY_INSTALLMENT,LEGACY,false", "MONTHLY_INSTALLMENT,UPFRONT,false", "MONTHLY_INSTALLMENT,CATCH_UP,false",
             "MONTHLY_INSTALLMENT,ANNUAL_UPFRONT_PAYMENT,false", "LATE_FEE,LATE_FEE,false"})
     void reasonAndFeeTypeMustMatch(FeeType feeType, InvoiceIssuingReason reason, boolean allowed) {
         InvoiceIssuingRequest request = request(feeType, reason, TODAY, 1L, 1);

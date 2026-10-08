@@ -85,6 +85,9 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -122,7 +125,6 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
 
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(3)).dueOn(LocalDate.now().minusMonths(3)).withBaseAmount(ars(deuda)).build();
         BillingTestFixtures.markInvoiceAsOverdue(invoice);
-        invoiceRepository.save(invoice);
         return enrollment;
     }
 
@@ -159,7 +161,6 @@ class StudentDebtResolutionServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = programEnrollmentRepository.save(enrollment);
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now().plusDays(5)).withBaseAmount(ars(5000)).build();
-        invoiceRepository.save(invoice);
 
         Program programNuevo = persistProgram();
         var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));

@@ -1,5 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
+
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
+
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
@@ -17,8 +21,6 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,17 +34,13 @@ public class InvoiceQueryService {
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final PriceRevisionService priceRevisionService;
     private final Clock clock;
 
-    public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader, CourseEnrollmentRepository courseEnrollmentRepository,
-                               ProgramEnrollmentRepository programEnrollmentRepository, PriceRevisionService priceRevisionService, Clock clock) {
+    public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
+                               PriceRevisionService priceRevisionService, Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
         this.priceRevisionService = priceRevisionService;
         this.clock = clock;
     }
@@ -58,18 +56,18 @@ public class InvoiceQueryService {
     }
 
     public CourseEnrollment courseBillable(Long courseEnrollmentId) {
-        return courseEnrollmentRepository.findById(courseEnrollmentId)
+        return invoiceViewLoader.findCourseEnrollment(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
     }
 
     public ProgramEnrollment programBillable(Long programEnrollmentId) {
-        return programEnrollmentRepository.findById(programEnrollmentId)
+        return invoiceViewLoader.findProgramEnrollment(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
     }
 
     @Transactional(readOnly = true)
     public List<InvoiceView> byOwnCourse(Long studentId, Long courseEnrollmentId) {
-        CourseEnrollment enrollment = courseEnrollmentRepository.findById(courseEnrollmentId)
+        CourseEnrollment enrollment = invoiceViewLoader.findCourseEnrollment(courseEnrollmentId)
                 .orElseThrow(() -> new CourseEnrollmentNotFoundException(courseEnrollmentId));
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, courseEnrollmentId);
@@ -79,7 +77,7 @@ public class InvoiceQueryService {
 
     @Transactional(readOnly = true)
     public List<InvoiceView> byOwnProgram(Long studentId, Long programEnrollmentId) {
-        ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
+        ProgramEnrollment enrollment = invoiceViewLoader.findProgramEnrollment(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
         if (!enrollment.getStudent().getId().equals(studentId)) {
             throw new NotOwnEnrollmentException(studentId, programEnrollmentId);
@@ -112,12 +110,12 @@ public class InvoiceQueryService {
     }
 
     public boolean hasDebt(Long studentId) {
-        for (CourseEnrollment enrollment : courseEnrollmentRepository.findByStudentId(studentId)) {
+        for (CourseEnrollment enrollment : invoiceViewLoader.findCourseEnrollmentsOfStudent(studentId)) {
             if (hasAnyUnpaidInstallment(invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()))) {
                 return true;
             }
         }
-        for (ProgramEnrollment enrollment : programEnrollmentRepository.findByStudentId(studentId)) {
+        for (ProgramEnrollment enrollment : invoiceViewLoader.findProgramEnrollmentsOfStudent(studentId)) {
             if (hasAnyUnpaidInstallment(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()))) {
                 return true;
             }
@@ -127,12 +125,12 @@ public class InvoiceQueryService {
 
     public boolean hasOverdueDebt(Long studentId) {
         LocalDate today = LocalDate.now(clock);
-        for (CourseEnrollment enrollment : courseEnrollmentRepository.findByStudentId(studentId)) {
+        for (CourseEnrollment enrollment : invoiceViewLoader.findCourseEnrollmentsOfStudent(studentId)) {
             if (invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId()).stream().anyMatch(i -> isOverdue(i, today))) {
                 return true;
             }
         }
-        for (ProgramEnrollment enrollment : programEnrollmentRepository.findByStudentId(studentId)) {
+        for (ProgramEnrollment enrollment : invoiceViewLoader.findProgramEnrollmentsOfStudent(studentId)) {
             if (invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream().anyMatch(i -> isOverdue(i, today))) {
                 return true;
             }
@@ -143,12 +141,12 @@ public class InvoiceQueryService {
     private String resolvePriceRevisionDescription(Invoice invoice) {
         InvoiceLine line = invoice.getPrimaryLine();
         if (invoice.findCourseEnrollmentId().isPresent()) {
-            CourseEnrollment enrollment = courseEnrollmentRepository.findById(invoice.findCourseEnrollmentId().get()).orElse(null);
+            CourseEnrollment enrollment = invoiceViewLoader.findCourseEnrollment(invoice.findCourseEnrollmentId().get()).orElse(null);
             return enrollment == null ? null : priceRevisionService.findRevisionForCourse(enrollment.getCourse().getId(), line.getFeeType(), invoice.getDueDate())
                     .map(PriceRevision::getDescription).orElse(null);
         }
         if (invoice.findProgramEnrollmentId().isPresent()) {
-            ProgramEnrollment enrollment = programEnrollmentRepository.findById(invoice.findProgramEnrollmentId().get()).orElse(null);
+            ProgramEnrollment enrollment = invoiceViewLoader.findProgramEnrollment(invoice.findProgramEnrollmentId().get()).orElse(null);
             return enrollment == null ? null : priceRevisionService.findRevisionForProgram(enrollment.getProgram().getId(), line.getFeeType(), invoice.getDueDate())
                     .map(PriceRevision::getDescription).orElse(null);
         }

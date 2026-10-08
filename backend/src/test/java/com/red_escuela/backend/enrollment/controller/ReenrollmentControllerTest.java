@@ -92,6 +92,9 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -113,6 +116,9 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(dni);
+        person.setDni(Long.toString(Math.abs((long) (dni).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(dni + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -144,7 +150,6 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
 
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(3)).dueOn(LocalDate.now().minusMonths(3)).withBaseAmount(ars(5000)).build();
         BillingTestFixtures.markInvoiceAsOverdue(invoice);
-        invoiceRepository.save(invoice);
     }
 
     @Test

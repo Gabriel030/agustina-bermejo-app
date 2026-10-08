@@ -25,7 +25,6 @@ public class InvoiceOverdueRowProcessor {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
         if (invoice.getPaymentStatus() == InvoicePaymentStatus.PENDING) {
             invoice.markInvoiceAsOverdue(businessDate, new StatusChangeActor(null, "InvoiceOverdueSweep"));
-            invoiceRepository.save(invoice);
         }
     }
 }

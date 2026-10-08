@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
-import com.red_escuela.backend.billing.service.InvoiceView;
-import com.red_escuela.backend.billing.service.InvoiceViewLoader;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;

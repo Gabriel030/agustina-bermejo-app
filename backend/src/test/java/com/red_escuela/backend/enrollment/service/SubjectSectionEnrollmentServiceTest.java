@@ -317,6 +317,9 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         Address address = new Address();
         entityManager.persist(address);
         director.setUsername("director.matricula." + System.nanoTime());
+        director.setDni(Long.toString(Math.abs((long) ("director.matricula." + System.nanoTime()).hashCode())));
+        director.setName("Persona");
+        director.setLastname("Prueba");
         director.setEmail(director.getUsername() + "@example.com");
         director.setAddress(address);
         director.setStatus(StatusType.ACTIVE);

@@ -86,6 +86,9 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     private StudentRepository studentRepository;
 
     @Autowired
+    private com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader invoiceViewLoader;
+
+    @Autowired
     private CourseRepository courseRepository;
 
     @Autowired
@@ -102,6 +105,9 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         Person person = new Person();
         String username = "mp.webhook." + System.nanoTime();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -136,11 +142,11 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         enrollment = courseEnrollmentRepository.save(enrollment);
 
         Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(amount)).build();
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
-        return new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
+        return new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.of(new MercadoPagoApprovedPayment(new PaymentAllocationRequest(invoiceId, ars(reportedAmount)), 1)),
                 new MpWebhookSignatureVerifier("", true));
     }
@@ -166,7 +172,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void theWebhookStoresTheCardTypeAndInstallmentsReportedByTheGateway() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
                 id -> Optional.of(new MercadoPagoApprovedPayment(
                         new PaymentAllocationRequest(invoice.getId(), ars(BigDecimal.valueOf(10000))), 6,
                         com.red_escuela.backend.billing.entity.CardType.CREDIT)),
@@ -209,7 +215,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     void anInvalidSignatureLogsWarnWithoutLeakingTheSecretOrTheSignature(CapturedOutput output) {
         String secret = "super-secret-webhook-key";
         String signature = "ts=1,v1=deadbeefdeadbeef";
-        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, studentRepository, paymentRepository, registerPaymentUseCase,
+        ProcessMpWebhookService service = new ProcessMpWebhookService(invoiceRepository, invoiceViewLoader, paymentRepository, registerPaymentUseCase,
                 mpPaymentId -> Optional.empty(), new MpWebhookSignatureVerifier(secret, false));
 
         assertThatThrownBy(() -> service.process(signature, "request-1", "123456"))

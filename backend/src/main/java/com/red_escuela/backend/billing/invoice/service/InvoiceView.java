@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.invoice.service;
 
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;

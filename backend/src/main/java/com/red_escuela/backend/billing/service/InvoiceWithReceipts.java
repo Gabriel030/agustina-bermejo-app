@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
+
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 
 import java.util.List;

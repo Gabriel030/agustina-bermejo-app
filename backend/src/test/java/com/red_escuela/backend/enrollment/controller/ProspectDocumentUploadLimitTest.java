@@ -102,6 +102,9 @@ class ProspectDocumentUploadLimitTest extends AbstractIntegrationTest {
         Address preceptorAddress = addressRepository.save(new Address());
         preceptor = new Person();
         preceptor.setUsername("preceptor-limite");
+        preceptor.setDni(Long.toString(Math.abs((long) ("preceptor-limite").hashCode())));
+        preceptor.setName("Persona");
+        preceptor.setLastname("Prueba");
         preceptor.setEmail("preceptor-limite@example.com");
         preceptor.setAddress(preceptorAddress);
         preceptor.setStatus(StatusType.ACTIVE);

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.usecase.invoice;
 
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
-import com.red_escuela.backend.billing.service.InvoiceView;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 
 public interface CreateAdHocInvoiceForCourseEnrollmentUseCase {
     InvoiceView create(Long courseEnrollmentId, CreateAdHocInvoiceRequest request);
