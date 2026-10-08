@@ -40,7 +40,8 @@ public final class InvoiceIssuingRequestFactory {
 
     public static InvoiceIssuingRequest createProgramEnrollmentRequest(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice planned,
                                                                        InvoiceIssuingReason reason) {
-        return new InvoiceIssuingRequest(enrollment.getStudent().getId(), enrollment.getId(), null, enrollment.getProgram().getId(), null, null,
+        return new InvoiceIssuingRequest(enrollment.getStudent().getId(), enrollment.getId(), null, enrollment.getProgram().getId(), null,
+                enrollment.getProgramCohort() == null ? null : enrollment.getProgramCohort().getId(),
                 planned.kind(), planned.period(), planned.dueDate(), planned.priceDate(), reason, selection == null ? null : selection.getId(),
                 planned.templateId(), planned.slot(), planned.entry(), null, null, null, null, null, actor());
     }

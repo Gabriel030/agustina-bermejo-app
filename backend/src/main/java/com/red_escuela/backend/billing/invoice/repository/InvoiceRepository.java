@@ -32,7 +32,7 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     Optional<Invoice> findById(Long id);
 
-    @Query("select distinct i from Invoice i left join fetch i.lines where i.id = :id")
+    @Query("select distinct i from Invoice i left join fetch i.lines l left join fetch l.discount where i.id = :id")
     Optional<Invoice> findInvoiceWithLinesById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -52,10 +52,10 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """)
     long countPromotionDiscountsOfStudent(@Param("benefitId") Long benefitId, @Param("studentId") Long studentId);
 
-    @Query("select distinct i from Invoice i join fetch i.lines l where l.programEnrollmentId = :enrollmentId")
+    @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where l.programEnrollmentId = :enrollmentId")
     List<Invoice> findByProgramEnrollmentId(@Param("enrollmentId") Long enrollmentId);
 
-    @Query("select distinct i from Invoice i join fetch i.lines l where l.courseEnrollmentId = :enrollmentId")
+    @Query("select distinct i from Invoice i join fetch i.lines l left join fetch l.discount where l.courseEnrollmentId = :enrollmentId")
     List<Invoice> findByCourseEnrollmentId(@Param("enrollmentId") Long enrollmentId);
 
     default List<Invoice> findByProgramEnrollmentIdOrderByPeriod(Long enrollmentId) {

@@ -181,34 +181,33 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theOverviewListsEachPaymentOfAnInvoiceNewestFirstWithItsRecorderAndNotes() throws Exception {
+    @Tag("D-136")
+    void theOverviewListsTheFullPaymentOfAnInvoiceWithItsRecorderAndNotes() {
         Person recorder = persistPerson("admin.detail1." + System.nanoTime(), "Ana", "Ruiz");
         Student student = persistStudent();
         Invoice invoice = persistInvoice(persistCourseEnrollment(student), ars(10000), 0);
-        registerPaymentUseCase.register(request(PaymentMethod.CASH, null, null, "Seña",
-                new PaymentAllocationRequest(invoice.getId(), ars(3000))), recorder);
-        Thread.sleep(5);
-        registerPaymentUseCase.register(request(PaymentMethod.TRANSFER, "TRF-998", null, null,
-                new PaymentAllocationRequest(invoice.getId(), ars(2000))), recorder);
+        registerPaymentUseCase.register(request(PaymentMethod.TRANSFER, "TRF-998", null, "Pago completo",
+                new PaymentAllocationRequest(invoice.getId(), ars(10000))), recorder);
 
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
 
-        assertThat(response.status()).isEqualTo("PENDING");
-        assertThat(response.remainingBalance()).isEqualTo(ars(5000));
-        assertThat(response.payments()).hasSize(2);
-        AdminInvoicePaymentResponse newest = response.payments().get(0);
-        assertThat(newest.method()).isEqualTo("TRANSFER");
-        assertThat(newest.externalReference()).isEqualTo("TRF-998");
-        assertThat(newest.amountApplied()).isEqualTo(ars(2000));
-        assertThat(newest.paymentTotal()).isEqualTo(ars(2000));
-        assertThat(newest.registeredByName()).isEqualTo("Ana Ruiz");
-        assertThat(newest.status()).isEqualTo("CONFIRMED");
-        assertThat(response.payments().get(1).notes()).isEqualTo("Seña");
-        assertThat(response.paymentDate()).isEqualTo(newest.paidAt());
+        assertThat(response.status()).isEqualTo("PAID");
+        assertThat(response.remainingBalance()).isEqualTo(ars(0));
+        assertThat(response.payments()).hasSize(1);
+        AdminInvoicePaymentResponse payment = response.payments().get(0);
+        assertThat(payment.method()).isEqualTo("TRANSFER");
+        assertThat(payment.externalReference()).isEqualTo("TRF-998");
+        assertThat(payment.amountApplied()).isEqualTo(ars(10000));
+        assertThat(payment.paymentTotal()).isEqualTo(ars(10000));
+        assertThat(payment.registeredByName()).isEqualTo("Ana Ruiz");
+        assertThat(payment.status()).isEqualTo("CONFIRMED");
+        assertThat(payment.notes()).isEqualTo("Pago completo");
+        assertThat(response.paymentDate()).isEqualTo(payment.paidAt());
         assertThat(response.receipts()).isEmpty();
     }
 
     @Test
+    @Tag("D-136")
     void aPaymentCoveringTwoInstallmentsReportsTheAppliedAmountAndTheTotalOnEach() {
         Person recorder = persistPerson("admin.detail2." + System.nanoTime(), "Ana", "Ruiz");
         Student student = persistStudent();
@@ -217,12 +216,12 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
         Invoice second = persistInvoice(enrollment, ars(10000), 1);
         registerPaymentUseCase.register(request(PaymentMethod.CARD, "LOTE-1", 3, null,
                 new PaymentAllocationRequest(first.getId(), ars(10000)),
-                new PaymentAllocationRequest(second.getId(), ars(4000))), recorder);
+                new PaymentAllocationRequest(second.getId(), ars(10000))), recorder);
 
         AdminInvoicePaymentResponse onSecond = adminInvoice(student, second.getId()).payments().get(0);
 
-        assertThat(onSecond.amountApplied()).isEqualTo(ars(4000));
-        assertThat(onSecond.paymentTotal()).isEqualTo(ars(14000));
+        assertThat(onSecond.amountApplied()).isEqualTo(ars(10000));
+        assertThat(onSecond.paymentTotal()).isEqualTo(ars(20000));
         assertThat(onSecond.cardInstallments()).isEqualTo(3);
         assertThat(onSecond.cardType()).isNull();
     }
