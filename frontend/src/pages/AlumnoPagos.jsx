@@ -7,10 +7,8 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
-import { useMisSolicitudesCarrera } from '@/features/enrollment/hooks/useCatalogo';
+import { AdmissionInvoicePendingCard } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
-import { Button } from '@/components/ui/button';
-import { formatMoney } from '@/lib/utils';
 
 const STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
@@ -40,10 +38,6 @@ export function AlumnoPagos() {
   const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
   const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
   const { data: standings } = useEnrollmentPaymentStatus();
-  const { data: solicitudes } = useMisSolicitudesCarrera();
-  const matriculasDeIngresoPendientes = (solicitudes ?? []).filter(
-    (s) => s.status === 'APPROVED' && s.admissionInvoice && s.admissionInvoice.paymentStatus !== 'PAID',
-  );
 
   const cargando = cargandoCursos || cargandoCarreras;
 
@@ -95,19 +89,7 @@ export function AlumnoPagos() {
         />
       </div>
 
-      {matriculasDeIngresoPendientes.map((solicitud) => (
-        <GlassCard key={solicitud.id} className="flex items-center justify-between gap-4 p-5">
-          <div>
-            <div className="text-[13.5px] font-bold text-ink">Matrícula de ingreso · {solicitud.programName}</div>
-            <div className="text-xs text-ink-faint">
-              {formatMoney(solicitud.admissionInvoice.total)} · vence el {formatFecha(solicitud.admissionInvoice.dueDate)}. Al pagarla se confirma tu inscripción.
-            </div>
-          </div>
-          <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`)}>
-            Pagar matrícula
-          </Button>
-        </GlassCard>
-      ))}
+      <AdmissionInvoicePendingCard />
 
       <GlassCard className="overflow-hidden p-0">
         {cargando && (

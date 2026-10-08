@@ -9,3 +9,4 @@ export {
 } from './hooks/useStudentEnrollment';
 export { useProgresoStaff } from './hooks/useProgramProgress';
 export { useExcepcionesPendientes } from './hooks/useExceptionApprovals';
+export { useMisSolicitudesCarrera } from './hooks/useCatalogo';

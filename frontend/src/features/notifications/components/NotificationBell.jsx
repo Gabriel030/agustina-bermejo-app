@@ -38,6 +38,11 @@ export function NotificationBell() {
       navigate(`/alumno/inicio?aviso=${n.relatedEntityId}`);
       return;
     }
+    if (n.type === 'PROGRAM_APPLICATION_APPROVED' && n.relatedEntityId) {
+      setOpen(false);
+      navigate(`/mis-solicitudes/${n.relatedEntityId}`);
+      return;
+    }
   }
 
   return (

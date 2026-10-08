@@ -183,3 +183,35 @@ describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
     }
   });
 });
+
+describe('AlumnoInicio — matrícula de ingreso (D-227)', () => {
+  const solicitudAprobada = {
+    id: 3,
+    programName: 'Diseño Gráfico',
+    status: 'APPROVED',
+    admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2099-03-20', paymentStatus: 'PENDING' },
+  };
+
+  it('muestra la card de la matrícula impaga y no dice que no hay saldo pendiente', async () => {
+    mockearBase([]);
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([solicitudAprobada])),
+    );
+    montar();
+
+    expect(await screen.findByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
+    expect(await screen.findByText('Matrícula de ingreso pendiente')).toBeInTheDocument();
+    expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
+  });
+
+  it('sin matrículas impagas sigue diciendo que no hay saldo pendiente', async () => {
+    mockearBase([]);
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+    );
+    montar();
+
+    expect(await screen.findByText('No tenés saldo pendiente.')).toBeInTheDocument();
+    expect(screen.queryByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).not.toBeInTheDocument();
+  });
+});

@@ -15,6 +15,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   PAYMENT_RECEIPT_REJECTED: 'Comprobante rechazado',
   ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
   ANNOUNCEMENT_UPDATED: 'Aviso actualizado',
+  PROGRAM_APPLICATION_APPROVED: 'Solicitud aprobada',
 };
 
 export const TONO_NOTIFICACION = {
@@ -34,6 +35,7 @@ export const TONO_NOTIFICACION = {
   PAYMENT_RECEIPT_REJECTED: 'danger',
   ANNOUNCEMENT_PUBLISHED: 'accent2',
   ANNOUNCEMENT_UPDATED: 'accent2',
+  PROGRAM_APPLICATION_APPROVED: 'success',
 };
 
 export function tiempoRelativo(fechaIso) {

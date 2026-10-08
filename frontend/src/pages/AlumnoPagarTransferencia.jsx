@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
+import { useMisSolicitudesCarrera } from '@/features/enrollment/hooks/useCatalogo';
 import { usePaymentConfig, useSubirComprobante, useMisComprobantes, usePriceBreakdown } from '@/hooks/useBilling';
 import { formatMoney, receiptFileError, receiptUploadErrorMessage } from '@/lib/billing';
 
@@ -154,6 +155,8 @@ function PasoEstado({ invoiceId }) {
   const navigate = useNavigate();
   const { data: comprobantes, isLoading } = useMisComprobantes();
   const comprobante = comprobantes?.find((c) => c.invoiceId === parseInt(invoiceId, 10));
+  const { data: solicitudes } = useMisSolicitudesCarrera();
+  const programaDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10))?.programName;
 
   if (isLoading) return <Skeleton className="h-32" />;
 
@@ -181,7 +184,9 @@ function PasoEstado({ invoiceId }) {
             </p>
           )}
           {comprobante.status === 'APPROVED' && (
-            <p className="mt-1 text-sm text-ink-faint">Tu pago fue confirmado correctamente.</p>
+            <p className="mt-1 text-sm text-ink-faint">
+              {programaDeMatricula ? `Tu pago fue confirmado. Ya estás inscripto en ${programaDeMatricula}.` : 'Tu pago fue confirmado correctamente.'}
+            </p>
           )}
           {comprobante.status === 'REJECTED' && (
             <>

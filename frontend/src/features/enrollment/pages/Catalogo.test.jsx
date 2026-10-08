@@ -52,8 +52,7 @@ describe('Catalogo', () => {
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('Illustrator desde cero')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
-    expect(screen.getByText('En revisión')).toBeInTheDocument();
+    expect(screen.getAllByText('En revisión')).toHaveLength(2);
   });
 
   it('muestra en lista de espera una solicitud de curso aprobada cuyo cupo estaba lleno', async () => {

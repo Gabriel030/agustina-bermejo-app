@@ -132,13 +132,14 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     const modalConfirmar = await screen.findByRole('dialog');
     await user.click(within(modalConfirmar).getByRole('button', { name: 'Sí, confirmar' }));
     expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+    expect(screen.getByText(/quedó en revisión y no se te cobró nada\. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
 
     // Revisar la tab Mis solicitudes
     await user.click(await screen.findByRole('tab', { name: 'Mis solicitudes' }));
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('En revisión')).toBeInTheDocument();
 
     // Verificación real de lo que se mandó al backend (no solo del status code mockeado de
     // vuelta) — un bug que mande el cohortId equivocado, el DNI sin actualizar, o un comprobante

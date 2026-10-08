@@ -205,11 +205,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   if (state.exito) {
     return (
       <PageContainer className="mx-auto items-center justify-center py-16 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-bg text-3xl text-success">✓</div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success-bg text-success">
+          <CircleCheck size={36} />
+        </div>
         <div className="font-heading text-xl font-bold text-ink">Solicitud enviada</div>
         <div className="max-w-[420px] text-[13.5px] text-ink-soft">
           {tipo === 'carrera'
-            ? 'Tu documentación queda en revisión. Cuando la aprueben, vas a recibir la factura de la matrícula en Mis pagos; al pagarla queda confirmada tu inscripción.'
+            ? `Tu solicitud para ${target.name} quedó en revisión y no se te cobró nada. Si la aprueban, te vamos a emitir la factura de la matrícula de ingreso${formatMoney(montoAPagar) ? ` (${formatMoney(montoAPagar)})` : ''} y vas a tener 10 días para pagarla: recién con ese pago queda confirmada tu inscripción. Te avisamos cuando haya novedades.`
             : 'Tu comprobante queda en revisión. Cuando lo aprueben, vas a quedar inscripto en el curso.'}
         </div>
         <Button onClick={() => navigate('/catalogo?tab=mis-solicitudes')} variant="gradient" className="mt-2 px-6">
@@ -244,6 +246,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
       {state.paso === 'cohorte' && (
         <GlassCard className="flex flex-col gap-3 p-5">
           <div className="text-[13px] text-ink-soft">Elegí la cohorte a la que te querés inscribir.</div>
+          {tipo === 'carrera' && (
+            <div className="text-xs text-ink-faint">
+              No se te cobra nada al enviar la solicitud. Si la aprueban, vas a recibir la factura de la matrícula para pagarla en 10 días.
+            </div>
+          )}
           {cohorts?.length === 0 && (
             <div className="rounded-lg bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
               Todavía no hay cohortes abiertas para esta carrera.

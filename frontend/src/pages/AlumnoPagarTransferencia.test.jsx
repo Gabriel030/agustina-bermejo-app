@@ -100,4 +100,36 @@ describe('AlumnoPagarTransferencia', () => {
 
     expect(await screen.findByText('Ya enviaste un comprobante para esta cuota y está en revisión.')).toBeInTheDocument();
   });
+
+  it('cuando el comprobante de la matrícula de ingreso se aprueba confirma la inscripción a la carrera', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 3, programName: 'Diseño Gráfico', status: 'APPROVED', admissionInvoice: { id: 61, paymentStatus: 'PAID' } }]),
+      ),
+    );
+    let comprobanteSubido = false;
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(overdueBreakdown)),
+      http.get(`${API}/me/bank-transfer-receipts`, () =>
+        HttpResponse.json(comprobanteSubido ? [{ id: 302, invoiceId: 61, status: 'APPROVED', uploadedAt: '2026-10-02T10:00:00' }] : []),
+      ),
+      http.post(`${API}/me/invoices/61/bank-transfer-receipts`, () => {
+        comprobanteSubido = true;
+        return HttpResponse.json({ id: 302 }, { status: 201 });
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />
+      </Routes>,
+      { route: '/alumno/pagos/61/transferencia' },
+    );
+
+    await goToUploadStep(user);
+    await user.upload(document.querySelector('input[type="file"]'), new File(['pdf'], 'comprobante.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
+
+    expect(await screen.findByText('Tu pago fue confirmado. Ya estás inscripto en Diseño Gráfico.')).toBeInTheDocument();
+  });
 });

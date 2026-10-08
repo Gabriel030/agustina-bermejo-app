@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { useAuth } from '@/context/AuthContext';
-import { usePaymentStanding } from '@/features/billing';
+import { usePaymentStanding, AdmissionInvoicePendingCard, useAdmissionInvoicesPending } from '@/features/billing';
 import { useMisCursos } from '@/features/enrollment';
 import { useNovedades } from '@/features/announcements';
 import { CATEGORIA_AVISO_LABEL } from '@/lib/avisos';
@@ -107,6 +107,7 @@ export function AlumnoInicio() {
   const { usuario } = useAuth();
   const { data: standing, isLoading: cargandoStanding } = usePaymentStanding();
   const { data: cursos } = useMisCursos();
+  const { pendientes: matriculasPendientes } = useAdmissionInvoicesPending();
   const { data: novedadesRaw, isLoading: cargandoNovedades, isError: errorNovedades } = useNovedades();
   const [searchParams] = useSearchParams();
   const [verTodos, setVerTodos] = useState(false);
@@ -132,6 +133,8 @@ export function AlumnoInicio() {
           configurable por Administrativo/Director es una feature aparte (ver spec).
           La mecánica (auto-avance, flechas, dots) sí es real. */}
       <BannerCarousel />
+
+      <AdmissionInvoicePendingCard />
 
       {/* Identidad + estado de pago */}
       <GlassCard className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -219,6 +222,11 @@ export function AlumnoInicio() {
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Saldo pendiente</div>
               <div className="text-[13px] text-ink-soft mt-1">Revisá tus cuotas en la sección de pagos.</div>
+            </div>
+          ) : matriculasPendientes.length > 0 ? (
+            <div className="rounded-xl bg-warning-bg px-4 py-3">
+              <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
+              <div className="text-[13px] text-ink-soft mt-1">Pagala para confirmar tu inscripción.</div>
             </div>
           ) : (
             <div className="rounded-xl bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">

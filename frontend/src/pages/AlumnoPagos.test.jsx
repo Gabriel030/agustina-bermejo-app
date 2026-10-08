@@ -33,7 +33,8 @@ describe('AlumnoPagos', () => {
     );
     renderPagos();
 
-    expect(await screen.findByText('Matrícula de ingreso · Diseño Gráfico')).toBeInTheDocument();
+    expect(await screen.findByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
+    expect(screen.getByText(/Diseño Gráfico · \$\s50\.000,00\. Vencimiento:/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pagar matrícula' })).toBeInTheDocument();
   });
 
@@ -54,6 +55,39 @@ describe('AlumnoPagos', () => {
 
     await screen.findByPlaceholderText('Buscar curso o carrera…');
     await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
+  });
+
+  it('muestra el error en lugar de callar cuando no puede cargar las solicitudes', async () => {
+    server.use(http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json({}, { status: 500 })));
+    renderPagos();
+
+    expect(await screen.findByText(/No pudimos cargar tus matrículas de ingreso/)).toBeInTheDocument();
+  });
+
+  it('con el comprobante en revisión muestra el pago en revisión en lugar de ofrecer pagar de nuevo', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          {
+            id: 3,
+            programName: 'Diseño Gráfico',
+            status: 'APPROVED',
+            admissionInvoice: {
+              id: 77,
+              total: { amount: '50000.00', currency: 'ARS' },
+              dueDate: '2099-03-20',
+              paymentStatus: 'PENDING',
+              receiptStatus: 'PENDING_REVIEW',
+              receiptUploadedAt: '2026-10-02T10:00:00',
+            },
+          },
+        ]),
+      ),
+    );
+    renderPagos();
+
+    expect(await screen.findByText('Pago en revisión')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
   });
 });
