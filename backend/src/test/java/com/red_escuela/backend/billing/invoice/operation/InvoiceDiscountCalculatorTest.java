@@ -53,8 +53,10 @@ class InvoiceDiscountCalculatorTest {
     void aCandidateOfAnotherInvoiceTypeIsNeverSelectedEvenIfItIsBigger() {
         var enrollment = candidate(DiscountType.COHORT_ENTRY, 1, InvoiceType.ENROLLMENT_FEE, "100.00", "90.00");
         var installment = candidate(DiscountType.PROMOTION, 2, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "10.00");
+        var smallerInstallment = candidate(DiscountType.SCHOLARSHIP, 3, InvoiceType.MONTHLY_INSTALLMENT, "100.00", "5.00");
 
-        assertThat(calculator.selectBestDiscountForInvoice(InvoiceType.MONTHLY_INSTALLMENT, List.of(enrollment, installment))).contains(installment);
+        assertThat(calculator.selectBestDiscountForInvoice(InvoiceType.MONTHLY_INSTALLMENT, List.of(enrollment, installment, smallerInstallment))).contains(installment);
+        assertThat(calculator.selectBestDiscountForInvoice(InvoiceType.ENROLLMENT_FEE, List.of(enrollment, installment, smallerInstallment))).contains(enrollment);
         assertThat(calculator.selectBestDiscountForInvoice(InvoiceType.EXAM_FEE, List.of(enrollment, installment))).isEmpty();
     }
 
@@ -74,12 +76,12 @@ class InvoiceDiscountCalculatorTest {
 
     @Test
     @Tag("D-051")
-    void theIssuingMomentHasTheSixPoliciesInOrder() {
+    void theIssuingMomentHasTheSevenPoliciesInOrder() {
         var set = new InvoiceIssuingOperationConfiguration().invoiceIssuingPolicySet();
 
         assertThat(set.moment()).isEqualTo("INVOICE_ISSUING");
         assertThat(set.policies().stream().map(Policy::ruleName).toList()).containsExactly("InvoiceIssuingReasonMatchesFeeTypePolicy",
-                "DueDateNotBeforeIssueDatePolicy", "EnrollmentFeeSlotRequiredPolicy", "OfferingCurrencyPolicy", "ChargeKeyNotAlreadyUsedPolicy",
+                "DueDateNotBeforeIssueDatePolicy", "EnrollmentFeeSlotRequiredPolicy", "ChargeRecipientMatchesEnrollmentPolicy", "OfferingCurrencyPolicy", "ChargeKeyNotAlreadyUsedPolicy",
                 "EnrollmentFeeSlotWithinTemplateCountPolicy");
     }
 }

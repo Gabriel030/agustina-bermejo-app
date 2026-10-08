@@ -41,7 +41,7 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
 
     @Override
     public InvoiceIssuingContext loadContextLockingRecipient(InvoiceIssuingRequest request) {
-        lockEnrollmentOf(request);
+        boolean enrollmentMatches = lockEnrollmentAndCheckItBelongsToRecipient(request);
         Currency offeringCurrency = Currency.valueOf(request.belongsToProgram()
                 ? jdbcTemplate.queryForObject("select currency from program where id = ?", String.class, request.programId())
                 : jdbcTemplate.queryForObject("select currency from course where id = ?", String.class, request.courseId()));
@@ -51,19 +51,32 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
                 : NonNegativeMoney.of(revision.orElseThrow(() -> new PriceRevisionNotFoundException(
                         "No PriceRevision found for " + request.feeType() + " at " + request.pricingDate())).getMonthlyAmount());
         InvoiceIssuingFacts facts = new InvoiceIssuingFacts(LocalDate.now(clock), offeringCurrency, chargeAmount,
-                revision.map(PriceRevision::getId).orElse(null),
-                invoiceRepository.findLiveInvoiceIdByChargeKey(request.chargeKey().value()).orElse(null),
-                enrollmentFeeCountOf(request), snapshotOf(request.studentId()));
+                revision.map(PriceRevision::getId).orElse(null), findExistingInvoiceId(request), enrollmentFeeCountOf(request),
+                snapshotOf(request.studentId()), enrollmentMatches);
         return new InvoiceIssuingContext(request, facts);
     }
 
-    private void lockEnrollmentOf(InvoiceIssuingRequest request) {
+    private Long findExistingInvoiceId(InvoiceIssuingRequest request) {
+        return Stream.concat(request.findChargeKey().stream(), request.findEquivalentAdmissionChargeKeys().stream())
+                .map(key -> invoiceRepository.findLiveInvoiceIdByChargeKey(key.value()))
+                .flatMap(Optional::stream)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean lockEnrollmentAndCheckItBelongsToRecipient(InvoiceIssuingRequest request) {
         if (request.programEnrollmentId() != null) {
-            jdbcTemplate.queryForObject("select id from program_enrollment where id = ? for update", Long.class, request.programEnrollmentId());
+            return belongsToRecipient(request, "select student_id, program_id from program_enrollment where id = ? for update", request.programEnrollmentId(), request.programId());
         }
         if (request.courseEnrollmentId() != null) {
-            jdbcTemplate.queryForObject("select id from course_enrollment where id = ? for update", Long.class, request.courseEnrollmentId());
+            return belongsToRecipient(request, "select student_id, course_id from course_enrollment where id = ? for update", request.courseEnrollmentId(), request.courseId());
         }
+        return true;
+    }
+
+    private boolean belongsToRecipient(InvoiceIssuingRequest request, String lockQuery, Long enrollmentId, Long offeringId) {
+        return jdbcTemplate.query(lockQuery, (row, index) -> request.studentId().equals(row.getLong(1)) && offeringId.equals(row.getLong(2)), enrollmentId)
+                .stream().findFirst().orElse(false);
     }
 
     private Optional<PriceRevision> findRevision(InvoiceIssuingRequest request) {

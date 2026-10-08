@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.DiscountContest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingContext;
 import com.red_escuela.backend.billing.invoice.policy.issuing.BestDiscountPerInvoiceTypePolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.ChargeKeyNotAlreadyUsedPolicy;
+import com.red_escuela.backend.billing.invoice.policy.issuing.ChargeRecipientMatchesEnrollmentPolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.DiscountMatchesInvoiceTypePolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.DueDateNotBeforeIssueDatePolicy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.EnrollmentFeeSlotRequiredPolicy;
@@ -28,6 +29,7 @@ public class InvoiceIssuingOperationConfiguration {
                 new InvoiceIssuingReasonMatchesFeeTypePolicy(),
                 new DueDateNotBeforeIssueDatePolicy(),
                 new EnrollmentFeeSlotRequiredPolicy(),
+                new ChargeRecipientMatchesEnrollmentPolicy(),
                 new OfferingCurrencyPolicy(),
                 new ChargeKeyNotAlreadyUsedPolicy(),
                 new EnrollmentFeeSlotWithinTemplateCountPolicy());

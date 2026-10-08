@@ -40,17 +40,19 @@ class InvoiceDiscountSelectionProperties {
         DiscountType[] types = DiscountType.values();
         List<InvoiceDiscountCandidate> candidates = new java.util.ArrayList<>();
         for (int index = 0; index < spec.offers().size(); index++) {
-            candidates.add(new InvoiceDiscountCandidate(types[index % 3], index + 1L, index + 1L, "d" + index, InvoiceType.MONTHLY_INSTALLMENT,
+            candidates.add(new InvoiceDiscountCandidate(types[index % 3], index + 1L, index + 1L, "d" + index, index % 2 == 0 ? InvoiceType.MONTHLY_INSTALLMENT : InvoiceType.ENROLLMENT_FEE,
                     IssuingTestData.ars(BigDecimal.valueOf(spec.baseCents(), 2).toPlainString()),
                     IssuingTestData.ars(BigDecimal.valueOf(spec.offers().get(index)[0], 2).toPlainString()), null, null));
         }
 
         var winner = calculator.selectBestDiscountForInvoice(InvoiceType.MONTHLY_INSTALLMENT, candidates);
+        List<InvoiceDiscountCandidate> sameType = candidates.stream().filter(c -> c.applicableInvoiceType() == InvoiceType.MONTHLY_INSTALLMENT).toList();
 
-        assertThat(winner.isPresent()).isEqualTo(!candidates.isEmpty());
+        assertThat(winner.isPresent()).isEqualTo(!sameType.isEmpty());
+        winner.ifPresent(chosen -> assertThat(chosen.applicableInvoiceType()).isEqualTo(InvoiceType.MONTHLY_INSTALLMENT));
         winner.ifPresent(chosen -> {
             assertThat(chosen.discountAmount().value().amount()).isLessThanOrEqualTo(chosen.baseAmount().value().amount());
-            assertThat(candidates.stream().allMatch(other -> other.discountAmount().value().amount().compareTo(chosen.discountAmount().value().amount()) <= 0)).isTrue();
+            assertThat(sameType.stream().allMatch(other -> other.discountAmount().value().amount().compareTo(chosen.discountAmount().value().amount()) <= 0)).isTrue();
             assertThat(chosen.baseAmount().value().amount().subtract(chosen.discountAmount().value().amount()).signum()).isGreaterThanOrEqualTo(0);
         });
     }

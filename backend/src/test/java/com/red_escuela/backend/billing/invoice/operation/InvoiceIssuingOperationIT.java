@@ -86,7 +86,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
             Invoice invoice = issued(runner.issueInvoiceInNewTransaction(adHoc(offering, learner, feeType, amount, "k-" + feeType + learner.studentId())));
             expectedBalance = expectedBalance.add(new BigDecimal(amount));
             assertThat(invoice.getInvoiceType().name()).isEqualTo(feeType.name());
-            assertThat(invoice.getLines().get(0).getChargeKey()).isEqualTo("AH:k-" + feeType + learner.studentId());
+            assertThat(invoice.getLines().get(0).getChargeKey()).isEqualTo("AH:" + learner.studentId() + ":" + feeType + ":k-" + feeType + learner.studentId());
             assertThat(invoice.getLines().get(0).getPriceRevisionId()).isNull();
             assertThat(invoice.getAmounts().total().value().amount()).isEqualByComparingTo(amount);
             List<Map<String, Object>> entries = entriesOf(learner.studentId(), Currency.ARS);
@@ -157,6 +157,8 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(invoice.getDocumentStatus()).isEqualTo(InvoiceDocumentStatus.ISSUED);
         assertThat(invoice.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
         assertThat(entriesOf(learner.studentId(), Currency.ARS)).isEmpty();
+        assertThat(events.stream(com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent.class)
+                .filter(event -> event.invoiceId().equals(invoice.getId())).toList()).hasSize(1);
         assertThat(jdbc.queryForObject("select count(*) from invoice_status_change where invoice_id = ?", Long.class, invoice.getId())).isGreaterThanOrEqualTo(3L);
         invariants.assertAllBillingInvariantsHold();
     }
@@ -267,7 +269,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         InvoiceIssuingResult second = runner.issueInvoiceInNewTransaction(request);
 
         assertThat(second).isEqualTo(new InvoiceIssuingResult.InvoiceAlreadyIssued(first.getId()));
-        assertThat(jdbc.queryForObject("select count(*) from invoice_line where charge_key = ?", Long.class, "AH:idem-" + learner.studentId())).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select count(*) from invoice_line where charge_key = ?", Long.class, "AH:" + learner.studentId() + ":EXAM_FEE:idem-" + learner.studentId())).isEqualTo(1L);
     }
 
     @Test
@@ -299,16 +301,13 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         var usd = factory.newProgram(Currency.USD, 100, 60);
         var arsLearner = factory.newLearner(ars, null);
         Long studentId = arsLearner.studentId();
-        var usdLearner = factory.newLearner(usd, null);
-        var sharedUsd = new IssuingScenarioFactory.Learner(studentId, usdLearner.programEnrollmentId(), usdLearner.selectionId());
-        var usdRequest = new InvoiceIssuingRequest(studentId, usdLearner.programEnrollmentId(), null, usd.programId(), null, null, FeeType.MONTHLY_INSTALLMENT,
-                YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1), InvoiceIssuingReason.MONTHLY_RUN, null, null, null, false, null,
-                null, null, null, null, ACTOR);
+        var usdRequest = new InvoiceIssuingRequest(studentId, null, null, usd.programId(), null, null, FeeType.ADMINISTRATIVE_FEE,
+                YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1), InvoiceIssuingReason.AD_HOC_CHARGE, null, null, null, false,
+                com.red_escuela.backend.shared.domain.NonNegativeMoney.of(new BigDecimal("100.00"), Currency.USD), "Tasa", null, null, "usd-" + studentId, ACTOR);
 
         issued(runner.issueInvoiceInNewTransaction(installment(ars, arsLearner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
         issued(runner.issueInvoiceInNewTransaction(usdRequest));
 
-        assertThat(sharedUsd.studentId()).isEqualTo(studentId);
         assertThat(accountOf(studentId, Currency.ARS).getId()).isNotEqualTo(accountOf(studentId, Currency.USD).getId());
         assertThat(accountOf(studentId, Currency.ARS).getBalance().amount().value().amount()).isEqualByComparingTo("80000.00");
         assertThat(accountOf(studentId, Currency.USD).getBalance().amount().value().amount()).isEqualByComparingTo("100.00");

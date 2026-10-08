@@ -16,7 +16,13 @@ public record InvoiceDiscountCandidate(
         NonNegativeMoney baseAmount,
         NonNegativeMoney discountAmount,
         Integer installmentNumber,
-        Integer installmentsTotal) {
+        Integer installmentsTotal,
+        Long sourceInstallmentId) {
+
+    public InvoiceDiscountCandidate(DiscountType discountType, Long sourceId, Long studentDiscountId, String discountName, InvoiceType applicableInvoiceType,
+                                    NonNegativeMoney baseAmount, NonNegativeMoney discountAmount, Integer installmentNumber, Integer installmentsTotal) {
+        this(discountType, sourceId, studentDiscountId, discountName, applicableInvoiceType, baseAmount, discountAmount, installmentNumber, installmentsTotal, null);
+    }
 
     public InvoiceDiscountCandidate {
         Objects.requireNonNull(discountType, "discountType");
@@ -40,6 +46,6 @@ public record InvoiceDiscountCandidate(
     }
 
     public InvoiceDiscountDraft toDiscountDraft() {
-        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal);
+        return new InvoiceDiscountDraft(discountType, discountName, studentDiscountId, baseAmount, discountAmount, installmentNumber, installmentsTotal, sourceInstallmentId);
     }
 }

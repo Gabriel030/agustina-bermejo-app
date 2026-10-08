@@ -14,7 +14,8 @@ public record InvoiceIssuingFacts(
         Long priceRevisionId,
         Long existingInvoiceId,
         Integer templateEnrollmentFeeCount,
-        StudentSnapshot studentSnapshot) {
+        StudentSnapshot studentSnapshot,
+        boolean enrollmentMatchesRecipient) {
 
     public InvoiceIssuingFacts {
         Objects.requireNonNull(issueDate, "issueDate");

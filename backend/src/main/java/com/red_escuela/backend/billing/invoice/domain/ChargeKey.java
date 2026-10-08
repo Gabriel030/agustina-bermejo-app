@@ -42,11 +42,11 @@ public record ChargeKey(String value) {
                 + ":MONTHLY_INSTALLMENT:" + required(period, "period"));
     }
 
-    public static ChargeKey forAdHocCharge(String idempotencyKey) {
+    public static ChargeKey forAdHocCharge(Long studentId, FeeType feeType, String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("An ad hoc charge needs an idempotency key");
         }
-        return new ChargeKey(AD_HOC_PREFIX + idempotencyKey.strip());
+        return new ChargeKey(AD_HOC_PREFIX + required(studentId, "studentId") + ":" + required(feeType, "feeType") + ":" + idempotencyKey.strip());
     }
 
     private static <T> T required(T value, String name) {

@@ -41,7 +41,7 @@ public final class IssuingTestData {
 
     public static InvoiceIssuingContext context(InvoiceIssuingRequest request, Currency offeringCurrency, Long existingInvoiceId, Integer templateCount) {
         return new InvoiceIssuingContext(request, new InvoiceIssuingFacts(TODAY, offeringCurrency, ars("100.00"), 7L, existingInvoiceId, templateCount,
-                new StudentSnapshot("Ana Perez", "123", null)));
+                new StudentSnapshot("Ana Perez", "123", null), true));
     }
 
     public static InvoiceDiscountCandidate candidate(DiscountType type, long sourceId, InvoiceType invoiceType, String base, String discount) {

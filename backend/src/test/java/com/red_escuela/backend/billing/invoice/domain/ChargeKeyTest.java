@@ -21,7 +21,8 @@ class ChargeKeyTest {
         assertThat(ChargeKey.forCourseEnrollmentMonthlyInstallment(7L, YearMonth.of(2027, 3)).value()).isEqualTo("CE:7:MONTHLY_INSTALLMENT:2027-03");
         assertThat(ChargeKey.forProgramAdmissionEnrollmentFee(3L, 45L, 2).value()).isEqualTo("PA:3:ENROLLMENT_FEE:T45:S2");
         assertThat(ChargeKey.forCourseAdmissionMonthlyInstallment(3L, 8L, YearMonth.of(2027, 3)).value()).isEqualTo("CA:3:8:MONTHLY_INSTALLMENT:2027-03");
-        assertThat(ChargeKey.forAdHocCharge(" abc ").value()).isEqualTo("AH:abc");
+        assertThat(ChargeKey.forAdHocCharge(4L, FeeType.EXAM_FEE, " abc ").value()).isEqualTo("AH:4:EXAM_FEE:abc");
+        assertThat(ChargeKey.forAdHocCharge(5L, FeeType.EXAM_FEE, "abc")).isNotEqualTo(ChargeKey.forAdHocCharge(4L, FeeType.EXAM_FEE, "abc"));
     }
 
     @Test
@@ -29,8 +30,8 @@ class ChargeKeyTest {
         assertThatThrownBy(() -> new ChargeKey(" ")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new ChargeKey("x".repeat(121))).isInstanceOf(IllegalArgumentException.class);
         assertThat(new ChargeKey("x".repeat(120)).value()).hasSize(120);
-        assertThatThrownBy(() -> ChargeKey.forAdHocCharge(" ")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> ChargeKey.forAdHocCharge(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ChargeKey.forAdHocCharge(1L, FeeType.EXAM_FEE, " ")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ChargeKey.forAdHocCharge(1L, FeeType.EXAM_FEE, null)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ChargeKey.forProgramEnrollmentMonthlyInstallment(null, YearMonth.of(2027, 3))).isInstanceOf(NullPointerException.class);
     }
 
@@ -42,7 +43,7 @@ class ChargeKeyTest {
 
         assertThat(installment.chargeKey().value()).isEqualTo("PE:10:MONTHLY_INSTALLMENT:2027-03");
         assertThat(fee.chargeKey().value()).isEqualTo("PE:10:ENROLLMENT_FEE:T4:S2");
-        assertThat(adHoc.chargeKey().value()).isEqualTo("AH:key-1");
+        assertThat(adHoc.chargeKey().value()).isEqualTo("AH:1:EXAM_FEE:key-1");
     }
 
     @Test
@@ -57,6 +58,32 @@ class ChargeKeyTest {
         assertThat(program.chargeKey().value()).isEqualTo("PA:3:ENROLLMENT_FEE:T4:S1");
         assertThat(course.chargeKey().value()).isEqualTo("CA:3:8:MONTHLY_INSTALLMENT:2027-03");
         assertThat(courseEnrollment.chargeKey().value()).isEqualTo("CE:9:MONTHLY_INSTALLMENT:2027-03");
+    }
+
+    @Test
+    void anEnrollmentFeeWithoutTemplateOrSlotHasNoKeyYetAndACourseNeverHasOne() {
+        assertThat(IssuingTestData.request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.MONTHLY_RUN, IssuingTestData.TODAY, null, 1).findChargeKey()).isEmpty();
+        assertThat(IssuingTestData.request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.MONTHLY_RUN, IssuingTestData.TODAY, 2L, null).findChargeKey()).isEmpty();
+        var courseFee = new InvoiceIssuingRequest(3L, null, null, null, 8L, null, FeeType.ENROLLMENT_FEE, YearMonth.of(2027, 3), IssuingTestData.TODAY,
+                IssuingTestData.TODAY, InvoiceIssuingReason.COURSE_ADMISSION, null, 4L, 1, true, null, null, null, null, null, IssuingTestData.ACTOR);
+        assertThat(courseFee.findChargeKey()).isEmpty();
+        var programMonthlyWithoutEnrollment = new InvoiceIssuingRequest(3L, null, null, 5L, null, null, FeeType.MONTHLY_INSTALLMENT, YearMonth.of(2027, 3),
+                IssuingTestData.TODAY, IssuingTestData.TODAY, InvoiceIssuingReason.MONTHLY_RUN, null, null, null, false, null, null, null, null, null, IssuingTestData.ACTOR);
+        assertThat(programMonthlyWithoutEnrollment.findChargeKey()).isEmpty();
+        assertThatThrownBy(programMonthlyWithoutEnrollment::chargeKey).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void anEnrollmentRequestListsTheAdmissionKeyItMustReconcileWith() {
+        InvoiceIssuingRequest fee = IssuingTestData.request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.MONTHLY_RUN, IssuingTestData.TODAY, 4L, 2);
+        var courseEnrollment = new InvoiceIssuingRequest(3L, null, 9L, null, 8L, null, FeeType.MONTHLY_INSTALLMENT, YearMonth.of(2027, 3), IssuingTestData.TODAY,
+                IssuingTestData.TODAY, InvoiceIssuingReason.COURSE_MONTHLY_RUN, null, null, null, false, null, null, null, null, null, IssuingTestData.ACTOR);
+
+        assertThat(fee.findEquivalentAdmissionChargeKeys()).extracting(ChargeKey::value).containsExactly("PA:1:ENROLLMENT_FEE:T4:S2");
+        assertThat(courseEnrollment.findEquivalentAdmissionChargeKeys()).extracting(ChargeKey::value).containsExactly("CA:3:8:MONTHLY_INSTALLMENT:2027-03");
+        assertThat(IssuingTestData.monthly().findEquivalentAdmissionChargeKeys()).isEmpty();
+        assertThat(IssuingTestData.request(FeeType.ENROLLMENT_FEE, InvoiceIssuingReason.MONTHLY_RUN, IssuingTestData.TODAY, null, null).findEquivalentAdmissionChargeKeys()).isEmpty();
+        assertThat(IssuingTestData.request(FeeType.EXAM_FEE, InvoiceIssuingReason.AD_HOC_CHARGE, IssuingTestData.TODAY, null, null).findEquivalentAdmissionChargeKeys()).isEmpty();
     }
 
     @Test

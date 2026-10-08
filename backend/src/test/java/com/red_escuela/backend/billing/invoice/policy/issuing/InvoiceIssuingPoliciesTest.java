@@ -155,4 +155,31 @@ class InvoiceIssuingPoliciesTest {
 
         assertThat(new CohortEntryDiscountAppliesPolicy().evaluateRule(new CohortEntryDiscountAppliesPolicy.Offer(entry, reason, discount)).allowed()).isEqualTo(allowed);
     }
+
+    @Test
+    @Tag("D-097")
+    void theEnrollmentMustBelongToTheRecipientAndRegularChargesNeedOne() {
+        ChargeRecipientMatchesEnrollmentPolicy policy = new ChargeRecipientMatchesEnrollmentPolicy();
+        InvoiceIssuingRequest withEnrollment = monthly();
+        InvoiceIssuingRequest withoutEnrollment = new InvoiceIssuingRequest(1L, null, null, 5L, null, null, FeeType.MONTHLY_INSTALLMENT, java.time.YearMonth.of(2027, 3),
+                TODAY, TODAY, InvoiceIssuingReason.MONTHLY_RUN, null, null, null, false, null, null, null, null, null, ACTOR);
+        InvoiceIssuingRequest admission = new InvoiceIssuingRequest(1L, null, null, 5L, null, null, FeeType.ENROLLMENT_FEE, java.time.YearMonth.of(2027, 3),
+                TODAY, TODAY, InvoiceIssuingReason.PROGRAM_ADMISSION, null, 4L, 1, true, null, null, null, null, null, ACTOR);
+
+        assertThat(policy.evaluateRule(context(withEnrollment, Currency.ARS, null, null)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new InvoiceIssuingContext(withEnrollment, new com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFacts(TODAY,
+                Currency.ARS, ars("100.00"), 7L, null, null, new com.red_escuela.backend.billing.invoice.domain.StudentSnapshot("A B", "1", null), false))).code())
+                .isEqualTo("ENROLLMENT_RECIPIENT_MISMATCH");
+        assertThat(policy.evaluateRule(context(withoutEnrollment, Currency.ARS, null, null)).code()).isEqualTo("ENROLLMENT_REQUIRED");
+        assertThat(policy.evaluateRule(context(admission, Currency.ARS, null, null)).allowed()).isTrue();
+    }
+
+    @Test
+    @Tag("D-050")
+    void aCourseNeverIssuesAnEnrollmentFee() {
+        InvoiceIssuingRequest courseFee = new InvoiceIssuingRequest(1L, null, null, null, 8L, null, FeeType.ENROLLMENT_FEE, java.time.YearMonth.of(2027, 3),
+                TODAY, TODAY, InvoiceIssuingReason.COURSE_ADMISSION, null, 4L, 1, true, null, null, null, null, null, ACTOR);
+
+        assertThat(new InvoiceIssuingReasonMatchesFeeTypePolicy().evaluateRule(context(courseFee, Currency.ARS, null, null)).allowed()).isFalse();
+    }
 }

@@ -9,10 +9,12 @@ import com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCandidat
 import com.red_escuela.backend.billing.invoice.policy.issuing.ScholarshipDiscountAppliesPolicy;
 import com.red_escuela.backend.billing.entity.InstallmentStatus;
 import com.red_escuela.backend.billing.entity.Scholarship;
+import com.red_escuela.backend.billing.entity.ScholarshipInstallment;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,7 +41,7 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
         return findActiveScholarship(request)
                 .filter(scholarship -> appliesPolicy.evaluateRule(new ScholarshipDiscountAppliesPolicy.Offer(request.feeType(),
                         scholarship.getAppliesTo().covers(request.feeType()))).allowed())
-                .filter(scholarship -> pendingInstallmentsOf(scholarship) > 0)
+                .filter(scholarship -> nextPendingInstallmentOf(scholarship).isPresent())
                 .map(scholarship -> candidateOf(scholarship, context.facts().chargeAmount()))
                 .stream()
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
@@ -49,7 +51,7 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
     @Override
     public void markDiscountAsApplied(InvoiceDiscountCandidate winner) {
         Scholarship scholarship = scholarshipRepository.findById(winner.sourceId()).orElseThrow();
-        scholarship.consumeOneWithoutLegacyInvoice();
+        scholarship.consumeInstallmentWithoutLegacyInvoice(winner.sourceInstallmentId());
         scholarshipRepository.save(scholarship);
     }
 
@@ -61,15 +63,20 @@ public class ScholarshipDiscountCandidateStrategy implements InvoiceDiscountCand
     }
 
     private InvoiceDiscountCandidate candidateOf(Scholarship scholarship, NonNegativeMoney base) {
-        int total = scholarship.getInstallments().size();
-        long applied = scholarship.getInstallments().stream().filter(installment -> installment.getStatus() == InstallmentStatus.APPLIED).count();
-        String name = ("Beca: " + scholarship.getReason());
+        List<ScholarshipInstallment> live = scholarship.getInstallments().stream()
+                .filter(installment -> installment.getStatus() != InstallmentStatus.CANCELLED)
+                .sorted(Comparator.comparing(ScholarshipInstallment::getId))
+                .toList();
+        ScholarshipInstallment next = nextPendingInstallmentOf(scholarship).orElseThrow();
+        String name = "Beca: " + scholarship.getReason();
         return new InvoiceDiscountCandidate(DiscountType.SCHOLARSHIP, scholarship.getId(), scholarship.getId(),
                 name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name, InvoiceType.MONTHLY_INSTALLMENT, base,
-                DiscountAmounts.discountOf(scholarship.getValue(), base), (int) applied + 1, total);
+                DiscountAmounts.discountOf(scholarship.getValue(), base), live.indexOf(next) + 1, live.size(), next.getId());
     }
 
-    private long pendingInstallmentsOf(Scholarship scholarship) {
-        return scholarship.getInstallments().stream().filter(installment -> installment.getStatus() == InstallmentStatus.PENDING).count();
+    private Optional<ScholarshipInstallment> nextPendingInstallmentOf(Scholarship scholarship) {
+        return scholarship.getInstallments().stream()
+                .filter(installment -> installment.getStatus() == InstallmentStatus.PENDING)
+                .min(Comparator.comparing(ScholarshipInstallment::getId));
     }
 }

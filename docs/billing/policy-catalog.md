@@ -74,16 +74,24 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 4 | EnrollmentFeeSlotNotBeforeEntryPolicy | NOT_REQUIRED_BEFORE_ENTRY | D-020 |
 | 5 | EnrollmentFeeExemptionGrantedPolicy | NOT_REQUIRED_EXEMPTION_GRANTED | D-027 |
 
+## Momento INVOICE_DISCOUNT_SELECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | DiscountMatchesInvoiceTypePolicy | DISCOUNT_NOT_APPLICABLE_TO_INVOICE_TYPE | D-129 |
+| 2 | BestDiscountPerInvoiceTypePolicy | DISCOUNT_OUTBID_BY_A_BETTER_ONE | D-073, D-074, D-129 |
+
 ## Momento INVOICE_ISSUING
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
+| 1 | InvoiceIssuingReasonMatchesFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
 | 2 | DueDateNotBeforeIssueDatePolicy | DUE_DATE_BEFORE_ISSUE_DATE | D-057 |
 | 3 | EnrollmentFeeSlotRequiredPolicy | ENROLLMENT_FEE_SLOT_REQUIRED | D-002, D-009 |
-| 4 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
-| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |
-| 6 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
+| 4 | ChargeRecipientMatchesEnrollmentPolicy | ENROLLMENT_RECIPIENT_MISMATCH, ENROLLMENT_REQUIRED | D-097, D-009 |
+| 5 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
+| 6 | ChargeKeyNotAlreadyUsedPolicy | ALREADY_ISSUED | D-009, D-021 |
+| 7 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
 
 ## Momento ISSUANCE_SETTINGS
 
@@ -106,6 +114,17 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
+
+## Momento LEGACY_INVOICE_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
+| 2 | DueDateNotBeforeIssueDatePolicy | DUE_DATE_BEFORE_ISSUE_DATE | D-057 |
+| 3 | EnrollmentFeeSlotRequiredPolicy | ENROLLMENT_FEE_SLOT_REQUIRED | D-002, D-009 |
+| 4 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
+| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |
+| 6 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
 
 ## Momento MONTHLY_INSTALLMENT_PLANNING
 
@@ -229,3 +248,11 @@ Transiciones válidas: 18 de 78. Pares inválidos: (sin estado) × BANK_TRANSFER
 - Pre-procesamiento (en orden): —
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
+
+## Operación ISSUE_INVOICE
+
+- Validaciones (momentos): INVOICE_ISSUING
+- Pre-procesamiento (en orden): InvoiceDiscountEnrichmentHandler
+- Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
+- Post-procesamiento de InvoiceIssuedDomainEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: —

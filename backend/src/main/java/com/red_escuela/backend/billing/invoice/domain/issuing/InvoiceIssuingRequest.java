@@ -9,7 +9,9 @@ import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public record InvoiceIssuingRequest(
         Long studentId,
@@ -68,6 +70,10 @@ public record InvoiceIssuingRequest(
         };
     }
 
+    public boolean hasEnrollment() {
+        return programEnrollmentId != null || courseEnrollmentId != null;
+    }
+
     public boolean isAdHocCharge() {
         return issuingReason == InvoiceIssuingReason.AD_HOC_CHARGE;
     }
@@ -76,20 +82,42 @@ public record InvoiceIssuingRequest(
         return programId != null;
     }
 
-    public ChargeKey chargeKey() {
+    public Optional<ChargeKey> findChargeKey() {
         if (isAdHocCharge()) {
-            return ChargeKey.forAdHocCharge(idempotencyKey);
+            return Optional.of(ChargeKey.forAdHocCharge(studentId, feeType, idempotencyKey));
         }
         if (feeType == FeeType.ENROLLMENT_FEE) {
-            return programEnrollmentId != null
-                    ? ChargeKey.forProgramEnrollmentEnrollmentFee(programEnrollmentId, templateId, enrollmentFeeSlot)
-                    : ChargeKey.forProgramAdmissionEnrollmentFee(studentId, templateId, enrollmentFeeSlot);
+            return findEnrollmentFeeChargeKey();
         }
         if (programEnrollmentId != null) {
-            return ChargeKey.forProgramEnrollmentMonthlyInstallment(programEnrollmentId, period);
+            return Optional.of(ChargeKey.forProgramEnrollmentMonthlyInstallment(programEnrollmentId, period));
         }
-        return courseEnrollmentId != null
-                ? ChargeKey.forCourseEnrollmentMonthlyInstallment(courseEnrollmentId, period)
-                : ChargeKey.forCourseAdmissionMonthlyInstallment(studentId, courseId, period);
+        if (courseEnrollmentId != null) {
+            return Optional.of(ChargeKey.forCourseEnrollmentMonthlyInstallment(courseEnrollmentId, period));
+        }
+        return belongsToProgram() ? Optional.empty() : Optional.of(ChargeKey.forCourseAdmissionMonthlyInstallment(studentId, courseId, period));
+    }
+
+    public ChargeKey chargeKey() {
+        return findChargeKey().orElseThrow(() -> new IllegalStateException("The charge has no key yet: template and enrollment fee slot are required"));
+    }
+
+    public List<ChargeKey> findEquivalentAdmissionChargeKeys() {
+        if (isAdHocCharge() || programEnrollmentId == null && courseEnrollmentId == null) {
+            return List.of();
+        }
+        if (feeType == FeeType.ENROLLMENT_FEE) {
+            return templateId == null || enrollmentFeeSlot == null ? List.of() : List.of(ChargeKey.forProgramAdmissionEnrollmentFee(studentId, templateId, enrollmentFeeSlot));
+        }
+        return courseEnrollmentId == null ? List.of() : List.of(ChargeKey.forCourseAdmissionMonthlyInstallment(studentId, courseId, period));
+    }
+
+    private Optional<ChargeKey> findEnrollmentFeeChargeKey() {
+        if (!belongsToProgram() || templateId == null || enrollmentFeeSlot == null) {
+            return Optional.empty();
+        }
+        return Optional.of(programEnrollmentId != null
+                ? ChargeKey.forProgramEnrollmentEnrollmentFee(programEnrollmentId, templateId, enrollmentFeeSlot)
+                : ChargeKey.forProgramAdmissionEnrollmentFee(studentId, templateId, enrollmentFeeSlot));
     }
 }

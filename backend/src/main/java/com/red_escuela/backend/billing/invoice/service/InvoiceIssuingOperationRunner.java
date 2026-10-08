@@ -61,7 +61,9 @@ public class InvoiceIssuingOperationRunner {
                 throw e;
             }
             log.warn("Cargo duplicado detectado por la base: tipo={}, periodo={}, motivo={}", request.feeType(), request.period(), request.issuingReason());
-            return new InvoiceIssuingResult.InvoiceAlreadyIssued(invoiceRepository.findLiveInvoiceIdByChargeKey(request.chargeKey().value()).orElse(null));
+            return invoiceRepository.findLiveInvoiceIdByChargeKey(request.chargeKey().value())
+                    .<InvoiceIssuingResult>map(InvoiceIssuingResult.InvoiceAlreadyIssued::new)
+                    .orElseThrow(() -> e);
         }
     }
 

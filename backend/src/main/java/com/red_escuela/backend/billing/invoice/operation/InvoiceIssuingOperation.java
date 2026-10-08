@@ -13,6 +13,9 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedDomainEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidEvent;
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -20,6 +23,7 @@ import com.red_escuela.backend.shared.event.DomainEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
+import java.util.Optional;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +63,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
 
     @Override
     public List<Class<? extends DomainEvent>> publishedEventTypes() {
-        return List.of(InvoiceIssuedDomainEvent.class);
+        return List.of(InvoiceIssuedDomainEvent.class, InvoicePaidDomainEvent.class);
     }
 
     @Override
@@ -82,10 +86,18 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
     }
 
     @Override
-    public List<InvoiceIssuedDomainEvent> domainEventsOf(InvoiceIssuingContext context, InvoiceIssued result) {
-        Invoice invoice = result.invoice();
-        return List.of(InvoiceIssuedDomainEvent.issuedFor(invoice.getId(), invoice.getStudentCurrentAccountId(), invoice.getInvoiceNumber().value(),
-                invoice.getInvoiceType().name(), invoice.getAmounts().total(), invoice.getIssueDate(), invoice.getDueDate()));
+    public List<DomainEvent> domainEventsOf(InvoiceIssuingContext context, InvoiceIssued result) {
+        return result.invoice().pullRecordedDomainEvents().stream().flatMap(event -> toPublishedEvent(event, result.invoice()).stream()).toList();
+    }
+
+    private Optional<DomainEvent> toPublishedEvent(Object recorded, Invoice invoice) {
+        return switch (recorded) {
+            case InvoiceIssuedEvent issued -> Optional.of(InvoiceIssuedDomainEvent.issuedFor(issued.invoiceId(), issued.studentCurrentAccountId(),
+                    invoice.getInvoiceNumber().value(), issued.invoiceType().name(), issued.total(), issued.issueDate(), issued.dueDate()));
+            case InvoicePaidEvent paid -> Optional.of(InvoicePaidDomainEvent.paidFor(paid.invoiceId(), paid.studentCurrentAccountId(), paid.cause().name(),
+                    paid.businessDate()));
+            default -> Optional.empty();
+        };
     }
 
     private void markDiscountAsApplied(InvoiceDiscountCandidate winner) {

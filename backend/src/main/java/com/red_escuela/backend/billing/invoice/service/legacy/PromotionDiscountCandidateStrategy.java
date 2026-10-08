@@ -59,9 +59,7 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
     }
 
     private long countAppliedDiscounts(PromotionBenefit benefit, InvoiceIssuingRequest request) {
-        return request.programEnrollmentId() != null
-                ? invoiceRepository.countPromotionDiscountsOfProgramEnrollment(benefit.getId(), request.programEnrollmentId())
-                : invoiceRepository.countPromotionDiscountsOfCourseEnrollment(benefit.getId(), request.courseEnrollmentId());
+        return invoiceRepository.countPromotionDiscountsOfStudent(benefit.getId(), request.studentId());
     }
 
     private InvoiceDiscountCandidate candidateOf(Promotion promotion, BenefitUsage usage, NonNegativeMoney base, InvoiceIssuingRequest request) {
