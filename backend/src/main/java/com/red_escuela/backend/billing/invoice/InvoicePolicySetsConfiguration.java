@@ -28,7 +28,7 @@ public class InvoicePolicySetsConfiguration {
                 new OfferingCurrencyPolicy(),
                 new NotAlreadyIssuedPolicy(),
                 new EnrollmentFeeSlotWithinTemplateCountPolicy());
-        return PolicySet.named("INVOICE_ISSUING", ordered);
+        return PolicySet.named("LEGACY_INVOICE_ISSUING", ordered);
     }
 
     @Bean

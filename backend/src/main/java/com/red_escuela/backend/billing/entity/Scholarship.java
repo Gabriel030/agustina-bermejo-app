@@ -102,6 +102,10 @@ public class Scholarship {
         return next;
     }
 
+    public ScholarshipInstallment consumeOneWithoutLegacyInvoice() {
+        return consumeOne(null);
+    }
+
     public void cancelRemaining(String reason) {
         installments.stream()
                 .filter(installment -> installment.getStatus() == InstallmentStatus.PENDING)

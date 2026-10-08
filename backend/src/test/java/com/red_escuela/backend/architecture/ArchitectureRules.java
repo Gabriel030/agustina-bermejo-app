@@ -55,6 +55,7 @@ public final class ArchitectureRules {
     static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
+            + "|service\\.legacy\\.[A-Za-z]+"
             + "|service\\.(?:InvoiceIssuingService|InvoiceIssuingRequestFactory|InvoiceIssuingContextLoader|ChargeAdjustmentApplier)"
             + "|domain\\.(?:InvoiceIssuingRequest|InvoiceRecipient|InvoiceIssuingContext|InvoiceIssuingResult)"
             + "|policy\\.(?:DueDateNotBeforeIssueDatePolicy|EnrollmentFeeSlotRequiredPolicy|EnrollmentFeeSlotWithinTemplateCountPolicy|EntryFeeDiscountPolicy|NotAlreadyIssuedPolicy|OfferingCurrencyPolicy|PromotionBenefitCapPolicy|ReasonFeeTypePolicy|ScholarshipAppliesPolicy|UpfrontDiscountPolicy))(?:\\$.*)?";
