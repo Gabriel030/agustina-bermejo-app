@@ -14,6 +14,7 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
+import com.red_escuela.backend.billing.gateway.exception.PaymentGatewayUnavailableException;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -170,6 +171,16 @@ class UsdBillingTest extends AbstractIntegrationTest {
                 .findFirst()
                 .orElse(new FinancialDashboardResponse.CurrencyTotals(
                         Money.zero(currency), Money.zero(currency), Money.zero(currency), Money.zero(currency)));
+    }
+
+    @Test
+    @Tag("D-226")
+    void creatingAnOnlinePaymentPreferenceIsRejectedWhileTheGatewayIsDisabled() {
+        Student student = persistStudent("gateway.student." + System.nanoTime());
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoiceStatus.PENDING);
+
+        assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
+                .isInstanceOf(PaymentGatewayUnavailableException.class);
     }
 
     @Test

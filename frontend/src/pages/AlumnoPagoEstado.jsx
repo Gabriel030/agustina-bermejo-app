@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowLeft, Info } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
@@ -23,15 +23,22 @@ const STATUS_CONFIG = {
     message: 'Tu pago está siendo procesado por Mercado Pago. Te notificaremos cuando se confirme.',
     colorClass: 'text-warning',
   },
+  unknown: {
+    icon: Info,
+    title: 'No encontramos un pago en curso',
+    message: 'Revisá el estado de tus cuotas en Mis pagos.',
+    colorClass: 'text-ink-faint',
+  },
 };
 
 export function AlumnoPagoEstado() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const status = params.get('status') ?? 'pending';
+  const rawStatus = params.get('status');
+  const status = ['success', 'failure', 'pending'].includes(rawStatus) ? rawStatus : 'unknown';
   const invoiceId = params.get('invoiceId');
 
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const config = STATUS_CONFIG[status];
   const Icon = config.icon;
 
   return (
