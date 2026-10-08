@@ -34,6 +34,46 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | CancellationReasonRequiredPolicy | CANCELLATION_REASON_REQUIRED | D-115 |
 | 2 | ScheduledVersionCancellablePolicy | VERSION_ALREADY_EFFECTIVE | D-115 |
 
+## Momento COURSE_INVOICE_PLANNING_ELIGIBILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AcademicallyActiveEnrollmentPolicy | NOT_ACTIVE | D-050 |
+| 2 | NotSuspendedOrWithdrawnForNonPaymentPolicy | SUSPENDED_OR_WITHDRAWN | D-066, D-053 |
+| 3 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
+
+## Momento COURSE_MONTHLY_INSTALLMENT_PLANNING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
+| 2 | CourseInstallmentWithinTermPolicy | OUTSIDE_TERM | D-039 |
+| 3 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
+
+## Momento ENROLLMENT_FEE_PLANNING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | BillingWhilePausedPolicy | PAUSED_NOT_BILLED | D-050 |
+| 2 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
+| 3 | EnrollmentFeeSlotNotAlreadyIssuedPolicy | ALREADY_ISSUED, FEE_CANCELLED | D-009 |
+
+## Momento ENROLLMENT_FEE_REQUIREMENT
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | EnrollmentFeeSettledPolicy | ENROLLMENT_FEE_NOT_ISSUED, ENROLLMENT_FEE_NOT_PAID_FOR_TERM | D-166, D-010 |
+
+## Momento ENROLLMENT_FEE_REQUIREMENT_APPLICABILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CertificateEnrollmentFeeExemptionPolicy | NOT_REQUIRED_FOR_INACTIVE_OR_COMPLETED | D-015 |
+| 2 | EnrollmentFeeBlocksScopePolicy | NOT_REQUIRED_SCOPE_NOT_BLOCKED | D-013 |
+| 3 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
+| 4 | EnrollmentFeeSlotNotBeforeEntryPolicy | NOT_REQUIRED_BEFORE_ENTRY | D-020 |
+| 5 | EnrollmentFeeExemptionGrantedPolicy | NOT_REQUIRED_EXEMPTION_GRANTED | D-027 |
+
 ## Momento INVOICE_ISSUING
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -67,11 +107,32 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
 
+## Momento MONTHLY_INSTALLMENT_PLANNING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | NotBeforeEntryMonthPolicy | BEFORE_ENTRY | D-049 |
+| 2 | MonthlyCadencePolicy | PLAN_NOT_MONTHLY | D-040 |
+| 3 | InstallmentWithinLectiveYearRangePolicy | OUTSIDE_TERM, YEAR_NOT_CONFIGURED | D-001, D-006 |
+| 4 | BillingWhilePausedPolicy | PAUSED_NOT_BILLED | D-050 |
+| 5 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
+| 6 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
+| 7 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
+
 ## Momento PAYMENT_PLAN_SELECTION
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | AnnualUpfrontAvailableForProgramPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE | D-131, D-191 |
+
+## Momento PROGRAM_INVOICE_PLANNING_ELIGIBILITY
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | AcademicallyActiveEnrollmentPolicy | NOT_ACTIVE | D-050 |
+| 2 | NotSuspendedOrWithdrawnForNonPaymentPolicy | SUSPENDED_OR_WITHDRAWN | D-066, D-053 |
+| 3 | StudyPlanNotCompletedPolicy | PLAN_COMPLETED | D-038 |
+| 4 | PaymentPlanChosenPolicy | NO_PAYMENT_PLAN | D-050 |
 
 ## Momento YEAR_BILLING_CONFIGURATION
 

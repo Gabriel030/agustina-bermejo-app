@@ -10,7 +10,6 @@ public final class BillingInvariantChecker {
 
     private final JdbcTemplate jdbc;
     private final long baselineEnrollmentId;
-    private final java.util.Set<KnownInvariantViolation> tolerated = java.util.EnumSet.noneOf(KnownInvariantViolation.class);
 
     private BillingInvariantChecker(JdbcTemplate jdbc, long baselineEnrollmentId) {
         this.jdbc = jdbc;
@@ -20,10 +19,6 @@ public final class BillingInvariantChecker {
     public static BillingInvariantChecker startingNow(JdbcTemplate jdbc) {
         Long max = jdbc.queryForObject("select coalesce(max(id), 0) from program_enrollment", Long.class);
         return new BillingInvariantChecker(jdbc, Objects.requireNonNull(max));
-    }
-
-    public void tolerate(KnownInvariantViolation violation) {
-        tolerated.add(violation);
     }
 
     public List<String> oneEnrollmentFeePerEnrollmentTemplateAndSlotOnLegacyInvoices() {
@@ -72,13 +67,11 @@ public final class BillingInvariantChecker {
                 group by i.program_enrollment_id, i.template_id, t.recurring_fee_invoices_count
                 having count(*) > t.recurring_fee_invoices_count
                 """, baselineEnrollmentId));
-        if (!tolerated.contains(KnownInvariantViolation.UNDATED_TERMS_BILL_JANUARY_AND_FEBRUARY)) {
-            found.addAll(violations("I-15 installment in January or February", """
+        found.addAll(violations("I-15 installment in January or February", """
                 select 'invoice ' || id || ' period ' || period
                 from legacy_invoice
                 where program_enrollment_id > ? and fee_type = 'MONTHLY_INSTALLMENT' and extract(month from period) in (1, 2)
                 """, baselineEnrollmentId));
-        }
         return found;
     }
 

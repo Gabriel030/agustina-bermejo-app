@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
@@ -48,7 +49,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     private void requireCertificate(Long enrollmentId) {
         transactionTemplate.executeWithoutResult(status -> requirementService.requireForCurrentPeriod(
-                entityManager.find(ProgramEnrollment.class, enrollmentId), EnrollmentFeeRequirementService.Scope.CERTIFICATE));
+                entityManager.find(ProgramEnrollment.class, enrollmentId), EnrollmentFeeRequirementScope.CERTIFICATE));
     }
 
     private Year newUndatedYear(Career career, int year, int installments) {
@@ -116,9 +117,8 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    @Tag("contradicts-D-001")
-    void secondYearStudentOfUndatedTermsIsStillBilledAndTheCapCountsOnlyThatYear() {
-        invariantChecker.tolerate(com.red_escuela.backend.billing.invariant.KnownInvariantViolation.UNDATED_TERMS_BILL_JANUARY_AND_FEBRUARY);
+    @Tag("D-001")
+    void undatedTermsBillFromMarchAndTheCapCountsOnlyThatYear() {
         Career career = newCareer();
         Year y26 = newUndatedYear(career, 2026, 3);
         Year y27 = newUndatedYear(career, 2027, 3);

@@ -57,4 +57,28 @@ class UseCaseBranchingTest {
 
         assertThat(UseCaseBranchingScanner.scanSource("FixtureService.java", source)).isEmpty();
     }
+
+    @Test
+    void theMonthlyInvoicePlannersAndTheEnrollmentFeeRequirementServiceHaveNoBranching() {
+        java.util.List<String> violations = new java.util.ArrayList<>();
+        for (String file : List.of("billing/planning/service/ProgramMonthlyInvoicePlanner.java", "billing/planning/service/CourseMonthlyInvoicePlanner.java",
+                "billing/service/EnrollmentFeeRequirementService.java")) {
+            violations.addAll(UseCaseBranchingScanner.scanSource(file, "@UseCase\n" + readMain(file)));
+        }
+
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void detectsAnIfInAPlannerSource() {
+        assertThat(UseCaseBranchingScanner.scanSource("FixturePlanner.java", "@UseCase\nclass FixturePlanner {\n    void plan(boolean x) {\n        if (x) {\n        }\n    }\n}\n")).hasSize(1);
+    }
+
+    private static String readMain(String file) {
+        try {
+            return java.nio.file.Files.readString(Path.of("src/main/java/com/red_escuela/backend", file));
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
 }

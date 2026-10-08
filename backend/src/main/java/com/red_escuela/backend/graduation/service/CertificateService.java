@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.service;
-import java.time.Clock;
+
+import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;import java.time.Clock;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
@@ -63,7 +64,7 @@ public class CertificateService {
     @Transactional
     public byte[] issueRegularCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementService.Scope.CERTIFICATE);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new CertificateNotEligibleException("la matriculación no está ENROLLED");
         }
@@ -88,7 +89,7 @@ public class CertificateService {
     @Transactional
     public byte[] issueApprovedSubjectsCertificate(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementService.Scope.CERTIFICATE);
+        enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment, EnrollmentFeeRequirementScope.CERTIFICATE);
         Person person = enrollment.getStudent().getPerson();
         List<ProgramSubject> aprobadas = programEnrollmentService.listApprovedSubjects(programEnrollmentId);
 

@@ -7,6 +7,7 @@ import java.time.YearMonth;
 
 public final class YearCycle {
     private static final int PREVIOUS_YEAR_THRESHOLD_MONTHS = 6;
+    private static final int LECTIVE_YEAR_FIRST_MONTH = 3;
 
     private final ProgramYearBillingTemplate template;
     private final YearMonth start;
@@ -29,7 +30,7 @@ public final class YearCycle {
         if (term.getStartDate() == null || term.getEndDate() == null) {
             int year = term.getYear() != null ? term.getYear() : fallbackYear;
             YearMonth first = YearMonth.of(year, 1);
-            return new YearCycle(template, first, YearMonth.of(year, 12), first, year, first);
+            return new YearCycle(template, first, YearMonth.of(year, 12), YearMonth.of(year, LECTIVE_YEAR_FIRST_MONTH), year, first);
         }
         YearMonth termStart = YearMonth.from(term.getStartDate());
         YearMonth termEnd = YearMonth.from(term.getEndDate());
@@ -74,6 +75,10 @@ public final class YearCycle {
 
     public boolean installmentRangeContains(YearMonth month) {
         return !month.isBefore(termStart) && !month.isAfter(end);
+    }
+
+    public LectiveYearBillingTerms terms() {
+        return LectiveYearBillingTerms.fromTemplate(template);
     }
 
     public int slotCount() {
