@@ -193,7 +193,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(createdBy);
         ProgramCohort saved = programCohortRepository.save(cohort);
         if (intake == CohortIntake.SECOND) {
-            TestTemplateTerms.publishCohortEntryDiscount(entityManager, saved, Percentage.ofFraction(new BigDecimal("0.5")));
+            TestTemplateTerms.publishCohortEntryDiscount(configurationVersionRepository, saved, Percentage.ofFraction(new BigDecimal("0.5")));
         }
         return saved;
     }

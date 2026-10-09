@@ -118,6 +118,11 @@ public final class TestTemplateTerms {
         entityManager.flush();
     }
 
+    public static void publishCohortEntryDiscount(com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository repository, ProgramCohort cohort, Percentage discount) {
+        repository.saveAndFlush(ConfigurationVersion.publish(ConfigurationTopic.ofCohortEntry(cohort.getId()), new CohortEntryDiscount(discount), ALWAYS_EFFECTIVE, "Fixture de prueba",
+                cohort.getCreatedBy().getId(), LocalDate.now(), null, Instant.now()));
+    }
+
     public static void setRecurringFeeDueDays(ProgramYearBillingTemplate template, int value) {
         YearBillingTerms t = termsOf(template);
         replace(template, new YearBillingTerms(t.recurringFeeInvoicesCount(), t.enrollmentFeeCount(), t.firstEnrollmentFeeMonth(), t.secondEnrollmentFeeMonth(),
