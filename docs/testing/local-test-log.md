@@ -5,7 +5,7 @@ Las herramientas pesadas (PIT, Playwright, k6, OWASP Dependency-Check) **no corr
 Reglas:
 
 - Una fila por corrida, la más reciente arriba. No se borran filas.
-- Todo PR que toca el dominio de billing (`billing/`, `shared/domain/`) o el `pom.xml` agrega al menos la fila de PIT; el job `local-tests-log` del CI falla si no lo hace.
+- Todo PR que toca código que PIT muta (`targetClasses` del perfil `mutation`) o el `pom.xml` agrega al menos la fila de PIT; el job `local-tests-log` del CI falla si no lo hace.
 - **Commit**: el SHA sobre el que se corrió (antes del commit que agrega la fila).
 - **Área**: paquetes o flujos que cubre la corrida; es lo que se busca acá antes de modificar algo.
 - Si una corrida falla y se arregla, se anotan las dos (la roja dice qué encontró).

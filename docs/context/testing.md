@@ -67,7 +67,7 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 
 GitHub Actions tiene un tope de minutos, así que en el CI solo corre lo barato: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
 
-Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca el dominio de billing o el `pom.xml` y no agrega su fila de PIT, el job `local-tests-log` del CI falla.
+Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca código que PIT muta (los paquetes de `targetClasses` del perfil `mutation`: `shared/domain`, `billing/operation` y los `domain`/`policy` de billing) o el `pom.xml`, y no agrega su fila de PIT, el job `local-tests-log` del CI falla. Si cambiás `targetClasses`, actualizá también el patrón de ese job.
 
 ### Paso 3: un test que nunca falló no prueba nada
 
