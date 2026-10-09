@@ -74,7 +74,7 @@ export function Stepper({
               </div>
               <span
                 className={cn(
-                  'whitespace-nowrap text-[11px] font-semibold',
+                  'text-center text-[11px] font-semibold sm:whitespace-nowrap',
                   state === 'future' || state === 'locked' ? 'text-ink-faint' : 'text-ink',
                 )}
               >

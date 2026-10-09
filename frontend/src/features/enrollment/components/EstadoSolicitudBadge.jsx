@@ -25,8 +25,9 @@ const ESTADOS_DE_MATRICULA = {
   ENROLLED: { label: 'Inscripto', tone: 'success' },
 };
 
-export function EstadoSolicitudBadge({ status, admissionInvoice, programEnrollmentId }) {
-  const fase = admissionPaymentPhase({ status, admissionInvoice, programEnrollmentId });
+export function EstadoSolicitudBadge({ solicitud }) {
+  const { status } = solicitud;
+  const fase = admissionPaymentPhase(solicitud);
   const estado = (fase && ESTADOS_DE_MATRICULA[fase]) ?? ESTADOS[status] ?? { label: status, tone: 'neutral' };
   return <StatusPill tone={estado.tone}>{estado.label}</StatusPill>;
 }
