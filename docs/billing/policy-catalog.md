@@ -50,6 +50,21 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 2 | CourseInstallmentWithinTermPolicy | OUTSIDE_TERM | D-039 |
 | 3 | InstallmentCapPolicy | INSTALLMENT_CAP_REACHED | D-034, D-039 |
 
+## Momento CREDIT_NOTE_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CreditNoteJustificationRequiredPolicy | CREDIT_NOTE_JUSTIFICATION_REQUIRED | D-165 |
+| 2 | CreditNoteReasonAllowedPolicy | INVALID_CREDIT_NOTE_REASON | D-165, D-238 |
+| 3 | CreditNoteReferencesIssuedInvoicePolicy | CREDIT_NOTE_INVOICE_REFERENCE_REQUIRED | D-244 |
+| 4 | CreditNoteRecipientMatchesInvoicePolicy | CREDIT_NOTE_RECIPIENT_MISMATCH | D-244 |
+| 5 | CreditNoteInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-165 |
+| 6 | CreditNoteLinesBelongToInvoicePolicy | CREDIT_NOTE_LINES_INVALID | D-165 |
+| 7 | CreditNoteDestinationUnchangedPolicy | CREDIT_NOTE_DISTRIBUTION_MISMATCH | D-165 |
+| 8 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
+| 9 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
+| 10 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
+
 ## Momento ENROLLMENT_FEE_PLANNING
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -260,6 +275,14 @@ Transiciones válidas: 18 de 78. Pares inválidos: (sin estado) × BANK_TRANSFER
 - Pre-procesamiento (en orden): —
 - Eventos que publica: LatePaymentSettingsCreatedEvent
 - Post-procesamiento de LatePaymentSettingsCreatedEvent: BillingOperationNotificationListener#notifyLatePaymentSettingsCreated
+
+## Operación ISSUE_CREDIT_NOTE
+
+- Validaciones (momentos): CREDIT_NOTE_ISSUING
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: CreditNoteIssuedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+- Post-procesamiento de InvoicePaidDomainEvent: —
 
 ## Operación ISSUE_INVOICE
 

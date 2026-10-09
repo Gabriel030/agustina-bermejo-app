@@ -19,7 +19,9 @@ public class InvoiceCreditAccessService {
 
     @Transactional(readOnly = true)
     public Optional<Invoice> findInvoice(Long invoiceId) {
-        return invoiceRepository.findInvoiceWithLinesById(invoiceId);
+        Optional<Invoice> invoice = invoiceRepository.findInvoiceWithLinesById(invoiceId);
+        invoice.ifPresent(entityManager::detach);
+        return invoice;
     }
 
     @Transactional
