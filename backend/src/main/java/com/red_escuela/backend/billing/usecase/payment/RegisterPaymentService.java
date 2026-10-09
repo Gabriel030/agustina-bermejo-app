@@ -295,7 +295,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     }
 
     private void publishAdmissionPaidIfApplicable(Invoice invoice) {
-        if (invoice.getIssuingReason() == InvoiceIssuingReason.PROGRAM_ADMISSION && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+        if ((invoice.getIssuingReason() == InvoiceIssuingReason.PROGRAM_ADMISSION || invoice.getIssuingReason() == InvoiceIssuingReason.COURSE_ADMISSION) && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
             eventPublisher.publishEvent(AdmissionInvoicePaidEvent.paidFor(invoice.getId()));
         }
     }

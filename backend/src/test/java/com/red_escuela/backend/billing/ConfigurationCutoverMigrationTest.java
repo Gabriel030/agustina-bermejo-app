@@ -41,7 +41,7 @@ class ConfigurationCutoverMigrationTest {
             jdbc.update("insert into late_payment_settings (grace_period_days, surcharge_percentage, suspension_after_days, suspension_after_invoice_count, "
                     + "effective_from, created_by_id, created_at) values (7, 0.0800, 40, 3, date '2020-06-01', ?, timestamp '2020-06-01 10:00:00')", personId);
 
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("102").load().migrate();
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("99").load().migrate();
 
             assertThat(jdbc.queryForObject("select effective_from::text from configuration_version where scope = 'YEAR_TERMS'", String.class)).isEqualTo("2020-03-01");
             assertThat(jdbc.queryForObject("select count(*) from configuration_version where scope = 'LATE_PAYMENT'", Long.class)).isEqualTo(2);

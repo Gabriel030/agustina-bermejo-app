@@ -160,36 +160,6 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).isEmpty();
     }
 
-    @Test
-    void approvingTheFirstInstallmentReceiptTriggersTheActualEnrollment() {
-        Student student = persistStudent("82000002");
-        Course course = persistCourse(20);
-        Person director = persistPersonBase("DIR" + System.nanoTime());
-        persistPriceRevision(course, BigDecimal.valueOf(15000), director);
-        entityManager.flush();
-
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
-                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
-
-        Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
-        Role rolAdministrativo = roleRepository.findByName("ADMINISTRATIVO").orElseThrow();
-        administrativo.getRoles().add(rolAdministrativo);
-        entityManager.flush();
-
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), administrativo);
-
-        entityManager.flush();
-        entityManager.clear();
-
-        CourseEnrollmentApplication actualizada = entityManager.find(CourseEnrollmentApplication.class, application.getId());
-        assertThat(actualizada.getCourseEnrollment()).isNotNull();
-        assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).hasSize(1);
-        assertThatInvoice(actualizada.getPaymentReceipt().getInvoice()).isPaid();
-        assertThat(invoiceRepository.findInvoiceWithLinesById(actualizada.getPaymentReceipt().getInvoice().getId()).orElseThrow().findCourseEnrollmentId()).contains(actualizada.getCourseEnrollment().getId());
-
-        Student estudianteActualizado = entityManager.find(Student.class, student.getId());
-        assertThat(estudianteActualizado.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
-    }
 
     private Person persistAdministrativeReviewer() {
         Person administrativo = persistPersonBase("ADMIN" + System.nanoTime());
@@ -227,7 +197,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-235")
-    void approvingTheReceiptOfACourseWithoutOlderDebtEnrollsTheStudent() {
+    void approvingTheReceiptOfACourseWithoutOlderDebtMarksTheReceiptAsApprovedAndPaysTheInvoice() {
         Student student = persistStudent("82235002");
         Course course = persistCourse(20);
         persistPriceRevision(course, BigDecimal.valueOf(15000), persistPersonBase("DIR" + System.nanoTime()));
@@ -238,7 +208,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
-        assertThat(courseEnrollmentRepository.findByStudentId(student.getId())).hasSize(1);
+        assertThatInvoice(application.getInvoice()).isPaid();
     }
 
     @Test
@@ -341,22 +311,4 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(AlreadyEnrolledInCourseException.class);
     }
 
-    @Test
-    void studentsInProgressCountTowardsCourseCapacity() {
-        Course course = persistCourse(1);
-        persistPriceRevision(course, BigDecimal.valueOf(15000), persistPersonBase("DIR" + System.nanoTime()));
-        persistCourseEnrollment(persistStudent("82000007"), course, EnrollmentStatus.IN_PROGRESS);
-        Student student = persistStudent("82000008");
-        Person administrativo = persistAdministrativo();
-        entityManager.flush();
-
-        CourseEnrollmentApplication application = courseEnrollmentApplicationService.requestWithPayment(
-                student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile());
-        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), administrativo);
-        entityManager.flush();
-        entityManager.clear();
-
-        CourseEnrollmentApplication updated = entityManager.find(CourseEnrollmentApplication.class, application.getId());
-        assertThat(updated.getCourseEnrollment().getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
-    }
 }

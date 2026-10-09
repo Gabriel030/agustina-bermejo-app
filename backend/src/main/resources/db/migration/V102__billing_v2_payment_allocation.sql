@@ -51,3 +51,8 @@ create trigger trg_payment_allocation_append_only before update or delete on pay
     for each row execute function forbid_append_only_row_change();
 
 alter table course_enrollment_application alter column payment_receipt_id drop not null;
+
+alter table course_enrollment_application add column invoice_id bigint references invoice(id);
+update course_enrollment_application a set invoice_id = r.invoice_id from bank_transfer_receipt r where r.id = a.payment_receipt_id;
+create index ix_course_enrollment_application_invoice on course_enrollment_application (invoice_id);
+create unique index uk_course_enrollment_application_enrollment on course_enrollment_application (course_enrollment_id) where course_enrollment_id is not null;
