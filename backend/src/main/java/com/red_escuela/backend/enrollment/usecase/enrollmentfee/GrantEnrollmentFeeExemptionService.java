@@ -1,8 +1,8 @@
 package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
-import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTerms;
+import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTermsLookup;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
@@ -34,19 +34,19 @@ public class GrantEnrollmentFeeExemptionService implements GrantEnrollmentFeeExe
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final BillingConfigurationReader configurationReader;
+    private final YearEnrollmentFeeTermsLookup termsLookup;
     private final EnrollmentFeeExemptionRepository exemptionRepository;
     private final CurrentPersonService currentPersonService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public GrantEnrollmentFeeExemptionService(ProgramEnrollmentRepository programEnrollmentRepository,
-                                              ProgramYearBillingTemplateRepository templateRepository, BillingConfigurationReader configurationReader,
+                                              ProgramYearBillingTemplateRepository templateRepository, YearEnrollmentFeeTermsLookup termsLookup,
                                               EnrollmentFeeExemptionRepository exemptionRepository, CurrentPersonService currentPersonService,
                                               ApplicationEventPublisher eventPublisher, Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;
-        this.configurationReader = configurationReader;
+        this.termsLookup = termsLookup;
         this.exemptionRepository = exemptionRepository;
         this.currentPersonService = currentPersonService;
         this.eventPublisher = eventPublisher;
@@ -63,11 +63,11 @@ public class GrantEnrollmentFeeExemptionService implements GrantEnrollmentFeeExe
         if (!template.getProgram().getId().equals(enrollment.getProgram().getId())) {
             throw new ProgramYearBillingTemplateMismatchException(template.getId());
         }
-        YearBillingTerms terms = configurationReader.requireYearTermsEffectiveOn(template.programId(), template.getTerm().getId(), LocalDate.now(clock));
+        YearEnrollmentFeeTerms terms = termsLookup.requireEnrollmentFeeTermsEffectiveOn(template.programId(), template.termId(), LocalDate.now(clock));
         if (request.slot() > terms.enrollmentFeeCount()) {
             throw new InvalidEnrollmentFeeConfigurationException("El año lectivo solo tiene " + terms.enrollmentFeeCount() + " matrícula(s)");
         }
-        if (!terms.blocksEnrollment() && !terms.blocksExamRegistration() && !terms.blocksCertificates()) {
+        if (!terms.blocksAnyProcedure()) {
             throw new EnrollmentFeeExemptionNotNeededException("El año lectivo " + template.getId() + " no bloquea trámites por matrícula impaga");
         }
         if (exemptionRepository.findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(programEnrollmentId, template.getId(), request.slot()).isPresent()) {

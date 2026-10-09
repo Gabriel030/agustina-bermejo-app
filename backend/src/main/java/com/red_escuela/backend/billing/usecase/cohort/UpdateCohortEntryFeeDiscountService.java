@@ -36,7 +36,7 @@ public class UpdateCohortEntryFeeDiscountService implements UpdateCohortEntryFee
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramCohort update(Long cohortId, Percentage discount) {
         ProgramCohort cohort = programCohortRepository.findById(cohortId).orElseThrow(() -> new ProgramCohortNotFoundException(cohortId));
         pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofCohortEntry(cohortId), new CohortEntryDiscount(discount),

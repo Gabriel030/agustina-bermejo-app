@@ -50,7 +50,15 @@ public class ProgramYearBillingTemplate {
         return term.getEndDate();
     }
 
+    public Integer termYear() {
+        return term.getYear();
+    }
+
     public Long programId() {
         return program.getId();
+    }
+
+    public Long termId() {
+        return term.getId();
     }
 }

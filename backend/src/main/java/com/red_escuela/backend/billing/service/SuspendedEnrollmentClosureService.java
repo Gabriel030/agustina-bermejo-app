@@ -98,7 +98,7 @@ public class SuspendedEnrollmentClosureService {
         if (cycle.yearTerms().withdrawSuspendedAtTermEnd()) {
             Optional<LocalDate> termEnd = termRepository.findTermsOfProgram(enrollment.getProgram().getId()).stream()
                     .filter(t -> t.getStartDate() != null && t.getEndDate() != null)
-                    .filter(t -> !t.getId().equals(cycle.template().getTerm().getId()))
+                    .filter(t -> !t.getId().equals(cycle.template().termId()))
                     .filter(t -> !suspendedOn.isBefore(t.getStartDate().toLocalDate()) && !suspendedOn.isAfter(t.getEndDate().toLocalDate()))
                     .min(Comparator.comparing(t -> Duration.between(t.getStartDate(), t.getEndDate())))
                     .map(t -> t.getEndDate().toLocalDate());

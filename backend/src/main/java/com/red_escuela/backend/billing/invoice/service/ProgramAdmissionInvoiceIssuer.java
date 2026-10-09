@@ -29,7 +29,7 @@ public class ProgramAdmissionInvoiceIssuer {
     public Invoice issueAdmissionInvoice(Long studentId, Program program, ProgramCohort cohort) {
         return switch (invoiceIssuingService.issueInvoiceInCallerTransaction(
                 InvoiceIssuingRequestFactory.createProgramAdmissionRequest(studentId, program, cohort,
-                        configurationReader.requireYearTermsEffectiveOn(cohort.getTemplate().programId(), cohort.getTemplate().getTerm().getId(), LocalDate.now(clock)), LocalDate.now(clock)))) {
+                        configurationReader.requireYearTermsEffectiveOn(cohort.getTemplate().programId(), cohort.getTemplate().termId(), LocalDate.now(clock)), LocalDate.now(clock)))) {
             case InvoiceIssuingResult.InvoiceIssued issued -> issued.invoice();
             case InvoiceIssuingResult.InvoiceAlreadyIssued existing -> throw new DuplicateChargeException("admission");
             case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluationResult());

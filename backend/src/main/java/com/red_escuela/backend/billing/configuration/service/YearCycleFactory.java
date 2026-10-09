@@ -25,7 +25,7 @@ public class YearCycleFactory {
     }
 
     public YearCycle cycleOf(ProgramYearBillingTemplate template, int fallbackYear, LocalDate factDate) {
-        YearBillingTerms terms = configurationReader.requireYearTermsEffectiveOn(template.programId(), template.getTerm().getId(), factDate);
+        YearBillingTerms terms = configurationReader.requireYearTermsEffectiveOn(template.programId(), template.termId(), factDate);
         return YearCycle.of(template, terms, fallbackYear);
     }
 

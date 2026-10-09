@@ -37,6 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.red_escuela.backend.billing.planning.TestTemplateTerms;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -199,6 +201,9 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             cohort.setCursadaStart(cursadaStart);
             cohort.setCreatedBy(director);
             entityManager.persist(cohort);
+            if (intake == CohortIntake.SECOND) {
+                TestTemplateTerms.publishCohortEntryDiscount(entityManager, cohort, Percentage.ofFraction(new java.math.BigDecimal("0.5")));
+            }
             return cohort.getId();
         });
     }

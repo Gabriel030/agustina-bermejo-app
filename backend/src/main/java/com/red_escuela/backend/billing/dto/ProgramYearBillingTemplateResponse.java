@@ -10,7 +10,7 @@ public record ProgramYearBillingTemplateResponse(Long id, Long programId, Long t
 
     public static ProgramYearBillingTemplateResponse from(ProgramYearBillingTemplate template, YearBillingTerms terms) {
         return new ProgramYearBillingTemplateResponse(
-                template.getId(), template.getProgram().getId(), template.getTerm().getId(), terms.recurringFeeInvoicesCount(),
+                template.getId(), template.getProgram().getId(), template.termId(), terms.recurringFeeInvoicesCount(),
                 terms.enrollmentFeeCount(), terms.firstEnrollmentFeeMonth(), terms.secondEnrollmentFeeMonth(),
                 terms.enrollmentFeeLeadMonths(), terms.lateEnrollmentFeeDueDays(), terms.recurringFeeDueDays(), terms.withdrawSuspendedAtTermEnd(), terms.paysWhilePaused(), terms.blocksEnrollment(), terms.blocksExamRegistration(),
                 terms.blocksCertificates(), terms.requireEnrollmentFeeForFinalExamOnlyStudents());

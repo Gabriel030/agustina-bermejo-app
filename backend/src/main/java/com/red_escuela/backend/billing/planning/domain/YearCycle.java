@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.planning.domain;
 
-import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 
@@ -29,14 +28,13 @@ public final class YearCycle {
     }
 
     public static YearCycle of(ProgramYearBillingTemplate template, YearBillingTerms yearTerms, int fallbackYear) {
-        Term term = template.getTerm();
-        if (term.getStartDate() == null || term.getEndDate() == null) {
-            int year = term.getYear() != null ? term.getYear() : fallbackYear;
+        if (template.termStartDate() == null || template.termEndDate() == null) {
+            int year = template.termYear() != null ? template.termYear() : fallbackYear;
             YearMonth first = YearMonth.of(year, 1);
             return new YearCycle(template, yearTerms, first, YearMonth.of(year, 12), YearMonth.of(year, LECTIVE_YEAR_FIRST_MONTH), year, first);
         }
-        YearMonth termStart = YearMonth.from(term.getStartDate());
-        YearMonth termEnd = YearMonth.from(term.getEndDate());
+        YearMonth termStart = YearMonth.from(template.termStartDate());
+        YearMonth termEnd = YearMonth.from(template.termEndDate());
         YearMonth firstFee = firstFeePeriod(yearTerms, termStart);
         YearMonth start = firstFee.isBefore(termStart) ? firstFee : termStart;
         return new YearCycle(template, yearTerms, start, termEnd, termStart, termStart.getYear(), start);
@@ -94,8 +92,7 @@ public final class YearCycle {
 
     public YearMonth slotPeriod(int slot) {
         if (slot == 1) {
-            Term term = template.getTerm();
-            if (term.getStartDate() == null || term.getEndDate() == null) {
+            if (template.termStartDate() == null || template.termEndDate() == null) {
                 return YearMonth.of(baseYear, yearTerms.firstEnrollmentFeeMonth());
             }
             return firstFeePeriod(yearTerms, termStart);

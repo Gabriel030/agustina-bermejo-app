@@ -64,7 +64,7 @@ public class ProgramYearBillingTemplateController {
     }
 
     private ProgramYearBillingTemplateResponse templateResponse(ProgramYearBillingTemplate template) {
-        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template.programId(), template.getTerm().getId()));
+        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template.programId(), template.termId()));
     }
 
     private ProgramCohortResponse cohortResponse(ProgramCohort cohort) {

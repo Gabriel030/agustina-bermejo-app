@@ -48,12 +48,12 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramYearBillingTemplate update(Long templateId, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate template = templateRepository.findByIdForUpdate(templateId)
                 .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(templateId));
         LocalDate today = LocalDate.now(clock);
-        Long termId = template.getTerm().getId();
+        Long termId = template.termId();
         YearBillingTerms proposed = termsOverlay.overlay(configurationReader.requireYearTermsEffectiveOn(template.programId(), termId, today), request);
         pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON,
                         actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(templateId)), true))

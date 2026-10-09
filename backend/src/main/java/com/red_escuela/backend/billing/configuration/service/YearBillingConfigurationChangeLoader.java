@@ -57,7 +57,7 @@ public class YearBillingConfigurationChangeLoader {
     }
 
     private YearBillingTerms currentTermsOf(ProgramYearBillingTemplate template) {
-        return configurationReader.requireYearTermsEffectiveOn(template.programId(), template.getTerm().getId(), LocalDate.now(clock));
+        return configurationReader.requireYearTermsEffectiveOn(template.programId(), template.termId(), LocalDate.now(clock));
     }
 
     private ProgramYearBillingTemplateSnapshot snapshotOf(YearBillingTerms terms) {
