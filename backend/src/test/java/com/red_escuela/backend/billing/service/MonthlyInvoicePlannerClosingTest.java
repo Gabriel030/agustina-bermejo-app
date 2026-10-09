@@ -300,9 +300,10 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         pay(career, firstFee, 5000);
         today(date(2028, 2, 3));
         job.run();
-
         assertThatCode(() -> requireForTerm(enrollment, first)).doesNotThrowAnyException();
         assertThatThrownBy(() -> requireForTerm(enrollment, second)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
+        Invoice olderInstallment = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0);
+        pay(career, olderInstallment, olderInstallment.getAmounts().outstandingAmount().value().amount().longValueExact());
         pay(career, secondFee, 5000);
         assertThatCode(() -> requireForTerm(enrollment, second)).doesNotThrowAnyException();
         List<Invoice> next = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().filter(i -> y28.templateId().equals(i.getTemplateId())).toList();

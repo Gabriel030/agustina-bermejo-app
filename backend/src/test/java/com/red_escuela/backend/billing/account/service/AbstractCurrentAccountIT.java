@@ -34,9 +34,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.function.Supplier;
 
+import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.DUE_DATE;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ISSUE_DATE;
@@ -114,6 +116,24 @@ abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
         Invoice invoice = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);
         invoice.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), ISSUE_DATE, DUE_DATE, SNAPSHOT, ACTOR);
         return invoiceRepository.save(invoice).getId();
+    }
+
+    protected Long issueAdministrativeFeeWithLedgerDebit(Long accountId, String amount, LocalDate dueDate) {
+        return inTransaction(() -> {
+            InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ADMINISTRATIVE_FEE,
+                    InvoiceIssuingReason.AD_HOC_CHARGE, null);
+            InvoiceLineDraft line = new InvoiceLineDraft(FeeType.ADMINISTRATIVE_FEE, "Concepto", YearMonth.of(2027, 3), null, null, null, null, null,
+                    "AB:" + System.nanoTime(), ars(amount));
+            Invoice draft = InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);
+            draft.issueInvoice(numberGenerator.nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.minusDays(9), dueDate, SNAPSHOT, ACTOR);
+            Invoice saved = invoiceRepository.save(draft);
+            service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), saved, dueDate.minusDays(9));
+            return saved.getId();
+        });
+    }
+
+    protected Person newStaffPerson() {
+        return inTransaction(() -> studentRepository.findById(newStudentId()).orElseThrow().getPerson());
     }
 
     protected StudentCurrentAccount loadAccount(Long accountId) {

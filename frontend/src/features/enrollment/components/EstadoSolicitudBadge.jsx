@@ -13,6 +13,7 @@ const ESTADOS = {
   PENDING: { label: 'En revisión', tone: 'warning' },
   PENDING_REVIEW: { label: 'En revisión', tone: 'warning' },
   APPROVED: { label: 'Aprobada', tone: 'success' },
+  APPLIED_TO_DEBT: { label: 'Aplicado a deuda anterior', tone: 'warning' },
   REJECTED: { label: 'Rechazada', tone: 'danger' },
   WAITLISTED: { label: 'En lista de espera', tone: 'neutral' },
 };

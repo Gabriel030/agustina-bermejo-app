@@ -173,6 +173,49 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-089")
+    @Tag("D-128")
+    void aPaymentSelectingTheNewerInvoiceIsAllocatedToTheOldestOverdueOne() {
+        Person admin = persistPerson("admin.oldest." + System.nanoTime());
+        Student student = persistStudent("oldest" + System.nanoTime());
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice older = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(1))
+                .dueOn(LocalDate.now().minusDays(20)).withBaseAmount(ars(10000)).inState(InvoicePaymentStatus.OVERDUE).build();
+        Invoice newer = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING);
+
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(newer.getId(), ars(10000))), PaymentMethod.CASH, false, null, null, null, null), admin);
+
+        assertThatInvoice(invoiceRepository.findById(older.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(newer.getId()).orElseThrow()).isPending();
+        assertThat(payment.getAllocations()).singleElement().satisfies(link -> assertThat(link.getInvoice().getId()).isEqualTo(older.getId()));
+        Long accountId = invoiceRepository.findById(older.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
+                .isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-089")
+    void aPaymentOfTwoInvoicesAllocatesBothAndLinksEachToThePayment() {
+        Person admin = persistPerson("admin.two." + System.nanoTime());
+        Student student = persistStudent("two" + System.nanoTime());
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice first = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(10000), InvoicePaymentStatus.PENDING, YearMonth.now());
+        Invoice second = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(5000), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));
+
+        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
+                List.of(new PaymentAllocationRequest(first.getId(), ars(10000)), new PaymentAllocationRequest(second.getId(), ars(5000))),
+                PaymentMethod.CASH, false, null, null, null, null), admin);
+
+        assertThatInvoice(invoiceRepository.findById(first.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(second.getId()).orElseThrow()).isPaid();
+        assertThat(payment.getAllocations()).hasSize(2);
+        assertThat(jdbc.queryForObject("select count(*) from payment_allocation where invoice_id in (?, ?)", Long.class, first.getId(), second.getId())).isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
     void paymentThatCoversFullBalanceMarksInvoiceAsPaid() {
         Person admin = persistPerson("admin.pago1." + System.nanoTime());
         Student student = persistStudent("96000001");

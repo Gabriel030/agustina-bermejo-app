@@ -99,10 +99,12 @@ public final class BillingTestFixtures {
         allocation.setInvoice(invoice);
         allocation.setAmountApplied(amount);
         payment.getAllocations().add(allocation);
+        bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).save(
+                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), paidOn, paidOn, ACTOR));
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
         accounts.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
-        accounts.allocateUnallocatedCreditToInvoicePayment(account, NonNegativeMoney.of(amount));
+        accounts.consumeUnallocatedCreditForAllocation(account, NonNegativeMoney.of(amount));
         bean(InvoiceRepository.class).flush();
         return invoice;
     }

@@ -11,7 +11,9 @@ import com.red_escuela.backend.billing.invoice.exception.InvoiceIssuingRejectedE
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
+import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedDomainEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
@@ -32,15 +34,17 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
 
     private final PolicySet<InvoiceIssuingContext> issuingPolicies;
     private final StudentCurrentAccountService accountService;
+    private final CurrentAccountAllocationService allocationService;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceNumberGenerator numberGenerator;
     private final Map<DiscountType, InvoiceDiscountCandidateStrategy> strategiesByType = new EnumMap<>(DiscountType.class);
 
     public InvoiceIssuingOperation(PolicySet<InvoiceIssuingContext> issuingPolicies, StudentCurrentAccountService accountService,
-                                   InvoiceRepository invoiceRepository, InvoiceNumberGenerator numberGenerator,
+                                   CurrentAccountAllocationService allocationService, InvoiceRepository invoiceRepository, InvoiceNumberGenerator numberGenerator,
                                    List<InvoiceDiscountCandidateStrategy> strategies) {
         this.issuingPolicies = issuingPolicies;
         this.accountService = accountService;
+        this.allocationService = allocationService;
         this.invoiceRepository = invoiceRepository;
         this.numberGenerator = numberGenerator;
         strategies.forEach(strategy -> strategiesByType.put(strategy.discountType(), strategy));
@@ -81,6 +85,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         Invoice issued = invoiceRepository.save(invoice);
         invoiceRepository.flush();
         accountService.recordInvoiceIssuedDebit(account, issued, context.facts().issueDate());
+        allocationService.allocateAccountCreditToOldestInvoices(account, context.facts().issueDate(), request.actor());
         context.winningDiscount().ifPresent(this::markDiscountAsApplied);
         return new InvoiceIssued(issued);
     }
@@ -94,7 +99,7 @@ public class InvoiceIssuingOperation implements BillingOperation<InvoiceIssuingC
         return switch (recorded) {
             case InvoiceIssuedEvent issued -> Optional.of(InvoiceIssuedDomainEvent.issuedFor(issued.invoiceId(), issued.studentCurrentAccountId(),
                     invoice.getInvoiceNumber().value(), issued.invoiceType().name(), issued.total(), issued.issueDate(), issued.dueDate()));
-            case InvoicePaidEvent paid -> Optional.of(InvoicePaidDomainEvent.paidFor(paid.invoiceId(), paid.studentCurrentAccountId(), paid.cause().name(),
+            case InvoicePaidEvent paid when paid.cause() != InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED -> Optional.of(InvoicePaidDomainEvent.paidFor(paid.invoiceId(), paid.studentCurrentAccountId(), paid.cause().name(),
                     paid.businessDate()));
             default -> Optional.empty();
         };

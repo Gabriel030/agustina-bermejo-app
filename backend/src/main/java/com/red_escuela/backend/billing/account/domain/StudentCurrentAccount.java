@@ -108,10 +108,15 @@ public class StudentCurrentAccount {
         return entry;
     }
 
-    public void allocateUnallocatedCreditToInvoicePayment(NonNegativeMoney amount) {
+    public void consumeUnallocatedCreditForAllocation(NonNegativeMoney amount) {
         requireAccountCurrency(amount);
         requireUnallocatedCreditCovers(amount);
         unallocatedCreditAmount = unallocatedCreditAmount.minusNotBelowZero(amount);
+    }
+
+    public void restoreUnallocatedCreditFromReversedAllocation(NonNegativeMoney amount) {
+        requireAccountCurrency(amount);
+        unallocatedCreditAmount = unallocatedCreditAmount.plus(amount);
     }
 
     public CurrentAccountEntry recordCreditNoteIssuedCredit(Long creditNoteId, NonNegativeMoney offsetAmount, NonNegativeMoney freeCreditAmount,
@@ -209,7 +214,7 @@ public class StudentCurrentAccount {
         }
     }
 
-    private void requireUnallocatedCreditCovers(NonNegativeMoney amount) {
+    public void requireUnallocatedCreditCovers(NonNegativeMoney amount) {
         if (amount.value().isGreaterThan(unallocatedCreditAmount.value())) {
             throw new InsufficientAccountCreditException();
         }

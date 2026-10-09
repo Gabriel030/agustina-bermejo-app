@@ -10,6 +10,7 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface StudentCurrentAccountRepository extends Repository<StudentCurrentAccount, Long> {
@@ -19,6 +20,9 @@ public interface StudentCurrentAccountRepository extends Repository<StudentCurre
     Optional<StudentCurrentAccount> findById(Long id);
 
     Optional<StudentCurrentAccount> findByStudentIdAndCurrency(Long studentId, Currency currency);
+
+    @Query("select a.id from StudentCurrentAccount a where a.studentId = :studentId order by a.id")
+    List<Long> findIdsByStudentId(@Param("studentId") Long studentId);
 
     @Query("select a.id from StudentCurrentAccount a where a.studentId = :studentId and a.currency = :currency")
     Optional<Long> findIdByStudentIdAndCurrency(@Param("studentId") Long studentId, @Param("currency") Currency currency);

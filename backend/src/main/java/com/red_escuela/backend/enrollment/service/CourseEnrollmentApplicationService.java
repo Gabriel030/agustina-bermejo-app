@@ -20,6 +20,7 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplication
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.enrollment.exception.PaymentReceiptRequiredException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -81,13 +82,21 @@ public class CourseEnrollmentApplicationService {
             case InvoiceIssuingResult.InvoiceIssuingRejected rejected -> throw new ChargeRejectedException(rejected.evaluationResult());
             case InvoiceIssuingResult.InvoiceAlreadyIssued duplicated -> throw new com.red_escuela.backend.billing.exception.DuplicateChargeException("course admission");
         };
-        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante);
-
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(student);
         application.setCourse(course);
         application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
-        application.setPaymentReceipt(receipt);
+        Long invoiceId = invoice.getId();
+        application.setInvoiceId(invoiceId);
+        if (!invoice.isPayable()) {
+            application.setCourseEnrollment(courseEnrollmentService.enrollSelfService(studentId, request));
+            invoice.assignInvoiceToCourseEnrollment(application.getCourseEnrollment().getId());
+            return courseEnrollmentApplicationRepository.save(application);
+        }
+        if (comprobante == null || comprobante.isEmpty()) {
+            throw new PaymentReceiptRequiredException(invoiceId);
+        }
+        application.setPaymentReceipt(uploadPaymentReceiptUseCase.upload(invoiceId, studentId, comprobante));
         return courseEnrollmentApplicationRepository.save(application);
     }
 

@@ -9,6 +9,6 @@ public class UnauthorizedAllocatorFixture {
     private StudentCurrentAccountService service;
 
     public void allocate(StudentCurrentAccount account, NonNegativeMoney amount) {
-        service.allocateUnallocatedCreditToInvoicePayment(account, amount);
+        service.consumeUnallocatedCreditForAllocation(account, amount);
     }
 }
