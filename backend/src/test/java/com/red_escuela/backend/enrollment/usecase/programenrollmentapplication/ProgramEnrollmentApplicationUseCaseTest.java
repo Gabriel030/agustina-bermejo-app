@@ -52,6 +52,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.test.context.event.RecordApplicationEvents
 class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Autowired
     private RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase;
@@ -385,21 +386,22 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Autowired
-    private com.red_escuela.backend.notification.repository.NotificationRepository notificationRepository;
+    private org.springframework.test.context.event.ApplicationEvents applicationEvents;
 
     @Test
-    @Tag("D-227")
-    void approvingNotifiesTheStudentToPayTheAdmissionFeeLinkedToTheApplication() {
+    @Tag("D-184")
+    void approvingPublishesAnEventCarryingIdsAndValuesInsteadOfEntities() {
         ProgramEnrollmentApplication application = requestApplication("81900006");
 
         approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor()));
         entityManager.flush();
 
-        assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(application.getStudent().getPerson().getId()))
-                .singleElement().satisfies(notification -> {
-                    assertThat(notification.getType()).isEqualTo(com.red_escuela.backend.notification.entity.NotificationType.PROGRAM_APPLICATION_APPROVED);
-                    assertThat(notification.getRelatedEntityType()).isEqualTo("ProgramEnrollmentApplication");
-                    assertThat(notification.getRelatedEntityId()).isEqualTo(application.getId());
+        assertThat(applicationEvents.stream(com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.applicationId()).isEqualTo(application.getId());
+                    assertThat(event.studentPersonId()).isEqualTo(application.getStudent().getPerson().getId());
+                    assertThat(event.programName()).isEqualTo(application.getProgram().getName());
+                    assertThat(event.eventId()).isNotNull();
                 });
     }
 
@@ -424,5 +426,14 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId);
         assertThat(response.admissionInvoice().receiptStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(response.admissionInvoice().receiptUploadedAt()).isNotNull();
+    }
+
+    @Test
+    @Tag("D-231")
+    void theApplicationResponseExposesTheLinkedEnrollmentIdOnlyWhenOneExists() {
+        ProgramEnrollmentApplication application = requestApplication("81900008");
+
+        assertThat(ProgramEnrollmentApplicationResponse.from(application).programEnrollmentId()).isNull();
+        assertThat(ProgramEnrollmentApplicationResponse.from(application, invoiceId -> null, applicationId -> 77L).programEnrollmentId()).isEqualTo(77L);
     }
 }

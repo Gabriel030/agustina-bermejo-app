@@ -85,6 +85,7 @@ describe('DetalleSolicitud', () => {
             programName: 'Diseño Gráfico',
             status: 'APPROVED',
             requestedAt: '2026-03-02T10:00:00',
+            programEnrollmentId: 15,
             admissionInvoice: { id: 78, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PAID' },
           },
         ]),
@@ -182,7 +183,7 @@ describe('DetalleSolicitud', () => {
     expect(screen.queryByText(/Subí los 3 documentos/)).not.toBeInTheDocument();
   });
 
-  it('aprobada sin factura todavía avisa que se está generando, con tono neutral', async () => {
+  it('aprobada sin factura (solicitud previa a D-227) remite a Secretaría sin prometer una factura inminente', async () => {
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([{ id: 1, programName: 'Diseño Gráfico', status: 'APPROVED', requestedAt: '2026-03-02T10:00:00', admissionInvoice: null }]),
@@ -190,8 +191,8 @@ describe('DetalleSolicitud', () => {
     );
     renderDetalle('1');
 
-    expect(await screen.findByText(/Estamos generando la factura de la matrícula de ingreso/)).toBeInTheDocument();
-    expect(screen.getByText(/Si no aparece, avisá a Secretaría\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Consultá con Secretaría el pago de la matrícula de ingreso\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Estamos generando la factura/)).not.toBeInTheDocument();
   });
 
   it('aprobada con la matrícula impaga promete la confirmación cuando se confirme el pago y muestra el badge de pago pendiente', async () => {
@@ -244,7 +245,7 @@ describe('DetalleSolicitud', () => {
     expect(screen.getByText(/Subiste el comprobante el .*; cuando lo aprobemos/)).toBeInTheDocument();
   });
 
-  it('aprobada con la matrícula pagada figura como inscripto', async () => {
+  it('aprobada con la matrícula pagada y la inscripción creada figura como inscripto', async () => {
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([
@@ -253,6 +254,7 @@ describe('DetalleSolicitud', () => {
             programName: 'Diseño Gráfico',
             status: 'APPROVED',
             requestedAt: '2026-03-02T10:00:00',
+            programEnrollmentId: 15,
             admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PAID' },
           },
         ]),
@@ -261,5 +263,29 @@ describe('DetalleSolicitud', () => {
     renderDetalle('1');
 
     expect(await screen.findByText('Inscripto')).toBeInTheDocument();
+    expect(screen.getByText(/tu inscripción a la carrera está confirmada/)).toBeInTheDocument();
+  });
+
+  it('aprobada con la matrícula pagada pero sin inscripción todavía dice que se está confirmando', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          {
+            id: 1,
+            programName: 'Diseño Gráfico',
+            status: 'APPROVED',
+            requestedAt: '2026-03-02T10:00:00',
+            programEnrollmentId: null,
+            admissionInvoice: { id: 77, total: { amount: '50000.00', currency: 'ARS' }, dueDate: '2026-03-20', paymentStatus: 'PAID' },
+          },
+        ]),
+      ),
+    );
+    renderDetalle('1');
+
+    expect(await screen.findByText('Confirmando inscripción')).toBeInTheDocument();
+    expect(screen.getByText(/Estamos confirmando tu inscripción en Diseño Gráfico\./)).toBeInTheDocument();
+    expect(screen.queryByText('Inscripto')).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu inscripción a la carrera está confirmada/)).not.toBeInTheDocument();
   });
 });

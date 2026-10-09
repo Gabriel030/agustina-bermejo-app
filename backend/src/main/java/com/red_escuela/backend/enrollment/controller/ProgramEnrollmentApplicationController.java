@@ -6,6 +6,7 @@ import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentApplicationNotFoundException;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentUseCase;
@@ -52,6 +53,7 @@ public class ProgramEnrollmentApplicationController {
     private final RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
     private final StudentDocumentRepository studentDocumentRepository;
     private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
 
     public ProgramEnrollmentApplicationController(
             CurrentStudentService currentStudentService,
@@ -64,7 +66,8 @@ public class ProgramEnrollmentApplicationController {
             ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase,
             RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase,
             StudentDocumentRepository studentDocumentRepository,
-            AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder) {
+            AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder,
+            ProgramEnrollmentRepository programEnrollmentRepository) {
         this.currentStudentService = currentStudentService;
         this.currentPersonService = currentPersonService;
         this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
@@ -76,6 +79,7 @@ public class ProgramEnrollmentApplicationController {
         this.rejectProgramEnrollmentApplicationUseCase = rejectProgramEnrollmentApplicationUseCase;
         this.studentDocumentRepository = studentDocumentRepository;
         this.admissionInvoiceReceiptFinder = admissionInvoiceReceiptFinder;
+        this.programEnrollmentRepository = programEnrollmentRepository;
     }
 
     @PostMapping("/me/program-enrollment-applications")
@@ -93,7 +97,8 @@ public class ProgramEnrollmentApplicationController {
         Student student = currentStudentService.resolveCurrentStudent();
         return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
                 .map(application -> ProgramEnrollmentApplicationResponse.from(application,
-                        admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId))
+                        admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId,
+                        applicationId -> programEnrollmentRepository.findIdByAdmissionApplicationId(applicationId).orElse(null)))
                 .toList();
     }
 

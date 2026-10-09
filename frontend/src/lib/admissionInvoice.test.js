@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { admissionPaymentPhase, daysUntilDate, isAdmissionInvoicePending } from '@/lib/admissionInvoice';
+import { admissionPaymentPhase, daysUntilDate, isAdmissionInvoiceActionable, isAdmissionInvoicePending } from '@/lib/admissionInvoice';
 
 const aprobada = (invoice) => ({ status: 'APPROVED', admissionInvoice: invoice });
 
 describe('admissionInvoice', () => {
-  it('distingue pagada, en revisión, vencida y pendiente', () => {
-    expect(admissionPaymentPhase(aprobada({ paymentStatus: 'PAID' }))).toBe('PAID');
+  it('distingue inscripta, confirmando inscripción, en revisión, vencida y pendiente', () => {
+    expect(admissionPaymentPhase({ ...aprobada({ paymentStatus: 'PAID' }), programEnrollmentId: 9 })).toBe('ENROLLED');
+    expect(admissionPaymentPhase(aprobada({ paymentStatus: 'PAID' }))).toBe('CONFIRMING_ENROLLMENT');
     expect(admissionPaymentPhase(aprobada({ paymentStatus: 'PENDING', receiptStatus: 'PENDING_REVIEW' }))).toBe('UNDER_REVIEW');
     expect(admissionPaymentPhase(aprobada({ paymentStatus: 'OVERDUE' }))).toBe('OVERDUE');
     expect(admissionPaymentPhase(aprobada({ paymentStatus: 'PENDING', receiptStatus: 'REJECTED' }))).toBe('PENDING');
@@ -18,6 +19,13 @@ describe('admissionInvoice', () => {
     expect(isAdmissionInvoicePending(aprobada({ paymentStatus: 'OVERDUE' }))).toBe(true);
     expect(isAdmissionInvoicePending(aprobada({ paymentStatus: 'PAID' }))).toBe(false);
     expect(isAdmissionInvoicePending({ status: 'REJECTED', admissionInvoice: null })).toBe(false);
+  });
+
+  it('solo es accionable la matrícula pendiente o vencida, no la que está en revisión', () => {
+    expect(isAdmissionInvoiceActionable(aprobada({ paymentStatus: 'PENDING' }))).toBe(true);
+    expect(isAdmissionInvoiceActionable(aprobada({ paymentStatus: 'OVERDUE' }))).toBe(true);
+    expect(isAdmissionInvoiceActionable(aprobada({ paymentStatus: 'PENDING', receiptStatus: 'PENDING_REVIEW' }))).toBe(false);
+    expect(isAdmissionInvoiceActionable(aprobada({ paymentStatus: 'PAID' }))).toBe(false);
   });
 
   it('cuenta los días hasta el vencimiento por fecha local', () => {

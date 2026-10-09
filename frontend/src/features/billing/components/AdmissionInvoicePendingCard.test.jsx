@@ -92,6 +92,32 @@ describe('AdmissionInvoicePendingCard', () => {
     expect(botones[1]).toHaveAttribute('data-variant', 'outline');
   });
 
+  it('con todas las matrículas en revisión el título lo dice y no hay botón principal', async () => {
+    montar([solicitud(3, 'Diseño Gráfico', { receiptStatus: 'PENDING_REVIEW', receiptUploadedAt: '2026-10-02T10:00:00' })]);
+
+    expect(await screen.findByText('Matrícula de ingreso en revisión')).toBeInTheDocument();
+    expect(screen.queryByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).not.toBeInTheDocument();
+  });
+
+  it('ordena primero las filas accionables y deja el botón principal en la primera de ellas aunque otra venza antes', async () => {
+    montar([
+      solicitud(3, 'Carrera en revisión', { dueDate: enDias(1), receiptStatus: 'PENDING_REVIEW', receiptUploadedAt: '2026-10-02T10:00:00' }),
+      solicitud(4, 'Carrera a pagar', { dueDate: enDias(8) }),
+    ]);
+
+    const boton = await screen.findByRole('button', { name: 'Pagar matrícula' });
+    expect(boton).toHaveAttribute('data-variant', 'gradient');
+    const filas = screen.getAllByText(/Carrera/).map((nodo) => nodo.textContent);
+    expect(filas[0]).toContain('Carrera a pagar');
+    expect(screen.getByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
+  });
+
+  it('la fila vencida antepone la carrera y el monto', async () => {
+    montar([solicitud(3, 'Diseño Gráfico', { paymentStatus: 'OVERDUE', dueDate: enDias(-3) })]);
+
+    expect(await screen.findByText(/^Diseño Gráfico · \$\s50\.000,00\. La matrícula venció el /)).toBeInTheDocument();
+  });
+
   it('el botón lleva a elegir cómo pagar la factura de la matrícula', async () => {
     const user = userEvent.setup();
     montar([solicitud(3, 'Diseño Gráfico', {})]);

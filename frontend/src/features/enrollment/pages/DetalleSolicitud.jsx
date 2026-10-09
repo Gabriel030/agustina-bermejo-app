@@ -121,7 +121,7 @@ export function DetalleSolicitud() {
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{solicitud.programName}</div>
           <div className="mt-1 text-[13px] text-ink-faint">Solicitada el {formatFecha(solicitud.requestedAt)}</div>
         </div>
-        <EstadoSolicitudBadge status={solicitud.status} admissionInvoice={solicitud.admissionInvoice} />
+        <EstadoSolicitudBadge status={solicitud.status} admissionInvoice={solicitud.admissionInvoice} programEnrollmentId={solicitud.programEnrollmentId} />
       </div>
 
       {solicitud.status === 'REJECTED' && (
@@ -132,14 +132,19 @@ export function DetalleSolicitud() {
 
       {solicitud.status === 'APPROVED' && !solicitud.admissionInvoice && (
         <GlassCard className="bg-neutral-bg p-5 text-[13px] text-ink-soft">
-          <span className="font-bold text-ink">Solicitud aprobada.</span> Estamos generando la factura de la matrícula de ingreso; en unos minutos
-          va a aparecer acá y en Mis pagos. Si no aparece, avisá a Secretaría.
+          <span className="font-bold text-ink">Solicitud aprobada.</span> Consultá con Secretaría el pago de la matrícula de ingreso.
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && (
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && solicitud.programEnrollmentId && (
         <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
           <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso: tu inscripción a la carrera está confirmada.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && !solicitud.programEnrollmentId && (
+        <GlassCard className="bg-warning-bg p-5 text-[13px] text-warning">
+          <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso. Estamos confirmando tu inscripción en {solicitud.programName}.
         </GlassCard>
       )}
 
@@ -185,7 +190,7 @@ export function DetalleSolicitud() {
         <>
           <GlassCard className="p-5 text-[13px] text-ink-soft">
             Tu solicitud está en revisión. No se te cobró nada: si la aprueban, vas a recibir la factura de la matrícula de ingreso y vas
-            a tener 10 días para pagarla. Te avisamos por notificación cuando haya novedades.
+            a tener un plazo para pagarla. Te avisamos por notificación cuando haya novedades.
           </GlassCard>
 
           <div className="font-heading text-[15px] font-semibold text-ink-soft">Documentación</div>

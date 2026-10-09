@@ -54,7 +54,7 @@ public class ApproveProgramEnrollmentApplicationService implements ApproveProgra
         Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
         application.approve(command.decidedBy(), admissionInvoice);
         personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
-        eventPublisher.publishEvent(new ProgramApplicationApprovedEvent(application.getId(), student.getPerson(), application.getProgram().getName()));
+        eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;
     }
 }

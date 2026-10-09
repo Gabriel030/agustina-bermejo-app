@@ -5,10 +5,15 @@ export function isAdmissionInvoicePending(solicitud) {
 export function admissionPaymentPhase(solicitud) {
   const invoice = solicitud?.admissionInvoice;
   if (solicitud?.status !== 'APPROVED' || !invoice) return null;
-  if (invoice.paymentStatus === 'PAID') return 'PAID';
+  if (invoice.paymentStatus === 'PAID') return solicitud.programEnrollmentId ? 'ENROLLED' : 'CONFIRMING_ENROLLMENT';
   if (invoice.receiptStatus === 'PENDING_REVIEW') return 'UNDER_REVIEW';
   if (invoice.paymentStatus === 'OVERDUE') return 'OVERDUE';
   return 'PENDING';
+}
+
+export function isAdmissionInvoiceActionable(solicitud) {
+  const fase = admissionPaymentPhase(solicitud);
+  return fase === 'PENDING' || fase === 'OVERDUE';
 }
 
 function startOfLocalDay(date) {

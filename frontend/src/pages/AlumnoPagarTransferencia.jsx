@@ -151,12 +151,21 @@ const RECEIPT_STATUS = {
   REJECTED: { label: 'Rechazado', icon: XCircle, tone: 'danger' },
 };
 
+function textoDePagoAprobado(solicitud) {
+  if (!solicitud) return 'Tu pago fue confirmado correctamente.';
+  if (solicitud.admissionInvoice?.paymentStatus !== 'PAID') {
+    return 'Aprobamos tu comprobante, pero el monto acreditado todavía no alcanza a cubrir la matrícula de ingreso completa. Revisá el detalle en Mis pagos.';
+  }
+  if (solicitud.programEnrollmentId) return `Tu pago fue confirmado. Ya estás inscripto en ${solicitud.programName}.`;
+  return `Tu pago fue confirmado. Estamos confirmando tu inscripción en ${solicitud.programName}.`;
+}
+
 function PasoEstado({ invoiceId }) {
   const navigate = useNavigate();
   const { data: comprobantes, isLoading } = useMisComprobantes();
   const comprobante = comprobantes?.find((c) => c.invoiceId === parseInt(invoiceId, 10));
   const { data: solicitudes } = useMisSolicitudesCarrera();
-  const programaDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10))?.programName;
+  const solicitudDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10));
 
   if (isLoading) return <Skeleton className="h-32" />;
 
@@ -185,7 +194,7 @@ function PasoEstado({ invoiceId }) {
           )}
           {comprobante.status === 'APPROVED' && (
             <p className="mt-1 text-sm text-ink-faint">
-              {programaDeMatricula ? `Tu pago fue confirmado. Ya estás inscripto en ${programaDeMatricula}.` : 'Tu pago fue confirmado correctamente.'}
+              {textoDePagoAprobado(solicitudDeMatricula)}
             </p>
           )}
           {comprobante.status === 'REJECTED' && (

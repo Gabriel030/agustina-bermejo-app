@@ -201,6 +201,7 @@ describe('AlumnoInicio — matrícula de ingreso (D-227)', () => {
 
     expect(await screen.findByText('Pagá la matrícula de ingreso para confirmar tu inscripción')).toBeInTheDocument();
     expect(await screen.findByText('Matrícula de ingreso pendiente')).toBeInTheDocument();
+    expect(screen.queryByText('Pagala para confirmar tu inscripción.')).not.toBeInTheDocument();
     expect(screen.queryByText('No tenés saldo pendiente.')).not.toBeInTheDocument();
   });
 

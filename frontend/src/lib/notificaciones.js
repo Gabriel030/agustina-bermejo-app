@@ -16,6 +16,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   ANNOUNCEMENT_PUBLISHED: 'Nuevo aviso',
   ANNOUNCEMENT_UPDATED: 'Aviso actualizado',
   PROGRAM_APPLICATION_APPROVED: 'Solicitud aprobada',
+  PROGRAM_ENROLLMENT_STALLED: 'Inscripción pendiente de revisión',
 };
 
 export const TONO_NOTIFICACION = {
@@ -36,6 +37,7 @@ export const TONO_NOTIFICACION = {
   ANNOUNCEMENT_PUBLISHED: 'accent2',
   ANNOUNCEMENT_UPDATED: 'accent2',
   PROGRAM_APPLICATION_APPROVED: 'success',
+  PROGRAM_ENROLLMENT_STALLED: 'warning',
 };
 
 export function tiempoRelativo(fechaIso) {

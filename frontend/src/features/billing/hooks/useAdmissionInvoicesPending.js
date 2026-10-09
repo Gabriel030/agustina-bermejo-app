@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useMisSolicitudesCarrera } from '@/features/enrollment';
-import { isAdmissionInvoicePending } from '@/lib/admissionInvoice';
+import { isAdmissionInvoiceActionable, isAdmissionInvoicePending } from '@/lib/admissionInvoice';
 
 export function useAdmissionInvoicesPending() {
   const { data, isLoading, isError } = useMisSolicitudesCarrera();
@@ -8,7 +8,11 @@ export function useAdmissionInvoicesPending() {
     () =>
       (data ?? [])
         .filter(isAdmissionInvoicePending)
-        .sort((a, b) => String(a.admissionInvoice.dueDate).localeCompare(String(b.admissionInvoice.dueDate))),
+        .sort(
+          (a, b) =>
+            Number(isAdmissionInvoiceActionable(b)) - Number(isAdmissionInvoiceActionable(a)) ||
+            String(a.admissionInvoice.dueDate).localeCompare(String(b.admissionInvoice.dueDate)),
+        ),
     [data],
   );
   return { pendientes, isLoading, isError };

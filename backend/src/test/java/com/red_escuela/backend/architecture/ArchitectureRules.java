@@ -250,7 +250,7 @@ public final class ArchitectureRules {
         };
         return com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods().that().areAnnotatedWith(org.springframework.modulith.events.ApplicationModuleListener.class)
                 .or().areAnnotatedWith(org.springframework.scheduling.annotation.Async.class).should(allowedOwner)
-                .because("payment and enrollment are processed synchronously; async only for idempotent billing post listeners (D-178, D-183)");
+                .because("payment and allocation are processed synchronously; async only for idempotent post-commit listeners, including the enrollment derived from the admission payment (D-231, D-178, D-183)");
     }
 
     public static ArchRule domainEventsCarryNoEntities(Class<? extends java.lang.annotation.Annotation> entityAnnotation) {

@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Button } from '@/components/ui/button';
 import { formatFecha, formatMoney } from '@/lib/utils';
-import { admissionPaymentPhase, daysUntilDate } from '@/lib/admissionInvoice';
+import { admissionPaymentPhase, daysUntilDate, isAdmissionInvoiceActionable } from '@/lib/admissionInvoice';
 import { useAdmissionInvoicesPending } from '../hooks/useAdmissionInvoicesPending';
 
 function textoDeVencimiento(solicitud) {
@@ -13,7 +13,7 @@ function textoDeVencimiento(solicitud) {
   const monto = formatMoney(admissionInvoice.total);
   const fecha = formatFecha(admissionInvoice.dueDate);
   if (admissionPaymentPhase(solicitud) === 'OVERDUE') {
-    return `La matrícula venció el ${fecha}. Todavía podés pagarla para confirmar tu inscripción mientras la admisión siga abierta.`;
+    return `${programName} · ${monto}. La matrícula venció el ${fecha}. Todavía podés pagarla para confirmar tu inscripción mientras la admisión siga abierta.`;
   }
   const quedan = dias == null ? '' : ` (te quedan ${Math.max(dias, 0)} día${dias === 1 ? '' : 's'})`;
   return `${programName} · ${monto}. Vencimiento: ${fecha}${quedan}.`;
@@ -73,11 +73,16 @@ export function AdmissionInvoicePendingCard() {
     return null;
   }
 
+  const primeraAccionable = pendientes.find(isAdmissionInvoiceActionable);
+  const titulo = primeraAccionable
+    ? 'Pagá la matrícula de ingreso para confirmar tu inscripción'
+    : 'Matrícula de ingreso en revisión';
+
   return (
     <GlassCard className="flex flex-col gap-3 p-5">
-      <div className="font-heading text-[15px] font-semibold text-ink">Pagá la matrícula de ingreso para confirmar tu inscripción</div>
-      {pendientes.map((solicitud, indice) => (
-        <SolicitudPendiente key={solicitud.id} solicitud={solicitud} principal={indice === 0} />
+      <div className="font-heading text-[15px] font-semibold text-ink">{titulo}</div>
+      {pendientes.map((solicitud) => (
+        <SolicitudPendiente key={solicitud.id} solicitud={solicitud} principal={solicitud.id === primeraAccionable?.id} />
       ))}
     </GlassCard>
   );

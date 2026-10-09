@@ -21,11 +21,12 @@ const ESTADOS_DE_MATRICULA = {
   PENDING: { label: 'Pagá la matrícula', tone: 'warning' },
   UNDER_REVIEW: { label: 'Pago en revisión', tone: 'warning' },
   OVERDUE: { label: 'Matrícula vencida', tone: 'danger' },
-  PAID: { label: 'Inscripto', tone: 'success' },
+  CONFIRMING_ENROLLMENT: { label: 'Confirmando inscripción', tone: 'warning' },
+  ENROLLED: { label: 'Inscripto', tone: 'success' },
 };
 
-export function EstadoSolicitudBadge({ status, admissionInvoice }) {
-  const fase = admissionPaymentPhase({ status, admissionInvoice });
+export function EstadoSolicitudBadge({ status, admissionInvoice, programEnrollmentId }) {
+  const fase = admissionPaymentPhase({ status, admissionInvoice, programEnrollmentId });
   const estado = (fase && ESTADOS_DE_MATRICULA[fase]) ?? ESTADOS[status] ?? { label: status, tone: 'neutral' };
   return <StatusPill tone={estado.tone}>{estado.label}</StatusPill>;
 }

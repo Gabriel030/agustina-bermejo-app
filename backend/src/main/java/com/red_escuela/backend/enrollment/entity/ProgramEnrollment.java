@@ -52,6 +52,10 @@ public class ProgramEnrollment implements BillableEnrollment {
     @JoinColumn(name = "current_billing_template_id")
     private ProgramYearBillingTemplate currentBillingTemplate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admission_application_id")
+    private ProgramEnrollmentApplication admissionApplication;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private ProgramEnrollmentStatus status;

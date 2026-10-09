@@ -226,7 +226,6 @@ export function AlumnoInicio() {
           ) : matriculasPendientes.length > 0 ? (
             <div className="rounded-xl bg-warning-bg px-4 py-3">
               <div className="text-xs font-semibold text-warning">Matrícula de ingreso pendiente</div>
-              <div className="text-[13px] text-ink-soft mt-1">Pagala para confirmar tu inscripción.</div>
             </div>
           ) : (
             <div className="rounded-xl bg-success-bg px-4 py-3 text-[13px] font-semibold text-success">

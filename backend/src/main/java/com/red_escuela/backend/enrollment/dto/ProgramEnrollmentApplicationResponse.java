@@ -20,7 +20,8 @@ public record ProgramEnrollmentApplicationResponse(
         LocalDateTime requestedAt,
         LocalDateTime decidedAt,
         String rejectionReason,
-        AdmissionInvoiceSummary admissionInvoice) {
+        AdmissionInvoiceSummary admissionInvoice,
+        Long programEnrollmentId) {
 
     public record AdmissionInvoiceSummary(Long id, Money total, LocalDate dueDate, String paymentStatus, String receiptStatus,
                                           LocalDateTime receiptUploadedAt) {
@@ -37,6 +38,11 @@ public record ProgramEnrollmentApplicationResponse(
     }
 
     public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId) {
+        return from(application, latestReceiptByInvoiceId, applicationId -> null);
+    }
+
+    public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId,
+                                                            Function<Long, Long> enrollmentIdByApplicationId) {
         return new ProgramEnrollmentApplicationResponse(
                 application.getId(),
                 application.getStudent().getId(),
@@ -48,6 +54,7 @@ public record ProgramEnrollmentApplicationResponse(
                 application.getDecidedAt(),
                 application.getRejectionReason(),
                 application.getAdmissionInvoice() == null ? null : AdmissionInvoiceSummary.from(application.getAdmissionInvoice(),
-                        latestReceiptByInvoiceId.apply(application.getAdmissionInvoice().getId())));
+                        latestReceiptByInvoiceId.apply(application.getAdmissionInvoice().getId())),
+                enrollmentIdByApplicationId.apply(application.getId()));
     }
 }

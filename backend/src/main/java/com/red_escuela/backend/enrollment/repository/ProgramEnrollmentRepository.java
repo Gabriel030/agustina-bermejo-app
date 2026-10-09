@@ -19,6 +19,9 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusIn(
             Long studentId, Long programId, List<ProgramEnrollmentStatus> statuses);
 
+    @Query("select e.id from ProgramEnrollment e where e.admissionApplication.id = :applicationId")
+    java.util.Optional<Long> findIdByAdmissionApplicationId(@Param("applicationId") Long applicationId);
+
     List<ProgramEnrollment> findByStatus(ProgramEnrollmentStatus status);
 
     List<ProgramEnrollment> findByStatusInAndIdGreaterThanOrderByIdAsc(List<ProgramEnrollmentStatus> statuses, Long lastId, Pageable pageable);

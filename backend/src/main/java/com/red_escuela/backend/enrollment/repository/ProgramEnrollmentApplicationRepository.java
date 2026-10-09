@@ -20,6 +20,15 @@ public interface ProgramEnrollmentApplicationRepository extends JpaRepository<Pr
 
     Optional<ProgramEnrollmentApplication> findByAdmissionInvoiceIdAndStatus(Long admissionInvoiceId, ProgramEnrollmentApplicationStatus status);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from ProgramEnrollmentApplication a where a.admissionInvoice.id = :invoiceId and a.status = :status")
+    Optional<ProgramEnrollmentApplication> findLockedByAdmissionInvoiceIdAndStatus(@Param("invoiceId") Long admissionInvoiceId,
+                                                                                 @Param("status") ProgramEnrollmentApplicationStatus status);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from ProgramEnrollmentApplication a where a.id = :id")
+    Optional<ProgramEnrollmentApplication> findLockedById(@Param("id") Long id);
+
     @Query("""
             select count(a) > 0 from ProgramEnrollmentApplication a
             where a.student.id = :studentId and a.program.id = :programId

@@ -28,9 +28,15 @@ describe('EstadoSolicitudBadge', () => {
     expect(pill.className).toContain('text-danger');
   });
 
-  it('una solicitud aprobada con la matrícula pagada figura como inscripto', () => {
-    render(<EstadoSolicitudBadge status="APPROVED" admissionInvoice={factura({ paymentStatus: 'PAID' })} />);
+  it('una solicitud aprobada con la matrícula pagada y la inscripción creada figura como inscripto', () => {
+    render(<EstadoSolicitudBadge status="APPROVED" admissionInvoice={factura({ paymentStatus: 'PAID' })} programEnrollmentId={15} />);
     expect(screen.getByText('Inscripto').className).toContain('text-success');
+  });
+
+  it('una solicitud aprobada con la matrícula pagada pero sin inscripción figura como confirmando inscripción', () => {
+    render(<EstadoSolicitudBadge status="APPROVED" admissionInvoice={factura({ paymentStatus: 'PAID' })} programEnrollmentId={null} />);
+    expect(screen.getByText('Confirmando inscripción').className).toContain('text-warning');
+    expect(screen.queryByText('Inscripto')).not.toBeInTheDocument();
   });
 
   it('una matrícula con comprobante en revisión figura como pago en revisión', () => {

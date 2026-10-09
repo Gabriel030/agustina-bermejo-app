@@ -60,6 +60,13 @@ public class ProgramEnrollmentApplication {
     @JoinColumn(name = "admission_invoice_id")
     private Invoice admissionInvoice;
 
+    @Column(name = "enrollment_failure_notified_at")
+    private LocalDateTime enrollmentFailureNotifiedAt;
+
+    public void markEnrollmentFailureNotified() {
+        this.enrollmentFailureNotifiedAt = ApplicationTime.now();
+    }
+
     public void approve(Person decidedBy, Invoice admissionInvoice) {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
