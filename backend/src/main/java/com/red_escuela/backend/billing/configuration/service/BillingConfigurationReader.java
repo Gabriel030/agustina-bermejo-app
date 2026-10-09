@@ -41,6 +41,11 @@ public class BillingConfigurationReader {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), date, LatePaymentTerms.class);
     }
 
+    public Optional<LatePaymentTerms> findFirstLatePaymentSettings() {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        return repository.findFirstVersion(topic.scope().name(), topic.key()).map(version -> LatePaymentTerms.class.cast(version.values()));
+    }
+
     public Optional<IssuanceSettings> findIssuanceSettingsEffectiveOn(LocalDate date) {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.ISSUANCE), date, IssuanceSettings.class);
     }

@@ -429,4 +429,14 @@ class ArchitectureTest {
                 .hasMessageContaining("MisplacedBillingClassFixture")
                 .hasMessageContaining("NewLegacyEntityFixture");
     }
+
+    @Test
+    @Tag("D-288")
+    void collectionsStepsHaveNoCronOfTheirOwn() {
+        com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods()
+                .that().areDeclaredInClassesThat().resideInAPackage("..billing.collections..")
+                .should().beAnnotatedWith(org.springframework.scheduling.annotation.Scheduled.class)
+                .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them)")
+                .check(MAIN_CLASSES);
+    }
 }
