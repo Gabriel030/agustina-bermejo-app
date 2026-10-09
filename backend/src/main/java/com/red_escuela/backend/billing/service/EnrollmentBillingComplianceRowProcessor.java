@@ -5,14 +5,14 @@ import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationEventPublisher;
@@ -54,8 +54,8 @@ public class EnrollmentBillingComplianceRowProcessor {
     public void processCourseEnrollment(Long id, LatePaymentSettings policy, LocalDate today) {
         CourseEnrollment enrollment = courseEnrollmentRepository.findById(id).orElseThrow(() -> new CourseEnrollmentNotFoundException(id));
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, id,
-                () -> invoiceRepository.findFirstByCourseEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
-                () -> invoiceRepository.countByCourseEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
+                () -> invoiceRepository.findFirstByCourseEnrollmentIdAndPaymentStatusInOrderByDueDateAsc(id, List.of(InvoicePaymentStatus.OVERDUE)),
+                () -> invoiceRepository.countByCourseEnrollmentIdAndPaymentStatus(id, InvoicePaymentStatus.OVERDUE),
                 policy, today);
         courseEnrollmentRepository.save(enrollment);
     }
@@ -64,8 +64,8 @@ public class EnrollmentBillingComplianceRowProcessor {
     public void processProgramEnrollment(Long id, LatePaymentSettings policy, LocalDate today) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(id).orElseThrow(() -> new ProgramEnrollmentNotFoundException(id));
         recalculateStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, id,
-                () -> invoiceRepository.findFirstByProgramEnrollmentIdAndStatusInOrderByDueDateAsc(id, List.of(InvoiceStatus.OVERDUE)),
-                () -> invoiceRepository.countByProgramEnrollmentIdAndStatus(id, InvoiceStatus.OVERDUE),
+                () -> invoiceRepository.findFirstByProgramEnrollmentIdAndPaymentStatusInOrderByDueDateAsc(id, List.of(InvoicePaymentStatus.OVERDUE)),
+                () -> invoiceRepository.countByProgramEnrollmentIdAndPaymentStatus(id, InvoicePaymentStatus.OVERDUE),
                 policy, today);
         programEnrollmentRepository.save(enrollment);
     }

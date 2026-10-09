@@ -1,0 +1,24 @@
+meta {
+  name: 20. Bandeja propia refleja REJECTED (200)
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/me/program-enrollment-applications
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("refleja REJECTED", function () {
+    const propia = res.getBody().find(a => a.id === bru.getVar("applicationIdDocAlta"));
+    expect(propia.status).to.equal("REJECTED");
+  });
+}

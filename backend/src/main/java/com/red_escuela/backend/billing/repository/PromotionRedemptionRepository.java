@@ -26,4 +26,17 @@ public interface PromotionRedemptionRepository extends JpaRepository<PromotionRe
             order by r.id
             """)
     List<PromotionRedemption> findWithClosedPlanSelectionAndBenefits();
+
+    @Query("""
+            select s.id as paymentPlanSelectionId, l.feeType as feeType, d.studentDiscountId as promotionBenefitId, count(d) as used
+            from InvoiceDiscount d join d.invoiceLine l, PaymentPlanSelection s
+            where s.id in :paymentPlanSelectionIds
+              and d.discountType = com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION
+              and l.feeType = com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT
+              and l.chargeKeyReleasedAt is null
+              and ((s.programEnrollment is not null and s.programEnrollment.id = l.programEnrollmentId)
+                or (s.courseEnrollment is not null and s.courseEnrollment.id = l.courseEnrollmentId))
+            group by s.id, l.feeType, d.studentDiscountId
+            """)
+    List<PromotionBenefitUsage> countPromotionBenefitUsageBySelections(@Param("paymentPlanSelectionIds") List<Long> paymentPlanSelectionIds);
 }

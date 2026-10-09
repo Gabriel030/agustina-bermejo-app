@@ -175,7 +175,8 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         });
         expectViolation("fk_invoice_line_invoice", () -> {
             long invoice = insert("invoice", draftInvoice(arsAccount));
-            insert("invoice_line", with(line(invoice), "currency", "USD", "amount_currency", "USD", "discount_amount_currency", "USD", "credited_amount_currency", "USD"));
+            insert("invoice_line", with(line(invoice), "currency", "USD", "amount_currency", "USD", "discount_amount_currency", "USD", "credited_amount_currency", "USD",
+                    "free_credited_amount_currency", "USD"));
         });
     }
 
@@ -270,6 +271,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
 
     @Test
     void theAccountAndEntryTablesRejectTheirInvalidRows() {
+        long firstPaymentId = System.currentTimeMillis();
         long student = newPersistedStudent();
         jdbc.update("""
                 insert into student_current_account (student_id, currency, balance_amount, balance_amount_currency, balance_side,
@@ -299,19 +301,19 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         long account = insertAccount("ARS");
         expectViolation("ck_current_account_entry_direction_by_type", () -> entry(account, 1, "CREDIT", "INVOICE_ISSUED", 10, "OWES", 10, "invoice_id", insert("invoice", issuedInvoice(account))));
         expectViolation("ck_current_account_entry_source_by_type", () -> entry(account, 1, "DEBIT", "INVOICE_ISSUED", 10, "OWES", 10));
-        expectViolation("ck_current_account_entry_zero_side", () -> entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "ZERO", 10, "payment_id", 1));
+        expectViolation("ck_current_account_entry_zero_side", () -> entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "ZERO", 10, "payment_id", firstPaymentId));
         expectViolation("ck_current_account_entry_currencies", () -> {
-            Map<String, Object> row = entryRow(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", 1);
+            Map<String, Object> row = entryRow(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
             row.put("amount_currency", "USD");
             insert("current_account_entry", row);
         });
         expectViolation("uk_current_account_entry_sequence", () -> {
-            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", 1);
-            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", 2);
+            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
+            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", firstPaymentId + 1);
         });
         expectViolation("uk_current_account_entry_payment_credit", () -> {
-            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", 1);
-            entry(account, 2, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", 1);
+            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
+            entry(account, 2, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 20, "payment_id", firstPaymentId);
         });
         expectViolation("uk_current_account_entry_invoice_debit", () -> {
             long invoice = insert("invoice", issuedInvoice(account));
@@ -320,12 +322,12 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         });
         expectViolation("fk_current_account_entry_invoice", () -> entry(account, 1, "DEBIT", "INVOICE_ISSUED", 10, "OWES", 10,
                 "invoice_id", insert("invoice", issuedInvoice(insertAccount("ARS")))));
-        expectViolation("current_account_entry_amount_check", () -> entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 0, "IN_FAVOR", 10, "payment_id", 1));
+        expectViolation("current_account_entry_amount_check", () -> entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 0, "IN_FAVOR", 10, "payment_id", firstPaymentId));
         expectViolation("uk_current_account_entry_compensates", () -> {
-            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", 1);
+            entry(account, 1, "CREDIT", "PAYMENT_RECEIVED", 10, "IN_FAVOR", 10, "payment_id", firstPaymentId);
             long original = jdbc.queryForObject("select id from current_account_entry where student_current_account_id = ? and sequence_number = 1", Long.class, account);
-            entry(account, 2, "DEBIT", "PAYMENT_REVERSED", 10, "ZERO", 0, "payment_id", 1, "compensates_entry_id", original);
-            entry(account, 3, "DEBIT", "PAYMENT_REVERSED", 10, "OWES", 10, "payment_id", 1, "compensates_entry_id", original);
+            entry(account, 2, "DEBIT", "PAYMENT_REVERSED", 10, "ZERO", 0, "payment_id", firstPaymentId, "compensates_entry_id", original);
+            entry(account, 3, "DEBIT", "PAYMENT_REVERSED", 10, "OWES", 10, "payment_id", firstPaymentId, "compensates_entry_id", original);
         });
     }
 

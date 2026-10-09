@@ -2,8 +2,6 @@ package com.red_escuela.backend.billing.usecase.paymentgateway;
 
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException;
@@ -11,7 +9,7 @@ import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
 import com.red_escuela.backend.identity.entity.Person;
@@ -69,13 +67,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
 
         PaymentAllocationRequest reportedAllocation = approved.get().reportedAllocation();
         Long invoiceId = reportedAllocation.invoiceId();
-        Invoice invoice = invoiceRepository.findById(invoiceId)
+        Person owner = invoiceRepository.findOwnerPersonByInvoiceId(invoiceId)
                 .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
-
-        if (invoice.getStatus() == InvoiceStatus.PAID) {
-            log.warn("Webhook de Mercado Pago ignorado, la factura ya estaba pagada: pagoMp={}, factura={}", mpPaymentId, invoiceId);
-            return;
-        }
 
         RegisterPaymentRequest request = new RegisterPaymentRequest(
                 List.of(reportedAllocation),
@@ -87,18 +80,8 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
                 null
         );
 
-        Payment payment = registerPaymentUseCase.register(request, resolveOwnerPerson(invoice));
+        Payment payment = registerPaymentUseCase.creditPaymentToAccountAndSettleInvoiceIfCovered(request, owner);
         payment.setCardType(approved.get().cardType());
         log.info("Webhook de Mercado Pago acreditado: pagoMp={}, factura={}, monto={}", mpPaymentId, invoiceId, reportedAllocation.amountApplied());
-    }
-
-    private Person resolveOwnerPerson(Invoice invoice) {
-        if (invoice.getCourseEnrollment() != null) {
-            return invoice.getCourseEnrollment().getStudent().getPerson();
-        }
-        if (invoice.getProgramEnrollment() != null) {
-            return invoice.getProgramEnrollment().getStudent().getPerson();
-        }
-        throw new IllegalStateException("Invoice sin enrollment asociado: " + invoice.getId());
     }
 }

@@ -59,7 +59,7 @@ class MoneyCurrencyMigrationTest {
             jdbc.update("insert into scholarship (course_enrollment_id, value, reason, status, granted_by_id, granted_at) "
                     + "values (?, '{\"type\":\"PERCENTAGE\",\"percentage\":0.3000}'::jsonb, 'Beca porcentual', 'CANCELLED', ?, now())", enrollmentId, personId);
 
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate();
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("95").load().migrate();
 
             assertThat(jdbc.queryForObject("select base_amount_currency from legacy_invoice where id = ?", String.class, invoiceId)).isEqualTo("ARS");
             assertThat(jdbc.queryForObject("select base_amount from legacy_invoice where id = ?", BigDecimal.class, invoiceId))

@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 @Component
 public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssuingContextLoader {
-
     private final JdbcTemplate jdbcTemplate;
     private final PriceRevisionService priceRevisionService;
     private final ProgramYearBillingTemplateRepository templateRepository;

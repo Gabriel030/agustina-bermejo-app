@@ -1,0 +1,27 @@
+meta {
+  name: 13. Alumno intenta aprobar su propia solicitud (403)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/program-enrollment-applications/{{applicationIdQA}}/approve
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 403 — @PreAuthorize hasRole PRECEPTOR/ADMINISTRATIVO, un ALUMNO (o alguien sin rol) no puede", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  Caso de seguridad explícito: nadie sin el rol correcto puede aprobar
+  su propia solicitud (ni la de cualquier otro) — confirma que el
+  `@PreAuthorize` del endpoint está activo, no solo confiando en que el
+  frontend no muestre el botón.
+}

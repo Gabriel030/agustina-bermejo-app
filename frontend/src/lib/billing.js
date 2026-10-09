@@ -12,6 +12,9 @@ export const FEE_TYPE_LABELS = {
 export const ADJUSTMENT_TYPE_LABELS = {
   SCHOLARSHIP: 'Beca',
   PROMOTION: 'Promoción',
+  ANNUAL_UPFRONT: 'Pago anual',
+  COHORT_ENTRY: 'Ingreso de cohorte',
+  MANUAL: 'Manual',
   DISCOUNT: 'Descuento',
   SURCHARGE: 'Recargo por mora',
   WAIVE_DEBT: 'Condonación de deuda',

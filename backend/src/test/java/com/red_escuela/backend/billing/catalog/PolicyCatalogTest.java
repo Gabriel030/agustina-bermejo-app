@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import com.red_escuela.backend.billing.invoice.policy.NotAlreadyIssuedPolicy;
-import com.red_escuela.backend.billing.invoice.policy.ReasonFeeTypePolicy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -117,8 +115,8 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
         String declared = renderDeclaredCatalog();
 
         assertThat(declared).contains("## Momento INVOICE_ISSUING")
-                .contains("| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |")
-                .contains("| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |");
+                .contains("| 1 | InvoiceIssuingReasonMatchesFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |")
+                .contains("| 6 | ChargeKeyNotAlreadyUsedPolicy | ALREADY_ISSUED | D-009, D-021 |");
     }
 
     @Test

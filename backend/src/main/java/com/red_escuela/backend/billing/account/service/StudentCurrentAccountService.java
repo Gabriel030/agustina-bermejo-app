@@ -14,13 +14,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class StudentCurrentAccountService {
+
+    private static final Object LOCKED_ACCOUNT_IDS_RESOURCE = new Object();
 
     private final StudentCurrentAccountRepository accountRepository;
     private final CurrentAccountEntryRepository entryRepository;
@@ -37,6 +43,7 @@ public class StudentCurrentAccountService {
     public StudentCurrentAccount lockStudentCurrentAccount(Long studentCurrentAccountId) {
         StudentCurrentAccount account = accountRepository.findByIdForUpdate(studentCurrentAccountId).orElseThrow();
         entityManager.refresh(account, LockModeType.PESSIMISTIC_WRITE);
+        lockedAccountIdsOfCurrentTransaction().add(account.getId());
         return account;
     }
 
@@ -57,6 +64,13 @@ public class StudentCurrentAccountService {
                                                            LocalDate paidOn, String concept) {
         requireLocked(lockedAccount);
         return persist(lockedAccount, lockedAccount.recordPaymentReceivedCredit(paymentId, amount, paidOn, concept));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void allocateUnallocatedCreditToInvoicePayment(StudentCurrentAccount lockedAccount, NonNegativeMoney amount) {
+        requireLocked(lockedAccount);
+        lockedAccount.allocateUnallocatedCreditToInvoicePayment(amount);
+        accountRepository.save(lockedAccount);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -83,10 +97,41 @@ public class StudentCurrentAccountService {
         return persist(lockedAccount, lockedAccount.recordRefundPaidDebit(refundId, amount, effectiveDate, concept));
     }
 
+    public boolean isCreditNoteBookedInLedger(Long creditNoteId) {
+        return entryRepository.existsByCreditNoteId(creditNoteId);
+    }
+
     private void requireLocked(StudentCurrentAccount account) {
-        if (!entityManager.contains(account) || entityManager.getLockMode(account) != LockModeType.PESSIMISTIC_WRITE) {
+        if (!entityManager.contains(account) || !lockedAccountIdsOfCurrentTransaction().contains(account.getId())) {
             throw new IllegalStateException("The student current account must be locked in the current transaction before recording an entry");
         }
+    }
+
+    private Set<Long> lockedAccountIdsOfCurrentTransaction() {
+        @SuppressWarnings("unchecked")
+        Set<Long> lockedIds = (Set<Long>) TransactionSynchronizationManager.getResource(LOCKED_ACCOUNT_IDS_RESOURCE);
+        if (lockedIds != null) {
+            return lockedIds;
+        }
+        Set<Long> created = new HashSet<>();
+        TransactionSynchronizationManager.bindResource(LOCKED_ACCOUNT_IDS_RESOURCE, created);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void suspend() {
+                TransactionSynchronizationManager.unbindResourceIfPossible(LOCKED_ACCOUNT_IDS_RESOURCE);
+            }
+
+            @Override
+            public void resume() {
+                TransactionSynchronizationManager.bindResource(LOCKED_ACCOUNT_IDS_RESOURCE, created);
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                TransactionSynchronizationManager.unbindResourceIfPossible(LOCKED_ACCOUNT_IDS_RESOURCE);
+            }
+        });
+        return created;
     }
 
     private CurrentAccountEntry persist(StudentCurrentAccount account, CurrentAccountEntry entry) {

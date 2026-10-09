@@ -31,7 +31,7 @@ public final class InvoiceIssuingReasonMatchesFeeTypePolicy implements Policy<In
             case COURSE_ADMISSION -> feeType == FeeType.MONTHLY_INSTALLMENT;
             case MONTHLY_RUN, COURSE_MONTHLY_RUN, PAYMENT_PLAN_SELECTION, REACTIVATION, ENROLLMENT_FEE_ON_DEMAND, YEAR_CONFIGURATION_CHANGE ->
                     REGULAR_FEE_TYPES.contains(feeType);
-            case CATCH_UP, ANNUAL_UPFRONT_PAYMENT, LATE_FEE, UPFRONT, LEGACY -> false;
+            case ANNUAL_UPFRONT_PAYMENT, LATE_FEE -> false;
         };
         return allowed ? PolicyVerdict.allow(ruleName())
                 : PolicyVerdict.deny(ruleName(), "FEE_TYPE_NOT_ALLOWED_FOR_REASON", "El tipo de cargo " + feeType + " no se puede emitir por " + reason);

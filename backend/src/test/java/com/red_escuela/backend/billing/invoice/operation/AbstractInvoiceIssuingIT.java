@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingOperationRunner;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.repository.StudentCurrentAccountRepository;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
@@ -37,7 +37,7 @@ abstract class AbstractInvoiceIssuingIT extends AbstractIntegrationTest {
     protected static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess("TEST_ISSUING");
 
     @Autowired
-    protected InvoiceIssuingOperationRunner runner;
+    protected InvoiceIssuingService runner;
     @Autowired
     protected IssuingScenarioFactory factory;
     @Autowired

@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import com.red_escuela.backend.billing.entity.BankTransferReceipt;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.Program;
 
@@ -57,14 +57,22 @@ public class ProgramEnrollmentApplication {
     private String rejectionReason;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_receipt_id")
-    private BankTransferReceipt paymentReceipt;
+    @JoinColumn(name = "admission_invoice_id")
+    private Invoice admissionInvoice;
 
-    public void approve(Person decidedBy) {
+    @Column(name = "enrollment_failure_notified_at")
+    private LocalDateTime enrollmentFailureNotifiedAt;
+
+    public void markEnrollmentFailureNotified() {
+        this.enrollmentFailureNotifiedAt = ApplicationTime.now();
+    }
+
+    public void approve(Person decidedBy, Invoice admissionInvoice) {
         requirePending();
         this.status = ProgramEnrollmentApplicationStatus.APPROVED;
         this.decidedBy = decidedBy;
         this.decidedAt = ApplicationTime.now();
+        this.admissionInvoice = admissionInvoice;
     }
 
     public void reject(Person decidedBy, String reason) {

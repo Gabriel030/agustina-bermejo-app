@@ -9,8 +9,8 @@ import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -145,14 +145,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(java.time.YearMonth.from(dueDate));
-        invoice.setDueDate(dueDate);
-        invoice.setBaseAmount(ars(100));
-        BillingTestFixtures.markInvoiceAsPending(invoice);
-        entityManager.persist(invoice);
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(100)).build();
     }
 
     private void authenticateAsPerson(String dni) {

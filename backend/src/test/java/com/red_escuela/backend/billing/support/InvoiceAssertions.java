@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.support;
 
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import org.assertj.core.api.AbstractAssert;
 
 import java.math.BigDecimal;
@@ -11,6 +11,7 @@ import java.time.YearMonth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public final class InvoiceAssertions extends AbstractAssert<InvoiceAssertions, Invoice> {
+
     private InvoiceAssertions(Invoice actual) {
         super(actual, InvoiceAssertions.class);
     }
@@ -20,47 +21,44 @@ public final class InvoiceAssertions extends AbstractAssert<InvoiceAssertions, I
     }
 
     public InvoiceAssertions isPending() {
-        return hasStatus(InvoiceStatus.PENDING);
+        return hasStatus(InvoicePaymentStatus.PENDING);
     }
 
     public InvoiceAssertions isPaid() {
-        return hasStatus(InvoiceStatus.PAID);
+        return hasStatus(InvoicePaymentStatus.PAID);
     }
 
     public InvoiceAssertions isOverdue() {
-        return hasStatus(InvoiceStatus.OVERDUE);
+        return hasStatus(InvoicePaymentStatus.OVERDUE);
     }
 
     public InvoiceAssertions isCancelled() {
-        return hasStatus(InvoiceStatus.CANCELLED);
-    }
-
-    public InvoiceAssertions isWaived() {
-        return hasStatus(InvoiceStatus.WAIVED);
+        return hasStatus(InvoicePaymentStatus.CANCELLED);
     }
 
     public InvoiceAssertions isNotPaid() {
         isNotNull();
-        assertThat(actual.getStatus()).isNotEqualTo(InvoiceStatus.PAID);
+        assertThat(actual.getPaymentStatus()).isNotEqualTo(InvoicePaymentStatus.PAID);
         return this;
     }
 
     public InvoiceAssertions hasTotalAmount(String amount) {
         isNotNull();
-        assertThat(actual.getAmountDue().amount()).isEqualByComparingTo(new BigDecimal(amount));
+        assertThat(actual.getAmounts().total().value().amount()).isEqualByComparingTo(new BigDecimal(amount));
         return this;
     }
 
     public InvoiceAssertions hasSingleLine(FeeType feeType, String period) {
         isNotNull();
-        assertThat(actual.getFeeType()).isEqualTo(feeType);
-        assertThat(actual.getPeriod()).isEqualTo(YearMonth.parse(period));
+        assertThat(actual.getLines()).hasSize(1);
+        assertThat(actual.getPrimaryLine().getFeeType()).isEqualTo(feeType);
+        assertThat(actual.getPrimaryLine().getPeriod()).isEqualTo(YearMonth.parse(period));
         return this;
     }
 
-    private InvoiceAssertions hasStatus(InvoiceStatus expected) {
+    private InvoiceAssertions hasStatus(InvoicePaymentStatus expected) {
         isNotNull();
-        assertThat(actual.getStatus()).as("invoice %s", actual.getId()).isEqualTo(expected);
+        assertThat(actual.getPaymentStatus()).as("invoice %s", actual.getId()).isEqualTo(expected);
         return this;
     }
 }

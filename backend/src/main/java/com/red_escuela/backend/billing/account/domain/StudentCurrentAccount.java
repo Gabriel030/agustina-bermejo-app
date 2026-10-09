@@ -108,6 +108,12 @@ public class StudentCurrentAccount {
         return entry;
     }
 
+    public void allocateUnallocatedCreditToInvoicePayment(NonNegativeMoney amount) {
+        requireAccountCurrency(amount);
+        requireUnallocatedCreditCovers(amount);
+        unallocatedCreditAmount = unallocatedCreditAmount.minusNotBelowZero(amount);
+    }
+
     public CurrentAccountEntry recordCreditNoteIssuedCredit(Long creditNoteId, NonNegativeMoney offsetAmount, NonNegativeMoney freeCreditAmount,
                                                            LocalDate effectiveDate, String concept) {
         Objects.requireNonNull(creditNoteId, "creditNoteId");

@@ -61,8 +61,8 @@ class ArchitectureTest {
     }
 
     @Test
-    void invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing() {
-        ArchitectureRules.invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing().check(MAIN_CLASSES);
+    void invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages() {
+        ArchitectureRules.invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages().check(MAIN_CLASSES);
     }
 
     @Test
@@ -89,7 +89,7 @@ class ArchitectureTest {
         assertThatThrownBy(() -> ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(fixture))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("InvoiceIssuingFixture");
-        assertThatThrownBy(() -> ArchitectureRules.invoiceSettersAreNotCalledOutsideBillingEntityAndIssuing().check(fixture))
+        assertThatThrownBy(() -> ArchitectureRules.invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages().check(fixture))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("InvoiceIssuingFixture");
         assertThatThrownBy(() -> ArchitectureRules.policiesArePure().check(fixture))
@@ -377,6 +377,26 @@ class ArchitectureTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("UnauthorizedRecorderFixture")
                 .hasMessageNotContaining("AuthorizedOperationFixture");
+    }
+
+    @Test
+    @Tag("D-144")
+    void theAccountServiceRuleAlsoCoversTheAllocationOfCredit() {
+        assertThatThrownBy(() -> ArchitectureRules.currentAccountServiceIsCalledOnlyByOperations(ACCOUNT_SERVICE_CLASS, com.red_escuela.backend.architecture.fixture.billing.ledger.FixtureOperation.class).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("UnauthorizedAllocatorFixture.allocate");
+    }
+
+    @Test
+    @Tag("D-144")
+    void thePaymentBridgeExemptionCoversOnlyItsOwnMethods() {
+        String bridge = "com.red_escuela.backend.architecture.fixture.billing.ledger.BridgeOverreachFixture";
+        assertThatThrownBy(() -> ArchitectureRules.methodIsCalledOnlyBy(ACCOUNT_SERVICE_CLASS, name -> name.startsWith("record"), ACCOUNT_SERVICE_CLASS,
+                com.red_escuela.backend.architecture.fixture.billing.ledger.FixtureOperation.class, "recording of an account entry",
+                bridge, java.util.Set.of("recordPaymentReceivedCredit")).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("BridgeOverreachFixture.recordWhatTheBridgeMayNotRecord")
+                .hasMessageNotContaining("BridgeOverreachFixture.recordWhatTheBridgeMayRecord");
     }
 
     private static final String FIXTURE_LEDGER = ArchitectureRules.ROOT + ".architecture.fixture.billing.ledger";

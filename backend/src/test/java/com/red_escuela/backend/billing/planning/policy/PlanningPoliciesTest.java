@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.planning.policy;
 
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -130,15 +130,15 @@ class PlanningPoliciesTest {
         EnrollmentFeeSlotNotAlreadyIssuedPolicy policy = new EnrollmentFeeSlotNotAlreadyIssuedPolicy();
         ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
         YearCycle cycle = YearCycle.of(template, 2026);
-        java.util.function.Function<InvoiceStatus, EnrollmentFeeSlotPlanningContext> withFee = status -> EnrollmentFeeSlotPlanningContext.of(
+        java.util.function.Function<InvoicePaymentStatus, EnrollmentFeeSlotPlanningContext> withFee = status -> EnrollmentFeeSlotPlanningContext.of(
                 PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY),
                         List.of(new IssuedEnrollmentFee(5L, 1L, 1, YearMonth.of(2026, 2), status, LocalDate.of(2026, 2, 1))), Set.of(), Map.of()), cycle, 1, false);
 
         assertThat(policy.evaluateRule(EnrollmentFeeSlotPlanningContext.of(PlanningFixtures.facts(template, MARCH, false, false), cycle, 1, false)).allowed()).isTrue();
-        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoiceStatus.PENDING)), "ALREADY_ISSUED");
-        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoiceStatus.PAID)), "ALREADY_ISSUED");
-        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoiceStatus.CANCELLED)), "FEE_CANCELLED");
-        assertThat(policy.evaluateRule(withFee.apply(InvoiceStatus.PENDING)).reason()).isEqualTo("plantilla 1 matrícula 1");
+        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoicePaymentStatus.PENDING)), "ALREADY_ISSUED");
+        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoicePaymentStatus.PAID)), "ALREADY_ISSUED");
+        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoicePaymentStatus.CANCELLED)), "FEE_CANCELLED");
+        assertThat(policy.evaluateRule(withFee.apply(InvoicePaymentStatus.PENDING)).reason()).isEqualTo("plantilla 1 matrícula 1");
         assertThat(policy.plannerQuestionNumber()).isEqualTo(7);
     }
 
@@ -286,11 +286,11 @@ class PlanningPoliciesTest {
         EnrollmentFeeSettledPolicy policy = new EnrollmentFeeSettledPolicy();
         ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
         EnrollmentFeeRequirementScope scope = EnrollmentFeeRequirementScope.SUBJECT_ENROLLMENT;
-        java.util.function.Function<InvoiceStatus, Optional<IssuedEnrollmentFee>> fee = status ->
+        java.util.function.Function<InvoicePaymentStatus, Optional<IssuedEnrollmentFee>> fee = status ->
                 Optional.of(new IssuedEnrollmentFee(1L, 1L, 1, YearMonth.of(2026, 2), status, LocalDate.of(2026, 2, 1)));
 
         assertDenies(policy, policy.evaluateRule(requirement(scope, template, true, false, null, false, Optional.empty())), "ENROLLMENT_FEE_NOT_ISSUED");
-        assertDenies(policy, policy.evaluateRule(requirement(scope, template, true, false, null, false, fee.apply(InvoiceStatus.PENDING))), "ENROLLMENT_FEE_NOT_PAID_FOR_TERM");
-        assertThat(policy.evaluateRule(requirement(scope, template, true, false, null, false, fee.apply(InvoiceStatus.PAID))).allowed()).isTrue();
+        assertDenies(policy, policy.evaluateRule(requirement(scope, template, true, false, null, false, fee.apply(InvoicePaymentStatus.PENDING))), "ENROLLMENT_FEE_NOT_PAID_FOR_TERM");
+        assertThat(policy.evaluateRule(requirement(scope, template, true, false, null, false, fee.apply(InvoicePaymentStatus.PAID))).allowed()).isTrue();
     }
 }

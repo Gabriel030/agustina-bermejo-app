@@ -12,13 +12,13 @@ import com.red_escuela.backend.billing.dto.FinancialDashboardResponse;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException;
 import com.red_escuela.backend.billing.gateway.exception.PaymentGatewayUnavailableException;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase;
 import com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase;
@@ -113,6 +113,9 @@ class UsdBillingTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -149,15 +152,9 @@ class UsdBillingTest extends AbstractIntegrationTest {
         return courseEnrollmentRepository.save(enrollment);
     }
 
-    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoiceStatus status) {
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now().minusMonths(1));
-        invoice.setDueDate(LocalDate.now().minusDays(20));
-        invoice.setBaseAmount(amount);
-        invoice.setStatus(status);
-        return invoiceRepository.save(invoice);
+    private Invoice persistInvoice(CourseEnrollment enrollment, Money amount, InvoicePaymentStatus status) {
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(1)).dueOn(LocalDate.now().minusDays(20)).withBaseAmount(amount).inState(status).build();
+        return invoice;
     }
 
     private RegisterPaymentRequest paymentOf(Invoice invoice, Money amount) {
@@ -177,7 +174,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     @Tag("D-226")
     void creatingAnOnlinePaymentPreferenceIsRejectedWhileTheGatewayIsDisabled() {
         Student student = persistStudent("gateway.student." + System.nanoTime());
-        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
                 .isInstanceOf(PaymentGatewayUnavailableException.class);
@@ -188,7 +185,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     void anInstallmentInUsdPaidInUsdIsSettled() {
         Person admin = persistPerson("admin.usd1." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student1." + System.nanoTime()), Currency.USD);
-        Invoice invoice = persistInvoice(enrollment, usd(100), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, usd(100), InvoicePaymentStatus.PENDING);
 
         registerPaymentUseCase.register(paymentOf(invoice, usd(100)), admin);
 
@@ -201,7 +198,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     void mercadoPagoIsNotOfferedForAnInstallmentInUsdAndStaffRegistersItManually() {
         Person admin = persistPerson("admin.usd4." + System.nanoTime());
         Student student = persistStudent("usd.student4." + System.nanoTime());
-        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> transactionTemplate.execute(status -> createMpPreferenceUseCase.create(invoice.getId(), student.getId())))
                 .isInstanceOf(GatewayCurrencyNotSupportedException.class);
@@ -217,7 +214,7 @@ class UsdBillingTest extends AbstractIntegrationTest {
     void aPaymentInArsIsNotAppliedToAnInstallmentInUsd() {
         Person admin = persistPerson("admin.usd2." + System.nanoTime());
         CourseEnrollment enrollment = persistCourseEnrollment(persistStudent("usd.student2." + System.nanoTime()), Currency.USD);
-        Invoice invoice = persistInvoice(enrollment, usd(100), InvoiceStatus.PENDING);
+        Invoice invoice = persistInvoice(enrollment, usd(100), InvoicePaymentStatus.PENDING);
 
         assertThatThrownBy(() -> registerPaymentUseCase.register(paymentOf(invoice, ars(100)), admin))
                 .isInstanceOf(CurrencyMismatchException.class);
@@ -231,8 +228,8 @@ class UsdBillingTest extends AbstractIntegrationTest {
     void theAccountStatementWithDebtsInBothCurrenciesShowsTwoTotals() {
         FinancialDashboardResponse before = getFinancialDashboardUseCase.execute();
         Student student = persistStudent("usd.student3." + System.nanoTime());
-        persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoiceStatus.OVERDUE);
-        persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoiceStatus.OVERDUE);
+        persistInvoice(persistCourseEnrollment(student, Currency.ARS), ars(10000), InvoicePaymentStatus.OVERDUE);
+        persistInvoice(persistCourseEnrollment(student, Currency.USD), usd(100), InvoicePaymentStatus.OVERDUE);
 
         FinancialDashboardResponse after = getFinancialDashboardUseCase.execute();
 

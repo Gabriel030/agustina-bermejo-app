@@ -21,6 +21,7 @@ export function TabMisSolicitudes() {
       tipo: 'Carrera',
       nombre: s.programName,
       status: s.status,
+      admissionInvoice: s.admissionInvoice,
       rejectionReason: s.rejectionReason,
       onClick: () => navigate(`/mis-solicitudes/${s.id}`),
     }));
@@ -72,7 +73,7 @@ export function TabMisSolicitudes() {
             <div className="min-w-0 text-xs font-semibold text-ink-faint">{fila.tipo}</div>
             <div className="min-w-0 truncate text-[13.5px] font-bold text-ink">{fila.nombre}</div>
             <div className="min-w-0">
-              <EstadoSolicitudBadge status={fila.status} />
+              <EstadoSolicitudBadge status={fila.status} admissionInvoice={fila.admissionInvoice} programEnrollmentId={fila.programEnrollmentId} />
             </div>
           </Envoltorio>
         );

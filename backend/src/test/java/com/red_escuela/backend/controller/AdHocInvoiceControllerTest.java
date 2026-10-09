@@ -61,6 +61,9 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -78,6 +81,9 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
 
         Person studentPerson = new Person();
         studentPerson.setUsername("alumno.adhoc." + System.nanoTime());
+        studentPerson.setDni(Long.toString(Math.abs((long) ("alumno.adhoc." + System.nanoTime()).hashCode())));
+        studentPerson.setName("Persona");
+        studentPerson.setLastname("Prueba");
         studentPerson.setEmail(studentPerson.getUsername() + "@example.com");
         Address address = new Address();
         entityManager.persist(address);

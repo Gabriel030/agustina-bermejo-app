@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

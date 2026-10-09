@@ -5,9 +5,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.exception.ChargeRejectedException;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingRequest;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceRecipient;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
 import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -42,12 +41,10 @@ public class PlannedInvoiceIssuingService {
     }
 
     public InvoiceIssuingResult issuePlannedProgramInvoice(ProgramEnrollment enrollment, PaymentPlanSelection selection, PlannedInvoice charge, InvoiceIssuingReason reason, boolean inCurrentTransaction) {
-        FeeType feeType = charge.kind();
-        InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(enrollment), feeType, charge.period(), charge.dueDate(), reason,
-                selection, charge.templateId(), charge.slot(), charge.entry(), null, null, null, null);
+        var request = InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, selection, charge, reason);
         InvoiceIssuingResult result = inCurrentTransaction ? invoiceIssuingService.issueInvoiceInCallerTransaction(request) : invoiceIssuingService.issueInvoiceInNewTransaction(request);
         if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
-            throw new ChargeRejectedException(rejected.evaluation());
+            throw new ChargeRejectedException(rejected.evaluationResult());
         }
         return result;
     }
@@ -56,12 +53,10 @@ public class PlannedInvoiceIssuingService {
         log.info("Plan de cargos de curso: inscripcion={}, mes={}, cargos={}, decisiones={}", plan.enrollmentId(), plan.month(), plan.charges().size(), plan.describe());
         int issued = 0;
         for (PlannedInvoice charge : plan.charges()) {
-            InvoiceIssuingReason reason = charge.upfront() ? InvoiceIssuingReason.UPFRONT : InvoiceIssuingReason.COURSE_MONTHLY_RUN;
-            InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.CourseEnrollmentRecipient(enrollment), FeeType.MONTHLY_INSTALLMENT, charge.period(), charge.dueDate(),
-                    reason, selection, null, null, false, null, null, null, null);
+            var request = InvoiceIssuingRequestFactory.createCourseEnrollmentRequest(enrollment, selection, charge, InvoiceIssuingReason.COURSE_MONTHLY_RUN);
             InvoiceIssuingResult result = invoiceIssuingService.issueInvoiceInNewTransaction(request);
             if (result instanceof InvoiceIssuingResult.InvoiceIssuingRejected rejected) {
-                throw new ChargeRejectedException(rejected.evaluation());
+                throw new ChargeRejectedException(rejected.evaluationResult());
             }
             if (result instanceof InvoiceIssuingResult.InvoiceIssued) {
                 issued++;

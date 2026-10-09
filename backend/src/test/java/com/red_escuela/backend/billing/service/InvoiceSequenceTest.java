@@ -4,8 +4,8 @@ import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -48,7 +48,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, DEC_2027, () -> assertInvariants(enrollment, y26, y27));
 
         assertThat(sequence(enrollment)).isEqualTo(expected("M2026-03", "C2026-03..2026-12", "M2027-02", "C2027-03..2027-12"));
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0).getBaseAmount()).isEqualTo(ars(5000));
+        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0).getAmounts().linesTotal().value()).isEqualTo(ars(5000));
     }
 
     @Test
@@ -152,10 +152,10 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, DEC_2027, () -> assertInvariants(enrollment, y26, y27));
 
         List<Invoice> installments = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
-        assertThat(installments.stream().filter(i -> i.getPeriod().isBefore(YearMonth.of(2026, 6)))).allMatch(i -> i.getBaseAmount().equals(ars(10000)));
-        assertThat(installments.stream().filter(i -> !i.getPeriod().isBefore(YearMonth.of(2026, 6)))).allMatch(i -> i.getBaseAmount().equals(ars(12000)));
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0).getBaseAmount()).isEqualTo(ars(5000));
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(1).getBaseAmount()).isEqualTo(ars(7000));
+        assertThat(installments.stream().filter(i -> i.getPeriod().isBefore(YearMonth.of(2026, 6)))).allMatch(i -> i.getAmounts().linesTotal().value().equals(ars(10000)));
+        assertThat(installments.stream().filter(i -> !i.getPeriod().isBefore(YearMonth.of(2026, 6)))).allMatch(i -> i.getAmounts().linesTotal().value().equals(ars(12000)));
+        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(0).getAmounts().linesTotal().value()).isEqualTo(ars(5000));
+        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE).get(1).getAmounts().linesTotal().value()).isEqualTo(ars(7000));
     }
 
     @Test
@@ -447,7 +447,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, YearMonth.of(2026, 4), () -> {
         });
         List<String> before = sequence(enrollment);
-        markInvoices(enrollment, FeeType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 3), InvoiceStatus.PAID);
+        markInvoices(enrollment, FeeType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 3), InvoicePaymentStatus.PAID);
 
         configureYear(y26, template -> template.configureEnrollmentFees(2, 2, 7));
         runEveryMonth(YearMonth.of(2026, 4), YearMonth.of(2026, 4), () -> {
@@ -472,8 +472,8 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
 
         Invoice firstYearApril = invoices(firstYear, FeeType.MONTHLY_INSTALLMENT).stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow();
         Invoice thirdYearApril = invoices(thirdYear, FeeType.MONTHLY_INSTALLMENT).stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow();
-        assertThat(firstYearApril.getBaseAmount()).isEqualTo(ars(10000));
-        assertThat(thirdYearApril.getBaseAmount()).isEqualTo(firstYearApril.getBaseAmount());
+        assertThat(firstYearApril.getAmounts().linesTotal().value()).isEqualTo(ars(10000));
+        assertThat(thirdYearApril.getAmounts().linesTotal().value()).isEqualTo(firstYearApril.getAmounts().linesTotal().value());
     }
 
     private List<BillingConfigurationAlert> openAlerts(Career career) {

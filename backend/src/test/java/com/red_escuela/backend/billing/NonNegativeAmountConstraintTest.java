@@ -27,13 +27,11 @@ class NonNegativeAmountConstraintTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @CsvSource({
-            "legacy_invoice,base_amount,ck_invoice_base_amount_not_negative",
             "payment,amount,ck_payment_amount_not_negative",
             "credit_note,amount,ck_credit_note_amount_not_negative",
             "payment_allocation,amount_applied,ck_payment_allocation_amount_applied_not_negative",
             "credit_application,amount_applied,ck_credit_application_amount_applied_not_negative",
-            "price_revision,monthly_amount,ck_price_revision_monthly_amount_not_negative",
-            "invoice_adjustment,resolved_base,ck_invoice_adjustment_resolved_base_not_negative"
+            "price_revision,monthly_amount,ck_price_revision_monthly_amount_not_negative"
     })
     void aNegativeAmountViolatesTheCheckConstraint(String table, String column, String constraint) {
         String copy = "tmp_" + table;

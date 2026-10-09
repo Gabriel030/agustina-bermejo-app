@@ -6,6 +6,7 @@ import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentApplicationNotFoundException;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentCommand;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.AddProgramEnrollmentApplicationDocumentUseCase;
@@ -20,11 +21,11 @@ import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.R
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.RequestProgramEnrollmentApplicationUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.enrollment.service.AdmissionInvoiceReceiptFinder;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,6 +52,8 @@ public class ProgramEnrollmentApplicationController {
     private final ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase;
     private final RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
     private final StudentDocumentRepository studentDocumentRepository;
+    private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
 
     public ProgramEnrollmentApplicationController(
             CurrentStudentService currentStudentService,
@@ -62,7 +65,9 @@ public class ProgramEnrollmentApplicationController {
             AddProgramEnrollmentApplicationDocumentUseCase addProgramEnrollmentApplicationDocumentUseCase,
             ApproveProgramEnrollmentApplicationUseCase approveProgramEnrollmentApplicationUseCase,
             RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase,
-            StudentDocumentRepository studentDocumentRepository) {
+            StudentDocumentRepository studentDocumentRepository,
+            AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder,
+            ProgramEnrollmentRepository programEnrollmentRepository) {
         this.currentStudentService = currentStudentService;
         this.currentPersonService = currentPersonService;
         this.requestProgramEnrollmentApplicationUseCase = requestProgramEnrollmentApplicationUseCase;
@@ -73,15 +78,17 @@ public class ProgramEnrollmentApplicationController {
         this.approveProgramEnrollmentApplicationUseCase = approveProgramEnrollmentApplicationUseCase;
         this.rejectProgramEnrollmentApplicationUseCase = rejectProgramEnrollmentApplicationUseCase;
         this.studentDocumentRepository = studentDocumentRepository;
+        this.admissionInvoiceReceiptFinder = admissionInvoiceReceiptFinder;
+        this.programEnrollmentRepository = programEnrollmentRepository;
     }
 
-    @PostMapping(value = "/me/program-enrollment-applications", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/me/program-enrollment-applications")
     @ResponseStatus(HttpStatus.CREATED)
     public ProgramEnrollmentApplicationResponse request(
-            @RequestParam Long programId, @RequestParam Long cohortId, @RequestPart MultipartFile comprobante) {
+            @RequestParam Long programId, @RequestParam Long cohortId) {
         Student student = currentStudentService.resolveCurrentStudent();
         ProgramEnrollmentApplication application = requestProgramEnrollmentApplicationUseCase.request(
-                new RequestProgramEnrollmentApplicationCommand(student, programId, cohortId, comprobante));
+                new RequestProgramEnrollmentApplicationCommand(student, programId, cohortId));
         return ProgramEnrollmentApplicationResponse.from(application);
     }
 
@@ -89,7 +96,10 @@ public class ProgramEnrollmentApplicationController {
     public List<ProgramEnrollmentApplicationResponse> mine() {
         Student student = currentStudentService.resolveCurrentStudent();
         return listMyProgramEnrollmentApplicationsUseCase.list(student.getId()).stream()
-                .map(ProgramEnrollmentApplicationResponse::from).toList();
+                .map(application -> ProgramEnrollmentApplicationResponse.from(application,
+                        admissionInvoiceReceiptFinder::findLatestReceiptByAdmissionInvoiceId,
+                        applicationId -> programEnrollmentRepository.findIdByAdmissionApplicationId(applicationId).orElse(null)))
+                .toList();
     }
 
     @PostMapping("/me/program-enrollment-applications/{id}/documents")

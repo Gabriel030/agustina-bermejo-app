@@ -14,7 +14,7 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
@@ -34,7 +34,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
@@ -154,6 +154,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         person.setName("Persona");
         person.setLastname(username);
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -293,7 +294,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
     private Invoice invoiceConAjustesDe(CourseEnrollment enrollment, int index) {
         List<Invoice> invoices = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId());
-        return invoiceRepository.findByIdWithAdjustments(invoices.get(index).getId()).orElseThrow();
+        return invoiceRepository.findInvoiceWithLinesById(invoices.get(index).getId()).orElseThrow();
     }
 
     @Test
@@ -310,8 +311,8 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        assertThat(invoice.getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoice.getAmountDue()).isEqualTo(ars(9000));
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(9000));
     }
 
     @Test
@@ -328,7 +329,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        assertThat(invoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -347,9 +348,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
             invoiceGenerationService.generateNextInstallmentForCourse(enrollment, mesInicial.plusMonths(i));
         }
 
-        assertThat(invoiceConAjustesDe(enrollment, 0).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(enrollment, 1).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(enrollment, 2).getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 0))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 1))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 2))).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -369,7 +370,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         }
 
         for (int i = 0; i < 4; i++) {
-            assertThat(invoiceConAjustesDe(enrollment, i).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+            assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, i))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
         }
     }
 
@@ -395,8 +396,8 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForCourse(yaCalificado, YearMonth.now());
         invoiceGenerationService.generateNextInstallmentForCourse(despuesDelCierre, YearMonth.now());
 
-        assertThat(invoiceConAjustesDe(yaCalificado, 0).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(despuesDelCierre, 0).getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(yaCalificado, 0))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(despuesDelCierre, 0))).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -417,10 +418,10 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        long cantidadDeAjustesPromocion = invoice.getAdjustments().stream()
-                .filter(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION).count();
+        long cantidadDeAjustesPromocion = com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).stream()
+                .filter(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION).count();
         assertThat(cantidadDeAjustesPromocion).isEqualTo(1);
-        assertThat(invoice.getAmountDue()).isEqualTo(ars(9000));
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(9000));
     }
 
     @Test
@@ -443,8 +444,8 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         List<Invoice> recurringInvoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).toList();
         assertThat(recurringInvoices).hasSize(3);
-        Invoice tercera = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(2).getId()).orElseThrow();
-        assertThat(tercera.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        Invoice tercera = invoiceRepository.findInvoiceWithLinesById(recurringInvoices.get(2).getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(tercera)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -463,14 +464,14 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
         List<Invoice> recurringInvoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).toList();
-        Invoice firstInvoice = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(0).getId()).orElseThrow();
-        assertThat(firstInvoice.getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        Invoice firstInvoice = invoiceRepository.findInvoiceWithLinesById(recurringInvoices.get(0).getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(firstInvoice)).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
 
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now().plusMonths(1));
         Invoice nextInvoice = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
                 .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).reduce((first, second) -> second).orElseThrow();
-        nextInvoice = invoiceRepository.findByIdWithAdjustments(nextInvoice.getId()).orElseThrow();
-        assertThat(nextInvoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        nextInvoice = invoiceRepository.findInvoiceWithLinesById(nextInvoice.getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(nextInvoice)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test

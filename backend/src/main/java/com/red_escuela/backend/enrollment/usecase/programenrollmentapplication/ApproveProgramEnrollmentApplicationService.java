@@ -1,58 +1,60 @@
 package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
-import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
-import com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase;
-import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
+import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
+import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.service.PersonRoleGranter;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
+
 
 @UseCase
 public class ApproveProgramEnrollmentApplicationService implements ApproveProgramEnrollmentApplicationUseCase {
 
     private final ProgramEnrollmentApplicationFinder applicationFinder;
-    private final ProgramEnrollmentService programEnrollmentService;
     private final PersonRoleGranter personRoleGranter;
-    private final ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
-    private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
+    private final ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer;
+    private final StudentDebtResolutionService studentDebtResolutionService;
+    private final ProgramEnrollmentService programEnrollmentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ApproveProgramEnrollmentApplicationService(ProgramEnrollmentApplicationFinder applicationFinder,
-                                                        ProgramEnrollmentService programEnrollmentService,
                                                         PersonRoleGranter personRoleGranter,
-                                                        ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase,
-                                                        ProgramEnrollmentBillingSetup programEnrollmentBillingSetup) {
-        this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
+                                                        ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer,
+                                                        StudentDebtResolutionService studentDebtResolutionService,
+                                                        ProgramEnrollmentService programEnrollmentService,
+                                                        ApplicationEventPublisher eventPublisher) {
         this.applicationFinder = applicationFinder;
-        this.programEnrollmentService = programEnrollmentService;
         this.personRoleGranter = personRoleGranter;
-        this.approvePaymentReceiptUseCase = approvePaymentReceiptUseCase;
+        this.programAdmissionInvoiceIssuer = programAdmissionInvoiceIssuer;
+        this.studentDebtResolutionService = studentDebtResolutionService;
+        this.programEnrollmentService = programEnrollmentService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
     @Transactional
     public ProgramEnrollmentApplication approve(ApproveProgramEnrollmentApplicationCommand command) {
         ProgramEnrollmentApplication application = applicationFinder.findOrThrow(command.id());
-        application.approve(command.decidedBy());
-
+        if (application.getStatus() != ProgramEnrollmentApplicationStatus.PENDING) {
+            throw new InvalidProgramEnrollmentApplicationStateException(application.getId(), application.getStatus());
+        }
         Student student = application.getStudent();
-        Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
-        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
-                new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId));
+        programEnrollmentService.validateStudentCanEnrollInProgram(student, application.getProgram());
+        studentDebtResolutionService.verifyNoDebt(student.getId());
+
+        Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
+        application.approve(command.decidedBy(), admissionInvoice);
         personRoleGranter.grantStudentRoleIfMissing(student.getPerson());
-
-        if (application.getPaymentReceipt() != null) {
-            programEnrollmentBillingSetup.attachAdmissionFee(enrollment, application.getPaymentReceipt().getInvoice());
-        }
-
-        if (application.getPaymentReceipt() != null && application.getPaymentReceipt().isPendingReview()) {
-            approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), command.decidedBy());
-        }
-
+        eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;
     }
 }

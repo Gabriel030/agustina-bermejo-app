@@ -126,7 +126,7 @@ describe('DetalleCarrera', () => {
     expect(await screen.findByText('Cohorte')).toBeInTheDocument();
   });
 
-  it('el flujo completo pide cohorte, documentación, comprobante y confirma', async () => {
+  it('el flujo completo pide cohorte y documentación y confirma sin pago (D-227)', async () => {
     server.use(
       http.post(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json({ id: 5, status: 'PENDING' }, { status: 201 }),
@@ -159,17 +159,7 @@ describe('DetalleCarrera', () => {
     await user.upload(fileInputs[2], analitico);
     expect(screen.getAllByText('Cargado correctamente')).toHaveLength(3);
 
-    await user.click(screen.getByRole('button', { name: 'Continuar →' }));
-
-    // Paso pago
-    expect(await screen.findByText('$ 50.000,00')).toBeInTheDocument();
-    const confirmarAntesDeSubir = screen.getByRole('button', { name: 'Confirmar solicitud' });
-    expect(confirmarAntesDeSubir).toBeDisabled();
-
-    const comprobante = new File(['contenido'], 'comprobante.pdf', { type: 'application/pdf' });
-    const [comprobanteInput] = document.querySelectorAll('input[type="file"]');
-    await user.upload(comprobanteInput, comprobante);
-
+    expect(screen.queryByText('Subir comprobante de pago')).not.toBeInTheDocument();
     const confirmar = screen.getByRole('button', { name: 'Confirmar solicitud' });
     expect(confirmar).toBeEnabled();
     await user.click(confirmar);

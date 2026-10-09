@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
+import { useMisSolicitudesCarrera } from '@/features/enrollment/hooks/useCatalogo';
 import { usePaymentConfig, useSubirComprobante, useMisComprobantes, usePriceBreakdown } from '@/hooks/useBilling';
 import { formatMoney, receiptFileError, receiptUploadErrorMessage } from '@/lib/billing';
 
@@ -150,10 +151,21 @@ const RECEIPT_STATUS = {
   REJECTED: { label: 'Rechazado', icon: XCircle, tone: 'danger' },
 };
 
+function textoDePagoAprobado(solicitud) {
+  if (!solicitud) return 'Tu pago fue confirmado correctamente.';
+  if (solicitud.admissionInvoice?.paymentStatus !== 'PAID') {
+    return 'Aprobamos tu comprobante, pero el monto acreditado todavía no alcanza a cubrir la matrícula de ingreso completa. Revisá el detalle en Mis pagos.';
+  }
+  if (solicitud.programEnrollmentId) return `Tu pago fue confirmado. Ya estás inscripto en ${solicitud.programName}.`;
+  return `Tu pago fue confirmado. Estamos confirmando tu inscripción en ${solicitud.programName}.`;
+}
+
 function PasoEstado({ invoiceId }) {
   const navigate = useNavigate();
   const { data: comprobantes, isLoading } = useMisComprobantes();
   const comprobante = comprobantes?.find((c) => c.invoiceId === parseInt(invoiceId, 10));
+  const { data: solicitudes } = useMisSolicitudesCarrera();
+  const solicitudDeMatricula = (solicitudes ?? []).find((s) => s.admissionInvoice?.id === parseInt(invoiceId, 10));
 
   if (isLoading) return <Skeleton className="h-32" />;
 
@@ -181,7 +193,9 @@ function PasoEstado({ invoiceId }) {
             </p>
           )}
           {comprobante.status === 'APPROVED' && (
-            <p className="mt-1 text-sm text-ink-faint">Tu pago fue confirmado correctamente.</p>
+            <p className="mt-1 text-sm text-ink-faint">
+              {textoDePagoAprobado(solicitudDeMatricula)}
+            </p>
           )}
           {comprobante.status === 'REJECTED' && (
             <>

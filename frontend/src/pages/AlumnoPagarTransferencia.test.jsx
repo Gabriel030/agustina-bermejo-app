@@ -100,4 +100,80 @@ describe('AlumnoPagarTransferencia', () => {
 
     expect(await screen.findByText('Ya enviaste un comprobante para esta cuota y está en revisión.')).toBeInTheDocument();
   });
+
+  it('cuando el comprobante de la matrícula de ingreso se aprueba confirma la inscripción a la carrera', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([{ id: 3, programName: 'Diseño Gráfico', status: 'APPROVED', programEnrollmentId: 12, admissionInvoice: { id: 61, paymentStatus: 'PAID' } }]),
+      ),
+    );
+    let comprobanteSubido = false;
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(overdueBreakdown)),
+      http.get(`${API}/me/bank-transfer-receipts`, () =>
+        HttpResponse.json(comprobanteSubido ? [{ id: 302, invoiceId: 61, status: 'APPROVED', uploadedAt: '2026-10-02T10:00:00' }] : []),
+      ),
+      http.post(`${API}/me/invoices/61/bank-transfer-receipts`, () => {
+        comprobanteSubido = true;
+        return HttpResponse.json({ id: 302 }, { status: 201 });
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />
+      </Routes>,
+      { route: '/alumno/pagos/61/transferencia' },
+    );
+
+    await goToUploadStep(user);
+    await user.upload(document.querySelector('input[type="file"]'), new File(['pdf'], 'comprobante.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
+
+    expect(await screen.findByText('Tu pago fue confirmado. Ya estás inscripto en Diseño Gráfico.')).toBeInTheDocument();
+  });
+  async function subirComprobanteDeMatricula(solicitud) {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([solicitud])),
+    );
+    let comprobanteSubido = false;
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${API}/me/invoices/61/price-breakdown`, () => HttpResponse.json(overdueBreakdown)),
+      http.get(`${API}/me/bank-transfer-receipts`, () =>
+        HttpResponse.json(comprobanteSubido ? [{ id: 302, invoiceId: 61, status: 'APPROVED', uploadedAt: '2026-10-02T10:00:00' }] : []),
+      ),
+      http.post(`${API}/me/invoices/61/bank-transfer-receipts`, () => {
+        comprobanteSubido = true;
+        return HttpResponse.json({ id: 302 }, { status: 201 });
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/alumno/pagos/:invoiceId/transferencia" element={<AlumnoPagarTransferencia />} />
+      </Routes>,
+      { route: '/alumno/pagos/61/transferencia' },
+    );
+    await goToUploadStep(user);
+    await user.upload(document.querySelector('input[type="file"]'), new File(['pdf'], 'comprobante.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Enviar comprobante' }));
+  }
+
+  it('con el comprobante aprobado y la factura paga pero sin inscripción todavía dice que se está confirmando', async () => {
+    await subirComprobanteDeMatricula({
+      id: 3, programName: 'Diseño Gráfico', status: 'APPROVED', programEnrollmentId: null, admissionInvoice: { id: 61, paymentStatus: 'PAID' },
+    });
+
+    expect(await screen.findByText('Tu pago fue confirmado. Estamos confirmando tu inscripción en Diseño Gráfico.')).toBeInTheDocument();
+    expect(screen.queryByText(/Ya estás inscripto/)).not.toBeInTheDocument();
+  });
+
+  it('con el comprobante aprobado pero la factura todavía impaga (monto menor) no dice que está inscripto', async () => {
+    await subirComprobanteDeMatricula({
+      id: 3, programName: 'Diseño Gráfico', status: 'APPROVED', programEnrollmentId: null, admissionInvoice: { id: 61, paymentStatus: 'PENDING' },
+    });
+
+    expect(await screen.findByText(/todavía no alcanza a cubrir la matrícula de ingreso completa/)).toBeInTheDocument();
+    expect(screen.queryByText(/inscripto/)).not.toBeInTheDocument();
+  });
 });

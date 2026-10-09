@@ -1,10 +1,14 @@
 package com.red_escuela.backend.billing.dto;
 
+import com.red_escuela.backend.billing.entity.PaymentAllocation;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-
 import com.red_escuela.backend.shared.domain.Money;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -19,12 +23,15 @@ public record InvoiceResponse(
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod) {
-    public static InvoiceResponse from(Invoice invoice) {
+
+    public static InvoiceResponse from(InvoiceView view) {
+        Invoice invoice = view.invoice();
+        InvoiceLine line = invoice.getPrimaryLine();
         Long studentId = null;
         String studentDni = null;
         ProductRef productRef = null;
-        CourseEnrollment courseEnrollment = invoice.getCourseEnrollment();
-        ProgramEnrollment programEnrollment = invoice.getProgramEnrollment();
+        CourseEnrollment courseEnrollment = view.courseEnrollment();
+        ProgramEnrollment programEnrollment = view.programEnrollment();
         if (courseEnrollment != null) {
             studentId = courseEnrollment.getStudent().getId();
             studentDni = courseEnrollment.getStudent().getPerson().getDni();
@@ -34,25 +41,18 @@ public record InvoiceResponse(
             studentDni = programEnrollment.getStudent().getPerson().getDni();
             productRef = new ProductRef("PROGRAM", programEnrollment.getProgram().getId(), programEnrollment.getId());
         }
-        LocalDateTime paymentDate = invoice.getAllocations().stream()
-                .map(a -> a.getPayment().getPaidAt())
-                .max(Comparator.naturalOrder()).orElse(null);
-        String paymentMethod = invoice.getAllocations().stream()
-                .max(Comparator.comparing(a -> a.getPayment().getPaidAt()))
-                .map(a -> a.getPayment().getMethod().name())
-                .orElse(null);
+        PaymentAllocation latest = view.allocations().stream().max(Comparator.comparing((PaymentAllocation a) -> a.getPayment().getPaidAt())).orElse(null);
+        boolean discarded = invoice.getDocumentStatus() == InvoiceDocumentStatus.DISCARDED;
         return new InvoiceResponse(
-                invoice.getId(), invoice.getFeeType().name(), invoice.getPeriod().toString(), invoice.getDueDate(),
-                invoice.getBaseAmount(), invoice.getAmountDue(), invoice.getRemainingBalance(), invoice.getStatus().name(),
-                invoice.getAdjustments().stream().map(InvoiceAdjustmentResponse::from).toList(),
+                invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getDueDate(),
+                invoice.getAmounts().linesTotal().value(), invoice.getAmounts().total().value(), invoice.getAmounts().outstandingAmount().value(),
+                discarded ? "CANCELLED" : invoice.getPaymentStatus().name(),
+                invoice.getLines().stream().filter(l -> l.getDiscount() != null).map(l -> InvoiceAdjustmentResponse.from(l.getDiscount())).toList(),
                 null,
                 invoice.getCreatedAt(), invoice.getUpdatedAt(),
-                invoice.getCancelledBy() == null ? null : invoice.getCancelledBy().getName() + " " + invoice.getCancelledBy().getLastname(),
-                invoice.getCancelledReason(), invoice.getCancelledAt(),
+                null, invoice.getDiscardedReason(), null,
                 studentId, studentDni, productRef,
-                invoice.getDescription(),
-                invoice.getSubject() == null ? null : invoice.getSubject().getId(),
-                invoice.getExamBoardRegistration() == null ? null : invoice.getExamBoardRegistration().getId(),
-                paymentDate, paymentMethod);
+                line.getConcept(), line.getSubjectId(), line.getExamBoardRegistrationId(),
+                latest == null ? null : latest.getPayment().getPaidAt(), latest == null ? null : latest.getPayment().getMethod().name());
     }
 }

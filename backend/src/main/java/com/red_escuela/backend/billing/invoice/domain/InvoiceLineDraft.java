@@ -15,7 +15,16 @@ public record InvoiceLineDraft(
         Long examBoardRegistrationId,
         Long priceRevisionId,
         String chargeKey,
-        NonNegativeMoney amount) {
+        NonNegativeMoney amount,
+        Long templateId,
+        Integer enrollmentFeeSlot) {
+
+    public InvoiceLineDraft(FeeType feeType, String concept, YearMonth period, Long programEnrollmentId, Long courseEnrollmentId, Long subjectId,
+                            Long examBoardRegistrationId, Long priceRevisionId, String chargeKey, NonNegativeMoney amount) {
+        this(feeType, concept, period, programEnrollmentId, courseEnrollmentId, subjectId, examBoardRegistrationId, priceRevisionId, chargeKey, amount,
+                null, null);
+    }
+
 
     private static final int MAX_CONCEPT_LENGTH = 200;
     private static final int MAX_CHARGE_KEY_LENGTH = 120;

@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
+import { AdmissionInvoicePendingCard } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
 
 const STANDING_CONFIG = {
@@ -87,6 +88,8 @@ export function AlumnoPagos() {
           className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:border-brand"
         />
       </div>
+
+      <AdmissionInvoicePendingCard />
 
       <GlassCard className="overflow-hidden p-0">
         {cargando && (

@@ -4,8 +4,10 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
 import { Skeleton } from '@/components/Skeleton';
+import { StatusPill } from '@/components/StatusPill';
 import { apiFetch } from '@/api/client';
-import { formatFecha } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { formatFecha, formatMoney } from '@/lib/utils';
 
 // DocumentType del backend (entity.DocumentType) — mismos 3 tipos que pide el
 // wizard de inscripción (InscripcionWizard.jsx): DNI frente/dorso, analítico.
@@ -119,7 +121,7 @@ export function DetalleSolicitud() {
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{solicitud.programName}</div>
           <div className="mt-1 text-[13px] text-ink-faint">Solicitada el {formatFecha(solicitud.requestedAt)}</div>
         </div>
-        <EstadoSolicitudBadge status={solicitud.status} />
+        <EstadoSolicitudBadge status={solicitud.status} admissionInvoice={solicitud.admissionInvoice} programEnrollmentId={solicitud.programEnrollmentId} />
       </div>
 
       {solicitud.status === 'REJECTED' && (
@@ -128,16 +130,67 @@ export function DetalleSolicitud() {
         </GlassCard>
       )}
 
-      {solicitud.status === 'APPROVED' && (
+      {solicitud.status === 'APPROVED' && !solicitud.admissionInvoice && (
+        <GlassCard className="bg-neutral-bg p-5 text-[13px] text-ink-soft">
+          <span className="font-bold text-ink">Solicitud aprobada.</span> Consultá con Secretaría el pago de la matrícula de ingreso.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && solicitud.programEnrollmentId && (
         <GlassCard className="bg-success-bg p-5 text-[13px] text-success">
-          <span className="font-bold">Solicitud aprobada.</span> Tu inscripción a la carrera ya está confirmada; no tenés que subir nada más.
+          <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso: tu inscripción a la carrera está confirmada.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice?.paymentStatus === 'PAID' && !solicitud.programEnrollmentId && (
+        <GlassCard className="bg-warning-bg p-5 text-[13px] text-warning">
+          <span className="font-bold">Solicitud aprobada.</span> Pagaste la matrícula de ingreso. Estamos confirmando tu inscripción en {solicitud.programName}.
+        </GlassCard>
+      )}
+
+      {solicitud.status === 'APPROVED' && solicitud.admissionInvoice && solicitud.admissionInvoice.paymentStatus !== 'PAID' && (
+        <GlassCard className="flex flex-col gap-3 p-5">
+          <div className="text-[13px] text-ink-soft">
+            <span className="font-bold text-ink">Solicitud aprobada.</span> Cuando confirmemos el pago, tu inscripción a la carrera queda confirmada.
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-3">
+            <div>
+              <div className="text-xs text-ink-faint">Matrícula de ingreso</div>
+              <div className="font-heading text-lg font-bold text-ink">{formatMoney(solicitud.admissionInvoice.total)}</div>
+              <div className="text-xs text-ink-faint">
+                {solicitud.admissionInvoice.paymentStatus === 'OVERDUE' ? 'Venció' : 'Vence'} el {formatFecha(solicitud.admissionInvoice.dueDate)}
+              </div>
+            </div>
+            {solicitud.admissionInvoice.receiptStatus === 'PENDING_REVIEW' ? (
+              <div className="flex flex-col items-end gap-1.5">
+                <StatusPill tone="warning">Pago en revisión</StatusPill>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/transferencia`)}
+                  className="text-[12.5px] font-semibold text-primary"
+                >
+                  Ver estado del pago
+                </button>
+              </div>
+            ) : (
+              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`)}>
+                Pagar matrícula
+              </Button>
+            )}
+          </div>
+          {solicitud.admissionInvoice.receiptStatus === 'PENDING_REVIEW' && (
+            <div className="text-xs text-ink-faint">
+              Subiste el comprobante el {formatFecha(solicitud.admissionInvoice.receiptUploadedAt)}; cuando lo aprobemos tu inscripción queda confirmada.
+            </div>
+          )}
         </GlassCard>
       )}
 
       {solicitud.status !== 'REJECTED' && solicitud.status !== 'APPROVED' && (
         <>
           <GlassCard className="p-5 text-[13px] text-ink-soft">
-            Subí los 3 documentos para que Preceptoría revise tu solicitud. Podés volver más tarde a completar los que falten.
+            Tu solicitud está en revisión. No se te cobró nada: si la aprueban, vas a recibir la factura de la matrícula de ingreso y vas
+            a tener un plazo para pagarla. Te avisamos por notificación cuando haya novedades.
           </GlassCard>
 
           <div className="font-heading text-[15px] font-semibold text-ink-soft">Documentación</div>

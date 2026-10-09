@@ -7,7 +7,7 @@ import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
@@ -25,7 +25,7 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -99,6 +99,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(dni);
+        person.setName("Alumno");
+        person.setLastname("Prueba");
+        person.setDni(dni);
         person.setEmail(dni + "@example.com");
         person.setAddress(addressRepository.save(new Address()));
         person.setStatus(StatusType.ACTIVE);

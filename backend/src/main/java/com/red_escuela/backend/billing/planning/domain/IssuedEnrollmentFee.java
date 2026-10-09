@@ -1,18 +1,18 @@
 package com.red_escuela.backend.billing.planning.domain;
 
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 
-public record IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoiceStatus status, LocalDate dueDate) {
+public record IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate) {
 
     public boolean isCancelled() {
-        return status == InvoiceStatus.CANCELLED;
+        return status == InvoicePaymentStatus.CANCELLED;
     }
 
     public boolean isSettled() {
-        return status == InvoiceStatus.PAID || status == InvoiceStatus.WAIVED;
+        return status == InvoicePaymentStatus.PAID;
     }
 
     public boolean covers(YearCycle cycle, int cycleSlot) {

@@ -1,0 +1,27 @@
+meta {
+  name: 26. No se puede rechazar una solicitud ya aprobada (409)
+  type: http
+  seq: 26
+}
+
+post {
+  url: {{baseUrl}}/program-enrollment-applications/{{applicationIdDocAlta2}}/reject
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenDocAlta}}
+}
+
+body:json {
+  {
+    "reason": "Documentación ilegible"
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

@@ -35,12 +35,19 @@ Feature: Caso de uso — Inscribirse a un curso
     # price de arriba — no hace falta un paso aparte.
 
     # Alumno recién registrado
+    * def dniAlumno = '' + (30000000 + java.lang.System.nanoTime() % 60000000)
     * def emailAlumno = 'karate.inscribirmecurso.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
     And request { nombre: 'QA', apellido: 'InscribeCurso', email: '#(emailAlumno)', username: '#(emailAlumno)', password: '#(passwordValida)', institutionId: '#(institutionId)' }
     When method post
     Then status 201
     * def alumnoToken = response.accessToken
+
+    Given path '/me'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And request { dni: '#(dniAlumno)' }
+    When method put
+    Then status 200
 
   Scenario: Inscripción con comprobante queda en revisión, aprobar recién ahí otorga ALUMNO y crea el CourseEnrollment
     # Solicitar — 201, PENDING_REVIEW, sin CourseEnrollment todavía

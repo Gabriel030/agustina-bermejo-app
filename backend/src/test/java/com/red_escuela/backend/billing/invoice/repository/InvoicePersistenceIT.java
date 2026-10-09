@@ -20,7 +20,6 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -61,9 +60,6 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     @Autowired
     private InvoiceNumberGenerator numberGenerator;
     @Autowired
-    @Qualifier("legacyInvoiceRepository")
-    private com.red_escuela.backend.billing.repository.InvoiceRepository legacyInvoiceRepository;
-    @Autowired
     private TransactionTemplate transactionTemplate;
     @Autowired
     private JdbcTemplate jdbc;
@@ -76,11 +72,21 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     @Autowired
     private StudentRepository studentRepository;
 
+    private BillingInvariantChecker invariants;
+
+    @org.junit.jupiter.api.BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = BillingInvariantChecker.startingNow(jdbc);
+    }
+
     private StudentCurrentAccount newAccount() {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         String username = "v2" + System.nanoTime();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -130,7 +136,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
         assertThat(loaded.getVersion()).isNotNull();
         assertThat(loaded.getCreatedAt()).isNotNull();
         assertThat(accountRepository.findByStudentIdAndCurrency(account.getStudentId(), Currency.ARS)).isPresent();
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -151,12 +157,12 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
 
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, id)).isEqualTo("OVERDUE");
         assertThat(jdbc.queryForObject("select count(*) from invoice_status_change where invoice_id = ? and status_kind = 'PAYMENT'", Integer.class, id)).isEqualTo(3);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
 
         Invoice draft = invoiceRepository.save(draftFor(account, "PE:ds" + System.nanoTime()));
         transactionTemplate.executeWithoutResult(status -> invoiceRepository.findInvoiceWithLinesById(draft.getId()).orElseThrow().discardDraftInvoice("error", ACTOR));
         assertThat(jdbc.queryForObject("select count(*) from invoice_line where invoice_id = ? and charge_key_released_at is not null", Integer.class, draft.getId())).isEqualTo(1);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -234,7 +240,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
         transactionTemplate.executeWithoutResult(status -> invoiceRepository.findInvoiceWithLinesById(winner).orElseThrow().discardDraftInvoice("repetir", ACTOR));
         Invoice again = invoiceRepository.save(draftFor(account, key));
         assertThat(again.getId()).isNotNull();
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -249,12 +255,10 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void bothInvoiceEntitiesAndRepositoriesCoexistAndTheLegacyOneStillWorks() {
-        assertThat(legacyInvoiceRepository.count()).isGreaterThanOrEqualTo(0);
-        assertThat(jdbc.queryForObject("select count(*) from legacy_invoice", Integer.class)).isNotNull();
-        assertThat(jdbc.queryForObject("select count(*) from pg_constraint where confrelid = 'legacy_invoice'::regclass", Integer.class)).isGreaterThan(0);
-        assertThat(jdbc.queryForObject("select count(*) from payment_allocation a join legacy_invoice i on i.id = a.invoice_id", Integer.class)).isNotNull();
-        assertThat(invoiceRepository).isNotSameAs(legacyInvoiceRepository);
+    void theLegacyInvoiceTablesNoLongerExistAndIncomingForeignKeysPointToTheNewInvoice() {
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_name in ('legacy_invoice', 'invoice_adjustment')", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from pg_constraint where contype = 'f' and confrelid = 'invoice'::regclass "
+                + "and conrelid = 'payment_allocation'::regclass", Integer.class)).isGreaterThan(0);
         assertThat(Map.of("v", LocalDate.of(2027, 1, 1))).isNotEmpty();
     }
 
@@ -288,6 +292,6 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, id)).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("select credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("69999.50");
         assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("10000.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 }

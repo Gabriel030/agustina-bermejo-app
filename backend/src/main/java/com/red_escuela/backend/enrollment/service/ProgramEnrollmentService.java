@@ -18,6 +18,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -96,10 +97,29 @@ public class ProgramEnrollmentService {
 
     @Transactional
     public ProgramEnrollment enroll(Long studentId, CreateProgramEnrollmentRequest request) {
+        studentDebtResolutionService.verifyNoDebt(studentId);
+        return createEnrollment(studentId, request, true, true, null);
+    }
+
+    @Transactional
+    public ProgramEnrollment enrollAfterAdmissionPayment(Long studentId, CreateProgramEnrollmentRequest request) {
+        return createEnrollment(studentId, request, false, false, null);
+    }
+
+    @Transactional
+    public ProgramEnrollment enrollApplicantAfterAdmissionPayment(ProgramEnrollmentApplication application) {
+        Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
+        return createEnrollment(application.getStudent().getId(),
+                new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId), false, false, application);
+    }
+
+    private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
+                                               boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
-        validateStudentEligible(student);
-        studentDebtResolutionService.verifyNoDebt(studentId);
+        if (validateEligibility) {
+            validateStudentEligible(student);
+        }
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
@@ -108,7 +128,9 @@ public class ProgramEnrollmentService {
         if (request.cohortId() != null) {
             cohort = programCohortRepository.findById(request.cohortId())
                     .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
-            validateAdmissionWindow(cohort);
+            if (validateAdmissionWindow) {
+                validateAdmissionWindow(cohort);
+            }
         }
 
         LocalDateTime now = LocalDateTime.now(clock);
@@ -122,6 +144,7 @@ public class ProgramEnrollmentService {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setProgramCohort(cohort);
+        enrollment.setAdmissionApplication(admissionApplication);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
         return programEnrollmentRepository.save(enrollment);
@@ -277,6 +300,15 @@ public class ProgramEnrollmentService {
         }
         enrollment.setCurrentBillingTemplate(template);
         return programEnrollmentRepository.save(enrollment);
+    }
+
+    public void validateStudentCanEnrollInProgram(Student student, Program program) {
+        validateStudentEligible(student);
+        boolean alreadyEnrolled = !programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
+                student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)).isEmpty();
+        if (alreadyEnrolled) {
+            throw new AlreadyEnrolledInProgramException(student.getId(), program.getId());
+        }
     }
 
     private void validateStudentEligible(Student student) {

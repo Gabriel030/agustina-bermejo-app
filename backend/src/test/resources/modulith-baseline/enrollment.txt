@@ -1,6 +1,6 @@
 COUNT academicstructure 158
 COUNT attendance 2
-COUNT billing 72
+COUNT billing 70
 COUNT evaluation 3
 COUNT identity 70
 COUNT notification 5

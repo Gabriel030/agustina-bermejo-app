@@ -24,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import com.red_escuela.backend.billing.invoice.exception.InvoiceLinesEnrollmentMismatchException;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
@@ -59,10 +60,10 @@ public class InvoiceLine {
     @Column(name = "period", nullable = false, updatable = false)
     private YearMonth period;
 
-    @Column(name = "program_enrollment_id", updatable = false)
+    @Column(name = "program_enrollment_id")
     private Long programEnrollmentId;
 
-    @Column(name = "course_enrollment_id", updatable = false)
+    @Column(name = "course_enrollment_id")
     private Long courseEnrollmentId;
 
     @Column(name = "subject_id", updatable = false)
@@ -73,6 +74,12 @@ public class InvoiceLine {
 
     @Column(name = "price_revision_id", updatable = false)
     private Long priceRevisionId;
+
+    @Column(name = "template_id", updatable = false)
+    private Long templateId;
+
+    @Column(name = "enrollment_fee_slot", updatable = false)
+    private Integer enrollmentFeeSlot;
 
     @Column(name = "charge_key", nullable = false, updatable = false, length = 120)
     private String chargeKey;
@@ -120,6 +127,8 @@ public class InvoiceLine {
         this.subjectId = draft.subjectId();
         this.examBoardRegistrationId = draft.examBoardRegistrationId();
         this.priceRevisionId = draft.priceRevisionId();
+        this.templateId = draft.templateId();
+        this.enrollmentFeeSlot = draft.enrollmentFeeSlot();
         this.chargeKey = draft.chargeKey();
         this.amount = draft.amount();
         this.discountAmount = NonNegativeMoney.zero(lineCurrency);
@@ -130,6 +139,20 @@ public class InvoiceLine {
     void attachDiscount(InvoiceDiscountDraft draft) {
         this.discount = new InvoiceDiscount(this, draft);
         this.discountAmount = draft.discountAmount();
+    }
+
+    void assignProgramEnrollment(Long enrollmentId) {
+        if (programEnrollmentId != null || courseEnrollmentId != null) {
+            throw new InvoiceLinesEnrollmentMismatchException();
+        }
+        this.programEnrollmentId = enrollmentId;
+    }
+
+    void assignCourseEnrollment(Long enrollmentId) {
+        if (programEnrollmentId != null || courseEnrollmentId != null) {
+            throw new InvoiceLinesEnrollmentMismatchException();
+        }
+        this.courseEnrollmentId = enrollmentId;
     }
 
     void releaseChargeKey() {

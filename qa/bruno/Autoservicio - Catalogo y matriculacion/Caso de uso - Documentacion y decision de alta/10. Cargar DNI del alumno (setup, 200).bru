@@ -1,0 +1,27 @@
+meta {
+  name: 10. Cargar DNI del alumno (setup, 200)
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/me
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+body:json {
+  {
+    "dni": "30445566"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

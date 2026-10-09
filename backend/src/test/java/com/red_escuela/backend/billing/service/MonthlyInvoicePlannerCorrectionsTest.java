@@ -7,8 +7,8 @@ import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -164,26 +164,9 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    void aCancelledFeeBlocksTheGateAndIsNeverIssuedAgain() {
-        Career career = newCareer();
-        newYear(career, 2026, 10, 1, 2, null);
-        today(date(2026, 3, 10));
-        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 10));
-
-        assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
-
-        markAllEnrollmentFees(enrollment, InvoiceStatus.CANCELLED);
-        assertThatThrownBy(() -> requireCertificate(enrollment)).isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        job.run();
-
-        assertThat(invoices(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(1);
-    }
-
-    @Test
     @Tag("D-066")
-    @Tag("contradicts-D-142")
-    void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtCancelledWhenTheYearEnds() {
+    @Tag("D-142")
+    void suspendedEnrollmentsAreFrozenAndAreWithdrawnWithTheirDebtStillOwedWhenTheYearEnds() {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         today(date(2026, 1, 5));
@@ -204,7 +187,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         ProgramEnrollment closed = entityManager.find(ProgramEnrollment.class, enrollment);
         assertThat(closed.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
         assertThat(closed.getPaymentStatus()).isEqualTo(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).allMatch(i -> i.getStatus() == InvoiceStatus.WAIVED);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment)).noneMatch(i -> i.getPaymentStatus() == InvoicePaymentStatus.PAID);
         assertThat(sequence(enrollment)).isEqualTo(frozen);
         assertInvariants(enrollment, y26);
     }

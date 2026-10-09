@@ -1,12 +1,9 @@
 package com.red_escuela.backend.billing.controller;
 
-import com.red_escuela.backend.billing.dto.CreateInvoiceAdjustmentRequest;
 import com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
-import com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentCommand;
-import com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,11 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class InvoiceController {
     private final InvoiceQueryService invoiceQueryService;
-    private final ApplyInvoiceAdjustmentUseCase applyInvoiceAdjustmentUseCase;
-
-    public InvoiceController(InvoiceQueryService invoiceQueryService, ApplyInvoiceAdjustmentUseCase applyInvoiceAdjustmentUseCase) {
+    
+    public InvoiceController(InvoiceQueryService invoiceQueryService) {
         this.invoiceQueryService = invoiceQueryService;
-        this.applyInvoiceAdjustmentUseCase = applyInvoiceAdjustmentUseCase;
     }
 
     @GetMapping("/course-enrollments/{id}/invoices")
@@ -38,13 +33,6 @@ public class InvoiceController {
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
     public EnrollmentBillingStatusResponse byProgram(@PathVariable Long id) {
         return EnrollmentBillingStatusResponse.of(invoiceQueryService.programBillable(id), invoiceQueryService.byProgram(id));
-    }
-
-    @PostMapping("/invoices/{id}/adjustments")
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('DIRECTOR')")
-    public InvoiceResponse applyAdjustment(@PathVariable Long id, @Valid @RequestBody CreateInvoiceAdjustmentRequest request) {
-        return InvoiceResponse.from(applyInvoiceAdjustmentUseCase.apply(new ApplyInvoiceAdjustmentCommand(id, request)));
     }
 
     @GetMapping("/invoices/{id}/price-breakdown")

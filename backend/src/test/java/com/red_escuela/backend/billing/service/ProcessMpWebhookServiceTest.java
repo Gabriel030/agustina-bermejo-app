@@ -9,13 +9,12 @@ import com.red_escuela.backend.academicstructure.repository.InstitutionRepositor
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment;
 import com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
@@ -86,6 +85,9 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     private StudentRepository studentRepository;
 
     @Autowired
+    private com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader invoiceViewLoader;
+
+    @Autowired
     private CourseRepository courseRepository;
 
     @Autowired
@@ -97,11 +99,24 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants;
+
+    @org.junit.jupiter.api.BeforeEach
+    void startBillingInvariantBaseline() {
+        invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbc);
+    }
+
     private Invoice persistPendingInvoice(BigDecimal amount) {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         String username = "mp.webhook." + System.nanoTime();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -135,14 +150,8 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment = courseEnrollmentRepository.save(enrollment);
 
-        Invoice invoice = BillingTestFixtures.invoice().build();
-        invoice.setCourseEnrollment(enrollment);
-        invoice.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(ars(amount));
-        BillingTestFixtures.markInvoiceAsPending(invoice);
-        return invoiceRepository.save(invoice);
+        Invoice invoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now()).withBaseAmount(ars(amount)).build();
+        return invoice;
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {
@@ -152,19 +161,46 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void theWebhookRecordsTheAmountReportedByMercadoPagoNotTheInvoiceBalance() {
+    @Tag("D-139")
+    @Tag("D-136")
+    @Tag("D-144")
+    void aMercadoPagoAmountBelowTheBalanceIsCreditedToTheAccountAndTheInvoiceStaysPending() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
-        String mpPaymentId = String.valueOf(System.nanoTime());
-
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId()))
-                .extracting(PaymentAllocation::getAmountApplied)
-                .singleElement()
-                .satisfies(amount -> assertThat(amount).isEqualTo(ars(4000)));
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(4000))));
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForList("select entry_type, direction, amount from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
+                .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((BigDecimal) row.get("amount")).setScale(0))
+                .containsExactly("INVOICE_ISSUED:DEBIT:10000", "PAYMENT_RECEIVED:CREDIT:4000");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("4000");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    void aSecondMercadoPagoAmountThatCompletesTheBalanceSettlesTheInvoiceWithoutLeftovers() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(6000))
+                .process("", "request-2", "second-" + System.nanoTime()));
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("0");
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
+                .isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
@@ -188,20 +224,85 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void aMercadoPagoAmountAboveTheBalanceKeepsTheOverpaymentRule() {
+    @Tag("D-139")
+    @Tag("D-144")
+    void aMercadoPagoAmountAboveTheBalanceSettlesTheInvoiceAndKeepsTheExcessAsAccountCredit() {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(15000));
+        String mpPaymentId = String.valueOf(System.nanoTime());
 
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(
-                status -> service.process("", "request-1", String.valueOf(System.nanoTime()))))
-                .isInstanceOf(PaymentExceedsInvoiceBalanceException.class);
-        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
+
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("5000");
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).singleElement()
+                .satisfies(payment -> assertThat(payment.getAmount()).isEqualTo(ars(BigDecimal.valueOf(15000))));
+        invariants.assertAllBillingInvariantsHold();
     }
+
+    @Test
+    @Tag("D-139")
+    @Tag("D-144")
+    void aMercadoPagoPaymentOnAnAlreadyPaidInvoiceIsCreditedToTheAccountInsteadOfBeingIgnored() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        String secondPaymentId = "second-" + System.nanoTime();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-2", secondPaymentId));
+
+        assertThat(paymentRepository.findAll()).filteredOn(p -> secondPaymentId.equals(p.getExternalReference())).hasSize(1);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("10000");
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    @Tag("D-144")
+    void twoConcurrentWebhooksWithDifferentIdsOnTheSameInvoiceLoseNoMoneyAndAllocateOnce() throws Exception {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String mpPaymentId = "concurrent-" + i + "-" + System.nanoTime();
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                            .process("", "request-" + mpPaymentId, mpPaymentId));
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (java.util.concurrent.Future<?> future : futures) {
+                future.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        assertThat(jdbc.queryForObject("select coalesce(sum(amount), 0) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", BigDecimal.class, accountId))
+                .isEqualByComparingTo("20000");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
+                .isEqualByComparingTo("10000");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
     @Test
     void anApprovedPaymentLogsInfoWithPaymentAndInvoiceIds(CapturedOutput output) {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
         String mpPaymentId = String.valueOf(System.nanoTime());
-        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(4000));
+        ProcessMpWebhookService service = serviceReporting(invoice.getId(), BigDecimal.valueOf(10000));
 
         transactionTemplate.executeWithoutResult(status -> service.process("", "request-1", mpPaymentId));
 
@@ -241,5 +342,92 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         }
 
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+    }
+
+    @Test
+    @Tag("D-139")
+    void theSameMercadoPagoPaymentReportedTwiceSequentiallyIsCreditedOnce() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = "same-" + System.nanoTime();
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000)).process("", "request-1", mpPaymentId));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000)).process("", "request-2", mpPaymentId));
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(paymentRepository.findAll()).filteredOn(payment -> mpPaymentId.equals(payment.getExternalReference())).hasSize(1);
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("4000");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    void theSameMercadoPagoPaymentReportedTwiceConcurrentlyIsCreditedOnce() throws Exception {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = "concurrent-" + System.nanoTime();
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        java.util.List<java.util.concurrent.Future<?>> deliveries = new java.util.ArrayList<>();
+        for (int delivery = 0; delivery < 2; delivery++) {
+            deliveries.add(executor.submit(() -> {
+                start.await();
+                transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request", mpPaymentId));
+                return null;
+            }));
+        }
+        start.countDown();
+        java.util.List<Throwable> rejectedDeliveries = new java.util.ArrayList<>();
+        for (java.util.concurrent.Future<?> delivery : deliveries) {
+            try {
+                delivery.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.ExecutionException e) {
+                rejectedDeliveries.add(e.getCause());
+            }
+        }
+        executor.shutdownNow();
+        assertThat(rejectedDeliveries).hasSizeLessThanOrEqualTo(1)
+                .allSatisfy(failure -> assertThat(failure).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class));
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(paymentRepository.findAll()).filteredOn(payment -> mpPaymentId.equals(payment.getExternalReference())).hasSize(1);
+        assertThat(jdbc.queryForObject("select coalesce(sum(amount),0) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", BigDecimal.class, accountId)).isEqualByComparingTo("10000");
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).hasSize(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-134")
+    void aMercadoPagoPaymentOnACancelledInvoiceIsCreditedToTheAccountAndNotAllocated() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        jdbc.update("update invoice set payment_status = 'CANCELLED', outstanding_amount = 0, paid_amount = 0, credited_amount = total where id = ?", invoice.getId());
+        String mpPaymentId = "cancelled-" + System.nanoTime();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000)).process("", "request", mpPaymentId));
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(paymentAllocationRepository.findByInvoiceId(invoice.getId())).isEmpty();
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoice.getId())).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("10000");
+    }
+
+    @Test
+    @Tag("D-139")
+    void aPriorCreditPlusAShortMercadoPagoPaymentSettlesTheReportedInvoice() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        CourseEnrollment enrollment = transactionTemplate.execute(status -> {
+            CourseEnrollment loaded = invoiceViewLoader.loadInvoiceView(invoiceRepository.findById(invoice.getId()).orElseThrow()).courseEnrollment();
+            loaded.getStudent().getId();
+            return loaded;
+        });
+        Invoice otherInvoice = BillingTestFixtures.invoice().forCourseEnrollment(enrollment)
+                .ofType(FeeType.ADMINISTRATIVE_FEE).dueOn(LocalDate.now()).withBaseAmount(ars(BigDecimal.valueOf(3000))).build();
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(otherInvoice.getId(), BigDecimal.valueOf(6000)).process("", "request-1", "first-" + System.nanoTime()));
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(7000)).process("", "request-2", "second-" + System.nanoTime()));
+
+        assertThatInvoice(invoiceRepository.findById(otherInvoice.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("0");
+        invariants.assertAllBillingInvariantsHold();
     }
 }

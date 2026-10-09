@@ -9,11 +9,12 @@ import com.red_escuela.backend.billing.planning.service.ProgramMonthlyInvoicePla
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingService;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingRequest;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceRecipient;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingResult;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
+import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
+import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;
+import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingResult;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -70,14 +71,14 @@ public class BillingTestTrigger {
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
         int slot = com.red_escuela.backend.billing.planning.domain.YearCycle.of(template, entryMonth.getYear()).slotOf(entryMonth);
         LocalDate due = cohort.getCursadaStart().isBefore(today) ? today.plusDays(template.getLateEnrollmentFeeDueDays()) : cohort.getCursadaStart();
-        InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(enrollment), FeeType.ENROLLMENT_FEE, entryMonth, due,
-                InvoiceIssuingReason.PAYMENT_PLAN_SELECTION, selection, template.getId(), slot, true, null, null, null, null);
-        invoiceIssuingService.issueInvoiceInCallerTransaction(request);
+        PlannedInvoice planned = new PlannedInvoice(FeeType.ENROLLMENT_FEE, entryMonth, due, today, template.getId(), slot, null, true, false);
+        invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, selection, planned,
+                InvoiceIssuingReason.PAYMENT_PLAN_SELECTION));
     }
 
     public Invoice issueInstallment(ProgramEnrollment enrollment, YearMonth period, LocalDate dueDate) {
-        InvoiceIssuingRequest request = new InvoiceIssuingRequest(new InvoiceRecipient.ProgramEnrollmentRecipient(enrollment), FeeType.MONTHLY_INSTALLMENT, period, dueDate,
-                InvoiceIssuingReason.MONTHLY_RUN, null, null, null, false, null, null, null, null);
+        PlannedInvoice planned = new PlannedInvoice(FeeType.MONTHLY_INSTALLMENT, period, dueDate, LocalDate.now(clock), null, null, null, false, false);
+        InvoiceIssuingRequest request = InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, null, planned, InvoiceIssuingReason.MONTHLY_RUN);
         return ((InvoiceIssuingResult.InvoiceIssued) invoiceIssuingService.issueInvoiceInNewTransaction(request)).invoice();
     }
 }

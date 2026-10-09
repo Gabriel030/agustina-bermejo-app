@@ -15,14 +15,14 @@ public record MeEnrollmentBillingStatusResponse(String paymentStatus, LocalDateT
     public static MeEnrollmentBillingStatusResponse of(CourseEnrollment enrollment, List<InvoiceWithReceipts> invoices) {
         return new MeEnrollmentBillingStatusResponse(
                 enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
-                invoices.stream().map(i -> MeInvoiceResponse.of(i.invoice(), i.receipts())).toList(),
+                invoices.stream().map(i -> MeInvoiceResponse.of(i.view(), i.receipts())).toList(),
                 "COURSE", enrollment.getId(), enrollment.getCourse().getName(), enrollment.getCourse().getId());
     }
 
     public static MeEnrollmentBillingStatusResponse of(ProgramEnrollment enrollment, List<InvoiceWithReceipts> invoices) {
         return new MeEnrollmentBillingStatusResponse(
                 enrollment.getPaymentStatus().name(), enrollment.getPaymentStatusUpdatedAt(),
-                invoices.stream().map(i -> MeInvoiceResponse.of(i.invoice(), i.receipts())).toList(),
+                invoices.stream().map(i -> MeInvoiceResponse.of(i.view(), i.receipts())).toList(),
                 "PROGRAM", enrollment.getId(), enrollment.getProgram().getName(), enrollment.getProgram().getId());
     }
 }

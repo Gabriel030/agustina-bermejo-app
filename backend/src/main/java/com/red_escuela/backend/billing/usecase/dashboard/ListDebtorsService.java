@@ -1,10 +1,12 @@
 package com.red_escuela.backend.billing.usecase.dashboard;
 
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.DebtorSummaryResponse;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.shared.UseCase;
@@ -21,34 +23,31 @@ import java.util.stream.Collectors;
 public class ListDebtorsService implements ListDebtorsUseCase {
 
     private final InvoiceRepository invoiceRepository;
+    private final InvoiceViewLoader invoiceViewLoader;
     private final Clock clock;
 
-    public ListDebtorsService(InvoiceRepository invoiceRepository, Clock clock) {
+    public ListDebtorsService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader, Clock clock) {
         this.invoiceRepository = invoiceRepository;
+        this.invoiceViewLoader = invoiceViewLoader;
         this.clock = clock;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DebtorSummaryResponse> list(String sortBy) {
-        List<InvoiceStatus> debtStatuses = List.of(InvoiceStatus.OVERDUE);
-
-        List<Invoice> courseInvoices = invoiceRepository.findByCourseEnrollmentStatusInWithStudent(debtStatuses);
-        List<Invoice> programInvoices = invoiceRepository.findByProgramEnrollmentStatusInWithStudent(debtStatuses);
-
         Map<String, DebtorAccumulator> accumulators = new LinkedHashMap<>();
-
-        for (Invoice invoice : courseInvoices) {
-            Student student = invoice.getCourseEnrollment().getStudent();
-            String name = invoice.getCourseEnrollment().getCourse().getName();
-            accumulators.computeIfAbsent(student.getId() + "/" + invoice.currency(), key -> new DebtorAccumulator(student, invoice.currency())).add(name, invoice);
+        for (InvoiceView view : invoiceViewLoader.loadInvoiceViews(invoiceRepository.findByPaymentStatusWithLines(InvoicePaymentStatus.OVERDUE))) {
+            Invoice invoice = view.invoice();
+            if (view.courseEnrollment() != null) {
+                Student student = view.courseEnrollment().getStudent();
+                accumulators.computeIfAbsent(student.getId() + "/" + invoice.currency(), key -> new DebtorAccumulator(student, invoice.currency()))
+                        .add(view.courseEnrollment().getCourse().getName(), invoice);
+            } else if (view.programEnrollment() != null) {
+                Student student = view.programEnrollment().getStudent();
+                accumulators.computeIfAbsent(student.getId() + "/" + invoice.currency(), key -> new DebtorAccumulator(student, invoice.currency()))
+                        .add(view.programEnrollment().getProgram().getName(), invoice);
+            }
         }
-        for (Invoice invoice : programInvoices) {
-            Student student = invoice.getProgramEnrollment().getStudent();
-            String name = invoice.getProgramEnrollment().getProgram().getName();
-            accumulators.computeIfAbsent(student.getId() + "/" + invoice.currency(), key -> new DebtorAccumulator(student, invoice.currency())).add(name, invoice);
-        }
-
         Comparator<DebtorSummaryResponse> comparator = "DEBT_AMOUNT".equals(sortBy)
                 ? Comparator.<DebtorSummaryResponse, Currency>comparing(row -> row.totalDebt().currency())
                 .thenComparing(row -> row.totalDebt().amount(), Comparator.reverseOrder())
@@ -72,7 +71,7 @@ public class ListDebtorsService implements ListDebtorsUseCase {
         }
 
         void add(String enrollmentName, Invoice invoice) {
-            Money remaining = invoice.getRemainingBalance();
+            Money remaining = invoice.getAmounts().outstandingAmount().value();
             totalDebt = totalDebt.plus(remaining.isNegative() ? Money.zero(remaining.currency()) : remaining);
             if (oldestDueDate == null || invoice.getDueDate().isBefore(oldestDueDate)) {
                 oldestDueDate = invoice.getDueDate();

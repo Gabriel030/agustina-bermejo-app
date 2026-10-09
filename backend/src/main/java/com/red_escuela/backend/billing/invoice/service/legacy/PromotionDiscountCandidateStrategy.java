@@ -42,18 +42,17 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
             return List.of();
         }
         return redemptionRepository.findByPaymentPlanSelectionIdForUpdate(request.paymentPlanSelectionId())
-                .map(redemption -> redemption.getPromotion())
-                .map(promotion -> candidatesOf(promotion, context))
+                .map(redemption -> candidatesOf(redemption.getPromotion(), redemption.getPaymentPlanSelection().getPaymentPlanOption().getDescription(), context))
                 .orElse(List.of());
     }
 
-    private List<InvoiceDiscountCandidate> candidatesOf(Promotion promotion, InvoiceIssuingContext context) {
+    private List<InvoiceDiscountCandidate> candidatesOf(Promotion promotion, String planDescription, InvoiceIssuingContext context) {
         InvoiceIssuingRequest request = context.request();
         return promotion.getBenefits().stream()
                 .filter(benefit -> benefit.getFeeType() == request.feeType())
                 .map(benefit -> new BenefitUsage(benefit, countAppliedDiscounts(benefit, request)))
                 .filter(usage -> capPolicy.evaluateRule(new PromotionDiscountInstallmentCapPolicy.Usage(usage.benefit().getInvoiceScopeCount(), usage.alreadyApplied())).allowed())
-                .map(usage -> candidateOf(promotion, usage, context.facts().chargeAmount(), request))
+                .map(usage -> candidateOf(promotion, planDescription, usage, context.facts().chargeAmount(), request))
                 .filter(candidate -> !candidate.discountAmount().value().isZero())
                 .toList();
     }
@@ -62,8 +61,8 @@ public class PromotionDiscountCandidateStrategy implements InvoiceDiscountCandid
         return invoiceRepository.countPromotionDiscountsOfStudent(benefit.getId(), request.studentId());
     }
 
-    private InvoiceDiscountCandidate candidateOf(Promotion promotion, BenefitUsage usage, NonNegativeMoney base, InvoiceIssuingRequest request) {
-        String name = "Promoción: " + promotion.getDescription();
+    private InvoiceDiscountCandidate candidateOf(Promotion promotion, String planDescription, BenefitUsage usage, NonNegativeMoney base, InvoiceIssuingRequest request) {
+        String name = "Promoción: " + promotion.getDescription() + " (plan " + planDescription + ")";
         return new InvoiceDiscountCandidate(DiscountType.PROMOTION, usage.benefit().getId(), usage.benefit().getId(),
                 name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name, request.invoiceType(), base,
                 DiscountAmounts.discountOf(usage.benefit().getValue(), base), (int) usage.alreadyApplied() + 1, usage.benefit().getInvoiceScopeCount());

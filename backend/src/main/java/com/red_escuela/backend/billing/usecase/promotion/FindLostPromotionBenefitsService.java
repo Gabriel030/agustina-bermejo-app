@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PromotionBenefitUsage;
 import com.red_escuela.backend.billing.repository.PromotionRedemptionRepository;
 import com.red_escuela.backend.identity.entity.Person;
@@ -20,11 +19,9 @@ import java.util.stream.Collectors;
 @UseCase
 public class FindLostPromotionBenefitsService implements FindLostPromotionBenefitsUseCase {
     private final PromotionRedemptionRepository promotionRedemptionRepository;
-    private final InvoiceRepository invoiceRepository;
 
-    public FindLostPromotionBenefitsService(PromotionRedemptionRepository promotionRedemptionRepository, InvoiceRepository invoiceRepository) {
+    public FindLostPromotionBenefitsService(PromotionRedemptionRepository promotionRedemptionRepository) {
         this.promotionRedemptionRepository = promotionRedemptionRepository;
-        this.invoiceRepository = invoiceRepository;
     }
 
     @Override
@@ -35,7 +32,7 @@ public class FindLostPromotionBenefitsService implements FindLostPromotionBenefi
             return List.of();
         }
         List<Long> selectionIds = redemptions.stream().map(redemption -> redemption.getPaymentPlanSelection().getId()).toList();
-        Map<UsageKey, Long> usage = invoiceRepository.countPromotionBenefitUsageBySelections(selectionIds).stream()
+        Map<UsageKey, Long> usage = promotionRedemptionRepository.countPromotionBenefitUsageBySelections(selectionIds).stream()
                 .collect(Collectors.toMap(
                         row -> new UsageKey(row.getPaymentPlanSelectionId(), row.getFeeType(), row.getPromotionBenefitId()),
                         PromotionBenefitUsage::getUsed));

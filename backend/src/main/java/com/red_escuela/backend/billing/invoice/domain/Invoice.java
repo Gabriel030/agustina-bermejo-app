@@ -47,7 +47,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.time.YearMonth;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 @Table(name = "invoice")
@@ -163,6 +165,52 @@ public class Invoice {
 
     public List<InvoiceLine> getLines() {
         return Collections.unmodifiableList(lines);
+    }
+
+    public InvoiceLine getPrimaryLine() {
+        return lines.get(0);
+    }
+
+    public Currency currency() {
+        return currency;
+    }
+
+    public FeeType getFeeType() {
+        return getPrimaryLine().getFeeType();
+    }
+
+    public YearMonth getPeriod() {
+        return getPrimaryLine().getPeriod();
+    }
+
+    public Long getTemplateId() {
+        return getPrimaryLine().getTemplateId();
+    }
+
+    public Integer getEnrollmentFeeSlot() {
+        return getPrimaryLine().getEnrollmentFeeSlot();
+    }
+
+    public boolean isPayable() {
+        return documentStatus == InvoiceDocumentStatus.ISSUED && (paymentStatus == InvoicePaymentStatus.PENDING || paymentStatus == InvoicePaymentStatus.OVERDUE);
+    }
+
+    public Optional<Long> findProgramEnrollmentId() {
+        return lines.stream().map(InvoiceLine::getProgramEnrollmentId).filter(Objects::nonNull).findFirst();
+    }
+
+    public Optional<Long> findCourseEnrollmentId() {
+        return lines.stream().map(InvoiceLine::getCourseEnrollmentId).filter(Objects::nonNull).findFirst();
+    }
+
+    public void assignInvoiceToProgramEnrollment(Long programEnrollmentId) {
+        Objects.requireNonNull(programEnrollmentId, "programEnrollmentId");
+        lines.forEach(line -> line.assignProgramEnrollment(programEnrollmentId));
+    }
+
+    public void assignInvoiceToCourseEnrollment(Long courseEnrollmentId) {
+        Objects.requireNonNull(courseEnrollmentId, "courseEnrollmentId");
+        lines.forEach(line -> line.assignCourseEnrollment(courseEnrollmentId));
     }
 
     public List<InvoiceStatusChange> getStatusChanges() {

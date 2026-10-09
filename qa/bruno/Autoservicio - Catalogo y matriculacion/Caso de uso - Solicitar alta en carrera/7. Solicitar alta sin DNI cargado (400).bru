@@ -1,0 +1,28 @@
+meta {
+  name: 7. Solicitar alta sin DNI cargado (400)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdQA}}&cohortId={{cohortIdQA}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessToken}}
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+  test("código DNI_REQUIRED", function () {
+    expect(res.getBody().code).to.equal("DNI_REQUIRED");
+  });
+}
+
+docs {
+  D-228: no se puede solicitar una carrera sin DNI cargado; no se crea ninguna solicitud ni factura.
+}

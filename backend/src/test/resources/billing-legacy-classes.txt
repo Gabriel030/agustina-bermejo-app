@@ -25,7 +25,6 @@ com.red_escuela.backend.billing.dto.CoursePricingResponse
 com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest
 com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest
 com.red_escuela.backend.billing.dto.CreateCreditNoteRequest
-com.red_escuela.backend.billing.dto.CreateInvoiceAdjustmentRequest
 com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest
 com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest
 com.red_escuela.backend.billing.dto.CreateProgramCohortRequest
@@ -85,11 +84,6 @@ com.red_escuela.backend.billing.entity.CreditNoteReasonType
 com.red_escuela.backend.billing.entity.CreditNoteStatus
 com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus
 com.red_escuela.backend.billing.entity.InstallmentStatus
-com.red_escuela.backend.billing.entity.Invoice
-com.red_escuela.backend.billing.entity.InvoiceAdjustment
-com.red_escuela.backend.billing.entity.InvoiceAdjustmentType
-com.red_escuela.backend.billing.entity.InvoiceDraft
-com.red_escuela.backend.billing.entity.InvoiceStatus
 com.red_escuela.backend.billing.entity.LatePaymentSettings
 com.red_escuela.backend.billing.entity.Payment
 com.red_escuela.backend.billing.entity.PaymentAllocation
@@ -110,9 +104,6 @@ com.red_escuela.backend.billing.entity.Scholarship
 com.red_escuela.backend.billing.entity.ScholarshipInstallment
 com.red_escuela.backend.billing.entity.ScholarshipScope
 com.red_escuela.backend.billing.entity.ScholarshipStatus
-com.red_escuela.backend.billing.events.AuthorizationRequestExpiredEvent
-com.red_escuela.backend.billing.events.AuthorizationRequestedEvent
-com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent
 com.red_escuela.backend.billing.exception.ChargeRejectedException
 com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException
 com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException
@@ -163,7 +154,6 @@ com.red_escuela.backend.billing.repository.BillingConfigurationAlertRepository
 com.red_escuela.backend.billing.repository.BillingPeriodRepository
 com.red_escuela.backend.billing.repository.CreditApplicationRepository
 com.red_escuela.backend.billing.repository.CreditNoteRepository
-com.red_escuela.backend.billing.repository.InvoiceRepository
 com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository
 com.red_escuela.backend.billing.repository.PaymentAllocationRepository
 com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository
@@ -244,9 +234,6 @@ com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardService
 com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase
 com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsService
 com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsUseCase
-com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentCommand
-com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentService
-com.red_escuela.backend.billing.usecase.invoice.ApplyInvoiceAdjustmentUseCase
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentService
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentService
@@ -308,5 +295,3 @@ com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseSer
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForCourseUseCase
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramService
 com.red_escuela.backend.billing.usecase.scholarship.GrantScholarshipForProgramUseCase
-com.red_escuela.backend.billing.events.ConfigurationChangeDecidedEvent
-com.red_escuela.backend.billing.events.ConfigurationVersionCancelledEvent

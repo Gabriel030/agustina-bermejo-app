@@ -1,0 +1,24 @@
+meta {
+  name: 24. Preceptor aprueba la segunda solicitud y se emite la matricula (200)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/program-enrollment-applications/{{applicationIdDocAlta2}}/approve
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{preceptorAccessTokenDocAlta}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("queda APPROVED con la matrícula de ingreso pendiente", function () {
+    expect(res.getBody().status).to.equal("APPROVED");
+    expect(res.getBody().admissionInvoice.paymentStatus).to.equal("PENDING");
+  });
+}

@@ -5,11 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.service.PaymentReceiptFinder;
 import com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase;
@@ -34,7 +33,6 @@ import java.util.Map;
 public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCase {
     private static final Logger log = LoggerFactory.getLogger(ApprovePaymentReceiptService.class);
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
-    private final InvoiceRepository invoiceRepository;
     private final PaymentReceiptFinder paymentReceiptFinder;
     private final CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository;
     private final CourseEnrollmentService courseEnrollmentService;
@@ -42,12 +40,11 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
-    public ApprovePaymentReceiptService(BankTransferReceiptRepository bankTransferReceiptRepository, InvoiceRepository invoiceRepository,
+    public ApprovePaymentReceiptService(BankTransferReceiptRepository bankTransferReceiptRepository,
                                          PaymentReceiptFinder paymentReceiptFinder, CourseEnrollmentApplicationRepository courseEnrollmentApplicationRepository,
                                          CourseEnrollmentService courseEnrollmentService, RegisterPaymentUseCase registerPaymentUseCase,
                                          ObjectMapper objectMapper, ApplicationEventPublisher eventPublisher) {
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
-        this.invoiceRepository = invoiceRepository;
         this.paymentReceiptFinder = paymentReceiptFinder;
         this.courseEnrollmentApplicationRepository = courseEnrollmentApplicationRepository;
         this.courseEnrollmentService = courseEnrollmentService;
@@ -64,7 +61,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
 
         Invoice invoice = receipt.getInvoice();
         Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getRemainingBalance())),
+                List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
                 PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
         receipt.setPayment(payment);
 
@@ -86,8 +83,7 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         courseEnrollmentApplicationRepository.save(application);
 
         Invoice invoice = application.getPaymentReceipt().getInvoice();
-        invoice.attachToEnrollment(enrollment);
-        invoiceRepository.save(invoice);
+        invoice.assignInvoiceToCourseEnrollment(enrollment.getId());
     }
 
     private Map<Long, Long> deserializarOverrides(String sectionOverridesJson) {

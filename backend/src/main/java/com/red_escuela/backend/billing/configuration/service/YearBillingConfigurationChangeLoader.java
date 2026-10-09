@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.service.IssuedChargeQueryService;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,10 +16,10 @@ import java.util.Set;
 
 @Component
 public class YearBillingConfigurationChangeLoader {
-    private final InvoiceRepository invoiceRepository;
+    private final IssuedChargeQueryService issuedChargeQueryService;
 
-    public YearBillingConfigurationChangeLoader(InvoiceRepository invoiceRepository) {
-        this.invoiceRepository = invoiceRepository;
+    public YearBillingConfigurationChangeLoader(IssuedChargeQueryService issuedChargeQueryService) {
+        this.issuedChargeQueryService = issuedChargeQueryService;
     }
 
     public YearBillingConfigurationChange loadConfigurationUpdate(ProgramYearBillingTemplate template, YearBillingConfigurationRequest request) {
@@ -44,10 +44,10 @@ public class YearBillingConfigurationChangeLoader {
 
     private YearBillingConfigurationChange loadChange(ProgramYearBillingTemplate template, ProgramYearBillingTemplateSnapshot proposed,
                                                       LocalDateTime proposedStart, LocalDateTime proposedEnd) {
-        Set<Integer> issuedSlots = new HashSet<>(invoiceRepository.findIssuedEnrollmentFeeSlotsByTemplateId(template.getId()));
+        Set<Integer> issuedSlots = new HashSet<>(issuedChargeQueryService.findIssuedEnrollmentFeeSlots(template.getId()));
         Set<YearMonth> issuedPeriods = new HashSet<>();
         if (template.termStartDate() != null && template.termEndDate() != null) {
-            issuedPeriods.addAll(invoiceRepository.findIssuedInstallmentPeriodsByProgramIdAndPeriodBetween(
+            issuedPeriods.addAll(issuedChargeQueryService.findIssuedInstallmentPeriods(
                     template.programId(), YearMonth.from(template.termStartDate()), YearMonth.from(template.termEndDate())));
         }
         return new YearBillingConfigurationChange(snapshotOf(template, null), proposed, monthOf(proposedStart), monthOf(proposedEnd), issuedSlots, issuedPeriods);

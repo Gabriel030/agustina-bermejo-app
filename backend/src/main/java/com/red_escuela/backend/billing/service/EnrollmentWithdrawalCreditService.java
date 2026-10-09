@@ -5,9 +5,9 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
@@ -41,9 +41,8 @@ public class EnrollmentWithdrawalCreditService {
         if (isNonPaymentWithdrawal(enrollment)) {
             return;
         }
-        List<Invoice> pending = invoiceRepository.findByCourseEnrollmentIdAndStatusIn(enrollment.getId(), List.of(InvoiceStatus.PENDING));
-        List<Invoice> paid = invoiceRepository.findByCourseEnrollmentIdAndStatusIn(enrollment.getId(), List.of(InvoiceStatus.PAID));
-        process(enrollment.getStudent(), pending, paid, "Baja voluntaria del enrollment", "Baja anticipada — cuotas futuras ya pagas");
+        List<Invoice> paid = invoiceRepository.findByCourseEnrollmentIdAndPaymentStatusIn(enrollment.getId(), List.of(InvoicePaymentStatus.PAID));
+        process(enrollment.getStudent(), paid, "Baja voluntaria del enrollment", "Baja anticipada — cuotas futuras ya pagas");
     }
 
     @Transactional
@@ -51,40 +50,35 @@ public class EnrollmentWithdrawalCreditService {
         if (isNonPaymentWithdrawal(enrollment)) {
             return;
         }
-        List<Invoice> pending = invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollment.getId(), List.of(InvoiceStatus.PENDING));
-        List<Invoice> paid = invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollment.getId(), List.of(InvoiceStatus.PAID));
-        process(enrollment.getStudent(), pending, paid, "Baja voluntaria del enrollment", "Baja anticipada — cuotas futuras ya pagas");
+        List<Invoice> paid = invoiceRepository.findByProgramEnrollmentIdAndPaymentStatusIn(enrollment.getId(), List.of(InvoicePaymentStatus.PAID));
+        process(enrollment.getStudent(), paid, "Baja voluntaria del enrollment", "Baja anticipada — cuotas futuras ya pagas");
     }
 
     @Transactional
     public void handleProgramEnrollmentGraduation(ProgramEnrollment enrollment) {
-        List<Invoice> paid = invoiceRepository.findByProgramEnrollmentIdAndStatusIn(enrollment.getId(), List.of(InvoiceStatus.PAID));
-        process(enrollment.getStudent(), List.of(), paid, "Egreso de la carrera", "Egreso anticipado — cuotas futuras ya pagas");
+        List<Invoice> paid = invoiceRepository.findByProgramEnrollmentIdAndPaymentStatusIn(enrollment.getId(), List.of(InvoicePaymentStatus.PAID));
+        process(enrollment.getStudent(), paid, "Egreso de la carrera", "Egreso anticipado — cuotas futuras ya pagas");
     }
 
     private boolean isNonPaymentWithdrawal(BillableEnrollment enrollment) {
         return enrollment.getPaymentStatus() == EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT;
     }
 
-    private void process(Student student, List<Invoice> pending, List<Invoice> paid, String reason, String creditNoteDescription) {
+    private void process(Student student, List<Invoice> paid, String reason, String creditNoteDescription) {
         YearMonth withdrawalPeriod = YearMonth.now(clock);
         List<Invoice> paidFuturePeriods = paid.stream()
                 .filter(invoice -> invoice.getPeriod().isAfter(withdrawalPeriod))
                 .toList();
-        if (pending.isEmpty() && paidFuturePeriods.isEmpty()) {
+        if (paidFuturePeriods.isEmpty()) {
             return;
         }
 
         Person actor = currentPersonService.resolveCurrentPerson();
-        for (Invoice invoice : pending) {
-            invoice.cancel(actor, reason);
-            invoiceRepository.save(invoice);
-        }
 
         if (paidFuturePeriods.isEmpty()) {
             return;
         }
-        Money total = paidFuturePeriods.stream().map(Invoice::getAmountDue).reduce(Money::plus).orElseThrow();
+        Money total = paidFuturePeriods.stream().map(invoice -> invoice.getAmounts().total().value()).reduce(Money::plus).orElseThrow();
         CreditNote creditNote = creditNoteService.createFor(student, total, CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED,
                 creditNoteDescription, actor);
         creditNote.getSourceInvoices().addAll(paidFuturePeriods);

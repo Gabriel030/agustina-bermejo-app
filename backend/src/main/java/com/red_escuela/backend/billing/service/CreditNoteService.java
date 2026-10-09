@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.entity.CreditApplication;
 import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.CreditNoteStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.exception.CreditNoteNotFoundException;
 import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;

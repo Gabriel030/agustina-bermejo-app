@@ -115,17 +115,6 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
 
-## Momento LEGACY_INVOICE_ISSUING
-
-| Orden | Policy | Códigos de violación | Decisiones |
-|---|---|---|---|
-| 1 | ReasonFeeTypePolicy | FEE_TYPE_NOT_ALLOWED_FOR_REASON | D-050 |
-| 2 | DueDateNotBeforeIssueDatePolicy | DUE_DATE_BEFORE_ISSUE_DATE | D-057 |
-| 3 | EnrollmentFeeSlotRequiredPolicy | ENROLLMENT_FEE_SLOT_REQUIRED | D-002, D-009 |
-| 4 | OfferingCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
-| 5 | NotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009 |
-| 6 | EnrollmentFeeSlotWithinTemplateCountPolicy | ENROLLMENT_FEE_SLOT_NOT_CONFIGURED | D-009, D-036 |
-
 ## Momento MONTHLY_INSTALLMENT_PLANNING
 
 | Orden | Policy | Códigos de violación | Decisiones |

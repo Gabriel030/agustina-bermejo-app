@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
+import com.red_escuela.backend.billing.entity.PaymentMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -82,6 +85,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
+
+    @Autowired
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     private Long persistInstitution() {
         Institution institution = new Institution();
@@ -212,6 +218,13 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 "sofia.ramirez." + sufijo, "Test1234", institutionId);
     }
 
+    private void giveDni(String suffix) {
+        entityManager.flush();
+        entityManager.createQuery("update Person p set p.dni = :dni where p.username = :username")
+                .setParameter("dni", "9" + Math.abs(suffix.hashCode())).setParameter("username", "sofia.ramirez." + suffix).executeUpdate();
+        entityManager.clear();
+    }
+
     @Test
     void registeringReturnsImmediatelyUsableTokens() throws Exception {
         Long institutionId = persistInstitution();
@@ -284,9 +297,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("carrera", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("carrera");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -295,8 +308,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = objectMapper.readTree(solicitudResponse).get("id").asLong();
 
-        mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -315,14 +327,51 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         assertThat(persisted.getStatus()).isEqualTo(ProgramEnrollmentApplicationStatus.APPROVED);
 
         Student student = persisted.getStudent();
+        assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
+        assertThat(persisted.getAdmissionInvoice()).isNotNull();
         assertThat(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 student.getId(), program.getId(),
                 java.util.List.of(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)))
-                .isNotEmpty();
-        assertThat(student.getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
-        assertThat(persisted.getPaymentReceipt()).isNotNull();
-        assertThat(persisted.getPaymentReceipt().getStatus())
-                .isEqualTo(com.red_escuela.backend.billing.entity.BankTransferReceiptStatus.APPROVED);
+                .isEmpty();
+
+        registerPaymentUseCase.register(new RegisterPaymentRequest(
+                java.util.List.of(new PaymentAllocationRequest(persisted.getAdmissionInvoice().getId(),
+                        persisted.getAdmissionInvoice().getAmounts().outstandingAmount().value())),
+                PaymentMethod.TRANSFER, false, null, null, null, null), persisted.getDecidedBy());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(entityManager.find(com.red_escuela.backend.billing.invoice.domain.Invoice.class, persisted.getAdmissionInvoice().getId()).getPaymentStatus())
+                .isEqualTo(com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.PAID);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    void requestingAProgramOrACourseWithoutDniIsRejectedWithDniRequired() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        Course course = persistCourse(20);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        persistPriceRevision(null, course, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("sindni", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
+        mockMvc.perform(multipart("/me/course-enrollments")
+                        .file(comprobante())
+                        .param("courseId", course.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
     }
 
     @Test
@@ -337,9 +386,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("rechazo", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("rechazo");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -379,9 +428,9 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("selfapprove", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("selfapprove");
 
-        String solicitudResponse = mockMvc.perform(multipart("/me/program-enrollment-applications")
-                        .file(comprobante())
+        String solicitudResponse = mockMvc.perform(post("/me/program-enrollment-applications")
                         .param("programId", program.getId().toString())
                         .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
@@ -404,6 +453,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(validRegistration("curso", institutionId))))
                 .andReturn().getResponse().getContentAsString();
         String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+        giveDni("curso");
 
         mockMvc.perform(multipart("/me/course-enrollments")
                         .file(comprobante())

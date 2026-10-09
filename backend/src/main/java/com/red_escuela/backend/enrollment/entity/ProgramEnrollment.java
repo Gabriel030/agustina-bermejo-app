@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.List;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -51,6 +51,10 @@ public class ProgramEnrollment implements BillableEnrollment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_billing_template_id")
     private ProgramYearBillingTemplate currentBillingTemplate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admission_application_id")
+    private ProgramEnrollmentApplication admissionApplication;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
