@@ -64,9 +64,13 @@ function ErrorDeCampo({ error }) {
   );
 }
 
-function MotivoDeshabilitado({ faltantes }) {
-  if (faltantes.length === 0) return null;
-  return <p className="text-right text-xs text-ink-faint">Para continuar falta: {faltantes.join(', ')}.</p>;
+function MotivoDeshabilitado({ id, faltantes, visible }) {
+  if (!visible || faltantes.length === 0) return null;
+  return (
+    <p id={id} aria-live="polite" className="text-right text-xs text-ink-faint">
+      Para continuar falta: {faltantes.join(', ')}.
+    </p>
+  );
 }
 
 const MENSAJES_ERROR_INSCRIPCION = {
@@ -156,11 +160,12 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   const navigate = useNavigate();
   const { usuario, refrescarPerfil } = useAuth();
   const [state, dispatch] = useReducer(reducer, { tipo }, estadoInicial);
+  const [tocado, setTocado] = useState(false);
   const {
     register,
     watch,
     getValues,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm({ resolver: zodResolver(datosSchema), mode: 'onTouched', defaultValues: datosIniciales(usuario) });
   const datos = watch();
   const [modalConfirmarAbierto, setModalConfirmarAbierto] = useState(false);
@@ -411,7 +416,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
                         accept="image/*,.pdf"
                         capture="environment"
                         className="hidden"
-                        onChange={(e) => dispatch({ type: 'SET_DOCUMENTO', tipo: doc.tipo, file: e.target.files?.[0] })}
+                        onChange={(e) => { setTocado(true); dispatch({ type: 'SET_DOCUMENTO', tipo: doc.tipo, file: e.target.files?.[0] }); }}
                       />
                     </label>
                   );
@@ -424,6 +429,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{state.error}</div>
           )}
 
+          <MotivoDeshabilitado id="motivo-documentacion" faltantes={faltantesDeDocumentacion()} visible={tocado || isDirty} />
           <div className="flex justify-between">
             {tipo === 'carrera' ? (
               <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'cohorte' })} className="rounded-xl">
@@ -436,6 +442,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               <Button
                 onClick={() => setModalConfirmarAbierto(true)}
                 disabled={faltantesDeDocumentacion().length > 0}
+                aria-describedby="motivo-documentacion"
                 loading={state.enviando}
                 variant="gradient"
                 className="px-6"
@@ -446,6 +453,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               <Button
                 onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
                 disabled={faltantesDeDocumentacion().length > 0}
+                aria-describedby="motivo-documentacion"
                 variant="gradient"
                 className="px-6"
               >
@@ -453,8 +461,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               </Button>
             )}
           </div>
-          <MotivoDeshabilitado faltantes={faltantesDeDocumentacion()} />
-        </GlassCard>
+                  </GlassCard>
       )}
 
       {state.paso === 'pago' && (
@@ -506,10 +513,11 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               accept="image/*,.pdf"
               capture="environment"
               className="hidden"
-              onChange={(e) => dispatch({ type: 'ELEGIR_COMPROBANTE', file: e.target.files?.[0] })}
+              onChange={(e) => { setTocado(true); dispatch({ type: 'ELEGIR_COMPROBANTE', file: e.target.files?.[0] }); }}
             />
           </label>
 
+          <MotivoDeshabilitado id="motivo-solicitud" faltantes={faltantesDeSolicitud()} visible={tocado || isDirty} />
           <div className="flex justify-between gap-3">
             <Button variant="outline" onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'documentacion' })} className="rounded-xl">
               ← Volver
@@ -517,13 +525,13 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             <Button
               onClick={() => setModalConfirmarAbierto(true)}
               disabled={faltantesDeSolicitud().length > 0}
+              aria-describedby="motivo-solicitud"
               loading={state.enviando}
               variant="gradient"
             >
               Confirmar solicitud
             </Button>
           </div>
-          <MotivoDeshabilitado faltantes={faltantesDeSolicitud()} />
         </GlassCard>
       )}
 

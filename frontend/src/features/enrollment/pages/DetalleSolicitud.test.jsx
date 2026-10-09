@@ -13,6 +13,7 @@ function renderDetalle(id = '1') {
     <MemoryRouter initialEntries={[`/mis-solicitudes/${id}`]}>
       <Routes>
         <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
+        <Route path="/catalogo/carreras/:id" element={<div>Ficha de la carrera</div>} />
         <Route path="/mis-solicitudes" element={<div>Bandeja de mis solicitudes</div>} />
       </Routes>
     </MemoryRouter>,
@@ -293,16 +294,17 @@ describe('DetalleSolicitud', () => {
     server.use(
       http.get(`${API}/me/program-enrollment-applications`, () =>
         HttpResponse.json([
-          { id: 2, programName: 'Administración de Empresas', status: 'REJECTED', requestedAt: '2026-01-10T10:00:00', rejectionReason: 'Falta analítico' },
+          { id: 2, programId: 9, programName: 'Administración de Empresas', status: 'REJECTED', requestedAt: '2026-01-10T10:00:00', rejectionReason: 'Falta analítico' },
         ]),
       ),
     );
     const user = userEvent.setup();
     renderDetalle('2');
 
-    expect(await screen.findByText('Solicitud enviada')).toBeInTheDocument();
+    expect(await screen.findByText('Enviada')).toBeInTheDocument();
     expect(screen.getAllByText('Rechazada').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Ver el catálogo' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ver el catálogo' }));
+    expect(screen.getByText('Podés volver a solicitar el ingreso a Administración de Empresas cuando corrijas lo indicado.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Solicitar de nuevo' }));
+    expect(await screen.findByText('Ficha de la carrera')).toBeInTheDocument();
   });
 });

@@ -87,7 +87,11 @@ export function DetalleSolicitud() {
   }
 
   if (errorCarga) {
-    return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar la solicitud. Probá recargar la página.</GlassCard>;
+    return (
+      <PageContainer>
+        <GlassCard className="p-6 text-sm text-danger">No pudimos cargar la solicitud. Probá recargar la página.</GlassCard>
+      </PageContainer>
+    );
   }
 
   if (noEncontrada) {
@@ -126,7 +130,7 @@ export function DetalleSolicitud() {
           <div className="font-heading text-2xl font-bold tracking-tight text-ink">{solicitud.programName}</div>
           <div className="mt-1 text-[13px] text-ink-faint">Solicitada el {formatFecha(solicitud.requestedAt)}</div>
         </div>
-        <EstadoSolicitudBadge status={solicitud.status} admissionInvoice={solicitud.admissionInvoice} programEnrollmentId={solicitud.programEnrollmentId} />
+        <EstadoSolicitudBadge solicitud={solicitud} />
       </div>
 
       <Stepper {...applicationProgress(solicitud)} />
@@ -136,8 +140,9 @@ export function DetalleSolicitud() {
           <div>
             <span className="font-bold">Solicitud rechazada.</span> {solicitud.rejectionReason}
           </div>
-          <Button variant="outline" className="w-fit" onClick={() => navigate('/catalogo')}>
-            Ver el catálogo
+          <div>Podés volver a solicitar el ingreso a {solicitud.programName} cuando corrijas lo indicado.</div>
+          <Button variant="outline" className="w-fit" onClick={() => navigate(`/catalogo/carreras/${solicitud.programId}`)}>
+            Solicitar de nuevo
           </Button>
         </GlassCard>
       )}

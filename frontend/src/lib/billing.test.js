@@ -29,7 +29,7 @@ describe('estado de la factura', () => {
     ['PAYMENT_UNDER_REVIEW', 'En revisión'],
     ['OVERDUE', 'Vencida'],
     ['PAID', 'Pagada'],
-    ['CANCELLED', 'Anulada'],
+    ['CANCELLED', 'Cuota sin efecto'],
   ])('traduce el estado de cobro %s', (status, label) => {
     expect(invoiceStatusInfo(status).label).toBe(label);
   });
@@ -38,7 +38,7 @@ describe('estado de la factura', () => {
     ['DRAFT', 'Borrador'],
     ['AWAITING_PAYMENT', 'A la espera del pago'],
     ['ISSUED', 'Emitida'],
-    ['DISCARDED', 'Anulada'],
+    ['DISCARDED', 'Factura anulada'],
   ])('traduce el estado del documento %s', (status, label) => {
     expect(INVOICE_DOCUMENT_STATUS_LABELS[status]).toBe(label);
   });
@@ -68,6 +68,7 @@ describe('descuentos del renglón', () => {
   it('marca como expandible una factura con descuento o anulada', () => {
     expect(hasInvoiceDetail({ lines: [{ discount: {} }] })).toBe(true);
     expect(hasInvoiceDetail({ lines: [{ discount: null }] })).toBe(false);
+    expect(hasInvoiceDetail({ lines: [{ discount: null }, { discount: null }] })).toBe(true);
     expect(hasInvoiceDetail({ lines: [], documentStatus: 'DISCARDED' })).toBe(true);
   });
 });

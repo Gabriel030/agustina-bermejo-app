@@ -16,14 +16,14 @@ export const INVOICE_PAYMENT_STATUS_CONFIG = {
   PAYMENT_UNDER_REVIEW: { label: 'En revisión', tone: 'neutral' },
   OVERDUE: { label: 'Vencida', tone: 'danger' },
   PAID: { label: 'Pagada', tone: 'success' },
-  CANCELLED: { label: 'Anulada', tone: 'neutral' },
+  CANCELLED: { label: 'Cuota sin efecto', tone: 'neutral' },
 };
 
 export const INVOICE_DOCUMENT_STATUS_LABELS = {
   DRAFT: 'Borrador',
   AWAITING_PAYMENT: 'A la espera del pago',
   ISSUED: 'Emitida',
-  DISCARDED: 'Anulada',
+  DISCARDED: 'Factura anulada',
 };
 
 const PAYABLE_PAYMENT_STATUSES = ['PENDING', 'OVERDUE'];
@@ -120,6 +120,7 @@ export function hasInvoiceDetail(invoice) {
     (invoice.payments?.length ?? 0) > 0 ||
     (invoice.receipts?.length ?? 0) > 0 ||
     (invoice.lines ?? []).some((line) => line.discount != null) ||
+    (invoice.lines ?? []).length > 1 ||
     invoice.documentStatus === 'DISCARDED'
   );
 }

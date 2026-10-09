@@ -30,8 +30,28 @@ describe('TabMisSolicitudes', () => {
     renderWithProviders(<TabMisSolicitudes />);
 
     expect(await screen.findByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Diseño Gráfico' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Diseño Gráfico' })).toBeInTheDocument();
     expect(screen.getByText('Primeros Auxilios')).toBeInTheDocument();
     expect(screen.getAllByText('En revisión')).toHaveLength(2);
+  });
+
+  it('una solicitud aprobada con matrícula pagada e inscripción creada figura como inscripto', async () => {
+    mockSolicitudes(
+      [
+        {
+          id: 1,
+          programId: 4,
+          programName: 'Diseño Gráfico',
+          status: 'APPROVED',
+          programEnrollmentId: 15,
+          admissionInvoice: { id: 77, paymentStatus: 'PAID' },
+        },
+      ],
+      [],
+    );
+    renderWithProviders(<TabMisSolicitudes />);
+
+    expect(await screen.findByText('Inscripto')).toBeInTheDocument();
+    expect(screen.queryByText('Confirmando inscripción')).not.toBeInTheDocument();
   });
 });

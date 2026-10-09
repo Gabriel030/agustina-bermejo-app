@@ -44,7 +44,11 @@ async function openReceiptsTab(user) {
   return screen.findByText('Martina Acosta');
 }
 
-async function openRegisterPaymentModal(user) {
+const DEFAULT_MODAL_INVOICES = [
+  invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', total: '52800.00', paymentStatus: 'OVERDUE' }),
+];
+
+async function openRegisterPaymentModal(user, invoices = DEFAULT_MODAL_INVOICES) {
   server.use(
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([
@@ -53,9 +57,7 @@ async function openRegisterPaymentModal(user) {
           enrollmentId: 2,
           productName: 'Profesorado de Educación Inicial',
           paymentStatus: 'OVERDUE',
-          invoices: [
-            invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', total: '52800.00', paymentStatus: 'OVERDUE' }),
-          ],
+          invoices,
         },
       ]),
     ),
@@ -126,8 +128,33 @@ describe('AdministrativoFacturacion — registrar pago', () => {
     const dialog = await openRegisterPaymentModal(user);
 
     expect(within(dialog).queryByRole('spinbutton')).not.toBeInTheDocument();
-    expect(within(dialog).getByText('Se cobra completa')).toBeInTheDocument();
+    expect(within(dialog).getByText('Las cuotas se cobran completas: no se admiten pagos parciales.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Saldo a cobrar')).toBeInTheDocument();
+    expect(within(dialog).getByText('Vence el 10/09/2026')).toBeInTheDocument();
     expect(within(dialog).getAllByText('$ 52.800,00').length).toBeGreaterThan(0);
+  });
+
+  it('starts with only the installment closest to its due date selected and sets the receipt-under-review ones apart', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openRegisterPaymentModal(user, [
+      invoiceFixture({ id: 62, period: '2026-10', dueDate: '2026-10-10', paymentStatus: 'PENDING' }),
+      invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', paymentStatus: 'OVERDUE' }),
+      invoiceFixture({
+        id: 63,
+        period: '2026-11',
+        dueDate: '2026-11-10',
+        paymentStatus: 'PENDING',
+        receipts: [{ id: 5, status: 'PENDING_REVIEW', uploadedAt: '2026-10-01T10:00:00' }],
+      }),
+    ]);
+
+    expect(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · sep 2026' })).toBeChecked();
+    expect(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · oct 2026' })).not.toBeChecked();
+    expect(within(dialog).queryByRole('checkbox', { name: 'Cobrar Cuota mensual · nov 2026' })).not.toBeInTheDocument();
+    expect(within(dialog).getByText('En revisión — resolvelas en Comprobantes')).toBeInTheDocument();
+    expect(within(dialog).getByText('Vencida')).toBeInTheDocument();
+    expect(within(dialog).getByText('Pendiente')).toBeInTheDocument();
   });
 
   it('registers the payment for the full outstanding amount of the selected installment', async () => {

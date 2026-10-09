@@ -199,6 +199,8 @@ describe('DetalleCarrera', () => {
     await user.click(await screen.findByText('Marzo 2026'));
 
     const dni = screen.getByPlaceholderText('DNI sin puntos');
+    expect(screen.queryByText(/Para continuar falta:/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar solicitud' })).toHaveAttribute('aria-describedby', 'motivo-documentacion');
     await user.type(dni, '30.111.222');
     await user.tab();
 

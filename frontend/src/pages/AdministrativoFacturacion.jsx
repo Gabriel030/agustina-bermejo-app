@@ -23,7 +23,7 @@ import {
   isInvoicePayable,
 } from '@/lib/billing';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
-import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
+import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
@@ -91,9 +91,62 @@ async function openReceiptFile(receiptId) {
   }
 }
 
+function nearestDueInvoiceId(invoices) {
+  const sorted = [...invoices].sort((a, b) => String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')));
+  return sorted[0]?.id;
+}
+
+function PayableInvoiceRow({ invoice, checked, onToggle }) {
+  const [showLines, setShowLines] = useState(false);
+  const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(invoice));
+  const inputId = `register-payment-${invoice.id}`;
+  const multiLine = (invoice.lines ?? []).length > 1;
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <label htmlFor={inputId} className="flex cursor-pointer items-center gap-3">
+        <input
+          id={inputId}
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          aria-label={`Cobrar ${invoiceTitle(invoice)}`}
+          className="h-4 w-4 accent-brand"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink">{invoiceTitle(invoice)}</p>
+          <p className="text-xs text-ink-faint">Vence el {formatDate(invoice.dueDate)}</p>
+        </div>
+        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+        <div className="flex w-28 flex-col items-end">
+          <span className="font-mono text-sm font-semibold text-ink">{formatMonto(invoice.outstandingAmount)}</span>
+          <span className="text-xs text-ink-faint">Saldo a cobrar</span>
+        </div>
+      </label>
+      {multiLine && (
+        <div className="mt-2 pl-7">
+          <button
+            type="button"
+            aria-expanded={showLines}
+            onClick={() => setShowLines((value) => !value)}
+            className="text-xs font-semibold text-brand hover:underline"
+          >
+            {showLines ? 'Ocultar desglose' : 'Ver desglose'}
+          </button>
+          {showLines && (
+            <div className="mt-2">
+              <InvoiceLinesBreakdown invoice={invoice} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
-  const payableInvoices = invoices.filter(isInvoicePayable);
-  const [selectedIds, setSelectedIds] = useState(() => new Set(payableInvoices.map((inv) => inv.id)));
+  const underReviewInvoices = invoices.filter((inv) => invoiceDisplayStatus(inv) === 'PAYMENT_UNDER_REVIEW');
+  const payableInvoices = invoices.filter((inv) => isInvoicePayable(inv) && invoiceDisplayStatus(inv) !== 'PAYMENT_UNDER_REVIEW');
+  const [selectedIds, setSelectedIds] = useState(() => new Set([nearestDueInvoiceId(payableInvoices)]));
   const [method, setMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
   const [externalRef, setExternalRef] = useState('');
@@ -102,6 +155,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
 
   const selectedInvoices = payableInvoices.filter((inv) => selectedIds.has(inv.id));
   const total = selectedInvoices.reduce((sum, inv) => sum + moneyValue(inv.outstandingAmount), 0);
+  const totalCurrency = (selectedInvoices[0] ?? payableInvoices[0])?.outstandingAmount?.currency ?? 'ARS';
 
   function toggleInvoice(id) {
     setSelectedIds((previous) => {
@@ -137,44 +191,38 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <p className="text-sm text-ink-faint">{enrollmentName}</p>
         </DialogHeader>
 
+        {underReviewInvoices.length > 0 && (
+          <div className="rounded-xl bg-warning-bg px-3 py-2 text-sm text-warning">
+            <p className="font-semibold">En revisión — resolvelas en Comprobantes</p>
+            <ul className="mt-1 text-xs">
+              {underReviewInvoices.map((inv) => (
+                <li key={inv.id}>
+                  {invoiceTitle(inv)} · vence el {formatDate(inv.dueDate)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {payableInvoices.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas pendientes en esta inscripción.</p>
+          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas para cobrar en esta inscripción.</p>
         ) : (
           <div className="flex flex-col gap-4">
+            <p className="text-sm text-ink-soft">Las cuotas se cobran completas: no se admiten pagos parciales.</p>
             <div className="flex flex-col gap-3">
-              {payableInvoices.map((inv) => {
-                const statusInfo = invoiceStatusInfo(inv.paymentStatus);
-                const inputId = `register-payment-${inv.id}`;
-                return (
-                  <label
-                    key={inv.id}
-                    htmlFor={inputId}
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-3"
-                  >
-                    <input
-                      id={inputId}
-                      type="checkbox"
-                      checked={selectedIds.has(inv.id)}
-                      onChange={() => toggleInvoice(inv.id)}
-                      aria-label={`Cobrar ${invoiceTitle(inv)}`}
-                      className="h-4 w-4 accent-brand"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">{invoiceTitle(inv)}</p>
-                      <p className="text-xs text-ink-faint">Se cobra completa</p>
-                    </div>
-                    <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                    <span className="w-28 text-right font-mono text-sm font-semibold text-ink">
-                      {formatMonto(inv.outstandingAmount)}
-                    </span>
-                  </label>
-                );
-              })}
+              {payableInvoices.map((inv) => (
+                <PayableInvoiceRow
+                  key={inv.id}
+                  invoice={inv}
+                  checked={selectedIds.has(inv.id)}
+                  onToggle={() => toggleInvoice(inv.id)}
+                />
+              ))}
             </div>
 
             <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
               <span className="text-sm font-medium text-ink">Total</span>
-              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: payableInvoices[0]?.outstandingAmount?.currency ?? 'ARS' })}</span>
+              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: totalCurrency })}</span>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -227,7 +275,7 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={handleSubmit} disabled={isPending}>
+          <Button variant="gradient" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Registrando…' : 'Confirmar pago'}
           </Button>
         </DialogFooter>
@@ -291,7 +339,7 @@ function InvoicesTable({ invoices }) {
               {open && (
                 <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
                   <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
-                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink />
+                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink showDocumentStatus />
                   </TableCell>
                 </TableRow>
               )}
@@ -519,11 +567,7 @@ function RechazarModal({ receipt, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button
-            className="bg-danger text-white hover:bg-danger/90"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
+          <Button variant="destructive" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Rechazando…' : 'Rechazar'}
           </Button>
         </DialogFooter>

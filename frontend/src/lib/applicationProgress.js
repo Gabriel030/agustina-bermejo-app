@@ -1,14 +1,14 @@
 import { admissionPaymentPhase } from '@/lib/admissionInvoice';
 
 const STEPS = [
-  { key: 'submitted', label: 'Solicitud enviada' },
+  { key: 'submitted', label: 'Enviada' },
   { key: 'review', label: 'En revisión' },
-  { key: 'payment', label: 'Pago de matrícula' },
+  { key: 'payment', label: 'Matrícula' },
   { key: 'enrolled', label: 'Inscripto' },
 ];
 
 const REJECTED_STEPS = [
-  { key: 'submitted', label: 'Solicitud enviada' },
+  { key: 'submitted', label: 'Enviada' },
   { key: 'rejected', label: 'Rechazada' },
 ];
 

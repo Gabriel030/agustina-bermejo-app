@@ -139,7 +139,7 @@ function PasoComprobante({ invoiceId, onSuccess }) {
 
       {fileError && <p className="text-sm text-danger">{fileError}</p>}
 
-      <Button variant="gradient" disabled={!file || isPending} onClick={handleSubmit}>
+      <Button variant="gradient" disabled={!file} loading={isPending} onClick={handleSubmit}>
         {isPending ? 'Enviando…' : 'Enviar comprobante'}
       </Button>
     </div>

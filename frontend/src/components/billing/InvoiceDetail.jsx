@@ -105,7 +105,7 @@ function ReceiptBlock({ receipt, onViewReceipt }) {
   );
 }
 
-function InvoiceLinesBreakdown({ invoice }) {
+export function InvoiceLinesBreakdown({ invoice }) {
   const lines = invoice.lines ?? [];
   const hasDiscount = lines.some((line) => line.discount != null);
   return (
@@ -126,7 +126,7 @@ function InvoiceLinesBreakdown({ invoice }) {
           )}
         </Fragment>
       ))}
-      {hasDiscount && (
+      {(hasDiscount || lines.length > 1) && (
         <div className="flex justify-between gap-4 border-t border-border pt-1.5">
           <span className="font-medium text-ink-soft">Total</span>
           <span className="font-mono font-semibold tabular-nums text-ink">{formatMoney(invoice.totalAmount)}</span>
@@ -136,8 +136,9 @@ function InvoiceLinesBreakdown({ invoice }) {
   );
 }
 
-export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false }) {
-  const hasDiscount = (invoice.lines ?? []).some((line) => line.discount != null);
+export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false, showDocumentStatus = false }) {
+  const lines = invoice.lines ?? [];
+  const showBreakdown = lines.some((line) => line.discount != null) || lines.length > 1;
   const payments = invoice.payments ?? [];
   const receipts = invoice.receipts ?? [];
   const pendingReceipt = receipts.some((receipt) => receipt.status === 'PENDING_REVIEW');
@@ -146,13 +147,14 @@ export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false }) {
     <div className="flex flex-col gap-3 py-2">
       {invoice.invoiceNumber && (
         <p className="text-xs text-ink-faint">
-          Factura {invoice.invoiceNumber} · {INVOICE_DOCUMENT_STATUS_LABELS[invoice.documentStatus] ?? invoice.documentStatus}
-          {invoice.issueDate ? ` el ${formatDate(invoice.issueDate)}` : ''}
+          Factura {invoice.invoiceNumber}
+          {showDocumentStatus ? ` · ${INVOICE_DOCUMENT_STATUS_LABELS[invoice.documentStatus] ?? invoice.documentStatus}` : ''}
+          {invoice.issueDate ? ` · emitida el ${formatDate(invoice.issueDate)}` : ''}
         </p>
       )}
       {invoice.documentStatus === 'DISCARDED' && (
         <p className="text-sm text-ink-soft">
-          Cuota anulada
+          Factura anulada
           {invoice.discardedReason ? `. Motivo: ${invoice.discardedReason}` : ''}
         </p>
       )}
@@ -164,7 +166,7 @@ export function InvoiceDetail({ invoice, onViewReceipt, reviewLink = false }) {
           </Link>
         </p>
       )}
-      {hasDiscount && <InvoiceLinesBreakdown invoice={invoice} />}
+      {showBreakdown && <InvoiceLinesBreakdown invoice={invoice} />}
       {payments.map((payment) => (
         <PaymentBlock key={payment.paymentId} payment={payment} />
       ))}

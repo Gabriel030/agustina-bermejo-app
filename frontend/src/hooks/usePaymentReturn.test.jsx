@@ -56,4 +56,12 @@ describe('usePaymentReturn', () => {
 
     expect(screen.getByText('Llegó con /mis-solicitudes/5')).toBeInTheDocument();
   });
+
+  it.each(['https://sitio-malicioso.com', '//sitio-malicioso.com', 'mis-pagos'])('ignora el origen no interno %s y vuelve a Mis pagos', async (volverA) => {
+    renderFrom({ volverA, volverALabel: 'Volver a otro lado' });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Volver a otro lado' }));
+
+    expect(screen.getByText('Mis pagos')).toBeInTheDocument();
+  });
 });

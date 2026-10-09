@@ -47,7 +47,7 @@ public record InvoiceResponse(
         return new InvoiceResponse(
                 invoice.getId(), invoice.getInvoiceNumber() == null ? null : invoice.getInvoiceNumber().value(),
                 invoice.getInvoiceType().name(), invoice.getDocumentType().name(), invoice.getDocumentStatus().name(),
-                invoice.getPaymentStatus().name(), invoice.getIssueDate(), invoice.getDueDate(), invoice.currency().name(),
+                invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name(), invoice.getIssueDate(), invoice.getDueDate(), invoice.currency().name(),
                 amounts.linesTotal().value(), amounts.discountsTotal().value(), amounts.total().value(), amounts.paidAmount().value(),
                 amounts.creditedAmount().value(), amounts.outstandingAmount().value(),
                 invoice.getLines().stream().map(InvoiceLineResponse::from).toList(),

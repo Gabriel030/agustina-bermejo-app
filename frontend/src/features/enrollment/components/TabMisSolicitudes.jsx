@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -15,7 +15,6 @@ import { useMisSolicitudesCarrera, useMisSolicitudesCurso } from '@/features/enr
 // navegan a un detalle: no existe pantalla de detalle de solicitud de curso
 // (no hace falta — no tiene documentación que subir, ver spec funcional).
 export function TabMisSolicitudes() {
-  const navigate = useNavigate();
   const { data: solicitudesCarrera, isLoading: cargandoCarrera, isError: errorCarrera } = useMisSolicitudesCarrera();
   const { data: solicitudesCurso, isLoading: cargandoCurso, isError: errorCurso } = useMisSolicitudesCurso();
 
@@ -24,21 +23,18 @@ export function TabMisSolicitudes() {
       key: `carrera-${s.id}`,
       tipo: 'Carrera',
       nombre: s.programName,
-      status: s.status,
-      admissionInvoice: s.admissionInvoice,
-      rejectionReason: s.rejectionReason,
-      onClick: () => navigate(`/mis-solicitudes/${s.id}`),
+      solicitud: s,
+      href: `/mis-solicitudes/${s.id}`,
     }));
     const curso = (solicitudesCurso ?? []).map((s) => ({
       key: `curso-${s.id}`,
       tipo: 'Curso',
       nombre: s.courseName,
-      status: s.courseEnrollmentStatus === 'WAITLISTED' ? 'WAITLISTED' : s.paymentStatus,
-      rejectionReason: s.rejectionReason,
-      onClick: null,
+      solicitud: { status: s.courseEnrollmentStatus === 'WAITLISTED' ? 'WAITLISTED' : s.paymentStatus },
+      href: null,
     }));
     return [...carrera, ...curso];
-  }, [solicitudesCarrera, solicitudesCurso, navigate]);
+  }, [solicitudesCarrera, solicitudesCurso]);
 
   if (errorCarrera || errorCurso) {
     return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar tus solicitudes. Probá recargar la página.</GlassCard>;
@@ -76,28 +72,21 @@ export function TabMisSolicitudes() {
         </TableHeader>
         <TableBody>
           {filas.map((fila) => (
-            <TableRow key={fila.key} className={fila.onClick ? 'cursor-pointer' : undefined} onClick={fila.onClick ?? undefined}>
+            <TableRow key={fila.key}>
               <TableCell className="text-xs font-semibold text-ink-faint">{fila.tipo}</TableCell>
               <TableCell className="max-w-[220px] truncate font-bold text-ink">
-                {fila.onClick ? (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      fila.onClick();
-                    }}
-                    className="max-w-full truncate text-left font-bold text-ink hover:underline"
-                  >
+                {fila.href ? (
+                  <Link to={fila.href} className="block max-w-full truncate font-bold text-ink hover:underline">
                     {fila.nombre}
-                  </button>
+                  </Link>
                 ) : (
                   fila.nombre
                 )}
               </TableCell>
               <TableCell>
-                <EstadoSolicitudBadge status={fila.status} admissionInvoice={fila.admissionInvoice} programEnrollmentId={fila.programEnrollmentId} />
+                <EstadoSolicitudBadge solicitud={fila.solicitud} />
               </TableCell>
-              <TableCell>{fila.onClick && <ChevronRight size={16} className="text-ink-faint" />}</TableCell>
+              <TableCell>{fila.href && <ChevronRight size={16} className="text-ink-faint" aria-hidden="true" />}</TableCell>
             </TableRow>
           ))}
         </TableBody>

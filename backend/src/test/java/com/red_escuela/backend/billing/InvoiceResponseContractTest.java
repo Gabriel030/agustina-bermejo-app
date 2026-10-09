@@ -50,6 +50,11 @@ class InvoiceResponseContractTest {
             return AdminInvoiceResponse.of(new InvoiceView(scholarshipInvoice(), null, null, List.of()), List.of());
         }
 
+        @GetMapping("/contract/draft-invoice")
+        AdminInvoiceResponse draft() {
+            return AdminInvoiceResponse.of(new InvoiceView(scholarshipDraftInvoice(), null, null, List.of()), List.of());
+        }
+
         @GetMapping("/contract/me-invoice")
         MeInvoiceResponse me() {
             return MeInvoiceResponse.of(new InvoiceView(scholarshipInvoice(), null, null, List.of()), List.of());
@@ -57,16 +62,20 @@ class InvoiceResponseContractTest {
     }
 
     private static Invoice scholarshipInvoice() {
+        Invoice invoice = scholarshipDraftInvoice();
+        invoice.issueInvoice(InvoiceNumber.formatInvoiceNumber(InvoiceDocumentType.INVOICE, 1), LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 10),
+                new StudentSnapshot("Ana Ruiz", "30111222", null), ACTOR);
+        return invoice;
+    }
+
+    private static Invoice scholarshipDraftInvoice() {
         InvoiceDraftHeader header = new InvoiceDraftHeader(1L, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT,
                 InvoiceIssuingReason.MONTHLY_RUN, null);
         InvoiceLineDraft line = new InvoiceLineDraft(FeeType.MONTHLY_INSTALLMENT, "Cuota 2026-03", YearMonth.of(2026, 3), null, null, null, null,
                 1L, "CONTRACT:1", NonNegativeMoney.of(ars(100000)), null, null);
         InvoiceDiscountDraft discount = new InvoiceDiscountDraft(DiscountType.SCHOLARSHIP, "Beca 50 %", 7L,
                 NonNegativeMoney.of(ars(100000)), NonNegativeMoney.of(ars(50000)), 1, 3);
-        Invoice invoice = InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.of(discount), ACTOR);
-        invoice.issueInvoice(InvoiceNumber.formatInvoiceNumber(InvoiceDocumentType.INVOICE, 1), LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 10),
-                new StudentSnapshot("Ana Ruiz", "30111222", null), ACTOR);
-        return invoice;
+        return InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.of(discount), ACTOR);
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper()
@@ -122,5 +131,13 @@ class InvoiceResponseContractTest {
                 .andExpect(jsonPath("$.status").doesNotExist())
                 .andExpect(jsonPath("$.feeType").doesNotExist())
                 .andExpect(jsonPath("$.cancelledByName").doesNotExist());
+    }
+
+    @Test
+    void aDraftInvoiceWithoutPaymentStatusSerializesItAsNull() throws Exception {
+        mockMvc.perform(get("/contract/draft-invoice"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.paymentStatus").value(org.hamcrest.Matchers.nullValue()));
     }
 }
