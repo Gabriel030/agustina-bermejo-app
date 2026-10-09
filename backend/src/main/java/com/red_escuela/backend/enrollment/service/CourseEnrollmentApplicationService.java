@@ -86,16 +86,17 @@ public class CourseEnrollmentApplicationService {
         application.setStudent(student);
         application.setCourse(course);
         application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
-        application.setInvoiceId(invoice.getId());
+        Long invoiceId = invoice.getId();
+        application.setInvoiceId(invoiceId);
         if (!invoice.isPayable()) {
             application.setCourseEnrollment(courseEnrollmentService.enrollSelfService(studentId, request));
             invoice.assignInvoiceToCourseEnrollment(application.getCourseEnrollment().getId());
             return courseEnrollmentApplicationRepository.save(application);
         }
         if (comprobante == null || comprobante.isEmpty()) {
-            throw new PaymentReceiptRequiredException(invoice.getId());
+            throw new PaymentReceiptRequiredException(invoiceId);
         }
-        application.setPaymentReceipt(uploadPaymentReceiptUseCase.upload(invoice.getId(), studentId, comprobante));
+        application.setPaymentReceipt(uploadPaymentReceiptUseCase.upload(invoiceId, studentId, comprobante));
         return courseEnrollmentApplicationRepository.save(application);
     }
 

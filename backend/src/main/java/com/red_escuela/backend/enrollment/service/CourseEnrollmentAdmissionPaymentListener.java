@@ -3,15 +3,16 @@ package com.red_escuela.backend.enrollment.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.billing.api.CourseInvoiceEnrollmentLink;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
+import com.red_escuela.backend.enrollment.events.CourseEnrollmentConfirmedByAdmissionPaymentEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
@@ -24,14 +25,14 @@ public class CourseEnrollmentAdmissionPaymentListener {
 
     private final CourseEnrollmentApplicationRepository applicationRepository;
     private final CourseEnrollmentService courseEnrollmentService;
-    private final CourseInvoiceEnrollmentLink courseInvoiceEnrollmentLink;
+    private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
 
     public CourseEnrollmentAdmissionPaymentListener(CourseEnrollmentApplicationRepository applicationRepository,
-                                                    CourseEnrollmentService courseEnrollmentService, CourseInvoiceEnrollmentLink courseInvoiceEnrollmentLink, ObjectMapper objectMapper) {
+                                                    CourseEnrollmentService courseEnrollmentService, ApplicationEventPublisher eventPublisher, ObjectMapper objectMapper) {
         this.applicationRepository = applicationRepository;
         this.courseEnrollmentService = courseEnrollmentService;
-        this.courseInvoiceEnrollmentLink = courseInvoiceEnrollmentLink;
+        this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
     }
 
@@ -46,7 +47,7 @@ public class CourseEnrollmentAdmissionPaymentListener {
                 new CreateCourseEnrollmentRequest(application.getCourse().getId(), deserializeOverrides(application.getSectionOverrides())));
         application.setCourseEnrollment(enrollment);
         applicationRepository.save(application);
-        courseInvoiceEnrollmentLink.linkInvoiceToCourseEnrollment(event.invoiceId(), enrollment.getId());
+        eventPublisher.publishEvent(CourseEnrollmentConfirmedByAdmissionPaymentEvent.confirmedFor(event.invoiceId(), enrollment.getId()));
         log.info("Inscripción a curso confirmada por el pago de la factura de admisión: solicitud={}, inscripcion={}, factura={}",
                 application.getId(), enrollment.getId(), event.invoiceId());
     }
