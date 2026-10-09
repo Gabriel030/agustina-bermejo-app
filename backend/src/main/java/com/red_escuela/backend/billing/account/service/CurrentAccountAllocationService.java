@@ -74,7 +74,8 @@ public class CurrentAccountAllocationService {
             return AccountCreditAllocationResult.nothingAllocated();
         }
         List<Invoice> openInvoices = invoices.listOpenInvoicesOfAccount(lockedAccount.getId());
-        List<OpenInvoiceView> orderedViews = strategy.sortInAllocationOrder(openInvoices.stream().map(OpenInvoiceView::of).toList());
+        List<OpenInvoiceView> orderedViews = strategy.sortInAllocationOrder(openInvoices.stream().map(OpenInvoiceView::of)
+                .filter(view -> !view.outstandingAmount().value().isZero()).toList());
         List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(creditToAllocate, orderedViews);
         planPolicies.evaluateRulesUntilFirstViolation(new AllocationPlanContext(lockedAccount.getId(), lockedAccount.getCurrency(), creditToAllocate,
                 orderedViews, plan)).throwIfDenied(PaymentAllocationRejectedException::new);
@@ -124,11 +125,12 @@ public class CurrentAccountAllocationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public PaymentAllocation reverseAllocation(StudentCurrentAccount lockedAccount, PaymentAllocation allocation, LocalDate businessDate,
                                                int gracePeriodDays, String reason, StatusChangeActor actor) {
+        Invoice invoice = invoices.lockInvoice(allocation.getInvoiceId());
         reversalPolicies.evaluateRulesUntilFirstViolation(new AllocationReversalContext(allocation.getId(),
-                allocation.isReversal() || allocationRepository.existsByReversesAllocationId(allocation.getId())))
+                allocation.isReversal() || allocationRepository.existsByReversesAllocationId(allocation.getId()),
+                lockedAccount.getId(), allocation.getStudentCurrentAccountId()))
                 .throwIfDenied(PaymentAllocationRejectedException::new);
         PaymentAllocation reversal = allocationRepository.save(allocation.recordAllocationReversal(businessDate, reason, actor));
-        Invoice invoice = invoices.lockInvoice(allocation.getInvoiceId());
         invoice.reversePaymentAllocation(businessDate, gracePeriodDays, actor, reason);
         accountService.restoreUnallocatedCreditFromReversedAllocation(lockedAccount, allocation.getAmount());
         log.info("Imputación revertida: cuenta={}, factura={}, monto={}, motivo={}", lockedAccount.getId(), allocation.getInvoiceId(),

@@ -130,7 +130,8 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages() {
-        return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..", "..billing.account.service..")
+        return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.account.service.CurrentAccountAllocationService")
                 .should().callMethodWhere(target(name("allocateFullInvoicePayment")).and(target(owner(assignableTo(Invoice.class)))))
                 .because("a payment allocation must be registered together with its credit in the current account");
     }

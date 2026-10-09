@@ -189,7 +189,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         if (received.currency() != account.getCurrency()) {
             throw new CurrencyMismatchException(account.getCurrency(), received.currency());
         }
-        boolean reportedInvoiceWasOpen = invoiceRepository.isOpenIssuedInvoice(reportedInvoiceId);
 
         Payment payment = new Payment();
         payment.setAmount(received);
@@ -205,9 +204,11 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
         AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditToOldestInvoices(account, today,
                 new StatusChangeActor(registeredBy.getId(), null));
-        linkSettledInvoicesToPayment(payment, allocated);
-        if (!reportedInvoiceWasOpen) {
-            eventPublisher.publishEvent(PaymentLeftAsAccountCreditEvent.leftFor(payment.getId(), reportedInvoiceId, registeredBy.getId(), received.amount(),
+        linkSettledInvoicesToPayment(payment, allocated, received);
+        Money unallocatedAfterwards = account.getUnallocatedCreditAmount().value();
+        Money leftAsCredit = unallocatedAfterwards.isGreaterThan(received) ? received : unallocatedAfterwards;
+        if (leftAsCredit.isGreaterThan(Money.zero(received.currency()))) {
+            eventPublisher.publishEvent(PaymentLeftAsAccountCreditEvent.leftFor(payment.getId(), reportedInvoiceId, registeredBy.getId(), leftAsCredit.amount(),
                     received.currency().name()));
         }
         log.info("Pago acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}, facturas saldadas={}",
@@ -259,17 +260,21 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         for (Map.Entry<Long, Money> received : receivedByAccount.entrySet()) {
             StudentCurrentAccount account = accountService.lockStudentCurrentAccount(received.getKey());
             accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received.getValue()), today, "Pago " + payment.getId());
-            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditToOldestInvoices(account, today, actor));
+            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditToOldestInvoices(account, today, actor), received.getValue());
         }
     }
 
-    private void linkSettledInvoicesToPayment(Payment payment, AccountCreditAllocationResult result) {
-        for (int i = 0; i < result.allocations().size(); i++) {
+    private void linkSettledInvoicesToPayment(Payment payment, AccountCreditAllocationResult result, Money contributedByThePayment) {
+        Money remaining = contributedByThePayment;
+        for (int i = 0; i < result.allocations().size() && remaining.isGreaterThan(Money.zero(remaining.currency())); i++) {
+            Money allocated = result.allocations().get(i).getAmount().value();
+            Money linked = allocated.isGreaterThan(remaining) ? remaining : allocated;
             PaymentAllocation link = new PaymentAllocation();
             link.setPayment(payment);
             link.setInvoice(result.settledInvoices().get(i));
-            link.setAmountApplied(result.allocations().get(i).getAmount().value());
+            link.setAmountApplied(linked);
             payment.getAllocations().add(link);
+            remaining = remaining.minus(linked);
         }
     }
 

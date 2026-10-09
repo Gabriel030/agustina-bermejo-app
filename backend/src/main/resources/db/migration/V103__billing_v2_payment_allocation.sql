@@ -29,6 +29,7 @@ create index ix_payment_allocation_by_invoice on payment_allocation (invoice_id)
 
 create function forbid_inconsistent_payment_allocation() returns trigger language plpgsql as $$
 begin
+    perform 1 from invoice where id = new.invoice_id for update;
     if new.reverses_allocation_id is null then
         if exists (select 1 from payment_allocation a
                    where a.invoice_id = new.invoice_id and a.reverses_allocation_id is null
@@ -48,3 +49,5 @@ create trigger trg_payment_allocation_consistent before insert on payment_alloca
     for each row execute function forbid_inconsistent_payment_allocation();
 create trigger trg_payment_allocation_append_only before update or delete on payment_allocation
     for each row execute function forbid_append_only_row_change();
+
+alter table course_enrollment_application alter column payment_receipt_id drop not null;

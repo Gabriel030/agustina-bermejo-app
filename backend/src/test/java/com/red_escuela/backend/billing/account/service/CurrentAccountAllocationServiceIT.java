@@ -379,4 +379,20 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
                 accountId, invoiceId, jdbc.queryForObject("select total from invoice where id = ?", BigDecimal.class, invoiceId), TODAY, TODAY,
                 reversesAllocationId, reversesAllocationId == null ? null : "Prueba", LocalDateTime.now());
     }
+
+    @Test
+    @Tag("D-094")
+    void anAllocationOfAnotherAccountCannotBeReversedThroughTheLockOfThisOne() {
+        Long otherAccountId = newAccountId(newStudentId(), Currency.ARS);
+        issueAdministrativeFeeWithLedgerDebit(otherAccountId, "100.00", LocalDate.of(2027, 3, 10));
+        inTransaction(() -> {
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(otherAccountId), nextExternalId(), ars("100.00"), TODAY, "Pago");
+            return allocationService.allocateAccountCreditToOldestInvoices(service.lockStudentCurrentAccount(otherAccountId), TODAY, ACTOR);
+        });
+        PaymentAllocation foreign = allocationRepository.findCurrentAllocationsByAccountNewestFirst(otherAccountId).get(0);
+
+        assertThatThrownBy(() -> inTransaction(() -> allocationService.reverseAllocation(service.lockStudentCurrentAccount(accountId), foreign, TODAY,
+                GRACE_DAYS, "Intento", ACTOR))).isInstanceOf(PaymentAllocationRejectedException.class);
+        assertThat(paymentStatusOf(foreign.getInvoiceId())).isEqualTo("PAID");
+    }
 }

@@ -42,6 +42,7 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -387,6 +388,49 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(notificationsOf(student))
                 .extracting(Notification::getType)
                 .contains(NotificationType.PAYMENT_RECEIPT_APPROVED);
+    }
+
+    @Test
+    @Tag("D-235")
+    @Tag("D-089")
+    void approvingAReceiptOfANewerInvoiceWhileAnOlderOneIsOverdueSettlesTheOlderOneAndKeepsTheReceiptInTheAppliedToOlderDebtState() {
+        Person admin = persistPerson("admin.d235a." + System.nanoTime());
+        Student student = persistStudent("97235001");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice older = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().minusMonths(1))
+                .dueOn(LocalDate.now().minusDays(20)).withBaseAmount(ars(10000)).inState(InvoicePaymentStatus.OVERDUE).build();
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+
+        assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
+        assertThatInvoice(invoiceRepository.findById(older.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
+        assertThat(notificationsOf(student)).extracting(Notification::getType)
+                .contains(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT)
+                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPROVED);
+        BankTransferReceipt second = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        assertThat(second.getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
+        rejectPaymentReceiptUseCase.reject(second.getId(), "Limpieza de test", admin);
+    }
+
+    @Test
+    @Tag("D-235")
+    void approvingAReceiptWithoutOlderDebtSettlesItsInvoiceAndNotifiesTheNormalApproval() {
+        Person admin = persistPerson("admin.d235b." + System.nanoTime());
+        Student student = persistStudent("97235002");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+
+        assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        assertThat(notificationsOf(student)).extracting(Notification::getType)
+                .contains(NotificationType.PAYMENT_RECEIPT_APPROVED)
+                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT);
     }
 
     @Test

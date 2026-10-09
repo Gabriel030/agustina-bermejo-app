@@ -124,6 +124,25 @@ class BridgePaymentNowCreditsAndAllocatesIT extends AbstractCurrentAccountIT {
     }
 
     @Test
+    @Tag("D-089")
+    void theLinksOfAPaymentNeverAddUpToMoreThanThePaymentWhenOlderCreditAlsoSettlesInvoices() {
+        issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 3, 10));
+        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "80000.00", LocalDate.of(2027, 4, 10));
+        inTransaction(() -> {
+            service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), nextExternalId(), ars("80000.00"), LocalDate.of(2027, 3, 9), "Pago previo");
+            return null;
+        });
+
+        Payment payment = payInCash(second, "80000.00");
+
+        assertThat(allocationRows()).hasSize(2);
+        assertThat(legacyRowsOf(payment)).hasSize(1);
+        assertThat(payment.getAllocations().stream().map(link -> link.getAmountApplied().amount()).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add))
+                .isEqualByComparingTo("80000.00");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
     @Tag("D-144")
     void theAllocationDatesAreTheLocalBusinessDayEvenWhenTheJvmRunsInUtcAndTheUtcDayIsDifferent() {
         TimeZone previous = TimeZone.getDefault();

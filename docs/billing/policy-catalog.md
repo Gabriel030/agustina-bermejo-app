@@ -139,7 +139,8 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | PaymentAllocationReversedOnlyOncePolicy | PAYMENT_ALLOCATION_ALREADY_REVERSED | D-094 |
+| 1 | PaymentAllocationBelongsToLockedAccountPolicy | PAYMENT_ALLOCATION_ACCOUNT_MISMATCH | D-094, D-097 |
+| 2 | PaymentAllocationReversedOnlyOncePolicy | PAYMENT_ALLOCATION_ALREADY_REVERSED | D-094 |
 
 ## Momento PAYMENT_PLAN_SELECTION
 

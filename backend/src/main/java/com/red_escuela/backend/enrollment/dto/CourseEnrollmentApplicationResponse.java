@@ -17,8 +17,8 @@ public record CourseEnrollmentApplicationResponse(
                 application.getStudent().getId(),
                 application.getCourse().getId(),
                 application.getCourse().getName(),
-                application.getPaymentReceipt().getStatus().name(),
-                application.getPaymentReceipt().getRejectionReason(),
+                application.getPaymentReceipt() == null ? "APPROVED" : application.getPaymentReceipt().getStatus().name(),
+                application.getPaymentReceipt() == null ? null : application.getPaymentReceipt().getRejectionReason(),
                 application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getId(),
                 application.getCourseEnrollment() == null ? null : application.getCourseEnrollment().getStatus().name());
     }

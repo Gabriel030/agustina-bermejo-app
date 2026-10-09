@@ -364,6 +364,43 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent.class)).hasSize(1);
     }
 
+    private Invoice persistSiblingPendingInvoice(Invoice sibling, BigDecimal amount) {
+        CourseEnrollment enrollment = courseEnrollmentRepository.findById(invoiceRepository.findInvoiceWithLinesById(sibling.getId()).orElseThrow()
+                .findCourseEnrollmentId().orElseThrow()).orElseThrow();
+        return BillingTestFixtures.invoice().forCourseEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now().plusMonths(1))
+                .dueOn(LocalDate.now().plusDays(30)).withBaseAmount(ars(amount)).build();
+    }
+
+    @Test
+    @Tag("D-134")
+    void aMercadoPagoPaymentOnAClosedInvoiceThatSettlesAnotherOpenInvoiceDoesNotAnnounceLeftoverCredit() {
+        Invoice reported = persistPendingInvoice(BigDecimal.valueOf(10000));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(reported.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        Invoice other = persistSiblingPendingInvoice(reported, BigDecimal.valueOf(10000));
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(reported.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-2", "second-" + System.nanoTime()));
+
+        assertThatInvoice(invoiceRepository.findById(other.getId()).orElseThrow()).isPaid();
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent.class)).isEmpty();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-134")
+    void aMercadoPagoPaymentSmallerThanAnOpenInvoiceAnnouncesTheCreditThatStaysInFavor() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(4000))
+                .process("", "request-1", "smaller-" + System.nanoTime()));
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent.class)).singleElement()
+                .satisfies(event -> assertThat(event.amount()).isEqualByComparingTo("4000"));
+    }
+
     @Test
     void anApprovedPaymentLogsInfoWithPaymentAndInvoiceIds(CapturedOutput output) {
         Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));

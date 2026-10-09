@@ -18,7 +18,8 @@ public final class OldestOverdueFirstAllocationOrderPolicy implements Policy<All
 
     @Override
     public PolicyVerdict evaluateRule(AllocationPlanContext context) {
-        List<OpenInvoiceView> ordered = context.openInvoicesInAllocationOrder();
+        List<OpenInvoiceView> ordered = context.openInvoicesInAllocationOrder().stream()
+                .filter(invoice -> !invoice.outstandingAmount().value().isZero()).toList();
         int plannedCount = context.plan().size();
         if (plannedCount > ordered.size()) {
             return violated();

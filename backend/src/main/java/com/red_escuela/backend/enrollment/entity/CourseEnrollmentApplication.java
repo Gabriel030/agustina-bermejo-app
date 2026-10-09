@@ -32,8 +32,8 @@ public class CourseEnrollmentApplication {
     @Column(name = "section_overrides")
     private String sectionOverrides;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "payment_receipt_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_receipt_id")
     private BankTransferReceipt paymentReceipt;
 
     @ManyToOne(fetch = FetchType.LAZY)

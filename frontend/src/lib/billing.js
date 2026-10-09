@@ -112,6 +112,7 @@ export function paymentMethodLabel(method, cardType, cardInstallments) {
 export const RECEIPT_STATUS_CONFIG = {
   PENDING_REVIEW: { label: 'En revisión', tone: 'warning' },
   APPROVED: { label: 'Aprobado', tone: 'success' },
+  APPLIED_TO_DEBT: { label: 'Aprobado, aplicado a deuda anterior', tone: 'warning' },
   REJECTED: { label: 'Rechazado', tone: 'danger' },
 };
 

@@ -149,6 +149,7 @@ function PasoComprobante({ invoiceId, onSuccess }) {
 const RECEIPT_STATUS = {
   PENDING_REVIEW: { label: 'Pendiente de revisión', icon: Clock, tone: 'warning' },
   APPROVED: { label: 'Aprobado', icon: CheckCircle, tone: 'success' },
+  APPLIED_TO_DEBT: { label: 'Aprobado, aplicado a deuda anterior', icon: Clock, tone: 'warning' },
   REJECTED: { label: 'Rechazado', icon: XCircle, tone: 'danger' },
 };
 

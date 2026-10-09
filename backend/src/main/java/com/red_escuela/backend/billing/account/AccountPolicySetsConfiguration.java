@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.account.policy.AllocationPlanContext;
 import com.red_escuela.backend.billing.account.policy.AllocationReversalContext;
 import com.red_escuela.backend.billing.account.policy.FullInvoicePaymentOnlyPolicy;
 import com.red_escuela.backend.billing.account.policy.OldestOverdueFirstAllocationOrderPolicy;
+import com.red_escuela.backend.billing.account.policy.PaymentAllocationBelongsToLockedAccountPolicy;
 import com.red_escuela.backend.billing.account.policy.PaymentAllocationReversedOnlyOncePolicy;
 import com.red_escuela.backend.billing.account.policy.PaymentAllocationSameAccountPolicy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
@@ -32,6 +33,6 @@ public class AccountPolicySetsConfiguration {
 
     @Bean
     public PolicySet<AllocationReversalContext> paymentAllocationReversalPolicySet() {
-        return PolicySet.named("PAYMENT_ALLOCATION_REVERSAL", List.of(new PaymentAllocationReversedOnlyOncePolicy()));
+        return PolicySet.named("PAYMENT_ALLOCATION_REVERSAL", List.of(new PaymentAllocationBelongsToLockedAccountPolicy(), new PaymentAllocationReversedOnlyOncePolicy()));
     }
 }

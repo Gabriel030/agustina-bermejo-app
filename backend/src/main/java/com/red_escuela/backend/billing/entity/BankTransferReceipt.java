@@ -80,6 +80,13 @@ public class BankTransferReceipt {
         markReviewed(BankTransferReceiptStatus.APPROVED, reviewer);
     }
 
+    public void markAsAppliedToOlderDebt() {
+        if (status != BankTransferReceiptStatus.APPROVED) {
+            throw new InvalidPaymentReceiptStateException(id, status.name());
+        }
+        this.status = BankTransferReceiptStatus.APPLIED_TO_DEBT;
+    }
+
     public void reject(Person reviewer, String reason) {
         requirePendingReview();
         this.rejectionReason = reason;

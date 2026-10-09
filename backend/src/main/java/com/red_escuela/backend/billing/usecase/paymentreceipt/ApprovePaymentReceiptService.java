@@ -19,6 +19,8 @@ import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesExcep
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
+import com.red_escuela.backend.notification.PaymentReceiptAppliedToOlderDebtEvent;
 import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
@@ -64,6 +66,14 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
                 List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
                 PaymentMethod.TRANSFER, false, null, null, null, null), decidedBy);
         receipt.setPayment(payment);
+
+        if (invoice.getPaymentStatus() != InvoicePaymentStatus.PAID) {
+            receipt.markAsAppliedToOlderDebt();
+            BankTransferReceipt applied = bankTransferReceiptRepository.save(receipt);
+            eventPublisher.publishEvent(new PaymentReceiptAppliedToOlderDebtEvent(applied));
+            log.info("Comprobante aprobado y aplicado a deuda anterior: comprobante={}, factura={}", id, invoice.getId());
+            return applied;
+        }
 
         courseEnrollmentApplicationRepository.findByPaymentReceiptId(id)
                 .filter(application -> application.getCourseEnrollment() == null)

@@ -155,9 +155,9 @@ class AllocationPoliciesTest {
     @Test
     @Tag("D-094")
     void reversalPolicyAllowsTheFirstReversalAndDeniesTheSecond() {
-        assertThat(new PaymentAllocationReversedOnlyOncePolicy().evaluateRule(new AllocationReversalContext(1L, false)).allowed()).isTrue();
+        assertThat(new PaymentAllocationReversedOnlyOncePolicy().evaluateRule(new AllocationReversalContext(1L, false, 7L, 7L)).allowed()).isTrue();
 
-        PolicyVerdict denied = new PaymentAllocationReversedOnlyOncePolicy().evaluateRule(new AllocationReversalContext(1L, true));
+        PolicyVerdict denied = new PaymentAllocationReversedOnlyOncePolicy().evaluateRule(new AllocationReversalContext(1L, true, 7L, 7L));
 
         assertThat(denied.allowed()).isFalse();
         assertThat(denied.code()).isEqualTo("PAYMENT_ALLOCATION_ALREADY_REVERSED");
@@ -181,5 +181,30 @@ class AllocationPoliciesTest {
 
         assertThat(context.findOpenInvoice(2L)).contains(second);
         assertThat(context.findOpenInvoice(3L)).isEmpty();
+    }
+
+    @Test
+    @Tag("D-094")
+    void reversalPolicyAllowsAnAllocationOfTheLockedAccountAndDeniesOneOfAnotherAccount() {
+        PaymentAllocationBelongsToLockedAccountPolicy policy = new PaymentAllocationBelongsToLockedAccountPolicy();
+
+        assertThat(policy.evaluateRule(new AllocationReversalContext(1L, false, 7L, 7L)).allowed()).isTrue();
+        PolicyVerdict denied = policy.evaluateRule(new AllocationReversalContext(1L, false, 7L, 8L));
+        assertThat(denied.allowed()).isFalse();
+        assertThat(denied.code()).isEqualTo("PAYMENT_ALLOCATION_ACCOUNT_MISMATCH");
+        assertThat(policy.evaluateRule(new AllocationReversalContext(1L, false, null, null)).allowed()).isFalse();
+        assertThat(policy.ruleName()).isEqualTo("PaymentAllocationBelongsToLockedAccountPolicy");
+    }
+
+    @Test
+    @Tag("D-089")
+    void theOrderPolicyIgnoresOpenInvoicesWithNothingOutstanding() {
+        OpenInvoiceView settled = open(1, ACCOUNT, "2027-03-10", ars("0.00"));
+        OpenInvoiceView next = open(2, ACCOUNT, "2027-04-10", ars("100.00"));
+
+        PolicyVerdict verdict = new OldestOverdueFirstAllocationOrderPolicy().evaluateRule(
+                context("100.00", List.of(settled, next), List.of(plan(2, ars("100.00")))));
+
+        assertThat(verdict.allowed()).isTrue();
     }
 }
