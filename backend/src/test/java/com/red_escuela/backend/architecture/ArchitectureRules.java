@@ -58,10 +58,11 @@ public final class ArchitectureRules {
             + "|service\\.legacy\\.[A-Za-z]+"
             + "|service\\.(?:InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
-    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService";
+    static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService"
+            + "," + ROOT + ".billing.account.service.CurrentAccountAllocationService";
 
     static final Set<String> PAYMENT_BRIDGE_ACCOUNT_METHODS = Set.of(
-            "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "allocateUnallocatedCreditToInvoicePayment");
+            "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "consumeUnallocatedCreditForAllocation", "restoreUnallocatedCreditFromReversedAllocation");
 
     static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure");
 
@@ -129,7 +130,7 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages() {
-        return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..")
+        return noClasses().that().resideOutsideOfPackages("..billing.invoice..", "..billing.usecase.payment..", "..billing.account.service..")
                 .should().callMethodWhere(target(name("allocateFullInvoicePayment")).and(target(owner(assignableTo(Invoice.class)))))
                 .because("a payment allocation must be registered together with its credit in the current account");
     }
@@ -382,7 +383,15 @@ public final class ArchitectureRules {
     }
 
     private static boolean isTheBridge(String callerClassName, String bridgeCallerClassName) {
-        return !bridgeCallerClassName.isEmpty() && (callerClassName.equals(bridgeCallerClassName) || callerClassName.startsWith(bridgeCallerClassName + "$"));
+        if (bridgeCallerClassName.isEmpty()) {
+            return false;
+        }
+        for (String bridge : bridgeCallerClassName.split(",")) {
+            if (callerClassName.equals(bridge) || callerClassName.startsWith(bridge + "$")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
@@ -401,7 +410,7 @@ public final class ArchitectureRules {
     }
 
     public static ArchRule currentAccountServiceIsCalledOnlyByOperations(String serviceClassName, Class<?> operationType) {
-        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record") || name.startsWith("allocate"), serviceClassName, operationType,
+        return methodIsCalledOnlyBy(serviceClassName, name -> name.startsWith("record") || name.startsWith("allocate") || name.startsWith("consume") || name.startsWith("restore"), serviceClassName, operationType,
                 "recording of an account entry or allocation of its credit", PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION, PAYMENT_BRIDGE_ACCOUNT_METHODS);
     }
 

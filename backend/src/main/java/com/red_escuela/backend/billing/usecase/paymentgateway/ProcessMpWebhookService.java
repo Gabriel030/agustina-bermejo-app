@@ -54,6 +54,7 @@ public class ProcessMpWebhookService implements ProcessMpWebhookUseCase {
             throw e;
         }
 
+        paymentRepository.lockExternalReferenceUntilTransactionEnds(mpPaymentId);
         if (paymentRepository.existsByExternalReference(mpPaymentId)) {
             log.warn("Webhook de Mercado Pago ignorado, el pago ya estaba acreditado: pagoMp={}", mpPaymentId);
             return;

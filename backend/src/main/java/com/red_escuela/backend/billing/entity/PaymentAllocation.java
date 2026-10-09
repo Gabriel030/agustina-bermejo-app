@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "payment_allocation")
+@Entity(name = "LegacyPaymentAllocation")
+@Table(name = "legacy_payment_allocation")
 public class PaymentAllocation {
     @Id
     @Column(name = "id")

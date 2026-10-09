@@ -52,7 +52,7 @@ public final class BillingInvariantChecker {
 
     public List<String> noNegativeAmountIsPersisted() {
         List<String> found = new ArrayList<>();
-        found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount_applied < 0"));
+        found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount < 0"));
         found.addAll(violations("I-06 negative payment", "select 'payment ' || id from payment where amount < 0"));
         found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where amount < 0"));
         found.addAll(violations("I-06 negative credit application", "select 'credit application ' || id from credit_application where amount_applied < 0"));
@@ -64,7 +64,7 @@ public final class BillingInvariantChecker {
         return violations("I-13 allocation in a different currency than its invoice", """
                 select 'allocation ' || a.id
                 from payment_allocation a join invoice i on i.id = a.invoice_id
-                where a.id > ? and a.amount_applied_currency <> i.currency
+                where a.id > ? and a.amount_currency <> i.currency
                 """, baselineAllocationId);
     }
 
@@ -256,6 +256,36 @@ public final class BillingInvariantChecker {
         return found;
     }
 
+    private static final String NET_ALLOCATED_OF_INVOICE = """
+            (select coalesce(sum(case when a.reverses_allocation_id is null then a.amount else -a.amount end), 0)
+             from payment_allocation a where a.invoice_id = i.id)""";
+
+    public List<String> invoicesAreNeverPartiallyAllocated() {
+        return violations("I-03 invoice allocated in part or beyond its total", """
+                select 'invoice ' || i.id
+                from invoice i
+                where @INVOICES@ and i.document_status = 'ISSUED' and %s not in (0, i.total)
+                """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> paidInvoicesAreCoveredByAllocationsOrCreditNotes() {
+        return violations("I-04 paid invoice not covered by allocations or credit notes", """
+                select 'invoice ' || i.id
+                from invoice i
+                where @INVOICES@ and i.payment_status = 'PAID' and i.total > 0
+                  and %s + i.credited_amount <> i.total
+                """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
+    }
+
+    public List<String> noDebtDisappearsWithoutADocument() {
+        return violations("I-09 total differs from outstanding plus allocations plus credit notes", """
+                select 'invoice ' || i.id
+                from invoice i
+                where @INVOICES@ and i.document_status = 'ISSUED'
+                  and i.total <> i.outstanding_amount + %s + i.credited_amount
+                """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
+    }
+
     public void assertAllBillingInvariantsHold() {
         List<String> all = new ArrayList<>();
         all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlot());
@@ -274,6 +304,9 @@ public final class BillingInvariantChecker {
         all.addAll(accountBalanceEqualsCreditsMinusDebits());
         all.addAll(runningBalancesFollowTheEntrySequence());
         all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
+        all.addAll(invoicesAreNeverPartiallyAllocated());
+        all.addAll(paidInvoicesAreCoveredByAllocationsOrCreditNotes());
+        all.addAll(noDebtDisappearsWithoutADocument());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

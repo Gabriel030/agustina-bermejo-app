@@ -67,9 +67,16 @@ public class StudentCurrentAccountService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void allocateUnallocatedCreditToInvoicePayment(StudentCurrentAccount lockedAccount, NonNegativeMoney amount) {
+    public void consumeUnallocatedCreditForAllocation(StudentCurrentAccount lockedAccount, NonNegativeMoney amount) {
         requireLocked(lockedAccount);
-        lockedAccount.allocateUnallocatedCreditToInvoicePayment(amount);
+        lockedAccount.consumeUnallocatedCreditForAllocation(amount);
+        accountRepository.save(lockedAccount);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void restoreUnallocatedCreditFromReversedAllocation(StudentCurrentAccount lockedAccount, NonNegativeMoney amount) {
+        requireLocked(lockedAccount);
+        lockedAccount.restoreUnallocatedCreditFromReversedAllocation(amount);
         accountRepository.save(lockedAccount);
     }
 
