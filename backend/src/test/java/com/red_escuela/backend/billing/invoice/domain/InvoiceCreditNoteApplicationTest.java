@@ -244,18 +244,15 @@ class InvoiceCreditNoteApplicationTest {
     }
 
     @Test
-    void freeCreditOnAPaidInvoiceDoesNotBlockALaterCancellationOfTheFullDebt() {
+    void freeCreditAlreadyGivenOnALineBlocksACancellationOfMoreThanWhatIsLeftUncredited() {
         Invoice invoice = pending();
         invoice.allocateFullInvoicePayment(ars("80000.00"), DUE_DATE, ACTOR);
         invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "0.00", "10000.00"), DUE_DATE, ACTOR);
         invoice.reversePaymentAllocation(DUE_DATE, 0, ACTOR, "contracargo");
 
-        invoice.applyCreditNote(creditNote(CANCELLATION, "80000.00", "0.00"), DUE_DATE, ACTOR);
-
-        assertThat(invoice.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.CANCELLED);
-        assertThat(invoice.getAmounts().creditedAmount()).isEqualTo(ars("80000.00"));
-        assertThat(invoice.getLines().get(0).getCreditedAmount()).isEqualTo(ars("80000.00"));
-        assertThat(invoice.getLines().get(0).getFreeCreditedAmount()).isEqualTo(ars("10000.00"));
+        assertThatThrownBy(() -> invoice.applyCreditNote(creditNote(CANCELLATION, "80000.00", "0.00"), DUE_DATE, ACTOR))
+                .isInstanceOf(CreditNoteExceedsCreditableAmountException.class);
+        assertThat(invoice.getLines().get(0).getCreditedAmount()).isEqualTo(ars("0.00"));
     }
 
     @Test
