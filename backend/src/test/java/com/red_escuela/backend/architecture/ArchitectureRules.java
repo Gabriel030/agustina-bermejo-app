@@ -66,7 +66,7 @@ public final class ArchitectureRules {
 
     static final Set<String> BILLING_LEGACY_FLAT_PACKAGES = Set.of("entity", "dto", "service", "usecase", "exception", "controller", "repository", "infrastructure");
 
-    static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener");
+    static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener", "CourseEnrollmentAdmissionPaymentListener");
 
     static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
 

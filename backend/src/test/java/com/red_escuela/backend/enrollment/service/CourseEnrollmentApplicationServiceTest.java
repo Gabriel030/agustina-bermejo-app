@@ -208,7 +208,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
         BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrativeReviewer());
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
-        assertThatInvoice(application.getInvoice()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(application.getInvoiceId()).orElseThrow()).isPaid();
     }
 
     @Test

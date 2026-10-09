@@ -149,7 +149,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         persistOverdueInstallment(student);
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
-        Long invoiceId = application.getInvoice().getId();
+        Long invoiceId = application.getInvoiceId();
 
         var first = approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin);
 
@@ -170,7 +170,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Course course = persistPricedCourse();
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
-        Long invoiceId = application.getInvoice().getId();
+        Long invoiceId = application.getInvoiceId();
 
         transactionTemplate.executeWithoutResult(status -> {
             Invoice managed = invoiceRepository.findById(invoiceId).orElseThrow();
@@ -189,7 +189,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Course course = persistPricedCourse();
         Person admin = persistAdministrative();
         CourseEnrollmentApplication application = request(student, course);
-        Long invoiceId = application.getInvoice().getId();
+        Long invoiceId = application.getInvoiceId();
         approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin);
         awaitEnrollments(student, 1);
 
@@ -205,7 +205,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         Student student = persistStudent();
         Course course = persistPricedCourse();
         CourseEnrollmentApplication application = request(student, course);
-        Long invoiceId = application.getInvoice().getId();
+        Long invoiceId = application.getInvoiceId();
 
         approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), persistAdministrative());
 

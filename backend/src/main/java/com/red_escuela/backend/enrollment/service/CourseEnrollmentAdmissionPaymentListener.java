@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.api.CourseInvoiceEnrollmentLink;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -23,12 +24,14 @@ public class CourseEnrollmentAdmissionPaymentListener {
 
     private final CourseEnrollmentApplicationRepository applicationRepository;
     private final CourseEnrollmentService courseEnrollmentService;
+    private final CourseInvoiceEnrollmentLink courseInvoiceEnrollmentLink;
     private final ObjectMapper objectMapper;
 
     public CourseEnrollmentAdmissionPaymentListener(CourseEnrollmentApplicationRepository applicationRepository,
-                                                    CourseEnrollmentService courseEnrollmentService, ObjectMapper objectMapper) {
+                                                    CourseEnrollmentService courseEnrollmentService, CourseInvoiceEnrollmentLink courseInvoiceEnrollmentLink, ObjectMapper objectMapper) {
         this.applicationRepository = applicationRepository;
         this.courseEnrollmentService = courseEnrollmentService;
+        this.courseInvoiceEnrollmentLink = courseInvoiceEnrollmentLink;
         this.objectMapper = objectMapper;
     }
 
@@ -43,7 +46,7 @@ public class CourseEnrollmentAdmissionPaymentListener {
                 new CreateCourseEnrollmentRequest(application.getCourse().getId(), deserializeOverrides(application.getSectionOverrides())));
         application.setCourseEnrollment(enrollment);
         applicationRepository.save(application);
-        application.getInvoice().assignInvoiceToCourseEnrollment(enrollment.getId());
+        courseInvoiceEnrollmentLink.linkInvoiceToCourseEnrollment(event.invoiceId(), enrollment.getId());
         log.info("Inscripción a curso confirmada por el pago de la factura de admisión: solicitud={}, inscripcion={}, factura={}",
                 application.getId(), enrollment.getId(), event.invoiceId());
     }

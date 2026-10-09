@@ -8,7 +8,6 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.enrollment.exception.PendingCourseEnrollmentApplicationException;
@@ -87,8 +86,8 @@ public class CourseEnrollmentApplicationService {
         application.setStudent(student);
         application.setCourse(course);
         application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
-        application.setInvoice(invoice);
-        if (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+        application.setInvoiceId(invoice.getId());
+        if (!invoice.isPayable()) {
             application.setCourseEnrollment(courseEnrollmentService.enrollSelfService(studentId, request));
             invoice.assignInvoiceToCourseEnrollment(application.getCourseEnrollment().getId());
             return courseEnrollmentApplicationRepository.save(application);

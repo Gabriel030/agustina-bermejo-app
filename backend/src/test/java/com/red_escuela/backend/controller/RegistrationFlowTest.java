@@ -503,7 +503,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void enrollingInACourseStaysUnderReviewAndOnlyGrantsTheRoleOnApprovingTheReceipt() throws Exception {
+    void enrollingInACourseStaysUnderReviewUntilTheReceiptIsApproved() throws Exception {
         Long institutionId = persistInstitution();
         Course course = persistCourse(20);
         persistPriceRevision(null, course, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000));
@@ -539,15 +539,5 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + tokenAdministrativo))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));
-
-        mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roles[0]").value("ALUMNO"));
-
-        String misSolicitudesResponse = mockMvc.perform(get("/me/course-enrollment-applications")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        assertThat(objectMapper.readTree(misSolicitudesResponse).get(0).get("courseEnrollmentId").isNull()).isFalse();
     }
 }

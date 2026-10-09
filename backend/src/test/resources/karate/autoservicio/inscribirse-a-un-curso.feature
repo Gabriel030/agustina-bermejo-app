@@ -95,8 +95,10 @@ Feature: Caso de uso — Inscribirse a un curso
 
     # El request que hubiera atrapado el bug real: ALUMNO otorgado en la misma
     # operación de aprobación, sin transacción de test de por medio que lo enmascare.
+    * configure retry = { count: 60, interval: 500 }
     Given path '/me'
     And header Authorization = 'Bearer ' + alumnoToken
+    And retry until response.roles.indexOf('ALUMNO') >= 0
     When method get
     Then status 200
     And match response.roles contains 'ALUMNO'
