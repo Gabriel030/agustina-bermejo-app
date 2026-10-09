@@ -3,6 +3,8 @@ package com.red_escuela.backend.identity.usecase.person;
 import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
+import com.red_escuela.backend.shared.domain.DocumentNumber;
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -42,13 +44,14 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
             person.setSex(request.sexo());
         }
         if (request.dni() != null && !request.dni().isBlank()) {
-            String newDni = request.dni().trim();
-            personRepository.findByDni(newDni)
+            DocumentNumber document = DocumentNumber.of(
+                    request.documentType() == null ? DocumentType.DNI : request.documentType(), request.dni());
+            personRepository.findByDocumentTypeAndDni(document.type(), document.value())
                     .filter(owner -> !owner.getId().equals(person.getId()))
                     .ifPresent(owner -> {
-                        throw new DniAlreadyExistsException(newDni);
+                        throw new DniAlreadyExistsException(document.type(), document.value());
                     });
-            person.changeDni(newDni);
+            person.changeDocument(document.type(), document.value());
         }
 
         var address = person.getAddress();

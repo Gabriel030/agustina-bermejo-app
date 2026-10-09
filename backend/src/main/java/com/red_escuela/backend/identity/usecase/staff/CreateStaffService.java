@@ -48,8 +48,8 @@ public class CreateStaffService implements CreateStaffUseCase {
         staffRoleAssignmentPolicy.requireCanAssign(requestedRole);
 
         Person person = personFactory.createBasePerson(request.nombre(), request.apellido(), request.email());
-        person.setDni(request.dni());
-        person.setUsername(request.dni());
+        person.changeDocument(request.documentType(), request.dni());
+        person.setUsername(person.getDni());
 
         var address = person.getAddress();
         address.setStreet(request.street());
@@ -67,7 +67,7 @@ public class CreateStaffService implements CreateStaffUseCase {
         try {
             personRepository.saveAndFlush(person);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
 
         if ("DOCENTE".equals(requestedRole)) {

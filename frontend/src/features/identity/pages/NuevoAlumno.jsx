@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { validateDocument } from '@/lib/documentType';
 import { toast } from 'sonner';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -26,6 +27,7 @@ const schema = z.object({
   apellido: z.string().min(1, 'Requerido'),
   email: z.string().email('Email inválido'),
   telefono: z.string().optional(),
+  documentType: z.enum(['DNI', 'PASSPORT', 'OTHER']).default('DNI'),
   dni: z.string().min(1, 'Requerido'),
   street: z.string().min(1, 'Requerido'),
   number: z.string().optional(),
@@ -34,6 +36,9 @@ const schema = z.object({
   state: z.string().optional(),
   postalCode: z.string().optional(),
   country: z.string().optional(),
+}).superRefine((valores, ctx) => {
+  const mensaje = validateDocument(valores.documentType, valores.dni);
+  if (mensaje) ctx.addIssue({ code: 'custom', path: ['dni'], message: mensaje });
 });
 
 const TIPOS_REQUERIDOS = ['DNI_FRENTE', 'DNI_DORSO', 'ANALITICO_SECUNDARIO'];
@@ -45,9 +50,9 @@ function createProspectErrorMessage(err) {
 }
 
 function confirmErrorMessage(err) {
-  if (err?.code === 'DNI_ALREADY_EXISTS') return 'Ya existe una persona con ese DNI.';
+  if (err?.code === 'DNI_ALREADY_EXISTS') return 'Ya existe una persona con ese documento.';
   if (err?.code === 'PROSPECT_ALREADY_CONFIRMED') return 'Este alumno ya fue confirmado.';
-  if (err?.status === 400) return 'Revisá los datos: DNI, calle y ciudad son obligatorios.';
+  if (err?.status === 400) return 'Revisá los datos: documento, calle y ciudad son obligatorios.';
   return 'No se pudo confirmar el alta. Intentá de nuevo.';
 }
 
@@ -72,10 +77,11 @@ export function NuevoAlumno() {
 
   const {
     register,
+    control,
     trigger,
     getValues,
     formState: { errors },
-  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched' });
+  } = useForm({ resolver: zodResolver(schema), mode: 'onTouched', defaultValues: { documentType: 'DNI' } });
 
   const isMutating = crearProspecto.isPending || guardarBorrador.isPending || confirmarAlta.isPending;
 
@@ -129,6 +135,7 @@ export function NuevoAlumno() {
     if (currentStep === 2) {
       const values = getValues();
       const borrador = {
+        documentType: values.documentType,
         dni: values.dni || null,
         street: values.street || null,
         number: values.number || null,
@@ -200,7 +207,7 @@ export function NuevoAlumno() {
               errorValidacion={TIPOS_REQUERIDOS.every((t) => documentos[t]) ? null : errorDocumentos}
             />
           )}
-          {currentStep === 2 && <DatosConfirmacionStep register={register} errors={errors} isLoading={isMutating} />}
+          {currentStep === 2 && <DatosConfirmacionStep register={register} control={control} errors={errors} isLoading={isMutating} />}
           {currentStep === 3 && <ResumenStep alumno={getValues()} esAnonimo={false} />}
         </form>
 

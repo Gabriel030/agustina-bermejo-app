@@ -118,7 +118,7 @@ describe('NuevoAlumno', () => {
     await user.type(screen.getByPlaceholderText('Buenos Aires'), 'Córdoba');
     await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
 
-    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('Ya existe una persona con ese DNI.'));
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('Ya existe una persona con ese documento.'));
 
     await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
 

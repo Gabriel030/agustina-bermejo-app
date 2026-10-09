@@ -3,11 +3,13 @@ package com.red_escuela.backend.identity.dto;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 
+import com.red_escuela.backend.shared.domain.DocumentType;
+
 import java.util.List;
 
 public record PersonResponse(
         Long id, String legajo, boolean hasAvatar, String nombre, String apellido, String sexo,
-        String email, String telefono, String dni,
+        String email, String telefono, String dni, DocumentType documentType,
         String street, String number, String floor, String city, String state,
         String postalCode, String country, List<String> roles) {
 
@@ -23,6 +25,7 @@ public record PersonResponse(
                 person.emailValue(),
                 person.getPhoneNumber(),
                 person.getDni(),
+                person.getDocumentType(),
                 address == null ? null : address.getStreet(),
                 address == null ? null : address.getNumber(),
                 address == null ? null : address.getFloor(),
