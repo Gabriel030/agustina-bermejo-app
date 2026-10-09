@@ -20,7 +20,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.notification.PaymentReceiptAppliedToOlderDebtEvent;
+import com.red_escuela.backend.billing.events.PaymentReceiptAppliedToOlderDebtEvent;
 import com.red_escuela.backend.notification.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.slf4j.Logger;
@@ -70,7 +70,10 @@ public class ApprovePaymentReceiptService implements ApprovePaymentReceiptUseCas
         if (invoice.getPaymentStatus() != InvoicePaymentStatus.PAID) {
             receipt.markAsAppliedToOlderDebt();
             BankTransferReceipt applied = bankTransferReceiptRepository.save(receipt);
-            eventPublisher.publishEvent(new PaymentReceiptAppliedToOlderDebtEvent(applied));
+            if (applied.payer() != null) {
+                eventPublisher.publishEvent(PaymentReceiptAppliedToOlderDebtEvent.appliedFor(applied.getId(), invoice.getId(), applied.payer().getId(),
+                        invoice.getPeriod().format(java.time.format.DateTimeFormatter.ofPattern("MM/yyyy"))));
+            }
             log.info("Comprobante aprobado y aplicado a deuda anterior: comprobante={}, factura={}", id, invoice.getId());
             return applied;
         }

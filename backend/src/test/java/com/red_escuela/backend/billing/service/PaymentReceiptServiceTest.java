@@ -407,9 +407,9 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPLIED_TO_DEBT);
         assertThatInvoice(invoiceRepository.findById(older.getId()).orElseThrow()).isPaid();
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
-        assertThat(notificationsOf(student)).extracting(Notification::getType)
-                .contains(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT)
-                .doesNotContain(NotificationType.PAYMENT_RECEIPT_APPROVED);
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() ->
+                assertThat(notificationsOf(student)).extracting(Notification::getType).contains(NotificationType.PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT));
+        assertThat(notificationsOf(student)).extracting(Notification::getType).doesNotContain(NotificationType.PAYMENT_RECEIPT_APPROVED);
         BankTransferReceipt second = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
         assertThat(second.getStatus()).isEqualTo(BankTransferReceiptStatus.PENDING_REVIEW);
         rejectPaymentReceiptUseCase.reject(second.getId(), "Limpieza de test", admin);

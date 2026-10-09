@@ -20,7 +20,6 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplication
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.enrollment.exception.PaymentReceiptRequiredException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,7 +86,7 @@ public class CourseEnrollmentApplicationService {
         application.setStudent(student);
         application.setCourse(course);
         application.setSectionOverrides(serializeOverrides(request.sectionOverrides()));
-        if (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+        if (!invoice.isPayable()) {
             application.setCourseEnrollment(courseEnrollmentService.enrollSelfService(studentId, request));
             invoice.assignInvoiceToCourseEnrollment(application.getCourseEnrollment().getId());
             return courseEnrollmentApplicationRepository.save(application);
