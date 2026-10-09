@@ -325,6 +325,14 @@ class ArchitectureTest {
     private static final String INVOICE_REPOSITORY_CLASS = "com.red_escuela.backend.billing.invoice.repository.InvoiceRepository";
 
     @Test
+    @Tag("D-094")
+    @Tag("D-051")
+    void paymentAllocationsAreAppendOnly() {
+        ArchitectureRules.paymentAllocationsAreAppendOnly("com.red_escuela.backend.billing.account.domain.PaymentAllocation",
+                "com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository").check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-144")
     void currentAccountEntriesAreAppendOnly() {
         ArchitectureRules.currentAccountEntriesAreAppendOnly(ENTRY_CLASS, ENTRY_REPOSITORY_CLASS, ACCOUNT_REPOSITORY_CLASS, "insertStudentCurrentAccountIfAbsent").check(MAIN_CLASSES);

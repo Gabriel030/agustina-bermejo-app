@@ -59,6 +59,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension.class)
+@org.springframework.test.context.event.RecordApplicationEvents
 class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -98,6 +99,9 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private org.springframework.test.context.event.ApplicationEvents applicationEvents;
 
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbc;
@@ -296,6 +300,68 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId))
                 .isEqualByComparingTo("10000");
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-139")
+    @Tag("D-183")
+    void twoSimultaneousDeliveriesOfTheSameMercadoPagoPaymentCreditItOnceAndBothFinishWithoutError() throws Exception {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        String mpPaymentId = "same-delivery-" + System.nanoTime();
+        java.util.concurrent.CountDownLatch start = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.List<java.util.concurrent.Future<?>> futures = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                            .process("", "request-" + System.nanoTime(), mpPaymentId));
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (java.util.concurrent.Future<?> future : futures) {
+                future.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).hasSize(1);
+        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId))
+                .isEqualTo(1L);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-134")
+    void aMercadoPagoPaymentOnAnInvoiceThatIsNoLongerOpenStaysAsAccountCreditAndAnnouncesIt() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-1", "first-" + System.nanoTime()));
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-2", "second-" + System.nanoTime()));
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent.class)).hasSize(1)
+                .allSatisfy(event -> assertThat(event.reportedInvoiceId()).isEqualTo(invoice.getId()));
+    }
+
+    @Test
+    @Tag("D-134")
+    void aMercadoPagoPaymentOnAnOpenInvoiceDoesNotAnnounceAnyLeftoverCredit() {
+        Invoice invoice = persistPendingInvoice(BigDecimal.valueOf(10000));
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(status -> serviceReporting(invoice.getId(), BigDecimal.valueOf(10000))
+                .process("", "request-1", "only-" + System.nanoTime()));
+
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent.class)).isEmpty();
+        assertThat(applicationEvents.stream(com.red_escuela.backend.billing.events.AccountCreditAllocatedEvent.class)).hasSize(1);
     }
 
     @Test

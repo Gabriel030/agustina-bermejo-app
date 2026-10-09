@@ -332,6 +332,28 @@ public final class ArchitectureRules {
                 .because("the V2 billing model must not depend on the legacy billing code that V2-02 replaces");
     }
 
+    public static ArchRule paymentAllocationsAreAppendOnly(String allocationClassName, String allocationRepositoryClassName) {
+        return classes()
+                .should(new ArchCondition<JavaClass>("be append-only") {
+                    @Override
+                    public void check(JavaClass origin, ConditionEvents events) {
+                        if (origin.getName().equals(allocationClassName)) {
+                            origin.getMethods().stream()
+                                    .filter(method -> method.getModifiers().contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC))
+                                    .filter(method -> method.getName().startsWith("set"))
+                                    .forEach(method -> events.add(SimpleConditionEvent.violated(method, method.getFullName() + " is a public setter of an append-only allocation")));
+                        }
+                        if (origin.getName().equals(allocationRepositoryClassName)) {
+                            origin.getMethods().stream()
+                                    .filter(method -> method.getName().startsWith("delete") || method.getName().startsWith("remove")
+                                            || method.isAnnotatedWith(org.springframework.data.jpa.repository.Modifying.class))
+                                    .forEach(method -> events.add(SimpleConditionEvent.violated(method, method.getFullName() + " modifies allocations")));
+                        }
+                    }
+                })
+                .because("payment allocations are never updated nor deleted: a reversal is a new row (D-094)");
+    }
+
     public static ArchRule currentAccountEntriesAreAppendOnly(String entryClassName, String entryRepositoryClassName,
                                                               String accountRepositoryClassName, String allowedModifyingMethod) {
         return classes()
