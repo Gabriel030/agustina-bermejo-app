@@ -35,7 +35,7 @@ const DOCUMENTOS_CARRERA = [
 
 const CAMPOS_DATOS = {
   email: 'el email',
-  dni: 'el DNI',
+  dni: 'el documento',
   street: 'la calle',
   number: 'el número',
   city: 'la ciudad',
