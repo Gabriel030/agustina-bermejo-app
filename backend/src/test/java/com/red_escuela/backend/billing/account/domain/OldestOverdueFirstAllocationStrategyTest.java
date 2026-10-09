@@ -115,4 +115,12 @@ class OldestOverdueFirstAllocationStrategyTest {
 
         assertThat(input).containsExactly(first, second);
     }
+
+    @Test
+    void anInvoiceGoesBeforeItsDebitNoteEvenWhenTheNoteHasTheEarlierIssueDateAndId() {
+        OpenInvoiceView debitNote = invoice(1, InvoiceDocumentType.DEBIT_NOTE, 2L, "2027-03-10", "2027-03-01", "10.00");
+        OpenInvoiceView invoice = invoice(2, InvoiceDocumentType.INVOICE, null, "2027-03-10", "2027-03-02", "10.00");
+
+        assertThat(plannedIds("10.00", debitNote, invoice)).containsExactly(2L);
+    }
 }

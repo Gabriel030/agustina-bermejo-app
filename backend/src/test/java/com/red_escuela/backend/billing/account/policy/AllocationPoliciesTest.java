@@ -162,4 +162,24 @@ class AllocationPoliciesTest {
         assertThat(denied.allowed()).isFalse();
         assertThat(denied.code()).isEqualTo("PAYMENT_ALLOCATION_ALREADY_REVERSED");
     }
+
+    @Test
+    @Tag("D-089")
+    void everyPolicyReportsItsOwnRuleName() {
+        assertThat(new PaymentAllocationSameAccountPolicy().ruleName()).isEqualTo("PaymentAllocationSameAccountPolicy");
+        assertThat(new FullInvoicePaymentOnlyPolicy().ruleName()).isEqualTo("FullInvoicePaymentOnlyPolicy");
+        assertThat(new OldestOverdueFirstAllocationOrderPolicy().ruleName()).isEqualTo("OldestOverdueFirstAllocationOrderPolicy");
+        assertThat(new PaymentAllocationReversedOnlyOncePolicy().ruleName()).isEqualTo("PaymentAllocationReversedOnlyOncePolicy");
+    }
+
+    @Test
+    @Tag("D-089")
+    void findingAnOpenInvoiceByIdReturnsThatInvoiceAndNothingForAnUnknownId() {
+        OpenInvoiceView first = open(1, ACCOUNT, "2027-03-10", ars("100.00"));
+        OpenInvoiceView second = open(2, ACCOUNT, "2027-04-10", ars("100.00"));
+        AllocationPlanContext context = context("100.00", List.of(first, second), List.of());
+
+        assertThat(context.findOpenInvoice(2L)).contains(second);
+        assertThat(context.findOpenInvoice(3L)).isEmpty();
+    }
 }
