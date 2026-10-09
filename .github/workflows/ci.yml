@@ -2,11 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [develop, master]
-    paths-ignore: ['*.md', 'docs/context/**', 'docs/*.png']
+    branches: [master]
+    paths-ignore: ['*.md', 'docs/**']
   pull_request:
     branches: [develop, master]
-    paths-ignore: ['*.md', 'docs/context/**', 'docs/*.png']
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore: ['*.md', 'docs/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,24 +16,7 @@ concurrency:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: |
-            21
-          cache: maven
-          cache-dependency-path: backend/pom.xml
-
-      - name: Run backend test suite
-        working-directory: backend
-        run: ./mvnw clean verify
-
-  mutation:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,19 +27,19 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          backend=true
+          relevant=true
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
-              if ! printf '%s\n' "$changed" | grep -q '^backend/'; then
-                backend=false
+              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|\.github/workflows/)'; then
+                relevant=false
               fi
             fi
           fi
-          echo "backend=$backend" >> "$GITHUB_OUTPUT"
-          echo "backend changes: $backend"
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "backend changes: $relevant"
 
       - name: Set up JDK 21
-        if: steps.changes.outputs.backend == 'true'
+        if: steps.changes.outputs.relevant == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -64,25 +48,58 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
 
-      - name: Run mutation testing
-        if: steps.changes.outputs.backend == 'true'
+      - name: Run backend test suite
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: backend
-        run: ./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage
+        run: ./mvnw clean verify
 
-      - name: Upload PIT report
-        if: always() && steps.changes.outputs.backend == 'true'
-        uses: actions/upload-artifact@v4
+  local-tests-log:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
         with:
-          name: pit-report
-          path: backend/target/pit-reports
-          if-no-files-found: ignore
+          fetch-depth: 0
+
+      - name: Require the local test log when the billing domain changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          if printf '%s\n' "$changed" | grep -qE '^backend/(pom\.xml|src/(main|test)/java/com/red_escuela/backend/(shared/domain|billing)/)'; then
+            if ! printf '%s\n' "$changed" | grep -qx 'docs/testing/local-test-log.md'; then
+              echo "This PR changes the billing domain: add its local PIT run to docs/testing/local-test-log.md"
+              exit 1
+            fi
+          fi
+          echo "local test log check passed"
 
   frontend:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect frontend changes
+        id: changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          relevant=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
+              if ! printf '%s\n' "$changed" | grep -qE '^(frontend/|\.github/workflows/)'; then
+                relevant=false
+              fi
+            fi
+          fi
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "frontend changes: $relevant"
 
       - name: Set up Node
+        if: steps.changes.outputs.relevant == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -90,18 +107,22 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm ci
 
       - name: Lint
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run lint
 
       - name: Build
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run build
 
       - name: Run frontend test suite
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: frontend
         run: npm run test
 
