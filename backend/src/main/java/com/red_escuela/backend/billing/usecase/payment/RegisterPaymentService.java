@@ -114,6 +114,8 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
                 .sorted(Comparator.comparing(PaymentAllocationRequest::invoiceId))
                 .toList();
 
+        lockAccountsOfInvoicesInAscendingOrder(ordered);
+
         List<Invoice> lockedInvoices = ordered.stream()
                 .map(allocation -> invoiceRepository.findByIdForUpdate(allocation.invoiceId())
                         .orElseThrow(() -> new InvoiceNotFoundException(allocation.invoiceId())))
@@ -211,6 +213,15 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         log.info("Pago acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}, facturas saldadas={}",
                 payment.getId(), request.method(), received.amount(), reportedInvoiceId, allocated.settledInvoices().stream().map(Invoice::getId).toList());
         return payment;
+    }
+
+    private void lockAccountsOfInvoicesInAscendingOrder(List<PaymentAllocationRequest> allocations) {
+        allocations.stream()
+                .map(allocation -> invoiceRepository.findStudentCurrentAccountIdByInvoiceId(allocation.invoiceId())
+                        .orElseThrow(() -> new InvoiceNotFoundException(allocation.invoiceId())))
+                .distinct()
+                .sorted()
+                .forEach(accountService::lockStudentCurrentAccount);
     }
 
     private void settleSelectedInvoicesWithLegacyCredit(Payment payment, List<PaymentAllocationRequest> ordered, List<Invoice> lockedInvoices,
