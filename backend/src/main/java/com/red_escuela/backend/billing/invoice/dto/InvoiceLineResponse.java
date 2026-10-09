@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.dto;
+package com.red_escuela.backend.billing.invoice.dto;
 
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.shared.domain.Money;

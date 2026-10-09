@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.dto;
 
+import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceAmounts;
