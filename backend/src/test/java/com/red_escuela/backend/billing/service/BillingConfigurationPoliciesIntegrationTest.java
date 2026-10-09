@@ -22,6 +22,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,20 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     @Autowired
     private UpdateYearBillingConfigurationUseCase updateYearConfiguration;
     @Autowired
+    private com.red_escuela.backend.identity.repository.RoleRepository roleRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader configurationReader;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay termsOverlay;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingActorResolver actorResolver;
+    @Autowired
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private java.time.Clock clock;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository versionRepository;
+    @Autowired
     private com.red_escuela.backend.billing.operation.BillingOperationPipeline pipeline;
     @Autowired
     private com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation changeOperation;
@@ -58,6 +74,25 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     private ProgramYearBillingTemplateRepository templateRepository;
     @Autowired
     private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository policyRepository;
+
+    @BeforeEach
+    void authenticateAsDirector() {
+        authenticateAs("DIRECTOR");
+    }
+
+    @AfterEach
+    void clearSecurity() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAs(String roleName) {
+        Person person = transactionTemplate.execute(status -> {
+            Person created = newPerson();
+            created.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+            return created;
+        });
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(person.getId().toString(), null, "ROLE_" + roleName));
+    }
 
     private static YearBillingConfigurationRequest config(Integer count, Integer first, Integer second, Integer dueDays) {
         return new YearBillingConfigurationRequest(count, first, second, null, null, dueDays, null, null, null, null, null, null);
@@ -374,7 +409,9 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         today(date(2027, 6, 20));
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch start = new CountDownLatch(1);
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Future<Object> reduction = pool.submit(() -> {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             start.await();
             try {
                 updateYearConfiguration.update(year.templateId(), config(1, null, null, null));
@@ -399,6 +436,40 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         if (secondIssued) {
             assertThat(reductionOutcome).isEqualTo("FROZEN");
         }
+    }
+
+    @Test
+    @Tag("D-212")
+    void theSamePatchTwiceCreatesNoSecondVersion() {
+        Year year = yearWithFirstFeeIssued();
+        updateYearConfiguration.update(year.templateId(), config(null, null, null, 15));
+        long afterFirst = versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId())).count();
+
+        updateYearConfiguration.update(year.templateId(), config(null, null, null, 15));
+
+        assertThat(versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId())).count()).isEqualTo(afterFirst);
+    }
+
+    @Test
+    @Tag("D-212")
+    @Tag("D-095")
+    void anAdministrativeActorLeavesAPersistedProposalInsteadOfRollingBack() {
+        Year year = yearWithFirstFeeIssued();
+        authenticateAs("ADMINISTRATIVO");
+        var service = new com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService(templateRepository, configurationReader, termsOverlay, pipeline,
+                changeOperation, actorResolver, eventPublisher, clock);
+
+        Object outcome = transactionTemplate.execute(status -> {
+            try {
+                return service.update(year.templateId(), config(null, null, null, 21));
+            } catch (com.red_escuela.backend.billing.operation.AuthorizationPendingException e) {
+                return e;
+            }
+        });
+
+        assertThat(outcome).isInstanceOf(com.red_escuela.backend.billing.operation.AuthorizationPendingException.class);
+        assertThat(versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId()))
+                .filter(v -> v.getStatus() == com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.PROPOSED).count()).isEqualTo(1);
     }
 
     private CreateLatePaymentSettingsRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {

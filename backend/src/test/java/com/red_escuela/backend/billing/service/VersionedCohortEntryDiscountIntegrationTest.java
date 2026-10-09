@@ -10,6 +10,8 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
+import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
+import com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -33,6 +35,8 @@ class VersionedCohortEntryDiscountIntegrationTest extends AbstractInvoiceSequenc
 
     @Autowired
     private UpdateCohortEntryFeeDiscountUseCase updateEntryDiscount;
+    @Autowired
+    private CreateProgramCohortUseCase createCohort;
     @Autowired
     private ApproveAuthorizationRequestUseCase approveRequest;
     @Autowired
@@ -108,6 +112,81 @@ class VersionedCohortEntryDiscountIntegrationTest extends AbstractInvoiceSequenc
                 .filteredOn(version -> version.getStatus() == ConfigurationVersionStatus.EFFECTIVE)
                 .singleElement()
                 .satisfies(version -> assertThat(version.isDirectPublication()).isTrue());
+    }
+
+    private static final Percentage THIRTY_PERCENT = Percentage.ofFraction(new BigDecimal("0.30"));
+    private static final Percentage NONE = Percentage.ofFraction(BigDecimal.ZERO);
+
+    private Long createCohortWithDiscount(Percentage discount) {
+        Career career = newCareer();
+        Year year = newYear(career, 2027, 10, 2, 2, 7);
+        today(TODAY);
+        LocalDate start = LocalDate.of(2027, 3, 1);
+        return createCohort.create(year.templateId(), new CreateProgramCohortRequest(CohortIntake.FIRST, start.minusMonths(2), start.minusDays(1), start, discount)).getId();
+    }
+
+    private long versionsOf(Long cohortId) {
+        return versionRepository.findAll().stream().filter(version -> cohortId.equals(version.getCohortId())).count();
+    }
+
+    private Long pendingRequestOf(Long cohortId) {
+        return versionRepository.findAll().stream().filter(version -> cohortId.equals(version.getCohortId()) && version.getStatus() == ConfigurationVersionStatus.PROPOSED)
+                .findFirst().orElseThrow().getAuthorizationRequestId();
+    }
+
+    @Test
+    @Tag("D-234")
+    @Tag("D-212")
+    void anAdministrativeCreatingACohortWithANonDefaultDiscountLeavesItPendingUntilTheDirectorApprovesIt() {
+        authenticateAs(personWithRole("ADMINISTRATIVO"), "ADMINISTRATIVO");
+
+        Long cohortId = createCohortWithDiscount(THIRTY_PERCENT);
+
+        Long requestId = pendingRequestOf(cohortId);
+        assertThat(requestRepository.findById(requestId).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.PENDING);
+        assertThat(reader.cohortEntryDiscountEffectiveOn(cohortId, TODAY)).isEqualTo(NONE);
+
+        authenticateAs(personWithRole("DIRECTOR"), "DIRECTOR");
+        approveRequest.approve(requestId, "de acuerdo");
+
+        assertThat(reader.cohortEntryDiscountEffectiveOn(cohortId, TODAY)).isEqualTo(THIRTY_PERCENT);
+    }
+
+    @Test
+    @Tag("D-234")
+    @Tag("D-223")
+    void aDirectorCreatingACohortWithANonDefaultDiscountPublishesItDirectly() {
+        authenticateAs(personWithRole("DIRECTOR"), "DIRECTOR");
+
+        Long cohortId = createCohortWithDiscount(THIRTY_PERCENT);
+
+        assertThat(reader.cohortEntryDiscountEffectiveOn(cohortId, TODAY)).isEqualTo(THIRTY_PERCENT);
+        assertThat(versionRepository.findAll().stream().filter(version -> cohortId.equals(version.getCohortId())))
+                .singleElement().satisfies(version -> assertThat(version.isDirectPublication()).isTrue());
+    }
+
+    @Test
+    @Tag("D-234")
+    void anAdministrativeCreatingACohortWithTheDefaultDiscountOpensNoProposal() {
+        authenticateAs(personWithRole("ADMINISTRATIVO"), "ADMINISTRATIVO");
+
+        Long cohortId = createCohortWithDiscount(NONE);
+
+        assertThat(versionsOf(cohortId)).isZero();
+        assertThat(reader.cohortEntryDiscountEffectiveOn(cohortId, TODAY)).isEqualTo(NONE);
+    }
+
+    @Test
+    @Tag("D-212")
+    void anAdministrativeRepeatingTheCurrentDiscountOpensNoProposalAndCreatesNoVersion() {
+        Long cohortId = cohortWithDiscount(TEN_PERCENT);
+        today(TODAY);
+        authenticateAs(personWithRole("ADMINISTRATIVO"), "ADMINISTRATIVO");
+        long before = versionsOf(cohortId);
+
+        updateEntryDiscount.update(cohortId, TEN_PERCENT);
+
+        assertThat(versionsOf(cohortId)).isEqualTo(before);
     }
 
     private Long pendingRequestIdOf(Long cohortId) {

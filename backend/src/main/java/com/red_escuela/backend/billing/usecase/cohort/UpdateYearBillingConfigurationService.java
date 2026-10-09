@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
@@ -48,16 +49,20 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     }
 
     @Override
+    @PreAuthorize("hasRole('DIRECTOR')")
     @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramYearBillingTemplate update(Long templateId, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate template = templateRepository.findByIdForUpdate(templateId)
                 .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(templateId));
         LocalDate today = LocalDate.now(clock);
         Long termId = template.termId();
-        YearBillingTerms proposed = termsOverlay.overlay(configurationReader.requireYearTermsEffectiveOn(template.programId(), termId, today), request);
-        pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON,
-                        actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(templateId)), true))
-                .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
+        YearBillingTerms current = configurationReader.requireYearTermsEffectiveOn(template.programId(), termId, today);
+        YearBillingTerms proposed = termsOverlay.overlay(current, request);
+        if (!proposed.equals(current)) {
+            pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON,
+                            actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(templateId)), actorResolver.currentActorIsDirector()))
+                    .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
+        }
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return template;
     }

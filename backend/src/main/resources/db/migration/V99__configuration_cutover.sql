@@ -1,3 +1,5 @@
+create temporary table migration_v99_start as select coalesce(max(id), 0) as max_id from configuration_version;
+
 create temporary table migration_default_actor as
 select coalesce(
     (select p.id from person p join person_role pr on pr.person_id = p.id join role r on r.id = pr.role_id where r.name = 'DIRECTOR' order by p.id limit 1),
@@ -13,8 +15,8 @@ select 'YEAR_TERMS', 'YEAR_TERMS:P' || t.program_id || ':T' || t.term_id, t.prog
            'paysWhilePaused', t.pays_while_paused, 'blocksEnrollment', t.blocks_enrollment, 'blocksExamRegistration', t.blocks_exam_registration,
            'blocksCertificates', t.blocks_certificates,
            'requireEnrollmentFeeForFinalExamOnlyStudents', t.require_enrollment_fee_for_final_exam_only_students),
-       'EFFECTIVE', t.created_at::date, 'Versión inicial migrada', t.created_by_id, t.created_at::timestamptz, t.created_by_id, t.created_at::timestamptz, true
-from program_year_billing_template t
+       'EFFECTIVE', least(coalesce(tm.start_date::date, t.created_at::date), t.created_at::date), 'Versión inicial migrada', t.created_by_id, t.created_at::timestamptz, t.created_by_id, t.created_at::timestamptz, true
+from program_year_billing_template t left join term tm on tm.id = t.term_id
 where not exists (select 1 from configuration_version v where v.scope = 'YEAR_TERMS' and v.topic_key = 'YEAR_TERMS:P' || t.program_id || ':T' || t.term_id);
 
 insert into configuration_version (scope, topic_key, cohort_id, config_values, status, effective_from, change_reason, proposed_by_id, proposed_at,
@@ -44,12 +46,42 @@ from program_year_billing_template t join term tm on tm.id = t.term_id
 where tm.start_date is not null
   and not exists (select 1 from configuration_version v where v.scope = 'ANNUAL_UPFRONT' and v.topic_key = 'ANNUAL_UPFRONT:P' || t.program_id || ':T' || t.term_id);
 
+insert into configuration_version (scope, topic_key, config_values, status, effective_from, change_reason, proposed_by_id, proposed_at,
+                                   decided_by_id, decided_at, direct_publication)
+select 'LATE_PAYMENT', 'LATE_PAYMENT',
+       jsonb_build_object('type', 'LATE_PAYMENT', 'gracePeriodDays', s.grace_period_days, 'monthlyLateFeeRate', jsonb_build_object('fraction', s.surcharge_percentage),
+           'lateFeeCapMonths', 12, 'lateFeeCapPercentage', null, 'suspensionAfterDays', s.suspension_after_days,
+           'suspensionAfterInvoiceCount', s.suspension_after_invoice_count, 'blockNewEnrollmentsWhenOverdue', true,
+           'lateFeeDebitNoteDueDays', 10, 'freezeLateFeesOnWithdrawal', true),
+       case when s.effective_from > current_date then 'SCHEDULED' else 'SUPERSEDED' end,
+       s.effective_from, 'Versión inicial migrada', s.created_by_id, s.created_at::timestamptz, s.created_by_id, s.created_at::timestamptz, true
+from late_payment_settings s
+where not exists (select 1 from configuration_version v where v.scope = 'LATE_PAYMENT' and v.effective_from = s.effective_from and v.proposed_at = s.created_at::timestamptz);
+
+with latest as (
+    select id from configuration_version
+    where scope = 'LATE_PAYMENT' and status in ('EFFECTIVE', 'SUPERSEDED') and effective_from <= current_date
+    order by effective_from desc, proposed_at desc, id desc limit 1)
+update configuration_version v
+set status = case when v.id = (select id from latest) then 'EFFECTIVE' else 'SUPERSEDED' end
+where v.scope = 'LATE_PAYMENT' and v.status in ('EFFECTIVE', 'SUPERSEDED') and v.effective_from <= current_date
+  and v.status <> case when v.id = (select id from latest) then 'EFFECTIVE' else 'SUPERSEDED' end;
+
 insert into configuration_version_status_change (configuration_version_id, from_status, to_status, event, actor_process, changed_at, reason)
-select v.id, null, 'EFFECTIVE', 'PUBLISH_FOR_TODAY', 'LegacyConfigurationMigration', v.proposed_at, v.change_reason
+select v.id, null, case when v.status = 'SCHEDULED' then 'SCHEDULED' else 'EFFECTIVE' end,
+       case when v.status = 'SCHEDULED' then 'PUBLISH_FOR_FUTURE' else 'PUBLISH_FOR_TODAY' end,
+       'LegacyConfigurationMigration', v.proposed_at, v.change_reason
+from configuration_version v, migration_v99_start m
+where v.id > m.max_id;
+
+insert into configuration_version_status_change (configuration_version_id, from_status, to_status, event, actor_process, changed_at, reason)
+select v.id, 'EFFECTIVE', 'SUPERSEDED', 'SUPERSEDE', 'LegacyConfigurationMigration', now(), 'Versión posterior migrada'
 from configuration_version v
-where not exists (select 1 from configuration_version_status_change c where c.configuration_version_id = v.id);
+where v.scope = 'LATE_PAYMENT' and v.status = 'SUPERSEDED'
+  and not exists (select 1 from configuration_version_status_change c where c.configuration_version_id = v.id and c.to_status = 'SUPERSEDED');
 
 drop table migration_default_actor;
+drop table migration_v99_start;
 
 alter table program_year_billing_template
     drop column recurring_fee_invoices_count,

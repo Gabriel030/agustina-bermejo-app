@@ -387,7 +387,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     @Tag("D-118")
     @Tag("D-210")
     @Tag("D-095")
-    void legacyLatePaymentWritesAreMirroredSoTheReaderAgreesWithTheLegacySource() {
+    void latePaymentSettingsCreatedThroughTheLegacyUseCaseAreReadByEffectiveDate() {
         authenticateAs(director);
         createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.05")), 30, 2, TODAY));
         createLatePayment.create(new CreateLatePaymentSettingsRequest(4, Percentage.ofFraction(new BigDecimal("0.07")), 40, 3, DECEMBER_FIRST));
