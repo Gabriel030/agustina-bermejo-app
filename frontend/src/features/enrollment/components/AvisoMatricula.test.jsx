@@ -34,10 +34,10 @@ describe('AvisoMatricula', () => {
     expect(screen.queryByRole('button', { name: 'Pagar matrícula' })).not.toBeInTheDocument();
   });
 
-  it('explains a partial payment and keeps the pay button', () => {
-    render(<AvisoMatricula obligacion={{ status: 'PARTIAL', invoiceId: 7 }} onPagar={() => {}} />);
+  it('asks to pay the whole enrollment fee and keeps the pay button', () => {
+    render(<AvisoMatricula obligacion={{ status: 'PENDING', invoiceId: 7 }} onPagar={() => {}} />);
 
-    expect(screen.getByText(/Te falta completar el pago de la matrícula/)).toBeInTheDocument();
+    expect(screen.getByText(/tenés que pagar la matrícula/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pagar matrícula' })).toBeInTheDocument();
   });
 

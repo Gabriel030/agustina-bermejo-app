@@ -1,8 +1,9 @@
 package com.red_escuela.backend.billing.dto;
 
+import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceAmounts;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -15,11 +16,11 @@ import java.util.Comparator;
 import java.util.List;
 
 public record InvoiceResponse(
-        Long id, String feeType, String period, LocalDate dueDate, Money baseAmount,
-        Money amountDue, Money remainingBalance, String status,
-        List<InvoiceAdjustmentResponse> adjustments, String fiscalInvoiceStatus,
-        LocalDateTime createdAt, LocalDateTime updatedAt,
-        String cancelledByName, String cancelledReason, LocalDateTime cancelledAt,
+        Long id, String invoiceNumber, String invoiceType, String documentType, String documentStatus,
+        String paymentStatus, LocalDate issueDate, LocalDate dueDate, String currency,
+        Money linesTotalAmount, Money discountsTotalAmount, Money totalAmount, Money paidAmount,
+        Money creditedAmount, Money outstandingAmount, List<InvoiceLineResponse> lines,
+        String issuingReason, String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod) {
@@ -42,15 +43,15 @@ public record InvoiceResponse(
             productRef = new ProductRef("PROGRAM", programEnrollment.getProgram().getId(), programEnrollment.getId());
         }
         PaymentAllocation latest = view.allocations().stream().max(Comparator.comparing((PaymentAllocation a) -> a.getPayment().getPaidAt())).orElse(null);
-        boolean discarded = invoice.getDocumentStatus() == InvoiceDocumentStatus.DISCARDED;
+        InvoiceAmounts amounts = invoice.getAmounts();
         return new InvoiceResponse(
-                invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getDueDate(),
-                invoice.getAmounts().linesTotal().value(), invoice.getAmounts().total().value(), invoice.getAmounts().outstandingAmount().value(),
-                discarded ? "CANCELLED" : invoice.getPaymentStatus().name(),
-                invoice.getLines().stream().filter(l -> l.getDiscount() != null).map(l -> InvoiceAdjustmentResponse.from(l.getDiscount())).toList(),
-                null,
-                invoice.getCreatedAt(), invoice.getUpdatedAt(),
-                null, invoice.getDiscardedReason(), null,
+                invoice.getId(), invoice.getInvoiceNumber() == null ? null : invoice.getInvoiceNumber().value(),
+                invoice.getInvoiceType().name(), invoice.getDocumentType().name(), invoice.getDocumentStatus().name(),
+                invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name(), invoice.getIssueDate(), invoice.getDueDate(), invoice.currency().name(),
+                amounts.linesTotal().value(), amounts.discountsTotal().value(), amounts.total().value(), amounts.paidAmount().value(),
+                amounts.creditedAmount().value(), amounts.outstandingAmount().value(),
+                invoice.getLines().stream().map(InvoiceLineResponse::from).toList(),
+                invoice.getIssuingReason().name(), invoice.getDiscardedReason(),
                 studentId, studentDni, productRef,
                 line.getConcept(), line.getSubjectId(), line.getExamBoardRegistrationId(),
                 latest == null ? null : latest.getPayment().getPaidAt(), latest == null ? null : latest.getPayment().getMethod().name());

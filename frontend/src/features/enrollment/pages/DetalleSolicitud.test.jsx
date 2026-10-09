@@ -13,6 +13,7 @@ function renderDetalle(id = '1') {
     <MemoryRouter initialEntries={[`/mis-solicitudes/${id}`]}>
       <Routes>
         <Route path="/mis-solicitudes/:id" element={<DetalleSolicitud />} />
+        <Route path="/catalogo/carreras/:id" element={<div>Ficha de la carrera</div>} />
         <Route path="/mis-solicitudes" element={<div>Bandeja de mis solicitudes</div>} />
       </Routes>
     </MemoryRouter>,
@@ -29,7 +30,7 @@ describe('DetalleSolicitud', () => {
     renderDetalle('1');
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
-    expect(screen.getByText('En revisión')).toBeInTheDocument();
+    expect(screen.getAllByText('En revisión')).toHaveLength(2);
     expect(screen.getByText('DNI — frente')).toBeInTheDocument();
     expect(screen.getByText('DNI — dorso')).toBeInTheDocument();
     expect(screen.getByText('Analítico del secundario')).toBeInTheDocument();
@@ -262,7 +263,7 @@ describe('DetalleSolicitud', () => {
     );
     renderDetalle('1');
 
-    expect(await screen.findByText('Inscripto')).toBeInTheDocument();
+    expect(await screen.findAllByText('Inscripto')).toHaveLength(2);
     expect(screen.getByText(/tu inscripción a la carrera está confirmada/)).toBeInTheDocument();
   });
 
@@ -285,7 +286,25 @@ describe('DetalleSolicitud', () => {
 
     expect(await screen.findByText('Confirmando inscripción')).toBeInTheDocument();
     expect(screen.getByText(/Estamos confirmando tu inscripción en Diseño Gráfico\./)).toBeInTheDocument();
-    expect(screen.queryByText('Inscripto')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Inscripto')).toHaveLength(1);
     expect(screen.queryByText(/tu inscripción a la carrera está confirmada/)).not.toBeInTheDocument();
+  });
+
+  it('muestra el avance de la solicitud en el stepper y una salida desde el rechazo', async () => {
+    server.use(
+      http.get(`${API}/me/program-enrollment-applications`, () =>
+        HttpResponse.json([
+          { id: 2, programId: 9, programName: 'Administración de Empresas', status: 'REJECTED', requestedAt: '2026-01-10T10:00:00', rejectionReason: 'Falta analítico' },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    renderDetalle('2');
+
+    expect(await screen.findByText('Enviada')).toBeInTheDocument();
+    expect(screen.getAllByText('Rechazada').length).toBeGreaterThan(0);
+    expect(screen.getByText('Podés volver a solicitar el ingreso a Administración de Empresas cuando corrijas lo indicado.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Solicitar de nuevo' }));
+    expect(await screen.findByText('Ficha de la carrera')).toBeInTheDocument();
   });
 });

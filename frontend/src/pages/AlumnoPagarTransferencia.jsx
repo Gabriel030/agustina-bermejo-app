@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { ChevronLeft, Copy, Check, Upload, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -138,7 +139,7 @@ function PasoComprobante({ invoiceId, onSuccess }) {
 
       {fileError && <p className="text-sm text-danger">{fileError}</p>}
 
-      <Button variant="gradient" disabled={!file || isPending} onClick={handleSubmit}>
+      <Button variant="gradient" disabled={!file} loading={isPending} onClick={handleSubmit}>
         {isPending ? 'Enviando…' : 'Enviar comprobante'}
       </Button>
     </div>
@@ -161,7 +162,7 @@ function textoDePagoAprobado(solicitud) {
 }
 
 function PasoEstado({ invoiceId }) {
-  const navigate = useNavigate();
+  const { originLabel, goToOrigin } = usePaymentReturn();
   const { data: comprobantes, isLoading } = useMisComprobantes();
   const comprobante = comprobantes?.find((c) => c.invoiceId === parseInt(invoiceId, 10));
   const { data: solicitudes } = useMisSolicitudesCarrera();
@@ -208,8 +209,8 @@ function PasoEstado({ invoiceId }) {
         </div>
       </GlassCard>
 
-      <Button variant="gradient" onClick={() => navigate('/alumno/pagos')}>
-        Volver a Mis pagos
+      <Button variant="gradient" onClick={goToOrigin}>
+        {originLabel}
       </Button>
     </div>
   );
@@ -217,7 +218,7 @@ function PasoEstado({ invoiceId }) {
 
 export function AlumnoPagarTransferencia() {
   const { invoiceId } = useParams();
-  const navigate = useNavigate();
+  const { goTo } = usePaymentReturn();
   const { data: config, isLoading } = usePaymentConfig();
   const { data: breakdown } = usePriceBreakdown(invoiceId);
   const { data: receipts } = useMisComprobantes();
@@ -240,7 +241,7 @@ export function AlumnoPagarTransferencia() {
     <PageContainer className="max-w-lg">
       <button
         type="button"
-        onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
+        onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
         className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
       >
         <ChevronLeft size={16} />

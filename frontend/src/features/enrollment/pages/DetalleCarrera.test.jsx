@@ -184,10 +184,28 @@ describe('DetalleCarrera', () => {
     // Volver a Cohorte (botón y click en el paso del stepper) y adelante de nuevo.
     await user.click(screen.getByRole('button', { name: '← Volver' }));
     expect(await screen.findByText('Marzo 2026')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Documentación' }));
+    await user.click(screen.getByRole('button', { name: 'Tus datos y documentos' }));
 
     // El email y el dni siguen cargados — no se perdieron al navegar.
     expect(screen.getByPlaceholderText('tu@email.com')).toHaveValue('alumno@example.com');
     expect(screen.getByPlaceholderText('DNI sin puntos')).toHaveValue('30111222');
+  });
+
+  it('marca el DNI con formato inválido y dice qué falta mientras el envío está deshabilitado', async () => {
+    const user = userEvent.setup();
+    renderConWizard();
+
+    await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
+    await user.click(await screen.findByText('Marzo 2026'));
+
+    const dni = screen.getByPlaceholderText('DNI sin puntos');
+    expect(screen.queryByText(/Para continuar falta:/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar solicitud' })).toHaveAttribute('aria-describedby', 'motivo-documentacion');
+    await user.type(dni, '30.111.222');
+    await user.tab();
+
+    expect(await screen.findByText('El DNI tiene 7 u 8 números, sin puntos ni espacios')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar solicitud' })).toBeDisabled();
+    expect(screen.getByText(/Para continuar falta:.*el DNI.*DNI — frente.*Analítico del secundario/)).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
-import { useMatch, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useMatch, useParams, useNavigate } from 'react-router-dom';
+import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -13,30 +14,17 @@ import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
 import { useFacturasDeCurso, useFacturasDeMatricula, useMisComprobantes } from '@/hooks/useBilling';
-import { formatDate, hasInvoiceDetail, invoiceConcept } from '@/lib/billing';
+import {
+  formatDate,
+  hasInvoiceDetail,
+  invoiceDisplayStatus,
+  invoicePrimaryPeriod,
+  invoiceStatusInfo,
+  invoiceTitle,
+  isInvoicePayable,
+} from '@/lib/billing';
 
 const PAGE_SIZE = 10;
-
-const FEE_TYPE_LABELS = {
-  MONTHLY_INSTALLMENT: 'Cuota mensual',
-  ENROLLMENT_FEE: 'Matrícula',
-  EXAM_FEE: 'Derecho a examen',
-  RETAKEN_SUBJECT_FEE: 'Recurse',
-  DEGREE_ISSUANCE_FEE: 'Emisión de título',
-  ADMINISTRATIVE_FEE: 'Gestión administrativa',
-};
-
-const STATUS_CONFIG = {
-  PENDING: { label: 'Pendiente de pago', tone: 'warning' },
-  OVERDUE: { label: 'Vencida', tone: 'danger' },
-  PAID: { label: 'Pagada', tone: 'success' },
-  PARTIALLY_PAID: { label: 'Pago parcial', tone: 'warning' },
-  PENDING_REVIEW: { label: 'En revisión', tone: 'neutral' },
-  WAIVED: { label: 'Bonificada', tone: 'neutral' },
-  CANCELLED: { label: 'Anulada', tone: 'neutral' },
-};
-
-const PAYABLE_STATUSES = ['PENDING', 'OVERDUE', 'PARTIALLY_PAID'];
 
 function latestReceiptByInvoice(receipts) {
   const latest = new Map();
@@ -51,6 +39,8 @@ function latestReceiptByInvoice(receipts) {
 
 function InvoiceTable({ invoices, receiptsByInvoice }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const originState = paymentOriginState(pathname, 'Volver a las cuotas');
   const { isExpanded, toggle } = useExpandedRows();
 
   if (!invoices?.length) {
@@ -72,16 +62,15 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
       <TableBody>
         {invoices.map((inv) => {
           const receipt = receiptsByInvoice.get(inv.id);
-          const unpaid = PAYABLE_STATUSES.includes(inv.status);
-          const underReview = unpaid && receipt?.status === 'PENDING_REVIEW';
+          const unpaid = isInvoicePayable(inv);
+          const displayStatus = invoiceDisplayStatus(inv, receipt);
+          const underReview = displayStatus === 'PAYMENT_UNDER_REVIEW';
           const rejectedReceipt = unpaid && receipt?.status === 'REJECTED' ? receipt : null;
-          const statusInfo = underReview
-            ? STATUS_CONFIG.PENDING_REVIEW
-            : STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
+          const statusInfo = invoiceStatusInfo(displayStatus);
           const pagable = unpaid && !underReview;
           const expandable = hasInvoiceDetail(inv);
           const open = expandable && isExpanded(inv.id);
-          const concept = invoiceConcept(inv.feeType, inv.period);
+          const concept = invoiceTitle(inv);
           return (
             <Fragment key={inv.id}>
               <TableRow
@@ -112,7 +101,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                         variant="gradient"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`/alumno/pagos/${inv.id}/seleccion`);
+                          navigate(`/alumno/pagos/${inv.id}/seleccion`, { state: originState });
                         }}
                       >
                         Pagar
@@ -124,7 +113,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                         variant="outline"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`/alumno/pagos/${inv.id}/transferencia`);
+                          navigate(`/alumno/pagos/${inv.id}/transferencia`, { state: originState });
                         }}
                       >
                         Ver estado
@@ -176,10 +165,12 @@ export function AlumnoPagoDetalle() {
   const enrollmentName = data?.productName ?? null;
 
   const sorted = [...(data?.invoices ?? [])].sort((a, b) => {
-    if (!a.period) return 1;
-    if (!b.period) return -1;
-    if (b.period < a.period) return -1;
-    if (b.period > a.period) return 1;
+    const periodA = invoicePrimaryPeriod(a);
+    const periodB = invoicePrimaryPeriod(b);
+    if (!periodA) return 1;
+    if (!periodB) return -1;
+    if (periodB < periodA) return -1;
+    if (periodB > periodA) return 1;
     return 0;
   });
 
