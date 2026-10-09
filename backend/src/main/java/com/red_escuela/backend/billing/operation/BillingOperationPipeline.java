@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public class BillingOperationPipeline {
     private static final Logger log = LoggerFactory.getLogger(BillingOperationPipeline.class);
 
@@ -32,15 +34,24 @@ public class BillingOperationPipeline {
     private <C, R> BillingOperationOutcome<R> runStages(BillingOperation<C, R> operation, C context, PriorAuthorization priorAuthorization) {
         BillingOperationType type = operation.type();
         operation.requireValidContext(context);
-        for (PreProcessingHandler<C> handler : handlerRegistry.<C>preHandlersFor(type)) {
+        List<PreProcessingHandler<C>> handlers = handlerRegistry.<C>preHandlersFor(type);
+        for (PreProcessingHandler<C> handler : handlers) {
             PreProcessingResult result = handler.handleBeforeProcessing(type, context, priorAuthorization);
             if (result instanceof PreProcessingResult.RequiresAuthorization required) {
                 Long requestId = authorizationRequests.openAuthorizationRequest(type, context, required.requiredRole(), required.reason(), required.expiresOn());
                 log.info("Operation awaiting authorization: type={}, authorizationRequestId={}", type, requestId);
+                handlers.forEach(awaiting -> awaiting.handleAwaitingAuthorization(type, context, requestId));
                 return new BillingOperationOutcome.AwaitingAuthorization<>(requestId);
+            }
+            if (result instanceof PreProcessingResult.ReplayStoredOutcome replay) {
+                log.info("Operation replayed from its stored outcome: type={}", type);
+                @SuppressWarnings("unchecked")
+                BillingOperationOutcome<R> stored = (BillingOperationOutcome<R>) replay.storedOutcome();
+                return stored;
             }
         }
         R result = operation.processOperation(context);
+        handlers.forEach(handler -> handler.handleAfterProcessing(type, context, result));
         operation.domainEventsOf(context, result).forEach(eventPublisher::publishEvent);
         log.info("Operation processed: type={}", type);
         return new BillingOperationOutcome.Processed<>(result);

@@ -124,7 +124,9 @@ class PolicyCatalogTest extends AbstractIntegrationTest {
         assertThat(renderDeclaredCatalog()).contains("## Máquinas de estado")
                 .contains("### InvoiceDocumentStatusStateMachine")
                 .contains("### InvoicePaymentStatusStateMachine")
+                .contains("### PaymentStatusStateMachine")
                 .contains("Transiciones válidas: 7 de 25")
-                .contains("Transiciones válidas: 18 de 78");
+                .contains("Transiciones válidas: 18 de 78")
+                .contains("Transiciones válidas: 14 de 96");
     }
 }

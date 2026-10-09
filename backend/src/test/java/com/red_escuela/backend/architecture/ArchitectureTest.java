@@ -286,6 +286,41 @@ class ArchitectureTest {
                 .hasMessageContaining("InvoiceDraftCreatingFixture");
     }
 
+    private static final String PAYMENT_CLASS = "com.red_escuela.backend.billing.payment.domain.Payment";
+    private static final String PAYMENT_STATUS_MACHINE_CLASS = "com.red_escuela.backend.billing.payment.domain.PaymentStatusStateMachine";
+    private static final String PAYMENT_V2_REPOSITORY_CLASS = "com.red_escuela.backend.billing.payment.repository.PaymentRepository";
+    private static final String FIXTURE_PAYMENT_GATEWAY = ArchitectureRules.ROOT + ".architecture.fixture.billing.payment";
+    private static final java.util.Set<String> FROZEN_MERCADO_PAGO_CLASSES = java.util.Set.of(
+            "com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher",
+            "com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceService");
+
+    @Test
+    @Tag("D-082")
+    void paymentStatusChangesOnlyThroughItsTransitionTable() {
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable(PAYMENT_CLASS, "status", "changeStatus", PAYMENT_STATUS_MACHINE_CLASS).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void paymentsArePersistedOnlyByOperations() {
+        ArchitectureRules.economicStateIsPersistedOnlyByOperations(PAYMENT_V2_REPOSITORY_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void gatewaySpecificCodeStaysInItsAdapter() {
+        ArchitectureRules.gatewaySpecificCodeStaysInItsAdapter("com.mercadopago..", "com.red_escuela.backend.billing.payment.gateway.mercadopago..", FROZEN_MERCADO_PAGO_CLASSES).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void gatewayAdapterRuleDetectsAProviderSdkUsedOutsideItsAdapterAndAllowsItInside() {
+        assertThatThrownBy(() -> ArchitectureRules.gatewaySpecificCodeStaysInItsAdapter("com.mercadopago..", FIXTURE_PAYMENT_GATEWAY + ".mercadopago..", java.util.Set.of()).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("StrayMercadoPagoUserFixture")
+                .hasMessageNotContaining("InsideAdapterFixture");
+    }
+
     @Test
     @Tag("D-051")
     void statusChangesOnlyThroughTransitionTables() {

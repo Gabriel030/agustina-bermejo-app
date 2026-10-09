@@ -50,9 +50,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.payment.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.payment"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"
@@ -68,7 +68,7 @@ public final class ArchitectureRules {
 
     static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener", "CourseEnrollmentAdmissionPaymentListener");
 
-    static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
+    static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception", "gateway");
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -420,6 +420,15 @@ public final class ArchitectureRules {
     public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
         return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationType,
                 "save of the invoice");
+    }
+
+    public static ArchRule gatewaySpecificCodeStaysInItsAdapter(String sdkPackage, String adapterPackage, Set<String> frozenLegacyClasses) {
+        return noClasses()
+                .that().resideOutsideOfPackage(adapterPackage)
+                .and(DescribedPredicate.describe("are not frozen legacy classes", (JavaClass javaClass) -> !frozenLegacyClasses.contains(javaClass.getName())))
+                .should().dependOnClassesThat().resideInAPackage(sdkPackage)
+                .allowEmptyShould(true)
+                .because("a payment provider's SDK is used only inside its own adapter (D-082)");
     }
 
     public static ArchRule currentAccountIsWrittenOnlyThroughItsService(String serviceClassName, String... repositoryClassNames) {
