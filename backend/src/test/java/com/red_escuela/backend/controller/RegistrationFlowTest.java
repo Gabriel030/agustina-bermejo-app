@@ -11,7 +11,6 @@ import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -197,15 +196,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setCourse(course);
-        revision.setFeeType(feeType);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(amount));
-        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-        revision.setCreatedBy(director);
-        entityManager.persist(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), course.getId(), feeType, "Precio de prueba", ars(amount), LocalDate.now().minusDays(1), director.getId());
         entityManager.flush();
     }
 

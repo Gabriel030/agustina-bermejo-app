@@ -17,7 +17,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -145,14 +144,7 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     }
 
     protected void addPrice(Program program, Person director, FeeType type, long amount, LocalDate from) {
-        PriceRevision price = new PriceRevision();
-        price.setProgram(program);
-        price.setFeeType(type);
-        price.setDescription("Precio");
-        price.setMonthlyAmount(ars(amount));
-        price.setEffectiveFrom(from);
-        price.setCreatedBy(director);
-        entityManager.persist(price);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, type, "Precio", ars(amount), from, director.getId());
     }
 
     protected void newPrice(Career career, FeeType type, long amount, LocalDate from) {

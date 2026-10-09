@@ -239,11 +239,11 @@ class ArchitectureTest {
     @Tag("D-051")
     void academicStructureRuleDetectsABillingDependency() {
         JavaClasses academicStructureToBilling = new ClassFileImporter()
-                .importClasses(com.red_escuela.backend.academicstructure.service.ProgramService.class);
+                .importClasses(com.red_escuela.backend.academicstructure.controller.ProgramController.class);
 
         assertThatThrownBy(() -> ArchitectureRules.academicStructureDoesNotDependOnBilling().check(academicStructureToBilling))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("ProgramService");
+                .hasMessageContaining("ProgramController");
     }
 
     @Test

@@ -16,7 +16,6 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -27,7 +26,6 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.Tag;
@@ -99,9 +97,6 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     private TermRepository termRepository;
 
     @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
-    @Autowired
     private CourseEnrollmentService courseEnrollmentService;
 
     @Autowired
@@ -161,14 +156,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         course.setDurationMonths(durationMonths);
         course = courseRepository.save(course);
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(ars(precio));
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(precio), LocalDate.now().minusYears(1), director.getId());
 
         return course;
     }
@@ -238,14 +226,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.NOMINAL, ars(5000), null), "Beca fija $5.000", 3));
 
-        PriceRevision aumento = new PriceRevision();
-        aumento.setCourse(course);
-        aumento.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        aumento.setDescription("Ajuste inflacionario");
-        aumento.setMonthlyAmount(ars(20000));
-        aumento.setEffectiveFrom(YearMonth.now().atDay(1));
-        aumento.setCreatedBy(director);
-        priceRevisionRepository.save(aumento);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Ajuste inflacionario", ars(20000), YearMonth.now().atDay(1), director.getId());
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
@@ -343,14 +324,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
 
         invoiceGenerationService.generateNextInstallmentForCourse(early, YearMonth.of(2026, 6));
 
-        PriceRevision increase = new PriceRevision();
-        increase.setCourse(course);
-        increase.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        increase.setDescription("Aumento");
-        increase.setMonthlyAmount(ars(BigDecimal.valueOf(12000)));
-        increase.setEffectiveFrom(LocalDate.of(2026, 6, 3));
-        increase.setCreatedBy(director);
-        priceRevisionRepository.save(increase);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Aumento", ars(BigDecimal.valueOf(12000)), LocalDate.of(2026, 6, 3), director.getId());
         com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 6, 4));
         invoiceGenerationService.generateNextInstallmentForCourse(late, YearMonth.of(2026, 6));
 

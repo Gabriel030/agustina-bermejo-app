@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.red_escuela.backend.billing.invoice.exception.InvoiceLinesEnrollmentMismatchException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
@@ -72,8 +73,14 @@ public class InvoiceLine {
     @Column(name = "exam_board_registration_id", updatable = false)
     private Long examBoardRegistrationId;
 
-    @Column(name = "price_revision_id", updatable = false)
-    private Long priceRevisionId;
+    @Column(name = "price_version_id", updatable = false)
+    private Long priceVersionId;
+
+    @Column(name = "marketing_discount_amount", nullable = false, updatable = false)
+    private BigDecimal marketingDiscountAmount;
+
+    @Column(name = "list_amount", insertable = false, updatable = false)
+    private BigDecimal listAmount;
 
     @Column(name = "template_id", updatable = false)
     private Long templateId;
@@ -126,7 +133,8 @@ public class InvoiceLine {
         this.courseEnrollmentId = draft.courseEnrollmentId();
         this.subjectId = draft.subjectId();
         this.examBoardRegistrationId = draft.examBoardRegistrationId();
-        this.priceRevisionId = draft.priceRevisionId();
+        this.priceVersionId = draft.priceVersionId();
+        this.marketingDiscountAmount = draft.marketingDiscountAmount().value().amount();
         this.templateId = draft.templateId();
         this.enrollmentFeeSlot = draft.enrollmentFeeSlot();
         this.chargeKey = draft.chargeKey();
