@@ -30,7 +30,7 @@ class OwnProfileCharacterizationTest extends AccessCharacterizationSupport {
     void ownProfileEditIsVisibleInTheNextGetAndTheDniIsAlsoEditable() throws Exception {
         Person person = persistPerson("access.profile1", "70000041", "ALUMNO");
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest("nuevo.mail@example.com", "1155556666",
-                null, "99999999", "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                null, "99999999", null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
 
         mockMvc.perform(put("/me")
                         .header("Authorization", bearer(person))

@@ -40,19 +40,24 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.AfterEach;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
+import com.red_escuela.backend.billing.planning.domain.SlotWindow;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
-import java.util.Set;
 
 import static com.red_escuela.backend.billing.support.InvoiceAssertions.assertThatInvoice;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
@@ -81,6 +86,10 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     private GrantScholarshipForProgramUseCase grantScholarshipUseCase;
     @Autowired
     private InvoicePlanningContextLoader contextLoader;
+    @Autowired
+    private BillingConfigurationReader configurationReader;
+    @Autowired
+    private DirectConfigurationPublisher configurationPublisher;
 
     @AfterEach
     void clearSecurity() {
@@ -175,7 +184,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void theYearCanConfigureTheDueDaysOfItsInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        configureYear(y27, template -> template.setRecurringFeeDueDays(5));
+        configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeDueDays(template, 5));
         today(date(2027, 3, 2));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
 
@@ -377,7 +386,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void theSuspendedWithdrawalCanBeConfiguredToWaitForTheEndOfTheLectiveYear() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        configureYear(y27, template -> template.setWithdrawSuspendedAtTermEnd(false));
+        configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setWithdrawSuspendedAtTermEnd(template, false));
         Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
         newSection(career, first);
         today(date(2027, 1, 4));
@@ -401,10 +410,41 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     @Tag("D-008")
     void noTermTypeIsIrregularByDefault() {
-        Set<String> irregular = (Set<String>) ReflectionTestUtils.getField(contextLoader, "irregularTermTypes");
-        assertThat(irregular).isEmpty();
+        assertThat(configurationReader.irregularTermTypesEffectiveOn(date(2027, 1, 1)).types()).isEmpty();
+    }
+
+    @Test
+    @Tag("D-213")
+    void theGlobalIrregularListRemovesThoseTermsFromTheEnrollmentWindows() {
+        Career career = newCareer();
+        newYear(career, 2027, 10, 1, 2, null);
+        Term regular = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
+        Term summer = newCuatrimestre(2027, 3, date(2027, 1, 5), date(2027, 3, 20), "Intensivo de verano");
+        newSection(career, regular);
+        newSection(career, summer);
+        today(date(2027, 1, 10));
+        Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 8));
+
+        assertThat(windowOpeningDates(enrollment)).containsExactly(date(2027, 1, 5));
+
+        publishIrregularTypes(career, List.of("Intensivo de verano"));
+        try {
+            assertThat(windowOpeningDates(enrollment)).containsExactly(date(2027, 2, 1));
+        } finally {
+            publishIrregularTypes(career, List.of());
+        }
+        assertThat(windowOpeningDates(enrollment)).containsExactly(date(2027, 1, 5));
+    }
+
+    private List<LocalDate> windowOpeningDates(Long enrollment) {
+        return transactionTemplate.execute(status -> contextLoader.load(entityManager.find(ProgramEnrollment.class, enrollment), YearMonth.of(2027, 1), date(2027, 1, 10))
+                .facts().windows().values().stream().map(SlotWindow::opensOn).toList());
+    }
+
+    private void publishIrregularTypes(Career career, List<String> types) {
+        transactionTemplate.executeWithoutResult(status -> configurationPublisher.publishVersion(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS),
+                new IrregularTermTypes(types), date(2027, 1, 10), "Prueba de D-213", career.directorId()));
     }
 }

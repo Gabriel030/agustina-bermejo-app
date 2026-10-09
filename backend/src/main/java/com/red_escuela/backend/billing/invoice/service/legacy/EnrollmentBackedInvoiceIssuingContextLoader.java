@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingFact
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.operation.InvoiceIssuingContextLoader;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 
 @Component
 public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssuingContextLoader {
+    private final BillingConfigurationReader configurationReader;
     private final JdbcTemplate jdbcTemplate;
     private final PriceRevisionService priceRevisionService;
     private final ProgramYearBillingTemplateRepository templateRepository;
@@ -30,7 +32,8 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     private final Clock clock;
 
     public EnrollmentBackedInvoiceIssuingContextLoader(JdbcTemplate jdbcTemplate, PriceRevisionService priceRevisionService,
-                                                       ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, Clock clock) {
+                                                       ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader, Clock clock) {
+        this.configurationReader = configurationReader;
         this.jdbcTemplate = jdbcTemplate;
         this.priceRevisionService = priceRevisionService;
         this.templateRepository = templateRepository;
@@ -85,7 +88,11 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
     }
 
     private Integer enrollmentFeeCountOf(InvoiceIssuingRequest request) {
-        return request.templateId() == null ? null : templateRepository.findEnrollmentFeeCountForShare(request.templateId()).orElse(null);
+        if (request.templateId() == null || templateRepository.lockForShare(request.templateId()).isEmpty()) {
+            return null;
+        }
+        return configurationReader.requireYearTermsEffectiveOn(templateRepository.findProgramIdById(request.templateId()), templateRepository.findTermIdById(request.templateId()),
+                request.pricingDate()).enrollmentFeeCount();
     }
 
     private StudentSnapshot snapshotOf(Long studentId) {

@@ -61,14 +61,14 @@ public final class PlanningEquivalenceMatrix {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setId(id);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(installments);
-        template.configureEnrollmentFees(count, first, count == 2 ? second : null);
-        template.setPaysWhilePaused(paysWhilePaused);
-        template.setRequireEnrollmentFeeForFinalExamOnlyStudents(requireFee);
-        template.setEnrollmentFeeLeadMonths(lead);
-        template.setBlocksEnrollment(blocks);
-        template.setBlocksExamRegistration(blocks);
-        template.setBlocksCertificates(blocks);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, installments);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, count, first, count == 2 ? second : null);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setPaysWhilePaused(template, paysWhilePaused);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(template, requireFee);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setEnrollmentFeeLeadMonths(template, lead);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksEnrollment(template, blocks);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksExamRegistration(template, blocks);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksCertificates(template, blocks);
         return template;
     }
 
@@ -92,7 +92,7 @@ public final class PlanningEquivalenceMatrix {
                 PaymentPlanCoverage.ofCadence(PaymentPlanCadence.ANNUAL_UPFRONT),
                 new PaymentPlanCoverage(PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2026, 3), 10),
                 new PaymentPlanCoverage(PaymentPlanCadence.ANNUAL_UPFRONT, YearMonth.of(2026, 3), 12));
-        YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), pick(random, null, 1L));
+        YearCycles cycles = new YearCycles(templates.stream().map(t -> com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, month.getYear())).toList(), pick(random, null, 1L));
         List<IssuedEnrollmentFee> fees = new ArrayList<>();
         InvoicePaymentStatus feeStatus = pick(random, null, InvoicePaymentStatus.PENDING, InvoicePaymentStatus.PAID, InvoicePaymentStatus.CANCELLED);
         if (feeStatus != null) {

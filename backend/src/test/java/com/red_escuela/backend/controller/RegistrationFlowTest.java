@@ -123,9 +123,10 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(10);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
         template.setCreatedBy(director);
         entityManager.persist(template);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -369,6 +370,65 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         mockMvc.perform(multipart("/me/course-enrollments")
                         .file(comprobante())
                         .param("courseId", course.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    @org.junit.jupiter.api.Tag("D-233")
+    void aForeignStudentWithAPassportCanRequestAProgram() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("pasaporte", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content("{\"documentType\":\"PASSPORT\",\"dni\":\"X1234567\"}"))
+                .andExpect(status().isOk());
+        entityManager.flush();
+        entityManager.clear();
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-228")
+    @org.junit.jupiter.api.Tag("D-233")
+    void aDniWithLettersIsRejectedAndLeavesTheProgramRequestWithoutDocument() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        String registerResponse = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("dnibad", institutionId))))
+                .andReturn().getResponse().getContentAsString();
+        String accessToken = objectMapper.readTree(registerResponse).get("accessToken").asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .content("{\"documentType\":\"DNI\",\"dni\":\"12AB5678\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_DOCUMENT_NUMBER"));
+
+        mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("DNI_REQUIRED"));

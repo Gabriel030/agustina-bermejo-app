@@ -5,8 +5,9 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -21,7 +22,6 @@ import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
@@ -61,7 +61,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private LatePaymentSettingsRepository latePaymentSettingsRepository;
+    private ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private BatchExecutionLogRepository batchExecutionLogRepository;
@@ -138,16 +138,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         return BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(period).dueOn(dueDate).withBaseAmount(amount).build();
     }
 
-    private LatePaymentSettings persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        LatePaymentSettings policy = LatePaymentSettings.builder()
-                .gracePeriodDays(gracePeriodDays)
-                .surchargeRate(Percentage.ofFraction(surchargePercentage))
-                .suspensionAfterDays(30)
-                .suspensionAfterInvoiceCount(2)
-                .effectiveFrom(LocalDate.now().minusYears(1))
-                .createdBy(createdBy)
-                .build();
-        return latePaymentSettingsRepository.save(policy);
+    private ConfigurationVersion persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
+        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now());
     }
 
     @Test

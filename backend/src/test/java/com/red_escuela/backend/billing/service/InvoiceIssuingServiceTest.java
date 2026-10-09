@@ -199,7 +199,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
             student.setInstitution(entityManager.getReference(com.red_escuela.backend.academicstructure.entity.Institution.class, career.institutionId()));
             student.setOnboardingStatus(com.red_escuela.backend.identity.entity.StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
-            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, java.time.LocalDate.now(clockOf())));
+            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(cohort.getTemplate()), java.time.LocalDate.now(clockOf())));
             return ((InvoiceIssuingResult.InvoiceIssued) result).invoice();
         });
     }

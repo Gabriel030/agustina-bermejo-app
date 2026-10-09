@@ -28,7 +28,7 @@ async function fillRequiredFields(user, role) {
   await user.type(screen.getByPlaceholderText('Ej: García'), 'Gil');
   await user.type(screen.getByPlaceholderText('correo@ejemplo.com'), 'mara@demo.test');
   await user.type(screen.getByPlaceholderText('12345678'), '90300011');
-  await user.click(screen.getByRole('combobox'));
+  await user.click(screen.getByRole('combobox', { name: 'Rol' }));
   await user.click(await screen.findByRole('option', { name: role }));
 }
 
@@ -46,7 +46,7 @@ describe('GestionPersonal', () => {
     renderWithProviders(<GestionPersonal />);
 
     await openCreateModal(user);
-    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('combobox', { name: 'Rol' }));
 
     expect(await screen.findByRole('option', { name: 'Administrativo' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Docente' })).not.toBeInTheDocument();

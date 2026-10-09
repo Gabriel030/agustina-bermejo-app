@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -38,6 +39,7 @@ public class SuspendedEnrollmentClosureService {
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramYearBillingTemplateRepository templateRepository;
+    private final YearCycleFactory cycleFactory;
     private final TermRepository termRepository;
     private final InvoiceRepository invoiceRepository;
     private final ProgramEnrollmentService programEnrollmentService;
@@ -47,7 +49,8 @@ public class SuspendedEnrollmentClosureService {
     public SuspendedEnrollmentClosureService(ProgramEnrollmentRepository programEnrollmentRepository,
                                              ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository, InvoiceRepository invoiceRepository,
                                              ProgramEnrollmentService programEnrollmentService, Clock clock,
-                                             PlatformTransactionManager transactionManager) {
+                                             PlatformTransactionManager transactionManager, YearCycleFactory cycleFactory) {
+        this.cycleFactory = cycleFactory;
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -78,8 +81,7 @@ public class SuspendedEnrollmentClosureService {
         LocalDate today = LocalDate.now(clock);
         LocalDate suspendedOn = enrollment.getPaymentStatusUpdatedAt() != null ? enrollment.getPaymentStatusUpdatedAt().toLocalDate() : today;
         YearMonth suspensionMonth = YearMonth.from(suspendedOn);
-        YearCycles cycles = new YearCycles(templateRepository.findAllByProgramId(enrollment.getProgram().getId()).stream()
-                .map(t -> YearCycle.of(t, suspensionMonth.getYear())).toList(), null);
+        YearCycles cycles = new YearCycles(cycleFactory.cyclesOf(templateRepository.findAllByProgramId(enrollment.getProgram().getId()), suspensionMonth.getYear()), null);
         Optional<YearCycle> cycle = cycles.covering(suspensionMonth).or(() -> cycles.latestStartedOn(suspensionMonth));
         if (cycle.isEmpty() || !cycleOrTermEnded(enrollment, cycle.get(), suspendedOn, today)) {
             return false;
@@ -93,10 +95,10 @@ public class SuspendedEnrollmentClosureService {
     }
 
     private boolean cycleOrTermEnded(ProgramEnrollment enrollment, YearCycle cycle, LocalDate suspendedOn, LocalDate today) {
-        if (cycle.template().isWithdrawSuspendedAtTermEnd()) {
+        if (cycle.yearTerms().withdrawSuspendedAtTermEnd()) {
             Optional<LocalDate> termEnd = termRepository.findTermsOfProgram(enrollment.getProgram().getId()).stream()
                     .filter(t -> t.getStartDate() != null && t.getEndDate() != null)
-                    .filter(t -> !t.getId().equals(cycle.template().getTerm().getId()))
+                    .filter(t -> !t.getId().equals(cycle.template().termId()))
                     .filter(t -> !suspendedOn.isBefore(t.getStartDate().toLocalDate()) && !suspendedOn.isAfter(t.getEndDate().toLocalDate()))
                     .min(Comparator.comparing(t -> Duration.between(t.getStartDate(), t.getEndDate())))
                     .map(t -> t.getEndDate().toLocalDate());

@@ -93,6 +93,8 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
@@ -159,9 +161,9 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(recurringFeeInvoicesCount);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, recurringFeeInvoicesCount);
         template.setCreatedBy(createdBy);
-        return templateRepository.save(template);
+        return com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
     }
 
     private ProgramCohort persistCohort(ProgramYearBillingTemplate template, CohortIntake intake,

@@ -23,7 +23,7 @@ class StaffCreationCharacterizationTest extends AccessCharacterizationSupport {
 
     private ResultActions createStaff(Person actor, String dni, String role) throws Exception {
         CreateStaffRequest request = new CreateStaffRequest("Nuevo", "Personal", "staff." + dni + "@example.com",
-                dni, "Calle", "1", null, "Ciudad", "Provincia", "1000", "AR", role);
+                dni, null, "Calle", "1", null, "Ciudad", "Provincia", "1000", "AR", role);
         return mockMvc.perform(post("/staff")
                 .header("Authorization", bearer(actor))
                 .contentType(MediaType.APPLICATION_JSON)

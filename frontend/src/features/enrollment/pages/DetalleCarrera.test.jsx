@@ -142,7 +142,7 @@ describe('DetalleCarrera', () => {
 
     // Paso documentación: email + dni + dirección + 3 documentos
     await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     // Nombre/Apellido (disabled) + Email + DNI son los primeros 4 textbox; Calle/
     // Número/Piso/Ciudad/Provincia/CP le siguen en ese orden, sin placeholder propio.
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
@@ -179,7 +179,7 @@ describe('DetalleCarrera', () => {
     await user.click(await screen.findByText('Marzo 2026'));
 
     await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
 
     // Volver a Cohorte (botón y click en el paso del stepper) y adelante de nuevo.
     await user.click(screen.getByRole('button', { name: '← Volver' }));
@@ -188,7 +188,7 @@ describe('DetalleCarrera', () => {
 
     // El email y el dni siguen cargados — no se perdieron al navegar.
     expect(screen.getByPlaceholderText('tu@email.com')).toHaveValue('alumno@example.com');
-    expect(screen.getByPlaceholderText('DNI sin puntos')).toHaveValue('30111222');
+    expect(screen.getByLabelText('Número de documento')).toHaveValue('30111222');
   });
 
   it('marca el DNI con formato inválido y dice qué falta mientras el envío está deshabilitado', async () => {
@@ -198,7 +198,7 @@ describe('DetalleCarrera', () => {
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
     await user.click(await screen.findByText('Marzo 2026'));
 
-    const dni = screen.getByPlaceholderText('DNI sin puntos');
+    const dni = screen.getByLabelText('Número de documento');
     expect(screen.queryByText(/Para continuar falta:/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirmar solicitud' })).toHaveAttribute('aria-describedby', 'motivo-documentacion');
     await user.type(dni, '30.111.222');
@@ -206,6 +206,6 @@ describe('DetalleCarrera', () => {
 
     expect(await screen.findByText('El DNI tiene 7 u 8 números, sin puntos ni espacios')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirmar solicitud' })).toBeDisabled();
-    expect(screen.getByText(/Para continuar falta:.*el DNI.*DNI — frente.*Analítico del secundario/)).toBeInTheDocument();
+    expect(screen.getByText(/Para continuar falta:.*el documento.*DNI — frente.*Analítico del secundario/)).toBeInTheDocument();
   });
 });

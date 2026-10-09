@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
@@ -25,11 +26,13 @@ public class BillingConfigurationAlertService {
     private final BillingConfigurationAlertRepository alertRepository;
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final ProgramRepository programRepository;
+    private final YearCycleFactory cycleFactory;
     private final Clock clock;
 
     public BillingConfigurationAlertService(BillingConfigurationAlertRepository alertRepository,
                                             ProgramYearBillingTemplateRepository templateRepository,
-                                            ProgramRepository programRepository, Clock clock) {
+                                            ProgramRepository programRepository, YearCycleFactory cycleFactory, Clock clock) {
+        this.cycleFactory = cycleFactory;
         this.alertRepository = alertRepository;
         this.templateRepository = templateRepository;
         this.programRepository = programRepository;
@@ -93,6 +96,6 @@ public class BillingConfigurationAlertService {
     }
 
     private YearCycles cyclesOf(Long programId, YearMonth month) {
-        return new YearCycles(templateRepository.findAllByProgramId(programId).stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
+        return new YearCycles(cycleFactory.cyclesOf(templateRepository.findAllByProgramId(programId), month.getYear()), null);
     }
 }

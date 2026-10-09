@@ -126,8 +126,14 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         for (Long personId : personIds) {
             jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", personId);
             jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", personId);
-            jdbcTemplate.update("delete from late_payment_settings where created_by_id = ?", personId);
         }
+        jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+        for (Long personId : personIds) {
+            jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", personId);
+            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)", personId);
+            jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", personId);
+        }
+        jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
         jdbcTemplate.update("delete from event_publication");
         SecurityContextHolder.clearContext();
         AUTHORIZATION_DEMAND.set(null);
@@ -164,7 +170,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     }
 
     private long policiesCreatedBy(Person person) {
-        return count("select count(*) from late_payment_settings where created_by_id = ?", person.getId());
+        return count("select count(*) from configuration_version where scope = 'LATE_PAYMENT' and proposed_by_id = ?", person.getId());
     }
 
     private long notificationsFor(Person person, String type) {

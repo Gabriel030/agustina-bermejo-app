@@ -69,8 +69,8 @@ public class BillingTestTrigger {
         var template = cohort.getTemplate();
         LocalDate today = LocalDate.now(clock);
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
-        int slot = com.red_escuela.backend.billing.planning.domain.YearCycle.of(template, entryMonth.getYear()).slotOf(entryMonth);
-        LocalDate due = cohort.getCursadaStart().isBefore(today) ? today.plusDays(template.getLateEnrollmentFeeDueDays()) : cohort.getCursadaStart();
+        int slot = com.red_escuela.backend.billing.planning.domain.YearCycle.of(template, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template), entryMonth.getYear()).slotOf(entryMonth);
+        LocalDate due = cohort.getCursadaStart().isBefore(today) ? today.plusDays(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).lateEnrollmentFeeDueDays()) : cohort.getCursadaStart();
         PlannedInvoice planned = new PlannedInvoice(FeeType.ENROLLMENT_FEE, entryMonth, due, today, template.getId(), slot, null, true, false);
         invoiceIssuingService.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramEnrollmentRequest(enrollment, selection, planned,
                 InvoiceIssuingReason.PAYMENT_PLAN_SELECTION));

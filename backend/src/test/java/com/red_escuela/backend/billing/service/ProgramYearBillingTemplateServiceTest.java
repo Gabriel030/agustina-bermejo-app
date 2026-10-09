@@ -108,7 +108,7 @@ class ProgramYearBillingTemplateServiceTest extends AbstractIntegrationTest {
 
         var template = createTemplateUseCase.create(program.getId(), term.getId(), 4);
 
-        assertThat(template.getRecurringFeeInvoicesCount()).isEqualTo(4);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount()).isEqualTo(4);
     }
 
     @Test

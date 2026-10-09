@@ -36,6 +36,8 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
+import com.red_escuela.backend.billing.planning.TestTemplateTerms;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -92,6 +94,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
@@ -173,9 +177,9 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(recurringFeeInvoicesCount);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, recurringFeeInvoicesCount);
         template.setCreatedBy(createdBy);
-        return templateRepository.save(template);
+        return com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
     }
 
     private ProgramCohort persistCohort(ProgramYearBillingTemplate template, CohortIntake intake,
@@ -187,7 +191,11 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(cursadaStart);
         cohort.setCreatedBy(createdBy);
-        return programCohortRepository.save(cohort);
+        ProgramCohort saved = programCohortRepository.save(cohort);
+        if (intake == CohortIntake.SECOND) {
+            TestTemplateTerms.publishCohortEntryDiscount(configurationVersionRepository, saved, Percentage.ofFraction(new BigDecimal("0.5")));
+        }
+        return saved;
     }
 
     private void persistPriceRevision(Program program, FeeType feeType, BigDecimal amount, LocalDate effectiveFrom, Person createdBy) {

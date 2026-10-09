@@ -183,7 +183,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     @Tag("D-013")
     void doesNotBlockWhenTheYearDoesNotBlockEnrollmentOrIsNotConfigured() {
         World world = world(1, null, false);
-        configureYear(world.year(), template -> template.setBlocksEnrollment(false));
+        configureYear(world.year(), template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksEnrollment(template, false));
         today(date(2027, 2, 5));
         assertThatCode(() -> enrollIn(world, world.firstSection())).doesNotThrowAnyException();
 
@@ -250,9 +250,9 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
                 .header("Authorization", "Bearer " + tokenWithRole("ALUMNO"))).andExpect(status().isForbidden());
 
         configureYear(world.year(), template -> {
-            template.setBlocksEnrollment(false);
-            template.setBlocksExamRegistration(false);
-            template.setBlocksCertificates(false);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksEnrollment(template, false);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksExamRegistration(template, false);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksCertificates(template, false);
         });
         grant(tokenWithRole("DIRECTOR"), world, 1, "Motivo suficientemente largo").andExpect(status().isConflict());
     }
@@ -298,8 +298,8 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     void certificatesAndExamsOfTheYearThatDoesNotBlockThemAreAllowed() {
         World world = world(1, null, false);
         configureYear(world.year(), template -> {
-            template.setBlocksExamRegistration(false);
-            template.setBlocksCertificates(false);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksExamRegistration(template, false);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksCertificates(template, false);
         });
         today(date(2027, 5, 10));
         authenticateAs(world.career());
@@ -320,7 +320,7 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
                 .doesNotThrowAnyException();
         assertThat(invoices(world.enrollment(), FeeType.ENROLLMENT_FEE)).isEmpty();
 
-        configureYear(world.year(), template -> template.setRequireEnrollmentFeeForFinalExamOnlyStudents(true));
+        configureYear(world.year(), template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(template, true));
         assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
     }

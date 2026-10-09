@@ -10,7 +10,6 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.List;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -78,10 +77,6 @@ public class ProgramEnrollment implements BillableEnrollment {
 
     public ProgramYearBillingTemplate effectiveBillingTemplate() {
         return currentBillingTemplate != null ? currentBillingTemplate : programCohort.getTemplate();
-    }
-
-    public boolean isEnrollmentFeeMonth(YearMonth period) {
-        return programCohort != null && programCohort.isEnrollmentFeeMonth(period);
     }
 
     public boolean isActive() {

@@ -1,52 +1,69 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
-import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
-import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
-import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationChangeLoader;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay;
+import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
+import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
+import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.service.YearBillingConfigurationApplier;
+import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
-import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 @UseCase
 public class UpdateYearBillingConfigurationService implements UpdateYearBillingConfigurationUseCase {
-    private final ProgramYearBillingTemplateRepository templateRepository;
-    private final YearBillingConfigurationApplier configurationApplier;
-    private final ApplicationEventPublisher eventPublisher;
-    private final YearBillingConfigurationChangeLoader changeLoader;
-    private final ConfigurationPolicyEvaluator policyEvaluator;
-    private final LegacyConfigurationMirror configurationMirror;
+    private static final String CHANGE_REASON = "Cambio de la configuración del año lectivo";
 
-    public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateRepository templateRepository,
-                                                 YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
-                                                 YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
-                                                 LegacyConfigurationMirror configurationMirror) {
-        this.configurationMirror = configurationMirror;
-        this.changeLoader = changeLoader;
-        this.policyEvaluator = policyEvaluator;
+    private final ProgramYearBillingTemplateRepository templateRepository;
+    private final BillingConfigurationReader configurationReader;
+    private final YearBillingTermsOverlay termsOverlay;
+    private final BillingOperationPipeline pipeline;
+    private final ChangeBillingConfigurationOperation operation;
+    private final BillingActorResolver actorResolver;
+    private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
+
+    public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateRepository templateRepository, BillingConfigurationReader configurationReader,
+                                                 YearBillingTermsOverlay termsOverlay, BillingOperationPipeline pipeline, ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver,
+                                                 ApplicationEventPublisher eventPublisher, Clock clock) {
         this.templateRepository = templateRepository;
-        this.configurationApplier = configurationApplier;
+        this.configurationReader = configurationReader;
+        this.termsOverlay = termsOverlay;
+        this.pipeline = pipeline;
+        this.operation = operation;
+        this.actorResolver = actorResolver;
         this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
     @Override
-    @Transactional
+    @PreAuthorize("hasRole('DIRECTOR')")
+    @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramYearBillingTemplate update(Long templateId, YearBillingConfigurationRequest request) {
         ProgramYearBillingTemplate template = templateRepository.findByIdForUpdate(templateId)
                 .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(templateId));
-        YearBillingConfigurationChange change = changeLoader.loadConfigurationUpdate(template, request);
-        policyEvaluator.requireCoherentYearConfiguration(change);
-        policyEvaluator.requireUnfrozenYearConfiguration(change);
-        configurationApplier.applyYearBillingConfiguration(template, request);
-        ProgramYearBillingTemplate saved = templateRepository.save(template);
-        configurationMirror.recordYearTerms(saved);
+        LocalDate today = LocalDate.now(clock);
+        Long termId = template.termId();
+        YearBillingTerms current = configurationReader.requireYearTermsEffectiveOn(template.programId(), termId, today);
+        YearBillingTerms proposed = termsOverlay.overlay(current, request);
+        if (!proposed.equals(current)) {
+            pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON,
+                            actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(templateId)), actorResolver.currentActorIsDirector()))
+                    .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
+        }
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
-        return saved;
+        return template;
     }
 }
