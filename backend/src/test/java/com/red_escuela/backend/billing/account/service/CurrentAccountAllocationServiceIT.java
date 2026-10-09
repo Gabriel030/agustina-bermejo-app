@@ -158,6 +158,7 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
 
     @Test
     @Tag("D-128")
+    @Tag("D-138")
     void aNewerInvoiceTheStudentWantsToPayCannotJumpTheQueueOfAnOlderOverdueOne() {
         Long february = issue("80000.00", LocalDate.of(2027, 2, 10), FeeType.ADMINISTRATIVE_FEE);
         Long enrollmentFee = issue("50000.00", LocalDate.of(2027, 8, 10), FeeType.ADMINISTRATIVE_FEE);
