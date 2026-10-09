@@ -2,6 +2,8 @@ package com.red_escuela.backend.identity.entity;
 
 import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.DocumentNumber;
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.StatusType;
 
 import com.red_escuela.backend.shared.domain.EmailAddress;
@@ -41,8 +43,12 @@ public class Person {
     @Convert(converter = EmailAddressConverter.class)
     private EmailAddress email;
 
-    @Column(name = "dni", unique = true)
+    @Column(name = "dni")
     private String dni;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false)
+    private DocumentType documentType = DocumentType.DNI;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", nullable = false)
@@ -106,7 +112,15 @@ public class Person {
         return email == null ? null : email.value();
     }
 
-    public void changeDni(String newDni) {
-        this.dni = newDni == null || newDni.isBlank() ? null : newDni.trim();
+    public void changeDocument(DocumentType type, String number) {
+        DocumentType resolved = type == null ? DocumentType.DNI : type;
+        if (number == null || number.isBlank()) {
+            this.documentType = resolved;
+            this.dni = null;
+            return;
+        }
+        DocumentNumber document = DocumentNumber.of(resolved, number);
+        this.documentType = document.type();
+        this.dni = document.value();
     }
 }

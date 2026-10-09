@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { DocumentField } from '@/components/DocumentField';
+import { validateDocument } from '@/lib/documentType';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { STAFF_ROLE_LABELS, manageableStaffRoles } from '@/features/identity/staffRoles';
 
 const EMPTY = {
-  nombre: '', apellido: '', email: '', dni: '', role: '',
+  nombre: '', apellido: '', email: '', documentType: 'DNI', dni: '', role: '',
   street: '', number: '', floor: '', city: '', state: '', postalCode: '', country: '',
 };
 
@@ -29,7 +31,7 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
   function handleConfirmar() {
     onConfirmar({
       nombre: form.nombre, apellido: form.apellido, email: form.email,
-      dni: form.dni, role: form.role,
+      documentType: form.documentType, dni: form.dni, role: form.role,
       street: form.street || undefined, number: form.number || undefined,
       floor: form.floor || undefined, city: form.city || undefined,
       state: form.state || undefined, postalCode: form.postalCode || undefined,
@@ -37,7 +39,7 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
     });
   }
 
-  const valido = form.nombre && form.apellido && form.email && form.dni && form.role;
+  const valido = form.nombre && form.apellido && form.email && !validateDocument(form.documentType, form.dni) && form.role;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
@@ -65,13 +67,18 @@ export function AltaPersonalModal({ open, onClose, onConfirmar, isPending }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-ink">DNI *</label>
-              <Input value={form.dni} onChange={set('dni')} placeholder="12345678" />
+              <label className="text-[13px] font-medium text-ink">Documento *</label>
+              <DocumentField
+                type={form.documentType}
+                number={form.dni}
+                onTypeChange={(v) => setForm((prev) => ({ ...prev, documentType: v }))}
+                onNumberChange={(v) => setForm((prev) => ({ ...prev, dni: v }))}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[13px] font-medium text-ink">Rol *</label>
               <Select value={form.role} onValueChange={(v) => setForm((prev) => ({ ...prev, role: v }))}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Rol">
                   <SelectValue placeholder="Seleccioná un rol" />
                 </SelectTrigger>
                 <SelectContent>

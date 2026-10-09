@@ -102,7 +102,7 @@ public class ProspectService {
         Person person = student.getPerson();
 
         if (request.dni() != null) {
-            person.setDni(request.dni());
+            person.changeDocument(request.documentType(), request.dni());
         }
 
         Address address = person.getAddress();
@@ -117,7 +117,7 @@ public class ProspectService {
         try {
             studentRepository.saveAndFlush(student);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
     }
 
@@ -160,8 +160,8 @@ public class ProspectService {
         }
 
         Person person = student.getPerson();
-        person.setDni(request.dni());
-        person.setUsername(request.dni());
+        person.changeDocument(request.documentType(), request.dni());
+        person.setUsername(person.getDni());
 
         var address = person.getAddress();
         address.setStreet(request.street());
@@ -181,7 +181,7 @@ public class ProspectService {
         try {
             studentRepository.saveAndFlush(student);
         } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
+            throw new DniAlreadyExistsException(person.getDocumentType(), person.getDni());
         }
 
         requestPasswordResetUseCase.requestReset(person.emailValue());

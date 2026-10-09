@@ -65,7 +65,7 @@ class StaffUseCaseTest extends AbstractIntegrationTest {
 
     private CreateStaffRequest requestParaRol(String dni, String role) {
         return new CreateStaffRequest(
-                "Nombre", "Apellido", dni + "@example.com", dni,
+                "Nombre", "Apellido", dni + "@example.com", dni, com.red_escuela.backend.shared.domain.DocumentType.OTHER,
                 null, null, null, null, null, null, null, role);
     }
 

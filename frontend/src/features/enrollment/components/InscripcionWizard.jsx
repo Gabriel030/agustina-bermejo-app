@@ -1,5 +1,5 @@
 import { useReducer, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DocumentField } from '@/components/DocumentField';
+import { validateDocument } from '@/lib/documentType';
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Stepper } from '@/components/Stepper';
 import { useAuth } from '@/context/AuthContext';
@@ -33,27 +35,29 @@ const DOCUMENTOS_CARRERA = [
 
 const CAMPOS_DATOS = {
   email: 'el email',
-  dni: 'el DNI',
+  dni: 'el documento',
   street: 'la calle',
   number: 'el número',
   city: 'la ciudad',
 };
 
-const datosSchema = z.object({
-  email: z.string().trim().min(1, 'Ingresá tu email').email('El email no es válido'),
-  dni: z
-    .string()
-    .trim()
-    .min(1, 'Ingresá tu DNI')
-    .regex(/^\d{7,8}$/, 'El DNI tiene 7 u 8 números, sin puntos ni espacios'),
-  street: z.string().trim().min(1, 'Ingresá la calle'),
-  number: z.string().trim().min(1, 'Ingresá el número'),
-  floor: z.string(),
-  city: z.string().trim().min(1, 'Ingresá la ciudad'),
-  state: z.string(),
-  postalCode: z.string(),
-  country: z.string(),
-});
+const datosSchema = z
+  .object({
+    email: z.string().trim().min(1, 'Ingresá tu email').email('El email no es válido'),
+    documentType: z.enum(['DNI', 'PASSPORT', 'OTHER']),
+    dni: z.string(),
+    street: z.string().trim().min(1, 'Ingresá la calle'),
+    number: z.string().trim().min(1, 'Ingresá el número'),
+    floor: z.string(),
+    city: z.string().trim().min(1, 'Ingresá la ciudad'),
+    state: z.string(),
+    postalCode: z.string(),
+    country: z.string(),
+  })
+  .superRefine((valores, ctx) => {
+    const mensaje = validateDocument(valores.documentType, valores.dni);
+    if (mensaje) ctx.addIssue({ code: 'custom', path: ['dni'], message: mensaje });
+  });
 
 function ErrorDeCampo({ error }) {
   if (!error) return null;
@@ -81,8 +85,9 @@ const MENSAJES_ERROR_INSCRIPCION = {
   COHORT_ADMISSION_WINDOW_CLOSED: 'La inscripción a esta cohorte está cerrada.',
   ADMISSION_WINDOW_CLOSED: 'La inscripción a este curso está cerrada.',
   STUDENT_NOT_CONFIRMED: 'Tu cuenta todavía no está habilitada para inscribirte. Consultá en Secretaría.',
-  DNI_REQUIRED: 'Cargá tu DNI para poder enviar la solicitud.',
-  DNI_ALREADY_EXISTS: 'Ese DNI ya está registrado en otra cuenta. Revisalo en tus datos personales.',
+  DNI_REQUIRED: 'Cargá tu documento para poder enviar la solicitud.',
+  DNI_ALREADY_EXISTS: 'Ese documento ya está registrado en otra cuenta. Revisalo en tus datos personales.',
+  INVALID_DOCUMENT_NUMBER: 'El número de documento no tiene un formato válido para el tipo elegido.',
   STUDENT_IN_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
   PENDING_DEBT: 'Tenés deuda pendiente. Regularizala antes de inscribirte.',
 };
@@ -103,6 +108,7 @@ function datosIniciales(usuario) {
   const datos = usuario ?? {};
   return {
     email: datos.email ?? '',
+    documentType: datos.documentType ?? 'DNI',
     dni: datos.dni ?? '',
     street: datos.street ?? '',
     number: datos.number ?? '',
@@ -163,6 +169,8 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   const [tocado, setTocado] = useState(false);
   const {
     register,
+    control,
+    trigger,
     watch,
     getValues,
     formState: { errors, isDirty },
@@ -216,6 +224,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
       if (datosCambiaron) {
         await actualizarPerfil.mutateAsync({
           email: valores.email.trim(),
+          documentType: valores.documentType,
           dni: valores.dni.trim(),
           street: valores.street,
           number: valores.number,
@@ -347,9 +356,27 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               <ErrorDeCampo error={errors.email} />
             </div>
             <div>
-              <div className="mb-1.5 text-xs font-semibold text-ink-soft">DNI</div>
-              <Input placeholder="DNI sin puntos" inputMode="numeric" aria-invalid={!!errors.dni} {...register('dni')} />
-              <ErrorDeCampo error={errors.dni} />
+              <div className="mb-1.5 text-xs font-semibold text-ink-soft">Documento</div>
+              <Controller
+                control={control}
+                name="documentType"
+                render={({ field: tipo }) => (
+                  <Controller
+                    control={control}
+                    name="dni"
+                    render={({ field: numero }) => (
+                      <DocumentField
+                        type={tipo.value}
+                        number={numero.value}
+                        onTypeChange={(v) => { tipo.onChange(v); trigger('dni'); }}
+                        onNumberChange={numero.onChange}
+                        onBlur={numero.onBlur}
+                        error={errors.dni?.message}
+                      />
+                    )}
+                  />
+                )}
+              />
             </div>
           </div>
 
