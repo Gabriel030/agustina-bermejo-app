@@ -120,10 +120,11 @@ public class IssuingScenarioFactory {
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
             template.setProgram(entityManager.getReference(Program.class, offering.programId()));
             template.setTerm(term);
-            template.setRecurringFeeInvoicesCount(10);
-            template.configureEnrollmentFees(2, 2, 8);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 2, 2, 8);
             template.setCreatedBy(entityManager.getReference(Person.class, offering.directorId()));
             entityManager.persist(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             return template.getId();
         });
     }
@@ -136,9 +137,9 @@ public class IssuingScenarioFactory {
             cohort.setAdmissionStart(cursadaStart.minusMonths(2));
             cohort.setAdmissionEnd(cursadaStart.minusDays(1));
             cohort.setCursadaStart(cursadaStart);
-            cohort.setEntryFeeDiscount(entryDiscount);
             cohort.setCreatedBy(newPerson());
             entityManager.persist(cohort);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publishCohortEntryDiscount(entityManager, cohort, entryDiscount);
             return cohort.getId();
         });
     }

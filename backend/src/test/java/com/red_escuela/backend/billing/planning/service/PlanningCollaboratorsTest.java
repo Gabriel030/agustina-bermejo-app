@@ -85,7 +85,7 @@ class PlanningCollaboratorsTest {
 
     private ProgramInvoicePlanningFacts facts(YearMonth month, LocalDate today, YearMonth entry, Map<String, SlotWindow> windows, Long entryTemplate, Integer entrySlot,
                                               LocalDate courseStart) {
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(template, 2026)), null);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026)), null);
         return new ProgramInvoicePlanningFacts(1L, month, today, true, false, false, false, false, entry, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY), true,
                 cycles, List.of(), Set.of(), windows, entryTemplate, entrySlot, courseStart);
     }
@@ -95,7 +95,7 @@ class PlanningCollaboratorsTest {
     @Tag("D-025")
     @Tag("D-021")
     void dueDateStrategiesCloseAtTheWindowOrAfterTheLateDaysWhenTheDateAlreadyPassed() {
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         String key = SlotWindow.key(cycle.templateId(), 1);
         LocalDate today = LocalDate.of(2026, 3, 10);
         EntryEnrollmentFeeDueDateStrategy entry = new EntryEnrollmentFeeDueDateStrategy();
@@ -128,7 +128,7 @@ class PlanningCollaboratorsTest {
     @Tag("D-022")
     @Tag("D-026")
     void aSlotIsCandidateInTheMonthBeforeItsWindowAndWhileItIsOpenAndInCatchUpUntilTheSlotEnds() {
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         String key = SlotWindow.key(cycle.templateId(), 1);
         LocalDate today = LocalDate.of(2026, 2, 10);
         YearMonth feb = YearMonth.of(2026, 2);
@@ -144,7 +144,8 @@ class PlanningCollaboratorsTest {
         assertThat(EnrollmentFeeSlotDueThisMonthSpecification.isDueNow(facts(YearMonth.of(2027, 1), LocalDate.of(2027, 1, 5), null, opensNextMonth, null, null, null), cycle, 1, true)).isFalse();
         assertThat(EnrollmentFeeSlotDueThisMonthSpecification.isDueNow(facts(feb, today, null, opensInTwoMonths, null, null, null), cycle, 1, true)).isFalse();
         assertThat(EnrollmentFeeSlotDueThisMonthSpecification.emissionMonth(facts(feb, today, null, opensNextMonth, null, null, null), cycle, 1)).isEqualTo(feb);
-        template.setEnrollmentFeeLeadMonths(0);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setEnrollmentFeeLeadMonths(template, 0);
+        cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         assertThat(EnrollmentFeeSlotDueThisMonthSpecification.emissionMonth(facts(feb, today, null, opensNextMonth, null, null, null), cycle, 1)).isEqualTo(MARCH);
     }
 
@@ -173,7 +174,7 @@ class PlanningCollaboratorsTest {
         later.getTerm().setStartDate(java.time.LocalDateTime.of(2028, 3, 1, 0, 0));
         later.getTerm().setEndDate(java.time.LocalDateTime.of(2028, 12, 31, 0, 0));
         ProgramInvoicePlanningFacts gap = new ProgramInvoicePlanningFacts(1L, YearMonth.of(2027, 5), LocalDate.of(2027, 5, 1), true, false, false, false, false, null,
-                PaymentPlanCoverage.none(), true, new YearCycles(List.of(YearCycle.of(template, 2026), YearCycle.of(later, 2028)), null), List.of(), Set.of(), Map.of(), null, null, null);
+                PaymentPlanCoverage.none(), true, new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026), com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(later, 2028)), null), List.of(), Set.of(), Map.of(), null, null, null);
         LectiveYearCycleResolution between = resolver.resolveLectiveYearCycle(gap);
         assertThat(between).isInstanceOf(LectiveYearCycleResolution.BetweenYears.class);
         assertThat(between.toDecision().code()).isEqualTo("BETWEEN_YEARS");
@@ -242,8 +243,8 @@ class PlanningCollaboratorsTest {
     void theReferenceSlotIsTheLatestSlotDueInCatchUpAndTheSlotCoveringThePeriod() {
         EnrollmentFeeReferenceSlotResolver resolver = new EnrollmentFeeReferenceSlotResolver();
         ProgramYearBillingTemplate two = com.red_escuela.backend.billing.planning.policy.PlanningFixtures_.template();
-        two.configureEnrollmentFees(2, 2, 8);
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(two, 2026)), null);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(two, 2, 2, 8);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(two, 2026)), null);
         java.util.function.Function<YearMonth, ProgramInvoicePlanningFacts> at = month -> new ProgramInvoicePlanningFacts(1L, month, month.atDay(1), true, false, false, false, false,
                 null, PaymentPlanCoverage.none(), true, cycles, List.of(), Set.of(), Map.of(), null, null, null);
 

@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.usecase.cohort.FindProgramBillingConfigurationUseCase;
+import com.red_escuela.backend.billing.configuration.usecase.FindProgramBillingConfigurationUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationUseCase;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -64,11 +64,11 @@ public class ProgramYearBillingTemplateController {
     }
 
     private ProgramYearBillingTemplateResponse templateResponse(ProgramYearBillingTemplate template) {
-        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template));
+        return ProgramYearBillingTemplateResponse.from(template, findConfigurationUseCase.findYearTermsInEffect(template.programId(), template.getTerm().getId()));
     }
 
     private ProgramCohortResponse cohortResponse(ProgramCohort cohort) {
-        return ProgramCohortResponse.from(cohort, findConfigurationUseCase.findEntryDiscountInEffect(cohort));
+        return ProgramCohortResponse.from(cohort, findConfigurationUseCase.findEntryDiscountInEffect(cohort.getId()));
     }
 
     @PostMapping("/programs/{id}/year-billing-templates")

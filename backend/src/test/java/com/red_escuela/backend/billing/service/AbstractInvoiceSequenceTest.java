@@ -170,16 +170,22 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
             template.setProgram(entityManager.getReference(Program.class, career.programId()));
             template.setTerm(term);
-            template.setRecurringFeeInvoicesCount(installments);
-            template.configureEnrollmentFees(feeCount, firstFeeMonth, secondFeeMonth);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, installments);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, feeCount, firstFeeMonth, secondFeeMonth);
             template.setCreatedBy(entityManager.getReference(Person.class, career.directorId()));
             entityManager.persist(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             return new Year(template.getId(), term.getId(), year);
         });
     }
 
     protected void configureYear(Year year, java.util.function.Consumer<ProgramYearBillingTemplate> change) {
-        transactionTemplate.executeWithoutResult(status -> change.accept(entityManager.find(ProgramYearBillingTemplate.class, year.templateId())));
+        transactionTemplate.executeWithoutResult(status -> {
+            ProgramYearBillingTemplate template = entityManager.find(ProgramYearBillingTemplate.class, year.templateId());
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.load(entityManager, template);
+            change.accept(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
+        });
     }
 
     protected Long newCohort(Year year, CohortIntake intake, LocalDate cursadaStart) {
@@ -322,10 +328,10 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             });
             long installments = all.stream().filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
                     .filter(i -> year.templateId().equals(i.getTemplateId())).count();
-            assertThat(installments).as("cuotas del año lectivo %s", year.year()).isLessThanOrEqualTo(template.getRecurringFeeInvoicesCount());
+            assertThat(installments).as("cuotas del año lectivo %s", year.year()).isLessThanOrEqualTo(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).recurringFeeInvoicesCount());
             List<Invoice> fees = all.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
                     .filter(i -> year.templateId().equals(i.getTemplateId())).toList();
-            assertThat(fees).as("matrículas del ciclo %s", year.year()).hasSizeLessThanOrEqualTo(template.getEnrollmentFeeCount());
+            assertThat(fees).as("matrículas del ciclo %s", year.year()).hasSizeLessThanOrEqualTo(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).enrollmentFeeCount());
             assertThat(fees.stream().map(Invoice::getEnrollmentFeeSlot).filter(Objects::nonNull).distinct().count())
                     .as("una matrícula por número de slot en el ciclo %s", year.year()).isEqualTo(fees.stream().filter(f -> f.getEnrollmentFeeSlot() != null).count());
         }

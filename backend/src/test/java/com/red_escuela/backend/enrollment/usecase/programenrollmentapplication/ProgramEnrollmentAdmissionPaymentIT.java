@@ -138,9 +138,10 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
             template.setProgram(program);
             template.setTerm(term);
-            template.setRecurringFeeInvoicesCount(10);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
             template.setCreatedBy(director);
             entityManager.persist(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplate(template);
             cohort.setIntake(CohortIntake.FIRST);

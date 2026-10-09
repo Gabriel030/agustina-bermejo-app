@@ -139,9 +139,10 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(10);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
         template.setCreatedBy(createdBy);
         entityManager.persist(template);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -265,7 +266,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = approved.getAdmissionInvoice();
         assertThatInvoice(invoice).isPending();
         assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
-        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(approved.getProgramCohort().getTemplate().getLateEnrollmentFeeDueDays()));
+        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(approved.getProgramCohort().getTemplate()).lateEnrollmentFeeDueDays()));
         assertThat(admissionInvoicesOf(approved.getStudent())).isEqualTo(1L);
         assertThat(isEnrolled(approved.getStudent(), approved.getProgram())).isFalse();
         assertThat(approved.getStudent().getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

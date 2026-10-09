@@ -38,8 +38,8 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setId(id);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(installments);
-        template.configureEnrollmentFees(count, first, second);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, installments);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, count, first, second);
         return template;
     }
 
@@ -96,7 +96,7 @@ class ProgramMonthlyInvoicePlannerTest {
         }
 
         ProgramInvoicePlanningFacts at(YearMonth month, LocalDate today) {
-            YearCycles cycles = new YearCycles(templates.stream().map(t -> YearCycle.of(t, month.getYear())).toList(), null);
+            YearCycles cycles = new YearCycles(templates.stream().map(t -> com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, month.getYear())).toList(), null);
             return new ProgramInvoicePlanningFacts(1L, month, today, active, suspended, completed, paused, onlyFinals, entry, cadence, hasPlan, cycles,
                     fees.stream().map(p -> new IssuedEnrollmentFee(null, null, null, p, InvoicePaymentStatus.PENDING, p.atDay(1))).toList(), installments, windows,
                     null, null, null);
@@ -168,7 +168,7 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
         assertThat(plan(Builder.base(t).isOnlyFinals(), ym(2026, 3)).charges()).isEmpty();
 
-        t.setRequireEnrollmentFeeForFinalExamOnlyStudents(true);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(t, true);
         assertThat(plan(Builder.base(t).isOnlyFinals(), ym(2026, 3)).charges()).extracting(PlannedInvoice::kind).containsExactly(FeeType.ENROLLMENT_FEE);
     }
 
@@ -204,7 +204,7 @@ class ProgramMonthlyInvoicePlannerTest {
         assertThat(december.charges().get(0).priceDate()).isEqualTo(LocalDate.of(2026, 12, 2));
         assertThat(december.charges().get(0).period()).isEqualTo(ym(2027, 2));
 
-        t.setEnrollmentFeeLeadMonths(0);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setEnrollmentFeeLeadMonths(t, 0);
         assertThat(plan(builder, ym(2026, 12)).charges()).isEmpty();
         assertThat(planner.planInvoicesForMonth(builder.at(ym(2027, 1), LocalDate.of(2027, 1, 2)), InvoicePlanningScope.ALL).charges()).hasSize(1);
     }
@@ -219,7 +219,7 @@ class ProgramMonthlyInvoicePlannerTest {
         assertThat(april.charges()).hasSize(1);
         assertThat(april.charges().get(0).dueDate()).isEqualTo(LocalDate.of(2027, 4, 12));
 
-        t.setLateEnrollmentFeeDueDays(30);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setLateEnrollmentFeeDueDays(t, 30);
         assertThat(planner.planInvoicesForMonth(builder.at(ym(2027, 4), LocalDate.of(2027, 4, 2)), InvoicePlanningScope.ENROLLMENT_FEE_ONLY, true).charges().get(0).dueDate())
                 .isEqualTo(LocalDate.of(2027, 5, 2));
     }
@@ -233,14 +233,14 @@ class ProgramMonthlyInvoicePlannerTest {
         assertThat(plan(paused, ym(2026, 3)).charges()).isEmpty();
         assertThat(plan(paused, ym(2026, 3)).decisions()).extracting(InvoicePlanningDecision::code).contains("PAUSED_NOT_BILLED");
 
-        t.setPaysWhilePaused(true);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setPaysWhilePaused(t, true);
         assertThat(plan(paused, ym(2026, 3)).charges()).hasSize(2);
     }
 
     @Test
     void aCancelledFeeIsNeverIssuedAgainAndIsReportedWithItsOwnCode() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 3, null);
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, 2026)), null);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 3), LocalDate.of(2026, 3, 1), true, false, false, false, false, null,
                 PaymentPlanCadence.MONTHLY, true, cycles, List.of(new IssuedEnrollmentFee(9L, 1L, 1, ym(2026, 3), InvoicePaymentStatus.CANCELLED, LocalDate.of(2026, 3, 1))),
                 Set.of(), Map.of(), null, null, null);
@@ -255,11 +255,11 @@ class ProgramMonthlyInvoicePlannerTest {
     @Tag("D-009")
     void movingTheSecondFeeMonthOfARunningYearDoesNotCreateAnotherFeeBecauseSlotsAreTrackedByNumber() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 2, 2, 7);
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(t, 2026)), null);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, 2026)), null);
         List<IssuedEnrollmentFee> issued = List.of(
                 new IssuedEnrollmentFee(1L, 1L, 1, ym(2026, 2), InvoicePaymentStatus.PAID, LocalDate.of(2026, 2, 1)),
                 new IssuedEnrollmentFee(2L, 1L, 2, ym(2026, 7), InvoicePaymentStatus.PENDING, LocalDate.of(2026, 7, 1)));
-        t.configureEnrollmentFees(2, 2, 8);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 2, 2, 8);
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, ym(2026, 9), LocalDate.of(2026, 9, 1), true, false, false, false, false, null,
                 PaymentPlanCadence.MONTHLY, true, cycles, issued, Set.of(), Map.of(), null, null, null);
 
@@ -268,8 +268,8 @@ class ProgramMonthlyInvoicePlannerTest {
 
     @Test
     void firstFeeMonthsFarAfterTheTermStartBelongToThePreviousCalendarYear() {
-        YearCycle december = YearCycle.of(template(1, 2027, 10, 1, 12, null), 2027);
-        YearCycle february = YearCycle.of(template(2, 2027, 10, 1, 2, null), 2027);
+        YearCycle december = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(1, 2027, 10, 1, 12, null), 2027);
+        YearCycle february = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(2, 2027, 10, 1, 2, null), 2027);
 
         assertThat(december.slotPeriod(1)).isEqualTo(ym(2026, 12));
         assertThat(december.start()).isEqualTo(ym(2026, 12));
@@ -283,8 +283,8 @@ class ProgramMonthlyInvoicePlannerTest {
         ProgramYearBillingTemplate t = new ProgramYearBillingTemplate();
         t.setId(2L);
         t.setTerm(term);
-        t.setRecurringFeeInvoicesCount(2);
-        YearCycle cycle = YearCycle.of(t, 2026);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(t, 2);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(t, 2026);
         Set<YearMonth> issuedLastYear = Set.of(ym(2026, 3), ym(2026, 4), ym(2026, 5));
 
         assertThat(issuedLastYear.stream().filter(cycle::installmentRangeContains)).isEmpty();
@@ -293,8 +293,8 @@ class ProgramMonthlyInvoicePlannerTest {
 
     @Test
     void yearGapsAreDetectedOnlyWhenACalendarYearHasNoCycleBetweenTwoConfiguredYears() {
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(template(1, 2026, 10, 1, 2, null), 2026),
-                YearCycle.of(template(2, 2028, 10, 1, 2, null), 2028)), null);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(1, 2026, 10, 1, 2, null), 2026),
+                com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(2, 2028, 10, 1, 2, null), 2028)), null);
 
         assertThat(cycles.hasGapAt(ym(2027, 5))).isTrue();
         assertThat(cycles.hasGapAt(ym(2026, 5))).isFalse();
@@ -328,18 +328,18 @@ class ProgramMonthlyInvoicePlannerTest {
     void configurationRejectsInconsistentEnrollmentFeeSetups() {
         ProgramYearBillingTemplate t = template(1, 2026, 10, 1, 2, null);
 
-        assertThatThrownBy(() -> t.configureEnrollmentFees(3, 2, null)).isInstanceOf(RuntimeException.class);
-        assertThatThrownBy(() -> t.configureEnrollmentFees(2, 7, 2)).isInstanceOf(RuntimeException.class);
-        assertThatThrownBy(() -> t.configureEnrollmentFees(2, 2, null)).isInstanceOf(RuntimeException.class);
-        assertThatThrownBy(() -> t.configureEnrollmentFees(1, 13, null)).isInstanceOf(RuntimeException.class);
-        t.configureEnrollmentFees(1, 4, 9);
-        assertThat(t.getSecondEnrollmentFeeMonth()).isNull();
+        assertThatThrownBy(() -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 3, 2, null)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 2, 7, 2)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 2, 2, null)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 1, 13, null)).isInstanceOf(RuntimeException.class);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(t, 1, 4, 9);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.termsOf(t).secondEnrollmentFeeMonth()).isNull();
     }
 
     @Test
     void slotRangesPartitionTheCycleAndTheFirstSlotCoversTheEntireYearWithOneFee() {
-        YearCycle one = YearCycle.of(template(1, 2026, 10, 1, 2, null), 2026);
-        YearCycle two = YearCycle.of(template(2, 2026, 10, 2, 2, 7), 2026);
+        YearCycle one = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(1, 2026, 10, 1, 2, null), 2026);
+        YearCycle two = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template(2, 2026, 10, 2, 2, 7), 2026);
 
         assertThat(one.slotContains(1, ym(2026, 12))).isTrue();
         assertThat(two.slotContains(1, ym(2026, 6))).isTrue();

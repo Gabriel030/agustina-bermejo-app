@@ -175,7 +175,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void theYearCanConfigureTheDueDaysOfItsInstallments() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        configureYear(y27, template -> template.setRecurringFeeDueDays(5));
+        configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeDueDays(template, 5));
         today(date(2027, 3, 2));
         Long enrollment = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 1), date(2027, 1, 20));
 
@@ -376,7 +376,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
     void theSuspendedWithdrawalCanBeConfiguredToWaitForTheEndOfTheLectiveYear() {
         Career career = newCareer();
         Year y27 = newYear(career, 2027, 10, 1, 2, null);
-        configureYear(y27, template -> template.setWithdrawSuspendedAtTermEnd(false));
+        configureYear(y27, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setWithdrawSuspendedAtTermEnd(template, false));
         Term first = newCuatrimestre(2027, 3, date(2027, 2, 1), date(2027, 3, 10), "1C");
         newSection(career, first);
         today(date(2027, 1, 4));

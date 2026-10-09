@@ -62,10 +62,11 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
             template.setProgram(entityManager.getReference(Program.class, career.programId()));
             template.setTerm(term);
-            template.setRecurringFeeInvoicesCount(installments);
-            template.configureEnrollmentFees(1, 2, null);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, installments);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 1, 2, null);
             template.setCreatedBy(entityManager.getReference(Person.class, career.directorId()));
             entityManager.persist(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             return new Year(template.getId(), term.getId(), year);
         });
     }
@@ -109,7 +110,7 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         runEveryMonth(JAN_2026, YearMonth.of(2026, 7), () -> assertInvariants(enrollment, y26));
         assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).containsExactly(YearMonth.of(2026, 3), YearMonth.of(2026, 7));
 
-        configureYear(y26, template -> template.configureEnrollmentFees(2, 2, 8));
+        configureYear(y26, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 2, 2, 8));
         runEveryMonth(YearMonth.of(2026, 8), YearMonth.of(2026, 12), () -> assertInvariants(enrollment, y26));
 
         assertThat(periods(enrollment, FeeType.ENROLLMENT_FEE)).hasSize(2);
@@ -202,13 +203,13 @@ class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
         Long paying = newEnrollment(career, null, PaymentPlanCadence.MONTHLY, JAN_2026, date(2026, 1, 5));
         setStatus(free, ProgramEnrollmentStatus.PAUSED);
         setStatus(paying, ProgramEnrollmentStatus.PAUSED);
-        configureYear(y26, template -> template.setPaysWhilePaused(true));
+        configureYear(y26, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setPaysWhilePaused(template, true));
         today(date(2026, 2, 1));
         job.run();
         today(date(2026, 3, 1));
         job.run();
 
-        configureYear(y26, template -> template.setPaysWhilePaused(false));
+        configureYear(y26, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setPaysWhilePaused(template, false));
         today(date(2026, 4, 1));
         job.run();
 

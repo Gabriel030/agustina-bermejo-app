@@ -1,7 +1,6 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
-import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import org.springframework.stereotype.Component;

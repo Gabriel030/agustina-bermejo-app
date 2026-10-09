@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
-import com.red_escuela.backend.billing.configuration.exception.NoEffectiveConfigurationException;
+import com.red_escuela.backend.billing.configuration.domain.EffectiveConfigurations;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
@@ -62,11 +62,11 @@ public class BillingConfigurationReader {
     }
 
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {
-        return findYearTermsEffectiveOn(programId, termId, date).orElseThrow(() -> new NoEffectiveConfigurationException(ConfigurationTopic.ofYearTerms(programId, termId), date));
+        return EffectiveConfigurations.requireInEffect(findYearTermsEffectiveOn(programId, termId, date), ConfigurationTopic.ofYearTerms(programId, termId), date);
     }
 
     public LatePaymentTerms requireLatePaymentSettingsEffectiveOn(LocalDate date) {
-        return findLatePaymentSettingsEffectiveOn(date).orElseThrow(() -> new NoEffectiveConfigurationException(ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), date));
+        return EffectiveConfigurations.requireInEffect(findLatePaymentSettingsEffectiveOn(date), ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), date);
     }
 
     public Percentage cohortEntryDiscountEffectiveOn(Long cohortId, LocalDate date) {

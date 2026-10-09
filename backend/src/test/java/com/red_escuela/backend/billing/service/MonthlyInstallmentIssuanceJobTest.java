@@ -168,9 +168,10 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
             template.setProgram(program);
             template.setTerm(term);
-            template.setRecurringFeeInvoicesCount(recurringCount);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, recurringCount);
             template.setCreatedBy(director);
             entityManager.persist(template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplate(template);
@@ -257,8 +258,12 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     }
 
     private void setEnrollmentFeeMonth(Fixture fixture, int month) {
-        transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().getTemplate().configureEnrollmentFees(1, month, null));
+        transactionTemplate.executeWithoutResult(tx -> {
+            var template = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().getTemplate();
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.load(entityManager, template);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 1, month, null);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
+        });
     }
 
     private void persistNextYearTemplate(Fixture fixture) {
@@ -274,9 +279,10 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             ProgramYearBillingTemplate nextTemplate = new ProgramYearBillingTemplate();
             nextTemplate.setProgram(enrollment.getProgram());
             nextTemplate.setTerm(nextTerm);
-            nextTemplate.setRecurringFeeInvoicesCount(10);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(nextTemplate, 10);
             nextTemplate.setCreatedBy(fixture.director());
             entityManager.persist(nextTemplate);
+            com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, nextTemplate);
         });
     }
 

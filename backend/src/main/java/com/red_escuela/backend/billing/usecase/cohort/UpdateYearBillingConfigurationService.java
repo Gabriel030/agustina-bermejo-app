@@ -4,7 +4,10 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay;
-import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase;
+import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
+import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
+import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
@@ -25,17 +28,21 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final BillingConfigurationReader configurationReader;
     private final YearBillingTermsOverlay termsOverlay;
-    private final ProposeBillingConfigurationChangeUseCase proposeChangeUseCase;
+    private final BillingOperationPipeline pipeline;
+    private final ChangeBillingConfigurationOperation operation;
+    private final BillingActorResolver actorResolver;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public UpdateYearBillingConfigurationService(ProgramYearBillingTemplateRepository templateRepository, BillingConfigurationReader configurationReader,
-                                                 YearBillingTermsOverlay termsOverlay, ProposeBillingConfigurationChangeUseCase proposeChangeUseCase,
+                                                 YearBillingTermsOverlay termsOverlay, BillingOperationPipeline pipeline, ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver,
                                                  ApplicationEventPublisher eventPublisher, Clock clock) {
         this.templateRepository = templateRepository;
         this.configurationReader = configurationReader;
         this.termsOverlay = termsOverlay;
-        this.proposeChangeUseCase = proposeChangeUseCase;
+        this.pipeline = pipeline;
+        this.operation = operation;
+        this.actorResolver = actorResolver;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -48,7 +55,8 @@ public class UpdateYearBillingConfigurationService implements UpdateYearBillingC
         LocalDate today = LocalDate.now(clock);
         Long termId = template.getTerm().getId();
         YearBillingTerms proposed = termsOverlay.overlay(configurationReader.requireYearTermsEffectiveOn(template.programId(), termId, today), request);
-        proposeChangeUseCase.proposeChange(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON)
+        pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofYearTerms(template.programId(), termId), proposed, today, CHANGE_REASON,
+                        actorResolver.currentPersonIdOr(templateRepository.findCreatedByIdById(templateId)), true))
                 .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(template.getProgram().getId()));
         return template;
