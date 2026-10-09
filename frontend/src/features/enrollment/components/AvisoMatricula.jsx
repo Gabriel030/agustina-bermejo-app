@@ -39,9 +39,7 @@ export function AvisoMatricula({ obligacion, onPagar }) {
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          {obligacion?.status === 'PARTIAL'
-            ? `Te falta completar el pago de la matrícula ${periodoLegible(obligacion)}${montoLegible(obligacion)} para poder inscribirte.`
-            : `Para inscribirte tenés que pagar la matrícula ${periodoLegible(obligacion)}${montoLegible(obligacion)}${vencimientoLegible(obligacion)}. Pagala y volvé a esta pantalla.`}
+          {`Para inscribirte tenés que pagar la matrícula ${periodoLegible(obligacion)}${montoLegible(obligacion)}${vencimientoLegible(obligacion)}. Pagala y volvé a esta pantalla.`}
         </span>
       </div>
       {obligacion?.invoiceId && (

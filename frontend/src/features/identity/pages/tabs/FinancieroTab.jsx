@@ -18,9 +18,7 @@ const ESTADO_MATRICULA = {
   NOT_ISSUED: { label: 'Todavía no emitida', tone: 'neutral' },
   PENDING: { label: 'Pendiente de pago', tone: 'warning' },
   IN_REVIEW: { label: 'Comprobante en revisión', tone: 'info' },
-  PARTIAL: { label: 'Pago parcial', tone: 'warning' },
   PAID: { label: 'Paga', tone: 'success' },
-  WAIVED: { label: 'Condonada', tone: 'success' },
   EXEMPTED: { label: 'Habilitado sin pagar', tone: 'info' },
 };
 

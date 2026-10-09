@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
+import { invoiceFixture, money } from '@/test/fixtures/invoices';
 
 const API = 'http://localhost:8080';
 
@@ -53,7 +54,7 @@ async function openRegisterPaymentModal(user) {
           productName: 'Profesorado de Educación Inicial',
           paymentStatus: 'OVERDUE',
           invoices: [
-            { id: 61, feeType: 'MONTHLY_INSTALLMENT', period: '2026-09', dueDate: '2026-09-10', remainingBalance: { amount: '52800.00', currency: 'ARS' }, status: 'OVERDUE' },
+            invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', total: '52800.00', paymentStatus: 'OVERDUE' }),
           ],
         },
       ]),
@@ -119,32 +120,62 @@ describe('AdministrativoFacturacion — comprobantes', () => {
 });
 
 describe('AdministrativoFacturacion — registrar pago', () => {
-  it('does not send an amount above the installment balance', async () => {
+  it('shows each installment with its full amount and offers no field to edit it', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openRegisterPaymentModal(user);
+
+    expect(within(dialog).queryByRole('spinbutton')).not.toBeInTheDocument();
+    expect(within(dialog).getByText('Se cobra completa')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('$ 52.800,00').length).toBeGreaterThan(0);
+  });
+
+  it('registers the payment for the full outstanding amount of the selected installment', async () => {
+    let body;
+    server.use(
+      http.post(`${API}/payments`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ id: 1 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openRegisterPaymentModal(user);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
+
+    await vi.waitFor(() => expect(body).toBeDefined());
+    expect(body.allocations).toEqual([{ invoiceId: 61, amountApplied: { amount: '52800.00', currency: 'ARS' } }]);
+  });
+
+  it('asks to pick at least one installment instead of sending an empty payment', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const user = userEvent.setup();
     renderPage();
     const dialog = await openRegisterPaymentModal(user);
 
-    const amount = within(dialog).getByRole('spinbutton');
-    await user.clear(amount);
-    await user.type(amount, '999999');
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · sep 2026' }));
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
 
-    expect(await within(dialog).findByText('El monto de Cuota mensual · sep 2026 supera su saldo ($ 52.800,00).')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Elegí al menos una cuota para cobrar.')).toBeInTheDocument();
     expect(fetchSpy.mock.calls.some(([url, options]) => String(url).endsWith('/payments') && options?.method === 'POST')).toBe(false);
   });
 
-  it('does not accept negative amounts', async () => {
+  it('explains when the backend rejects a partial payment', async () => {
+    server.use(
+      http.post(`${API}/payments`, () =>
+        HttpResponse.json({ code: 'PARTIAL_PAYMENT_NOT_ALLOWED' }, { status: 409 }),
+      ),
+    );
     const user = userEvent.setup();
     renderPage();
     const dialog = await openRegisterPaymentModal(user);
 
-    const amount = within(dialog).getByRole('spinbutton');
-    await user.clear(amount);
-    await user.type(amount, '-5');
     await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
 
-    expect(await within(dialog).findByText('Los montos no pueden ser negativos.')).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText('Las cuotas se cobran completas: el monto cambió. Actualizá la pantalla y volvé a intentar.'),
+    ).toBeInTheDocument();
   });
 
   it('explains when the backend rejects the amount for exceeding the balance', async () => {
@@ -165,18 +196,13 @@ describe('AdministrativoFacturacion — registrar pago', () => {
   });
 });
 
-const money = (amount) => ({ amount, currency: 'ARS' });
-
-const paidInvoice = {
+const paidInvoice = invoiceFixture({
   id: 70,
-  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-03',
   dueDate: '2026-03-10',
-  baseAmount: money('52000.00'),
-  amountDue: money('52000.00'),
-  remainingBalance: money('0.00'),
-  status: 'PAID',
-  adjustments: [],
+  total: '52000.00',
+  paid: '52000.00',
+  paymentStatus: 'PAID',
   paymentDate: '2026-03-12T09:05:00',
   payments: [
     {
@@ -205,45 +231,45 @@ const paidInvoice = {
       reviewedAt: '2026-03-12T09:00:00',
     },
   ],
-};
+});
 
-const partialInvoice = {
+const creditedInvoice = invoiceFixture({
   id: 71,
-  feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-04',
   dueDate: '2026-04-10',
-  baseAmount: money('52000.00'),
-  amountDue: money('52000.00'),
-  remainingBalance: money('20000.00'),
-  status: 'PARTIALLY_PAID',
-  adjustments: [],
-  paymentDate: '2026-04-20T09:05:00',
-  payments: [
-    { paymentId: 1, status: 'CONFIRMED', method: 'CASH', amountApplied: money('12000.00'), paymentTotal: money('30000.00'), paidAt: '2026-04-20T09:05:00', registeredByName: 'Ana Ruiz' },
-    { paymentId: 2, status: 'CONFIRMED', method: 'TRANSFER', amountApplied: money('20000.00'), paymentTotal: money('20000.00'), paidAt: '2026-04-15T10:00:00', registeredByName: 'Ana Ruiz' },
-  ],
-  receipts: [],
-};
-
-const untouchedInvoice = {
-  id: 72,
-  feeType: 'MONTHLY_INSTALLMENT',
-  period: '2026-05',
-  dueDate: '2026-05-10',
-  baseAmount: money('52000.00'),
-  amountDue: money('52000.00'),
-  remainingBalance: money('52000.00'),
-  status: 'PENDING',
-  adjustments: [],
-  paymentDate: null,
+  total: '52000.00',
+  credited: '32000.00',
   payments: [],
   receipts: [],
-};
+});
+
+const sharedPaymentInvoice = invoiceFixture({
+  id: 74,
+  period: '2026-07',
+  dueDate: '2026-07-10',
+  total: '12000.00',
+  paid: '12000.00',
+  paymentStatus: 'PAID',
+  paymentDate: '2026-07-20T09:05:00',
+  payments: [
+    { paymentId: 1, status: 'CONFIRMED', method: 'TRANSFER', amountApplied: money('12000.00'), paymentTotal: money('30000.00'), paidAt: '2026-07-20T09:05:00', registeredByName: 'Ana Ruiz' },
+  ],
+  receipts: [],
+});
+
+const untouchedInvoice = invoiceFixture({
+  id: 72,
+  period: '2026-05',
+  dueDate: '2026-05-10',
+  total: '52000.00',
+  payments: [],
+  receipts: [],
+});
 
 const reviewInvoice = {
   ...untouchedInvoice,
   id: 73,
-  period: '2026-06',
+  lines: [{ ...untouchedInvoice.lines[0], period: '2026-06' }],
   dueDate: '2026-06-10',
   receipts: [{ id: 90, status: 'PENDING_REVIEW', fileName: 'x.pdf', uploadedAt: '2026-06-02T10:00:00', uploadedByName: 'Lucía Pérez' }],
 };
@@ -285,17 +311,16 @@ describe('AdministrativoFacturacion — pestañas', () => {
 });
 
 describe('AdministrativoFacturacion — estado de cuenta', () => {
-  it('shows the period inside the concept, one date format, the payment date and the balance under the amount', async () => {
+  it('shows the period inside the concept, one date format, the payment date and the outstanding balance under the amount', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await openAccountOf([paidInvoice, partialInvoice, untouchedInvoice], user);
+    await openAccountOf([paidInvoice, creditedInvoice, untouchedInvoice], user);
 
     expect(screen.getByText('Cuota mensual · abr 2026')).toBeInTheDocument();
     expect(screen.getByText('10/03/2026')).toBeInTheDocument();
     expect(screen.getByText('12/03/2026')).toBeInTheDocument();
-    expect(screen.getByText('20/04/2026')).toBeInTheDocument();
-    expect(screen.getByText('2 pagos')).toBeInTheDocument();
+    expect(screen.getByText('10/04/2026')).toBeInTheDocument();
     expect(screen.getByText('Saldo $ 20.000,00')).toBeInTheDocument();
     expect(screen.getAllByText('$ 52.000,00').length).toBeGreaterThan(0);
   });
@@ -332,9 +357,9 @@ describe('AdministrativoFacturacion — estado de cuenta', () => {
   it('tells how much of a multi-installment payment was applied to this installment', async () => {
     const user = userEvent.setup();
     renderPage();
-    await openAccountOf([paidInvoice, partialInvoice], user);
+    await openAccountOf([paidInvoice, sharedPaymentInvoice], user);
 
-    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · abr 2026' }));
+    await user.click(screen.getByRole('button', { name: 'Ver pagos de Cuota mensual · jul 2026' }));
 
     expect(screen.getByText(/Aplicado a esta cuota \$ 12\.000,00 de un pago de \$ 30\.000,00/)).toBeInTheDocument();
     expect(screen.getByText('Transferencia bancaria')).toBeInTheDocument();

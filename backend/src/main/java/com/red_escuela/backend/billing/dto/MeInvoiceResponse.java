@@ -14,11 +14,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public record MeInvoiceResponse(
-        Long id, String feeType, String period, LocalDate dueDate, Money baseAmount,
-        Money amountDue, Money remainingBalance, String status,
-        List<InvoiceAdjustmentResponse> adjustments, String fiscalInvoiceStatus,
-        LocalDateTime createdAt, LocalDateTime updatedAt,
-        String cancelledByName, String cancelledReason, LocalDateTime cancelledAt,
+        Long id, String invoiceNumber, String invoiceType, String documentType, String documentStatus,
+        String paymentStatus, LocalDate issueDate, LocalDate dueDate, String currency,
+        Money linesTotalAmount, Money discountsTotalAmount, Money totalAmount, Money paidAmount,
+        Money creditedAmount, Money outstandingAmount, List<InvoiceLineResponse> lines,
+        String issuingReason, String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod,
@@ -35,11 +35,11 @@ public record MeInvoiceResponse(
                 .map(allocation -> MeInvoicePaymentResponse.from(allocation, receiptIdByPaymentId))
                 .toList();
         return new MeInvoiceResponse(
-                base.id(), base.feeType(), base.period(), base.dueDate(), base.baseAmount(),
-                base.amountDue(), base.remainingBalance(), base.status(),
-                base.adjustments(), base.fiscalInvoiceStatus(),
-                base.createdAt(), base.updatedAt(),
-                base.cancelledByName(), base.cancelledReason(), base.cancelledAt(),
+                base.id(), base.invoiceNumber(), base.invoiceType(), base.documentType(), base.documentStatus(),
+                base.paymentStatus(), base.issueDate(), base.dueDate(), base.currency(),
+                base.linesTotalAmount(), base.discountsTotalAmount(), base.totalAmount(), base.paidAmount(),
+                base.creditedAmount(), base.outstandingAmount(), base.lines(),
+                base.issuingReason(), base.discardedReason(),
                 base.studentId(), base.studentDni(), base.productRef(),
                 base.description(), base.subjectId(), base.examBoardRegistrationId(),
                 base.paymentDate(), base.paymentMethod(),

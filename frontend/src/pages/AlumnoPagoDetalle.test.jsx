@@ -6,25 +6,11 @@ import { Routes, Route } from 'react-router-dom';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AlumnoPagoDetalle } from '@/pages/AlumnoPagoDetalle';
+import { discountFixture, invoiceFixture, money } from '@/test/fixtures/invoices';
 
 const API = 'http://localhost:8080';
 
-function invoice(overrides) {
-  return {
-    id: 1,
-    feeType: 'MONTHLY_INSTALLMENT',
-    period: '2026-09',
-    dueDate: '2026-09-10',
-    baseAmount: { amount: '48000.00', currency: 'ARS' },
-    amountDue: { amount: '48000.00', currency: 'ARS' },
-    remainingBalance: { amount: '48000.00', currency: 'ARS' },
-    status: 'PENDING',
-    adjustments: [],
-    paymentDate: null,
-    paymentMethod: null,
-    ...overrides,
-  };
-}
+const invoice = (overrides) => invoiceFixture(overrides);
 
 function billingStatus(enrollmentType, productName, invoices) {
   return {
@@ -57,7 +43,7 @@ describe('AlumnoPagoDetalle', () => {
     server.use(
       http.get(`${API}/me/course-enrollments/10/invoices`, () =>
         HttpResponse.json(billingStatus('COURSE', 'Primeros Auxilios y RCP', [
-          invoice({ id: 5, period: '2026-03', status: 'PAID', remainingBalance: { amount: '0.00', currency: 'ARS' }, amountDue: { amount: '11050.00', currency: 'ARS' }, baseAmount: { amount: '11050.00', currency: 'ARS' } }),
+          invoice({ id: 5, period: '2026-03', paymentStatus: 'PAID', total: '11050.00', paid: '11050.00' }),
         ])),
       ),
       http.get(`${API}/me/program-enrollments/10/invoices`, () => new HttpResponse(null, { status: 403 })),
@@ -99,7 +85,7 @@ describe('AlumnoPagoDetalle', () => {
     withReceipts([{ id: 300, invoiceId: 1, status: 'PENDING_REVIEW', uploadedAt: '2026-10-01T10:00:00' }]);
     server.use(
       http.get(`${API}/me/program-enrollments/10/invoices`, () =>
-        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [invoice({ status: 'OVERDUE' })])),
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [invoice({ paymentStatus: 'OVERDUE' })])),
       ),
     );
 
@@ -131,17 +117,12 @@ describe('AlumnoPagoDetalle', () => {
     expect(screen.getByRole('button', { name: 'Pagar' })).toBeInTheDocument();
   });
 
-  it('explains the late fee in the installment detail', async () => {
+  it('explains the scholarship discount of the installment in its detail', async () => {
     withReceipts([]);
     server.use(
       http.get(`${API}/me/program-enrollments/10/invoices`, () =>
         HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
-          invoice({
-            status: 'OVERDUE',
-            amountDue: { amount: '52800.00', currency: 'ARS' },
-            remainingBalance: { amount: '52800.00', currency: 'ARS' },
-            adjustments: [{ type: 'SURCHARGE', resolvedAmount: { amount: '4800.00', currency: 'ARS' }, reason: 'Recargo por mora' }],
-          }),
+          invoice({ total: '24000.00', discount: discountFixture() }),
         ])),
       ),
     );
@@ -150,26 +131,27 @@ describe('AlumnoPagoDetalle', () => {
     renderDetail('/alumno/pagos/carrera/10');
 
     await user.click(await screen.findByRole('button', { name: /Ver detalle de/ }));
-    expect(screen.getByText('Importe de la cuota')).toBeInTheDocument();
-    expect(screen.getByText('Recargo por mora')).toBeInTheDocument();
-    expect(screen.getByText('+ $ 4.800,00')).toBeInTheDocument();
+    expect(screen.getByText('Beca 50 % (cuota 1 de 3)')).toBeInTheDocument();
+    expect(screen.getByText('− $ 24.000,00')).toBeInTheDocument();
+    expect(screen.getByText('Total')).toBeInTheDocument();
+    expect(screen.queryByText('Recargo por mora')).not.toBeInTheDocument();
   });
 
-  it('shows the payment date, the balance under the amount and the period inside the concept', async () => {
+  it('shows the payment date, the outstanding balance under the amount and the period inside the concept', async () => {
     withReceipts([]);
     server.use(
       http.get(`${API}/me/program-enrollments/10/invoices`, () =>
         HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
           invoice({
-            status: 'PARTIALLY_PAID',
+            paymentStatus: 'PENDING',
             period: '2026-03',
             dueDate: '2026-03-10',
-            amountDue: { amount: '52000.00', currency: 'ARS' },
-            remainingBalance: { amount: '20000.00', currency: 'ARS' },
+            total: '52000.00',
+            credited: '32000.00',
             paymentDate: '2026-03-12T09:05:00',
             payments: [
-              { paymentId: 1, method: 'CASH', amountApplied: { amount: '12000.00', currency: 'ARS' }, paymentTotal: { amount: '12000.00', currency: 'ARS' }, paidAt: '2026-03-12T09:05:00' },
-              { paymentId: 2, method: 'CASH', amountApplied: { amount: '20000.00', currency: 'ARS' }, paymentTotal: { amount: '20000.00', currency: 'ARS' }, paidAt: '2026-03-11T10:00:00' },
+              { paymentId: 1, method: 'CASH', amountApplied: money('12000.00'), paymentTotal: money('12000.00'), paidAt: '2026-03-12T09:05:00' },
+              { paymentId: 2, method: 'CASH', amountApplied: money('20000.00'), paymentTotal: money('20000.00'), paidAt: '2026-03-11T10:00:00' },
             ],
           }),
         ])),
@@ -191,7 +173,8 @@ describe('AlumnoPagoDetalle', () => {
       http.get(`${API}/me/program-enrollments/10/invoices`, () =>
         HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [
           invoice({
-            status: 'PAID',
+            paymentStatus: 'PAID',
+            paid: '48000.00',
             paymentDate: '2026-03-12T09:05:00',
             payments: [
               { paymentId: 1, method: 'MERCADO_PAGO', cardType: 'CREDIT', cardInstallments: 3, externalReference: '998877', amountApplied: { amount: '52000.00', currency: 'ARS' }, paymentTotal: { amount: '52000.00', currency: 'ARS' }, paidAt: '2026-03-12T09:05:00' },
@@ -218,7 +201,7 @@ describe('AlumnoPagoDetalle', () => {
     withReceipts([]);
     server.use(
       http.get(`${API}/me/program-enrollments/10/invoices`, () =>
-        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [invoice({ status: 'PENDING', period: '2026-03' })])),
+        HttpResponse.json(billingStatus('PROGRAM', 'Profesorado', [invoice({ paymentStatus: 'PENDING', period: '2026-03' })])),
       ),
     );
 

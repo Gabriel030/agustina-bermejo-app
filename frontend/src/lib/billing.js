@@ -7,7 +7,54 @@ export const FEE_TYPE_LABELS = {
   RETAKEN_SUBJECT_FEE: 'Recurse',
   DEGREE_ISSUANCE_FEE: 'Emisión de título',
   ADMINISTRATIVE_FEE: 'Gestión administrativa',
+  LATE_FEE: 'Recargo por mora',
+  ANNUAL_UPFRONT: 'Pago anual',
 };
+
+export const INVOICE_PAYMENT_STATUS_CONFIG = {
+  PENDING: { label: 'Pendiente', tone: 'warning' },
+  PAYMENT_UNDER_REVIEW: { label: 'En revisión', tone: 'neutral' },
+  OVERDUE: { label: 'Vencida', tone: 'danger' },
+  PAID: { label: 'Pagada', tone: 'success' },
+  CANCELLED: { label: 'Anulada', tone: 'neutral' },
+};
+
+export const INVOICE_DOCUMENT_STATUS_LABELS = {
+  DRAFT: 'Borrador',
+  AWAITING_PAYMENT: 'A la espera del pago',
+  ISSUED: 'Emitida',
+  DISCARDED: 'Anulada',
+};
+
+const PAYABLE_PAYMENT_STATUSES = ['PENDING', 'OVERDUE'];
+
+export function isInvoicePayable(invoice) {
+  return invoice.documentStatus === 'ISSUED' && PAYABLE_PAYMENT_STATUSES.includes(invoice.paymentStatus);
+}
+
+export function hasPendingReceipt(invoice, latestReceipt) {
+  if (latestReceipt) return latestReceipt.status === 'PENDING_REVIEW';
+  return (invoice.receipts ?? []).some((receipt) => receipt.status === 'PENDING_REVIEW');
+}
+
+export function invoiceDisplayStatus(invoice, latestReceipt) {
+  if (invoice.paymentStatus === 'PAYMENT_UNDER_REVIEW') return 'PAYMENT_UNDER_REVIEW';
+  if (isInvoicePayable(invoice) && hasPendingReceipt(invoice, latestReceipt)) return 'PAYMENT_UNDER_REVIEW';
+  return invoice.paymentStatus;
+}
+
+export function invoiceStatusInfo(status) {
+  return INVOICE_PAYMENT_STATUS_CONFIG[status] ?? { label: status, tone: 'neutral' };
+}
+
+export function discountLabel(discount) {
+  const name = discount.discountName || ADJUSTMENT_TYPE_LABELS[discount.discountSource] || discount.discountSource;
+  if (discount.installmentNumber == null) return name;
+  const progress = discount.installmentsTotal == null
+    ? `cuota ${discount.installmentNumber}`
+    : `cuota ${discount.installmentNumber} de ${discount.installmentsTotal}`;
+  return `${name} (${progress})`;
+}
 
 export const ADJUSTMENT_TYPE_LABELS = {
   SCHOLARSHIP: 'Beca',
@@ -16,8 +63,6 @@ export const ADJUSTMENT_TYPE_LABELS = {
   COHORT_ENTRY: 'Ingreso de cohorte',
   MANUAL: 'Manual',
   DISCOUNT: 'Descuento',
-  SURCHARGE: 'Recargo por mora',
-  WAIVE_DEBT: 'Condonación de deuda',
 };
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -74,8 +119,8 @@ export function hasInvoiceDetail(invoice) {
   return (
     (invoice.payments?.length ?? 0) > 0 ||
     (invoice.receipts?.length ?? 0) > 0 ||
-    (invoice.adjustments?.length ?? 0) > 0 ||
-    invoice.status === 'CANCELLED'
+    (invoice.lines ?? []).some((line) => line.discount != null) ||
+    invoice.documentStatus === 'DISCARDED'
   );
 }
 
@@ -94,10 +139,16 @@ export function invoiceConcept(feeType, period) {
   return period ? `${label} · ${formatPeriod(period)}` : label;
 }
 
-export function signedAdjustmentAmount(adjustment) {
-  const value = moneyValue(adjustment.resolvedAmount);
-  const signed = adjustment.type === 'SURCHARGE' ? value : -value;
-  return { amount: signed.toFixed(2), currency: adjustment.resolvedAmount.currency };
+export function invoicePrimaryPeriod(invoice) {
+  return invoice.lines?.[0]?.period ?? null;
+}
+
+export function invoiceTitle(invoice) {
+  return invoiceConcept(invoice.invoiceType, invoicePrimaryPeriod(invoice));
+}
+
+export function negatedMoney(money) {
+  return { amount: (-moneyValue(money)).toFixed(2), currency: money.currency };
 }
 
 export const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
