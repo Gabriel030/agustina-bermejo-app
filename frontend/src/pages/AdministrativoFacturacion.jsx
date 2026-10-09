@@ -12,9 +12,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { apiFetchBlob } from '@/api/client';
-import { FEE_TYPE_LABELS, formatDate, formatPeriod, hasInvoiceDetail, invoiceConcept } from '@/lib/billing';
+import {
+  FEE_TYPE_LABELS,
+  formatDate,
+  formatPeriod,
+  hasInvoiceDetail,
+  invoiceDisplayStatus,
+  invoiceStatusInfo,
+  invoiceTitle,
+  isInvoicePayable,
+} from '@/lib/billing';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
-import { InvoiceDetail } from '@/components/billing/InvoiceDetail';
+import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
 import { formatMoney, moneyValue } from '@/lib/utils';
@@ -36,16 +45,6 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
-const INVOICE_STATUS_CONFIG = {
-  PENDING: { label: 'Pendiente', tone: 'warning' },
-  PENDING_REVIEW: { label: 'En revisión', tone: 'neutral' },
-  OVERDUE: { label: 'Vencida', tone: 'danger' },
-  PAID: { label: 'Pagada', tone: 'success' },
-  PARTIALLY_PAID: { label: 'Pago parcial', tone: 'warning' },
-  CANCELLED: { label: 'Anulada', tone: 'neutral' },
-  WAIVED: { label: 'Bonificada', tone: 'neutral' },
-};
-
 const BILLING_STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
   OVERDUE: { label: 'En mora', tone: 'danger' },
@@ -65,6 +64,7 @@ function formatMonto(money) {
 }
 
 const REGISTER_PAYMENT_ERRORS = {
+  PARTIAL_PAYMENT_NOT_ALLOWED: 'Las cuotas se cobran completas: el monto cambió. Actualizá la pantalla y volvé a intentar.',
   PAYMENT_EXCEEDS_INVOICE_BALANCE: 'El monto supera el saldo de la cuota. Actualizá la pantalla y revisá los saldos.',
   INVOICE_NOT_PAYABLE: 'Una de las cuotas ya no admite pagos. Actualizá la pantalla y revisá su estado.',
 };
@@ -74,20 +74,6 @@ const APPROVE_RECEIPT_ERRORS = {
     'La cuota de este comprobante ya está saldada (por ejemplo, se cobró en mostrador). Rechazalo indicando el motivo.',
   INVALID_PAYMENT_RECEIPT_STATE: 'Este comprobante ya fue revisado. Actualizá la bandeja.',
 };
-
-function paymentAmountsError(payableInvoices, amounts) {
-  for (const inv of payableInvoices) {
-    const amount = parseFloat(amounts[inv.id] ?? '0');
-    if (isNaN(amount)) continue;
-    if (amount < 0) {
-      return 'Los montos no pueden ser negativos.';
-    }
-    if (inv.remainingBalance != null && amount > moneyValue(inv.remainingBalance)) {
-      return `El monto de ${invoiceConcept(inv.feeType, inv.period)} supera su saldo (${formatMonto(inv.remainingBalance)}).`;
-    }
-  }
-  return null;
-}
 
 async function openReceiptFile(receiptId) {
   const preview = window.open('', '_blank');
@@ -105,45 +91,88 @@ async function openReceiptFile(receiptId) {
   }
 }
 
-function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
-  const [amounts, setAmounts] = useState(() =>
-    Object.fromEntries(
-      invoices
-        .filter((inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID')
-        .map((inv) => [inv.id, inv.remainingBalance?.amount ?? '0'])
-    )
+function nearestDueInvoiceId(invoices) {
+  const sorted = [...invoices].sort((a, b) => String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')));
+  return sorted[0]?.id;
+}
+
+function PayableInvoiceRow({ invoice, checked, onToggle }) {
+  const [showLines, setShowLines] = useState(false);
+  const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(invoice));
+  const inputId = `register-payment-${invoice.id}`;
+  const multiLine = (invoice.lines ?? []).length > 1;
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <label htmlFor={inputId} className="flex cursor-pointer items-center gap-3">
+        <input
+          id={inputId}
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          aria-label={`Cobrar ${invoiceTitle(invoice)}`}
+          className="h-4 w-4 accent-brand"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink">{invoiceTitle(invoice)}</p>
+          <p className="text-xs text-ink-faint">Vence el {formatDate(invoice.dueDate)}</p>
+        </div>
+        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
+        <div className="flex w-28 flex-col items-end">
+          <span className="font-mono text-sm font-semibold text-ink">{formatMonto(invoice.outstandingAmount)}</span>
+          <span className="text-xs text-ink-faint">Saldo a cobrar</span>
+        </div>
+      </label>
+      {multiLine && (
+        <div className="mt-2 pl-7">
+          <button
+            type="button"
+            aria-expanded={showLines}
+            onClick={() => setShowLines((value) => !value)}
+            className="text-xs font-semibold text-brand hover:underline"
+          >
+            {showLines ? 'Ocultar desglose' : 'Ver desglose'}
+          </button>
+          {showLines && (
+            <div className="mt-2">
+              <InvoiceLinesBreakdown invoice={invoice} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
+}
+
+function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
+  const underReviewInvoices = invoices.filter((inv) => invoiceDisplayStatus(inv) === 'PAYMENT_UNDER_REVIEW');
+  const payableInvoices = invoices.filter((inv) => isInvoicePayable(inv) && invoiceDisplayStatus(inv) !== 'PAYMENT_UNDER_REVIEW');
+  const [selectedIds, setSelectedIds] = useState(() => new Set([nearestDueInvoiceId(payableInvoices)]));
   const [method, setMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
   const [externalRef, setExternalRef] = useState('');
   const [error, setError] = useState('');
   const { mutate, isPending } = useRegistrarPago();
 
-  const payableInvoices = invoices.filter(
-    (inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE' || inv.status === 'PARTIALLY_PAID'
-  );
+  const selectedInvoices = payableInvoices.filter((inv) => selectedIds.has(inv.id));
+  const total = selectedInvoices.reduce((sum, inv) => sum + moneyValue(inv.outstandingAmount), 0);
+  const totalCurrency = (selectedInvoices[0] ?? payableInvoices[0])?.outstandingAmount?.currency ?? 'ARS';
 
-  const total = payableInvoices.reduce((sum, inv) => {
-    const a = parseFloat(amounts[inv.id] ?? '0');
-    return sum + (isNaN(a) ? 0 : a);
-  }, 0);
+  function toggleInvoice(id) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function handleSubmit() {
-    const amountsError = paymentAmountsError(payableInvoices, amounts);
-    if (amountsError) {
-      setError(amountsError);
+    if (!selectedInvoices.length) {
+      setError('Elegí al menos una cuota para cobrar.');
       return;
     }
 
-    const allocations = payableInvoices
-      .map((inv) => ({ invoiceId: inv.id, amount: parseFloat(amounts[inv.id] ?? '0'), currency: inv.remainingBalance.currency }))
-      .filter((a) => a.amount > 0)
-      .map((a) => ({ invoiceId: a.invoiceId, amountApplied: { amount: a.amount.toFixed(2), currency: a.currency } }));
-
-    if (!allocations.length) {
-      setError('Ingresá al menos un monto mayor a cero.');
-      return;
-    }
+    const allocations = selectedInvoices.map((inv) => ({ invoiceId: inv.id, amountApplied: inv.outstandingAmount }));
 
     mutate(
       { allocations, method, notes: notes || undefined, externalReference: externalRef || undefined },
@@ -162,43 +191,38 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <p className="text-sm text-ink-faint">{enrollmentName}</p>
         </DialogHeader>
 
+        {underReviewInvoices.length > 0 && (
+          <div className="rounded-xl bg-warning-bg px-3 py-2 text-sm text-warning">
+            <p className="font-semibold">En revisión — resolvelas en Comprobantes</p>
+            <ul className="mt-1 text-xs">
+              {underReviewInvoices.map((inv) => (
+                <li key={inv.id}>
+                  {invoiceTitle(inv)} · vence el {formatDate(inv.dueDate)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {payableInvoices.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas pendientes en esta inscripción.</p>
+          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas para cobrar en esta inscripción.</p>
         ) : (
           <div className="flex flex-col gap-4">
+            <p className="text-sm text-ink-soft">Las cuotas se cobran completas: no se admiten pagos parciales.</p>
             <div className="flex flex-col gap-3">
-              {payableInvoices.map((inv) => {
-                const statusInfo = INVOICE_STATUS_CONFIG[inv.status] ?? { label: inv.status, tone: 'neutral' };
-                return (
-                  <div key={inv.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-ink">
-                        {FEE_TYPE_LABELS[inv.feeType] ?? inv.feeType}
-                        {inv.period ? ` · ${formatPeriod(inv.period)}` : ''}
-                      </p>
-                      <p className="text-xs text-ink-faint">Saldo: {formatMonto(inv.remainingBalance)}</p>
-                    </div>
-                    <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-                    <div className="w-28">
-                      <input
-                        type="number"
-                        min="0"
-                        max={inv.remainingBalance == null ? undefined : moneyValue(inv.remainingBalance)}
-                        step="0.01"
-                        aria-label={`Monto a imputar a ${invoiceConcept(inv.feeType, inv.period)}`}
-                        value={amounts[inv.id] ?? ''}
-                        onChange={(e) => setAmounts((prev) => ({ ...prev, [inv.id]: e.target.value }))}
-                        className="w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-right text-sm font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+              {payableInvoices.map((inv) => (
+                <PayableInvoiceRow
+                  key={inv.id}
+                  invoice={inv}
+                  checked={selectedIds.has(inv.id)}
+                  onToggle={() => toggleInvoice(inv.id)}
+                />
+              ))}
             </div>
 
             <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
               <span className="text-sm font-medium text-ink">Total</span>
-              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: payableInvoices[0]?.remainingBalance?.currency ?? 'ARS' })}</span>
+              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: totalCurrency })}</span>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -251,21 +275,13 @@ function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button variant="gradient" onClick={handleSubmit} disabled={isPending}>
+          <Button variant="gradient" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Registrando…' : 'Confirmar pago'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
-
-const PAYABLE_STATUSES = ['PENDING', 'OVERDUE', 'PARTIALLY_PAID'];
-
-function displayedStatus(invoice) {
-  const underReview =
-    PAYABLE_STATUSES.includes(invoice.status) && (invoice.receipts ?? []).some((r) => r.status === 'PENDING_REVIEW');
-  return underReview ? 'PENDING_REVIEW' : invoice.status;
 }
 
 function InvoicesTable({ invoices }) {
@@ -285,11 +301,10 @@ function InvoicesTable({ invoices }) {
       </TableHeader>
       <TableBody>
         {invoices.map((inv) => {
-          const status = displayedStatus(inv);
-          const statusInfo = INVOICE_STATUS_CONFIG[status] ?? { label: status, tone: 'neutral' };
+          const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(inv));
           const expandable = hasInvoiceDetail(inv);
           const open = expandable && isExpanded(inv.id);
-          const concept = invoiceConcept(inv.feeType, inv.period);
+          const concept = invoiceTitle(inv);
           return (
             <Fragment key={inv.id}>
               <TableRow
@@ -324,7 +339,7 @@ function InvoicesTable({ invoices }) {
               {open && (
                 <TableRow id={`invoice-detail-${inv.id}`} className="hover:bg-transparent">
                   <TableCell colSpan={6} className="bg-neutral-bg/40 px-4">
-                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink />
+                    <InvoiceDetail invoice={inv} onViewReceipt={openReceiptFile} reviewLink showDocumentStatus />
                   </TableCell>
                 </TableRow>
               )}
@@ -346,7 +361,7 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
   };
 
   const invoices = enrollment.invoices ?? [];
-  const hasPayable = invoices.some((inv) => PAYABLE_STATUSES.includes(inv.status));
+  const hasPayable = invoices.some(isInvoicePayable);
 
   const productLabel = `${enrollment.enrollmentType === 'COURSE' ? 'Curso' : 'Carrera'}: ${enrollment.productName ?? enrollment.enrollmentId}`;
 
@@ -552,11 +567,7 @@ function RechazarModal({ receipt, onClose }) {
           <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
             Cancelar
           </Button>
-          <Button
-            className="bg-danger text-white hover:bg-danger/90"
-            onClick={handleSubmit}
-            disabled={isPending}
-          >
+          <Button variant="destructive" onClick={handleSubmit} loading={isPending}>
             {isPending ? 'Rechazando…' : 'Rechazar'}
           </Button>
         </DialogFooter>

@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Banknote, CreditCard, ChevronLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
 import { cn } from '@/lib/utils';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { InvoiceSummary } from '@/components/alumno/InvoiceSummary';
 import { usePaymentConfig, usePriceBreakdown } from '@/hooks/useBilling';
 
@@ -48,7 +49,7 @@ function CardPaymentOption({ enabled, onSelect }) {
 
 export function AlumnoPagarSeleccion() {
   const { invoiceId } = useParams();
-  const navigate = useNavigate();
+  const { originLabel, goToOrigin, goTo } = usePaymentReturn();
   const { data: config, isLoading: loadingConfig } = usePaymentConfig();
   const { data: breakdown, isLoading: loadingBreakdown } = usePriceBreakdown(invoiceId);
   const payable = !breakdown || PAYABLE_STATUSES.includes(breakdown.status);
@@ -60,11 +61,11 @@ export function AlumnoPagarSeleccion() {
     <PageContainer className="max-w-lg">
       <button
         type="button"
-        onClick={() => navigate('/alumno/pagos')}
+        onClick={goToOrigin}
         className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
       >
         <ChevronLeft size={16} />
-        Volver a Mis pagos
+        {originLabel}
       </button>
 
       <h1 className="text-xl font-bold">¿Cómo querés pagar?</h1>
@@ -85,7 +86,7 @@ export function AlumnoPagarSeleccion() {
           {tieneTransferencia && (
             <button
               type="button"
-              onClick={() => navigate(`/alumno/pagos/${invoiceId}/transferencia`)}
+              onClick={() => goTo(`/alumno/pagos/${invoiceId}/transferencia`)}
               className="text-left"
             >
               <GlassCard className="flex items-start gap-4 p-5 transition-shadow hover:shadow-md">
@@ -111,7 +112,7 @@ export function AlumnoPagarSeleccion() {
 
           <CardPaymentOption
             enabled={tieneMp}
-            onSelect={() => navigate(`/alumno/pagos/${invoiceId}/online`)}
+            onSelect={() => goTo(`/alumno/pagos/${invoiceId}/online`)}
           />
         </div>
       )}

@@ -37,7 +37,6 @@ com.red_escuela.backend.billing.dto.DebtorSummaryResponse
 com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse
 com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse
 com.red_escuela.backend.billing.dto.FinancialDashboardResponse
-com.red_escuela.backend.billing.dto.InvoiceAdjustmentResponse
 com.red_escuela.backend.billing.dto.InvoiceResponse
 com.red_escuela.backend.billing.dto.LatePaymentSettingsResponse
 com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse

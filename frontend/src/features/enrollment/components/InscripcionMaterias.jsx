@@ -11,7 +11,8 @@ import {
   useInscribirmeAMateria,
   useEstadoMatricula,
 } from '@/features/enrollment/hooks/useStudentEnrollment';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { useQueryClient } from '@tanstack/react-query';
 import { AvisoMatricula } from './AvisoMatricula';
 import { obligacionPendiente, CODIGO_MATRICULA_IMPAGA } from '@/lib/matricula';
@@ -35,6 +36,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
   const [confirmacion, setConfirmacion] = useState(null);
   const [matriculaRechazada, setMatriculaRechazada] = useState(false);
   const navigate = useNavigate();
+  const { pathname, search } = useLocation();
   const queryClient = useQueryClient();
   const { data: obligaciones } = useEstadoMatricula(carreraId);
   const pendiente = obligacionPendiente(obligaciones);
@@ -189,7 +191,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
           )}
 
           {(pendiente || matriculaRechazada) && (
-            <AvisoMatricula obligacion={pendiente} onPagar={(invoiceId) => navigate(`/alumno/pagos/${invoiceId}/seleccion`)} />
+            <AvisoMatricula obligacion={pendiente} onPagar={(invoiceId) => navigate(`/alumno/pagos/${invoiceId}/seleccion`, { state: paymentOriginState(`${pathname}${search}`, 'Volver a la inscripción a materias') })} />
           )}
 
           {inscribirme.isError && !matriculaRechazada && (

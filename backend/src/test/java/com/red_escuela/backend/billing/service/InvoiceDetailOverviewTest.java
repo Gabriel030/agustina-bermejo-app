@@ -191,8 +191,10 @@ class InvoiceDetailOverviewTest extends AbstractIntegrationTest {
 
         AdminInvoiceResponse response = adminInvoice(student, invoice.getId());
 
-        assertThat(response.status()).isEqualTo("PAID");
-        assertThat(response.remainingBalance()).isEqualTo(ars(0));
+        assertThat(response.paymentStatus()).isEqualTo("PAID");
+        assertThat(response.documentStatus()).isEqualTo("ISSUED");
+        assertThat(response.outstandingAmount()).isEqualTo(ars(0));
+        assertThat(response.paidAmount()).isEqualTo(ars(10000));
         assertThat(response.payments()).hasSize(1);
         AdminInvoicePaymentResponse payment = response.payments().get(0);
         assertThat(payment.method()).isEqualTo("TRANSFER");
