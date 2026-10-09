@@ -12,4 +12,5 @@ Reglas:
 
 | Fecha | PR | Commit | Área | Herramienta | Comando | Resultado | Notas |
 |---|---|---|---|---|---|---|---|
+| 2026-10-08 | #180 | `d445762d` | billing (webhook de Mercado Pago, pagos, cuenta corriente), enrollment (matrícula de ingreso), shared/domain | PIT | `./mvnw clean verify -P mutation` | ✅ 91% (1051/1150), umbral 90; `./mvnw clean verify` 2026 tests, 0 fallas | Tercera ronda de revisión de V2-02d1 (webhook MP sobre matrícula de ingreso, listener tras commit, D-229/D-230) |
 | 2026-10-08 | #180 | `61ed0edb` | billing (invoice, account, operation, policy/issuing), shared/domain | PIT | `./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage` | ✅ 91% (1051/1150), umbral 90 | Corte V2-02d1, antes de las correcciones de revisión |
