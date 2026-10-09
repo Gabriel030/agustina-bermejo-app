@@ -139,7 +139,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private ConfigurationVersion persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now().minusYears(1));
+        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now());
     }
 
     @Test

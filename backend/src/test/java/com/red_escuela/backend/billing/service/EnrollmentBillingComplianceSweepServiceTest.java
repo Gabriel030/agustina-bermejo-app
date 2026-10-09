@@ -121,7 +121,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
 
     private ConfigurationVersion persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
         return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, 10, BigDecimal.valueOf(0.10), suspensionAfterDays, suspensionAfterInvoiceCount,
-                LocalDate.now().minusYears(1));
+                LocalDate.now());
     }
 
     private ProgramEnrollment reload(Long id) {

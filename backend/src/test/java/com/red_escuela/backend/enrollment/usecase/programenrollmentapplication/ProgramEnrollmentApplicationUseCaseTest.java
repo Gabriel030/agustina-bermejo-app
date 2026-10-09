@@ -55,6 +55,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @org.springframework.test.context.event.RecordApplicationEvents
 class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader configurationReader;
+
+    @Autowired
     private RequestProgramEnrollmentApplicationUseCase requestProgramEnrollmentApplicationUseCase;
 
     @Autowired
@@ -266,7 +269,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = approved.getAdmissionInvoice();
         assertThatInvoice(invoice).isPending();
         assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
-        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(approved.getProgramCohort().getTemplate()).lateEnrollmentFeeDueDays()));
+        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(configurationReader.requireYearTermsEffectiveOn(approved.getProgramCohort().getTemplate().programId(), approved.getProgramCohort().getTemplate().termId(), LocalDate.of(2100, 1, 1)).lateEnrollmentFeeDueDays()));
         assertThat(admissionInvoicesOf(approved.getStudent())).isEqualTo(1L);
         assertThat(isEnrolled(approved.getStudent(), approved.getProgram())).isFalse();
         assertThat(approved.getStudent().getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");
