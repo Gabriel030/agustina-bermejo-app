@@ -6,7 +6,11 @@ import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSol
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { apiFetch } from '@/api/client';
+import { paymentOriginState } from '@/hooks/usePaymentReturn';
+import { CircleCheck, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Stepper } from '@/components/Stepper';
+import { applicationProgress } from '@/lib/applicationProgress';
 import { formatFecha, formatMoney } from '@/lib/utils';
 
 // DocumentType del backend (entity.DocumentType) — mismos 3 tipos que pide el
@@ -31,6 +35,7 @@ const TIPOS_DOCUMENTO = [
 export function DetalleSolicitud() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const originState = paymentOriginState(`/mis-solicitudes/${id}`, 'Volver a tu solicitud');
   const [solicitud, setSolicitud] = useState(null);
   const [noEncontrada, setNoEncontrada] = useState(false);
   const [errorCarga, setErrorCarga] = useState(false);
@@ -124,9 +129,16 @@ export function DetalleSolicitud() {
         <EstadoSolicitudBadge status={solicitud.status} admissionInvoice={solicitud.admissionInvoice} programEnrollmentId={solicitud.programEnrollmentId} />
       </div>
 
+      <Stepper {...applicationProgress(solicitud)} />
+
       {solicitud.status === 'REJECTED' && (
-        <GlassCard className="bg-danger-bg p-5 text-[13px] text-danger">
-          <span className="font-bold">Solicitud rechazada.</span> {solicitud.rejectionReason}
+        <GlassCard className="flex flex-col gap-3 bg-danger-bg p-5 text-[13px] text-danger">
+          <div>
+            <span className="font-bold">Solicitud rechazada.</span> {solicitud.rejectionReason}
+          </div>
+          <Button variant="outline" className="w-fit" onClick={() => navigate('/catalogo')}>
+            Ver el catálogo
+          </Button>
         </GlassCard>
       )}
 
@@ -166,14 +178,14 @@ export function DetalleSolicitud() {
                 <StatusPill tone="warning">Pago en revisión</StatusPill>
                 <button
                   type="button"
-                  onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/transferencia`)}
+                  onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/transferencia`, { state: originState })}
                   className="text-[12.5px] font-semibold text-primary"
                 >
                   Ver estado del pago
                 </button>
               </div>
             ) : (
-              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`)}>
+              <Button variant="gradient" onClick={() => navigate(`/alumno/pagos/${solicitud.admissionInvoice.id}/seleccion`, { state: originState })}>
                 Pagar matrícula
               </Button>
             )}
@@ -193,7 +205,7 @@ export function DetalleSolicitud() {
             a tener un plazo para pagarla. Te avisamos por notificación cuando haya novedades.
           </GlassCard>
 
-          <div className="font-heading text-[15px] font-semibold text-ink-soft">Documentación</div>
+          <div className="font-heading text-[15px] font-semibold text-ink-soft">Documentos de tu solicitud</div>
 
           {errorSubida && <div className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger">{errorSubida}</div>}
 
@@ -208,7 +220,7 @@ export function DetalleSolicitud() {
                     <div
                       className={`flex h-9 w-9 items-center justify-center rounded-xl ${uploaded ? 'bg-success-bg' : 'bg-neutral-bg'}`}
                     >
-                      {uploaded ? '✓' : '＋'}
+                      {uploaded ? <CircleCheck size={18} className="text-success" /> : <Plus size={18} className="text-ink-faint" />}
                     </div>
                     <div>
                       <div className="text-[13.5px] font-bold text-ink">{label}</div>
@@ -227,14 +239,9 @@ export function DetalleSolicitud() {
                     className="hidden"
                     onChange={(e) => subirArchivo(type, e.target.files?.[0])}
                   />
-                  <button
-                    type="button"
-                    disabled={subiendo === type}
-                    onClick={() => elegirArchivo(type)}
-                    className="rounded-xl border border-border bg-surface px-4 py-2 text-[12.5px] font-bold text-ink disabled:opacity-60"
-                  >
-                    {subiendo === type ? 'Subiendo…' : uploaded ? 'Reemplazar' : 'Subir archivo'}
-                  </button>
+                  <Button type="button" variant="outline" loading={subiendo === type} onClick={() => elegirArchivo(type)}>
+                    {uploaded ? 'Reemplazar' : 'Subir archivo'}
+                  </Button>
                 </div>
               );
             })}

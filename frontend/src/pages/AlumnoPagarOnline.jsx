@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import { toast } from 'sonner';
 import { ChevronLeft, CreditCard, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -35,7 +36,7 @@ export function AlumnoPagarOnline() {
 }
 
 function OnlinePaymentRedirect({ invoiceId }) {
-  const navigate = useNavigate();
+  const { goTo } = usePaymentReturn();
   const { mutate, isPending, error, data } = useCrearPreferenciaMp();
   const [initiated, setInitiated] = useState(false);
 
@@ -56,7 +57,7 @@ function OnlinePaymentRedirect({ invoiceId }) {
     <PageContainer className="max-w-lg">
       <button
         type="button"
-        onClick={() => navigate(`/alumno/pagos/${invoiceId}/seleccion`)}
+        onClick={() => goTo(`/alumno/pagos/${invoiceId}/seleccion`)}
         className="flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink"
       >
         <ChevronLeft size={16} />

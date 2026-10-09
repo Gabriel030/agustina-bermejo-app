@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
+import { EmptyState } from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { EstadoSolicitudBadge } from '@/features/enrollment/components/EstadoSolicitudBadge';
 import { useMisSolicitudesCarrera, useMisSolicitudesCurso } from '@/features/enrollment/hooks/useCatalogo';
 
@@ -40,44 +44,64 @@ export function TabMisSolicitudes() {
     return <GlassCard className="p-6 text-sm text-danger">No pudimos cargar tus solicitudes. Probá recargar la página.</GlassCard>;
   }
   if (cargandoCarrera || cargandoCurso) {
-    return <div className="text-sm text-ink-faint">Cargando…</div>;
+    return (
+      <GlassCard className="flex flex-col gap-3 p-5" aria-busy="true">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+      </GlassCard>
+    );
   }
   if (filas.length === 0) {
     return (
-      <GlassCard className="p-6 text-sm text-ink-faint">
-        Todavía no pediste el alta en ninguna carrera ni te inscribiste a un curso — elegí uno en las otras tabs para empezar.
+      <GlassCard className="p-2">
+        <EmptyState
+          title="Todavía no tenés solicitudes"
+          description="Cuando pidas el alta en una carrera o te inscribas a un curso, vas a ver acá el estado de cada trámite. Elegí uno en las otras pestañas para empezar."
+        />
       </GlassCard>
     );
   }
 
   return (
-    <GlassCard className="flex flex-col p-2 pb-3">
-      <div className="grid grid-cols-[0.8fr_2fr_1.3fr] gap-3 border-b border-border px-5 pb-3 pt-4 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
-        <div>Tipo</div>
-        <div>Nombre</div>
-        <div>Estado</div>
-      </div>
-      {filas.map((fila) => {
-        const Envoltorio = fila.onClick ? 'button' : 'div';
-        return (
-          <Envoltorio
-            key={fila.key}
-            type={fila.onClick ? 'button' : undefined}
-            onClick={fila.onClick ?? undefined}
-            className={`grid grid-cols-[0.8fr_2fr_1.3fr] items-center gap-3 border-b border-border px-5 py-4 text-left last:border-b-0 ${fila.onClick ? 'hover:bg-surface' : ''}`}
-          >
-            {/* min-w-0: los items de grid, igual que los de flex, no se achican
-                por debajo del ancho intrínseco de su contenido por default —
-                sin esto el pill de estado empuja la fila (y la página) más
-                allá del viewport en mobile. */}
-            <div className="min-w-0 text-xs font-semibold text-ink-faint">{fila.tipo}</div>
-            <div className="min-w-0 truncate text-[13.5px] font-bold text-ink">{fila.nombre}</div>
-            <div className="min-w-0">
-              <EstadoSolicitudBadge status={fila.status} admissionInvoice={fila.admissionInvoice} programEnrollmentId={fila.programEnrollmentId} />
-            </div>
-          </Envoltorio>
-        );
-      })}
+    <GlassCard className="overflow-x-auto p-2">
+      <Table className="min-w-[420px]">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead className="w-8" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filas.map((fila) => (
+            <TableRow key={fila.key} className={fila.onClick ? 'cursor-pointer' : undefined} onClick={fila.onClick ?? undefined}>
+              <TableCell className="text-xs font-semibold text-ink-faint">{fila.tipo}</TableCell>
+              <TableCell className="max-w-[220px] truncate font-bold text-ink">
+                {fila.onClick ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      fila.onClick();
+                    }}
+                    className="max-w-full truncate text-left font-bold text-ink hover:underline"
+                  >
+                    {fila.nombre}
+                  </button>
+                ) : (
+                  fila.nombre
+                )}
+              </TableCell>
+              <TableCell>
+                <EstadoSolicitudBadge status={fila.status} admissionInvoice={fila.admissionInvoice} programEnrollmentId={fila.programEnrollmentId} />
+              </TableCell>
+              <TableCell>{fila.onClick && <ChevronRight size={16} className="text-ink-faint" />}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </GlassCard>
   );
 }

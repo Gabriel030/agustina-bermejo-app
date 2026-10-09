@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
@@ -21,6 +22,8 @@ function textoDeVencimiento(solicitud) {
 
 function SolicitudPendiente({ solicitud, principal }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const originState = paymentOriginState(pathname, pathname === '/alumno/pagos' ? 'Volver a Mis pagos' : 'Volver al inicio');
   const fase = admissionPaymentPhase(solicitud);
   const { admissionInvoice } = solicitud;
 
@@ -34,7 +37,7 @@ function SolicitudPendiente({ solicitud, principal }) {
         </div>
         <button
           type="button"
-          onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/transferencia`)}
+          onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/transferencia`, { state: originState })}
           className="w-fit text-[12.5px] font-semibold text-primary"
         >
           Ver estado del pago
@@ -48,7 +51,7 @@ function SolicitudPendiente({ solicitud, principal }) {
       <div className="text-[13px] text-ink-soft">{textoDeVencimiento(solicitud)}</div>
       <Button
         variant={principal ? 'gradient' : 'outline'}
-        onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/seleccion`)}
+        onClick={() => navigate(`/alumno/pagos/${admissionInvoice.id}/seleccion`, { state: originState })}
       >
         Pagar matrícula
       </Button>

@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
 import { AdmissionInvoicePendingCard } from '@/features/billing';
 import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
+import { formatDate } from '@/lib/billing';
 
 const STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
@@ -24,12 +25,6 @@ const ENROLLMENT_STATUS_LABELS = {
   WITHDRAWN: 'Dado de baja',
   SUSPENDED: 'Suspendido',
 };
-
-function formatFecha(date) {
-  if (!date) return '-';
-  const d = new Date(date);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
 
 export function AlumnoPagos() {
   const navigate = useNavigate();
@@ -134,7 +129,7 @@ export function AlumnoPagos() {
                     <TableCell>
                       <StatusPill tone="neutral">{ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}</StatusPill>
                     </TableCell>
-                    <TableCell className="text-ink-faint">{formatFecha(e.enrollmentDate)}</TableCell>
+                    <TableCell className="text-ink-faint">{formatDate(e.enrollmentDate) || '-'}</TableCell>
                     <TableCell>
                       {standingInfo ? (
                         <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>

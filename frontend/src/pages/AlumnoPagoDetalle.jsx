@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
-import { useMatch, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useMatch, useParams, useNavigate } from 'react-router-dom';
+import { paymentOriginState } from '@/hooks/usePaymentReturn';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
@@ -38,6 +39,8 @@ function latestReceiptByInvoice(receipts) {
 
 function InvoiceTable({ invoices, receiptsByInvoice }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const originState = paymentOriginState(pathname, 'Volver a las cuotas');
   const { isExpanded, toggle } = useExpandedRows();
 
   if (!invoices?.length) {
@@ -98,7 +101,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                         variant="gradient"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`/alumno/pagos/${inv.id}/seleccion`);
+                          navigate(`/alumno/pagos/${inv.id}/seleccion`, { state: originState });
                         }}
                       >
                         Pagar
@@ -110,7 +113,7 @@ function InvoiceTable({ invoices, receiptsByInvoice }) {
                         variant="outline"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`/alumno/pagos/${inv.id}/transferencia`);
+                          navigate(`/alumno/pagos/${inv.id}/transferencia`, { state: originState });
                         }}
                       >
                         Ver estado

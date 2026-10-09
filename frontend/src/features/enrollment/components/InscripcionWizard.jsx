@@ -1,4 +1,7 @@
 import { useReducer, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -28,7 +31,43 @@ const DOCUMENTOS_CARRERA = [
   { tipo: 'ANALITICO_SECUNDARIO', label: 'Analítico del secundario' },
 ];
 
-const EMAIL_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CAMPOS_DATOS = {
+  email: 'el email',
+  dni: 'el DNI',
+  street: 'la calle',
+  number: 'el número',
+  city: 'la ciudad',
+};
+
+const datosSchema = z.object({
+  email: z.string().trim().min(1, 'Ingresá tu email').email('El email no es válido'),
+  dni: z
+    .string()
+    .trim()
+    .min(1, 'Ingresá tu DNI')
+    .regex(/^\d{7,8}$/, 'El DNI tiene 7 u 8 números, sin puntos ni espacios'),
+  street: z.string().trim().min(1, 'Ingresá la calle'),
+  number: z.string().trim().min(1, 'Ingresá el número'),
+  floor: z.string(),
+  city: z.string().trim().min(1, 'Ingresá la ciudad'),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+});
+
+function ErrorDeCampo({ error }) {
+  if (!error) return null;
+  return (
+    <p role="alert" className="mt-1 text-[11.5px] font-medium text-danger">
+      {error.message}
+    </p>
+  );
+}
+
+function MotivoDeshabilitado({ faltantes }) {
+  if (faltantes.length === 0) return null;
+  return <p className="text-right text-xs text-ink-faint">Para continuar falta: {faltantes.join(', ')}.</p>;
+}
 
 const MENSAJES_ERROR_INSCRIPCION = {
   ALREADY_HAS_PENDING_APPLICATION: 'Ya tenés una solicitud pendiente para esto.',
@@ -48,19 +87,17 @@ function pasosDe(tipo) {
   return tipo === 'carrera'
     ? [
         { key: 'cohorte', label: 'Cohorte' },
-        { key: 'documentacion', label: 'Documentación' },
+        { key: 'documentacion', label: 'Tus datos y documentos' },
       ]
     : [
-        { key: 'documentacion', label: 'Documentación' },
+        { key: 'documentacion', label: 'Tus datos' },
         { key: 'pago', label: 'Pago' },
       ];
 }
 
-function estadoInicial({ tipo, usuario }) {
+function datosIniciales(usuario) {
   const datos = usuario ?? {};
   return {
-    paso: pasosDe(tipo)[0].key,
-    cohortId: null,
     email: datos.email ?? '',
     dni: datos.dni ?? '',
     street: datos.street ?? '',
@@ -70,6 +107,13 @@ function estadoInicial({ tipo, usuario }) {
     state: datos.state ?? '',
     postalCode: datos.postalCode ?? '',
     country: datos.country ?? '',
+  };
+}
+
+function estadoInicial({ tipo }) {
+  return {
+    paso: pasosDe(tipo)[0].key,
+    cohortId: null,
     documentos: {},
     comprobante: null,
     visitados: [pasosDe(tipo)[0].key],
@@ -88,8 +132,6 @@ function marcarVisitado(state, paso) {
 // ya cargado (pedido explícito): cambiar `paso` nunca toca los demás campos.
 function reducer(state, action) {
   switch (action.type) {
-    case 'SET_CAMPO':
-      return { ...state, [action.campo]: action.valor };
     case 'ELEGIR_COHORTE':
       return { ...state, cohortId: action.cohortId, paso: 'documentacion', visitados: marcarVisitado(state, 'documentacion') };
     case 'SET_DOCUMENTO':
@@ -113,7 +155,14 @@ function reducer(state, action) {
 export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
   const navigate = useNavigate();
   const { usuario, refrescarPerfil } = useAuth();
-  const [state, dispatch] = useReducer(reducer, { tipo, usuario }, estadoInicial);
+  const [state, dispatch] = useReducer(reducer, { tipo }, estadoInicial);
+  const {
+    register,
+    watch,
+    getValues,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(datosSchema), mode: 'onTouched', defaultValues: datosIniciales(usuario) });
+  const datos = watch();
   const [modalConfirmarAbierto, setModalConfirmarAbierto] = useState(false);
   const pasos = pasosDe(tipo);
 
@@ -130,54 +179,46 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
         : pricing?.matriculaCohorte1
       : pricing?.cuotaMensual;
 
-  function datosPersonalesValidos() {
-    return (
-      EMAIL_VALIDO.test(state.email.trim()) &&
-      state.dni.trim() &&
-      state.street.trim() &&
-      state.number.trim() &&
-      state.city.trim()
-    );
+  function camposDatosFaltantes() {
+    const resultado = datosSchema.safeParse(datos);
+    if (resultado.success) return [];
+    const campos = new Set(resultado.error.issues.map((issue) => issue.path[0]));
+    return Object.keys(CAMPOS_DATOS).filter((campo) => campos.has(campo)).map((campo) => CAMPOS_DATOS[campo]);
   }
 
-  function documentacionCompleta() {
-    if (!datosPersonalesValidos()) return false;
-    if (tipo === 'curso') return true;
-    return DOCUMENTOS_CARRERA.every((d) => state.documentos[d.tipo]);
+  function documentosFaltantes() {
+    if (tipo === 'curso') return [];
+    return DOCUMENTOS_CARRERA.filter((doc) => !state.documentos[doc.tipo]).map((doc) => doc.label);
   }
 
-  // "no podemos subir una solicitud incompleta" — se revalida acá, no solo al
-  // avanzar de paso, para que el botón de confirmar nunca se habilite con
-  // datos a medio cargar (ej. volviendo atrás y borrando algo).
-  function solicitudCompleta() {
-    return documentacionCompleta() && (tipo === 'carrera' || !!state.comprobante);
+  function faltantesDeDocumentacion() {
+    return [...camposDatosFaltantes(), ...documentosFaltantes()];
+  }
+
+  function faltantesDeSolicitud() {
+    const faltantes = faltantesDeDocumentacion();
+    if (tipo === 'curso' && !state.comprobante) faltantes.push('el comprobante de pago');
+    return faltantes;
   }
 
   async function confirmarSolicitud() {
     setModalConfirmarAbierto(false);
     dispatch({ type: 'ENVIANDO' });
     try {
-      const datosCambiaron =
-        state.email !== (usuario?.email ?? '') ||
-        state.dni !== (usuario?.dni ?? '') ||
-        state.street !== (usuario?.street ?? '') ||
-        state.number !== (usuario?.number ?? '') ||
-        state.floor !== (usuario?.floor ?? '') ||
-        state.city !== (usuario?.city ?? '') ||
-        state.state !== (usuario?.state ?? '') ||
-        state.postalCode !== (usuario?.postalCode ?? '') ||
-        state.country !== (usuario?.country ?? '');
+      const valores = getValues();
+      const iniciales = datosIniciales(usuario);
+      const datosCambiaron = Object.keys(iniciales).some((campo) => valores[campo] !== iniciales[campo]);
       if (datosCambiaron) {
         await actualizarPerfil.mutateAsync({
-          email: state.email,
-          dni: state.dni,
-          street: state.street,
-          number: state.number,
-          floor: state.floor || null,
-          city: state.city,
-          state: state.state || null,
-          postalCode: state.postalCode || null,
-          country: state.country || null,
+          email: valores.email.trim(),
+          dni: valores.dni.trim(),
+          street: valores.street,
+          number: valores.number,
+          floor: valores.floor || null,
+          city: valores.city,
+          state: valores.state || null,
+          postalCode: valores.postalCode || null,
+          country: valores.country || null,
         });
         await refrescarPerfil();
       }
@@ -297,55 +338,46 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Email</div>
-              <Input
-                type="email"
-                placeholder="tu@email.com"
-                value={state.email}
-                onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'email', valor: e.target.value })}
-                required
-              />
+              <Input type="email" placeholder="tu@email.com" aria-invalid={!!errors.email} {...register('email')} />
+              <ErrorDeCampo error={errors.email} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">DNI</div>
-              <Input
-                placeholder="DNI sin puntos"
-                value={state.dni}
-                onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'dni', valor: e.target.value })}
-                required
-              />
+              <Input placeholder="DNI sin puntos" inputMode="numeric" aria-invalid={!!errors.dni} {...register('dni')} />
+              <ErrorDeCampo error={errors.dni} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1fr_1fr]">
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Calle</div>
-              <Input value={state.street} onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'street', valor: e.target.value })} required />
+              <Input aria-invalid={!!errors.street} {...register('street')} />
+              <ErrorDeCampo error={errors.street} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Número</div>
-              <Input value={state.number} onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'number', valor: e.target.value })} required />
+              <Input aria-invalid={!!errors.number} {...register('number')} />
+              <ErrorDeCampo error={errors.number} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Piso/Depto</div>
-              <Input value={state.floor} onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'floor', valor: e.target.value })} />
+              <Input {...register('floor')} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Ciudad</div>
-              <Input value={state.city} onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'city', valor: e.target.value })} required />
+              <Input aria-invalid={!!errors.city} {...register('city')} />
+              <ErrorDeCampo error={errors.city} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Provincia</div>
-              <Input value={state.state} onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'state', valor: e.target.value })} />
+              <Input {...register('state')} />
             </div>
             <div>
               <div className="mb-1.5 text-xs font-semibold text-ink-soft">Código postal</div>
-              <Input
-                value={state.postalCode}
-                onChange={(e) => dispatch({ type: 'SET_CAMPO', campo: 'postalCode', valor: e.target.value })}
-              />
+              <Input {...register('postalCode')} />
             </div>
           </div>
 
@@ -403,16 +435,17 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             {tipo === 'carrera' ? (
               <Button
                 onClick={() => setModalConfirmarAbierto(true)}
-                disabled={!solicitudCompleta() || state.enviando}
+                disabled={faltantesDeDocumentacion().length > 0}
+                loading={state.enviando}
                 variant="gradient"
                 className="px-6"
               >
-                {state.enviando ? 'Enviando…' : 'Confirmar solicitud'}
+                Confirmar solicitud
               </Button>
             ) : (
               <Button
                 onClick={() => dispatch({ type: 'IR_A_PASO', paso: 'pago' })}
-                disabled={!documentacionCompleta()}
+                disabled={faltantesDeDocumentacion().length > 0}
                 variant="gradient"
                 className="px-6"
               >
@@ -420,6 +453,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
               </Button>
             )}
           </div>
+          <MotivoDeshabilitado faltantes={faltantesDeDocumentacion()} />
         </GlassCard>
       )}
 
@@ -482,12 +516,14 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA }) {
             </Button>
             <Button
               onClick={() => setModalConfirmarAbierto(true)}
-              disabled={!solicitudCompleta() || state.enviando}
+              disabled={faltantesDeSolicitud().length > 0}
+              loading={state.enviando}
               variant="gradient"
             >
-              {state.enviando ? 'Enviando…' : 'Confirmar solicitud'}
+              Confirmar solicitud
             </Button>
           </div>
+          <MotivoDeshabilitado faltantes={faltantesDeSolicitud()} />
         </GlassCard>
       )}
 

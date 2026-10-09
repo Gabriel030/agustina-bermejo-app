@@ -15,7 +15,7 @@ const overdueBreakdown = {
   feeType: 'MONTHLY_INSTALLMENT',
   period: '2026-09',
   baseAmount: { amount: '48000.00', currency: 'ARS' },
-  adjustments: [{ type: 'SURCHARGE', amount: { amount: '4800.00', currency: 'ARS' }, humanLabel: 'Recargo por mora' }],
+  adjustments: [{ type: 'SCHOLARSHIP', amount: { amount: '-4800.00', currency: 'ARS' }, humanLabel: 'Beca 10%' }],
   amountDue: { amount: '52800.00', currency: 'ARS' },
   paymentsApplied: [],
   remainingBalance: { amount: '52800.00', currency: 'ARS' },
@@ -43,12 +43,12 @@ async function goToUploadStep(user) {
 }
 
 describe('AlumnoPagarTransferencia', () => {
-  it('shows which installment is being paid, the exact amount and the late fee it includes', async () => {
+  it('shows which installment is being paid, the exact amount and the discount it includes', async () => {
     renderTransfer();
 
     expect(await screen.findByText('Cuota mensual · sep 2026')).toBeInTheDocument();
     expect(screen.getAllByText('$ 52.800,00').length).toBeGreaterThan(0);
-    expect(screen.getByText('Recargo por mora')).toBeInTheDocument();
+    expect(screen.getByText('Beca')).toBeInTheDocument();
     expect(screen.getByText(/Transferí exactamente \$ 52\.800,00/)).toBeInTheDocument();
   });
 
