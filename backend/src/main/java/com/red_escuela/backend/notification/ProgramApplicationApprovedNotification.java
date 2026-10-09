@@ -1,10 +1,11 @@
 package com.red_escuela.backend.notification;
 
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 
 import java.util.List;
 
-public record ProgramApplicationApprovedNotification(Long applicationId, Long studentPersonId, String programName) implements DomainNotificationEvent {
+public record ProgramApplicationApprovedNotification(Long applicationId, Person student, String programName) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.PROGRAM_APPLICATION_APPROVED;
@@ -17,7 +18,7 @@ public record ProgramApplicationApprovedNotification(Long applicationId, Long st
 
     @Override
     public List<NotificationRecipient> recipients() {
-        return List.of(new PersonIdRecipient(studentPersonId));
+        return List.of(new PersonRecipient(student));
     }
 
     @Override

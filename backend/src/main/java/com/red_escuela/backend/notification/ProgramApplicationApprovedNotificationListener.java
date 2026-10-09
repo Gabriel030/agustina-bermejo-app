@@ -2,8 +2,10 @@ package com.red_escuela.backend.notification;
 
 import com.red_escuela.backend.enrollment.events.AdmissionEnrollmentStalledEvent;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -17,16 +19,20 @@ public class ProgramApplicationApprovedNotificationListener {
 
     private final ProcessedEffectGuard effectGuard;
     private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
-    public ProgramApplicationApprovedNotificationListener(ProcessedEffectGuard effectGuard, ApplicationEventPublisher eventPublisher) {
+    public ProgramApplicationApprovedNotificationListener(ProcessedEffectGuard effectGuard, ApplicationEventPublisher eventPublisher,
+                                                          EntityManager entityManager) {
         this.effectGuard = effectGuard;
         this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     @ApplicationModuleListener
     public void notifyStudentOfApprovedApplication(ProgramApplicationApprovedEvent event) {
         effectGuard.runEffectOnce(event, APPROVED_HANDLER, () -> eventPublisher.publishEvent(
-                new ProgramApplicationApprovedNotification(event.applicationId(), event.studentPersonId(), event.programName())));
+                new ProgramApplicationApprovedNotification(event.applicationId(),
+                entityManager.getReference(Person.class, event.studentPersonId()), event.programName())));
     }
 
     @ApplicationModuleListener
