@@ -1,31 +1,53 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
+import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand;
+import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
+import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
-import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 
 @UseCase
 public class UpdateCohortEntryFeeDiscountService implements UpdateCohortEntryFeeDiscountUseCase {
-    private final ProgramCohortRepository programCohortRepository;
-    private final LegacyConfigurationMirror configurationMirror;
+    private static final String CHANGE_REASON = "Cambio del descuento de ingreso de la cohorte";
 
-    public UpdateCohortEntryFeeDiscountService(ProgramCohortRepository programCohortRepository, LegacyConfigurationMirror configurationMirror) {
-        this.configurationMirror = configurationMirror;
+    private final ProgramCohortRepository programCohortRepository;
+    private final BillingOperationPipeline pipeline;
+    private final ChangeBillingConfigurationOperation operation;
+    private final BillingActorResolver actorResolver;
+    private final BillingConfigurationReader configurationReader;
+    private final Clock clock;
+
+    public UpdateCohortEntryFeeDiscountService(ProgramCohortRepository programCohortRepository, BillingOperationPipeline pipeline, ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, BillingConfigurationReader configurationReader, Clock clock) {
         this.programCohortRepository = programCohortRepository;
+        this.pipeline = pipeline;
+        this.operation = operation;
+        this.actorResolver = actorResolver;
+        this.configurationReader = configurationReader;
+        this.clock = clock;
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramCohort update(Long cohortId, Percentage discount) {
         ProgramCohort cohort = programCohortRepository.findById(cohortId).orElseThrow(() -> new ProgramCohortNotFoundException(cohortId));
-        cohort.setEntryFeeDiscount(discount);
-        ProgramCohort saved = programCohortRepository.save(cohort);
-        configurationMirror.recordCohortEntryDiscount(saved);
-        return saved;
+        LocalDate today = LocalDate.now(clock);
+        if (!discount.equals(configurationReader.cohortEntryDiscountEffectiveOn(cohortId, today))) {
+            pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofCohortEntry(cohortId), new CohortEntryDiscount(discount),
+                            today, CHANGE_REASON, actorResolver.currentPersonIdOr(cohort.getCreatedBy().getId()), actorResolver.currentActorIsDirector()))
+                    .resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);
+        }
+        return cohort;
     }
 }

@@ -15,6 +15,10 @@ public record LatePaymentTerms(int gracePeriodDays, Percentage monthlyLateFeeRat
         }
     }
 
+    public static LatePaymentTerms initial() {
+        return new LatePaymentTerms(0, Percentage.ofFraction(java.math.BigDecimal.ZERO), 12, null, 0, 1, true, 10, true);
+    }
+
     @Override
     public ConfigurationScope scope() {
         return ConfigurationScope.LATE_PAYMENT;

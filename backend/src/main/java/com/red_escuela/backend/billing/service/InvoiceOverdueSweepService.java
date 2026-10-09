@@ -5,11 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
@@ -33,18 +33,18 @@ public class InvoiceOverdueSweepService {
     private static final String JOB_NAME = "InvoiceOverdueSweepService";
 
     private final InvoiceRepository invoiceRepository;
-    private final LatePaymentSettingsRepository latePaymentSettingsRepository;
+    private final BillingConfigurationReader configurationReader;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
     private final InvoiceOverdueRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
     private final Clock clock;
 
-    public InvoiceOverdueSweepService(InvoiceRepository invoiceRepository, LatePaymentSettingsRepository latePaymentSettingsRepository,
+    public InvoiceOverdueSweepService(InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader,
                                        BatchExecutionLogRepository batchExecutionLogRepository, InvoiceOverdueRowProcessor rowProcessor,
                                        ObjectMapper objectMapper,
                                        Clock clock) {
         this.invoiceRepository = invoiceRepository;
-        this.latePaymentSettingsRepository = latePaymentSettingsRepository;
+        this.configurationReader = configurationReader;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
         this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
@@ -58,7 +58,7 @@ public class InvoiceOverdueSweepService {
     }
 
     public void run(LocalDate today) {
-        Optional<LatePaymentSettings> policy = latePaymentSettingsRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
+        Optional<LatePaymentTerms> policy = configurationReader.findLatePaymentSettingsEffectiveOn(today);
         if (policy.isEmpty()) {
             log.warn("Barrido de mora omitido: no hay política de cobranzas vigente al {}", today);
             return;
@@ -69,7 +69,7 @@ public class InvoiceOverdueSweepService {
         int processed = 0;
         int failed = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
-        LocalDate cutoff = today.minusDays(policy.get().getGracePeriodDays());
+        LocalDate cutoff = today.minusDays(policy.get().gracePeriodDays());
 
         Long lastId = 0L;
         while (true) {

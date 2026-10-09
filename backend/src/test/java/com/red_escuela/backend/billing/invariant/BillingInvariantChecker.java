@@ -81,9 +81,13 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>(violations("I-15 more installments than configured", """
                 select 'enrollment ' || i.program_enrollment_id || ' template ' || i.template_id
                 from invoice_line i join program_year_billing_template t on t.id = i.template_id
+                join lateral (select (v.config_values ->> 'recurringFeeInvoicesCount')::int as installments from configuration_version v
+                              where v.scope = 'YEAR_TERMS' and v.topic_key = 'YEAR_TERMS:P' || t.program_id || ':T' || t.term_id
+                                and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+                              order by v.effective_from desc, v.decided_at desc, v.id desc limit 1) c on true
                 where i.program_enrollment_id > ? and i.fee_type = 'MONTHLY_INSTALLMENT' and i.charge_key_released_at is null
-                group by i.program_enrollment_id, i.template_id, t.recurring_fee_invoices_count
-                having count(*) > t.recurring_fee_invoices_count
+                group by i.program_enrollment_id, i.template_id, c.installments
+                having count(*) > c.installments
                 """, baselineEnrollmentId));
         found.addAll(violations("I-15 installment in January or February", """
                 select 'invoice ' || id || ' period ' || period

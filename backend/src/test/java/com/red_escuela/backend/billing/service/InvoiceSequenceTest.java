@@ -74,8 +74,8 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         Career career = newCareer();
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         Long cohort = newCohort(y26, CohortIntake.SECOND, date(2026, 8, 3));
-        transactionTemplate.executeWithoutResult(s -> entityManager.find(com.red_escuela.backend.billing.entity.ProgramCohort.class, cohort)
-                .setEntryFeeDiscount(com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.ZERO)));
+        transactionTemplate.executeWithoutResult(s -> com.red_escuela.backend.billing.planning.TestTemplateTerms.publishCohortEntryDiscount(entityManager,
+                entityManager.find(com.red_escuela.backend.billing.entity.ProgramCohort.class, cohort), com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.ZERO)));
         today(date(2026, 7, 20));
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 7), date(2026, 7, 20));
         issueEntryFee(enrollment);
@@ -344,7 +344,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         });
         assertThat(sequence(enrollment)).isEmpty();
 
-        configureYear(y26, template -> template.setRequireEnrollmentFeeForFinalExamOnlyStudents(true));
+        configureYear(y26, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(template, true));
         today(date(2026, 2, 2));
         job.run();
         today(date(2026, 3, 2));
@@ -449,7 +449,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceTest {
         List<String> before = sequence(enrollment);
         markInvoices(enrollment, FeeType.MONTHLY_INSTALLMENT, YearMonth.of(2026, 3), InvoicePaymentStatus.PAID);
 
-        configureYear(y26, template -> template.configureEnrollmentFees(2, 2, 7));
+        configureYear(y26, template -> com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 2, 2, 7));
         runEveryMonth(YearMonth.of(2026, 4), YearMonth.of(2026, 4), () -> {
         });
 

@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.usecase.latepaymentsettings;
 import com.red_escuela.backend.billing.configuration.policy.CreateLatePaymentSettingsCommand;
 import com.red_escuela.backend.billing.configuration.service.CreateLatePaymentSettingsOperation;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
@@ -24,7 +24,7 @@ public class CreateLatePaymentSettingsService implements CreateLatePaymentSettin
     }
 
     @Override
-    public LatePaymentSettings create(CreateLatePaymentSettingsRequest request) {
+    public ConfigurationVersion create(CreateLatePaymentSettingsRequest request) {
         CreateLatePaymentSettingsCommand command = new CreateLatePaymentSettingsCommand(request.gracePeriodDays(), request.surchargePercent(),
                 request.suspensionAfterDays(), request.suspensionAfterInvoiceCount(), request.effectiveFrom(),
                 currentPersonService.resolveCurrentPerson().getId());

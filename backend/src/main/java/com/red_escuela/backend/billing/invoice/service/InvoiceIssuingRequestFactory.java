@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.service;
 
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -25,11 +26,11 @@ public final class InvoiceIssuingRequestFactory {
     private InvoiceIssuingRequestFactory() {
     }
 
-    public static InvoiceIssuingRequest createProgramAdmissionRequest(Long studentId, Program program, ProgramCohort cohort, LocalDate today) {
+    public static InvoiceIssuingRequest createProgramAdmissionRequest(Long studentId, Program program, ProgramCohort cohort, YearBillingTerms terms, LocalDate today) {
         ProgramYearBillingTemplate template = cohort.getTemplate();
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
-        int slot = YearCycle.of(template, entryMonth.getYear()).slotOf(entryMonth);
-        return new InvoiceIssuingRequest(studentId, null, null, program.getId(), null, cohort.getId(), FeeType.ENROLLMENT_FEE, entryMonth, today.plusDays(template.getLateEnrollmentFeeDueDays()), today,
+        int slot = YearCycle.of(template, terms, entryMonth.getYear()).slotOf(entryMonth);
+        return new InvoiceIssuingRequest(studentId, null, null, program.getId(), null, cohort.getId(), FeeType.ENROLLMENT_FEE, entryMonth, today.plusDays(terms.lateEnrollmentFeeDueDays()), today,
                 InvoiceIssuingReason.PROGRAM_ADMISSION, null, template.getId(), slot, true, null, null, null, null, null, actor());
     }
 

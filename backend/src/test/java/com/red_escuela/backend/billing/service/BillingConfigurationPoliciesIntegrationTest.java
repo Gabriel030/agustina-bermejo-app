@@ -14,7 +14,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationUseCase;
@@ -23,6 +22,8 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 import com.red_escuela.backend.shared.exception.ErrorCodeResponse;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,24 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     @Autowired
     private UpdateYearBillingConfigurationUseCase updateYearConfiguration;
     @Autowired
+    private com.red_escuela.backend.identity.repository.RoleRepository roleRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader configurationReader;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay termsOverlay;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.BillingActorResolver actorResolver;
+    @Autowired
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private java.time.Clock clock;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository versionRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.operation.BillingOperationPipeline pipeline;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation changeOperation;
+    @Autowired
     private CreateProgramYearBillingTemplateUseCase createTemplate;
     @Autowired
     private UpdateTermUseCase updateTerm;
@@ -54,7 +73,26 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
     @Autowired
-    private LatePaymentSettingsRepository policyRepository;
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository policyRepository;
+
+    @BeforeEach
+    void authenticateAsDirector() {
+        authenticateAs("DIRECTOR");
+    }
+
+    @AfterEach
+    void clearSecurity() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAs(String roleName) {
+        Person person = transactionTemplate.execute(status -> {
+            Person created = newPerson();
+            created.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
+            return created;
+        });
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(person.getId().toString(), null, "ROLE_" + roleName));
+    }
 
     private static YearBillingConfigurationRequest config(Integer count, Integer first, Integer second, Integer dueDays) {
         return new YearBillingConfigurationRequest(count, first, second, null, null, dueDays, null, null, null, null, null, null);
@@ -93,7 +131,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
                 .isInstanceOfSatisfying(BillingConfigurationFrozenException.class,
                         e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("ENROLLMENT_FEE_COUNT_FROZEN"));
 
-        assertThat(template(year).getEnrollmentFeeCount()).isEqualTo(2);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(year)).enrollmentFeeCount()).isEqualTo(2);
     }
 
     @Test
@@ -106,11 +144,11 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
                 new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null)))
                 .isInstanceOfSatisfying(BillingConfigurationFrozenException.class,
                         e -> assertThat(e.violations()).extracting(PolicyViolation::code).containsExactly("ENROLLMENT_FEE_LEAD_MONTHS_FROZEN"));
-        assertThat(template(issued).getEnrollmentFeeLeadMonths()).isEqualTo(1);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(issued)).enrollmentFeeLeadMonths()).isEqualTo(1);
 
         updateYearConfiguration.update(pristine.templateId(),
                 new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
-        assertThat(template(pristine).getEnrollmentFeeLeadMonths()).isEqualTo(2);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(pristine)).enrollmentFeeLeadMonths()).isEqualTo(2);
     }
 
     @Test
@@ -132,7 +170,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
         updateYearConfiguration.update(year.templateId(), config(null, null, 8, null));
 
-        assertThat(template(year).getSecondEnrollmentFeeMonth()).isEqualTo(8);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(year)).secondEnrollmentFeeMonth()).isEqualTo(8);
     }
 
     @Test
@@ -217,8 +255,8 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
         ProgramYearBillingTemplate januaryTemplate = createTemplate.create(career.programId(), januaryTermId, 10);
 
-        assertThat(januaryTemplate.getEnrollmentFeeCount()).isEqualTo(1);
-        assertThat(januaryTemplate.getFirstEnrollmentFeeMonth()).isEqualTo(12);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(januaryTemplate).enrollmentFeeCount()).isEqualTo(1);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(januaryTemplate).firstEnrollmentFeeMonth()).isEqualTo(12);
     }
 
     @Test
@@ -241,7 +279,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         ProgramYearBillingTemplate template = createTemplate.create(career.programId(), termId, 10,
                 new YearBillingConfigurationRequest(null, null, null, 2, null, null, null, null, null, null, null, null));
 
-        assertThat(template.getFirstEnrollmentFeeMonth()).isEqualTo(1);
+        assertThat(com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template).firstEnrollmentFeeMonth()).isEqualTo(1);
         assertThat(marchYear.year()).isEqualTo(2028);
     }
 
@@ -264,6 +302,36 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
                 .isInstanceOfSatisfying(InvalidYearBillingConfigurationException.class,
                         e -> assertThat(codes(e)).containsExactly(
                                 "FIRST_ENROLLMENT_FEE_AFTER_TERM_START", "SECOND_ENROLLMENT_FEE_OUTSIDE_TERM", "INSTALLMENT_COUNT_EXCEEDS_TERM_SPAN"));
+    }
+
+    @Test
+    @Tag("D-095")
+    @Tag("D-035")
+    @Tag("D-120")
+    void aScheduledDueDaysVersionRulesOnlyFromItsStartDate() {
+        Career career = newCareer();
+        Year year = newYear(career, 2027, 10, 1, 2, null);
+        Long cohort = newCohort(year, CohortIntake.FIRST, date(2027, 3, 1));
+        today(date(2027, 2, 10));
+        Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2027, 2), date(2027, 2, 10));
+        issueEntryFee(enrollment);
+        var current = com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(templateRepository.findById(year.templateId()).orElseThrow());
+        var scheduled = new com.red_escuela.backend.billing.configuration.domain.YearBillingTerms(current.recurringFeeInvoicesCount(), current.enrollmentFeeCount(),
+                current.firstEnrollmentFeeMonth(), current.secondEnrollmentFeeMonth(), current.enrollmentFeeLeadMonths(), current.lateEnrollmentFeeDueDays(), 15,
+                current.withdrawSuspendedAtTermEnd(), current.paysWhilePaused(), current.blocksEnrollment(), current.blocksExamRegistration(), current.blocksCertificates(),
+                current.requireEnrollmentFeeForFinalExamOnlyStudents());
+        pipeline.runOperation(changeOperation, new com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigurationCommand(
+                com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic.ofYearTerms(career.programId(), year.termId()), scheduled, date(2027, 6, 1),
+                "vencimiento a 15 dias", career.directorId(), true));
+
+        today(date(2027, 5, 1));
+        job.run();
+        today(date(2027, 6, 1));
+        job.run();
+
+        List<Invoice> installments = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
+        assertThat(installments.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 11));
+        assertThat(installments.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 6))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 6, 16));
     }
 
     @Test
@@ -341,7 +409,9 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         today(date(2027, 6, 20));
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch start = new CountDownLatch(1);
+        org.springframework.security.core.Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Future<Object> reduction = pool.submit(() -> {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             start.await();
             try {
                 updateYearConfiguration.update(year.templateId(), config(1, null, null, null));
@@ -361,11 +431,45 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
         pool.shutdown();
 
         boolean secondIssued = invoices(enrollment, FeeType.ENROLLMENT_FEE).stream().anyMatch(i -> Integer.valueOf(2).equals(i.getEnrollmentFeeSlot()));
-        int configuredCount = template(year).getEnrollmentFeeCount();
+        int configuredCount = com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template(year)).enrollmentFeeCount();
         assertThat(secondIssued && configuredCount == 1).isFalse();
         if (secondIssued) {
             assertThat(reductionOutcome).isEqualTo("FROZEN");
         }
+    }
+
+    @Test
+    @Tag("D-212")
+    void theSamePatchTwiceCreatesNoSecondVersion() {
+        Year year = yearWithFirstFeeIssued();
+        updateYearConfiguration.update(year.templateId(), config(null, null, null, 15));
+        long afterFirst = versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId())).count();
+
+        updateYearConfiguration.update(year.templateId(), config(null, null, null, 15));
+
+        assertThat(versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId())).count()).isEqualTo(afterFirst);
+    }
+
+    @Test
+    @Tag("D-212")
+    @Tag("D-095")
+    void anAdministrativeActorLeavesAPersistedProposalInsteadOfRollingBack() {
+        Year year = yearWithFirstFeeIssued();
+        authenticateAs("ADMINISTRATIVO");
+        var service = new com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService(templateRepository, configurationReader, termsOverlay, pipeline,
+                changeOperation, actorResolver, eventPublisher, clock);
+
+        Object outcome = transactionTemplate.execute(status -> {
+            try {
+                return service.update(year.templateId(), config(null, null, null, 21));
+            } catch (com.red_escuela.backend.billing.operation.AuthorizationPendingException e) {
+                return e;
+            }
+        });
+
+        assertThat(outcome).isInstanceOf(com.red_escuela.backend.billing.operation.AuthorizationPendingException.class);
+        assertThat(versionRepository.findAll().stream().filter(v -> year.termId().equals(v.getTermId()))
+                .filter(v -> v.getStatus() == com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus.PROPOSED).count()).isEqualTo(1);
     }
 
     private CreateLatePaymentSettingsRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {

@@ -77,11 +77,12 @@ class PlanningPoliciesTest {
     void billingWhilePausedDeniesOnlyWhenPausedAndTheTemplateDoesNotChargeWhilePaused() {
         BillingWhilePausedPolicy<EnrollmentFeeSlotPlanningContext> policy = new BillingWhilePausedPolicy<>();
         ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
 
         EnrollmentFeeSlotPlanningContext paused = EnrollmentFeeSlotPlanningContext.of(PlanningFixtures.facts(template, MARCH, true, false), cycle, 1, false);
         EnrollmentFeeSlotPlanningContext active = EnrollmentFeeSlotPlanningContext.of(PlanningFixtures.facts(template, MARCH, false, false), cycle, 1, false);
-        template.setPaysWhilePaused(true);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setPaysWhilePaused(template, true);
+        cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         EnrollmentFeeSlotPlanningContext pausedButPays = EnrollmentFeeSlotPlanningContext.of(PlanningFixtures.facts(template, MARCH, true, false), cycle, 1, false);
 
         assertDenies(policy, policy.evaluateRule(paused), "PAUSED_NOT_BILLED");
@@ -96,7 +97,7 @@ class PlanningPoliciesTest {
     @Tag("D-037")
     void finalExamsOnlyExemptionDependsOnTheFeeTypeAndTheConsultation() {
         ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         ProgramInvoicePlanningFacts onlyFinals = PlanningFixtures.facts(template, MARCH, false, true);
         ProgramInvoicePlanningFacts regular = PlanningFixtures.facts(template, MARCH, false, false);
         FinalExamsOnlyExemptionPolicy<ProgramFactsContext> fee = new FinalExamsOnlyExemptionPolicy<>(FeeType.ENROLLMENT_FEE, Set.of(BillingConsultation.PLANNING), "ONLY_FINAL_EXAMS");
@@ -108,7 +109,8 @@ class PlanningPoliciesTest {
         assertDenies(fee, fee.evaluateRule(planning), "ONLY_FINAL_EXAMS");
         assertThat(fee.evaluateRule(planning).reason()).isEqualTo("plantilla 1 matrícula 1 no se emite: solo debe finales");
         assertThat(fee.evaluateRule(EnrollmentFeeSlotPlanningContext.of(regular, cycle, 1, false)).allowed()).isTrue();
-        template.setRequireEnrollmentFeeForFinalExamOnlyStudents(true);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(template, true);
+        cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         assertThat(fee.evaluateRule(EnrollmentFeeSlotPlanningContext.of(onlyFinals, cycle, 1, false)).allowed()).isTrue();
         MonthlyInstallmentPlanningContext installmentContext = new MonthlyInstallmentPlanningContext(onlyFinals,
                 new LectiveYearCycleResolution.Configured(cycle, Optional.of(cycle), true));
@@ -116,7 +118,9 @@ class PlanningPoliciesTest {
         assertThat(installment.evaluateRule(installmentContext).reason()).isEqualTo("no se emite cuota: solo debe finales");
         assertThat(fee.plannerQuestionNumber()).isEqualTo(6);
 
-        template.setRequireEnrollmentFeeForFinalExamOnlyStudents(false);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRequireEnrollmentFeeForFinalExamOnlyStudents(template, false);
+
+        cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         EnrollmentFeeRequirementContext exam = new EnrollmentFeeRequirementContext(EnrollmentFeeRequirementScope.EXAM_REGISTRATION, onlyFinals, cycle, 1, cycle.terms(), false, Optional.empty());
         EnrollmentFeeRequirementContext subject = new EnrollmentFeeRequirementContext(EnrollmentFeeRequirementScope.SUBJECT_ENROLLMENT, onlyFinals, cycle, 1, cycle.terms(), false, Optional.empty());
         assertDenies(examRegistration, examRegistration.evaluateRule(exam), "NOT_REQUIRED_ONLY_FINAL_EXAMS");
@@ -129,7 +133,7 @@ class PlanningPoliciesTest {
     void aSlotAlreadyIssuedDeniesWithAlreadyIssuedOrFeeCancelled() {
         EnrollmentFeeSlotNotAlreadyIssuedPolicy policy = new EnrollmentFeeSlotNotAlreadyIssuedPolicy();
         ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         java.util.function.Function<InvoicePaymentStatus, EnrollmentFeeSlotPlanningContext> withFee = status -> EnrollmentFeeSlotPlanningContext.of(
                 PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY),
                         List.of(new IssuedEnrollmentFee(5L, 1L, 1, YearMonth.of(2026, 2), status, LocalDate.of(2026, 2, 1))), Set.of(), Map.of()), cycle, 1, false);
@@ -239,7 +243,7 @@ class PlanningPoliciesTest {
 
     private static EnrollmentFeeRequirementContext requirement(EnrollmentFeeRequirementScope scope, ProgramYearBillingTemplate template, boolean active, boolean completed,
                                                               YearMonth entry, boolean exempted, Optional<IssuedEnrollmentFee> fee) {
-        YearCycle cycle = YearCycle.of(template, 2026);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
         ProgramInvoicePlanningFacts base = PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, entry,
                 PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY), List.of(), Set.of(), Map.of());
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(1L, MARCH, MARCH.atDay(1), active, false, completed, false, false, entry,
@@ -265,13 +269,13 @@ class PlanningPoliciesTest {
         assertDenies(certificate, certificate.evaluateRule(requirement(cert, template, true, true, null, false, Optional.empty())), "NOT_REQUIRED_FOR_INACTIVE_OR_COMPLETED");
         assertThat(certificate.evaluateRule(requirement(EnrollmentFeeRequirementScope.EXAM_REGISTRATION, template, false, true, null, false, Optional.empty())).allowed()).isTrue();
         assertThat(blocks.evaluateRule(requirement(cert, template, true, false, null, false, Optional.empty())).allowed()).isTrue();
-        template.setBlocksCertificates(false);
-        template.setBlocksExamRegistration(false);
-        template.setBlocksEnrollment(false);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksCertificates(template, false);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksExamRegistration(template, false);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksEnrollment(template, false);
         for (EnrollmentFeeRequirementScope scope : EnrollmentFeeRequirementScope.values()) {
             assertDenies(blocks, blocks.evaluateRule(requirement(scope, template, true, false, null, false, Optional.empty())), "NOT_REQUIRED_SCOPE_NOT_BLOCKED");
         }
-        template.setBlocksEnrollment(true);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setBlocksEnrollment(template, true);
         assertThat(blocks.evaluateRule(requirement(EnrollmentFeeRequirementScope.SUBJECT_ENROLLMENT, template, true, false, null, false, Optional.empty())).allowed()).isTrue();
         assertThat(beforeEntry.evaluateRule(requirement(cert, template, true, false, MARCH, false, Optional.empty())).allowed()).isTrue();
         assertDenies(beforeEntry, beforeEntry.evaluateRule(requirement(cert, template, true, false, YearMonth.of(2027, 1), false, Optional.empty())), "NOT_REQUIRED_BEFORE_ENTRY");

@@ -1,7 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -39,14 +41,16 @@ public class InvoicePlanningContextLoader {
     private final PaymentPlanSelectionRepository selectionRepository;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final Set<String> irregularTermTypes;
+    private final YearCycleFactory cycleFactory;
+    private final BillingConfigurationReader configurationReader;
 
     public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
                                        InvoiceRepository invoiceRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
-                                       @Value("${app.billing.irregular-term-types:}") Set<String> irregularTermTypes) {
-        this.irregularTermTypes = irregularTermTypes.stream().map(String::trim).map(String::toUpperCase).collect(Collectors.toSet());
+                                       YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader) {
+        this.cycleFactory = cycleFactory;
+        this.configurationReader = configurationReader;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;
         this.termRepository = termRepository;
@@ -79,7 +83,7 @@ public class InvoicePlanningContextLoader {
         PaymentPlanSelection selection = selectionAtMonth == null || coverage.isAnnualScopeExpiredAt(month) ? null : selectionAtMonth;
 
         Long hint = enrollment.getCurrentBillingTemplate() != null ? enrollment.getCurrentBillingTemplate().getId() : null;
-        List<YearCycle> cycleList = templateRepository.findAllByProgramId(enrollment.getProgram().getId()).stream().map(t -> YearCycle.of(t, month.getYear())).toList();
+        List<YearCycle> cycleList = templateRepository.findAllByProgramId(enrollment.getProgram().getId()).stream().map(t -> cycleFactory.cycleOf(t, month.getYear(), today)).toList();
         YearCycles cycles = new YearCycles(cycleList, hint);
 
         List<Invoice> invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId);
@@ -96,12 +100,12 @@ public class InvoicePlanningContextLoader {
         java.time.LocalDate cursadaStart = null;
         if (cohort != null) {
             entryTemplateId = cohort.getTemplate().getId();
-            entrySlot = YearCycle.of(cohort.getTemplate(), YearMonth.from(cohort.getCursadaStart()).getYear()).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            entrySlot = cycleFactory.cycleOf(cohort.getTemplate(), YearMonth.from(cohort.getCursadaStart()).getYear(), today).slotOf(YearMonth.from(cohort.getCursadaStart()));
             cursadaStart = cohort.getCursadaStart();
         }
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
                 coverage, !selections.isEmpty(),
-                cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList),
+                cycles, fees, recurringPeriods, windowsOf(enrollment.getProgram().getId(), cycleList, today),
                 entryTemplateId, entrySlot, cursadaStart);
         return new PlanningContext(facts, selection != null ? selection : (selectionAtMonth == null ? latest(selections) : null));
     }
@@ -114,14 +118,15 @@ public class InvoicePlanningContextLoader {
         return invoices.stream().filter(i -> i.getFeeType() == type).map(Invoice::getPeriod).collect(Collectors.toSet());
     }
 
-    private Map<String, SlotWindow> windowsOf(Long programId, List<YearCycle> cycles) {
+    private Map<String, SlotWindow> windowsOf(Long programId, List<YearCycle> cycles, LocalDate today) {
         Map<String, SlotWindow> windows = new HashMap<>();
         if (cycles.isEmpty()) {
             return windows;
         }
+        Set<String> irregularTypes = configurationReader.irregularTermTypesEffectiveOn(today).types().stream().map(String::toUpperCase).collect(Collectors.toSet());
         List<Term> terms = termRepository.findTermsOfProgram(programId).stream()
                 .filter(t -> t.getEnrollmentStart() != null && t.getStartDate() != null)
-                .filter(t -> t.getType() == null || !irregularTermTypes.contains(t.getType().trim().toUpperCase())).toList();
+                .filter(t -> t.getType() == null || !irregularTypes.contains(t.getType().trim().toUpperCase())).toList();
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;

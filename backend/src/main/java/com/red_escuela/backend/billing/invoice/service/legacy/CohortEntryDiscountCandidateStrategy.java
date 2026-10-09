@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingCont
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCandidateStrategy;
 import com.red_escuela.backend.billing.invoice.policy.issuing.CohortEntryDiscountAppliesPolicy;
+import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
@@ -20,10 +21,12 @@ import java.util.List;
 public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCandidateStrategy {
 
     private final ProgramCohortRepository cohortRepository;
+    private final BillingConfigurationReader configurationReader;
     private final CohortEntryDiscountAppliesPolicy appliesPolicy = new CohortEntryDiscountAppliesPolicy();
 
-    public CohortEntryDiscountCandidateStrategy(ProgramCohortRepository cohortRepository) {
+    public CohortEntryDiscountCandidateStrategy(ProgramCohortRepository cohortRepository, BillingConfigurationReader configurationReader) {
         this.cohortRepository = cohortRepository;
+        this.configurationReader = configurationReader;
     }
 
     @Override
@@ -38,7 +41,7 @@ public class CohortEntryDiscountCandidateStrategy implements InvoiceDiscountCand
             return List.of();
         }
         ProgramCohort cohort = cohortRepository.findById(request.cohortId()).orElseThrow();
-        Percentage discount = cohort.getEntryFeeDiscount();
+        Percentage discount = configurationReader.cohortEntryDiscountEffectiveOn(cohort.getId(), request.pricingDate());
         if (!appliesPolicy.evaluateRule(new CohortEntryDiscountAppliesPolicy.Offer(request.entryEnrollmentFee(), request.issuingReason(), discount)).allowed()) {
             return List.of();
         }

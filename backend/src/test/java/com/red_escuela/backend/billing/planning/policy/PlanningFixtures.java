@@ -30,15 +30,15 @@ final class PlanningFixtures {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setId(id);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(installments);
-        template.configureEnrollmentFees(count, first, second);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, installments);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, count, first, second);
         return template;
     }
 
     static ProgramInvoicePlanningFacts facts(ProgramYearBillingTemplate template, YearMonth month, LocalDate today, boolean paused, boolean onlyFinals,
                                              YearMonth entry, PaymentPlanCoverage coverage, List<IssuedEnrollmentFee> fees, Set<YearMonth> recurring,
                                              Map<String, SlotWindow> windows) {
-        YearCycles cycles = new YearCycles(List.of(YearCycle.of(template, month.getYear())), null);
+        YearCycles cycles = new YearCycles(List.of(com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, month.getYear())), null);
         return new ProgramInvoicePlanningFacts(1L, month, today, true, false, false, paused, onlyFinals, entry, coverage, true, cycles, fees, recurring,
                 windows, null, null, null);
     }

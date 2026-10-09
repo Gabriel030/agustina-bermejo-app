@@ -130,7 +130,6 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
             jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", person.getId());
             jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)", person.getId());
             jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", person.getId());
-            jdbcTemplate.update("delete from late_payment_settings where created_by_id = ?", person.getId());
         }
         jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
         SecurityContextHolder.clearContext();
@@ -388,7 +387,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     @Tag("D-118")
     @Tag("D-210")
     @Tag("D-095")
-    void legacyLatePaymentWritesAreMirroredSoTheReaderAgreesWithTheLegacySource() {
+    void latePaymentSettingsCreatedThroughTheLegacyUseCaseAreReadByEffectiveDate() {
         authenticateAs(director);
         createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.05")), 30, 2, TODAY));
         createLatePayment.create(new CreateLatePaymentSettingsRequest(4, Percentage.ofFraction(new BigDecimal("0.07")), 40, 3, DECEMBER_FIRST));
@@ -403,13 +402,48 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-095")
-    void aNoopLegacyWriteDoesNotCreateAnotherVersion() {
+    @Tag("D-225")
+    void administrativeWithdrawsOwnPendingProposalAndTheTopicAcceptsANewOne() {
+        authenticateAs(administrative);
+        Long proposed = propose(ALLOCATION, false, DECEMBER_FIRST);
+        assertThat(versionOf(proposed).getStatus()).isEqualTo(ConfigurationVersionStatus.PROPOSED);
+        withdrawRequest.withdraw(proposed);
+        assertThat(versionOf(proposed).getStatus()).isEqualTo(ConfigurationVersionStatus.WITHDRAWN);
+        assertThat(count("select count(*) from configuration_version_status_change where configuration_version_id = ? and to_status = 'WITHDRAWN' and actor_person_id = ?",
+                versionOf(proposed).getId(), administrative.getId())).isEqualTo(1);
+        Long replacement = propose(ALLOCATION, true, DECEMBER_FIRST);
+        assertThat(versionOf(replacement).getStatus()).isEqualTo(ConfigurationVersionStatus.PROPOSED);
+    }
+
+    @Test
+    @Tag("D-225")
+    void anotherAdministrativeCannotWithdrawAProposalThatIsNotTheirs() {
+        authenticateAs(administrative);
+        Long proposed = propose(ALLOCATION, false, DECEMBER_FIRST);
+        Person other = persistPerson("administrative.other", "ADMINISTRATIVO");
+        authenticateAs(other);
+        assertThatThrownBy(() -> withdrawRequest.withdraw(proposed)).isInstanceOf(AuthorizationRequestAccessDeniedException.class);
+        assertThat(versionOf(proposed).getStatus()).isEqualTo(ConfigurationVersionStatus.PROPOSED);
+    }
+
+    @Test
+    @Tag("D-225")
+    void aProposalAlreadyApprovedCannotBeWithdrawn() {
+        authenticateAs(administrative);
+        Long proposed = propose(ALLOCATION, false, DECEMBER_FIRST);
         authenticateAs(director);
-        var request = new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.05")), 30, 2, TODAY);
-        createLatePayment.create(request);
-        long before = count("select count(*) from configuration_version where scope = 'LATE_PAYMENT'");
-        createLatePayment.create(request);
-        assertThat(count("select count(*) from configuration_version where scope = 'LATE_PAYMENT'")).isEqualTo(before);
+        approveRequest.approve(proposed, "de acuerdo");
+        authenticateAs(administrative);
+        assertThatThrownBy(() -> withdrawRequest.withdraw(proposed)).isInstanceOf(RuntimeException.class);
+        assertThat(versionOf(proposed).getStatus()).isEqualTo(ConfigurationVersionStatus.SCHEDULED);
+    }
+
+    @Test
+    @Tag("D-225")
+    void aDirectorPublicationIsNeverWithdrawableBecauseItHasNoPendingRequest() {
+        authenticateAs(director);
+        ConfigurationVersion published = publish(ALLOCATION, true, DECEMBER_FIRST);
+        assertThat(published.getAuthorizationRequestId()).isNull();
+        assertThat(published.getStatus()).isEqualTo(ConfigurationVersionStatus.SCHEDULED);
     }
 }

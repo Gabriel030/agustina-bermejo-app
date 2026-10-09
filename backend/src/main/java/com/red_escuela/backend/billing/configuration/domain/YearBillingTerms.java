@@ -26,6 +26,14 @@ public record YearBillingTerms(int recurringFeeInvoicesCount, int enrollmentFeeC
         }
     }
 
+    public static YearBillingTerms initial(int recurringFeeInvoicesCount) {
+        return new YearBillingTerms(recurringFeeInvoicesCount, 1, 2, null, 1, 10, 10, true, false, true, true, true, false);
+    }
+
+    public int remainingInstallments(long installmentsGeneratedInWindow) {
+        return recurringFeeInvoicesCount - (int) installmentsGeneratedInWindow;
+    }
+
     @Override
     public ConfigurationScope scope() {
         return ConfigurationScope.YEAR_TERMS;

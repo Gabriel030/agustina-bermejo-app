@@ -5,7 +5,8 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
@@ -19,7 +20,6 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.AddressRepository;
-import com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -52,7 +52,7 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private LatePaymentSettingsRepository latePaymentSettingsRepository;
+    private ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -119,16 +119,9 @@ class EnrollmentBillingComplianceSweepServiceTest extends AbstractIntegrationTes
         return invoice;
     }
 
-    private LatePaymentSettings persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
-        LatePaymentSettings policy = LatePaymentSettings.builder()
-                .gracePeriodDays(10)
-                .surchargeRate(Percentage.ofFraction(BigDecimal.valueOf(0.10)))
-                .suspensionAfterDays(suspensionAfterDays)
-                .suspensionAfterInvoiceCount(suspensionAfterInvoiceCount)
-                .effectiveFrom(LocalDate.now().minusYears(1))
-                .createdBy(createdBy)
-                .build();
-        return latePaymentSettingsRepository.save(policy);
+    private ConfigurationVersion persistPolicy(Person createdBy, int suspensionAfterDays, int suspensionAfterInvoiceCount) {
+        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, 10, BigDecimal.valueOf(0.10), suspensionAfterDays, suspensionAfterInvoiceCount,
+                LocalDate.now());
     }
 
     private ProgramEnrollment reload(Long id) {
