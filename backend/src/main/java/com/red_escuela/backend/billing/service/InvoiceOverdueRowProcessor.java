@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import java.time.LocalDate;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;

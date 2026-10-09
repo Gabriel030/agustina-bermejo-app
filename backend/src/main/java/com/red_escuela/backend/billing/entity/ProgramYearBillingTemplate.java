@@ -1,13 +1,11 @@
 package com.red_escuela.backend.billing.entity;
 
-import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -30,72 +28,12 @@ public class ProgramYearBillingTemplate {
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
-    @Column(name = "recurring_fee_invoices_count", nullable = false)
-    private Integer recurringFeeInvoicesCount;
-
-    @Column(name = "enrollment_fee_count", nullable = false)
-    private Integer enrollmentFeeCount = 1;
-
-    @Column(name = "first_enrollment_fee_month", nullable = false)
-    private Integer firstEnrollmentFeeMonth = 2;
-
-    @Column(name = "second_enrollment_fee_month")
-    private Integer secondEnrollmentFeeMonth;
-
-    @Column(name = "enrollment_fee_lead_months", nullable = false)
-    private Integer enrollmentFeeLeadMonths = 1;
-
-    @Column(name = "late_enrollment_fee_due_days", nullable = false)
-    private Integer lateEnrollmentFeeDueDays = 10;
-
-    @Column(name = "recurring_fee_due_days", nullable = false)
-    private Integer recurringFeeDueDays = 10;
-
-    @Column(name = "withdraw_suspended_at_term_end", nullable = false)
-    private boolean withdrawSuspendedAtTermEnd = true;
-
-    @Column(name = "pays_while_paused", nullable = false)
-    private boolean paysWhilePaused = false;
-
-    @Column(name = "blocks_enrollment", nullable = false)
-    private boolean blocksEnrollment = true;
-
-    @Column(name = "blocks_exam_registration", nullable = false)
-    private boolean blocksExamRegistration = true;
-
-    @Column(name = "blocks_certificates", nullable = false)
-    private boolean blocksCertificates = true;
-
-    @Column(name = "require_enrollment_fee_for_final_exam_only_students", nullable = false)
-    private boolean requireEnrollmentFeeForFinalExamOnlyStudents = false;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
     private Person createdBy;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    public void configureEnrollmentFees(int count, int firstMonth, Integer secondMonth) {
-        if (count != 1 && count != 2) {
-            throw new InvalidEnrollmentFeeConfigurationException("La cantidad de matrículas debe ser 1 o 2");
-        }
-        if (firstMonth < 1 || firstMonth > 12) {
-            throw new InvalidEnrollmentFeeConfigurationException("El mes de matrícula debe estar entre 1 y 12");
-        }
-        if (count == 1) {
-            this.enrollmentFeeCount = 1;
-            this.firstEnrollmentFeeMonth = firstMonth;
-            this.secondEnrollmentFeeMonth = null;
-            return;
-        }
-        if (secondMonth == null || secondMonth <= firstMonth || secondMonth > 12) {
-            throw new InvalidEnrollmentFeeConfigurationException("Con 2 matrículas, el mes de la segunda debe ser posterior al de la primera");
-        }
-        this.enrollmentFeeCount = 2;
-        this.firstEnrollmentFeeMonth = firstMonth;
-        this.secondEnrollmentFeeMonth = secondMonth;
-    }
 
     @PrePersist
     void onCreate() {
@@ -114,13 +52,5 @@ public class ProgramYearBillingTemplate {
 
     public Long programId() {
         return program.getId();
-    }
-
-    public boolean canGenerateInvoice(YearMonth period, long invoicesGeneratedInWindow) {
-        return term.contains(period) && invoicesGeneratedInWindow < recurringFeeInvoicesCount;
-    }
-
-    public int remainingInvoices(long invoicesGeneratedInWindow) {
-        return recurringFeeInvoicesCount - (int) invoicesGeneratedInWindow;
     }
 }

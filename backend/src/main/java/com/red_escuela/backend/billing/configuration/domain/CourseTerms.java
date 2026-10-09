@@ -8,6 +8,10 @@ public record CourseTerms(int monthlyInstallmentDueDays) implements Configuratio
         }
     }
 
+    public static CourseTerms initial() {
+        return new CourseTerms(10);
+    }
+
     @Override
     public ConfigurationScope scope() {
         return ConfigurationScope.COURSE_TERMS;

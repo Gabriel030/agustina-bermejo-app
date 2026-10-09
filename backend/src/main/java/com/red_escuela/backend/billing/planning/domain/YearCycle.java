@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.planning.domain;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 
 import java.time.YearMonth;
@@ -10,47 +11,53 @@ public final class YearCycle {
     private static final int LECTIVE_YEAR_FIRST_MONTH = 3;
 
     private final ProgramYearBillingTemplate template;
+    private final YearBillingTerms yearTerms;
     private final YearMonth start;
     private final YearMonth end;
     private final YearMonth termStart;
     private final int baseYear;
     private final YearMonth coverageStart;
 
-    private YearCycle(ProgramYearBillingTemplate template, YearMonth start, YearMonth end, YearMonth termStart, int baseYear, YearMonth coverageStart) {
+    private YearCycle(ProgramYearBillingTemplate template, YearBillingTerms yearTerms, YearMonth start, YearMonth end, YearMonth termStart, int baseYear, YearMonth coverageStart) {
         this.coverageStart = coverageStart;
         this.template = template;
+        this.yearTerms = yearTerms;
         this.start = start;
         this.end = end;
         this.termStart = termStart;
         this.baseYear = baseYear;
     }
 
-    public static YearCycle of(ProgramYearBillingTemplate template, int fallbackYear) {
+    public static YearCycle of(ProgramYearBillingTemplate template, YearBillingTerms yearTerms, int fallbackYear) {
         Term term = template.getTerm();
         if (term.getStartDate() == null || term.getEndDate() == null) {
             int year = term.getYear() != null ? term.getYear() : fallbackYear;
             YearMonth first = YearMonth.of(year, 1);
-            return new YearCycle(template, first, YearMonth.of(year, 12), YearMonth.of(year, LECTIVE_YEAR_FIRST_MONTH), year, first);
+            return new YearCycle(template, yearTerms, first, YearMonth.of(year, 12), YearMonth.of(year, LECTIVE_YEAR_FIRST_MONTH), year, first);
         }
         YearMonth termStart = YearMonth.from(term.getStartDate());
         YearMonth termEnd = YearMonth.from(term.getEndDate());
-        YearMonth firstFee = firstFeePeriod(template, termStart);
+        YearMonth firstFee = firstFeePeriod(yearTerms, termStart);
         YearMonth start = firstFee.isBefore(termStart) ? firstFee : termStart;
-        return new YearCycle(template, start, termEnd, termStart, termStart.getYear(), start);
+        return new YearCycle(template, yearTerms, start, termEnd, termStart, termStart.getYear(), start);
     }
 
-    private static YearMonth firstFeePeriod(ProgramYearBillingTemplate template, YearMonth termStart) {
-        int month = template.getFirstEnrollmentFeeMonth();
+    private static YearMonth firstFeePeriod(YearBillingTerms yearTerms, YearMonth termStart) {
+        int month = yearTerms.firstEnrollmentFeeMonth();
         boolean belongsToPreviousYear = month - termStart.getMonthValue() >= PREVIOUS_YEAR_THRESHOLD_MONTHS;
         return YearMonth.of(belongsToPreviousYear ? termStart.getYear() - 1 : termStart.getYear(), month);
     }
 
     public YearCycle withCoverageStart(YearMonth lowerBound) {
-        return new YearCycle(template, start, end, termStart, baseYear, lowerBound.isBefore(start) ? lowerBound : start);
+        return new YearCycle(template, yearTerms, start, end, termStart, baseYear, lowerBound.isBefore(start) ? lowerBound : start);
     }
 
     public ProgramYearBillingTemplate template() {
         return template;
+    }
+
+    public YearBillingTerms yearTerms() {
+        return yearTerms;
     }
 
     public Long templateId() {
@@ -78,22 +85,22 @@ public final class YearCycle {
     }
 
     public LectiveYearBillingTerms terms() {
-        return LectiveYearBillingTerms.fromTemplate(template);
+        return LectiveYearBillingTerms.of(yearTerms);
     }
 
     public int slotCount() {
-        return template.getEnrollmentFeeCount();
+        return yearTerms.enrollmentFeeCount();
     }
 
     public YearMonth slotPeriod(int slot) {
         if (slot == 1) {
             Term term = template.getTerm();
             if (term.getStartDate() == null || term.getEndDate() == null) {
-                return YearMonth.of(baseYear, template.getFirstEnrollmentFeeMonth());
+                return YearMonth.of(baseYear, yearTerms.firstEnrollmentFeeMonth());
             }
-            return firstFeePeriod(template, termStart);
+            return firstFeePeriod(yearTerms, termStart);
         }
-        return YearMonth.of(baseYear, template.getSecondEnrollmentFeeMonth());
+        return YearMonth.of(baseYear, yearTerms.secondEnrollmentFeeMonth());
     }
 
     public int slotOf(YearMonth month) {

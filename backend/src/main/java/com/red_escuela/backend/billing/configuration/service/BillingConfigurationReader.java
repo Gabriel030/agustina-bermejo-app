@@ -11,7 +11,9 @@ import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
+import com.red_escuela.backend.billing.configuration.exception.NoEffectiveConfigurationException;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +59,26 @@ public class BillingConfigurationReader {
 
     public Optional<IrregularTermTypes> findIrregularTermTypesEffectiveOn(LocalDate date) {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), date, IrregularTermTypes.class);
+    }
+
+    public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {
+        return findYearTermsEffectiveOn(programId, termId, date).orElseThrow(() -> new NoEffectiveConfigurationException(ConfigurationTopic.ofYearTerms(programId, termId), date));
+    }
+
+    public LatePaymentTerms requireLatePaymentSettingsEffectiveOn(LocalDate date) {
+        return findLatePaymentSettingsEffectiveOn(date).orElseThrow(() -> new NoEffectiveConfigurationException(ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT), date));
+    }
+
+    public Percentage cohortEntryDiscountEffectiveOn(Long cohortId, LocalDate date) {
+        return findCohortEntryEffectiveOn(cohortId, date).map(CohortEntryDiscount::discount).orElse(Percentage.ofFraction(java.math.BigDecimal.ZERO));
+    }
+
+    public CourseTerms courseTermsEffectiveOn(Long courseId, LocalDate date) {
+        return findCourseTermsEffectiveOn(courseId, date).orElse(CourseTerms.initial());
+    }
+
+    public IrregularTermTypes irregularTermTypesEffectiveOn(LocalDate date) {
+        return findIrregularTermTypesEffectiveOn(date).orElse(new IrregularTermTypes(java.util.List.of()));
     }
 
     private <V extends ConfigurationValues> Optional<V> findEffective(ConfigurationTopic topic, LocalDate date, Class<V> valuesType) {

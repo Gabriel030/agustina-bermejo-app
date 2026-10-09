@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.usecase.latepaymentsettings;
 
-import com.red_escuela.backend.billing.entity.LatePaymentSettings;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
 
 public interface FindCurrentLatePaymentSettingsUseCase {
-    LatePaymentSettings findCurrent();
+    ConfigurationVersion findCurrent();
 }

@@ -10,40 +10,50 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import com.red_escuela.backend.billing.configuration.service.LegacyConfigurationMirror;
+import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
+import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
+import com.red_escuela.backend.billing.configuration.service.YearBillingTermsOverlay;
+import java.time.Clock;
+import java.time.LocalDate;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.configuration.service.ConfigurationPolicyEvaluator;
 import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationChangeLoader;
 import com.red_escuela.backend.billing.configuration.service.YearBillingConfigurationDefaults;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
-import com.red_escuela.backend.billing.service.YearBillingConfigurationApplier;
 import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
 public class CreateProgramYearBillingTemplateService implements CreateProgramYearBillingTemplateUseCase {
+    private static final String INITIAL_VERSION_REASON = "Versión inicial del año lectivo";
+    private static final int INITIAL_PAYMENT_DEADLINE_HOURS = 48;
+
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final ProgramRepository programRepository;
     private final TermRepository termRepository;
     private final CurrentPersonService currentPersonService;
-    private final YearBillingConfigurationApplier configurationApplier;
+    private final YearBillingTermsOverlay termsOverlay;
     private final ApplicationEventPublisher eventPublisher;
     private final YearBillingConfigurationChangeLoader changeLoader;
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final YearBillingConfigurationDefaults configurationDefaults;
-    private final LegacyConfigurationMirror configurationMirror;
+    private final DirectConfigurationPublisher publisher;
+    private final Clock clock;
 
     public CreateProgramYearBillingTemplateService(ProgramYearBillingTemplateRepository templateRepository, ProgramRepository programRepository,
                                                      TermRepository termRepository, CurrentPersonService currentPersonService,
-                                                     YearBillingConfigurationApplier configurationApplier, ApplicationEventPublisher eventPublisher,
+                                                     YearBillingTermsOverlay termsOverlay, ApplicationEventPublisher eventPublisher,
                                                      YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
-                                                     YearBillingConfigurationDefaults configurationDefaults, LegacyConfigurationMirror configurationMirror) {
-        this.configurationMirror = configurationMirror;
+                                                     YearBillingConfigurationDefaults configurationDefaults, DirectConfigurationPublisher publisher, Clock clock) {
+        this.publisher = publisher;
+        this.clock = clock;
         this.configurationDefaults = configurationDefaults;
         this.changeLoader = changeLoader;
         this.policyEvaluator = policyEvaluator;
-        this.configurationApplier = configurationApplier;
+        this.termsOverlay = termsOverlay;
         this.eventPublisher = eventPublisher;
         this.templateRepository = templateRepository;
         this.programRepository = programRepository;
@@ -68,12 +78,21 @@ public class CreateProgramYearBillingTemplateService implements CreateProgramYea
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(recurringFeeInvoicesCount);
         template.setCreatedBy(actor);
-        configurationApplier.applyYearBillingConfiguration(template, effectiveConfiguration);
         ProgramYearBillingTemplate saved = templateRepository.save(template);
-        configurationMirror.recordYearTerms(saved);
+        publishInitialVersions(saved, term, termsOverlay.overlay(YearBillingTerms.initial(recurringFeeInvoicesCount), effectiveConfiguration), actor.getId());
         eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(programId));
         return saved;
+    }
+
+    private void publishInitialVersions(ProgramYearBillingTemplate template, Term term, YearBillingTerms terms, Long actorId) {
+        LocalDate today = LocalDate.now(clock);
+        LocalDate termStart = term.getStartDate() == null ? today : term.getStartDate().toLocalDate();
+        LocalDate effectiveFrom = termStart.isBefore(today) ? termStart : today;
+        publisher.publishVersion(ConfigurationTopic.ofYearTerms(template.programId(), term.getId()), terms, effectiveFrom, INITIAL_VERSION_REASON, actorId);
+        if (term.getStartDate() != null) {
+            publisher.publishVersion(ConfigurationTopic.ofAnnualUpfront(template.programId(), term.getId()),
+                    new AnnualUpfrontSettings(termStart.minusDays(1), INITIAL_PAYMENT_DEADLINE_HOURS), effectiveFrom, INITIAL_VERSION_REASON, actorId);
+        }
     }
 }
