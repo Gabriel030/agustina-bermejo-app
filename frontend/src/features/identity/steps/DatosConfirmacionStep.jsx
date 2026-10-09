@@ -1,6 +1,8 @@
+import { Controller } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
+import { DocumentField } from '@/components/DocumentField';
 
-export function DatosConfirmacionStep({ register, errors, values, onChange, isLoading }) {
+export function DatosConfirmacionStep({ register, control, errors, values, onChange, isLoading }) {
   function field(name) {
     if (register) return register(name);
     return {
@@ -15,9 +17,28 @@ export function DatosConfirmacionStep({ register, errors, values, onChange, isLo
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-semibold text-ink">Datos de confirmación</h2>
       <div className="flex flex-col gap-1">
-        <label className="text-[13px] font-medium text-ink">DNI <span className="text-danger">*</span></label>
-        <Input {...field('dni')} placeholder="12345678" disabled={isLoading} />
-        {err('dni') && <p className="text-[12px] text-danger">{err('dni')}</p>}
+        <label className="text-[13px] font-medium text-ink">Documento <span className="text-danger">*</span></label>
+        <Controller
+          control={control}
+          name="documentType"
+          render={({ field: tipo }) => (
+            <Controller
+              control={control}
+              name="dni"
+              render={({ field: numero }) => (
+                <DocumentField
+                  type={tipo.value}
+                  number={numero.value}
+                  onTypeChange={tipo.onChange}
+                  onNumberChange={numero.onChange}
+                  onBlur={numero.onBlur}
+                  error={err('dni')}
+                  disabled={isLoading}
+                />
+              )}
+            />
+          )}
+        />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="flex flex-col gap-1 sm:col-span-2">

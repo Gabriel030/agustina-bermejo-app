@@ -79,7 +79,7 @@ public class CertificateService {
 
         Person person = student.getPerson();
         String texto = "Se deja constancia de que " + person.getName() + " " + person.getLastname()
-                + " (DNI " + person.getDni() + ") es alumno/a regular de la carrera "
+                + " (" + person.getDocumentType().label() + " " + person.getDni() + ") es alumno/a regular de la carrera "
                 + enrollment.getProgram().getName() + ".";
         byte[] pdf = generatePdf("Constancia de alumno regular", texto);
         recordIssuance(enrollment, CertificateType.REGULAR_STUDENT);
@@ -95,7 +95,7 @@ public class CertificateService {
 
         StringBuilder texto = new StringBuilder(
                 "Se deja constancia de que " + person.getName() + " " + person.getLastname()
-                        + " (DNI " + person.getDni() + "), alumno/a de la carrera "
+                        + " (" + person.getDocumentType().label() + " " + person.getDni() + "), alumno/a de la carrera "
                         + enrollment.getProgram().getName() + ", tiene aprobadas las siguientes materias:");
         if (aprobadas.isEmpty()) {
             texto.append(" ninguna materia aprobada todavía.");

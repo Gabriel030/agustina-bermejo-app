@@ -228,7 +228,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor5", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
-                "30111222", "Calle Falsa", "123", null, "Ciudad", null, null, null);
+                "30111222", null, "Calle Falsa", "123", null, "Ciudad", null, null, null);
 
         mockMvc.perform(post("/prospects/{id}/confirm", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -264,7 +264,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor6", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
-                "30222333", "Calle Falsa", "123", null, "Ciudad", null, null, null);
+                "30222333", null, "Calle Falsa", "123", null, "Ciudad", null, null, null);
 
         mockMvc.perform(post("/prospects/{id}/confirm", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)

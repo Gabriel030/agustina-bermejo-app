@@ -70,7 +70,7 @@ describe('DetalleCurso', () => {
     expect(screen.queryByText('Cohorte')).not.toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
     await user.type(calleInput, 'Calle Falsa');
     await user.type(numeroInput, '123');
@@ -108,7 +108,7 @@ describe('DetalleCurso', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
     await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
     await user.type(calleInput, 'Calle Falsa');
     await user.type(numeroInput, '123');
@@ -181,7 +181,7 @@ describe('DetalleCurso', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
     await user.type(screen.getByPlaceholderText('tu@email.com'), 'alumno@example.com');
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
     await user.type(calleInput, 'Calle Falsa');
     await user.type(numeroInput, '123');

@@ -76,7 +76,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
 
     private CreateStaffRequest staffRequest(String email, String dni, String role) {
         return new CreateStaffRequest(
-                "Nombre", "Apellido", email, dni,
+                "Nombre", "Apellido", email, dni, null,
                 "Calle", "1", null, "Ciudad", null, null, null, role);
     }
 

@@ -1,5 +1,7 @@
 import { CheckCircle2, Mail } from 'lucide-react';
 
+import { documentLabel } from '@/lib/documentType';
+
 export function ResumenStep({ alumno, esAnonimo }) {
   const { nombre, apellido, email, telefono, dni, street, number, floor, city, state, postalCode, country } = alumno;
 
@@ -17,7 +19,7 @@ export function ResumenStep({ alumno, esAnonimo }) {
       {(dni || street || city) && (
         <div className="rounded-lg border border-border p-4 flex flex-col gap-3">
           <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Datos de confirmación</p>
-          {dni && <Row label="DNI" value={dni} />}
+          {dni && <Row label={documentLabel(alumno.documentType)} value={dni} />}
           {street && <Row label="Domicilio" value={[street, number, floor].filter(Boolean).join(' ')} />}
           {city && <Row label="Ciudad" value={[city, state].filter(Boolean).join(', ')} />}
           {postalCode && <Row label="Código postal" value={postalCode} />}
@@ -41,7 +43,7 @@ export function ResumenStep({ alumno, esAnonimo }) {
           <div>
             <p className="text-[13px] font-medium text-ink">Alumno confirmado</p>
             <p className="mt-0.5 text-[12px] text-ink-soft">
-              Le enviamos un email a <strong>{email}</strong> para que elija su contraseña. Va a ingresar con su DNI como usuario.
+              Le enviamos un email a <strong>{email}</strong> para que elija su contraseña. Va a ingresar con su documento como usuario.
             </p>
           </div>
         </div>

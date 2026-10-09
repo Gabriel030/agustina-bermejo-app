@@ -115,7 +115,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     await user.click(await screen.findByText('Marzo 2026'));
 
     // Email ya viene precargado de /me (Sofía se registró con email) — solo falta DNI/dirección.
-    await user.type(screen.getByPlaceholderText('DNI sin puntos'), '30111222');
+    await user.type(screen.getByLabelText('Número de documento'), '30111222');
     const [, , , , calleInput, numeroInput, , ciudadInput] = screen.getAllByRole('textbox');
     await user.type(calleInput, 'Calle Falsa');
     await user.type(numeroInput, '123');

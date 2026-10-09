@@ -1,12 +1,14 @@
 package com.red_escuela.backend.identity.dto;
 
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.shared.domain.DocumentType;
 
 public record StaffRecordResponse(
         Long id,
         String nombre,
         String apellido,
         String dni,
+        DocumentType documentType,
         String username,
         String email,
         String telefono,
@@ -20,6 +22,7 @@ public record StaffRecordResponse(
                 person.getName(),
                 person.getLastname(),
                 person.getDni(),
+                person.getDocumentType(),
                 person.getUsername(),
                 person.emailValue(),
                 person.getPhoneNumber(),

@@ -3,6 +3,7 @@ import { Camera, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { SEX_LABEL } from '@/lib/person';
+import { DocumentField } from '@/components/DocumentField';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -170,6 +171,7 @@ function TabDatosPropios() {
         telefono: valores.telefono,
         sexo: valores.sexo,
         dni: valores.dni,
+        documentType: valores.documentType ?? 'DNI',
         street: valores.street,
         number: valores.number,
         floor: valores.floor,
@@ -213,11 +215,12 @@ function TabDatosPropios() {
         <CampoFormulario label="Apellido">
           <Input value={valores.apellido ?? ''} disabled className="bg-neutral-bg/50" />
         </CampoFormulario>
-        <CampoFormulario label="DNI">
-          <Input
-            value={valores.dni ?? ''}
-            onChange={(e) => set('dni', e.target.value)}
-            placeholder="Número de DNI"
+        <CampoFormulario label="Documento">
+          <DocumentField
+            type={valores.documentType}
+            number={valores.dni}
+            onTypeChange={(v) => set('documentType', v)}
+            onNumberChange={(v) => set('dni', v)}
           />
         </CampoFormulario>
         <CampoFormulario label="Sexo">

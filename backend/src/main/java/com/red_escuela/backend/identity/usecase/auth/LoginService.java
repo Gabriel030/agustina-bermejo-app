@@ -9,6 +9,7 @@ import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.domain.DocumentType;
 import com.red_escuela.backend.shared.domain.InvalidEmailAddressException;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +44,7 @@ public class LoginService implements LoginUseCase {
     public AuthTokens login(LoginCommand command) {
         Optional<Person> personOpt = personRepository.findByUsername(command.username())
                 .or(() -> findByEmailIfValid(command.username()))
-                .or(() -> personRepository.findByDni(command.username()));
+                .or(() -> personRepository.findByDocumentTypeAndDni(DocumentType.DNI, command.username()));
 
         if (personOpt.isEmpty()) {
             recordAttempt(command.username(), null, false, command.ipAddress());
