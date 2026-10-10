@@ -1,7 +1,5 @@
 package com.red_escuela.backend.identity.controller;
 
-import com.red_escuela.backend.billing.dto.CreateCreditNoteRequest;
-import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.AdminEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetStudentBillingOverviewUseCase;
 import com.red_escuela.backend.enrollment.dto.StudentDocumentResponse;
@@ -19,8 +17,6 @@ import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseC
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteUseCase;
-import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -43,23 +39,18 @@ public class StudentController {
     private final WithdrawStudentUseCase withdrawStudentUseCase;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
     private final GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase;
-    private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
-    private final CreateManualCreditNoteUseCase createManualCreditNoteUseCase;
     private final StudentRepository studentRepository;
     private final StudentDocumentRepository studentDocumentRepository;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
                               WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
-                              GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase, ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
-                              CreateManualCreditNoteUseCase createManualCreditNoteUseCase, StudentRepository studentRepository,
+                              GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase, StudentRepository studentRepository,
                               StudentDocumentRepository studentDocumentRepository) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
         this.getStudentBillingOverviewUseCase = getStudentBillingOverviewUseCase;
-        this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
-        this.createManualCreditNoteUseCase = createManualCreditNoteUseCase;
         this.studentRepository = studentRepository;
         this.studentDocumentRepository = studentDocumentRepository;
     }
@@ -110,16 +101,4 @@ public class StudentController {
 
 
 
-    @GetMapping("/{id}/credit-notes")
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public List<CreditNoteResponse> creditNotes(@PathVariable Long id) {
-        return listCreditNotesForStudentUseCase.list(id).stream().map(CreditNoteResponse::from).toList();
-    }
-
-    @PostMapping("/{id}/credit-notes")
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
-    public CreditNoteResponse createCreditNote(@PathVariable Long id, @Valid @RequestBody CreateCreditNoteRequest request) {
-        return CreditNoteResponse.from(createManualCreditNoteUseCase.create(id, request));
-    }
 }

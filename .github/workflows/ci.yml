@@ -66,7 +66,7 @@ jobs:
         run: |
           set -uo pipefail
           changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
-          if printf '%s\n' "$changed" | grep -qE '^backend/(pom\.xml|src/main/java/com/red_escuela/backend/(shared/domain|billing/(operation|configuration/(policy|domain)|authorization/domain|invoice/(domain|policy|operation)|account/(domain|policy)|planning/(policy|domain|service)|collections/policy))/)'; then
+          if printf '%s\n' "$changed" | grep -qE '^backend/(pom\.xml|src/main/java/com/red_escuela/backend/(shared/domain|billing/(operation|configuration/(policy|domain)|authorization/domain|invoice/(domain|policy|operation)|account/(domain|policy)|note/(domain|policy)|planning/(policy|domain|service)|collections/policy))/)'; then
             if ! printf '%s\n' "$changed" | grep -qx 'docs/testing/local-test-log.md'; then
               echo "This PR changes code that PIT mutates (targetClasses of the mutation profile): add its local PIT run to docs/testing/local-test-log.md"
               exit 1

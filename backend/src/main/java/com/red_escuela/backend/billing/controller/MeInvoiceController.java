@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.controller;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
 
 import com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse;
-import com.red_escuela.backend.billing.dto.CreditNoteResponse;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnCourseEnrollmentBillingStatusUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.GetOwnProgramEnrollmentBillingStatusUseCase;
@@ -14,7 +13,6 @@ import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
-import com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.FindOwnPaymentReceiptsUseCase;
 import com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase;
@@ -42,7 +40,6 @@ public class MeInvoiceController {
     private final FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase;
     private final CreateMpPreferenceUseCase createMpPreferenceUseCase;
     private final GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase;
     private final GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase;
@@ -50,7 +47,6 @@ public class MeInvoiceController {
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
                                 CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
-                                ListCreditNotesForStudentUseCase listCreditNotesForStudentUseCase,
                                 CreateMpPreferenceUseCase createMpPreferenceUseCase,
                                 GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase,
                                 GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase,
@@ -62,16 +58,9 @@ public class MeInvoiceController {
         this.findOwnPaymentReceiptsUseCase = findOwnPaymentReceiptsUseCase;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.listCreditNotesForStudentUseCase = listCreditNotesForStudentUseCase;
         this.createMpPreferenceUseCase = createMpPreferenceUseCase;
         this.getOwnCourseEnrollmentBillingStatusUseCase = getOwnCourseEnrollmentBillingStatusUseCase;
         this.getOwnProgramEnrollmentBillingStatusUseCase = getOwnProgramEnrollmentBillingStatusUseCase;
-    }
-
-    @GetMapping("/credit-notes")
-    public List<CreditNoteResponse> myCreditNotes() {
-        Long studentId = currentStudentService.resolveCurrentStudent().getId();
-        return listCreditNotesForStudentUseCase.list(studentId).stream().map(CreditNoteResponse::from).toList();
     }
 
     @PostMapping("/invoices/{id}/mp-preference")

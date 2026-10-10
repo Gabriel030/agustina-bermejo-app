@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.TransitionExpectation;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -51,7 +52,7 @@ class InvoicePaymentStatusProperties {
             InvoicePaymentEvent.CREDIT_NOTE_APPLIED_TO_PAID_INVOICE,
             InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED};
 
-    private static boolean rejectionIsJustified(int operation, InvoicePaymentStatus before, InvoiceAmounts amountsBefore, RuntimeException rejected) {
+    private static boolean rejectionIsJustified(int operation, InvoicePaymentStatus before, InvoiceAmounts amountsBefore, NonNegativeMoney creditableBefore, RuntimeException rejected) {
         InvoicePaymentEvent intended = INTENDED[operation];
         if (literalTarget(before, intended).isEmpty()) {
             return true;
@@ -59,6 +60,10 @@ class InvoicePaymentStatusProperties {
         boolean reversal = operation == 4 || operation == 5;
         if (reversal && !amountsBefore.hasPaidAmount()) {
             return true;
+        }
+        if (operation >= 7 && operation <= 10 && rejected instanceof com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException) {
+            NonNegativeMoney requested = operation == 7 || operation == 8 ? amountsBefore.outstandingAmount() : ars("1.00");
+            return requested.value().isGreaterThan(creditableBefore.value());
         }
         if (operation == 11 && !amountsBefore.outstandingAmount().equals(ars("1.00"))) {
             return rejected instanceof com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
@@ -91,13 +96,14 @@ class InvoicePaymentStatusProperties {
             InvoicePaymentStatus before = invoice.getPaymentStatus();
             InvoiceAmounts amountsBefore = invoice.getAmounts();
             var creditedBefore = invoice.getLines().get(0).getCreditedAmount();
+            NonNegativeMoney creditableBefore = invoice.getLines().get(0).calculateCreditableAmount();
             int rows = invoice.getStatusChanges().size();
             try {
                 InvoicePaymentEvent event = apply(invoice, operation);
                 assertThat(literalTarget(before, event)).contains(invoice.getPaymentStatus());
                 assertThat(invoice.getStatusChanges()).hasSize(rows + 1);
             } catch (RuntimeException rejected) {
-                assertThat(rejectionIsJustified(operation, before, amountsBefore, rejected))
+                assertThat(rejectionIsJustified(operation, before, amountsBefore, creditableBefore, rejected))
                         .as("operation %s rejected from %s with %s: %s", operation, before, amountsBefore, rejected).isTrue();
                 assertThat(invoice.getPaymentStatus()).isEqualTo(before);
                 assertThat(invoice.getAmounts()).isEqualTo(amountsBefore);
