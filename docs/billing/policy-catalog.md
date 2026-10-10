@@ -63,7 +63,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 7 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
 | 8 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
 | 9 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
-| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167 |
+| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167, D-202, D-127 |
 
 ## Momento ENROLLMENT_FEE_PLANNING
 
@@ -88,6 +88,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 3 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
 | 4 | EnrollmentFeeSlotNotBeforeEntryPolicy | NOT_REQUIRED_BEFORE_ENTRY | D-020 |
 | 5 | EnrollmentFeeExemptionGrantedPolicy | NOT_REQUIRED_EXEMPTION_GRANTED | D-027 |
+
+## Momento INVOICE_CANCELLATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CancellationJustificationPolicy | CREDIT_NOTE_JUSTIFICATION_REQUIRED | D-165, D-127 |
+| 2 | CancellationReasonPolicy | INVALID_CREDIT_NOTE_REASON | D-127, D-238 |
+| 3 | SystemInitiatedCancellationPolicy | CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED | D-165, D-229, D-300, D-242 |
+| 4 | CancellationInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-127 |
+| 5 | CancellationByFullCreditNotePolicy | ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION | D-127, D-091 |
 
 ## Momento INVOICE_DISCOUNT_SELECTION
 
@@ -267,6 +277,13 @@ Transiciones válidas: 18 de 78. Pares inválidos: (sin estado) × BANK_TRANSFER
 - Pre-procesamiento (en orden): —
 - Eventos que publica: ConfigurationVersionCancelledEvent
 - Post-procesamiento de ConfigurationVersionCancelledEvent: BillingOperationNotificationListener#notifyConfigurationVersionCancelled
+
+## Operación CANCEL_INVOICE
+
+- Validaciones (momentos): INVOICE_CANCELLATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: CreditNoteIssuedEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
 
 ## Operación CHANGE_BILLING_CONFIGURATION
 
