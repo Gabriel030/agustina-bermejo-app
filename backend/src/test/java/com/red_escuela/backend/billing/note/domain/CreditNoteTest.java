@@ -89,7 +89,9 @@ class CreditNoteTest {
     void theApplicationIsADebtReductionUnlessItIsACancellationOfTheWholeOutstanding() {
         Invoice invoice = unpaid();
 
-        assertThat(issue(invoice, CreditNoteReason.BILLING_ERROR, "x", "80000.00").toInvoiceCreditNoteApplication(invoice.getAmounts().outstandingAmount()).kind())
+        assertThatThrownBy(() -> issue(invoice, CreditNoteReason.BILLING_ERROR, "x", "80000.00").toInvoiceCreditNoteApplication(invoice.getAmounts().outstandingAmount()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(issue(invoice, CreditNoteReason.BILLING_ERROR, "x", "79999.99").toInvoiceCreditNoteApplication(invoice.getAmounts().outstandingAmount()).kind())
                 .isEqualTo(CreditNoteApplicationKind.DEBT_REDUCTION);
         assertThat(issue(invoice, CreditNoteReason.CANCELLATION, "x", "80000.00").toInvoiceCreditNoteApplication(invoice.getAmounts().outstandingAmount()).kind())
                 .isEqualTo(CreditNoteApplicationKind.CANCELLATION);

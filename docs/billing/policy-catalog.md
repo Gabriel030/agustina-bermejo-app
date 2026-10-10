@@ -57,13 +57,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 1 | CreditNoteJustificationRequiredPolicy | CREDIT_NOTE_JUSTIFICATION_REQUIRED | D-165 |
 | 2 | CreditNoteReasonAllowedPolicy | INVALID_CREDIT_NOTE_REASON | D-165, D-238 |
 | 3 | CreditNoteReferencesIssuedInvoicePolicy | CREDIT_NOTE_INVOICE_REFERENCE_REQUIRED | D-244 |
-| 4 | CreditNoteRecipientMatchesInvoicePolicy | CREDIT_NOTE_RECIPIENT_MISMATCH | D-244 |
-| 5 | CreditNoteInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-165 |
-| 6 | CreditNoteLinesBelongToInvoicePolicy | CREDIT_NOTE_LINES_INVALID | D-165 |
-| 7 | CreditNoteDestinationUnchangedPolicy | CREDIT_NOTE_DISTRIBUTION_MISMATCH | D-165 |
-| 8 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
-| 9 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
-| 10 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
+| 4 | CreditNoteInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-165 |
+| 5 | CreditNoteLinesBelongToInvoicePolicy | CREDIT_NOTE_LINES_INVALID | D-165 |
+| 6 | CreditNoteDestinationUnchangedPolicy | CREDIT_NOTE_DISTRIBUTION_MISMATCH | D-165 |
+| 7 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
+| 8 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
+| 9 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
+| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167, D-202 |
 
 ## Momento ENROLLMENT_FEE_PLANNING
 

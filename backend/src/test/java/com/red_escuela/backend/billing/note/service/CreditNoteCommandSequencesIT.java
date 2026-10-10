@@ -40,6 +40,8 @@ class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
         Long requester = newStaffPerson().getId();
         int accepted = 0;
         int rejected = 0;
+        int attempts = 0;
+        long notesBefore = creditNoteCount();
 
         for (int sequence = 0; sequence < SEQUENCES; sequence++) {
             Long studentId = newStudentId();
@@ -61,6 +63,7 @@ class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
                         Long invoiceId = invoices.get(random.nextInt(invoices.size()));
                         String status = jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId);
                         BigDecimal creditAmount = amount.min(new BigDecimal("1500.00"));
+                        attempts++;
                         try {
                             pipeline.runOperation(operation, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR, "Error",
                                     List.of(new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(creditAmount, com.red_escuela.backend.shared.domain.Currency.ARS))), "PAID".equals(status) ? CreditNoteDestination.FREE_CREDIT : CreditNoteDestination.DEBT_OFFSET,
@@ -75,7 +78,9 @@ class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
             }
         }
         assertThat(accepted).isPositive();
-        assertThat(rejected).isNotNegative();
+        assertThat(accepted + rejected).isEqualTo(attempts);
+        assertThat(creditNoteCount() - notesBefore).isEqualTo(accepted);
+        invariants.assertAllBillingInvariantsHold();
         assertThat(jdbc.queryForList("select 1 from invoice_line where credited_amount + free_credited_amount > amount - discount_amount")).isEmpty();
     }
 }

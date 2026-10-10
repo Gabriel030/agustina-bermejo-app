@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CreditNoteCutoverMigrationTest {
 
@@ -57,6 +58,31 @@ class CreditNoteCutoverMigrationTest {
             assertThat(jdbc.queryForObject("select count(*) from pg_constraint where conname = 'fk_current_account_entry_credit_note'", Long.class)).isEqualTo(1L);
             assertThat(jdbc.queryForObject("select count(*) from pg_trigger where tgname = 'trg_current_account_entry_append_only' and tgenabled = 'O'", Long.class)).isEqualTo(1L);
             assertThat(jdbc.queryForObject("select count(*) from credit_note", Long.class)).isZero();
+            assertThat(jdbc.queryForObject("select character_maximum_length from information_schema.columns where table_name = 'authorization_request' and column_name = 'reason'", Integer.class))
+                    .isEqualTo(1200);
+            assertThat(jdbc.queryForObject("select character_maximum_length from information_schema.columns where table_name = 'authorization_request_status_change' and column_name = 'reason'", Integer.class))
+                    .isEqualTo(1200);
+        }
+    }
+
+    @Test
+    @Tag("D-144")
+    void theMigrationAbortsWhenThereAreCreditBalancePaymentsOrLegacyCreditApplications() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("102").load().migrate();
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            jdbc.update("insert into address default values");
+            Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
+            jdbc.update("insert into person (name, last_name, dni, email, username, address_id) values ('Seed', 'Person', '30111222', 'seed@example.com', 'seed.person', ?)", addressId);
+            Long personId = jdbc.queryForObject("select max(id) from person", Long.class);
+            jdbc.update("insert into payment (amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at) "
+                    + "values (100.00, 'ARS', 'CREDIT_BALANCE', ?, now(), 'CONFIRMED', now(), now())", personId);
+
+            assertThatThrownBy(() -> Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("103").load().migrate())
+                    .hasMessageContaining("V103 no migra pagos con saldo a favor");
+            assertThat(jdbc.queryForObject("select count(*) from payment", Long.class)).isEqualTo(1L);
         }
     }
 

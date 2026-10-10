@@ -1,3 +1,13 @@
+do $$
+begin
+    if exists (select 1 from payment where method = 'CREDIT_BALANCE') or exists (select 1 from credit_application) then
+        raise exception 'V103 no migra pagos con saldo a favor ni aplicaciones de notas de credito viejas: hay filas en payment (CREDIT_BALANCE) o en credit_application';
+    end if;
+end $$;
+
+alter table authorization_request alter column reason type varchar(1200);
+alter table authorization_request_status_change alter column reason type varchar(1200);
+
 alter table current_account_entry disable trigger trg_current_account_entry_append_only;
 
 create temporary table legacy_credit_note_entry on commit drop as

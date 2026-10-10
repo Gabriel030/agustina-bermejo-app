@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCredit
 import com.red_escuela.backend.billing.note.exception.CreditNoteDistributionMismatchException;
 import com.red_escuela.backend.billing.note.exception.CreditNoteIssuingRejectedException;
 import com.red_escuela.backend.billing.note.exception.CreditNoteJustificationRequiredException;
+import com.red_escuela.backend.billing.note.exception.CreditNoteLinesInvalidException;
 import com.red_escuela.backend.billing.note.exception.CreditNoteRefundExceedsPaidAmountException;
 import com.red_escuela.backend.billing.note.exception.InvalidCreditNoteReasonException;
 import com.red_escuela.backend.billing.note.exception.PendingBankTransferOnInvoiceException;
@@ -23,6 +24,7 @@ public final class CreditNoteIssuingRejections {
             case "PENDING_BANK_TRANSFER_ON_INVOICE" -> new PendingBankTransferOnInvoiceException(violations);
             case "CREDIT_NOTE_DISTRIBUTION_MISMATCH" -> new CreditNoteDistributionMismatchException(violations);
             case "CREDIT_NOTE_JUSTIFICATION_REQUIRED" -> new CreditNoteJustificationRequiredException(violations);
+            case "CREDIT_NOTE_LINES_INVALID" -> new CreditNoteLinesInvalidException(violations);
             case "INVALID_CREDIT_NOTE_REASON" -> new InvalidCreditNoteReasonException(violations);
             default -> new CreditNoteIssuingRejectedException(violations);
         };

@@ -37,11 +37,6 @@ public class InvoiceCreditAccessService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<String> findAccountOwnerDocumentNumber(Long studentCurrentAccountId) {
-        return invoiceRepository.findAccountOwnerDocumentNumber(studentCurrentAccountId);
-    }
-
-    @Transactional(readOnly = true)
     public Optional<Long> findAccountOwnerPersonId(Long invoiceId) {
         return invoiceRepository.findOwnerPersonByInvoiceId(invoiceId).map(person -> person.getId());
     }

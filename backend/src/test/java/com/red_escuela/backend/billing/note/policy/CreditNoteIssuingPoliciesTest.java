@@ -36,8 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-238")
 class CreditNoteIssuingPoliciesTest {
 
-    private static final String RECIPIENT = "30111222";
-
     private static Invoice unpaid() {
         return InvoiceTestData.withId(InvoiceTestData.issuedMonthly("80000.00"), 5L);
     }
@@ -58,16 +56,16 @@ class CreditNoteIssuingPoliciesTest {
         return new IssueCreditNoteCommand(5L, reason, justification, lines, destination, 9L, false, null);
     }
 
-    private static CreditNoteIssuingContext context(IssueCreditNoteCommand command, Invoice invoice, String creditNoteRecipient) {
-        return new CreditNoteIssuingContext(command, CreditedInvoiceFacts.of(invoice), creditNoteRecipient);
+    private static CreditNoteIssuingContext context(IssueCreditNoteCommand command, Invoice invoice) {
+        return new CreditNoteIssuingContext(command, CreditedInvoiceFacts.of(invoice));
     }
 
     private static CreditNoteIssuingContext unpaidContext(String amount) {
-        return context(command(CreditNoteReason.BILLING_ERROR, "Error", CreditNoteDestination.DEBT_OFFSET, amount), unpaid(), RECIPIENT);
+        return context(command(CreditNoteReason.BILLING_ERROR, "Error", CreditNoteDestination.DEBT_OFFSET, amount), unpaid());
     }
 
     private static CreditNoteIssuingContext paidContext(String amount) {
-        return context(command(CreditNoteReason.BILLING_ERROR, "Error", CreditNoteDestination.FREE_CREDIT, amount), reducedByFortyThousandAndPaid(), RECIPIENT);
+        return context(command(CreditNoteReason.BILLING_ERROR, "Error", CreditNoteDestination.FREE_CREDIT, amount), reducedByFortyThousandAndPaid());
     }
 
     private static boolean allows(Policy<CreditNoteIssuingContext> policy, CreditNoteIssuingContext context) {
@@ -94,7 +92,7 @@ class CreditNoteIssuingPoliciesTest {
         IssueCreditNoteCommand onLineTwo = new IssueCreditNoteCommand(5L, CreditNoteReason.BILLING_ERROR, "x",
                 List.of(new CreditNoteLineAmount(2, com.red_escuela.backend.shared.domain.Money.of(new BigDecimal("1.00"), com.red_escuela.backend.shared.domain.Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
 
-        assertThat(allows(new CreditNoteLinesWithinCreditableAmountPolicy(), context(onLineTwo, unpaid(), RECIPIENT))).isFalse();
+        assertThat(allows(new CreditNoteLinesWithinCreditableAmountPolicy(), context(onLineTwo, unpaid()))).isFalse();
     }
 
     @Test
@@ -124,8 +122,8 @@ class CreditNoteIssuingPoliciesTest {
                 List.of(new InvoiceLineCredit(1, ars("30000.00")))), DUE_DATE, ACTOR);
         Policy<CreditNoteIssuingContext> policy = new CreditNoteRefundWithinPaidAmountPolicy();
 
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.00"), invoice, RECIPIENT))).isTrue();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.01"), invoice, RECIPIENT))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.00"), invoice))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.01"), invoice))).isFalse();
     }
 
     @Test
@@ -135,7 +133,7 @@ class CreditNoteIssuingPoliciesTest {
         assertThat(allows(policy, unpaidContext("1.00"))).isTrue();
         assertThat(allows(policy, paidContext("1.00"))).isTrue();
         CreditNoteIssuingContext paidMeanwhile = context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"),
-                reducedByFortyThousandAndPaid(), RECIPIENT);
+                reducedByFortyThousandAndPaid());
         assertThat(allows(policy, paidMeanwhile)).isFalse();
         assertThat(codeOf(policy, paidMeanwhile)).isEqualTo("CREDIT_NOTE_DISTRIBUTION_MISMATCH");
     }
@@ -145,11 +143,11 @@ class CreditNoteIssuingPoliciesTest {
         Policy<CreditNoteIssuingContext> policy = new CreditNoteJustificationRequiredPolicy();
         Invoice invoice = unpaid();
 
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "a".repeat(1000), CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isTrue();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "a".repeat(1001), CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "   ", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, null, CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(codeOf(policy, context(command(CreditNoteReason.BILLING_ERROR, null, CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT)))
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "a".repeat(1000), CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "a".repeat(1001), CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "   ", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, null, CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
+        assertThat(codeOf(policy, context(command(CreditNoteReason.BILLING_ERROR, null, CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice)))
                 .isEqualTo("CREDIT_NOTE_JUSTIFICATION_REQUIRED");
     }
 
@@ -158,23 +156,24 @@ class CreditNoteIssuingPoliciesTest {
         Policy<CreditNoteIssuingContext> policy = new CreditNoteReasonAllowedPolicy();
         Invoice invoice = unpaid();
 
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isTrue();
-        assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_ANNULMENT, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isTrue();
-        assertThat(allows(policy, context(command(CreditNoteReason.WITHDRAWAL, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice, RECIPIENT))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_ANNULMENT, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.WITHDRAWAL, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), invoice))).isFalse();
         assertThat(CreditNoteReason.valueOf("BILLING_ERROR")).isNotNull();
         assertThat(CreditNoteReason.values()).extracting(Enum::name).doesNotContain("RETROACTIVE_SCHOLARSHIP");
     }
 
     @Test
-    void theCreditNoteGoesToTheSameRecipientAsTheInvoice() {
-        Policy<CreditNoteIssuingContext> policy = new CreditNoteRecipientMatchesInvoicePolicy();
+    void coveringTheWholeUnpaidDebtRequiresCancellationInsteadOfACreditNote() {
+        Policy<CreditNoteIssuingContext> policy = new CreditNoteFullDebtRequiresCancellationPolicy();
 
-        assertThat(allows(policy, unpaidContext("1.00"))).isTrue();
-        CreditNoteIssuingContext other = context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), unpaid(), "99999999");
-        assertThat(allows(policy, other)).isFalse();
-        assertThat(codeOf(policy, other)).isEqualTo("CREDIT_NOTE_RECIPIENT_MISMATCH");
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), unpaid(), null))).isFalse();
+        assertThat(allows(policy, unpaidContext("79999.99"))).isTrue();
+        assertThat(allows(policy, unpaidContext("80000.00"))).isFalse();
+        assertThat(codeOf(policy, unpaidContext("80000.00"))).isEqualTo("CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION");
+        assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_ANNULMENT, "x", CreditNoteDestination.DEBT_OFFSET, "80000.00"), unpaid()))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "80000.00"), unpaid()))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.00"), reducedByFortyThousandAndPaid()))).isTrue();
     }
 
     @Test
@@ -182,7 +181,7 @@ class CreditNoteIssuingPoliciesTest {
         Policy<CreditNoteIssuingContext> policy = new CreditNoteReferencesIssuedInvoicePolicy();
 
         assertThat(allows(policy, unpaidContext("1.00"))).isTrue();
-        CreditNoteIssuingContext withoutInvoice = new CreditNoteIssuingContext(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), null, RECIPIENT);
+        CreditNoteIssuingContext withoutInvoice = new CreditNoteIssuingContext(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), null);
         assertThat(allows(policy, withoutInvoice)).isFalse();
         assertThat(codeOf(policy, withoutInvoice)).isEqualTo("CREDIT_NOTE_INVOICE_REFERENCE_REQUIRED");
     }
@@ -194,7 +193,7 @@ class CreditNoteIssuingPoliciesTest {
         underReview.markPaymentUnderReview(DUE_DATE, ACTOR, "comprobante");
 
         assertThat(allows(policy, unpaidContext("1.00"))).isTrue();
-        CreditNoteIssuingContext context = context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), underReview, RECIPIENT);
+        CreditNoteIssuingContext context = context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00"), underReview);
         assertThat(allows(policy, context)).isFalse();
         assertThat(codeOf(policy, context)).isEqualTo("PENDING_BANK_TRANSFER_ON_INVOICE");
     }
@@ -205,20 +204,20 @@ class CreditNoteIssuingPoliciesTest {
         Invoice invoice = unpaid();
 
         assertThat(allows(policy, unpaidContext("1.00"))).isTrue();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "0.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "-1.00"), invoice, RECIPIENT))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00", "1.00"), invoice, RECIPIENT))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "0.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "-1.00"), invoice))).isFalse();
+        assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00", "1.00"), invoice))).isFalse();
         IssueCreditNoteCommand repeated = new IssueCreditNoteCommand(5L, CreditNoteReason.BILLING_ERROR, "x",
                 List.of(new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(BigDecimal.ONE, com.red_escuela.backend.shared.domain.Currency.ARS)), new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(BigDecimal.ONE, com.red_escuela.backend.shared.domain.Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
-        assertThat(allows(policy, context(repeated, invoice, RECIPIENT))).isFalse();
+        assertThat(allows(policy, context(repeated, invoice))).isFalse();
     }
 
     @Test
     void everyPolicyNamesItselfInItsVerdicts() {
         List<Policy<CreditNoteIssuingContext>> policies = List.of(new CreditNoteLinesBelongToInvoicePolicy(), new CreditNoteRefundWithinPaidAmountPolicy(),
                 new CreditNoteWithinOutstandingAmountPolicy(), new CreditNoteLinesWithinCreditableAmountPolicy(), new CreditNoteJustificationRequiredPolicy(),
-                new CreditNoteReasonAllowedPolicy(), new CreditNoteRecipientMatchesInvoicePolicy(), new CreditNoteReferencesIssuedInvoicePolicy(),
+                new CreditNoteReasonAllowedPolicy(), new CreditNoteFullDebtRequiresCancellationPolicy(), new CreditNoteReferencesIssuedInvoicePolicy(),
                 new CreditNoteDestinationUnchangedPolicy(), new CreditNoteInvoiceNotUnderReviewPolicy());
 
         policies.forEach(policy -> assertThat(policy.ruleName()).isEqualTo(policy.getClass().getSimpleName()));
@@ -232,7 +231,8 @@ class CreditNoteIssuingPoliciesTest {
         assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_DISTRIBUTION_MISMATCH"))).isInstanceOf(CreditNoteDistributionMismatchException.class);
         assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_JUSTIFICATION_REQUIRED"))).isInstanceOf(CreditNoteJustificationRequiredException.class);
         assertThat(CreditNoteIssuingRejections.rejectionOf(violation("INVALID_CREDIT_NOTE_REASON"))).isInstanceOf(InvalidCreditNoteReasonException.class);
-        assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_RECIPIENT_MISMATCH"))).isInstanceOf(CreditNoteIssuingRejectedException.class);
+        assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION"))).isInstanceOf(CreditNoteIssuingRejectedException.class);
+        assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_LINES_INVALID"))).isInstanceOf(com.red_escuela.backend.billing.note.exception.CreditNoteLinesInvalidException.class);
     }
 
     private static List<PolicyViolation> violation(String code) {

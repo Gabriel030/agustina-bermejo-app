@@ -100,9 +100,7 @@ public class IssueCreditNoteOperation implements BillingOperation<IssueCreditNot
         accountService.recordCreditNoteIssuedCredit(account, note.getId(), note.getOffsetAmount(), note.getFreeCreditAmount(), businessDate,
                 "Nota de crédito " + note.getCreditNoteNumber().value() + " sobre la factura " + note.getInvoiceNumber());
         publishInvoiceSettledByCreditNote(invoice, account, businessDate);
-        if (!note.getFreeCreditAmount().value().isZero()) {
-            allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, actor);
-        }
+        allocationService.allocateAccountCreditToOldestInvoices(account, businessDate, actor);
         log.info("Nota de crédito emitida: numero={}, factura={}, motivo={}, offset={}, libre={}, authorizationRequestId={}", note.getCreditNoteNumber().value(),
                 note.getInvoiceNumber(), note.getReason(), note.getOffsetAmount().value().amount(), note.getFreeCreditAmount().value().amount(),
                 note.getAuthorizationRequestId());
@@ -118,8 +116,7 @@ public class IssueCreditNoteOperation implements BillingOperation<IssueCreditNot
     }
 
     private void requireAllowed(IssueCreditNoteCommand command, Invoice invoice) {
-        String creditNoteRecipient = invoices.findAccountOwnerDocumentNumber(invoice.getStudentCurrentAccountId()).orElse(null);
-        issuingPolicies.evaluateRulesUntilFirstViolation(new CreditNoteIssuingContext(command, CreditedInvoiceFacts.of(invoice), creditNoteRecipient))
+        issuingPolicies.evaluateRulesUntilFirstViolation(new CreditNoteIssuingContext(command, CreditedInvoiceFacts.of(invoice)))
                 .throwIfDenied(CreditNoteIssuingRejections::rejectionOf);
     }
 

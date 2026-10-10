@@ -165,9 +165,6 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query("select a.studentId from StudentCurrentAccount a, Invoice i where i.id = :invoiceId and a.id = i.studentCurrentAccountId")
     Optional<Long> findOwnerStudentIdByInvoiceId(@Param("invoiceId") Long invoiceId);
 
-    @Query("select s.person.dni from StudentCurrentAccount a, Student s where a.id = :accountId and s.id = a.studentId")
-    Optional<String> findAccountOwnerDocumentNumber(@Param("accountId") Long accountId);
-
     @Query("select s.person from StudentCurrentAccount a, Invoice i, Student s where i.id = :invoiceId and a.id = i.studentCurrentAccountId and s.id = a.studentId")
     Optional<Person> findOwnerPersonByInvoiceId(@Param("invoiceId") Long invoiceId);
 

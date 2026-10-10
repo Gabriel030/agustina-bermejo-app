@@ -30,6 +30,8 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
 
     @Autowired
     private NotificationRepository notificationRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.authorization.service.AuthorizationRequestExpirer authorizationRequestExpirer;
 
     private record Scenario(Long studentId, Long accountId, Long invoiceId) {
     }
@@ -248,14 +250,107 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("D-244")
-    void aCreditNoteWhoseRecipientDiffersFromTheInvoiceOneIsRejected() throws Exception {
+    void aNationalIdCorrectedAfterIssuanceDoesNotBlockTheCreditNoteAndTheNoteKeepsTheInvoiceRecipient() throws Exception {
         Scenario scenario = unpaidInvoice("80000.00");
-        jdbc.update("update invoice set student_snapshot = jsonb_set(student_snapshot, '{documentNumber}', '\"00000000\"') where id = ?", scenario.invoiceId());
+        String snapshotBefore = jdbc.queryForObject("select student_snapshot ->> 'documentNumber' from invoice where id = ?", String.class, scenario.invoiceId());
+        jdbc.update("update person set dni = '99999999' where id = (select person_id from student where id = ?)", scenario.studentId());
 
-        mockMvc.perform(post("/invoices/" + scenario.invoiceId() + "/credit-notes").header("Authorization", "Bearer " + newStaff("DIRECTOR").token())
-                        .contentType(APPLICATION_JSON).content(creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00")))
+        requestCreditNote(scenario.invoiceId(), newStaff("DIRECTOR"), creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00"), 201);
+
+        assertThat(jdbc.queryForObject("select recipient_snapshot ->> 'documentNumber' from credit_note where invoice_id = ?", String.class, scenario.invoiceId()))
+                .isEqualTo(snapshotBefore).isNotEqualTo("99999999");
+    }
+
+    @Test
+    @Tag("D-167")
+    @Tag("D-202")
+    void aCreditNoteThatCoversTheWholeUnpaidDebtIsRejectedBecauseThatIsACancellation() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+        Staff director = newStaff("DIRECTOR");
+        String url = "/invoices/" + scenario.invoiceId() + "/credit-notes";
+
+        mockMvc.perform(post(url).header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
+                        .content(creditNoteBody("BILLING_ERROR", "Error", 1, "80000.00")))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.violations[0].code").value("CREDIT_NOTE_RECIPIENT_MISMATCH"));
+                .andExpect(jsonPath("$.violations[0].code").value("CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION"))
+                .andExpect(jsonPath("$.violations[0].message").value("Para anular toda la deuda de la factura se usa la cancelación, no una nota de crédito."));
+        mockMvc.perform(post(url).header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
+                .content(creditNoteBody("LATE_FEE_ANNULMENT", "Mora mal cargada", 1, "80000.00"))).andExpect(status().isConflict());
+
+        assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, scenario.invoiceId())).isEqualTo("PENDING");
+        assertThat(outstandingOf(scenario.invoiceId())).isEqualTo("80000.00");
+    }
+
+    @Test
+    @Tag("D-165")
+    void anAdministrativeRequestWithAThousandCharactersOfJustificationIsAccepted() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+
+        MvcResult pending = requestCreditNote(scenario.invoiceId(), newStaff("ADMINISTRATIVO"), creditNoteBody("BILLING_ERROR", "x".repeat(1000), 1, "1000.00"), 202);
+
+        assertThat(jdbc.queryForObject("select length(reason) from authorization_request where id = ?", Integer.class, pendingRequestId(pending))).isBetween(1000, 1200);
+    }
+
+    @Test
+    @Tag("D-134")
+    @Tag("D-165")
+    void anOffsetCreditNoteAllocatesTheCreditThatWasWaitingForTheInvoice() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Long studentId = newStudentId();
+        Long accountId = newAccountId(studentId, Currency.ARS);
+        Long invoiceId = issueInvoiceOfStudent(studentId, accountId, "80000.00", LocalDate.of(2027, 3, 10));
+        payAccount(accountId, "50000.00", LocalDate.of(2027, 3, 5));
+        assertThat(amount("select unallocated_credit_amount from student_current_account where id = ?", accountId)).isEqualByComparingTo("50000.00");
+
+        requestCreditNote(invoiceId, newStaff("DIRECTOR"), creditNoteBody("BILLING_ERROR", "Error", 1, "30000.00"), 201);
+
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId)).isEqualTo("PAID");
+        assertThat(amount("select unallocated_credit_amount from student_current_account where id = ?", accountId)).isEqualByComparingTo("0.00");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-165")
+    void aFreeCreditNoteLargerThanWhatWasPaidIsRejectedWithTheRefundCode() throws Exception {
+        Long studentId = newStudentId();
+        Long accountId = newAccountId(studentId, Currency.ARS);
+        Long invoiceId = issueInvoiceOfStudent(studentId, accountId, "80000.00", LocalDate.of(2027, 3, 10));
+        Staff director = newStaff("DIRECTOR");
+        requestCreditNote(invoiceId, director, creditNoteBody("BILLING_ERROR", "Error", 1, "40000.00"), 201);
+        payAccount(accountId, "40000.00", LocalDate.of(2027, 3, 5));
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, invoiceId)).isEqualTo("PAID");
+
+        mockMvc.perform(post("/invoices/" + invoiceId + "/credit-notes").header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
+                        .content(creditNoteBody("BILLING_ERROR", "Error", 1, "80000.00")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT"));
+        assertThat(creditNoteCountOf(invoiceId)).isEqualTo(1L);
+    }
+
+    @Test
+    @Tag("D-165")
+    void aLineInAnotherCurrencyThanTheInvoiceIsABadRequest() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+
+        mockMvc.perform(post("/invoices/" + scenario.invoiceId() + "/credit-notes").header("Authorization", "Bearer " + newStaff("DIRECTOR").token()).contentType(APPLICATION_JSON)
+                        .content(creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00").replace("\"ARS\"", "\"USD\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CREDIT_NOTE_LINES_INVALID"));
+        assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
+    }
+
+    @Test
+    @Tag("D-253")
+    void creditNoteRequestsHaveNoExpiryDateAndTheExpirerLeavesThemPending() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+        long requestId = pendingRequestId(requestCreditNote(scenario.invoiceId(), newStaff("ADMINISTRATIVO"), creditNoteBody("BILLING_ERROR", "Error", 1, "1000.00"), 202));
+
+        assertThat(jdbc.queryForObject("select expires_on from authorization_request where id = ?", java.sql.Date.class, requestId)).isNull();
+        MutableClock.INSTANCE.advance(Duration.ofDays(400));
+        authorizationRequestExpirer.expireDueRequests();
+
+        assertThat(jdbc.queryForObject("select status from authorization_request where id = ?", String.class, requestId)).isEqualTo("PENDING");
     }
 
     @Test

@@ -10,7 +10,7 @@ import com.red_escuela.backend.billing.note.policy.CreditNoteJustificationRequir
 import com.red_escuela.backend.billing.note.policy.CreditNoteLinesBelongToInvoicePolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteLinesWithinCreditableAmountPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteReasonAllowedPolicy;
-import com.red_escuela.backend.billing.note.policy.CreditNoteRecipientMatchesInvoicePolicy;
+import com.red_escuela.backend.billing.note.policy.CreditNoteFullDebtRequiresCancellationPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteReferencesIssuedInvoicePolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteRefundWithinPaidAmountPolicy;
 import com.red_escuela.backend.billing.note.policy.CreditNoteWithinOutstandingAmountPolicy;
@@ -34,12 +34,12 @@ public class CreditNoteOperationHandlersConfiguration {
                 new CreditNoteJustificationRequiredPolicy(),
                 new CreditNoteReasonAllowedPolicy(),
                 new CreditNoteReferencesIssuedInvoicePolicy(),
-                new CreditNoteRecipientMatchesInvoicePolicy(),
                 new CreditNoteInvoiceNotUnderReviewPolicy(),
                 new CreditNoteLinesBelongToInvoicePolicy(),
                 new CreditNoteDestinationUnchangedPolicy(),
                 new CreditNoteRefundWithinPaidAmountPolicy(),
                 new CreditNoteWithinOutstandingAmountPolicy(),
-                new CreditNoteLinesWithinCreditableAmountPolicy()));
+                new CreditNoteLinesWithinCreditableAmountPolicy(),
+                new CreditNoteFullDebtRequiresCancellationPolicy()));
     }
 }

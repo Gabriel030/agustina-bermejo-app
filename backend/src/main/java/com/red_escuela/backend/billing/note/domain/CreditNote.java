@@ -166,7 +166,11 @@ public class CreditNote {
     }
 
     public InvoiceCreditNoteApplication toInvoiceCreditNoteApplication(NonNegativeMoney invoiceOutstandingAmount) {
-        boolean cancelsInvoice = reason == CreditNoteReason.CANCELLATION && offsetAmount.equals(invoiceOutstandingAmount);
+        boolean coversWholeDebt = !offsetAmount.value().isZero() && offsetAmount.equals(invoiceOutstandingAmount);
+        if (coversWholeDebt && reason != CreditNoteReason.CANCELLATION) {
+            throw new IllegalStateException("Covering the whole unpaid debt of an invoice requires its cancellation");
+        }
+        boolean cancelsInvoice = coversWholeDebt;
         CreditNoteApplicationKind kind = cancelsInvoice ? CreditNoteApplicationKind.CANCELLATION : CreditNoteApplicationKind.DEBT_REDUCTION;
         return new InvoiceCreditNoteApplication(kind, offsetAmount, freeCreditAmount,
                 lines.stream().map(line -> new InvoiceLineCredit(line.getInvoiceLineNumber(), line.getAmount())).toList());
