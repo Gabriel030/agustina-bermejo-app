@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.operation;
 
 import com.red_escuela.backend.billing.collections.service.OverdueInvoiceTransitionService;
+import com.red_escuela.backend.billing.collections.service.OverdueTransitionOutcome;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ public class OverdueInvoiceDetectionStep {
     public OverdueDetectionResult detectOverdueInvoices(LocalDate today) {
         int candidates = 0;
         int marked = 0;
+        int skipped = 0;
         int failed = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
         Long lastId = 0L;
@@ -39,8 +41,15 @@ public class OverdueInvoiceDetectionStep {
             candidates += batch.size();
             for (Long invoiceId : batch) {
                 try {
-                    if (transitionService.markAsOverdueWhenPastDueDate(invoiceId, today)) {
+                    OverdueTransitionOutcome outcome = transitionService.markAsOverdueWhenPastDueDate(invoiceId, today);
+                    if (outcome == OverdueTransitionOutcome.MARKED_AS_OVERDUE) {
                         marked++;
+                    } else if (outcome == OverdueTransitionOutcome.SKIPPED_WITHOUT_LATE_PAYMENT_TERMS) {
+                        skipped++;
+                        Map<String, Object> skippedInvoice = new LinkedHashMap<>();
+                        skippedInvoice.put("invoiceId", invoiceId);
+                        skippedInvoice.put("message", "Sin versión de mora aplicable: no se evaluó su vencimiento");
+                        errors.add(skippedInvoice);
                     }
                 } catch (Exception e) {
                     failed++;
@@ -53,6 +62,6 @@ public class OverdueInvoiceDetectionStep {
             }
             lastId = batch.get(batch.size() - 1);
         }
-        return new OverdueDetectionResult(candidates, marked, failed, errors);
+        return new OverdueDetectionResult(candidates, marked, skipped, failed, errors);
     }
 }

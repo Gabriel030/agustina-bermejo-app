@@ -7,6 +7,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
+import com.red_escuela.backend.billing.collections.service.OverdueInvoiceTransitionService;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -52,7 +53,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private InvoiceOverdueSweepService sweepService;
 
     @Autowired
-    private com.red_escuela.backend.billing.collections.service.OverdueInvoiceTransitionService transitionService;
+    private OverdueInvoiceTransitionService transitionService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

@@ -131,7 +131,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | InvoiceIsPastDueDatePolicy | INVOICE_NOT_PAST_DUE_DATE | D-057, D-153, D-288 |
+| 1 | InvoiceIsPastDueDatePolicy | INVOICE_NOT_PENDING, INVOICE_WITHIN_GRACE_PERIOD | D-057, D-153, D-288 |
 
 ## Momento PAYMENT_ALLOCATION
 

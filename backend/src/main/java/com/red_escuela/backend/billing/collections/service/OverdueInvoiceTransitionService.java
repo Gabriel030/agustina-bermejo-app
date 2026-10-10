@@ -4,7 +4,7 @@ import com.red_escuela.backend.billing.collections.policy.OverdueDetectionContex
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
+import com.red_escuela.backend.billing.invoice.service.InvoiceLockingService;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.slf4j.Logger;
@@ -22,34 +22,34 @@ public class OverdueInvoiceTransitionService {
     private static final Logger log = LoggerFactory.getLogger(OverdueInvoiceTransitionService.class);
     private static final StatusChangeActor ACTOR = new StatusChangeActor(null, "OverdueInvoiceDetection");
 
-    private final PendingInvoiceQueryService pendingInvoiceQueryService;
+    private final InvoiceLockingService invoiceLockingService;
     private final BillingConfigurationReader configurationReader;
     private final PolicySet<OverdueDetectionContext> overdueDetectionPolicySet;
     private final ApplicationEventPublisher eventPublisher;
 
-    public OverdueInvoiceTransitionService(PendingInvoiceQueryService pendingInvoiceQueryService, BillingConfigurationReader configurationReader,
+    public OverdueInvoiceTransitionService(InvoiceLockingService invoiceLockingService, BillingConfigurationReader configurationReader,
                                            PolicySet<OverdueDetectionContext> overdueDetectionPolicySet, ApplicationEventPublisher eventPublisher) {
-        this.pendingInvoiceQueryService = pendingInvoiceQueryService;
+        this.invoiceLockingService = invoiceLockingService;
         this.configurationReader = configurationReader;
         this.overdueDetectionPolicySet = overdueDetectionPolicySet;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean markAsOverdueWhenPastDueDate(Long invoiceId, LocalDate today) {
-        Invoice invoice = pendingInvoiceQueryService.lockInvoiceForUpdate(invoiceId);
+    public OverdueTransitionOutcome markAsOverdueWhenPastDueDate(Long invoiceId, LocalDate today) {
+        Invoice invoice = invoiceLockingService.lockInvoiceForUpdate(invoiceId);
         Optional<LatePaymentTerms> terms = resolveTermsInEffectOnDueDate(invoice);
         if (terms.isEmpty()) {
             log.warn("Factura id={} sin versión de mora aplicable: no se evalúa su vencimiento", invoiceId);
-            return false;
+            return OverdueTransitionOutcome.SKIPPED_WITHOUT_LATE_PAYMENT_TERMS;
         }
         OverdueDetectionContext context = new OverdueDetectionContext(invoice.getPaymentStatus(), invoice.getDueDate(), terms.get().gracePeriodDays(), today);
         if (!overdueDetectionPolicySet.evaluateAllRules(context).allowed()) {
-            return false;
+            return OverdueTransitionOutcome.NOT_YET_OVERDUE;
         }
         invoice.markInvoiceAsOverdue(today, ACTOR);
         invoice.pullRecordedDomainEvents().forEach(eventPublisher::publishEvent);
-        return true;
+        return OverdueTransitionOutcome.MARKED_AS_OVERDUE;
     }
 
     private Optional<LatePaymentTerms> resolveTermsInEffectOnDueDate(Invoice invoice) {

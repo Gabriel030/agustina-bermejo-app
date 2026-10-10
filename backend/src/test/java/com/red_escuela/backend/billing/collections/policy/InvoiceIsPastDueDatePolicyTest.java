@@ -54,11 +54,18 @@ class InvoiceIsPastDueDatePolicyTest {
     }
 
     @Test
+    @Tag("D-153")
+    void aNonPendingInvoiceIsDeniedWithItsOwnViolationCode() {
+        var verdict = policy.evaluateRule(new OverdueDetectionContext(InvoicePaymentStatus.PAYMENT_UNDER_REVIEW, LocalDate.parse("2020-01-01"), 0, LocalDate.parse("2027-03-17")));
+        assertThat(verdict.code()).isEqualTo("INVOICE_NOT_PENDING");
+    }
+
+    @Test
     @Tag("D-288")
     void aDenialCarriesItsViolationCode() {
         var verdict = policy.evaluateRule(new OverdueDetectionContext(InvoicePaymentStatus.PENDING, LocalDate.parse("2027-03-12"), 5, LocalDate.parse("2027-03-17")));
         assertThat(verdict.allowed()).isFalse();
         assertThat(verdict.policy()).isEqualTo("InvoiceIsPastDueDatePolicy");
-        assertThat(verdict.code()).isEqualTo("INVOICE_NOT_PAST_DUE_DATE");
+        assertThat(verdict.code()).isEqualTo("INVOICE_WITHIN_GRACE_PERIOD");
     }
 }

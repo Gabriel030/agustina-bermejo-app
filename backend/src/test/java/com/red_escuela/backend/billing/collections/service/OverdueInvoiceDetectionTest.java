@@ -7,6 +7,7 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -33,6 +34,11 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import net.javacrumbs.shedlock.core.LockConfiguration;
+import net.javacrumbs.shedlock.core.LockProvider;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -51,13 +57,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @RecordApplicationEvents
+@ExtendWith(OutputCaptureExtension.class)
 class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private static final StatusChangeActor TEST_ACTOR = new StatusChangeActor(null, "OverdueInvoiceDetectionTest");
 
@@ -73,6 +83,8 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private ConfigurationVersionRepository configurationVersionRepository;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private LockProvider lockProvider;
     @Autowired
     private ApplicationEvents applicationEvents;
     @Autowired
@@ -170,7 +182,6 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-182")
     @Tag("D-288")
     void aGraceChangeAppliesOnlyToInstallmentsDueFromItsEffectiveDate() {
         arrange();
@@ -220,7 +231,6 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-182")
     @Tag("D-288")
     void aShorterGraceLoadedAfterTheDueDateDoesNotMakeAnIssuedInstallmentOverdueEarly() {
         arrange();
@@ -274,7 +284,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-288")
-    void theBusinessDayIsTheBuenosAiresOneEvenWhenTheJvmRunsInUtc() {
+    void theBusinessDayFollowsTheClockZoneAndNotTheUtcInstant() {
         arrange();
         publishGrace(5, LocalDate.of(2047, 1, 1));
         Invoice invoice = invoiceDueOn(LocalDate.of(2047, 3, 12));
@@ -318,7 +328,7 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         CountDownLatch ready = new CountDownLatch(threads);
         CountDownLatch go = new CountDownLatch(1);
-        List<Future<Boolean>> results = new ArrayList<>();
+        List<Future<OverdueTransitionOutcome>> results = new ArrayList<>();
         for (int i = 0; i < threads; i++) {
             results.add(executor.submit(() -> {
                 ready.countDown();
@@ -328,18 +338,88 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
         }
         ready.await();
         go.countDown();
-        int marked = 0;
-        for (Future<Boolean> result : results) {
-            if (result.get()) {
-                marked++;
-            }
+        List<OverdueTransitionOutcome> outcomes = new ArrayList<>();
+        for (Future<OverdueTransitionOutcome> result : results) {
+            assertThatCode(() -> outcomes.add(result.get(30, TimeUnit.SECONDS))).doesNotThrowAnyException();
         }
         executor.shutdown();
 
-        assertThat(marked).isEqualTo(1);
+        assertThat(outcomes).hasSize(threads);
+        assertThat(outcomes).filteredOn(outcome -> outcome == OverdueTransitionOutcome.MARKED_AS_OVERDUE).hasSize(1);
+        assertThat(outcomes).filteredOn(outcome -> outcome == OverdueTransitionOutcome.NOT_YET_OVERDUE).hasSize(threads - 1);
         Integer transitions = jdbcTemplate.queryForObject(
                 "select count(*) from invoice_status_change where invoice_id = ? and status_kind = 'PAYMENT' and to_status = 'OVERDUE'", Integer.class, invoice.getId());
         assertThat(transitions).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-288")
+    void anInstallmentDueBeforeTheOnlyVersionUsesItAndLogsTheFallbackAgainstPostgres(CapturedOutput output) {
+        arrange();
+        publishGrace(5, LocalDate.of(1950, 6, 1));
+        Invoice invoice = invoiceDueOn(LocalDate.of(1950, 3, 10));
+        var first = configurationVersionRepository.findFirstVersion("LATE_PAYMENT", "LATE_PAYMENT").orElseThrow();
+        assertThat(((LatePaymentTerms) first.values()).gracePeriodDays()).isEqualTo(5);
+
+        sweepService.run(LocalDate.of(1950, 3, 15));
+        assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.PENDING);
+        sweepService.run(LocalDate.of(1950, 3, 16));
+
+        assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
+        assertThat(output.getOut()).contains("antes de la primera versión de mora: se usa la primera versión");
+    }
+
+    @Test
+    @Tag("D-288")
+    void theSweepIsSkippedWhileAnotherInstanceHoldsItsLockAndRunsOnceWhenReleased() {
+        arrange();
+        publishGrace(5, LocalDate.of(2052, 1, 1));
+        Invoice invoice = invoiceDueOn(LocalDate.of(2052, 3, 12));
+        MutableClock.INSTANCE.setInstant(Instant.parse("2052-03-18T12:00:00Z"));
+
+        var heldByOtherInstance = lockProvider.lock(new LockConfiguration(Instant.now(), "InvoiceOverdueSweepService", Duration.ofMinutes(5), Duration.ZERO));
+        assertThat(heldByOtherInstance).isPresent();
+        try {
+            sweepService.run();
+        } finally {
+            heldByOtherInstance.get().unlock();
+        }
+        assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.PENDING);
+
+        sweepService.run();
+        assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
+    }
+
+    @Test
+    @Tag("D-288")
+    void twoConcurrentSweepInvocationsLeaveASingleTransitionPerInvoice() throws Exception {
+        arrange();
+        publishGrace(5, LocalDate.of(2053, 1, 1));
+        Invoice first = invoiceDueOn(LocalDate.of(2053, 3, 12));
+        Invoice second = invoiceDueOn(LocalDate.of(2053, 3, 11));
+        MutableClock.INSTANCE.setInstant(Instant.parse("2053-03-20T12:00:00Z"));
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch go = new CountDownLatch(1);
+        List<Future<?>> runs = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            runs.add(executor.submit(() -> {
+                go.await();
+                sweepService.run();
+                return null;
+            }));
+        }
+        go.countDown();
+        for (Future<?> run : runs) {
+            assertThatCode(() -> run.get(60, TimeUnit.SECONDS)).doesNotThrowAnyException();
+        }
+        executor.shutdown();
+
+        for (Invoice invoice : List.of(first, second)) {
+            assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
+            Integer transitions = jdbcTemplate.queryForObject(
+                    "select count(*) from invoice_status_change where invoice_id = ? and status_kind = 'PAYMENT' and to_status = 'OVERDUE'", Integer.class, invoice.getId());
+            assertThat(transitions).isEqualTo(1);
+        }
     }
 
     @Test

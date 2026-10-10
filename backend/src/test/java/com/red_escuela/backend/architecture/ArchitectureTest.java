@@ -8,8 +8,10 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import com.red_escuela.backend.architecture.fixture.billing.configuration.entity.FixtureEntity;
 import jakarta.persistence.Entity;
 import org.junit.jupiter.api.Tag;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ArchitectureTest {
@@ -433,9 +435,9 @@ class ArchitectureTest {
     @Test
     @Tag("D-288")
     void collectionsStepsHaveNoCronOfTheirOwn() {
-        com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods()
+        noMethods()
                 .that().areDeclaredInClassesThat().resideInAPackage("..billing.collections..")
-                .should().beAnnotatedWith(org.springframework.scheduling.annotation.Scheduled.class)
+                .should().beAnnotatedWith(Scheduled.class)
                 .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them)")
                 .check(MAIN_CLASSES);
     }

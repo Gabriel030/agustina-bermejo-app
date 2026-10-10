@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
+import com.red_escuela.backend.billing.invoice.service.InvoiceLockingService;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.junit.jupiter.api.Tag;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 class OverdueInvoiceTransitionServiceTest {
     private static final LocalDate DUE_DATE = LocalDate.of(2020, 3, 12);
 
-    private final PendingInvoiceQueryService pendingInvoiceQueryService = mock(PendingInvoiceQueryService.class);
+    private final InvoiceLockingService invoiceLockingService = mock(InvoiceLockingService.class);
     private final BillingConfigurationReader reader = mock(BillingConfigurationReader.class);
     private final Invoice invoice = mock(Invoice.class);
-    private final OverdueInvoiceTransitionService service = new OverdueInvoiceTransitionService(pendingInvoiceQueryService, reader,
+    private final OverdueInvoiceTransitionService service = new OverdueInvoiceTransitionService(invoiceLockingService, reader,
             PolicySet.<OverdueDetectionContext>named("OVERDUE_DETECTION", List.of(new InvoiceIsPastDueDatePolicy())), mock(ApplicationEventPublisher.class));
 
     private LatePaymentTerms termsWithGrace(int graceDays) {
@@ -41,7 +41,7 @@ class OverdueInvoiceTransitionServiceTest {
     private void arrangeInvoiceDueBeforeEveryVersion() {
         when(invoice.getPaymentStatus()).thenReturn(InvoicePaymentStatus.PENDING);
         when(invoice.getDueDate()).thenReturn(DUE_DATE);
-        when(pendingInvoiceQueryService.lockInvoiceForUpdate(7L)).thenReturn(invoice);
+        when(invoiceLockingService.lockInvoiceForUpdate(7L)).thenReturn(invoice);
         when(reader.findLatePaymentSettingsEffectiveOn(DUE_DATE)).thenReturn(Optional.empty());
     }
 
@@ -51,8 +51,8 @@ class OverdueInvoiceTransitionServiceTest {
         arrangeInvoiceDueBeforeEveryVersion();
         when(reader.findFirstLatePaymentSettings()).thenReturn(Optional.of(termsWithGrace(5)));
 
-        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusDays(5))).isFalse();
-        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusDays(6))).isTrue();
+        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusDays(5))).isEqualTo(OverdueTransitionOutcome.NOT_YET_OVERDUE);
+        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusDays(6))).isEqualTo(OverdueTransitionOutcome.MARKED_AS_OVERDUE);
         verify(invoice).markInvoiceAsOverdue(any(), any());
     }
 
@@ -62,7 +62,7 @@ class OverdueInvoiceTransitionServiceTest {
         arrangeInvoiceDueBeforeEveryVersion();
         when(reader.findFirstLatePaymentSettings()).thenReturn(Optional.empty());
 
-        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusYears(1))).isFalse();
+        assertThat(service.markAsOverdueWhenPastDueDate(7L, DUE_DATE.plusYears(1))).isEqualTo(OverdueTransitionOutcome.SKIPPED_WITHOUT_LATE_PAYMENT_TERMS);
         verify(invoice, never()).markInvoiceAsOverdue(any(), any());
     }
 }
