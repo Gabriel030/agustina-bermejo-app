@@ -141,6 +141,22 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
+    @Tag("B2-40")
+    @Tag("D-036")
+    void partialCreditNoteOnDiscountedInvoiceTakesTheInvoiceLockWithoutFailing() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Long studentId = newStudentId();
+        Long accountId = newAccountId(studentId, Currency.ARS);
+        Long invoiceId = issueDiscountedAnnualInvoice(studentId, accountId);
+
+        requestCreditNote(invoiceId, newStaff("DIRECTOR"), creditNoteBody("BILLING_ERROR", "Error", 1, "100.00"), 201);
+
+        assertThat(creditNoteCountOf(invoiceId)).isEqualTo(1L);
+        assertThat(outstandingOf(invoiceId)).isEqualTo("1900.00");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
     @Tag("B2-08")
     @Tag("D-165")
     void administrativeRequestWaitsForDirector() throws Exception {
@@ -314,7 +330,11 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
                         .content("{\"reason\":\"CANCELLATION\",\"justification\":\"Baja\",\"systemInitiated\":true,\"systemOrigin\":\"ADMISSION_EXPIRED\",\"requestedByDirector\":true}"))
                 .andReturn();
 
-        assertThat(result.getResponse().getStatus()).isIn(202, 400);
+        assertThat(result.getResponse().getStatus()).isEqualTo(202);
+        long requestId = pendingRequestId(result);
+        String payload = jdbc.queryForObject("select operation_payload from authorization_request where id = ?", String.class, requestId);
+        assertThat((Object) com.jayway.jsonpath.JsonPath.read(payload, "$.systemOrigin")).isNull();
+        assertThat((Boolean) com.jayway.jsonpath.JsonPath.read(payload, "$.requestedByDirector")).isFalse();
         assertThat(paymentStatusOf(scenario.invoiceId())).isEqualTo("PENDING");
         assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
     }
@@ -404,6 +424,10 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
         assertThat(outstandingOf(scenario.invoiceId())).isEqualTo("0.00");
         assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ? and reason = 'BILLING_ERROR' and offset_amount > 0", java.math.BigDecimal.class,
                 scenario.invoiceId())).isEqualByComparingTo("80000.00");
+        assertThat(jdbc.queryForMap("select unallocated_credit_amount, balance_amount, balance_side from student_current_account where id = ?", scenario.accountId()))
+                .satisfies(row -> assertThat(new java.math.BigDecimal(row.get("unallocated_credit_amount").toString())).isEqualByComparingTo("90000.00"))
+                .satisfies(row -> assertThat(new java.math.BigDecimal(row.get("balance_amount").toString())).isEqualByComparingTo("90000.00"))
+                .containsEntry("balance_side", "IN_FAVOR");
         assertThat(jdbc.queryForMap("select credited_amount, free_credited_amount from invoice_line where invoice_id = ?", scenario.invoiceId()))
                 .satisfies(row -> assertThat(new java.math.BigDecimal(row.get("credited_amount").toString())).isEqualByComparingTo("80000.00"))
                 .satisfies(row -> assertThat(new java.math.BigDecimal(row.get("free_credited_amount").toString())).isEqualByComparingTo("0.00"));

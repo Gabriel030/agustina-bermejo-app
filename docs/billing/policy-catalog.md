@@ -95,7 +95,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CancellationJustificationPolicy | CREDIT_NOTE_JUSTIFICATION_REQUIRED | D-165, D-127 |
 | 2 | CancellationReasonPolicy | INVALID_CREDIT_NOTE_REASON | D-127, D-238 |
-| 3 | SystemInitiatedCancellationPolicy | CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED | D-165, D-229, D-300, D-242 |
+| 3 | SystemInitiatedCancellationPolicy | CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED | D-165, D-229, D-300, D-242, D-311 |
 | 4 | CancellationInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-127 |
 | 5 | CancellationByFullCreditNotePolicy | ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION | D-127, D-091 |
 

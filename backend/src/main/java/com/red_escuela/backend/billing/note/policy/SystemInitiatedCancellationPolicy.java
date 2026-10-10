@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = {"CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED"}, decisions = {"D-165", "D-229", "D-300", "D-242"})
+@PolicyRule(violationCodes = {"CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED"}, decisions = {"D-165", "D-229", "D-300", "D-242", "D-311"})
 public final class SystemInitiatedCancellationPolicy implements Policy<InvoiceCancellationContext> {
 
     @Override

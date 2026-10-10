@@ -89,6 +89,8 @@ class InvoiceCancellationConcurrencyIT extends AbstractInvoiceCancellationIT {
             assertThat(status).isIn("CANCELLED", "PAID");
             if ("CANCELLED".equals(status)) {
                 assertThat(jdbc.queryForObject("select count(*) from payment_allocation where invoice_id = ?", Long.class, scenario.invoiceId())).isZero();
+                assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, scenario.accountId()))
+                        .isEqualByComparingTo("80000.00");
             } else {
                 assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
                 assertThat(outcomes.get(0)).isInstanceOf(ConflictException.class);
@@ -118,7 +120,7 @@ class InvoiceCancellationConcurrencyIT extends AbstractInvoiceCancellationIT {
     @Tag("B2-26")
     void lockOrderAccountThenInvoicesAvoidsDeadlock() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
-        for (int round = 0; round < 15; round++) {
+        for (int round = 0; round < 50; round++) {
             Long studentId = newStudentId();
             Long accountId = newAccountId(studentId, Currency.ARS);
             issueInvoiceOfStudent(studentId, accountId, "10000.00", LocalDate.of(2027, 3, 10));

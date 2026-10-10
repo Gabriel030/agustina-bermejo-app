@@ -13,6 +13,11 @@ import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -29,16 +34,19 @@ public class AllocateAccountCreditWhenInvoiceRequestIsClosedObserver implements 
     private final StudentCurrentAccountService accountService;
     private final CurrentAccountAllocationService allocationService;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate independentTransaction;
     private final Clock clock;
 
     public AllocateAccountCreditWhenInvoiceRequestIsClosedObserver(AuthorizationRequestRepository requests, InvoiceCreditAccessService invoices,
                                                                    StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
-                                                                   ObjectMapper objectMapper, Clock clock) {
+                                                                   ObjectMapper objectMapper, PlatformTransactionManager transactionManager, Clock clock) {
         this.requests = requests;
         this.invoices = invoices;
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.objectMapper = objectMapper;
+        this.independentTransaction = new TransactionTemplate(transactionManager);
+        this.independentTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.clock = clock;
     }
 
@@ -50,6 +58,31 @@ public class AllocateAccountCreditWhenInvoiceRequestIsClosedObserver implements 
     @Override
     public void afterWithdrawn(Long requestId, BillingOperationType type, Long requesterId) {
         allocateCreditOfTheInvoiceAccount(requestId, type);
+    }
+
+    @Override
+    public void afterResumeRejected(Long requestId, BillingOperationType type, Long deciderId, String reason) {
+        if (!INVOICE_REQUEST_TYPES.contains(type)) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            allocateWithoutBlockingTheRejection(requestId, type);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                allocateWithoutBlockingTheRejection(requestId, type);
+            }
+        });
+    }
+
+    private void allocateWithoutBlockingTheRejection(Long requestId, BillingOperationType type) {
+        try {
+            independentTransaction.executeWithoutResult(status -> allocateCreditOfTheInvoiceAccount(requestId, type));
+        } catch (RuntimeException failure) {
+            log.error("No se pudo imputar el saldo a favor tras rechazarse al reanudar el pedido {}; el rechazo queda registrado", requestId, failure);
+        }
     }
 
     private void allocateCreditOfTheInvoiceAccount(Long requestId, BillingOperationType type) {

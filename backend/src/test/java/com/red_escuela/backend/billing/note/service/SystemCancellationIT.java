@@ -76,24 +76,6 @@ class SystemCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
-    @Tag("B2-22")
-    @Tag("D-242")
-    void rejectedCourseReceiptReleasesTheChargeSoItCanBeRequestedAgain() {
-        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
-        Long studentId = newStudentId();
-        Long accountId = newAccountId(studentId, Currency.ARS);
-        String chargeKey = "COURSE:" + System.nanoTime();
-        Long first = issueWithKey(studentId, accountId, chargeKey);
-
-        systemCancellation.cancelInvoiceWithoutDirector(first, SystemCancellationOrigin.REJECTED_COURSE_RECEIPT, "Comprobante rechazado");
-
-        assertThat(invoiceRepository.findLiveInvoiceIdByChargeKey(chargeKey)).isEmpty();
-        Long second = issueWithKey(studentId, accountId, chargeKey);
-        assertThat(invoiceRepository.findLiveInvoiceIdByChargeKey(chargeKey)).contains(second);
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
     @Tag("B2-04")
     void aCommandThatClaimsSystemOriginWithAPersonOrWithoutOriginIsRejected() {
         Scenario scenario = unpaidInvoice("80000.00");

@@ -99,9 +99,13 @@ class InvoiceCancellationPoliciesTest {
     @Tag("D-229")
     @Tag("D-300")
     @Tag("D-242")
+    @Tag("D-311")
     void onlyAProcessActorWithAnOriginCancelsWithoutTheDirector() {
         Policy<InvoiceCancellationContext> policy = new SystemInitiatedCancellationPolicy();
 
+        assertThat(SystemCancellationOrigin.values()).contains(SystemCancellationOrigin.REJECTED_RECEIPT_OF_INVOICE_LEFT_OUT_OF_WITHDRAWAL);
+        assertThat(CancelInvoiceCommand.bySystem(5L, SystemCancellationOrigin.REJECTED_RECEIPT_OF_INVOICE_LEFT_OUT_OF_WITHDRAWAL, "x").actor().processName())
+                .isEqualTo("REJECTED_WITHDRAWAL_RECEIPT_CANCELLATION");
         for (SystemCancellationOrigin origin : SystemCancellationOrigin.values()) {
             assertThat(evaluate(policy, CancelInvoiceCommand.bySystem(5L, origin, "x"), open("1.00")).allowed()).isTrue();
         }

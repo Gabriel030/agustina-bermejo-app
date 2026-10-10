@@ -36,6 +36,8 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
     private BillingOperationPipeline pipeline;
     @Autowired
     private CancelInvoiceOperation cancelOperation;
+    @Autowired
+    private RecurringFeeWindowService windowService;
 
     @AfterEach
     void clearSecurity() {
@@ -123,6 +125,12 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
     @Tag("B2-27")
     @Tag("D-009")
     void cancellationAndIssuanceOfTheSamePeriodNeverLeaveTwoLiveKeys() throws Exception {
+        for (int round = 0; round < 5; round++) {
+            raceCancellationAgainstIssuance();
+        }
+    }
+
+    private void raceCancellationAgainstIssuance() throws Exception {
         Long enrollment = enrolledInApril();
         job.run(APRIL);
         Invoice april = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0);
@@ -149,5 +157,21 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
 
         assertThat(liveInvoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).isEqualTo(1L);
         invariantChecker.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("B2-14")
+    @Tag("D-245")
+    void remainingInstallmentsDoNotCountTheReleasedInvoiceTwice() {
+        Long enrollment = enrolledInApril();
+        job.run(APRIL);
+        Invoice april = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0);
+        int remainingBefore = transactionTemplate.execute(status -> windowService.remainingInvoices(entityManager.find(com.red_escuela.backend.enrollment.entity.ProgramEnrollment.class, enrollment)));
+
+        cancel(april, CreditNoteReason.BILLING_ERROR);
+        job.run(APRIL);
+
+        int remainingAfter = transactionTemplate.execute(status -> windowService.remainingInvoices(entityManager.find(com.red_escuela.backend.enrollment.entity.ProgramEnrollment.class, enrollment)));
+        assertThat(remainingAfter).isEqualTo(remainingBefore);
     }
 }

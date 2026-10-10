@@ -72,6 +72,22 @@ class ArchitectureTest {
     @Test
     @Tag("B2-33")
     @Tag("D-127")
+    void cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
+        ArchitectureRules.cancellationApplicationsAreBuiltOnlyByTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void cancellationApplicationRuleDetectsABackdoorInTheNoteServicePackage() {
+        assertThatThrownBy(() -> ArchitectureRules.cancellationApplicationsAreBuiltOnlyByTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("NoteServiceBackdoorFixture");
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
     void cancellationRuleDetectsABackdoor() {
         assertThatThrownBy(() -> ArchitectureRules.invoicesAreCancelledOnlyThroughTheCancellationOperation().check(fixtureClasses()))
                 .isInstanceOf(AssertionError.class)
