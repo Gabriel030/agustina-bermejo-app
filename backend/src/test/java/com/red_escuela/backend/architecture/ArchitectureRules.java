@@ -51,9 +51,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.payment.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.payment..", "..billing.note.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.payment"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.payment", ROOT + ".billing.note"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"

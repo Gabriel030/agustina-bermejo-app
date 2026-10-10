@@ -75,6 +75,7 @@ class PaymentModelMigrationTest {
                     + "values (80000.00, 'ARS', 'MERCADO_PAGO', ?, timestamp '2026-09-02 10:00:00', 'CONFIRMED', now(), now(), 'mp-123')", personId);
             jdbc.update("insert into payment (amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at, external_reference) "
                     + "values (10.00, 'USD', 'TRANSFER', ?, timestamp '2026-09-03 10:00:00', 'REJECTED', now(), now(), null)", personId);
+            migrateTo(dataSource, "103");
             List<Map<String, Object>> rowsBefore = jdbc.queryForList("select * from payment order by id");
             BigDecimal sumBefore = jdbc.queryForObject("select sum(amount) from payment", BigDecimal.class);
             List<String> foreignKeysBefore = jdbc.queryForList("select conname from pg_constraint where contype = 'f' and confrelid = 'payment'::regclass order by conname", String.class);

@@ -342,7 +342,7 @@ class ArchitectureTest {
     @Test
     @Tag("D-051")
     void billingV2DoesNotDependOnLegacyBilling() {
-        ArchitectureRules.billingV2DoesNotDependOnLegacyBilling("..billing.invoice..", "..billing.account..").check(MAIN_CLASSES);
+        ArchitectureRules.billingV2DoesNotDependOnLegacyBilling("..billing.invoice..", "..billing.account..", "..billing.note..").check(MAIN_CLASSES);
     }
 
     @Test

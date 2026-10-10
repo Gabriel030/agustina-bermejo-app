@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.authorization.domain.AuthorizationResumeO
 import com.red_escuela.backend.billing.operation.BillingOperation;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.operation.BillingOperations;
+import com.red_escuela.backend.billing.operation.ResumedFromAuthorizationRequest;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,7 +24,11 @@ public class AuthorizedOperationResumer {
 
     public void resumeApprovedOperation(AuthorizationRequest request) {
         BillingOperation<Object, Object> operation = operations.operationOf(request.getOperationType());
-        pipeline.resumeAuthorizedOperation(operation, deserializeContext(operation, request.getOperationPayload()));
+        Object context = deserializeContext(operation, request.getOperationPayload());
+        if (context instanceof ResumedFromAuthorizationRequest<?> resumable) {
+            context = resumable.resumedFromAuthorizationRequest(request.getId());
+        }
+        pipeline.resumeAuthorizedOperation(operation, context);
         request.recordResumeOutcome(AuthorizationResumeOutcome.PROCESSED);
     }
 

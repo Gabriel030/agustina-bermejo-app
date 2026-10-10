@@ -160,8 +160,7 @@ public class InvoiceLine {
     }
 
     void requireCreditable(NonNegativeMoney offsetPart, NonNegativeMoney freePart) {
-        if (offsetPart.value().isGreaterThan(calculateCreditableAmount().value())
-                || freePart.value().isGreaterThan(calculateFreeCreditableAmount().value())) {
+        if (offsetPart.plus(freePart).value().isGreaterThan(calculateCreditableAmount().value())) {
             throw new CreditNoteExceedsCreditableAmountException();
         }
     }
@@ -177,10 +176,6 @@ public class InvoiceLine {
     }
 
     public NonNegativeMoney calculateCreditableAmount() {
-        return NonNegativeMoney.of(calculateNetAmount().minus(creditedAmount));
-    }
-
-    public NonNegativeMoney calculateFreeCreditableAmount() {
-        return NonNegativeMoney.of(calculateNetAmount().minus(freeCreditedAmount));
+        return NonNegativeMoney.of(calculateNetAmount().minus(creditedAmount.plus(freeCreditedAmount)));
     }
 }
