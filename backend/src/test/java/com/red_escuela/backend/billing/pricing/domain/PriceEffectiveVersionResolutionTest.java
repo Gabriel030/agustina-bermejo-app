@@ -4,18 +4,19 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,21 +51,22 @@ class PriceEffectiveVersionResolutionTest {
     }
 
     @Test
-    void theStartDayIsTheBuenosAiresDayEvenWhenTheJvmRunsInUtc() {
+    void anInstantAfterTenInTheEveningInBuenosAiresStillResolvesTheBuenosAiresDayEvenThoughUtcAlreadyTurnedTheDay() {
         Price price = priceWithV1AndScheduledV2();
-        TimeZone previous = TimeZone.getDefault();
+        Instant tenThirtyInTheEveningInBuenosAires = ZonedDateTime.of(2027, 8, 31, 22, 30, 0, 0, BUENOS_AIRES).toInstant();
+        MutableClock.INSTANCE.setInstant(tenThirtyInTheEveningInBuenosAires);
         try {
-            TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.UTC));
-            ZonedDateTime buenosAiresHalfPastMidnight = ZonedDateTime.of(2027, 9, 1, 0, 30, 0, 0, BUENOS_AIRES);
-            LocalDate buenosAiresDay = buenosAiresHalfPastMidnight.toLocalDate();
-            LocalDate jvmDefaultDayAtThatInstant = buenosAiresHalfPastMidnight.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate dayOfTheApplicationClock = LocalDate.now(MutableClock.INSTANCE);
+            LocalDate dayInUtc = LocalDate.now(Clock.fixed(tenThirtyInTheEveningInBuenosAires, ZoneOffset.UTC));
 
-            assertThat(buenosAiresDay).isEqualTo(LocalDate.of(2027, 9, 1));
-            assertThat(price.findVersionEffectiveOn(buenosAiresDay.minusDays(1)).orElseThrow().finalAmount()).isEqualTo(ars(100000));
-            assertThat(price.findVersionEffectiveOn(buenosAiresDay).orElseThrow().finalAmount()).isEqualTo(ars(120000));
-            assertThat(jvmDefaultDayAtThatInstant).isEqualTo(LocalDate.of(2027, 9, 1));
+            assertThat(tenThirtyInTheEveningInBuenosAires).isEqualTo(Instant.parse("2027-09-01T01:30:00Z"));
+            assertThat(dayInUtc).isEqualTo(LocalDate.of(2027, 9, 1));
+            assertThat(MutableClock.INSTANCE.getZone()).isEqualTo(BUENOS_AIRES);
+            assertThat(dayOfTheApplicationClock).isEqualTo(LocalDate.of(2027, 8, 31));
+            assertThat(price.findVersionEffectiveOn(dayOfTheApplicationClock).orElseThrow().finalAmount()).isEqualTo(ars(100000));
+            assertThat(price.findVersionEffectiveOn(dayInUtc).orElseThrow().finalAmount()).isEqualTo(ars(120000));
         } finally {
-            TimeZone.setDefault(previous);
+            MutableClock.INSTANCE.reset();
         }
     }
 

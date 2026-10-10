@@ -154,8 +154,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | PriceCurrencyPolicy | CURRENCY_MISMATCH | D-097, D-240 |
 | 2 | MarketingDiscountNotNegativePolicy | NEGATIVE_MARKETING_DISCOUNT | D-240 |
-| 3 | MarketingDiscountPercentageNotAboveHundredPolicy | MARKETING_DISCOUNT_PERCENTAGE_ABOVE_HUNDRED | D-240 |
-| 4 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
+| 3 | MarketingDiscountFixedNotAboveBasePolicy | MARKETING_DISCOUNT_EXCEEDS_BASE | D-240 |
 
 ## Momento PROGRAM_INVOICE_PLANNING_ELIGIBILITY
 

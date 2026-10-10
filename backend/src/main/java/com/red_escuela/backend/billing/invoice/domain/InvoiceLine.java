@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import com.red_escuela.backend.billing.invoice.exception.InvoiceLinesEnrollmentMismatchException;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
@@ -76,11 +75,17 @@ public class InvoiceLine {
     @Column(name = "price_version_id", updatable = false)
     private Long priceVersionId;
 
-    @Column(name = "marketing_discount_amount", nullable = false, updatable = false)
-    private BigDecimal marketingDiscountAmount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "marketing_discount_amount", nullable = false, updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "currency", nullable = false, insertable = false, updatable = false))})
+    private NonNegativeMoney marketingDiscountAmount;
 
-    @Column(name = "list_amount", insertable = false, updatable = false)
-    private BigDecimal listAmount;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "list_amount", insertable = false, updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "currency", insertable = false, updatable = false))})
+    private NonNegativeMoney listAmount;
 
     @Column(name = "template_id", updatable = false)
     private Long templateId;
@@ -134,7 +139,7 @@ public class InvoiceLine {
         this.subjectId = draft.subjectId();
         this.examBoardRegistrationId = draft.examBoardRegistrationId();
         this.priceVersionId = draft.priceVersionId();
-        this.marketingDiscountAmount = draft.marketingDiscountAmount().value().amount();
+        this.marketingDiscountAmount = draft.marketingDiscountAmount();
         this.templateId = draft.templateId();
         this.enrollmentFeeSlot = draft.enrollmentFeeSlot();
         this.chargeKey = draft.chargeKey();

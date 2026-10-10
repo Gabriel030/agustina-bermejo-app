@@ -1,11 +1,14 @@
 package com.red_escuela.backend.billing.pricing.domain;
 
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.persistence.PercentageConverter;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,7 +26,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -56,8 +58,15 @@ public class PriceVersion {
     @Column(name = "marketing_discount_type", updatable = false)
     private MarketingDiscountType marketingDiscountType;
 
-    @Column(name = "marketing_discount_value", updatable = false)
-    private BigDecimal marketingDiscountValue;
+    @Convert(converter = PercentageConverter.class)
+    @Column(name = "marketing_discount_percentage", updatable = false)
+    private Percentage marketingDiscountPercentage;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "marketing_discount_amount", updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "marketing_discount_amount_currency", updatable = false))})
+    private NonNegativeMoney marketingDiscountFixedAmount;
 
     @Column(name = "effective_from", nullable = false, updatable = false)
     private LocalDate effectiveFrom;
@@ -149,8 +158,12 @@ public class PriceVersion {
         moveTo(PriceVersionEvent.REACH_START, StatusChangeActor.ofProcess(ACTIVATION_PROCESS), now, null);
     }
 
-    void supersede(Instant now) {
+    void supersedeByActivation(Instant now) {
         moveTo(PriceVersionEvent.SUPERSEDE, StatusChangeActor.ofProcess(ACTIVATION_PROCESS), now, null);
+    }
+
+    void supersedeCausedBy(Long personId, Instant now) {
+        moveTo(PriceVersionEvent.SUPERSEDE, StatusChangeActor.ofPerson(personId), now, null);
     }
 
     void cancel(Long directorId, String reason, Instant now) {
@@ -161,7 +174,7 @@ public class PriceVersion {
     }
 
     public Optional<MarketingDiscount> marketingDiscount() {
-        return marketingDiscountType == null ? Optional.empty() : Optional.of(new MarketingDiscount(marketingDiscountType, marketingDiscountValue));
+        return marketingDiscountType == null ? Optional.empty() : Optional.of(new MarketingDiscount(marketingDiscountType, marketingDiscountPercentage, marketingDiscountFixedAmount));
     }
 
     public NonNegativeMoney marketingDiscountAmount() {
@@ -191,7 +204,8 @@ public class PriceVersion {
         version.baseAmount = baseAmount;
         if (discount != null) {
             version.marketingDiscountType = discount.type();
-            version.marketingDiscountValue = discount.value();
+            version.marketingDiscountPercentage = discount.percentage();
+            version.marketingDiscountFixedAmount = discount.fixedAmount();
         }
         version.effectiveFrom = effectiveFrom;
         version.changeReason = changeReason;

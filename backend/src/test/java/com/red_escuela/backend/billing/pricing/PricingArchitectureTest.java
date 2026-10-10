@@ -19,7 +19,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 @Tag("D-214")
 class PricingArchitectureTest {
-    private static final String MUTATORS = "propose|publish|approve|reject|withdraw|expire|reachStart|supersede|cancel|set.*";
+    private static final String MUTATORS = "propose|publish|approve|reject|withdraw|expire|reachStart|supersede.*|cancel|set.*";
     private static final JavaClasses MAIN_CLASSES = new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
             .importPackages("com.red_escuela.backend");
 

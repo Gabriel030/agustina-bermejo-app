@@ -12,7 +12,8 @@ public final class MarketingDiscountFixedNotAboveBasePolicy implements Policy<Pr
     }
 
     public PolicyVerdict evaluateRule(PriceVersionDraft draft) {
-        boolean above = draft.hasDiscountOfType(MarketingDiscountType.FIXED) && draft.discountValue().compareTo(draft.baseAmount()) > 0;
+        boolean above = draft.hasDiscountOfType(MarketingDiscountType.FIXED) && draft.discountAmount().currency() == draft.baseAmount().currency()
+                && draft.discountAmount().isGreaterThan(draft.baseAmount());
         return above ? PolicyVerdict.deny(ruleName(), "MARKETING_DISCOUNT_EXCEEDS_BASE", "El descuento de marketing no puede superar el precio base.")
                 : PolicyVerdict.allow(ruleName());
     }

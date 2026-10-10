@@ -1,14 +1,25 @@
 package com.red_escuela.backend.billing;
 
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
+import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
+import com.red_escuela.backend.billing.pricing.repository.PriceVersionRepository;
+import com.red_escuela.backend.billing.pricing.service.PriceReader;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
+import jakarta.persistence.EntityManager;
 import org.flywaydb.core.Flyway;
+import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
 import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -89,16 +100,14 @@ class PriceRevisionMigrationIT {
             insertLine(seed, 2, "MONTHLY_INSTALLMENT", "120000.00", newest);
             insertLine(seed, 3, "ENROLLMENT_FEE", "50000.00", enrollmentFee);
             insertLine(seed, 4, "MONTHLY_INSTALLMENT", "15000.50", coursePrice);
-            List<Map<String, Object>> linesBefore = seed.jdbc().queryForList(
-                    "select id, invoice_id, line_number, fee_type, concept, amount, amount_currency, charge_key, price_revision_id from invoice_line order by id");
+            List<Map<String, Object>> linesBefore = seed.jdbc().queryForList("select * from invoice_line order by id");
             BigDecimal totalBefore = seed.jdbc().queryForObject("select sum(amount) from invoice_line", BigDecimal.class);
 
             migrateTo(dataSource, "105");
 
             JdbcTemplate jdbc = seed.jdbc();
-            List<Map<String, Object>> linesAfter = jdbc.queryForList(
-                    "select id, invoice_id, line_number, fee_type, concept, amount, amount_currency, charge_key, price_version_id as price_revision_id from invoice_line order by id");
-            assertThat(linesAfter).isEqualTo(linesBefore);
+            List<Map<String, Object>> linesAfter = jdbc.queryForList("select * from invoice_line order by id").stream().map(PriceRevisionMigrationIT::asBeforeTheMigration).toList();
+            assertThat(linesAfter).hasSize(4).isEqualTo(linesBefore);
             assertThat(jdbc.queryForObject("select sum(amount) from invoice_line", BigDecimal.class)).isEqualByComparingTo(totalBefore);
             assertThat(jdbc.queryForObject("select count(*) from invoice_line where marketing_discount_amount = 0 and list_amount = amount", Long.class)).isEqualTo(4);
             assertThat(jdbc.queryForObject("select count(*) from price", Long.class)).isEqualTo(3);
@@ -109,12 +118,25 @@ class PriceRevisionMigrationIT {
             assertThat(statusOf(jdbc, enrollmentFee)).isEqualTo("EFFECTIVE");
             assertThat(statusOf(jdbc, coursePrice)).isEqualTo("EFFECTIVE");
             assertThat(jdbc.queryForList("select id from price_version where initial_version order by id", Long.class)).containsExactlyInAnyOrder(oldest, enrollmentFee, coursePrice);
-            assertThat(jdbc.queryForObject("select count(*) from price_version where marketing_discount_type is not null or marketing_discount_value is not null", Long.class)).isZero();
+            assertThat(jdbc.queryForObject("select count(*) from price_version where marketing_discount_type is not null or marketing_discount_percentage is not null or marketing_discount_amount is not null or marketing_discount_amount_currency is not null", Long.class)).isZero();
             assertThat(jdbc.queryForObject("select count(*) from price_version where amount_currency <> 'ARS' or not direct_publication", Long.class)).isZero();
-            assertThat(jdbc.queryForObject("select id from price_version where price_id = (select id from price where program_id = ? and fee_type = 'MONTHLY_INSTALLMENT') "
-                    + "and effective_from = date '2020-01-01' order by decided_at desc, id desc limit 1", Long.class, seed.programId())).isEqualTo(sameDayCorrection);
+            PriceReader priceReader = priceReaderOver(dataSource);
+            OfferingReference program = OfferingReference.ofProgram(seed.programId());
+            PriceVersionResolution sameDay = priceReader.requirePriceVersionEffectiveOn(program, FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2020, 1, 1));
+            assertThat(sameDay.priceVersionId()).isEqualTo(sameDayCorrection);
+            assertThat(sameDay.finalAmount().value().amount()).isEqualByComparingTo("110000.00");
+            assertThat(sameDay.marketingDiscountAmount().value().isZero()).isTrue();
+            assertThat(priceReader.requirePriceVersionEffectiveOn(program, FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2025, 6, 1)).priceVersionId()).isEqualTo(newest);
+            assertThat(priceReader.requirePriceVersionEffectiveOn(program, FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2024, 12, 31)).priceVersionId()).isEqualTo(sameDayCorrection);
+            assertThat(priceReader.requirePriceVersionEffectiveOn(OfferingReference.ofCourse(seed.courseId()), FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2025, 2, 1)).priceVersionId())
+                    .isEqualTo(coursePrice);
             assertThat(jdbc.queryForObject("select count(*) from price_version v where not exists (select 1 from price_version_status_change c where c.price_version_id = v.id)", Long.class)).isZero();
             assertThat(jdbc.queryForObject("select count(*) from price_version_status_change where to_status = 'SUPERSEDED'", Long.class)).isEqualTo(2);
+            assertThat(jdbc.queryForObject("select change_reason from price_version where id = ?", String.class, oldest)).isEqualTo("Descripcion 2020-01-01");
+            assertThat(jdbc.queryForObject("select change_reason from price_version where id = ?", String.class, newest)).isEqualTo("Descripcion 2025-06-01");
+            assertThat(jdbc.queryForObject("select change_reason from price_version where id = ?", String.class, coursePrice)).isEqualTo("Descripcion 2025-02-01");
+            assertThat(jdbc.queryForObject("select reason from price_version_status_change c where c.price_version_id = ? and c.to_status = 'EFFECTIVE'", String.class, newest))
+                    .isEqualTo("Descripcion 2025-06-01");
         }
     }
 
@@ -132,6 +154,25 @@ class PriceRevisionMigrationIT {
                     .hasMessageContaining("currency different from the currency of their offering");
             assertThat(seed.jdbc().queryForObject("select count(*) from price_revision", Long.class)).isEqualTo(1);
         }
+    }
+
+    private static Map<String, Object> asBeforeTheMigration(Map<String, Object> afterTheMigration) {
+        Map<String, Object> row = new java.util.LinkedHashMap<>(afterTheMigration);
+        row.remove("marketing_discount_amount");
+        row.remove("list_amount");
+        row.put("price_revision_id", row.remove("price_version_id"));
+        return row;
+    }
+
+    private static PriceReader priceReaderOver(DriverManagerDataSource dataSource) {
+        LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
+        factory.setDataSource(dataSource);
+        factory.setPackagesToScan("com.red_escuela.backend.billing.pricing.domain");
+        factory.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        factory.setJpaPropertyMap(Map.of("hibernate.physical_naming_strategy", CamelCaseToUnderscoresNamingStrategy.class.getName()));
+        factory.afterPropertiesSet();
+        EntityManager entityManager = factory.getObject().createEntityManager();
+        return new PriceReader(new JpaRepositoryFactory(entityManager).getRepository(PriceVersionRepository.class));
     }
 
     private static String statusOf(JdbcTemplate jdbc, long versionId) {

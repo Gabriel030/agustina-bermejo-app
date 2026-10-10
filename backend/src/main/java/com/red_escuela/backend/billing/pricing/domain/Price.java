@@ -83,10 +83,11 @@ public class Price {
     public PriceVersion publishPriceVersion(NonNegativeMoney baseAmount, MarketingDiscount discount, LocalDate effectiveFrom, String changeReason,
                                             Long publisherId, boolean initialVersion, LocalDate today, Instant now) {
         requireOwnCurrency(baseAmount);
+        requireDiscountFitsPrice(baseAmount, discount);
         requireNotRetroactive(effectiveFrom, today);
         Long previousId = findVersionEffectiveOn(today).map(PriceVersion::getId).orElse(null);
         if (!effectiveFrom.isAfter(today)) {
-            supersedeEffectiveVersions(now);
+            supersedeEffectiveVersions(publisherId, now);
         }
         PriceVersion version = PriceVersion.publish(this, baseAmount, discount, effectiveFrom, changeReason, publisherId, initialVersion, today, previousId, now);
         versions.add(version);
@@ -96,6 +97,7 @@ public class Price {
     public PriceVersion proposePriceVersion(NonNegativeMoney baseAmount, MarketingDiscount discount, LocalDate effectiveFrom, String changeReason,
                                             Long proposerId, Long authorizationRequestId, boolean initialVersion, LocalDate today, Instant now) {
         requireOwnCurrency(baseAmount);
+        requireDiscountFitsPrice(baseAmount, discount);
         requireNotRetroactive(effectiveFrom, today);
         Long previousId = findVersionEffectiveOn(today).map(PriceVersion::getId).orElse(null);
         PriceVersion version = PriceVersion.propose(this, baseAmount, discount, effectiveFrom, changeReason, proposerId, authorizationRequestId, initialVersion, previousId, now);
@@ -106,7 +108,7 @@ public class Price {
     public void approveProposedVersion(PriceVersion version, Long deciderId, String decisionReason, LocalDate today, Instant now) {
         requireOwnVersion(version);
         if (version.isOpenProposal() && !version.getEffectiveFrom().isAfter(today)) {
-            supersedeEffectiveVersions(now);
+            supersedeEffectiveVersions(deciderId, now);
         }
         version.approve(deciderId, decisionReason, today, now);
     }
@@ -133,12 +135,12 @@ public class Price {
 
     public void activateScheduledVersion(PriceVersion version, Instant now) {
         requireOwnVersion(version);
-        supersedeEffectiveVersions(now);
+        versions.stream().filter(candidate -> candidate.getStatus() == PriceVersionStatus.EFFECTIVE).forEach(candidate -> candidate.supersedeByActivation(now));
         version.reachStart(now);
     }
 
-    public void retireEffectiveVersions(Instant now) {
-        supersedeEffectiveVersions(now);
+    public void retireEffectiveVersions(Long causedById, Instant now) {
+        supersedeEffectiveVersions(causedById, now);
     }
 
     public Optional<PriceVersion> findVersionEffectiveOn(LocalDate date) {
@@ -160,8 +162,21 @@ public class Price {
         return price;
     }
 
-    private void supersedeEffectiveVersions(Instant now) {
-        versions.stream().filter(version -> version.getStatus() == PriceVersionStatus.EFFECTIVE).forEach(version -> version.supersede(now));
+    private void supersedeEffectiveVersions(Long causedById, Instant now) {
+        versions.stream().filter(version -> version.getStatus() == PriceVersionStatus.EFFECTIVE).forEach(version -> version.supersedeCausedBy(causedById, now));
+    }
+
+    private void requireDiscountFitsPrice(NonNegativeMoney baseAmount, MarketingDiscount discount) {
+        if (discount == null || discount.type() != MarketingDiscountType.FIXED) {
+            return;
+        }
+        NonNegativeMoney fixed = discount.fixedAmount();
+        if (fixed.value().currency() != currency) {
+            throw new IllegalArgumentException("A price in " + currency + " cannot take a discount in " + fixed.value().currency());
+        }
+        if (fixed.value().isGreaterThan(baseAmount.value())) {
+            throw new IllegalArgumentException("A fixed marketing discount cannot exceed the base amount");
+        }
     }
 
     private void requireOwnCurrency(NonNegativeMoney baseAmount) {

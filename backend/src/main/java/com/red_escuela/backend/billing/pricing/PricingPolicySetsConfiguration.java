@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.pricing;
 
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountFixedNotAboveBasePolicy;
 import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountNotNegativePolicy;
-import com.red_escuela.backend.billing.pricing.policy.MarketingDiscountPercentageNotAboveHundredPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceCurrencyPolicy;
 import com.red_escuela.backend.billing.pricing.policy.PriceVersionDraft;
 import com.red_escuela.backend.shared.domain.policy.Policy;
@@ -20,7 +19,6 @@ public class PricingPolicySetsConfiguration {
         List<Policy<PriceVersionDraft>> ordered = List.of(
                 new PriceCurrencyPolicy(),
                 new MarketingDiscountNotNegativePolicy(),
-                new MarketingDiscountPercentageNotAboveHundredPolicy(),
                 new MarketingDiscountFixedNotAboveBasePolicy());
         return PolicySet.named("PRICE_VERSION", ordered);
     }

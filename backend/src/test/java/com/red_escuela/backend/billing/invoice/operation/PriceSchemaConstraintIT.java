@@ -40,9 +40,12 @@ class PriceSchemaConstraintIT extends AbstractInvoiceIssuingIT {
     private void insertVersion(long priceId, String status, LocalDate from, String amount, String discountType, String discountValue, Long directorId, String cancelReason, String decisionReason) {
         jdbc.update("""
                 insert into price_version (price_id, amount, amount_currency, effective_from, status, change_reason, proposed_by_id, proposed_at,
-                    decided_by_id, decided_at, marketing_discount_type, marketing_discount_value, cancellation_reason, decision_reason)
-                values (?, cast(? as numeric), 'ARS', ?, ?, 'test', ?, now(), ?, now(), ?, cast(? as numeric), ?, ?)
-                """, priceId, amount, from, status, directorId, "PROPOSED".equals(status) ? null : directorId, discountType, discountValue, cancelReason, decisionReason);
+                    decided_by_id, decided_at, marketing_discount_type, marketing_discount_percentage, marketing_discount_amount, marketing_discount_amount_currency,
+                    cancellation_reason, decision_reason)
+                values (?, cast(? as numeric), 'ARS', ?, ?, 'test', ?, now(), ?, now(), ?, case when ? = 'PERCENTAGE' then cast(? as numeric) / 100 end,
+                    case when ? = 'FIXED' then cast(? as numeric) end, case when ? = 'FIXED' then 'ARS' end, ?, ?)
+                """, priceId, amount, from, status, directorId, "PROPOSED".equals(status) ? null : directorId, discountType, discountType, discountValue,
+                discountType, discountValue, discountType, cancelReason, decisionReason);
     }
 
     @Test
@@ -52,8 +55,8 @@ class PriceSchemaConstraintIT extends AbstractInvoiceIssuingIT {
         long version = monthlyPriceVersionOf(offering);
         long otherPrice = monthlyPriceOf(other);
 
-        for (String assignment : new String[]{"amount = 1", "amount_currency = 'USD'", "effective_from = date '2030-01-01'", "marketing_discount_type = 'FIXED', marketing_discount_value = 1",
-                "marketing_discount_type = 'PERCENTAGE', marketing_discount_value = 10"}) {
+        for (String assignment : new String[]{"amount = 1", "amount_currency = 'USD'", "effective_from = date '2030-01-01'", "marketing_discount_type = 'FIXED', marketing_discount_amount = 1, marketing_discount_amount_currency = 'ARS'",
+                "marketing_discount_type = 'PERCENTAGE', marketing_discount_percentage = 0.1"}) {
             expectRejection("price_version values are immutable", () -> jdbc.update("update price_version set " + assignment + " where id = ?", version));
         }
         expectRejection("price_version values are immutable", () -> jdbc.update("update price_version set price_id = ? where id = ?", otherPrice, version));
@@ -67,7 +70,8 @@ class PriceSchemaConstraintIT extends AbstractInvoiceIssuingIT {
     void theMarketingDiscountIsImmutableOnceSetToo() {
         var offering = factory.newProgram(Currency.ARS, 100000, 50000);
         long priceId = monthlyPriceOf(offering);
-        for (String assignment : new String[]{"marketing_discount_value = 30", "marketing_discount_type = null, marketing_discount_value = null", "marketing_discount_type = 'FIXED', marketing_discount_value = 20"}) {
+        for (String assignment : new String[]{"marketing_discount_percentage = 0.3", "marketing_discount_type = null, marketing_discount_percentage = null",
+                "marketing_discount_type = 'FIXED', marketing_discount_percentage = null, marketing_discount_amount = 20, marketing_discount_amount_currency = 'ARS'"}) {
             expectRejection("price_version values are immutable", () -> {
                 insertVersion(priceId, "SCHEDULED", LocalDate.of(2090, 1, 1), "100000", "PERCENTAGE", "20", offering.directorId(), null, null);
                 jdbc.update("update price_version set " + assignment + " where price_id = ? and effective_from = date '2090-01-01'", priceId);
@@ -144,5 +148,18 @@ class PriceSchemaConstraintIT extends AbstractInvoiceIssuingIT {
                     .isEqualByComparingTo("110.00");
             status.setRollbackOnly();
         });
+    }
+
+    @Test
+    void anIssuedInvoiceLineRefusesToChangeItsMarketingDiscountAndItsPriceVersion() {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        var learner = factory.newLearner(offering, null);
+        Invoice invoice = issued(runner.issueInvoiceInNewTransaction(installment(offering, learner, YearMonth.of(2027, 3), LocalDate.of(2027, 3, 11), LocalDate.of(2027, 3, 1))));
+        long lineId = invoice.getLines().get(0).getId();
+        long otherVersion = monthlyPriceVersionOf(factory.newProgram(Currency.ARS, 100000, 50000));
+
+        expectRejection("issued invoice line is immutable", () -> jdbc.update("update invoice_line set marketing_discount_amount = 5 where id = ?", lineId));
+        expectRejection("issued invoice line is immutable", () -> jdbc.update("update invoice_line set price_version_id = ? where id = ?", otherVersion, lineId));
+        expectRejection("issued invoice line is immutable", () -> jdbc.update("update invoice_line set price_version_id = null where id = ?", lineId));
     }
 }

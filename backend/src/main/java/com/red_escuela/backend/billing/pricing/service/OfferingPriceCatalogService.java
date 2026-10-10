@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.pricing.service;
 
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.pricing.domain.Price;
+import com.red_escuela.backend.billing.pricing.exception.PriceChangedConcurrentlyException;
 import com.red_escuela.backend.billing.pricing.policy.PriceVersionDraft;
 import com.red_escuela.backend.billing.pricing.repository.PriceRepository;
 import com.red_escuela.backend.shared.domain.Money;
@@ -9,6 +10,8 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.pricing.OfferingFee;
 import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
 import com.red_escuela.backend.shared.pricing.OfferingReference;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,8 @@ import java.time.LocalDate;
 
 @Service
 public class OfferingPriceCatalogService implements OfferingPriceCatalog {
+    private static final String PRICE_UNIQUE_INDEX_PREFIX = "uk_price_";
+
     private final PriceRepository priceRepository;
     private final PriceVersionPolicyEvaluator policyEvaluator;
     private final Clock clock;
@@ -45,12 +50,33 @@ public class OfferingPriceCatalogService implements OfferingPriceCatalog {
     }
 
     private void publishPriceVersion(Price price, Money amount, Long actorPersonId, String changeReason, boolean initialVersion) {
-        policyEvaluator.requireValidPriceVersion(PriceVersionDraft.withoutDiscount(price.getCurrency(), amount.currency(), amount.amount()));
-        price.retireEffectiveVersions(Instant.now(clock));
-        priceRepository.saveAndFlush(price);
-        price.publishPriceVersion(NonNegativeMoney.of(amount), null, LocalDate.now(clock), changeReason, actorPersonId, initialVersion,
-                LocalDate.now(clock), Instant.now(clock));
-        priceRepository.save(price);
+        policyEvaluator.requireValidPriceVersion(PriceVersionDraft.withoutDiscount(price.getCurrency(), amount));
+        try {
+            price.retireEffectiveVersions(actorPersonId, Instant.now(clock));
+            priceRepository.saveAndFlush(price);
+            price.publishPriceVersion(NonNegativeMoney.of(amount), null, LocalDate.now(clock), changeReason, actorPersonId, initialVersion,
+                    LocalDate.now(clock), Instant.now(clock));
+            priceRepository.saveAndFlush(price);
+        } catch (DataIntegrityViolationException | ObjectOptimisticLockingFailureException exception) {
+            if (isConcurrentPriceWrite(exception)) {
+                throw new PriceChangedConcurrentlyException(price.getFeeType(), exception);
+            }
+            throw exception;
+        }
+    }
+
+    private static boolean isConcurrentPriceWrite(RuntimeException exception) {
+        if (exception instanceof ObjectOptimisticLockingFailureException) {
+            return true;
+        }
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause.getMessage() != null && cause.getMessage().contains(PRICE_UNIQUE_INDEX_PREFIX)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private Price findOrCreatePrice(OfferingReference offering, FeeType feeType, Money amount) {

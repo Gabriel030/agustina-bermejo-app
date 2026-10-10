@@ -64,14 +64,17 @@ class PriceVersionIssuingIT extends AbstractInvoiceIssuingIT {
     @Test
     @Tag("D-054")
     @Tag("D-161")
-    void theRunPricingDateDecidesEvenWhenTheIncreaseStartsTwoDaysAfterIt() {
+    void theRunPricingDateDecidesEvenWhenTheClockAlreadyPassedTheStartOfTheIncrease() {
         var offering = factory.newProgram(Currency.ARS, 100000, 50000);
         var learner = factory.newLearner(offering, null);
         addVersion(offering, 130000, LocalDate.of(2027, 4, 3), null, null);
+        today(LocalDate.of(2027, 4, 5));
 
-        Invoice firstOfApril = issueInstallment(offering, learner, YearMonth.of(2027, 4), LocalDate.of(2027, 4, 1));
+        Invoice retryOfTheFirstOfApril = issueInstallment(offering, learner, YearMonth.of(2027, 4), LocalDate.of(2027, 4, 1));
+        Invoice runOfTheThird = issueInstallment(offering, learner, YearMonth.of(2027, 5), LocalDate.of(2027, 4, 3));
 
-        assertThat(firstOfApril.getLines().get(0).getAmount()).isEqualTo(ars("100000.00"));
+        assertThat(retryOfTheFirstOfApril.getLines().get(0).getAmount()).isEqualTo(ars("100000.00"));
+        assertThat(runOfTheThird.getLines().get(0).getAmount()).isEqualTo(ars("130000.00"));
         assertThat(priceReader.requirePriceVersionEffectiveOn(OfferingReference.ofProgram(offering.programId()), FeeType.MONTHLY_INSTALLMENT, LocalDate.of(2027, 4, 3)).finalAmount())
                 .isEqualTo(ars("130000.00"));
     }

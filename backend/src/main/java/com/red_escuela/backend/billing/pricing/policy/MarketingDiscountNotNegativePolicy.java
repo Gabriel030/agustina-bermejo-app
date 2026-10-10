@@ -11,7 +11,7 @@ public final class MarketingDiscountNotNegativePolicy implements Policy<PriceVer
     }
 
     public PolicyVerdict evaluateRule(PriceVersionDraft draft) {
-        boolean negative = draft.discountValue() != null && draft.discountValue().signum() < 0;
+        boolean negative = draft.discountAmount() != null && draft.discountAmount().isNegative();
         return negative ? PolicyVerdict.deny(ruleName(), "NEGATIVE_MARKETING_DISCOUNT", "El descuento de marketing no puede ser negativo.") : PolicyVerdict.allow(ruleName());
     }
 }

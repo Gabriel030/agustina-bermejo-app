@@ -71,7 +71,7 @@ class PriceVersionStatusTransitionTest {
             case EFFECTIVE -> version.approve(2L, "ok", TODAY.plusDays(10), NOW);
             case SUPERSEDED -> {
                 version.approve(2L, "ok", TODAY.plusDays(10), NOW);
-                version.supersede(NOW);
+                version.supersedeByActivation(NOW);
             }
             case REJECTED -> version.reject(2L, "no", NOW);
             case WITHDRAWN -> version.withdraw(1L, NOW);

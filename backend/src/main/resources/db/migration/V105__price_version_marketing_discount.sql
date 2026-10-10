@@ -51,7 +51,9 @@ alter table price_version
     add column cancelled_at timestamptz,
     add column cancellation_reason varchar(1000),
     add column marketing_discount_type varchar(12) check (marketing_discount_type in ('PERCENTAGE', 'FIXED')),
-    add column marketing_discount_value numeric(14, 4);
+    add column marketing_discount_percentage numeric(7, 6),
+    add column marketing_discount_amount numeric(12, 2),
+    add column marketing_discount_amount_currency varchar(3) check (marketing_discount_amount_currency in ('ARS', 'USD'));
 
 update price_version v
 set price_id = p.id
@@ -68,7 +70,7 @@ set status = case
         else 'SUPERSEDED' end,
     initial_version = (v.id = (select r.id from price_version r where r.price_id = v.price_id
                                order by r.effective_from asc, r.created_at asc, r.id asc limit 1)),
-    change_reason = 'Versión migrada de price_revision',
+    change_reason = v.description,
     proposed_by_id = v.created_by_id,
     proposed_at = v.created_at::timestamptz,
     decided_by_id = v.created_by_id,
@@ -97,9 +99,11 @@ alter table price_version
     add constraint ck_price_version_cancel_reason check (status <> 'CANCELLED' or cancellation_reason is not null),
     add constraint ck_price_version_reject_reason check (status <> 'REJECTED' or decision_reason is not null),
     add constraint ck_price_version_marketing_discount check (
-        (marketing_discount_type is null and marketing_discount_value is null)
-        or (marketing_discount_type = 'PERCENTAGE' and marketing_discount_value is not null and marketing_discount_value >= 0 and marketing_discount_value <= 100)
-        or (marketing_discount_type = 'FIXED' and marketing_discount_value is not null and marketing_discount_value >= 0 and marketing_discount_value <= amount));
+        (marketing_discount_type is null and marketing_discount_percentage is null and marketing_discount_amount is null and marketing_discount_amount_currency is null)
+        or (marketing_discount_type = 'PERCENTAGE' and marketing_discount_percentage is not null and marketing_discount_percentage >= 0 and marketing_discount_percentage <= 1
+            and marketing_discount_amount is null and marketing_discount_amount_currency is null)
+        or (marketing_discount_type = 'FIXED' and marketing_discount_percentage is null and marketing_discount_amount is not null and marketing_discount_amount >= 0
+            and marketing_discount_amount <= amount and marketing_discount_amount_currency = amount_currency));
 
 create index ix_price_version_resolution on price_version (price_id, effective_from desc) where status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED');
 create unique index uk_price_version_open_proposal on price_version (price_id) where status = 'PROPOSED';
@@ -142,7 +146,9 @@ begin
         or new.effective_from is distinct from old.effective_from
         or new.price_id is distinct from old.price_id
         or new.marketing_discount_type is distinct from old.marketing_discount_type
-        or new.marketing_discount_value is distinct from old.marketing_discount_value then
+        or new.marketing_discount_percentage is distinct from old.marketing_discount_percentage
+        or new.marketing_discount_amount is distinct from old.marketing_discount_amount
+        or new.marketing_discount_amount_currency is distinct from old.marketing_discount_amount_currency then
         raise exception 'price_version values are immutable: changing the price means creating a new version' using errcode = 'integrity_constraint_violation';
     end if;
     return new;
