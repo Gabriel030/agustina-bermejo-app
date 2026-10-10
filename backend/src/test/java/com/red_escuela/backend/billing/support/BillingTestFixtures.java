@@ -246,7 +246,7 @@ public final class BillingTestFixtures {
             Long programId = programEnrollment == null ? null : programEnrollment.getProgram().getId();
             Long courseId = courseEnrollment == null ? null : courseEnrollment.getCourse().getId();
             if (programId == null && courseId == null) {
-                programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, true, 1, ?) returning id", Long.class,
+                programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, ?) returning id", Long.class,
                         "Fixture " + System.nanoTime(), baseAmount.currency().name());
             }
             java.util.List<Long> found = jdbc.queryForList("select v.id from price_version v join price p on p.id = v.price_id where "
