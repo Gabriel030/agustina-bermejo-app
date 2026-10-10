@@ -24,7 +24,6 @@ com.red_escuela.backend.billing.dto.BillingPeriodResponse
 com.red_escuela.backend.billing.dto.CoursePricingResponse
 com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest
 com.red_escuela.backend.billing.dto.CreateBillingPeriodRequest
-com.red_escuela.backend.billing.dto.CreateCreditNoteRequest
 com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest
 com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest
 com.red_escuela.backend.billing.dto.CreateProgramCohortRequest
@@ -32,7 +31,6 @@ com.red_escuela.backend.billing.dto.CreateProgramYearBillingTemplateRequest
 com.red_escuela.backend.billing.dto.CreatePromotionBenefitRequest
 com.red_escuela.backend.billing.dto.CreatePromotionRequest
 com.red_escuela.backend.billing.dto.CreateScholarshipRequest
-com.red_escuela.backend.billing.dto.CreditNoteResponse
 com.red_escuela.backend.billing.dto.DebtorSummaryResponse
 com.red_escuela.backend.billing.dto.EnrollmentBillingStatusResponse
 com.red_escuela.backend.billing.dto.EnrollmentPaymentStatusResponse
@@ -77,10 +75,6 @@ com.red_escuela.backend.billing.entity.BillingConfigurationAlert
 com.red_escuela.backend.billing.entity.BillingPeriod
 com.red_escuela.backend.billing.entity.CardType
 com.red_escuela.backend.billing.entity.CohortIntake
-com.red_escuela.backend.billing.entity.CreditApplication
-com.red_escuela.backend.billing.entity.CreditNote
-com.red_escuela.backend.billing.entity.CreditNoteReasonType
-com.red_escuela.backend.billing.entity.CreditNoteStatus
 com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus
 com.red_escuela.backend.billing.entity.InstallmentStatus
 com.red_escuela.backend.billing.entity.LatePaymentSettings
@@ -105,13 +99,10 @@ com.red_escuela.backend.billing.entity.ScholarshipStatus
 com.red_escuela.backend.billing.exception.ChargeRejectedException
 com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException
 com.red_escuela.backend.billing.exception.CoursePaymentPlanAlreadySetException
-com.red_escuela.backend.billing.exception.CreditNoteNotFoundException
 com.red_escuela.backend.billing.exception.DuplicateChargeException
 com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException
 com.red_escuela.backend.billing.exception.GatewayCurrencyNotSupportedException
-com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException
 com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException
-com.red_escuela.backend.billing.exception.InvalidCreditNoteReasonException
 com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException
 com.red_escuela.backend.billing.exception.InvalidMpWebhookSignatureException
 com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException
@@ -149,8 +140,6 @@ com.red_escuela.backend.billing.repository.BankTransferReceiptRepository
 com.red_escuela.backend.billing.repository.BatchExecutionLogRepository
 com.red_escuela.backend.billing.repository.BillingConfigurationAlertRepository
 com.red_escuela.backend.billing.repository.BillingPeriodRepository
-com.red_escuela.backend.billing.repository.CreditApplicationRepository
-com.red_escuela.backend.billing.repository.CreditNoteRepository
 com.red_escuela.backend.billing.repository.LatePaymentSettingsRepository
 com.red_escuela.backend.billing.repository.PaymentAllocationRepository
 com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository
@@ -168,12 +157,10 @@ com.red_escuela.backend.billing.service.BillingConfigurationAlertService
 com.red_escuela.backend.billing.service.BillingPlanningConfiguration
 com.red_escuela.backend.billing.service.ChargesOnReactivationListener
 com.red_escuela.backend.billing.service.CourseInvoicePlanningContextLoader
-com.red_escuela.backend.billing.service.CreditNoteService
 com.red_escuela.backend.billing.service.EnrollmentBillingComplianceRowProcessor
 com.red_escuela.backend.billing.service.EnrollmentBillingComplianceSweepService
 com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService
 com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent
-com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService
 com.red_escuela.backend.billing.service.InstallmentIssuanceOutcome
 com.red_escuela.backend.billing.service.InvoiceDetailLoader
 com.red_escuela.backend.billing.service.InvoiceOverdueRowProcessor
@@ -221,10 +208,6 @@ com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountServi
 com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase
 com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService
 com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationUseCase
-com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteService
-com.red_escuela.backend.billing.usecase.creditnote.CreateManualCreditNoteUseCase
-com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentService
-com.red_escuela.backend.billing.usecase.creditnote.ListCreditNotesForStudentUseCase
 com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardService
 com.red_escuela.backend.billing.usecase.dashboard.GetFinancialDashboardUseCase
 com.red_escuela.backend.billing.usecase.dashboard.ListDebtorsService

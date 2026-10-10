@@ -39,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
@@ -54,7 +53,6 @@ public class CourseEnrollmentService {
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
-    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
     private final Clock clock;
 
     public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
@@ -64,7 +62,7 @@ public class CourseEnrollmentService {
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService,
+            ScholarshipService scholarshipService,
             Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -75,7 +73,6 @@ public class CourseEnrollmentService {
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
-        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
         this.clock = clock;
     }
 
@@ -216,7 +213,6 @@ public class CourseEnrollmentService {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
-        enrollmentWithdrawalCreditService.handleCourseEnrollmentWithdrawal(enrollment);
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());

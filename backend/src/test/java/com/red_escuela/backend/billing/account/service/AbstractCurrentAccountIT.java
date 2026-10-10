@@ -47,7 +47,7 @@ import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.SNA
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("D-144")
-abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
+public abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
 
     @Autowired
     protected StudentCurrentAccountService service;

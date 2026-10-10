@@ -103,7 +103,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.repository.ScholarshipRepository scholarshipRepository;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.CreditNoteRepository creditNoteRepository;
+    private com.red_escuela.backend.billing.note.repository.CreditNoteRepository creditNoteRepository;
 
     private Person persistPerson(String username) {
         Address address = addressRepository.save(new Address());
@@ -287,8 +287,8 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @Tag("D-078")
-    void grantingAScholarshipWithTheCurrentMonthsInstallmentAlreadyPaidGeneratesARetroactiveCreditNote() {
+    @Tag("D-238")
+    void grantingAScholarshipWithTheCurrentMonthsInstallmentAlreadyPaidGeneratesNoCreditNote() {
         Person director = persistPerson("director.scholarship9." + System.nanoTime());
         Course course = persistCourse(director, BigDecimal.valueOf(10000));
         CourseEnrollment enrollment = persistCourseEnrollment("88000009", course);
@@ -301,14 +301,12 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
         var scholarship = grantScholarshipForCourseUseCase.grant(enrollment.getId(), new CreateScholarshipRequest(
                 new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), "Beca 20% tardía", 3));
 
-        var creditNote = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(enrollment.getStudent().getId()).get(0);
-        assertThat(creditNote.getReasonType()).isEqualTo(com.red_escuela.backend.billing.entity.CreditNoteReasonType.RETROACTIVE_SCHOLARSHIP);
-        assertThat(creditNote.getAmount()).isEqualTo(ars(2000));
+        assertThat(creditNoteRepository.findByStudentIdNewestFirst(enrollment.getStudent().getId())).isEmpty();
 
         var reloaded = scholarshipRepository.findByIdWithInstallments(scholarship.getId()).orElseThrow();
         assertThat(reloaded.getInstallments())
                 .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.APPLIED)
-                .hasSize(1);
+                .isEmpty();
     }
 
     @Test

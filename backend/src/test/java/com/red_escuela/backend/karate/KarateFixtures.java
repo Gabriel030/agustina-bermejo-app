@@ -239,4 +239,31 @@ public class KarateFixtures {
                 .build()
                 .getId();
     }
+
+    public static Long createIssuedInvoiceWithLedgerDebit(Long studentId, String amount) {
+        var transactionTemplate = new org.springframework.transaction.support.TransactionTemplate(
+                context().getBean(org.springframework.transaction.PlatformTransactionManager.class));
+        var accountService = context().getBean(com.red_escuela.backend.billing.account.service.StudentCurrentAccountService.class);
+        var invoiceRepository = context().getBean(com.red_escuela.backend.billing.invoice.repository.InvoiceRepository.class);
+        var numberGenerator = context().getBean(com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator.class);
+        var studentRepository = context().getBean(StudentRepository.class);
+        return transactionTemplate.execute(status -> {
+            Person person = studentRepository.findById(studentId).orElseThrow().getPerson();
+            var account = accountService.findOrOpenAndLockStudentCurrentAccount(studentId, com.red_escuela.backend.shared.domain.Currency.ARS);
+            var snapshot = new com.red_escuela.backend.billing.invoice.domain.StudentSnapshot(person.getName() + " " + person.getLastname(), person.getDni(), "Calle 1");
+            var header = new com.red_escuela.backend.billing.invoice.domain.InvoiceDraftHeader(account.getId(), com.red_escuela.backend.shared.domain.Currency.ARS,
+                    com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType.INVOICE, com.red_escuela.backend.billing.invoice.domain.InvoiceType.ADMINISTRATIVE_FEE,
+                    com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason.AD_HOC_CHARGE, null);
+            var line = new com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft(com.red_escuela.backend.billing.invoice.domain.FeeType.ADMINISTRATIVE_FEE, "Concepto",
+                    java.time.YearMonth.of(2027, 3), null, null, null, null, null, "KR:" + System.nanoTime(),
+                    com.red_escuela.backend.shared.domain.NonNegativeMoney.of(new BigDecimal(amount), com.red_escuela.backend.shared.domain.Currency.ARS));
+            var actor = com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor.ofProcess("KARATE");
+            var draft = com.red_escuela.backend.billing.invoice.domain.InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, actor);
+            draft.issueInvoice(numberGenerator.nextInvoiceNumber(com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType.INVOICE),
+                    java.time.LocalDate.of(2027, 3, 1), java.time.LocalDate.of(2027, 3, 10), snapshot, actor);
+            var saved = invoiceRepository.save(draft);
+            accountService.recordInvoiceIssuedDebit(account, saved, java.time.LocalDate.of(2027, 3, 1));
+            return saved.getId();
+        });
+    }
 }
