@@ -77,6 +77,8 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private LateFeeAccrualStep lateFeeAccrualStep;
+    @MockitoBean
+    private LateFeeOnOverdueInvoiceListener lateFeeOnOverdueInvoiceListener;
 
     @org.junit.jupiter.api.BeforeEach
     void stubLateFeeAccrualOutsideThisDetectionSuite() {
