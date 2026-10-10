@@ -7,6 +7,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
+import com.red_escuela.backend.billing.collections.service.OverdueInvoiceTransitionService;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -52,7 +53,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     private InvoiceOverdueSweepService sweepService;
 
     @Autowired
-    private InvoiceOverdueRowProcessor rowProcessor;
+    private OverdueInvoiceTransitionService transitionService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -139,7 +140,7 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     }
 
     private ConfigurationVersion persistPolicy(Person createdBy, int gracePeriodDays, BigDecimal surchargePercentage) {
-        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now());
+        return LatePaymentTestFixtures.persistLatePayment(configurationVersionRepository, createdBy, gracePeriodDays, surchargePercentage, 30, 2, LocalDate.now().minusYears(50));
     }
 
     @Test
@@ -230,8 +231,8 @@ class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("99000901");
         Invoice invoice = persistInvoice(enrollment, ars(1000), LocalDate.now().minusDays(15));
 
-        rowProcessor.process(invoice.getId(), LocalDate.now());
-        rowProcessor.process(invoice.getId(), LocalDate.now());
+        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), LocalDate.now());
+        transitionService.markAsOverdueWhenPastDueDate(invoice.getId(), LocalDate.now());
 
         Invoice reloaded = invoiceRepository.findInvoiceWithLinesById(invoice.getId()).orElseThrow();
         assertThatInvoice(reloaded).isOverdue();
