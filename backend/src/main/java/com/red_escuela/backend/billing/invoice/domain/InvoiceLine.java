@@ -155,7 +155,7 @@ public class InvoiceLine {
         this.courseEnrollmentId = enrollmentId;
     }
 
-    public boolean isChargeKeyReleased() {
+    public boolean getChargeKeyReleased() {
         return chargeKeyReleasedAt != null;
     }
 

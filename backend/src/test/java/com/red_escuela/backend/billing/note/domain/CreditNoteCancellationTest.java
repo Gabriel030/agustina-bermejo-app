@@ -38,7 +38,7 @@ class CreditNoteCancellationTest {
 
         assertThat(note.getTotalAmount()).isEqualTo(ars("80000.00"));
         assertThat(invoice.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.CANCELLED);
-        assertThat(invoice.getLines()).allMatch(line -> line.isChargeKeyReleased() == false);
+        assertThat(invoice.getLines()).allMatch(line -> line.getChargeKeyReleased() == false);
     }
 
     @Test
@@ -47,7 +47,7 @@ class CreditNoteCancellationTest {
 
         invoice.applyCreditNote(cancellationOf(invoice, CreditNoteReason.BILLING_ERROR).toInvoiceCancellationApplication(true), DUE_DATE, ACTOR);
 
-        assertThat(invoice.getLines()).allMatch(line -> line.isChargeKeyReleased());
+        assertThat(invoice.getLines()).allMatch(line -> line.getChargeKeyReleased());
     }
 
     @Test

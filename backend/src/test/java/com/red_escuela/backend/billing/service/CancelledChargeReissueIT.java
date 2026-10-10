@@ -56,7 +56,7 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
     }
 
     private long liveInvoices(Long enrollmentId, FeeType type) {
-        return invoices(enrollmentId, type).stream().filter(i -> !i.getPrimaryLine().isChargeKeyReleased() && i.getPaymentStatus() != InvoicePaymentStatus.CANCELLED).count();
+        return invoices(enrollmentId, type).stream().filter(i -> !i.getPrimaryLine().getChargeKeyReleased() && i.getPaymentStatus() != InvoicePaymentStatus.CANCELLED).count();
     }
 
     @Test
@@ -73,8 +73,8 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
 
         List<Invoice> installments = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(installments).hasSize(2);
-        assertThat(installments).filteredOn(i -> i.getPrimaryLine().isChargeKeyReleased()).hasSize(1);
-        assertThat(installments).filteredOn(i -> !i.getPrimaryLine().isChargeKeyReleased()).singleElement()
+        assertThat(installments).filteredOn(i -> i.getPrimaryLine().getChargeKeyReleased()).hasSize(1);
+        assertThat(installments).filteredOn(i -> !i.getPrimaryLine().getChargeKeyReleased()).singleElement()
                 .satisfies(live -> assertThat(live.getPrimaryLine().getChargeKey()).isEqualTo(key))
                 .satisfies(live -> assertThat(live.getPaymentStatus()).isNotEqualTo(InvoicePaymentStatus.CANCELLED));
         invariantChecker.assertAllBillingInvariantsHold();
@@ -93,7 +93,7 @@ class CancelledChargeReissueIT extends AbstractInvoiceSequenceTest {
         job.run(MAY);
 
         assertThat(periods(enrollment, FeeType.MONTHLY_INSTALLMENT)).containsExactly(APRIL, MAY);
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getPrimaryLine().isChargeKeyReleased()).isFalse();
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getPrimaryLine().getChargeKeyReleased()).isFalse();
         invariantChecker.assertAllBillingInvariantsHold();
     }
 

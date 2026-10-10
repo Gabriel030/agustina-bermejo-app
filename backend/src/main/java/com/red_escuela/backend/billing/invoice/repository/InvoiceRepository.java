@@ -104,19 +104,19 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
         return findByProgramEnrollmentId(enrollmentId).stream()
-                .filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
+                .filter(i -> !i.getPrimaryLine().getChargeKeyReleased())
                 .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
     }
 
     default Optional<Invoice> findFirstByCourseEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
         return findByCourseEnrollmentId(enrollmentId).stream()
-                .filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
+                .filter(i -> !i.getPrimaryLine().getChargeKeyReleased())
                 .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
     }
 
     default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndTemplateIdAndEnrollmentFeeSlot(Long enrollmentId, FeeType feeType, Long templateId,
                                                                                                         Integer slot) {
-        return findByProgramEnrollmentId(enrollmentId).stream().filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
+        return findByProgramEnrollmentId(enrollmentId).stream().filter(i -> !i.getPrimaryLine().getChargeKeyReleased())
                 .filter(i -> i.getPrimaryLine().getFeeType() == feeType
                 && java.util.Objects.equals(i.getPrimaryLine().getTemplateId(), templateId)
                 && java.util.Objects.equals(i.getPrimaryLine().getEnrollmentFeeSlot(), slot)).findFirst();
