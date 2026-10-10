@@ -54,8 +54,7 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>();
         found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount < 0"));
         found.addAll(violations("I-06 negative payment", "select 'payment ' || id from payment where amount < 0"));
-        found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where amount < 0"));
-        found.addAll(violations("I-06 negative credit application", "select 'credit application ' || id from credit_application where amount_applied < 0"));
+        found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where total_amount < 0"));
         found.addAll(violations("I-06 negative price", "select 'price revision ' || id from price_revision where monthly_amount < 0"));
         return found;
     }
@@ -268,7 +267,7 @@ public final class BillingInvariantChecker {
         return violations("I-03 invoice allocated in part or beyond its total", """
                 select 'invoice ' || i.id
                 from invoice i
-                where @INVOICES@ and i.document_status = 'ISSUED' and %s not in (0, i.total)
+                where @INVOICES@ and i.document_status = 'ISSUED' and %s not in (0, i.total - i.credited_amount)
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 

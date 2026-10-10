@@ -295,11 +295,14 @@
 								<param>com.red_escuela.backend.billing.invoice.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.policy.*</param>
+								<param>com.red_escuela.backend.billing.note.domain.*</param>
+								<param>com.red_escuela.backend.billing.note.policy.*</param>
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCalculator</param>
 								<param>com.red_escuela.backend.billing.planning.policy.*</param>
 								<param>com.red_escuela.backend.billing.planning.domain.*</param>
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
+								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -311,9 +314,12 @@
 								<param>com.red_escuela.backend.billing.invoice.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.policy.*</param>
+								<param>com.red_escuela.backend.billing.note.domain.*</param>
+								<param>com.red_escuela.backend.billing.note.policy.*</param>
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.*</param>
 								<param>com.red_escuela.backend.billing.planning.*</param>
+								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>
