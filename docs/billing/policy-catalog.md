@@ -127,6 +127,12 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 6 | FinalExamsOnlyExemptionPolicy | ONLY_FINAL_EXAMS, NOT_REQUIRED_ONLY_FINAL_EXAMS | D-016, D-037, D-014 |
 | 7 | MonthlyInstallmentNotAlreadyIssuedPolicy | ALREADY_ISSUED | D-009, D-039 |
 
+## Momento OVERDUE_DETECTION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | InvoiceIsPastDueDatePolicy | INVOICE_NOT_PAST_DUE_DATE | D-057, D-153, D-288 |
+
 ## Momento PAYMENT_ALLOCATION
 
 | Orden | Policy | Códigos de violación | Decisiones |
