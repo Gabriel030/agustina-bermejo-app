@@ -123,6 +123,18 @@ public final class ArchitectureRules {
                 .because("@UseCase is reserved for classes in a usecase package");
     }
 
+    public static ArchRule invoicesAreCancelledOnlyThroughTheCancellationOperation() {
+        return noClasses()
+                .that().resideOutsideOfPackages("..billing.note.service..", "..billing.invoice.domain..", "..billing.note.domain..")
+                .should().callCodeUnitWhere(DescribedPredicate.describe("an application of a credit note to an invoice or of a cancellation",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) ->
+                                (call.getTargetOwner().getName().equals(ROOT + ".billing.invoice.domain.Invoice") && call.getTarget().getName().equals("applyCreditNote"))
+                                        || (call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
+                                        && call.getTarget().getName().equals("toInvoiceCancellationApplication"))))
+                .allowEmptyShould(true)
+                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation");
+    }
+
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
         return noClasses().that().resideOutsideOfPackages("..billing.invoice.operation..", "..billing.invoice.domain..")
                 .should().callMethodWhere(target(name("issueInvoice")).and(target(owner(assignableTo(Invoice.class)))))

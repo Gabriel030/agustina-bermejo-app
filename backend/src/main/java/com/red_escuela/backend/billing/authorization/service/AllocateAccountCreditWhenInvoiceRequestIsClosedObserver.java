@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.note.service;
+package com.red_escuela.backend.billing.authorization.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

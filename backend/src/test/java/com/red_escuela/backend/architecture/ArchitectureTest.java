@@ -61,6 +61,22 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void invoicesAreCancelledOnlyThroughTheCancellationOperation() {
+        ArchitectureRules.invoicesAreCancelledOnlyThroughTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void cancellationRuleDetectsABackdoor() {
+        assertThatThrownBy(() -> ArchitectureRules.invoicesAreCancelledOnlyThroughTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("CancellationBackdoorFixture");
+    }
+
+    @Test
     void invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages() {
         ArchitectureRules.invoicePaymentAllocationIsCalledOnlyByTheInvoiceAndPaymentPackages().check(MAIN_CLASSES);
     }
