@@ -163,7 +163,6 @@ com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService
 com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent
 com.red_escuela.backend.billing.service.InstallmentIssuanceOutcome
 com.red_escuela.backend.billing.service.InvoiceDetailLoader
-com.red_escuela.backend.billing.service.InvoiceOverdueRowProcessor
 com.red_escuela.backend.billing.service.InvoiceOverdueSweepService
 com.red_escuela.backend.billing.service.InvoicePlanningContextLoader
 com.red_escuela.backend.billing.service.InvoiceQueryService
