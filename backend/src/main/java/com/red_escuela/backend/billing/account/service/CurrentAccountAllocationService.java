@@ -5,10 +5,10 @@ import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationStr
 import com.red_escuela.backend.billing.account.domain.AllocationSchedule;
 import com.red_escuela.backend.billing.account.domain.CreditContributions;
 import com.red_escuela.backend.billing.account.domain.NewestAllocationsReversalSelection;
-import com.red_escuela.backend.billing.account.domain.ScheduledAllocation;
 import com.red_escuela.backend.billing.account.domain.OpenInvoiceView;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.domain.PlannedInvoiceAllocation;
+import com.red_escuela.backend.billing.account.domain.ScheduledAllocation;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.exception.PaymentAllocationRejectedException;
 import com.red_escuela.backend.billing.account.policy.AllocationPlanContext;

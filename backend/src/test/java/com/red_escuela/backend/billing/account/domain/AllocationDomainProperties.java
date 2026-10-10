@@ -1,8 +1,6 @@
 package com.red_escuela.backend.billing.account.domain;
 
-import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
 import com.red_escuela.backend.shared.domain.Currency;
-import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import net.jqwik.api.Arbitraries;
@@ -25,7 +23,6 @@ class AllocationDomainProperties {
     private static final LocalDate START = LocalDate.of(2027, 1, 1);
     private static final LocalDate BUSINESS_DATE = LocalDate.of(2028, 1, 1);
     private static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess("TEST");
-    private final OldestOverdueFirstAllocationStrategy strategy = new OldestOverdueFirstAllocationStrategy();
 
     private static NonNegativeMoney ars(long cents) {
         return NonNegativeMoney.of(BigDecimal.valueOf(cents, 2), Currency.ARS);
@@ -45,50 +42,59 @@ class AllocationDomainProperties {
         return Arbitraries.longs().between(0, 5_000_000);
     }
 
-    private List<OpenInvoiceView> openInvoices(List<Long> outstandingCents) {
-        List<OpenInvoiceView> views = new ArrayList<>();
-        for (int index = 0; index < outstandingCents.size(); index++) {
-            views.add(new OpenInvoiceView((long) index + 1, 1L, InvoiceDocumentType.INVOICE, null,
-                    START.plusDays(index), START.minusDays(index), ars(outstandingCents.get(index))));
+    private static List<CreditContribution> creditsOf(List<Long> creditCents) {
+        List<CreditContribution> credits = new ArrayList<>();
+        for (int index = 0; index < creditCents.size(); index++) {
+            credits.add(new CreditContribution(START.plusDays(index), ars(creditCents.get(index))));
         }
-        return views;
+        return credits;
     }
 
-    private CreditContributions contributionsTotalling(long totalCents) {
-        long half = totalCents / 2;
-        return new CreditContributions(List.of(new CreditContribution(START, ars(half)), new CreditContribution(START.plusDays(10), ars(totalCents - half))));
-    }
-
-    @Property(tries = 1000)
-    void theScheduledAmountsNeverExceedTheCreditNorTheOutstandingOfEachInvoice(@ForAll("centAmounts") List<Long> outstanding, @ForAll("credit") long creditCents) {
-        List<OpenInvoiceView> open = openInvoices(outstanding);
-        NonNegativeMoney credit = ars(creditCents);
-        List<PlannedInvoiceAllocation> plan = strategy.planFullInvoiceAllocations(credit, strategy.sortInAllocationOrder(open));
-
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, contributionsTotalling(creditCents), credit, BUSINESS_DATE);
-
-        Money total = schedule.stream().map(scheduled -> scheduled.amount().value()).reduce(Money.zero(Currency.ARS), Money::plus);
-        assertThat(credit.value().isGreaterThan(total) || credit.value().equals(total)).isTrue();
-        assertThat(schedule).hasSameSizeAs(plan);
-        for (ScheduledAllocation scheduled : schedule) {
-            NonNegativeMoney invoiceOutstanding = open.stream().filter(view -> view.invoiceId().equals(scheduled.invoiceId())).findFirst().orElseThrow().outstandingAmount();
-            assertThat(scheduled.amount()).isEqualTo(invoiceOutstanding);
-        }
-    }
-
-    @Property(tries = 1000)
-    void effectiveDatesNeverGoBackwardsNorPastTheBusinessDate(@ForAll("centAmounts") List<Long> amounts, @ForAll("credit") long creditCents) {
+    private static List<PlannedInvoiceAllocation> planOf(List<Long> amounts) {
         List<PlannedInvoiceAllocation> plan = new ArrayList<>();
         for (int index = 0; index < amounts.size(); index++) {
-            plan.add(new PlannedInvoiceAllocation((long) index + 1, ars(amounts.get(index))));
+            plan.add(new PlannedInvoiceAllocation(100L + index * 7L, ars(amounts.get(index))));
         }
+        return plan;
+    }
 
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, contributionsTotalling(creditCents), ars(creditCents), BUSINESS_DATE);
+    @Property(tries = 1000)
+    void theScheduleKeepsTheOrderIdsAndAmountsOfThePlan(@ForAll("centAmounts") List<Long> amounts, @ForAll("centAmounts") List<Long> creditCents,
+                                                        @ForAll("credit") long toAllocateCents) {
+        List<PlannedInvoiceAllocation> plan = planOf(amounts);
 
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, new CreditContributions(creditsOf(creditCents)),
+                ars(toAllocateCents), BUSINESS_DATE);
+
+        assertThat(schedule).extracting(ScheduledAllocation::invoiceId).containsExactlyElementsOf(plan.stream().map(PlannedInvoiceAllocation::invoiceId).toList());
+        assertThat(schedule).extracting(ScheduledAllocation::amount).containsExactlyElementsOf(plan.stream().map(PlannedInvoiceAllocation::amount).toList());
+    }
+
+    @Property(tries = 1000)
+    void eachEffectiveDateIsTheCreditThatCoversTheConsumedPlusThePlanSoFar(@ForAll("centAmounts") List<Long> amounts,
+                                                                           @ForAll("centAmounts") List<Long> creditCents,
+                                                                           @ForAll("credit") long toAllocateCents) {
+        long total = creditCents.stream().mapToLong(Long::longValue).sum();
+        long consumedBefore = Math.max(total - toAllocateCents, 0);
+
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(amounts), new CreditContributions(creditsOf(creditCents)),
+                ars(toAllocateCents), BUSINESS_DATE);
+
+        long target = consumedBefore;
         LocalDate previous = START;
-        for (ScheduledAllocation scheduled : schedule) {
-            assertThat(scheduled.effectiveDate()).isAfterOrEqualTo(previous).isBeforeOrEqualTo(BUSINESS_DATE);
-            previous = scheduled.effectiveDate();
+        for (int item = 0; item < schedule.size(); item++) {
+            target += amounts.get(item);
+            LocalDate expected = BUSINESS_DATE;
+            long cumulative = 0;
+            for (int credit = 0; credit < creditCents.size(); credit++) {
+                cumulative += creditCents.get(credit);
+                if (target <= cumulative) {
+                    expected = START.plusDays(credit);
+                    break;
+                }
+            }
+            assertThat(schedule.get(item).effectiveDate()).isEqualTo(expected).isAfterOrEqualTo(previous);
+            previous = schedule.get(item).effectiveDate();
         }
     }
 

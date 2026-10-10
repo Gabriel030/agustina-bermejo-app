@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.infrastructure;
 
 import com.red_escuela.backend.shared.domain.Currency;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
@@ -21,6 +23,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SdkMercadoPagoPaymentFetcherTest {
+
+    private String previousAccessToken;
+
+    @BeforeEach
+    void rememberAccessToken() {
+        previousAccessToken = MercadoPagoConfig.getAccessToken();
+    }
+
+    @AfterEach
+    void restoreAccessToken() {
+        MercadoPagoConfig.setAccessToken(previousAccessToken);
+    }
 
     @Test
     void anUnknownCurrencyIsMappedToEmptyInsteadOfThrowing() {
