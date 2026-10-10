@@ -215,6 +215,16 @@ class CreditNoteIssuingPoliciesTest {
     }
 
     @Test
+    void everyPolicyNamesItselfInItsVerdicts() {
+        List<Policy<CreditNoteIssuingContext>> policies = List.of(new CreditNoteLinesBelongToInvoicePolicy(), new CreditNoteRefundWithinPaidAmountPolicy(),
+                new CreditNoteWithinOutstandingAmountPolicy(), new CreditNoteLinesWithinCreditableAmountPolicy(), new CreditNoteJustificationRequiredPolicy(),
+                new CreditNoteReasonAllowedPolicy(), new CreditNoteRecipientMatchesInvoicePolicy(), new CreditNoteReferencesIssuedInvoicePolicy(),
+                new CreditNoteDestinationUnchangedPolicy(), new CreditNoteInvoiceNotUnderReviewPolicy());
+
+        policies.forEach(policy -> assertThat(policy.ruleName()).isEqualTo(policy.getClass().getSimpleName()));
+    }
+
+    @Test
     void everyViolationCodeMapsToItsSpecificException() {
         assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT"))).isInstanceOf(CreditNoteExceedsCreditableAmountException.class);
         assertThat(CreditNoteIssuingRejections.rejectionOf(violation("CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT"))).isInstanceOf(CreditNoteRefundExceedsPaidAmountException.class);

@@ -50,6 +50,12 @@ class CreditNoteTest {
     }
 
     @Test
+    void aJustificationOfExactlyAThousandCharactersIsAcceptedAndOneMoreIsNot() {
+        assertThat(issue(unpaid(), CreditNoteReason.BILLING_ERROR, "x".repeat(1000), "1.00").getJustification()).hasSize(1000);
+        assertThatThrownBy(() -> issue(unpaid(), CreditNoteReason.BILLING_ERROR, "x".repeat(1001), "1.00")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void aCreditNoteOnAPaidInvoiceBecomesFreeCredit() {
         Invoice invoice = unpaid();
         invoice.allocateFullInvoicePayment(ars("80000.00"), DUE_DATE, ACTOR);
