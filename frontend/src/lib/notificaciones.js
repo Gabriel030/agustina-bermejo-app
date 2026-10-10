@@ -20,6 +20,8 @@ export const TIPO_NOTIFICACION_LABEL = {
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'Pago a saldo a favor',
   PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT: 'Pago aplicado a deuda anterior',
   CREDIT_NOTE_ISSUED: 'Nota de crédito emitida',
+  LATE_FEE_ISSUED: 'Recargo por mora emitido',
+  LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'Recargo emitido fuera de plazo',
 };
 
 export const TONO_NOTIFICACION = {
@@ -44,6 +46,8 @@ export const TONO_NOTIFICACION = {
   PAYMENT_LEFT_AS_ACCOUNT_CREDIT: 'accent2',
   PAYMENT_RECEIPT_APPLIED_TO_OLDER_DEBT: 'warning',
   CREDIT_NOTE_ISSUED: 'accent2',
+  LATE_FEE_ISSUED: 'warning',
+  LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'danger',
 };
 
 export function tiempoRelativo(fechaIso) {

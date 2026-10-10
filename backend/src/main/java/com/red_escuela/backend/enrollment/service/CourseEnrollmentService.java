@@ -211,6 +211,7 @@ public class CourseEnrollmentService {
         }
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
+        enrollment.setCompletionDate(LocalDateTime.now(clock));
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
         cancelModuleEnrollments(enrollment);

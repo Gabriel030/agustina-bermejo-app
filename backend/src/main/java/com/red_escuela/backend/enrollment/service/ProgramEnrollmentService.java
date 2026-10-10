@@ -156,6 +156,7 @@ public class ProgramEnrollmentService {
                     "La matriculación " + id + " no está ENROLLED/PAUSED, no se puede dar de baja");
         }
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setCompletionDate(LocalDateTime.now(clock));
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
     }

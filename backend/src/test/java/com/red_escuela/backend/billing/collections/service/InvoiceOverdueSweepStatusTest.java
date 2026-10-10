@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
 import com.red_escuela.backend.billing.collections.operation.OverdueDetectionResult;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
@@ -28,10 +30,12 @@ class InvoiceOverdueSweepStatusTest {
 
     private final OverdueInvoiceDetectionStep step = mock(OverdueInvoiceDetectionStep.class);
     private final BatchExecutionLogRepository logRepository = mock(BatchExecutionLogRepository.class);
-    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
+    private final LateFeeAccrualStep accrualStep = mock(LateFeeAccrualStep.class);
+    private final InvoiceOverdueSweepService sweep = new InvoiceOverdueSweepService(step, accrualStep, logRepository, new ObjectMapper(), Clock.system(ZoneOffset.UTC));
 
     private BatchExecutionLog runWith(OverdueDetectionResult result) {
         when(step.detectOverdueInvoices(TODAY)).thenReturn(result);
+        when(accrualStep.accrueLateFees(TODAY)).thenReturn(LateFeeAccrualResult.nothing());
         sweep.run(TODAY);
         ArgumentCaptor<BatchExecutionLog> saved = ArgumentCaptor.forClass(BatchExecutionLog.class);
         verify(logRepository).save(saved.capture());

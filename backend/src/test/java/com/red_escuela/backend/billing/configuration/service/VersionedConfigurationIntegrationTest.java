@@ -396,7 +396,7 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
         var december = reader.findLatePaymentSettingsEffectiveOn(DECEMBER_FIRST).orElseThrow();
         assertThat(today.gracePeriodDays()).isEqualTo(3);
         assertThat(today.monthlyLateFeeRate()).isEqualTo(Percentage.ofFraction(new BigDecimal("0.05")));
-        assertThat(today.lateFeeCapMonths()).isEqualTo(12);
+        assertThat(today.lateFeeChargingEnabled()).isFalse();
         assertThat(december.gracePeriodDays()).isEqualTo(4);
         assertThat(december.suspensionAfterInvoiceCount()).isEqualTo(3);
     }

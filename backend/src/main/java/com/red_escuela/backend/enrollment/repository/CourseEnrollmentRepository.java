@@ -38,6 +38,9 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     @Query("select distinct e.student.id from CourseEnrollment e where e.status in :statuses")
     List<Long> findDistinctStudentIdsByStatusIn(@Param("statuses") Collection<EnrollmentStatus> statuses);
 
+    @Query("select c.term.endDate from CourseEnrollment e join e.course c where e.id = :id")
+    java.util.Optional<java.time.LocalDateTime> findCourseTermEndDateByEnrollmentId(@Param("id") Long id);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from CourseEnrollment e where e.id = :id")
     java.util.Optional<CourseEnrollment> findByIdForUpdate(@Param("id") Long id);
