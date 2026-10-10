@@ -60,6 +60,9 @@ class InvoicePaymentStatusProperties {
         if (reversal && !amountsBefore.hasPaidAmount()) {
             return true;
         }
+        if (operation >= 7 && operation <= 10 && rejected instanceof com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException) {
+            return true;
+        }
         if (operation == 11 && !amountsBefore.outstandingAmount().equals(ars("1.00"))) {
             return rejected instanceof com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
         }
