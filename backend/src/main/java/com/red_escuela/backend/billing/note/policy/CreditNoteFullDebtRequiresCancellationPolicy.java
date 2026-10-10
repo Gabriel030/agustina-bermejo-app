@@ -8,7 +8,7 @@ import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
 import java.math.BigDecimal;
 
-@PolicyRule(violationCodes = {"CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION"}, decisions = {"D-167", "D-202"})
+@PolicyRule(violationCodes = {"CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION"}, decisions = {"D-167"})
 public final class CreditNoteFullDebtRequiresCancellationPolicy implements Policy<CreditNoteIssuingContext> {
 
     @Override

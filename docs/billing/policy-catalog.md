@@ -63,7 +63,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 7 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
 | 8 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
 | 9 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
-| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167, D-202 |
+| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167 |
 
 ## Momento ENROLLMENT_FEE_PLANNING
 

@@ -263,7 +263,6 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("D-167")
-    @Tag("D-202")
     void aCreditNoteThatCoversTheWholeUnpaidDebtIsRejectedBecauseThatIsACancellation() throws Exception {
         Scenario scenario = unpaidInvoice("80000.00");
         Staff director = newStaff("DIRECTOR");
