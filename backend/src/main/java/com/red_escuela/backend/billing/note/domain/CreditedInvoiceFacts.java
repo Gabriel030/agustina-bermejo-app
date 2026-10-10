@@ -27,6 +27,11 @@ public record CreditedInvoiceFacts(Long invoiceId, InvoiceDocumentStatus documen
         return lines.stream().filter(line -> line.lineNumber() == lineNumber).findFirst();
     }
 
+    public NonNegativeMoney cancellableAmount() {
+        return lines.stream().map(line -> line.creditableAmount().plus(line.freeCreditedAmount())).reduce(NonNegativeMoney::plus)
+                .orElseGet(() -> NonNegativeMoney.zero(paidAmount.value().currency()));
+    }
+
     public NonNegativeMoney freeCreditedAmount() {
         return lines.stream().map(CreditableLineFacts::freeCreditedAmount).reduce(NonNegativeMoney::plus)
                 .orElseGet(() -> NonNegativeMoney.zero(paidAmount.value().currency()));

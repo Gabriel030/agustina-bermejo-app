@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceCreditNoteApplication;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLineCredit;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -165,15 +166,31 @@ public class CreditNote {
         return note;
     }
 
+    public static CreditNote issueCancellationCreditNoteForInvoice(Invoice invoice, CreditNoteReason reason, String justification, CreditNoteNumber number,
+                                                                   LocalDate issueDate, LocalDate factDate, Long authorizationRequestId, StatusChangeActor actor) {
+        Objects.requireNonNull(invoice, "invoice");
+        if (invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+            throw new IllegalArgumentException("A paid invoice is not cancelled");
+        }
+        List<CreditNoteLineRequest> lineRequests = invoice.getLines().stream()
+                .filter(line -> !line.calculateCancellableAmount().value().isZero())
+                .map(line -> new CreditNoteLineRequest(line.getLineNumber(), line.calculateCancellableAmount())).toList();
+        return issueCreditNoteForInvoice(invoice, reason, justification, lineRequests, number, issueDate, factDate, authorizationRequestId, actor);
+    }
+
     public InvoiceCreditNoteApplication toInvoiceCreditNoteApplication(NonNegativeMoney invoiceOutstandingAmount) {
-        boolean coversWholeDebt = !offsetAmount.value().isZero() && offsetAmount.equals(invoiceOutstandingAmount);
-        if (coversWholeDebt && reason != CreditNoteReason.CANCELLATION) {
+        if (!offsetAmount.value().isZero() && offsetAmount.equals(invoiceOutstandingAmount)) {
             throw new IllegalStateException("Covering the whole unpaid debt of an invoice requires its cancellation");
         }
-        boolean cancelsInvoice = coversWholeDebt;
-        CreditNoteApplicationKind kind = cancelsInvoice ? CreditNoteApplicationKind.CANCELLATION : CreditNoteApplicationKind.DEBT_REDUCTION;
-        return new InvoiceCreditNoteApplication(kind, offsetAmount, freeCreditAmount,
-                lines.stream().map(line -> new InvoiceLineCredit(line.getInvoiceLineNumber(), line.getAmount())).toList());
+        return new InvoiceCreditNoteApplication(CreditNoteApplicationKind.DEBT_REDUCTION, offsetAmount, freeCreditAmount, lineCredits());
+    }
+
+    public InvoiceCreditNoteApplication toInvoiceCancellationApplication(boolean releasesChargeKeys) {
+        return new InvoiceCreditNoteApplication(CreditNoteApplicationKind.CANCELLATION, offsetAmount, freeCreditAmount, lineCredits(), releasesChargeKeys);
+    }
+
+    private List<InvoiceLineCredit> lineCredits() {
+        return lines.stream().map(line -> new InvoiceLineCredit(line.getInvoiceLineNumber(), line.getAmount())).toList();
     }
 
     public List<CreditNoteLine> getLines() {

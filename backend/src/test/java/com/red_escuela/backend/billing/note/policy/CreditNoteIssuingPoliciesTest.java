@@ -172,7 +172,7 @@ class CreditNoteIssuingPoliciesTest {
         assertThat(allows(policy, unpaidContext("80000.00"))).isFalse();
         assertThat(codeOf(policy, unpaidContext("80000.00"))).isEqualTo("CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION");
         assertThat(allows(policy, context(command(CreditNoteReason.LATE_FEE_ANNULMENT, "x", CreditNoteDestination.DEBT_OFFSET, "80000.00"), unpaid()))).isFalse();
-        assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "80000.00"), unpaid()))).isTrue();
+        assertThat(allows(policy, context(command(CreditNoteReason.CANCELLATION, "x", CreditNoteDestination.DEBT_OFFSET, "80000.00"), unpaid()))).isFalse();
         assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.FREE_CREDIT, "10000.00"), reducedByFortyThousandAndPaid()))).isTrue();
     }
 

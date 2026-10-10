@@ -357,15 +357,29 @@ public class Invoice {
         if (event != InvoicePaymentEvent.CREDIT_NOTE_APPLIED_TO_PAID_INVOICE && !application.freeCreditAmount().value().isZero()) {
             throw new IllegalInvoicePaymentStatusTransitionException(paymentStatus, event);
         }
+        boolean cancellation = application.kind() == CreditNoteApplicationKind.CANCELLATION;
         List<NonNegativeMoney[]> splits = splitLineCredits(application);
         for (int i = 0; i < splits.size(); i++) {
-            findLine(application.lineCredits().get(i).lineNumber()).requireCreditable(splits.get(i)[0], splits.get(i)[1]);
+            InvoiceLine line = findLine(application.lineCredits().get(i).lineNumber());
+            if (cancellation) {
+                line.requireCancellable(splits.get(i)[0]);
+            } else {
+                line.requireCreditable(splits.get(i)[0], splits.get(i)[1]);
+            }
         }
         InvoiceAmounts newAmounts = amounts.withCreditNoteOffset(offset);
         for (int i = 0; i < splits.size(); i++) {
-            findLine(application.lineCredits().get(i).lineNumber()).recordCredit(splits.get(i)[0], splits.get(i)[1]);
+            InvoiceLine line = findLine(application.lineCredits().get(i).lineNumber());
+            if (cancellation) {
+                line.recordCancellationCredit(splits.get(i)[0]);
+            } else {
+                line.recordCredit(splits.get(i)[0], splits.get(i)[1]);
+            }
         }
         changePaymentStatus(event, newAmounts, businessDate, actor, application.kind().name());
+        if (application.releasesChargeKeys()) {
+            lines.forEach(InvoiceLine::releaseChargeKey);
+        }
         recordCreditNoteEvents(event, businessDate);
     }
 

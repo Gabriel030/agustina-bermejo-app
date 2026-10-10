@@ -36,6 +36,9 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
     @Query("select distinct i from Invoice i left join fetch i.lines l left join fetch l.discount where i.id = :id")
     Optional<Invoice> findInvoiceWithLinesById(@Param("id") Long id);
 
+    @Query(value = "select id from invoice where id = :id for update", nativeQuery = true)
+    Optional<Long> lockInvoiceRowById(@Param("id") Long id);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Invoice i where i.id = :id")
     Optional<Invoice> findByIdForUpdate(@Param("id") Long id);
@@ -101,17 +104,20 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
         return findByProgramEnrollmentId(enrollmentId).stream()
+                .filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
                 .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
     }
 
     default Optional<Invoice> findFirstByCourseEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
         return findByCourseEnrollmentId(enrollmentId).stream()
+                .filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
                 .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
     }
 
     default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndTemplateIdAndEnrollmentFeeSlot(Long enrollmentId, FeeType feeType, Long templateId,
                                                                                                         Integer slot) {
-        return findByProgramEnrollmentId(enrollmentId).stream().filter(i -> i.getPrimaryLine().getFeeType() == feeType
+        return findByProgramEnrollmentId(enrollmentId).stream().filter(i -> !i.getPrimaryLine().isChargeKeyReleased())
+                .filter(i -> i.getPrimaryLine().getFeeType() == feeType
                 && java.util.Objects.equals(i.getPrimaryLine().getTemplateId(), templateId)
                 && java.util.Objects.equals(i.getPrimaryLine().getEnrollmentFeeSlot(), slot)).findFirst();
     }
