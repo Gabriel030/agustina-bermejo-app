@@ -1,7 +1,9 @@
 package com.red_escuela.backend.billing.payment.domain;
 
 import com.red_escuela.backend.billing.payment.exception.IllegalPaymentStatusTransitionException;
+import com.red_escuela.backend.shared.domain.statemachine.ExhaustiveTransitionExpectations;
 import com.red_escuela.backend.shared.domain.statemachine.StateTransitionRow;
+import com.red_escuela.backend.shared.domain.statemachine.TransitionExpectation;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-082")
 @Tag("D-094")
+@ExhaustiveTransitionExpectations(machine = PaymentStatusStateMachine.class)
 class PaymentStatusTransitionTest {
 
     private record Row(PaymentStatus from, PaymentEvent event, PaymentStatus to) {
@@ -43,6 +46,16 @@ class PaymentStatusTransitionTest {
             new Row(APPROVED, CHARGEBACK_REGISTERED, CHARGED_BACK),
             new Row(CHARGED_BACK, CHARGEBACK_REVERSED, APPROVED),
             new Row(APPROVED, BANK_TRANSFER_APPROVAL_REVOKED, REJECTED));
+
+    static List<TransitionExpectation> expectedTransitions() {
+        List<PaymentStatus> states = new ArrayList<>();
+        states.add(null);
+        states.addAll(EnumSet.allOf(PaymentStatus.class));
+        return states.stream().flatMap(from -> EnumSet.allOf(PaymentEvent.class).stream()
+                .map(event -> expectedTarget(from, event)
+                        .map(to -> TransitionExpectation.allows(from, event, to))
+                        .orElseGet(() -> TransitionExpectation.rejects(from, event, IllegalPaymentStatusTransitionException.class)))).toList();
+    }
 
     static Stream<Row> everyStatusAndEventPair() {
         List<PaymentStatus> states = new ArrayList<>(EnumSet.allOf(PaymentStatus.class));
