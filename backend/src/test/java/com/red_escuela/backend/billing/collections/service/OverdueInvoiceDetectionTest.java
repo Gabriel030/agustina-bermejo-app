@@ -30,6 +30,7 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.time.MutableClock;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +89,11 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private CourseEnrollmentRepository courseEnrollmentRepository;
     @Autowired
     private TermRepository termRepository;
+
+    @AfterEach
+    void removeBatchLogsWrittenInTheFuture() {
+        jdbcTemplate.update("delete from batch_execution_log where job_name = 'InvoiceOverdueSweepService' and ran_at > now()");
+    }
 
     private Person person;
     private CourseEnrollment enrollment;
