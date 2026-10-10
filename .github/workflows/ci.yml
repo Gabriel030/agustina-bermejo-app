@@ -30,7 +30,7 @@ jobs:
           relevant=true
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
-              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|\.github/workflows/)'; then
+              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/)'; then
                 relevant=false
               fi
             fi
@@ -52,6 +52,21 @@ jobs:
         if: steps.changes.outputs.relevant == 'true'
         working-directory: backend
         run: ./mvnw clean verify
+
+      - name: Check the OpenAPI contract for breaking changes
+        if: >-
+          steps.changes.outputs.relevant == 'true' &&
+          github.event_name == 'pull_request' &&
+          !contains(github.event.pull_request.labels.*.name, 'contract-break-approved')
+        shell: bash
+        run: |
+          set -uo pipefail
+          git fetch origin "${{ github.base_ref }}"
+          if ! git show "origin/${{ github.base_ref }}:contracts/openapi.json" > "$RUNNER_TEMP/openapi-base.json" 2>/dev/null; then
+            echo "The base branch has no contracts/openapi.json yet: skipping the breaking-change check"
+            exit 0
+          fi
+          scripts/oasdiff-breaking.sh "$RUNNER_TEMP/openapi-base.json" contracts/openapi.json
 
   local-tests-log:
     runs-on: ubuntu-latest
