@@ -245,6 +245,10 @@ public final class BillingTestFixtures {
             JdbcTemplate jdbc = bean(JdbcTemplate.class);
             Long programId = programEnrollment == null ? null : programEnrollment.getProgram().getId();
             Long courseId = courseEnrollment == null ? null : courseEnrollment.getCourse().getId();
+            if (programId == null && courseId == null) {
+                programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, true, 1, ?) returning id", Long.class,
+                        "Fixture " + System.nanoTime(), baseAmount.currency().name());
+            }
             java.util.List<Long> found = jdbc.queryForList("select v.id from price_version v join price p on p.id = v.price_id where "
                     + (programId != null ? "p.program_id = ?" : "p.course_id = ?") + " order by v.id limit 1", Long.class, programId != null ? programId : courseId);
             if (!found.isEmpty()) {

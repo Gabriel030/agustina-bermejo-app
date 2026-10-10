@@ -196,7 +196,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         director.setStatus(StatusType.ACTIVE);
         entityManager.persist(director);
 
-        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), course.getId(), feeType, "Precio de prueba", ars(amount), LocalDate.now().minusDays(1), director.getId());
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program == null ? null : program.getId(), course == null ? null : course.getId(), feeType, "Precio de prueba", ars(amount), LocalDate.now().minusDays(1), director.getId());
         entityManager.flush();
     }
 

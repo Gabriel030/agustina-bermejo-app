@@ -46,6 +46,8 @@ public class OfferingPriceCatalogService implements OfferingPriceCatalog {
 
     private void publishPriceVersion(Price price, Money amount, Long actorPersonId, String changeReason, boolean initialVersion) {
         policyEvaluator.requireValidPriceVersion(PriceVersionDraft.withoutDiscount(price.getCurrency(), amount.currency(), amount.amount()));
+        price.retireEffectiveVersions(Instant.now(clock));
+        priceRepository.saveAndFlush(price);
         price.publishPriceVersion(NonNegativeMoney.of(amount), null, LocalDate.now(clock), changeReason, actorPersonId, initialVersion,
                 LocalDate.now(clock), Instant.now(clock));
         priceRepository.save(price);

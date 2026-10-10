@@ -137,6 +137,10 @@ public class Price {
         version.reachStart(now);
     }
 
+    public void retireEffectiveVersions(Instant now) {
+        supersedeEffectiveVersions(now);
+    }
+
     public Optional<PriceVersion> findVersionEffectiveOn(LocalDate date) {
         return versions.stream()
                 .filter(version -> RESOLVABLE.contains(version.getStatus()))
