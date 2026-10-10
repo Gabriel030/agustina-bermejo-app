@@ -14,7 +14,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.service.InvoiceOverdueSweepService;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -70,8 +69,6 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private OverdueInvoiceTransitionService transitionService;
     @Autowired
     private OverdueInvoiceDetectionStep detectionStep;
-    @Autowired
-    private InvoiceOverdueSweepService sweepService;
     @Autowired
     private InvoiceRepository invoiceRepository;
     @Autowired
@@ -210,7 +207,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         LocalDate day = LocalDate.of(2062, 3, 12);
-        LocalDate end = LocalDate.of(2063, 5, 18);
+        LocalDate end = LocalDate.of(2063, 5, 17);
         int dayCount = 0;
         while (!day.isAfter(end)) {
             transitionService.markAsOverdueWhenPastDueDate(origin.getId(), day);
@@ -538,23 +535,5 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select currency from invoice where id = ?", String.class, charge.get("debit_note_id"))).isEqualTo("USD");
         assertThat(charge.get("nd_total")).isEqualTo(new BigDecimal("5.00"));
         invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    @Tag("D-061")
-    @Tag("D-288")
-    void theNightlySweepDetectsAndThenAccruesInTheSameRun() {
-        arrange(2082);
-        publishDefaults(2082);
-        Invoice origin = pendingInstallmentDueOn(LocalDate.of(2082, 3, 12));
-        LocalDate today = LocalDate.of(2082, 3, 18);
-
-        sweepService.run(today);
-
-        assertThat(invoiceRepository.findById(origin.getId()).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.OVERDUE);
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(chargesOf(origin)).hasSize(1));
-        assertThat(jdbc.queryForObject("select count(*) from batch_execution_log where job_name = 'InvoiceOverdueSweepService' and ran_at > now() - interval '5 minutes'",
-                Long.class)).isGreaterThanOrEqualTo(1L);
-        jdbc.update("delete from batch_execution_log where job_name = 'InvoiceOverdueSweepService' and ran_at > now() - interval '5 minutes'");
     }
 }

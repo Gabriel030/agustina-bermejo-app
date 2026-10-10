@@ -63,4 +63,24 @@ class InvoiceOverdueSweepStatusTest {
     void aRunWhereNothingWasMarkedAndSomethingFailedIsAFailure() {
         assertThat(runWith(new OverdueDetectionResult(1, 0, 0, 1, List.of(Map.of("invoiceId", 1L)))).getStatus()).isEqualTo(BatchExecutionStatus.FAILED);
     }
+
+    @Test
+    @Tag("D-061")
+    @Tag("D-288")
+    void theSweepDetectsFirstThenAccruesAndWritesASingleLogWithBothResults() {
+        when(step.detectOverdueInvoices(TODAY)).thenReturn(new OverdueDetectionResult(2, 2, 0, 0, List.of()));
+        when(accrualStep.accrueLateFees(TODAY)).thenReturn(new LateFeeAccrualResult(3, 4, 1, List.of(Map.of("invoiceId", 5L))));
+
+        sweep.run(TODAY);
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(step, accrualStep, logRepository);
+        order.verify(step).detectOverdueInvoices(TODAY);
+        order.verify(accrualStep).accrueLateFees(TODAY);
+        ArgumentCaptor<BatchExecutionLog> saved = ArgumentCaptor.forClass(BatchExecutionLog.class);
+        order.verify(logRepository).save(saved.capture());
+        assertThat(saved.getValue().getCandidateCount()).isEqualTo(5);
+        assertThat(saved.getValue().getProcessedCount()).isEqualTo(6);
+        assertThat(saved.getValue().getFailedCount()).isEqualTo(1);
+        assertThat(saved.getValue().getStatus()).isEqualTo(BatchExecutionStatus.PARTIAL_FAILURE);
+    }
 }
