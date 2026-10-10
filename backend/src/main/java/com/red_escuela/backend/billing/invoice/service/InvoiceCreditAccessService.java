@@ -3,7 +3,6 @@ package com.red_escuela.backend.billing.invoice.service;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +26,7 @@ public class InvoiceCreditAccessService {
     @Transactional
     public Optional<Invoice> lockInvoice(Long invoiceId) {
         Optional<Invoice> invoice = invoiceRepository.findByIdForUpdate(invoiceId);
-        invoice.ifPresent(locked -> entityManager.refresh(locked, LockModeType.PESSIMISTIC_WRITE));
+        invoice.ifPresent(locked -> entityManager.refresh(locked));
         return invoice;
     }
 

@@ -289,6 +289,44 @@ public final class BillingInvariantChecker {
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
+    private static final String TERMS_ON_FACT_DATE = """
+            (select v.config_values from configuration_version v
+             where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
+               and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= c.fact_date
+             order by v.effective_from desc, v.decided_at desc, v.id desc limit 1)
+            """;
+
+    public List<String> lateFeesRespectTheRedefinedI11() {
+        List<String> found = new ArrayList<>();
+        found.addAll(violations("I-11 more than one live debit note for the same origin and month", """
+                select 'origin ' || c.origin_invoice_id || ' month ' || c.month_ordinal
+                from late_fee_charge c join invoice d on d.id = c.debit_note_id
+                where c.debit_note_id > ? and d.document_status <> 'DISCARDED' and coalesce(d.payment_status, 'PENDING') <> 'CANCELLED'
+                group by c.origin_invoice_id, c.month_ordinal
+                having count(*) > 1
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11 late fee over a debit note or over a charge that does not accrue", """
+                select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
+                from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
+                where c.debit_note_id > ? and (o.document_type <> 'INVOICE' or o.invoice_type not in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE'))
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11 late fee dated before charging was enabled", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c
+                where c.debit_note_id > ? and coalesce(%s ->> 'lateFeeChargingEnabled', 'false') <> 'true'
+                """.formatted(TERMS_ON_FACT_DATE), baselineInvoiceId));
+        found.addAll(violations("I-11 late fee dated after the end of a frozen enrollment", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c
+                join invoice_line l on l.invoice_id = c.origin_invoice_id
+                left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+                left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+                where c.debit_note_id > ? and %s ->> 'freezeLateFeesOnWithdrawal' = 'true'
+                  and c.fact_date > coalesce(pe.completion_date, ce.completion_date)::date
+                """.formatted(TERMS_ON_FACT_DATE), baselineInvoiceId));
+        return found;
+    }
+
     public void assertAllBillingInvariantsHold() {
         List<String> all = new ArrayList<>();
         all.addAll(oneEnrollmentFeePerEnrollmentTemplateAndSlot());
@@ -310,6 +348,7 @@ public final class BillingInvariantChecker {
         all.addAll(invoicesAreNeverPartiallyAllocated());
         all.addAll(paidInvoicesAreCoveredByAllocationsOrCreditNotes());
         all.addAll(noDebtDisappearsWithoutADocument());
+        all.addAll(lateFeesRespectTheRedefinedI11());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

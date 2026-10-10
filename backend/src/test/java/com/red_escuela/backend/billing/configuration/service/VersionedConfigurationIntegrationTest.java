@@ -402,6 +402,20 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-210")
+    @Tag("D-294")
+    void legacyLatePaymentEndpointKeepsTheChargingFlagOfThePreviousVersion() {
+        authenticateAs(director);
+        com.red_escuela.backend.billing.service.LatePaymentTestFixtures.persistLatePayment(versionRepository, director, 5, new BigDecimal("0.05"), 30, 1, 10, true, true, TODAY);
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.07")), 30, 2, TODAY.plusDays(5)));
+        assertThat(reader.findLatePaymentSettingsEffectiveOn(TODAY.plusDays(5)).orElseThrow().lateFeeChargingEnabled()).isTrue();
+
+        com.red_escuela.backend.billing.service.LatePaymentTestFixtures.persistLatePayment(versionRepository, director, 5, new BigDecimal("0.05"), 30, 1, 10, true, false, TODAY.plusDays(10));
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.08")), 30, 2, TODAY.plusDays(15)));
+        assertThat(reader.findLatePaymentSettingsEffectiveOn(TODAY.plusDays(15)).orElseThrow().lateFeeChargingEnabled()).isFalse();
+    }
+
+    @Test
     @Tag("D-225")
     void administrativeWithdrawsOwnPendingProposalAndTheTopicAcceptsANewOne() {
         authenticateAs(administrative);

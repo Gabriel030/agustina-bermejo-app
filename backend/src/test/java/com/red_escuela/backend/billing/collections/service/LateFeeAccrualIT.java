@@ -6,7 +6,9 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
+import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.events.LateFeeIssuedEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
@@ -29,12 +31,16 @@ import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.mockito.Mockito;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -91,6 +97,12 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private CourseEnrollmentRepository courseEnrollmentRepository;
     @Autowired
     private TermRepository termRepository;
+    @Autowired
+    private StudentCurrentAccountService accountService;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+    @MockitoSpyBean
+    private LateFeeChargeRepository chargeRepositorySpy;
 
     private Person person;
     private CourseEnrollment enrollment;
@@ -231,14 +243,17 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     void lateFeeBaseIsTheLinePriceBeforeAnyScholarshipAndTheChargeKeepsThePhoto() {
         arrange(2064);
         publishDefaults(2064);
-        Invoice origin = installmentDueOn(LocalDate.of(2064, 3, 12), ars(100000));
+        Invoice origin = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(YearMonth.of(2064, 3)).dueOn(LocalDate.of(2064, 3, 12))
+                .withBaseAmount(ars(100000)).withScholarshipOf(ars(50000)).overdue().build();
 
         reconcile(origin, LocalDate.of(2064, 3, 18));
 
         Map<String, Object> charge = chargesOf(origin).get(0);
         assertThat(charge.get("nd_total")).isEqualTo(new BigDecimal("5000.00"));
         assertThat((BigDecimal) charge.get("base_amount")).isEqualByComparingTo("100000.00");
-        assertThat(reload(origin).getPrimaryLine().getAmount().value().amount()).isEqualByComparingTo("100000.00");
+        Invoice reloaded = reload(origin);
+        assertThat(reloaded.getPrimaryLine().getAmount().value().amount()).isEqualByComparingTo("100000.00");
+        assertThat(reloaded.getPrimaryLine().calculateNetAmount().value().amount()).isEqualByComparingTo("50000.00");
     }
 
     @Test
@@ -366,7 +381,6 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-289")
-    @Tag("D-242")
     @Tag("D-155")
     void onlyInstallmentsAndEnrollmentFeesAccrueAndOtherChargesAreNeverRetried() {
         arrange(2071);
@@ -408,7 +422,6 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-154")
-    @Tag("D-208")
     void aReleasedPaymentReviewIssuesPastMonthsAtOnceThroughTheAsyncListener() {
         arrange(2073);
         publishDefaults(2073);
@@ -534,6 +547,78 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         assertThat(charge.get("currency")).isEqualTo("USD");
         assertThat(jdbc.queryForObject("select currency from invoice where id = ?", String.class, charge.get("debit_note_id"))).isEqualTo("USD");
         assertThat(charge.get("nd_total")).isEqualTo(new BigDecimal("5.00"));
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-140")
+    @Tag("D-089")
+    void unallocatedCreditNeverPaysTheDebitNoteBeforeItsOrigin() {
+        arrange(2077);
+        publishDefaults(2077);
+        Invoice origin = installmentDueOn(LocalDate.of(2077, 3, 12), ars(80000));
+        Long accountId = reload(origin).getStudentCurrentAccountId();
+        transactionTemplate.executeWithoutResult(status -> accountService.recordPaymentReceivedCredit(accountService.lockStudentCurrentAccount(accountId),
+                System.nanoTime(), NonNegativeMoney.of(ars(5000)), LocalDate.of(2077, 3, 17), "Pago"));
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+
+        reconcile(origin, LocalDate.of(2077, 3, 18));
+
+        Map<String, Object> charge = chargesOf(origin).get(0);
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, charge.get("debit_note_id"))).isNotEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, origin.getId())).isEqualTo("OVERDUE");
+        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", BigDecimal.class, accountId)).isEqualByComparingTo("5000.00");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-061")
+    void whenThePriorCheckMissesAnExistingChargeTheDatabaseUniquenessIsTheBarrierAndItIsTranslatedToAlreadyIssued() {
+        arrange(2078);
+        publishDefaults(2078);
+        Invoice origin = installmentDueOn(LocalDate.of(2078, 3, 12), ars(80000));
+        LocalDate day = LocalDate.of(2078, 3, 18);
+        assertThat(accrualService.reconcileLateFeesOfInvoice(origin.getId(), day)).isEqualTo(1);
+        Mockito.doReturn(java.util.Set.of()).when(chargeRepositorySpy).findMonthOrdinalsByOriginInvoiceId(origin.getId());
+
+        int issuedByTheLoser = accrualService.reconcileLateFeesOfInvoice(origin.getId(), day);
+
+        assertThat(issuedByTheLoser).isZero();
+        assertThat(chargesOf(origin)).hasSize(1);
+        assertThat(jdbc.queryForObject("select count(*) from invoice where origin_invoice_id = ?", Long.class, origin.getId())).isEqualTo(1L);
+    }
+
+    @Test
+    @Tag("D-239")
+    @Tag("D-149")
+    @Tag("D-294")
+    void theLateFeeInvariantCheckerDetectsADebitNoteOverADebitNoteAndAChargeBeforeEnablement() {
+        arrange(2079);
+        publishDefaults(2079);
+        Invoice origin = installmentDueOn(LocalDate.of(2079, 3, 12), ars(80000));
+        reconcile(origin, LocalDate.of(2079, 3, 18));
+        BillingInvariantChecker clean = BillingInvariantChecker.startingNow(jdbc);
+        Invoice firstSpare = installmentDueOn(LocalDate.of(2079, 4, 12), ars(80000));
+        Invoice secondSpare = installmentDueOn(LocalDate.of(2079, 5, 12), ars(80000));
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Map<String, Object> charge = chargesOf(origin).get(0);
+        Long accountId = reload(origin).getStudentCurrentAccountId();
+        Long versionId = (Long) charge.get("late_payment_version_id");
+        Long debitNoteId = (Long) charge.get("debit_note_id");
+        String insert = "insert into late_fee_charge (debit_note_id, origin_invoice_id, student_current_account_id, month_ordinal, fact_date, late_payment_version_id, monthly_rate, base_amount, currency, created_at) "
+                + "values (?, ?, ?, ?, ?, ?, 0.05, 100, 'ARS', now())";
+        try {
+            jdbc.update(insert, firstSpare.getId(), debitNoteId, accountId, 1, java.sql.Date.valueOf("2079-04-18"), versionId);
+            jdbc.update(insert, secondSpare.getId(), origin.getId(), accountId, 2, java.sql.Date.valueOf("2000-01-01"), versionId);
+
+            List<String> violations = clean.lateFeesRespectTheRedefinedI11();
+
+            assertThat(violations).anyMatch(v -> v.startsWith("I-11 late fee over a debit note") && v.contains("debit note " + firstSpare.getId()));
+            assertThat(violations).anyMatch(v -> v.startsWith("I-11 late fee dated before charging was enabled") && v.contains("debit note " + secondSpare.getId()));
+            assertThat(violations).noneMatch(v -> v.contains("debit note " + debitNoteId));
+        } finally {
+            jdbc.update("delete from late_fee_charge where debit_note_id in (?, ?)", firstSpare.getId(), secondSpare.getId());
+        }
         invariants.assertAllBillingInvariantsHold();
     }
 }

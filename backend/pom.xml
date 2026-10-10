@@ -302,6 +302,7 @@
 								<param>com.red_escuela.backend.billing.planning.domain.*</param>
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -319,6 +320,7 @@
 								<param>com.red_escuela.backend.billing.invoice.operation.*</param>
 								<param>com.red_escuela.backend.billing.planning.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>

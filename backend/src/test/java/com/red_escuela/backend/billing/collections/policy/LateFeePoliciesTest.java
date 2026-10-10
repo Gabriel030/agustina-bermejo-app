@@ -47,7 +47,6 @@ class LateFeePoliciesTest {
     @Test
     @Tag("D-289")
     @Tag("D-149")
-    @Tag("D-242")
     @Tag("D-155")
     void onlyMonthlyInstallmentsAndEnrollmentFeesAccrueLateFees() {
         Set<InvoiceType> accruing = EnumSet.of(InvoiceType.MONTHLY_INSTALLMENT, InvoiceType.ENROLLMENT_FEE);

@@ -130,6 +130,7 @@ public final class BillingTestFixtures {
         private LocalDate dueDate = LocalDate.now();
         private Money baseAmount = Money.of(java.math.BigDecimal.valueOf(10000), com.red_escuela.backend.shared.domain.Currency.ARS);
         private InvoicePaymentStatus status = InvoicePaymentStatus.PENDING;
+        private Money scholarshipAmount;
         private Consumer<Invoice> customization = invoice -> {
         };
 
@@ -168,6 +169,11 @@ public final class BillingTestFixtures {
 
         public InvoiceFixture withBaseAmount(Money amount) {
             this.baseAmount = amount;
+            return this;
+        }
+
+        public InvoiceFixture withScholarshipOf(Money scholarshipAmount) {
+            this.scholarshipAmount = scholarshipAmount;
             return this;
         }
 
@@ -220,6 +226,11 @@ public final class BillingTestFixtures {
                 case ADMINISTRATIVE_FEE -> InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);
                 default -> throw new IllegalStateException("Unsupported fixture type " + invoiceType);
             };
+            if (scholarshipAmount != null) {
+                draft.addDiscountToDraftLine(1, new com.red_escuela.backend.billing.invoice.domain.InvoiceDiscountDraft(
+                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", null, NonNegativeMoney.of(baseAmount),
+                        NonNegativeMoney.of(scholarshipAmount), null, null));
+            }
             draft.issueInvoice(bean(InvoiceNumberGenerator.class).nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.isAfter(LocalDate.now()) ? LocalDate.now() : dueDate,
                     dueDate, new StudentSnapshot(person.getName() == null ? "Alumno de prueba" : person.getName() + " " + person.getLastname(), person.getDni() == null ? "00000000" : person.getDni(), null), ACTOR);
             Invoice saved = bean(InvoiceRepository.class).save(draft);
