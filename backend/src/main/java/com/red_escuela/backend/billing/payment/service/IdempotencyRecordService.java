@@ -40,7 +40,7 @@ public class IdempotencyRecordService {
         if (inserted == 1) {
             return StoredIdempotentResponse.KeyClaimed.INSTANCE;
         }
-        IdempotencyRecord existing = repository.findById(key).orElseThrow();
+        IdempotencyRecord existing = repository.findByIdLockingForUpdate(key).orElseThrow();
         reusePolicySet.evaluateRulesUntilFirstViolation(new IdempotencyKeyReuseContext(existing.getOperationType(), existing.getRequestHash(), type.name(), requestHash))
                 .throwIfDenied(IdempotencyKeyConflictException::new);
         boolean resumedAfterAuthorization = priorAuthorization == PriorAuthorization.APPROVED

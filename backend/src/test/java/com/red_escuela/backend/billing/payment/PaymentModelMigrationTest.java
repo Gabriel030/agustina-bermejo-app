@@ -96,6 +96,45 @@ class PaymentModelMigrationTest {
 
     @Test
     @Tag("D-082")
+    @Tag("D-144")
+    void theFirstNewPaymentGetsAnIdAboveEveryLegacyPaymentId() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            migrateTo(dataSource, "102");
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            Long personId = insertPerson(jdbc);
+            for (int index = 0; index < 3; index++) {
+                jdbc.update("insert into payment (amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at) "
+                        + "values (10.00, 'ARS', 'CASH', ?, now(), 'CONFIRMED', now(), now())", personId);
+            }
+            Long maxLegacyId = jdbc.queryForObject("select max(id) from payment", Long.class);
+
+            migrateTo(dataSource, "104");
+            Long accountId = insertStudentCurrentAccount(jdbc, personId, "ARS");
+            insertPayment(jdbc, accountId, personId, "");
+
+            assertThat(jdbc.queryForObject("select min(id) from payment", Long.class)).isGreaterThan(maxLegacyId);
+        }
+    }
+
+    @Test
+    @Tag("D-082")
+    void theNewPaymentIdentityStartsAtOneWhenThereAreNoLegacyPayments() {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
+            postgres.start();
+            DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            migrateTo(dataSource, "104");
+            JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+            Long personId = insertPerson(jdbc);
+            insertPayment(jdbc, insertStudentCurrentAccount(jdbc, personId, "ARS"), personId, "");
+
+            assertThat(jdbc.queryForObject("select min(id) from payment", Long.class)).isEqualTo(1L);
+        }
+    }
+
+    @Test
+    @Tag("D-082")
     @Tag("D-097")
     @Tag("D-136")
     void theNewPaymentTableEnforcesItsInvariantsInTheDatabase() {

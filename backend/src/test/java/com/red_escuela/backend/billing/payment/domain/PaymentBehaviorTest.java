@@ -24,7 +24,7 @@ class PaymentBehaviorTest {
     void onlyAnApprovedManualBankTransferCanHaveItsApprovalRevoked() {
         Payment cash = cashPayment();
         Payment card = pendingGatewayPayment(PaymentGatewayCode.MERCADO_PAGO);
-        card.approvePayment(ars("80000.00"), PAID_ON, ACTOR, null);
+        card.changeStatus(PaymentEvent.PAYMENT_APPROVED, ACTOR, null, new GatewayRawStatus("approved", "accredited"));
         Payment transfer = pendingBankTransfer();
         transfer.approvePayment(ars("80000.00"), PAID_ON, ACTOR, null);
 
@@ -160,5 +160,29 @@ class PaymentBehaviorTest {
         assertThat(transferDetails().methodType()).isEqualTo(PaymentMethodType.BANK_TRANSFER);
         assertThat(new CardPaymentDetails(CardPaymentType.DEBIT, 1, "1234").methodType()).isEqualTo(PaymentMethodType.CARD);
         assertThat(new WalletPaymentDetails("MERCADO_PAGO_WALLET", "payer@example.com").methodType()).isEqualTo(PaymentMethodType.WALLET);
+    }
+
+    @Test
+    @Tag("D-082")
+    void aManualReviewCannotApproveOrRejectAGatewayPayment() {
+        Payment card = pendingGatewayPayment(PaymentGatewayCode.MERCADO_PAGO);
+
+        assertThatThrownBy(() -> card.approvePayment(ars("80000.00"), PAID_ON, ACTOR, null)).isInstanceOf(IllegalPaymentStatusTransitionException.class);
+        assertThatThrownBy(() -> card.rejectPayment("no", ACTOR)).isInstanceOf(IllegalPaymentStatusTransitionException.class);
+        assertThat(card.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(card.statusChanges()).hasSize(1);
+    }
+
+    @Test
+    @Tag("D-082")
+    void aManualTransitionKeepsTheGatewayRawStatusTheGatewayLastReported() {
+        Payment card = pendingGatewayPayment(PaymentGatewayCode.MERCADO_PAGO);
+
+        card.cancelPendingPayment("el alumno desistio", ACTOR);
+
+        assertThat(card.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+        assertThat(card.getGatewayRawStatus()).isEqualTo("pending");
+        assertThat(card.getGatewayRawStatusDetail()).isEqualTo("pending_waiting_payment");
+        assertThat(card.statusChanges().get(1).getGatewayRawStatus()).isNull();
     }
 }

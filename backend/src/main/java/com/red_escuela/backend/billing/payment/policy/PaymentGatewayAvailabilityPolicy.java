@@ -14,7 +14,7 @@ public final class PaymentGatewayAvailabilityPolicy implements Policy<PaymentGat
 
     @Override
     public PolicyVerdict evaluateRule(PaymentGatewayAvailabilityContext context) {
-        boolean offlineOrEnabled = !context.requested().isOnlineProvider() || context.adapterRegistered();
+        boolean offlineOrEnabled = !context.requested().isOnlineProvider() || (context.adapterRegistered() && context.enabledByConfiguration());
         return offlineOrEnabled
                 ? PolicyVerdict.allow(ruleName())
                 : PolicyVerdict.deny(ruleName(), "PAYMENT_GATEWAY_UNAVAILABLE", "La pasarela de pago online no está habilitada");

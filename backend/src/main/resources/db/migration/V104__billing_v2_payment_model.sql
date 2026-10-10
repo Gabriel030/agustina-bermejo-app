@@ -51,6 +51,14 @@ create table payment (
     constraint ck_payment_registered_by check (num_nonnulls(registered_by_person_id, registered_by_process) = 1)
 );
 
+do $$
+declare
+    next_id bigint;
+begin
+    select coalesce(max(id), 0) + 1 into next_id from legacy_payment;
+    execute format('alter table payment alter column id restart with %s', next_id);
+end $$;
+
 create unique index uk_payment_gateway_payment_id on payment (gateway, gateway_payment_id) where gateway_payment_id is not null;
 create index ix_payment_account_registered_at on payment (student_current_account_id, registered_at desc, id desc);
 create index ix_payment_status on payment (status);

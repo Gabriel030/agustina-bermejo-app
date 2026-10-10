@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Set;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
@@ -68,7 +69,9 @@ public final class ArchitectureRules {
 
     static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener", "CourseEnrollmentAdmissionPaymentListener");
 
-    static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception", "gateway");
+    static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
+
+    static final Map<String, Set<String>> BILLING_SUBDOMAIN_EXTRA_FOLDERS = Map.of("payment", Set.of("gateway"));
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -467,7 +470,7 @@ public final class ArchitectureRules {
                         } else if (segments.length == 1) {
                             allowed = true;
                         } else {
-                            allowed = BILLING_SUBDOMAIN_FOLDERS.contains(segments[1]);
+                            allowed = BILLING_SUBDOMAIN_FOLDERS.contains(segments[1]) || BILLING_SUBDOMAIN_EXTRA_FOLDERS.getOrDefault(segments[0], Set.of()).contains(segments[1]);
                         }
                         if (!allowed) {
                             events.add(SimpleConditionEvent.violated(javaClass, javaClass.getName() + " is outside the subdomain folders and not a frozen legacy class"));

@@ -7,6 +7,8 @@ import com.red_escuela.backend.billing.payment.exception.PaymentGatewayNotFoundE
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayAvailabilityContext;
 import com.red_escuela.backend.billing.payment.policy.PaymentGatewayCapabilityContext;
 import com.red_escuela.backend.billing.gateway.exception.PaymentGatewayUnavailableException;
+import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
+import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.stereotype.Component;
@@ -22,9 +24,11 @@ public class PaymentGatewayRegistry {
     private final Map<PaymentGatewayCode, PaymentGateway> gatewaysByCode = new EnumMap<>(PaymentGatewayCode.class);
     private final PolicySet<PaymentGatewayAvailabilityContext> availabilityPolicySet;
     private final PolicySet<PaymentGatewayCapabilityContext> capabilityPolicySet;
+    private final PaymentGatewayConfigRepository configRepository;
 
     public PaymentGatewayRegistry(List<PaymentGateway> gateways, PolicySet<PaymentGatewayAvailabilityContext> paymentGatewayAvailabilityPolicySet,
-                                  PolicySet<PaymentGatewayCapabilityContext> paymentGatewayCapabilityPolicySet) {
+                                  PolicySet<PaymentGatewayCapabilityContext> paymentGatewayCapabilityPolicySet,
+                                  PaymentGatewayConfigRepository configRepository) {
         for (PaymentGateway gateway : gateways) {
             if (gatewaysByCode.putIfAbsent(gateway.gatewayCode(), gateway) != null) {
                 throw new IllegalStateException("Payment gateway declared twice for " + gateway.gatewayCode());
@@ -32,10 +36,11 @@ public class PaymentGatewayRegistry {
         }
         this.availabilityPolicySet = paymentGatewayAvailabilityPolicySet;
         this.capabilityPolicySet = paymentGatewayCapabilityPolicySet;
+        this.configRepository = configRepository;
     }
 
     public PaymentGateway findGatewayByCode(PaymentGatewayCode code) {
-        availabilityPolicySet.evaluateRulesUntilFirstViolation(new PaymentGatewayAvailabilityContext(code, gatewaysByCode.containsKey(code)))
+        availabilityPolicySet.evaluateRulesUntilFirstViolation(new PaymentGatewayAvailabilityContext(code, gatewaysByCode.containsKey(code), isEnabledByConfiguration(code)))
                 .throwIfDenied(PaymentGatewayUnavailableException::new);
         PaymentGateway gateway = gatewaysByCode.get(code);
         if (gateway == null) {
@@ -49,5 +54,9 @@ public class PaymentGatewayRegistry {
         capabilityPolicySet.evaluateRulesUntilFirstViolation(new PaymentGatewayCapabilityContext(gateway.describeCapabilities(), currency, required))
                 .throwIfDenied(PaymentGatewayCapabilityNotSupportedException::new);
         return gateway;
+    }
+
+    private boolean isEnabledByConfiguration(PaymentGatewayCode code) {
+        return code == PaymentGatewayCode.MERCADO_PAGO && configRepository.findFirstByOrderByIdAsc().map(PaymentGatewayConfig::isMpEnabled).orElse(false);
     }
 }

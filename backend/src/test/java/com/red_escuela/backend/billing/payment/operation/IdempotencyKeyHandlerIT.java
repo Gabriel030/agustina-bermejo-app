@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.operation.OperationPreHandlers;
 import com.red_escuela.backend.billing.operation.PreProcessingResult;
 import com.red_escuela.backend.billing.operation.PriorAuthorization;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.event.DomainEvent;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -53,7 +54,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import(IdempotencyKeyHandlerIT.IdempotentTestOperationConfiguration.class)
 class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
 
-    record TestCommand(String idempotencyKey, BigDecimal amount) implements IdempotencyKeyed {
+    record TestCommand(String idempotencyKey, BigDecimal amount, StatusChangeActor actor) implements IdempotencyKeyed {
+        TestCommand(String idempotencyKey, BigDecimal amount) {
+            this(idempotencyKey, amount, StatusChangeActor.ofPerson(1L));
+        }
     }
 
     record TestResult(String reference, BigDecimal amount) {
@@ -61,12 +65,13 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
 
     static final AtomicInteger EXECUTIONS = new AtomicInteger();
     static final AtomicBoolean FAIL_NEXT_EXECUTION = new AtomicBoolean();
-    static volatile long processingDelayMillis;
+    static volatile CountDownLatch processingEntered = new CountDownLatch(0);
+    static volatile CountDownLatch processingMayContinue = new CountDownLatch(0);
 
     static class IdempotentTestOperation implements BillingOperation<TestCommand, TestResult> {
         @Override
         public BillingOperationType type() {
-            return BillingOperationType.REGISTER_PAYMENT;
+            return BillingOperationType.CREATE_LATE_PAYMENT_SETTINGS;
         }
 
         @Override
@@ -91,7 +96,8 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
         @Override
         public TestResult processOperation(TestCommand context) {
             int execution = EXECUTIONS.incrementAndGet();
-            sleepFor(processingDelayMillis);
+            processingEntered.countDown();
+            awaitUninterrupted(processingMayContinue);
             if (FAIL_NEXT_EXECUTION.getAndSet(false)) {
                 throw new IllegalStateException("the operation failed after claiming its key");
             }
@@ -103,9 +109,11 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
             return List.of();
         }
 
-        private static void sleepFor(long millis) {
+        private static void awaitUninterrupted(CountDownLatch latch) {
             try {
-                Thread.sleep(millis);
+                if (!latch.await(30, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("the test never released the processing");
+                }
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
             }
@@ -115,21 +123,15 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
     @TestConfiguration
     static class IdempotentTestOperationConfiguration {
         @Bean
-        BillingOperation<TestCommand, TestResult> idempotentTestOperation() {
-            return new IdempotentTestOperation();
-        }
-
-        @Bean
         OperationPreHandlers idempotentTestPreHandlers(IdempotencyRecordService recordService, ObjectMapper objectMapper) {
-            return new OperationPreHandlers(BillingOperationType.REGISTER_PAYMENT,
+            return new OperationPreHandlers(BillingOperationType.CREATE_LATE_PAYMENT_SETTINGS,
                     List.of(new IdempotencyKeyHandler<TestCommand>(recordService, objectMapper, TestResult.class)));
         }
     }
 
     @Autowired
     private BillingOperationPipeline pipeline;
-    @Autowired
-    private BillingOperation<TestCommand, TestResult> operation;
+    private final BillingOperation<TestCommand, TestResult> operation = new IdempotentTestOperation();
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
@@ -152,7 +154,8 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
         jdbc.update("delete from idempotency_record");
         EXECUTIONS.set(0);
         FAIL_NEXT_EXECUTION.set(false);
-        processingDelayMillis = 0;
+        processingEntered = new CountDownLatch(0);
+        processingMayContinue = new CountDownLatch(0);
         jdbc.update("update shedlock set lock_until = now() - interval '1 minute' where name = 'IdempotencyRecordCleanupJob'");
     }
 
@@ -191,7 +194,7 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
                         ? PreProcessingResult.requireAuthorization(AuthorizationRole.DIRECTOR, "needs the director")
                         : PreProcessingResult.proceed();
         com.red_escuela.backend.billing.operation.OperationHandlerRegistry registry = new com.red_escuela.backend.billing.operation.OperationHandlerRegistry(List.of(
-                new OperationPreHandlers(BillingOperationType.REGISTER_PAYMENT,
+                new OperationPreHandlers(BillingOperationType.CREATE_LATE_PAYMENT_SETTINGS,
                         List.of(new IdempotencyKeyHandler<TestCommand>(recordService, objectMapper, TestResult.class), authorization))));
         return new BillingOperationPipeline(registry, (type, context, role, reason, expiresOn) -> (long) (100 + openedAuthorizationRequests.incrementAndGet()), eventPublisher);
     }
@@ -236,8 +239,57 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-136")
+    void theSameAmountWrittenWithDifferentScaleIsTheSameRequest() {
+        run("key-scale", "100");
+        BillingOperationOutcome<TestResult> second = run("key-scale", "100.00");
+
+        assertThat(second).isInstanceOf(BillingOperationOutcome.Processed.class);
+        assertThat(EXECUTIONS.get()).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-136")
+    void theSameKeyFromAnotherActorIsAConflictWithoutEffects() {
+        pipeline.runOperation(operation, new TestCommand("key-actor", new BigDecimal("10.00"), StatusChangeActor.ofPerson(1L)));
+
+        assertThatThrownBy(() -> pipeline.runOperation(operation, new TestCommand("key-actor", new BigDecimal("10.00"), StatusChangeActor.ofPerson(2L))))
+                .isInstanceOf(IdempotencyKeyConflictException.class);
+        assertThat(EXECUTIONS.get()).isEqualTo(1);
+    }
+
+    @Test
+    @Tag("D-136")
+    void twoConcurrentResumptionsAfterAuthorizationProcessTheOperationOnce() throws Exception {
+        authorizationRequired.set(true);
+        BillingOperationPipeline manual = pipelineThatMayRequireAuthorization();
+        TestCommand command = new TestCommand("key-concurrent-resume", new BigDecimal("10.00"));
+        runInTransaction(manual, false, command);
+        processingEntered = new CountDownLatch(1);
+        processingMayContinue = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<BillingOperationOutcome<TestResult>> firstResumption = executor.submit(() -> runInTransaction(manual, true, command));
+            assertThat(processingEntered.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<BillingOperationOutcome<TestResult>> secondResumption = executor.submit(() -> runInTransaction(manual, true, command));
+            awaitUntilABackendWaitsForALock();
+            processingMayContinue.countDown();
+
+            BillingOperationOutcome<TestResult> first = firstResumption.get(30, TimeUnit.SECONDS);
+            BillingOperationOutcome<TestResult> second = secondResumption.get(30, TimeUnit.SECONDS);
+
+            assertThat(EXECUTIONS.get()).isEqualTo(1);
+            assertThat(second).isEqualTo(first).isInstanceOf(BillingOperationOutcome.Processed.class);
+        } finally {
+            processingMayContinue.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @Tag("D-136")
     void twoThreadsWithTheSameKeyProcessOnceAndBothGetTheSameResponseWithoutAnyServerError() throws Exception {
-        processingDelayMillis = 400;
+        processingEntered = new CountDownLatch(1);
+        processingMayContinue = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch start = new CountDownLatch(1);
         try {
@@ -251,6 +303,9 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
                         return run("key-race", "80000.00");
                     }));
             start.countDown();
+            assertThat(processingEntered.await(30, TimeUnit.SECONDS)).isTrue();
+            awaitUntilABackendWaitsForALock();
+            processingMayContinue.countDown();
 
             BillingOperationOutcome<TestResult> first = futures.get(0).get(30, TimeUnit.SECONDS);
             BillingOperationOutcome<TestResult> second = futures.get(1).get(30, TimeUnit.SECONDS);
@@ -259,6 +314,7 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
             assertThat(first).isEqualTo(second).isInstanceOf(BillingOperationOutcome.Processed.class);
             assertThat(jdbc.queryForObject("select count(*) from idempotency_record where idempotency_key = 'key-race'", Long.class)).isEqualTo(1);
         } finally {
+            processingMayContinue.countDown();
             executor.shutdownNow();
         }
     }
@@ -266,13 +322,12 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-136")
     void ifTheFirstThreadFailsTheSecondOneWaitingOnTheSameKeyRunsTheOperationItself() throws Exception {
-        processingDelayMillis = 400;
+        processingEntered = new CountDownLatch(1);
+        processingMayContinue = new CountDownLatch(1);
         FAIL_NEXT_EXECUTION.set(true);
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch start = new CountDownLatch(1);
         try {
             Future<Object> failing = executor.submit(() -> {
-                start.await();
                 try {
                     run("key-failing-race", "5.00");
                     return "processed";
@@ -280,19 +335,26 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
                     return "failed";
                 }
             });
-            Future<Object> waiting = executor.submit(() -> {
-                start.await();
-                Thread.sleep(100);
-                return run("key-failing-race", "5.00");
-            });
-            start.countDown();
+            assertThat(processingEntered.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<Object> waiting = executor.submit(() -> run("key-failing-race", "5.00"));
+            awaitUntilABackendWaitsForALock();
+            processingMayContinue.countDown();
 
             assertThat(failing.get(30, TimeUnit.SECONDS)).isEqualTo("failed");
             assertThat(waiting.get(30, TimeUnit.SECONDS)).isInstanceOf(BillingOperationOutcome.Processed.class);
             assertThat(EXECUTIONS.get()).isEqualTo(2);
             assertThat(jdbc.queryForObject("select count(*) from idempotency_record where idempotency_key = 'key-failing-race'", Long.class)).isEqualTo(1);
         } finally {
+            processingMayContinue.countDown();
             executor.shutdownNow();
+        }
+    }
+
+    private void awaitUntilABackendWaitsForALock() throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (jdbc.queryForObject("select count(*) from pg_stat_activity where wait_event_type = 'Lock'", Long.class) == 0) {
+            assertThat(System.nanoTime()).isLessThan(deadline);
+            Thread.sleep(10);
         }
     }
 
@@ -310,7 +372,7 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
 
         assertThat(EXECUTIONS.get()).isEqualTo(1);
         assertThat(jdbc.queryForObject("select request_hash from idempotency_record where idempotency_key = 'key-conflict'", String.class)).isEqualTo(storedHash);
-        assertThat(jdbc.queryForObject("select operation_type from idempotency_record where idempotency_key = 'key-conflict'", String.class)).isEqualTo("REGISTER_PAYMENT");
+        assertThat(jdbc.queryForObject("select operation_type from idempotency_record where idempotency_key = 'key-conflict'", String.class)).isEqualTo("CREATE_LATE_PAYMENT_SETTINGS");
     }
 
     @Test
@@ -364,7 +426,7 @@ class IdempotencyKeyHandlerIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-136")
     void claimingOutsideATransactionIsRefusedSoAKeyCanNeverBeClaimedWithoutItsOperation() {
-        assertThatThrownBy(() -> recordService.claimKeyOrFindStoredResponse("key-outside", BillingOperationType.REGISTER_PAYMENT, "h", PriorAuthorization.ABSENT))
+        assertThatThrownBy(() -> recordService.claimKeyOrFindStoredResponse("key-outside", BillingOperationType.CREATE_LATE_PAYMENT_SETTINGS, "h", PriorAuthorization.ABSENT))
                 .isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
     }
 }

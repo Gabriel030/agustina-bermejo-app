@@ -22,7 +22,12 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
+import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository;
+import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +39,15 @@ class PaymentGatewayTest {
     private final ManualPaymentGateway manual = new ManualPaymentGateway();
 
     private PaymentGatewayRegistry registryOf(PaymentGateway... gateways) {
-        return new PaymentGatewayRegistry(List.of(gateways), availability, capability);
+        return registryWithMpEnabled(true, gateways);
+    }
+
+    private PaymentGatewayRegistry registryWithMpEnabled(boolean mpEnabled, PaymentGateway... gateways) {
+        PaymentGatewayConfig config = new PaymentGatewayConfig();
+        config.setMpEnabled(mpEnabled);
+        PaymentGatewayConfigRepository configRepository = Mockito.mock(PaymentGatewayConfigRepository.class);
+        Mockito.when(configRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(config));
+        return new PaymentGatewayRegistry(List.of(gateways), availability, capability, configRepository);
     }
 
     private PaymentGateway fakeGateway(PaymentGatewayCode code) {
@@ -143,10 +156,20 @@ class PaymentGatewayTest {
     void theAvailabilityPolicyOnlyBlocksOnlineProvidersWithoutAnAdapter() {
         PaymentGatewayAvailabilityPolicy policy = new PaymentGatewayAvailabilityPolicy();
 
-        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MANUAL, false)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MERCADO_PAGO, true)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MERCADO_PAGO, false)).allowed()).isFalse();
-        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.DLOCAL, false)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MANUAL, false, false)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MERCADO_PAGO, true, true)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MERCADO_PAGO, false, true)).allowed()).isFalse();
+        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.DLOCAL, false, false)).allowed()).isFalse();
+    }
+
+    @Test
+    @Tag("D-226")
+    void anOnlineProviderWithAnAdapterButDisabledByConfigurationIsUnavailable() {
+        PaymentGatewayAvailabilityPolicy policy = new PaymentGatewayAvailabilityPolicy();
+
+        assertThat(policy.evaluateRule(new PaymentGatewayAvailabilityContext(PaymentGatewayCode.MERCADO_PAGO, true, false)).allowed()).isFalse();
+        PaymentGatewayRegistry disabled = registryWithMpEnabled(false, fakeGateway(PaymentGatewayCode.MERCADO_PAGO));
+        assertThatThrownBy(() -> disabled.findGatewayByCode(PaymentGatewayCode.MERCADO_PAGO)).isInstanceOf(PaymentGatewayUnavailableException.class);
     }
 
     @Test

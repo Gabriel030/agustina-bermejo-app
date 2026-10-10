@@ -35,12 +35,13 @@ public class BillingOperationPipeline {
         BillingOperationType type = operation.type();
         operation.requireValidContext(context);
         List<PreProcessingHandler<C>> handlers = handlerRegistry.<C>preHandlersFor(type);
-        for (PreProcessingHandler<C> handler : handlers) {
+        for (int index = 0; index < handlers.size(); index++) {
+            PreProcessingHandler<C> handler = handlers.get(index);
             PreProcessingResult result = handler.handleBeforeProcessing(type, context, priorAuthorization);
             if (result instanceof PreProcessingResult.RequiresAuthorization required) {
                 Long requestId = authorizationRequests.openAuthorizationRequest(type, context, required.requiredRole(), required.reason(), required.expiresOn());
                 log.info("Operation awaiting authorization: type={}, authorizationRequestId={}", type, requestId);
-                handlers.forEach(awaiting -> awaiting.handleAwaitingAuthorization(type, context, requestId));
+                handlers.subList(0, index + 1).forEach(awaiting -> awaiting.handleAwaitingAuthorization(type, context, requestId));
                 return new BillingOperationOutcome.AwaitingAuthorization<>(requestId);
             }
             if (result instanceof PreProcessingResult.ReplayStoredOutcome replay) {

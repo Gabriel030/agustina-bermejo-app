@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.payment.repository;
 
 import com.red_escuela.backend.billing.payment.domain.IdempotencyRecord;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -12,6 +14,10 @@ import java.util.Optional;
 public interface IdempotencyRecordRepository extends Repository<IdempotencyRecord, String> {
 
     Optional<IdempotencyRecord> findById(String idempotencyKey);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from IdempotencyRecord r where r.idempotencyKey = :key")
+    Optional<IdempotencyRecord> findByIdLockingForUpdate(@Param("key") String key);
 
     @Modifying
     @Query(value = """

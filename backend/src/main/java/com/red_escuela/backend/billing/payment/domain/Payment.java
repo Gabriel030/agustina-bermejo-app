@@ -201,6 +201,7 @@ public class Payment {
         if (verifiedAmount.value().isZero()) {
             throw new IllegalArgumentException("A verified payment amount must be greater than zero");
         }
+        requireManualGateway(PaymentEvent.PAYMENT_APPROVED);
         resolveNextStatusFor(PaymentEvent.PAYMENT_APPROVED);
         this.approvedAmount = verifiedAmount;
         this.paidOn = paidOn;
@@ -210,6 +211,7 @@ public class Payment {
     }
 
     public void rejectPayment(String reason, StatusChangeActor reviewer) {
+        requireManualGateway(PaymentEvent.PAYMENT_REJECTED);
         resolveNextStatusFor(PaymentEvent.PAYMENT_REJECTED);
         this.rejectionReason = reason;
         this.reviewedByPersonId = reviewer.personId();
@@ -236,14 +238,22 @@ public class Payment {
         requireRevocationOnlyOfManualBankTransfer(event);
         PaymentStatus previousStatus = status;
         this.status = nextStatus;
-        this.gatewayRawStatus = rawStatus.status();
-        this.gatewayRawStatusDetail = rawStatus.detail();
+        if (!rawStatus.equals(GatewayRawStatus.none())) {
+            this.gatewayRawStatus = rawStatus.status();
+            this.gatewayRawStatusDetail = rawStatus.detail();
+        }
         statusChanges.add(new PaymentStatusChange(this, previousStatus, nextStatus, event, reason, rawStatus, actor));
     }
 
     private void resolveNextStatusFor(PaymentEvent event) {
         PaymentStatusStateMachine.resolveNextStatus(status, event);
         requireRevocationOnlyOfManualBankTransfer(event);
+    }
+
+    private void requireManualGateway(PaymentEvent event) {
+        if (gateway != PaymentGatewayCode.MANUAL) {
+            throw new IllegalPaymentStatusTransitionException(status, event);
+        }
     }
 
     private void requireRevocationOnlyOfManualBankTransfer(PaymentEvent event) {

@@ -188,6 +188,17 @@ class BillingOperationPipelineTest {
 
     @Test
     @Tag("D-136")
+    void handlersThatNeverRanAreNotToldTheOperationIsAwaitingAuthorization() {
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.requireAuthorization(AuthorizationRole.DIRECTOR, "needs approval")),
+                hookedHandler("second", PreProcessingResult.proceed()));
+
+        pipeline.runOperation(operation, CONTEXT);
+
+        assertThat(calls).containsExactly("validate", "first:before", "openRequest", "first:awaiting:77");
+    }
+
+    @Test
+    @Tag("D-136")
     void aReplayedOutcomeIsReturnedWithoutProcessingPublishingOrTouchingLaterHandlers() {
         BillingOperationOutcome<String> stored = new BillingOperationOutcome.Processed<>("stored");
         BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.replayStoredOutcome(stored)), hookedHandler("second", PreProcessingResult.proceed()));
