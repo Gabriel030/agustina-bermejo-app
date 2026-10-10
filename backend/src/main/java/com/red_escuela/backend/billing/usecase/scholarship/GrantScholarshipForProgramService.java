@@ -1,9 +1,7 @@
 package com.red_escuela.backend.billing.usecase.scholarship;
 
 import com.red_escuela.backend.billing.dto.CreateScholarshipRequest;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Scholarship;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.ScholarshipRepository;
 import com.red_escuela.backend.billing.service.ScholarshipGrantSupport;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -23,17 +21,15 @@ public class GrantScholarshipForProgramService implements GrantScholarshipForPro
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final RecurringFeeWindowService recurringFeeWindowService;
     private final CurrentPersonService currentPersonService;
-    private final InvoiceRepository invoiceRepository;
     private final ScholarshipGrantSupport support;
 
     public GrantScholarshipForProgramService(ScholarshipRepository scholarshipRepository, ProgramEnrollmentRepository programEnrollmentRepository,
                                               RecurringFeeWindowService recurringFeeWindowService, CurrentPersonService currentPersonService,
-                                              InvoiceRepository invoiceRepository, ScholarshipGrantSupport support) {
+                                              ScholarshipGrantSupport support) {
         this.scholarshipRepository = scholarshipRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.recurringFeeWindowService = recurringFeeWindowService;
         this.currentPersonService = currentPersonService;
-        this.invoiceRepository = invoiceRepository;
         this.support = support;
     }
 
@@ -46,9 +42,6 @@ public class GrantScholarshipForProgramService implements GrantScholarshipForPro
         Scholarship scholarship = support.build(request, currentPersonService.resolveCurrentPerson(), enrollment.getProgram().getCurrency());
         scholarship.setProgramEnrollment(enrollment);
         scholarship = scholarshipRepository.save(scholarship);
-        support.applyRetroactiveCreditIfCurrentInvoiceAlreadyPaid(scholarship,
-                invoiceRepository.findByProgramEnrollmentIdAndPaymentStatusIn(programEnrollmentId, List.of(InvoicePaymentStatus.PAID)),
-                enrollment.getStudent());
         return scholarship;
     }
 }

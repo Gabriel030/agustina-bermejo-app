@@ -16,6 +16,9 @@ public class DirectorAuthorizationHandler implements PreProcessingHandler<Direct
         if (priorAuthorization == PriorAuthorization.APPROVED || context.requestedByDirector()) {
             return PreProcessingResult.proceed();
         }
+        if (context.authorizationExpiresOn() == null) {
+            return PreProcessingResult.requireAuthorization(AuthorizationRole.DIRECTOR, context.authorizationReason());
+        }
         return PreProcessingResult.requireAuthorizationUntil(AuthorizationRole.DIRECTOR, context.authorizationReason(), context.authorizationExpiresOn());
     }
 }

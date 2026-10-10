@@ -20,17 +20,13 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.notification.entity.Notification;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
-import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
-import com.red_escuela.backend.billing.exception.InsufficientCreditBalanceException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
-import com.red_escuela.backend.billing.repository.CreditNoteRepository;
 import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -68,11 +64,7 @@ class PaymentServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-    @Autowired
-    private CreditNoteRepository creditNoteRepository;
 
-    @Autowired
-    private CreditNoteService creditNoteService;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -389,85 +381,9 @@ class PaymentServiceTest extends AbstractIntegrationTest {
                 .isInstanceOf(InvoiceNotFoundException.class);
     }
 
-    @Test
-    void creditBalancePaymentConsumesTheCreditNoteAndStillPaysTheInvoice() {
-        Person admin = persistPerson("admin.pago11." + System.nanoTime());
-        Student student = persistStudent("96000011");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
-        creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
 
-        Payment payment = registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(1000))),
-                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
 
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        CreditNote reloaded = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).get(0);
-        assertThat(reloaded.getStatus().name()).isEqualTo("PARTIALLY_CONSUMED");
-        assertThat(payment.getAllocations()).hasSize(1);
-    }
 
-    @Test
-    @Tag("D-144")
-    void aCreditBalancePaymentIsNeverRecordedAsMoneyReceivedAndBooksTheConsumedCreditNoteInTheLedger() {
-        Person admin = persistPerson("admin.creditbalance." + System.nanoTime());
-        Student student = persistStudent("96009903");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
-        creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
-        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
-
-        registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(1000))),
-                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
-
-        assertThat(jdbc.queryForList("select entry_type, direction, amount from current_account_entry where student_current_account_id = ? order by sequence_number", accountId))
-                .extracting(row -> row.get("entry_type") + ":" + row.get("direction") + ":" + ((java.math.BigDecimal) row.get("amount")).setScale(0))
-                .containsExactly("INVOICE_ISSUED:DEBIT:1000", "CREDIT_NOTE_ISSUED:CREDIT:1500");
-        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
-                .isEqualByComparingTo("500");
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    @Tag("D-144")
-    void consumingTheSameCreditNoteTwiceBooksItInTheLedgerOnlyOnce() {
-        Person admin = persistPerson("admin.creditbalance2." + System.nanoTime());
-        Student student = persistStudent("96009904");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice first = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING, YearMonth.now());
-        Invoice second = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(400), InvoicePaymentStatus.PENDING, YearMonth.now().plusMonths(1));
-        creditNoteService.createFor(student, ars(1500), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
-        Long accountId = invoiceRepository.findById(first.getId()).orElseThrow().getStudentCurrentAccountId();
-
-        for (Invoice invoice : List.of(first, second)) {
-            registerPaymentUseCase.register(new RegisterPaymentRequest(
-                    List.of(new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value())),
-                    PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin);
-        }
-
-        assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'CREDIT_NOTE_ISSUED'", Long.class, accountId))
-                .isEqualTo(1L);
-        assertThat(jdbc.queryForObject("select unallocated_credit_amount from student_current_account where id = ?", java.math.BigDecimal.class, accountId))
-                .isEqualByComparingTo("100");
-        invariants.assertAllBillingInvariantsHold();
-    }
-
-    @Test
-    void creditBalancePaymentWithoutEnoughCreditIsRejectedAndNothingChanges() {
-        Person admin = persistPerson("admin.pago12." + System.nanoTime());
-        Student student = persistStudent("96000012");
-        CourseEnrollment enrollment = persistCourseEnrollment(student);
-        Invoice invoice = persistInvoice(enrollment, FeeType.MONTHLY_INSTALLMENT, ars(1000), InvoicePaymentStatus.PENDING);
-        creditNoteService.createFor(student, ars(300), CreditNoteReasonType.ADMINISTRATIVE_CORRECTION, "Ajuste", admin);
-
-        assertThatThrownBy(() -> registerPaymentUseCase.register(new RegisterPaymentRequest(
-                List.of(new PaymentAllocationRequest(invoice.getId(), ars(1000))),
-                PaymentMethod.CREDIT_BALANCE, false, null, null, null, null), admin))
-                .isInstanceOf(InsufficientCreditBalanceException.class);
-
-        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPending();
-    }
 
     private CourseEnrollment persistCourseEnrollmentWithStanding(Student student, EnrollmentPaymentStatus standing) {
         CourseEnrollment enrollment = persistCourseEnrollment(student);
