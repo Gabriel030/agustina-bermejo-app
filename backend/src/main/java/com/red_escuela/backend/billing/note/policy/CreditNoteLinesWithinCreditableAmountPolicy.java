@@ -17,7 +17,7 @@ public final class CreditNoteLinesWithinCreditableAmountPolicy implements Policy
     public PolicyVerdict evaluateRule(CreditNoteIssuingContext context) {
         for (CreditNoteLineAmount line : context.command().lines()) {
             boolean exceeds = context.invoice().findLine(line.lineNumber())
-                    .map(facts -> line.amount().compareTo(facts.creditableAmount().value().amount()) > 0)
+                    .map(facts -> line.amount().amount().compareTo(facts.creditableAmount().value().amount()) > 0)
                     .orElse(true);
             if (exceeds) {
                 return PolicyVerdict.deny(ruleName(), "CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT", "El renglón " + line.lineNumber() + " no admite acreditar ese monto");

@@ -40,7 +40,7 @@ class CreditNoteConcurrencyIT extends AbstractCreditNoteIT {
         return () -> {
             start.await();
             return pipeline.runOperation(operation, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR, "Error",
-                    List.of(new CreditNoteLineAmount(1, new BigDecimal(amount))), CreditNoteDestination.DEBT_OFFSET, requester, true, null));
+                    List.of(new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(new BigDecimal(amount), com.red_escuela.backend.shared.domain.Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, requester, true, null));
         };
     }
 

@@ -125,7 +125,7 @@ public class IssueCreditNoteOperation implements BillingOperation<IssueCreditNot
 
     private List<CreditNoteLineRequest> toLineRequests(IssueCreditNoteCommand command, Invoice invoice) {
         return command.lines().stream()
-                .map(line -> new CreditNoteLineRequest(line.lineNumber(), NonNegativeMoney.of(line.amount(), invoice.getCurrency())))
+                .map(line -> new CreditNoteLineRequest(line.lineNumber(), NonNegativeMoney.of(line.amount().amount(), invoice.getCurrency())))
                 .toList();
     }
 

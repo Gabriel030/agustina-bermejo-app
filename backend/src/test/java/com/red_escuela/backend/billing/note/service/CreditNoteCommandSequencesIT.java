@@ -63,7 +63,7 @@ class CreditNoteCommandSequencesIT extends AbstractCreditNoteIT {
                         BigDecimal creditAmount = amount.min(new BigDecimal("1500.00"));
                         try {
                             pipeline.runOperation(operation, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR, "Error",
-                                    List.of(new CreditNoteLineAmount(1, creditAmount)), "PAID".equals(status) ? CreditNoteDestination.FREE_CREDIT : CreditNoteDestination.DEBT_OFFSET,
+                                    List.of(new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(creditAmount, com.red_escuela.backend.shared.domain.Currency.ARS))), "PAID".equals(status) ? CreditNoteDestination.FREE_CREDIT : CreditNoteDestination.DEBT_OFFSET,
                                     requester, true, null));
                             accepted++;
                         } catch (ConflictException | BadRequestException rejection) {

@@ -83,7 +83,7 @@ public abstract class AbstractCreditNoteIT extends AbstractCurrentAccountIT {
 
     protected String creditNoteBody(String reason, String justification, int lineNumber, String amount) {
         return "{\"reason\":\"" + reason + "\",\"justification\":" + (justification == null ? "null" : "\"" + justification + "\"")
-                + ",\"lines\":[{\"lineNumber\":" + lineNumber + ",\"amount\":" + new BigDecimal(amount).toPlainString() + "}]}";
+                + ",\"lines\":[{\"lineNumber\":" + lineNumber + ",\"amount\":{\"amount\":" + new BigDecimal(amount).toPlainString() + ",\"currency\":\"ARS\"}}]}";
     }
 
     protected String outstandingOf(Long invoiceId) {

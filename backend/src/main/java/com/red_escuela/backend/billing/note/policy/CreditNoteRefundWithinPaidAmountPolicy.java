@@ -30,6 +30,6 @@ public final class CreditNoteRefundWithinPaidAmountPolicy implements Policy<Cred
     }
 
     private BigDecimal totalRequested(CreditNoteIssuingContext context) {
-        return context.command().lines().stream().map(CreditNoteLineAmount::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return context.command().lines().stream().map(line -> line.amount().amount()).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

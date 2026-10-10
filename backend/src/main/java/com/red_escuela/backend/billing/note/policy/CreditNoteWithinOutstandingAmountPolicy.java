@@ -21,7 +21,7 @@ public final class CreditNoteWithinOutstandingAmountPolicy implements Policy<Cre
         if (context.invoice().currentDestination() != CreditNoteDestination.DEBT_OFFSET) {
             return PolicyVerdict.allow(ruleName());
         }
-        BigDecimal requested = context.command().lines().stream().map(CreditNoteLineAmount::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal requested = context.command().lines().stream().map(line -> line.amount().amount()).reduce(BigDecimal.ZERO, BigDecimal::add);
         if (requested.compareTo(context.invoice().outstandingAmount().value().amount()) > 0) {
             return PolicyVerdict.deny(ruleName(), "CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT", "La nota de crédito supera lo que la factura tiene impago");
         }

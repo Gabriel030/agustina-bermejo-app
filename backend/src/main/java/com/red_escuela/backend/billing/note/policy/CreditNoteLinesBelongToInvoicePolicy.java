@@ -25,10 +25,10 @@ public final class CreditNoteLinesBelongToInvoicePolicy implements Policy<Credit
         }
         Set<Integer> seen = new HashSet<>();
         for (CreditNoteLineAmount line : lines) {
-            if (line.amount().signum() <= 0) {
+            if (line.amount().amount().signum() <= 0) {
                 return PolicyVerdict.deny(ruleName(), "CREDIT_NOTE_LINES_INVALID", "El monto del renglón " + line.lineNumber() + " debe ser mayor que cero");
             }
-            if (!seen.add(line.lineNumber()) || context.invoice().findLine(line.lineNumber()).isEmpty()) {
+            if (!seen.add(line.lineNumber()) || context.invoice().findLine(line.lineNumber()).map(facts -> facts.creditableAmount().value().currency() != line.amount().currency()).orElse(true)) {
                 return PolicyVerdict.deny(ruleName(), "CREDIT_NOTE_LINES_INVALID", "El renglón " + line.lineNumber() + " está repetido o no pertenece a la factura");
             }
         }

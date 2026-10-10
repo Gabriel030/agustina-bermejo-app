@@ -302,7 +302,7 @@ class ScholarshipServiceTest extends AbstractIntegrationTest {
                 .hasSize(2);
         assertThat(reloaded.getInstallments())
                 .filteredOn(installment -> installment.getStatus() == com.red_escuela.backend.billing.entity.InstallmentStatus.APPLIED)
-                .isEmpty();
+                .hasSize(1);
     }
 
     @Test

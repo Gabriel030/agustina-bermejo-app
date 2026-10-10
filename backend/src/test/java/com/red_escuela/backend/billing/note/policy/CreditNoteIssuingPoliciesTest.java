@@ -53,7 +53,7 @@ class CreditNoteIssuingPoliciesTest {
     private static IssueCreditNoteCommand command(CreditNoteReason reason, String justification, CreditNoteDestination destination, String... amounts) {
         List<CreditNoteLineAmount> lines = new java.util.ArrayList<>();
         for (int i = 0; i < amounts.length; i++) {
-            lines.add(new CreditNoteLineAmount(i + 1, new BigDecimal(amounts[i])));
+            lines.add(new CreditNoteLineAmount(i + 1, com.red_escuela.backend.shared.domain.Money.of(new BigDecimal(amounts[i]), com.red_escuela.backend.shared.domain.Currency.ARS)));
         }
         return new IssueCreditNoteCommand(5L, reason, justification, lines, destination, 9L, false, null);
     }
@@ -92,7 +92,7 @@ class CreditNoteIssuingPoliciesTest {
     @Test
     void aLineOfTheCommandMissingFromTheInvoiceIsNotCreditable() {
         IssueCreditNoteCommand onLineTwo = new IssueCreditNoteCommand(5L, CreditNoteReason.BILLING_ERROR, "x",
-                List.of(new CreditNoteLineAmount(2, new BigDecimal("1.00"))), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
+                List.of(new CreditNoteLineAmount(2, com.red_escuela.backend.shared.domain.Money.of(new BigDecimal("1.00"), com.red_escuela.backend.shared.domain.Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
 
         assertThat(allows(new CreditNoteLinesWithinCreditableAmountPolicy(), context(onLineTwo, unpaid(), RECIPIENT))).isFalse();
     }
@@ -210,7 +210,7 @@ class CreditNoteIssuingPoliciesTest {
         assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "-1.00"), invoice, RECIPIENT))).isFalse();
         assertThat(allows(policy, context(command(CreditNoteReason.BILLING_ERROR, "x", CreditNoteDestination.DEBT_OFFSET, "1.00", "1.00"), invoice, RECIPIENT))).isFalse();
         IssueCreditNoteCommand repeated = new IssueCreditNoteCommand(5L, CreditNoteReason.BILLING_ERROR, "x",
-                List.of(new CreditNoteLineAmount(1, BigDecimal.ONE), new CreditNoteLineAmount(1, BigDecimal.ONE)), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
+                List.of(new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(BigDecimal.ONE, com.red_escuela.backend.shared.domain.Currency.ARS)), new CreditNoteLineAmount(1, com.red_escuela.backend.shared.domain.Money.of(BigDecimal.ONE, com.red_escuela.backend.shared.domain.Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, 9L, false, null);
         assertThat(allows(policy, context(repeated, invoice, RECIPIENT))).isFalse();
     }
 

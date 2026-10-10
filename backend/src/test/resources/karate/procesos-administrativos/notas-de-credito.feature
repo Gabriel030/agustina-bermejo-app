@@ -8,7 +8,7 @@ Feature: Notas de crédito con aprobación del director
     * def institutionId = fixtures.createInstitution()
     * def student = fixtures.createConfirmedStudentWithIdentity(institutionId, 'Ana', 'Perez', '' + java.lang.System.nanoTime())
     * def invoiceId = fixtures.createIssuedInvoiceWithLedgerDebit(student.studentId, '80000.00')
-    * def noteRequest = { reason: 'BILLING_ERROR', justification: 'Error de carga', lines: [{ lineNumber: 1, amount: 30000.00 }] }
+    * def noteRequest = { reason: 'BILLING_ERROR', justification: 'Error de carga', lines: [{ lineNumber: 1, amount: { amount: 30000.00, currency: 'ARS' } }] }
 
   Scenario: Administrativo pide, director aprueba y el alumno ve la nota de crédito
     Given path 'invoices', invoiceId, 'credit-notes'
