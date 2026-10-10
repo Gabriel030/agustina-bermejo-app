@@ -61,6 +61,8 @@ public final class ArchitectureRules {
     static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService"
             + "," + ROOT + ".billing.account.service.CurrentAccountAllocationService";
 
+    static final String DEBIT_NOTE_ISSUER_CLASS = ROOT + ".billing.invoice.operation.DebitNoteIssuer";
+
     static final Set<String> PAYMENT_BRIDGE_ACCOUNT_METHODS = Set.of(
             "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "consumeUnallocatedCreditForAllocation", "restoreUnallocatedCreditFromReversedAllocation");
 
@@ -419,7 +421,12 @@ public final class ArchitectureRules {
 
     public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
         return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationType,
-                "save of the invoice");
+                "save of the invoice", DEBIT_NOTE_ISSUER_CLASS, Set.of("save"));
+    }
+
+    public static ArchRule debitNotesAreIssuedOnlyThroughOperations(Class<?> operationType) {
+        return methodIsCalledOnlyBy(DEBIT_NOTE_ISSUER_CLASS, name -> name.startsWith("issue"), DEBIT_NOTE_ISSUER_CLASS, operationType,
+                "issuing of a debit note");
     }
 
     public static ArchRule currentAccountIsWrittenOnlyThroughItsService(String serviceClassName, String... repositoryClassNames) {

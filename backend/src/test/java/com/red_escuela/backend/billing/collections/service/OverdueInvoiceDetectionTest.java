@@ -1,6 +1,10 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import org.mockito.Mockito;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
@@ -70,6 +74,14 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 @ExtendWith(OutputCaptureExtension.class)
 class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     private static final StatusChangeActor TEST_ACTOR = new StatusChangeActor(null, "OverdueInvoiceDetectionTest");
+
+    @MockitoBean
+    private LateFeeAccrualStep lateFeeAccrualStep;
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubLateFeeAccrualOutsideThisDetectionSuite() {
+        Mockito.when(lateFeeAccrualStep.accrueLateFees(Mockito.any())).thenReturn(LateFeeAccrualResult.nothing());
+    }
 
     @Autowired
     private OverdueInvoiceTransitionService transitionService;
