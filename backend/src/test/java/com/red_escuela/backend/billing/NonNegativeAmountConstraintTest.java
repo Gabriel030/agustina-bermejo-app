@@ -31,7 +31,7 @@ class NonNegativeAmountConstraintTest extends AbstractIntegrationTest {
             "credit_note_line,free_part,credit_note_line_free_part_check",
             "legacy_payment_allocation,amount_applied,ck_payment_allocation_amount_applied_not_negative",
             "credit_note_line,offset_part,credit_note_line_offset_part_check",
-            "price_revision,monthly_amount,ck_price_revision_monthly_amount_not_negative"
+            "price_version,amount,ck_price_version_amount_not_negative"
     })
     void aNegativeAmountViolatesTheCheckConstraint(String table, String column, String constraint) {
         String copy = "tmp_" + table;

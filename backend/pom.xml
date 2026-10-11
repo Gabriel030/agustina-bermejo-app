@@ -310,6 +310,8 @@
 								<param>com.red_escuela.backend.billing.planning.policy.*</param>
 								<param>com.red_escuela.backend.billing.planning.domain.*</param>
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
@@ -330,6 +332,8 @@
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.*</param>
 								<param>com.red_escuela.backend.billing.planning.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>

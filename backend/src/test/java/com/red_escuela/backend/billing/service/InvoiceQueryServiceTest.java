@@ -18,7 +18,6 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -29,7 +28,6 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.Test;
@@ -57,9 +55,6 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -137,14 +132,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         Person admin = persistPerson("admin.breakdown1." + System.nanoTime());
         Course course = persistCourse();
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        priceRevision.setDescription("Cuota mensual 2026");
-        priceRevision.setMonthlyAmount(ars(10000));
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual 2026", ars(10000), LocalDate.now().minusYears(1), director.getId());
 
         CourseEnrollment enrollment = persistCourseEnrollment("99000401", course);
         Invoice invoice = persistInvoice(enrollment, ars(10000), LocalDate.now());

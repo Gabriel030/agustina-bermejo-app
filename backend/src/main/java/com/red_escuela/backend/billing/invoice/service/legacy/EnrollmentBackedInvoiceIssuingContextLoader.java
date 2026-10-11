@@ -7,10 +7,11 @@ import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequ
 import com.red_escuela.backend.billing.invoice.operation.InvoiceIssuingContextLoader;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.PriceRevision;
-import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
+import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
+import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
+import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.billing.service.PriceRevisionService;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,16 +27,16 @@ import java.util.stream.Stream;
 public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssuingContextLoader {
     private final BillingConfigurationReader configurationReader;
     private final JdbcTemplate jdbcTemplate;
-    private final PriceRevisionService priceRevisionService;
+    private final PriceReader priceReader;
     private final ProgramYearBillingTemplateRepository templateRepository;
     private final InvoiceRepository invoiceRepository;
     private final Clock clock;
 
-    public EnrollmentBackedInvoiceIssuingContextLoader(JdbcTemplate jdbcTemplate, PriceRevisionService priceRevisionService,
+    public EnrollmentBackedInvoiceIssuingContextLoader(JdbcTemplate jdbcTemplate, PriceReader priceReader,
                                                        ProgramYearBillingTemplateRepository templateRepository, InvoiceRepository invoiceRepository, BillingConfigurationReader configurationReader, Clock clock) {
         this.configurationReader = configurationReader;
         this.jdbcTemplate = jdbcTemplate;
-        this.priceRevisionService = priceRevisionService;
+        this.priceReader = priceReader;
         this.templateRepository = templateRepository;
         this.invoiceRepository = invoiceRepository;
         this.clock = clock;
@@ -47,14 +48,13 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
         Currency offeringCurrency = Currency.valueOf(request.belongsToProgram()
                 ? jdbcTemplate.queryForObject("select currency from program where id = ?", String.class, request.programId())
                 : jdbcTemplate.queryForObject("select currency from course where id = ?", String.class, request.courseId()));
-        Optional<PriceRevision> revision = request.isAdHocCharge() ? Optional.empty() : findRevision(request);
+        Optional<PriceVersionResolution> resolution = request.isAdHocCharge() ? Optional.empty() : findPriceVersion(request);
         NonNegativeMoney chargeAmount = request.isAdHocCharge()
                 ? request.explicitAmount()
-                : NonNegativeMoney.of(revision.orElseThrow(() -> new PriceRevisionNotFoundException(
-                        "No PriceRevision found for " + request.feeType() + " at " + request.pricingDate())).getMonthlyAmount());
+                : resolution.orElseThrow(() -> new NoEffectivePriceException(request.feeType(), request.pricingDate())).finalAmount();
         InvoiceIssuingFacts facts = new InvoiceIssuingFacts(LocalDate.now(clock), offeringCurrency, chargeAmount,
-                revision.map(PriceRevision::getId).orElse(null), findExistingInvoiceId(request), enrollmentFeeCountOf(request),
-                snapshotOf(request.studentId()), enrollmentMatches);
+                resolution.map(PriceVersionResolution::priceVersionId).orElse(null), findExistingInvoiceId(request), enrollmentFeeCountOf(request),
+                snapshotOf(request.studentId()), enrollmentMatches, resolution.map(PriceVersionResolution::marketingDiscountAmount).orElse(null));
         return new InvoiceIssuingContext(request, facts);
     }
 
@@ -81,10 +81,9 @@ public class EnrollmentBackedInvoiceIssuingContextLoader implements InvoiceIssui
                 .stream().findFirst().orElse(false);
     }
 
-    private Optional<PriceRevision> findRevision(InvoiceIssuingRequest request) {
-        return request.belongsToProgram()
-                ? priceRevisionService.findRevisionForProgram(request.programId(), request.feeType(), request.pricingDate())
-                : priceRevisionService.findRevisionForCourse(request.courseId(), request.feeType(), request.pricingDate());
+    private Optional<PriceVersionResolution> findPriceVersion(InvoiceIssuingRequest request) {
+        OfferingReference offering = request.belongsToProgram() ? OfferingReference.ofProgram(request.programId()) : OfferingReference.ofCourse(request.courseId());
+        return priceReader.findPriceVersionEffectiveOn(offering, request.feeType(), request.pricingDate());
     }
 
     private Integer enrollmentFeeCountOf(InvoiceIssuingRequest request) {
