@@ -84,7 +84,7 @@ class LateFeeNotificationListenerIT extends AbstractIntegrationTest {
         Person student = persistPerson("5" + System.nanoTime(), null);
         Long debitNoteId = System.nanoTime();
         LateFeeIssuedEvent event = publish(LateFeeIssuedEvent.issuedFor(debitNoteId, "ND-00000009", 70L, "F-00000070", student.getId(), 1,
-                java.time.LocalDate.of(2027, 3, 18), java.time.LocalDate.of(2027, 3, 18), new BigDecimal("4000.00"), "ARS"));
+                java.time.LocalDate.of(2027, 3, 18), java.time.LocalDate.of(2027, 3, 18), com.red_escuela.backend.shared.domain.Money.of(new BigDecimal("4000.00"), com.red_escuela.backend.shared.domain.Currency.ARS)));
 
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
             assertThat(processedHandlersOf(event.eventId())).isEqualTo(1L);

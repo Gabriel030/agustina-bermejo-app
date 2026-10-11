@@ -2,7 +2,12 @@ package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
@@ -14,6 +19,10 @@ import com.red_escuela.backend.billing.events.LateFeeIssuedEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
+import com.red_escuela.backend.billing.service.InvoiceOverdueSweepService;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoiceMarkedAsOverdueEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
@@ -101,10 +110,23 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private StudentCurrentAccountService accountService;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private InvoiceOverdueSweepService sweepService;
+    @MockitoSpyBean
+    private PendingInvoiceQueryService pendingInvoiceQueryService;
     @MockitoSpyBean
     private LateFeeChargeRepository chargeRepositorySpy;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private ProgramRepository programRepository;
+    @Autowired
+    private ProgramEnrollmentRepository programEnrollmentRepository;
+
     private Person person;
+    private Student student;
+    private Term term;
     private CourseEnrollment enrollment;
 
     private void arrange(int year) {
@@ -122,12 +144,12 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         Institution institution = new Institution();
         institution.setName("Instituto recargo " + System.nanoTime());
         institution = institutionRepository.save(institution);
-        Student student = new Student();
+        student = new Student();
         student.setPerson(person);
         student.setInstitution(institution);
         student.setOnboardingStatus(StudentOnboardingStatus.CONFIRMADO);
         student = studentRepository.save(student);
-        Term term = new Term();
+        term = new Term();
         term.setYear(year);
         term.setStatus(StatusType.ACTIVE);
         term = termRepository.save(term);
@@ -150,6 +172,28 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
     private void publishDefaults(int year) {
         publish(5, "0.05", 10, true, true, LocalDate.of(year, 1, 1));
+    }
+
+    private ProgramEnrollment programEnrollment() {
+        Program program = new Program();
+        program.setName("Carrera recargo " + System.nanoTime());
+        program.setTotalYears(1);
+        program.setTotalCreditsRequired(0);
+        program = programRepository.save(program);
+        ProgramEnrollment created = new ProgramEnrollment();
+        created.setStudent(student);
+        created.setProgram(program);
+        created.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        created.setEnrollmentDate(LocalDateTime.now());
+        return programEnrollmentRepository.save(created);
+    }
+
+    private Invoice programInstallmentDueOn(ProgramEnrollment programEnrollment, LocalDate dueDate) {
+        return BillingTestFixtures.invoice().forProgramEnrollment(programEnrollment).forPeriod(YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(80000)).overdue().build();
+    }
+
+    private List<String> factDatesOf(Invoice origin) {
+        return chargesOf(origin).stream().map(c -> c.get("fact_date").toString()).toList();
     }
 
     private Invoice installmentDueOn(LocalDate dueDate, Money amount) {
@@ -240,6 +284,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-297")
+    @Tag("D-151")
     void lateFeeBaseIsTheLinePriceBeforeAnyScholarshipAndTheChargeKeepsThePhoto() {
         arrange(2064);
         publishDefaults(2064);
@@ -434,9 +479,10 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
                 }).build();
 
         assertThat(reload(origin).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.OVERDUE);
-        accrualService.reconcileLateFeesOfInvoice(origin.getId(), releaseDate);
+        assertThat(chargesOf(origin)).isEmpty();
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(new InvoiceMarkedAsOverdueEvent(origin.getId(), dueDate, releaseDate)));
 
-        assertThat(chargesOf(origin).stream().map(c -> c.get("fact_date").toString()).toList()).containsExactly("2073-03-16", "2073-04-16");
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(factDatesOf(origin)).containsExactly("2073-03-16", "2073-04-16"));
     }
 
     @Test
@@ -492,11 +538,11 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     void thereIsNoCollisionAcrossTheYearBoundary() {
         arrange(2077);
         publishDefaults(2077);
-        Invoice origin = installmentDueOn(LocalDate.of(2077, 12, 10), ars(80000));
+        Invoice origin = programInstallmentDueOn(programEnrollment(), LocalDate.of(2077, 12, 10));
 
         reconcile(origin, LocalDate.of(2078, 2, 20));
 
-        assertThat(chargesOf(origin).stream().map(c -> c.get("fact_date").toString()).toList()).containsExactly("2077-12-16", "2078-01-16", "2078-02-16");
+        assertThat(factDatesOf(origin)).containsExactly("2077-12-16", "2078-01-16", "2078-02-16");
     }
 
     @Test
@@ -593,13 +639,14 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     @Tag("D-149")
     @Tag("D-294")
     void theLateFeeInvariantCheckerDetectsADebitNoteOverADebitNoteAndAChargeBeforeEnablement() {
-        arrange(2079);
-        publishDefaults(2079);
-        Invoice origin = installmentDueOn(LocalDate.of(2079, 3, 12), ars(80000));
-        reconcile(origin, LocalDate.of(2079, 3, 18));
+        arrange(2090);
+        publishDefaults(2090);
+        Invoice origin = installmentDueOn(LocalDate.of(2090, 3, 12), ars(80000));
+        reconcile(origin, LocalDate.of(2090, 3, 18));
+        publish(5, "0.05", 10, true, false, LocalDate.of(2090, 6, 1));
         BillingInvariantChecker clean = BillingInvariantChecker.startingNow(jdbc);
-        Invoice firstSpare = installmentDueOn(LocalDate.of(2079, 4, 12), ars(80000));
-        Invoice secondSpare = installmentDueOn(LocalDate.of(2079, 5, 12), ars(80000));
+        Invoice firstSpare = installmentDueOn(LocalDate.of(2090, 4, 12), ars(80000));
+        Invoice secondSpare = installmentDueOn(LocalDate.of(2090, 5, 12), ars(80000));
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Map<String, Object> charge = chargesOf(origin).get(0);
         Long accountId = reload(origin).getStudentCurrentAccountId();
@@ -608,8 +655,8 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         String insert = "insert into late_fee_charge (debit_note_id, origin_invoice_id, student_current_account_id, month_ordinal, fact_date, late_payment_version_id, monthly_rate, base_amount, currency, created_at) "
                 + "values (?, ?, ?, ?, ?, ?, 0.05, 100, 'ARS', now())";
         try {
-            jdbc.update(insert, firstSpare.getId(), debitNoteId, accountId, 1, java.sql.Date.valueOf("2079-04-18"), versionId);
-            jdbc.update(insert, secondSpare.getId(), origin.getId(), accountId, 2, java.sql.Date.valueOf("2000-01-01"), versionId);
+            jdbc.update(insert, firstSpare.getId(), debitNoteId, accountId, 1, java.sql.Date.valueOf("2090-04-18"), versionId);
+            jdbc.update(insert, secondSpare.getId(), origin.getId(), accountId, 2, java.sql.Date.valueOf("2090-06-20"), versionId);
 
             List<String> violations = clean.lateFeesRespectTheRedefinedI11();
 
@@ -620,5 +667,88 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
             jdbc.update("delete from late_fee_charge where debit_note_id in (?, ?)", firstSpare.getId(), secondSpare.getId());
         }
         invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-148")
+    void aCourseFreezesItsLateFeesAfterTheEndOfItsTermAndTheEndDayStillCharges() {
+        arrange(2080);
+        publishDefaults(2080);
+        term.setEndDate(LocalDateTime.of(2080, 6, 16, 0, 0));
+        termRepository.save(term);
+        Invoice origin = installmentDueOn(LocalDate.of(2080, 5, 10), ars(80000));
+
+        reconcile(origin, LocalDate.of(2080, 9, 30));
+
+        assertThat(factDatesOf(origin)).containsExactly("2080-05-16", "2080-06-16");
+    }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-148")
+    void aCareerWithdrawalForArrearsFreezesTheLateFeesAfterItsDate() {
+        arrange(2081);
+        publishDefaults(2081);
+        ProgramEnrollment programEnrollment = programEnrollment();
+        Invoice origin = programInstallmentDueOn(programEnrollment, LocalDate.of(2081, 5, 10));
+        programEnrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        programEnrollment.setCompletionDate(LocalDateTime.of(2081, 6, 16, 9, 0));
+        programEnrollmentRepository.save(programEnrollment);
+
+        reconcile(origin, LocalDate.of(2081, 9, 30));
+
+        assertThat(factDatesOf(origin)).containsExactly("2081-05-16", "2081-06-16");
+    }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-148")
+    void graduatingFreezesTheLateFeesOfTheCareerAfterTheGraduationDate() {
+        arrange(2082);
+        publishDefaults(2082);
+        ProgramEnrollment programEnrollment = programEnrollment();
+        Invoice origin = programInstallmentDueOn(programEnrollment, LocalDate.of(2082, 5, 10));
+        programEnrollment.complete(LocalDateTime.of(2082, 6, 20, 9, 0));
+        programEnrollmentRepository.save(programEnrollment);
+
+        reconcile(origin, LocalDate.of(2082, 9, 30));
+
+        assertThat(factDatesOf(origin)).containsExactly("2082-05-16", "2082-06-16");
+    }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-148")
+    void aCourseEndedByApprovalFreezesItsLateFees() {
+        arrange(2083);
+        publishDefaults(2083);
+        Invoice origin = installmentDueOn(LocalDate.of(2083, 5, 10), ars(80000));
+        enrollment.setStatus(EnrollmentStatus.APPROVED);
+        enrollment.setCompletionDate(LocalDateTime.of(2083, 6, 20, 10, 0));
+        courseEnrollmentRepository.save(enrollment);
+
+        reconcile(origin, LocalDate.of(2083, 9, 30));
+
+        assertThat(factDatesOf(origin)).containsExactly("2083-05-16", "2083-06-16");
+    }
+
+    @Test
+    @Tag("D-061")
+    @Tag("D-288")
+    void theRealSweepDetectsOverdueAndIssuesTheFirstLateFeeInTheSameRunWithASingleExecutionLog() {
+        arrange(1949);
+        publish(5, "0.05", 10, true, true, LocalDate.of(1949, 1, 1));
+        Invoice origin = pendingInstallmentDueOn(LocalDate.of(1949, 3, 12));
+        Mockito.doAnswer(call -> (Long) call.getArgument(0) < origin.getId() ? List.of(origin.getId()) : List.<Long>of())
+                .when(pendingInvoiceQueryService).findOverdueLateFeeOriginIdsAfter(Mockito.anyLong(), Mockito.anyInt());
+        Long logsBefore = jdbc.queryForObject("select count(*) from batch_execution_log where job_name = 'InvoiceOverdueSweepService'", Long.class);
+
+        sweepService.run(LocalDate.of(1949, 3, 18));
+
+        assertThat(reload(origin).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.OVERDUE);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(factDatesOf(origin)).containsExactly("1949-03-18"));
+        assertThat(jdbc.queryForObject("select count(*) from batch_execution_log where job_name = 'InvoiceOverdueSweepService'", Long.class)).isEqualTo(logsBefore + 1);
+        assertThat(jdbc.queryForObject("select processed_count from batch_execution_log where job_name = 'InvoiceOverdueSweepService' order by id desc limit 1", Long.class)).isGreaterThanOrEqualTo(1L);
     }
 }

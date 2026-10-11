@@ -290,10 +290,15 @@ public final class BillingInvariantChecker {
     }
 
     private static final String TERMS_ON_FACT_DATE = """
-            (select v.config_values from configuration_version v
-             where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
-               and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= c.fact_date
-             order by v.effective_from desc, v.decided_at desc, v.id desc limit 1)
+            coalesce(
+             (select v.config_values from configuration_version v
+              where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
+                and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= c.fact_date
+              order by v.effective_from desc, v.decided_at desc, v.id desc limit 1),
+             (select v.config_values from configuration_version v
+              where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
+                and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+              order by v.effective_from asc, v.decided_at asc, v.id asc limit 1))
             """;
 
     public List<String> lateFeesRespectTheRedefinedI11() {

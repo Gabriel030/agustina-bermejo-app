@@ -106,7 +106,7 @@ public class LateFeeDebitNoteIssuingOperation implements BillingOperation<LateFe
         Long studentPersonId = invoiceAccess.findAccountOwnerPersonId(context.origin().invoiceId()).orElseThrow();
         return List.of(LateFeeIssuedEvent.issuedFor(result.debitNote().getId(), result.debitNote().getInvoiceNumber().value(), context.origin().invoiceId(),
                 context.origin().invoiceNumber(), studentPersonId, context.month().ordinal(), context.month().factDate(), context.issueDate(),
-                context.lateFeeAmount().value().amount(), context.draft().currency().name()));
+                context.lateFeeAmount().value()));
     }
 
     private void recordIssuance(LateFeeIssuingContext context, Invoice issued) {

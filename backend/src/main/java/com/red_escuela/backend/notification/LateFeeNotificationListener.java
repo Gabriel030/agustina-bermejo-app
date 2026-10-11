@@ -30,7 +30,7 @@ public class LateFeeNotificationListener {
     public void notifyStudent(LateFeeIssuedEvent event) {
         effectGuard.runEffectOnce(event, STUDENT_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
                 NotificationType.LATE_FEE_ISSUED,
-                "Se emitió la nota de débito " + event.debitNoteNumber() + " por " + event.currency() + " " + event.amount()
+                "Se emitió la nota de débito " + event.debitNoteNumber() + " por " + event.amount().currency() + " " + event.amount().amount()
                         + " en concepto de recargo por mora de la factura " + event.originInvoiceNumber() + ".",
                 List.of(new PersonRecipient(entityManager.getReference(Person.class, event.studentPersonId()))), "Invoice", event.debitNoteId())));
     }
