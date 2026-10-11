@@ -27,7 +27,7 @@ class NonNegativeAmountConstraintTest extends AbstractIntegrationTest {
 
     @ParameterizedTest
     @CsvSource({
-            "payment,amount,ck_payment_amount_not_negative",
+            "legacy_payment,amount,ck_payment_amount_not_negative",
             "credit_note_line,free_part,credit_note_line_free_part_check",
             "legacy_payment_allocation,amount_applied,ck_payment_allocation_amount_applied_not_negative",
             "credit_note_line,offset_part,credit_note_line_offset_part_check",
