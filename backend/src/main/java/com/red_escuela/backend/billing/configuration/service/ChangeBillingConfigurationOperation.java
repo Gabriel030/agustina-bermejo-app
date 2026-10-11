@@ -72,7 +72,16 @@ public class ChangeBillingConfigurationOperation implements BillingOperation<Cha
     public void requireValidContext(ChangeBillingConfigurationCommand command) {
         policyEvaluator.requireValidChange(new ConfigurationChangeCheck(command.topic().scope(), command.topic().key(), command.effectiveFrom(),
                 LocalDate.now(clock), command.changeReason()));
-        scopeHandlers.handlerOf(command.topic().scope()).requireCoherentValues(command.topic(), command.values());
+        ConfigurationScopeHandler handler = scopeHandlers.handlerOf(command.topic().scope());
+        handler.requireCoherentValues(command.topic(), command.values());
+        if (!isApprovalOfOpenProposal(command)) {
+            handler.requireAllowedEffectiveFrom(command.topic(), command.effectiveFrom(), LocalDate.now(clock));
+        }
+    }
+
+    private boolean isApprovalOfOpenProposal(ChangeBillingConfigurationCommand command) {
+        return !command.requestedByDirector()
+                && repository.existsByScopeAndTopicKeyAndStatus(command.topic().scope(), command.topic().key(), ConfigurationVersionStatus.PROPOSED);
     }
 
     @Override
@@ -107,6 +116,7 @@ public class ChangeBillingConfigurationOperation implements BillingOperation<Cha
         ConfigurationVersion proposal = repository.findFirstByScopeAndTopicKeyAndStatus(command.topic().scope(), command.topic().key(), ConfigurationVersionStatus.PROPOSED)
                 .orElseThrow(() -> new ConfigurationVersionNotFoundException(null));
         policyEvaluator.requireProposalNotExpired(new ProposalApprovalCheck(proposal.getEffectiveFrom(), today, proposal.getProposedAt().atZone(clock.getZone()).toLocalDate()));
+        scopeHandlers.handlerOf(command.topic().scope()).requireAllowedEffectiveFrom(command.topic(), proposal.getEffectiveFrom(), today);
         proposal.approve(actorResolver.currentPersonId(), null, today, now);
         return proposal;
     }
