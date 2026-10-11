@@ -6,6 +6,8 @@ import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
@@ -45,6 +47,20 @@ public class BillingConfigurationReader {
     public Optional<LatePaymentTerms> findFirstLatePaymentSettings() {
         ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
         return repository.findFirstVersion(topic.scope().name(), topic.key()).map(version -> LatePaymentTerms.class.cast(version.values()));
+    }
+
+    public Optional<LatePaymentVersion> findLatePaymentVersionEffectiveOn(LocalDate date) {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date).map(BillingConfigurationReader::toLatePaymentVersion);
+    }
+
+    public Optional<LatePaymentVersion> findFirstLatePaymentVersion() {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        return repository.findFirstVersion(topic.scope().name(), topic.key()).map(BillingConfigurationReader::toLatePaymentVersion);
+    }
+
+    private static LatePaymentVersion toLatePaymentVersion(ConfigurationVersion version) {
+        return new LatePaymentVersion(version.getId(), LatePaymentTerms.class.cast(version.values()));
     }
 
     public Optional<IssuanceSettings> findIssuanceSettingsEffectiveOn(LocalDate date) {

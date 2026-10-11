@@ -130,6 +130,8 @@ public final class BillingTestFixtures {
         private LocalDate dueDate = LocalDate.now();
         private Money baseAmount = Money.of(java.math.BigDecimal.valueOf(10000), com.red_escuela.backend.shared.domain.Currency.ARS);
         private InvoicePaymentStatus status = InvoicePaymentStatus.PENDING;
+        private Money scholarshipAmount;
+        private Money marketingDiscountAmount;
         private Consumer<Invoice> customization = invoice -> {
         };
 
@@ -168,6 +170,16 @@ public final class BillingTestFixtures {
 
         public InvoiceFixture withBaseAmount(Money amount) {
             this.baseAmount = amount;
+            return this;
+        }
+
+        public InvoiceFixture withScholarshipOf(Money scholarshipAmount) {
+            this.scholarshipAmount = scholarshipAmount;
+            return this;
+        }
+
+        public InvoiceFixture withMarketingDiscountOf(Money marketingDiscountAmount) {
+            this.marketingDiscountAmount = marketingDiscountAmount;
             return this;
         }
 
@@ -210,7 +222,8 @@ public final class BillingTestFixtures {
             InvoiceDraftHeader header = new InvoiceDraftHeader(account.getId(), baseAmount.currency(), InvoiceDocumentType.INVOICE, invoiceType, reason, null);
             InvoiceLineDraft line = new InvoiceLineDraft(feeType, feeType == FeeType.MONTHLY_INSTALLMENT ? "Cuota " + period : feeType.name() + " " + period, period,
                     programEnrollment == null ? null : programEnrollment.getId(), courseEnrollment == null ? null : courseEnrollment.getId(), null, null,
-                    priceVersionId, key.value(), NonNegativeMoney.of(baseAmount));
+                    priceVersionId, key.value(), NonNegativeMoney.of(baseAmount), null, null,
+                    marketingDiscountAmount == null ? null : NonNegativeMoney.of(marketingDiscountAmount));
             Invoice draft = switch (invoiceType) {
                 case MONTHLY_INSTALLMENT -> InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.empty(), ACTOR);
                 case ENROLLMENT_FEE -> InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
@@ -220,6 +233,11 @@ public final class BillingTestFixtures {
                 case ADMINISTRATIVE_FEE -> InvoiceFactory.createAdministrativeFeeInvoiceDraft(header, line, ACTOR);
                 default -> throw new IllegalStateException("Unsupported fixture type " + invoiceType);
             };
+            if (scholarshipAmount != null) {
+                draft.addDiscountToDraftLine(1, new com.red_escuela.backend.billing.invoice.domain.InvoiceDiscountDraft(
+                        com.red_escuela.backend.billing.invoice.domain.DiscountType.SCHOLARSHIP, "Beca de prueba", null, NonNegativeMoney.of(baseAmount),
+                        NonNegativeMoney.of(scholarshipAmount), null, null));
+            }
             draft.issueInvoice(bean(InvoiceNumberGenerator.class).nextInvoiceNumber(InvoiceDocumentType.INVOICE), dueDate.isAfter(LocalDate.now()) ? LocalDate.now() : dueDate,
                     dueDate, new StudentSnapshot(person.getName() == null ? "Alumno de prueba" : person.getName() + " " + person.getLastname(), person.getDni() == null ? "00000000" : person.getDni(), null), ACTOR);
             Invoice saved = bean(InvoiceRepository.class).save(draft);
@@ -248,6 +266,10 @@ public final class BillingTestFixtures {
             if (programId == null && courseId == null) {
                 programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, ?) returning id", Long.class,
                         "Fixture " + System.nanoTime(), baseAmount.currency().name());
+            }
+            if (marketingDiscountAmount != null) {
+                return PriceFixtures.persistPriceVersion(programId, courseId, feeType, "Fixture con marketing", baseAmount.plus(marketingDiscountAmount),
+                        java.time.LocalDate.of(2000, 1, 1), createdById, "FIXED", marketingDiscountAmount.amount());
             }
             java.util.List<Long> found = jdbc.queryForList("select v.id from price_version v join price p on p.id = v.price_id where "
                     + (programId != null ? "p.program_id = ?" : "p.course_id = ?") + " order by v.id limit 1", Long.class, programId != null ? programId : courseId);

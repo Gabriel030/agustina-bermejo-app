@@ -35,7 +35,7 @@ class OverdueInvoiceTransitionServiceTest {
             PolicySet.<OverdueDetectionContext>named("OVERDUE_DETECTION", List.of(new InvoiceIsPastDueDatePolicy())), mock(ApplicationEventPublisher.class));
 
     private LatePaymentTerms termsWithGrace(int graceDays) {
-        return new LatePaymentTerms(graceDays, Percentage.ofFraction(BigDecimal.ZERO), 12, null, 0, 1, true, 10, true);
+        return new LatePaymentTerms(graceDays, Percentage.ofFraction(BigDecimal.ZERO), 0, 1, true, 10, true, false);
     }
 
     private void arrangeInvoiceDueBeforeEveryVersion() {

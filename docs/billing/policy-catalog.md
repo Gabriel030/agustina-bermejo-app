@@ -77,6 +77,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 9 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
 | 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167, D-202, D-127 |
 
+## Momento DEBIT_NOTE_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LateFeeAppliesToInvoiceTypePolicy | LATE_FEE_NOT_APPLICABLE | D-289, D-242, D-149, D-155 |
+| 2 | OriginNotUnderPaymentReviewPolicy | ORIGIN_UNDER_PAYMENT_REVIEW | D-153, D-154 |
+| 3 | LateFeeChargingEnabledPolicy | LATE_FEE_CHARGING_DISABLED | D-210, D-294 |
+| 4 | LateFeeNotFrozenPolicy | LATE_FEE_FROZEN | D-148, D-293 |
+| 5 | DebitNoteSameRecipientAsOriginPolicy | DEBIT_NOTE_RECIPIENT_MISMATCH | D-244, D-097 |
+
 ## Momento ENROLLMENT_FEE_PLANNING
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -156,7 +166,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
+| 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149, D-239 |
 
 ## Momento MONTHLY_INSTALLMENT_PLANNING
 
@@ -383,3 +393,10 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: —
+
+## Operación ISSUE_LATE_FEE_DEBIT_NOTE
+
+- Validaciones (momentos): DEBIT_NOTE_ISSUING
+- Pre-procesamiento (en orden): —
+- Eventos que publica: LateFeeIssuedEvent
+- Post-procesamiento de LateFeeIssuedEvent: LateFeeNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow, LateFeeNotificationListener#notifyStudent

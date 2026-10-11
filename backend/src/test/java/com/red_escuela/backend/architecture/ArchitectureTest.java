@@ -428,6 +428,12 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-244")
+    void debitNotesAreIssuedOnlyThroughOperations() {
+        ArchitectureRules.debitNotesAreIssuedOnlyThroughOperations(com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-144")
     void currentAccountIsWrittenOnlyThroughItsService() {
         ArchitectureRules.currentAccountIsWrittenOnlyThroughItsService(ACCOUNT_SERVICE_CLASS, ACCOUNT_REPOSITORY_CLASS, ENTRY_REPOSITORY_CLASS).check(MAIN_CLASSES);
