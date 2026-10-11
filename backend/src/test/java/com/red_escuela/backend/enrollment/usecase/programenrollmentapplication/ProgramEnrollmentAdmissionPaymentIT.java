@@ -36,7 +36,6 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -393,9 +392,9 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         invariants.assertAllBillingInvariantsHold();
     }
 
-    @Disabled("CI-IT: conflicto D-230 vs orden de imputación V2 (pago de admisión imputado a deuda vencida más vieja) — pendiente de decisión de negocio, deuda técnica #44")
     @Test
     @Tag("D-230")
+    @Tag("D-329")
     void aDebtAppearingAfterTheApprovalDoesNotBlockTheEnrollment() {
         ProgramEnrollmentApplication application = requestApplication();
         Invoice invoice = approve(application);

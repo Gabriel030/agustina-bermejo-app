@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.account.service;
 
 import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationResult;
 import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationStrategy;
+import com.red_escuela.backend.billing.account.domain.ProgramAdmissionInvoicePaidFirstAllocationStrategy;
 import com.red_escuela.backend.billing.account.domain.AllocationSchedule;
 import com.red_escuela.backend.billing.account.domain.CreditContributions;
 import com.red_escuela.backend.billing.account.domain.NewestAllocationsReversalSelection;
@@ -35,6 +36,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -69,6 +71,20 @@ public class CurrentAccountAllocationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public AccountCreditAllocationResult allocateAccountCreditToOldestInvoices(StudentCurrentAccount lockedAccount, LocalDate businessDate,
                                                                               StatusChangeActor actor) {
+        return allocateAccountCredit(lockedAccount, businessDate, actor, strategy);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AccountCreditAllocationResult allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(StudentCurrentAccount lockedAccount, LocalDate businessDate,
+                                                                                            StatusChangeActor actor,
+                                                                                            Set<Long> programAdmissionInvoiceIdsBeingPaid) {
+        AccountCreditAllocationStrategy effective = programAdmissionInvoiceIdsBeingPaid.isEmpty() ? strategy
+                : new ProgramAdmissionInvoicePaidFirstAllocationStrategy(strategy, programAdmissionInvoiceIdsBeingPaid);
+        return allocateAccountCredit(lockedAccount, businessDate, actor, effective);
+    }
+
+    private AccountCreditAllocationResult allocateAccountCredit(StudentCurrentAccount lockedAccount, LocalDate businessDate, StatusChangeActor actor,
+                                                                AccountCreditAllocationStrategy strategy) {
         NonNegativeMoney creditToAllocate = lockedAccount.getUnallocatedCreditAmount();
         if (creditToAllocate.value().isZero()) {
             return AccountCreditAllocationResult.nothingAllocated();
