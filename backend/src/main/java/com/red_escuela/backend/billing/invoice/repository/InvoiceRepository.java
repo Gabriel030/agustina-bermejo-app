@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.invoice.repository;
 
-import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import jakarta.persistence.LockModeType;
@@ -35,6 +34,9 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     @Query("select distinct i from Invoice i left join fetch i.lines l left join fetch l.discount where i.id = :id")
     Optional<Invoice> findInvoiceWithLinesById(@Param("id") Long id);
+
+    @Query(value = "select id from invoice where id = :id for update", nativeQuery = true)
+    Optional<Long> lockInvoiceRowById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Invoice i where i.id = :id")
@@ -97,31 +99,6 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
 
     default Optional<Invoice> findFirstByCourseEnrollmentIdAndPaymentStatusInOrderByDueDateAsc(Long enrollmentId, Collection<InvoicePaymentStatus> statuses) {
         return findByCourseEnrollmentIdAndPaymentStatusIn(enrollmentId, statuses).stream().min(Comparator.comparing(Invoice::getDueDate));
-    }
-
-    default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
-        return findByProgramEnrollmentId(enrollmentId).stream()
-                .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
-    }
-
-    default Optional<Invoice> findFirstByCourseEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
-        return findByCourseEnrollmentId(enrollmentId).stream()
-                .filter(i -> i.getPrimaryLine().getFeeType() == feeType && i.getPrimaryLine().getPeriod().equals(period)).findFirst();
-    }
-
-    default Optional<Invoice> findFirstByProgramEnrollmentIdAndFeeTypeAndTemplateIdAndEnrollmentFeeSlot(Long enrollmentId, FeeType feeType, Long templateId,
-                                                                                                        Integer slot) {
-        return findByProgramEnrollmentId(enrollmentId).stream().filter(i -> i.getPrimaryLine().getFeeType() == feeType
-                && java.util.Objects.equals(i.getPrimaryLine().getTemplateId(), templateId)
-                && java.util.Objects.equals(i.getPrimaryLine().getEnrollmentFeeSlot(), slot)).findFirst();
-    }
-
-    default boolean existsByProgramEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
-        return findFirstByProgramEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, feeType, period).isPresent();
-    }
-
-    default boolean existsByCourseEnrollmentIdAndFeeTypeAndPeriod(Long enrollmentId, FeeType feeType, YearMonth period) {
-        return findFirstByCourseEnrollmentIdAndFeeTypeAndPeriod(enrollmentId, feeType, period).isPresent();
     }
 
     @Query("""

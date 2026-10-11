@@ -78,7 +78,7 @@ public class RecurringFeeWindowService {
 
     private long generatedInCycle(ProgramEnrollment programEnrollment, YearCycle cycle) {
         return invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT && !i.getPrimaryLine().getChargeKeyReleased())
                 .filter(i -> cycle.installmentRangeContains(i.getPeriod()))
                 .count();
     }
@@ -110,7 +110,7 @@ public class RecurringFeeWindowService {
 
     private long recurringFeeInvoicesGeneratedInWindow(List<Invoice> invoices, Term term) {
         return invoices.stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT)
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT && !i.getPrimaryLine().getChargeKeyReleased())
                 .filter(i -> term.contains(i.getPeriod()))
                 .count();
     }
