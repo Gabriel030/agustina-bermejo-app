@@ -1,4 +1,4 @@
-COUNT billing 25
+COUNT billing 21
 COUNT enrollment 45
 Module 'graduation' depends on module 'notification' via com.red_escuela.backend.graduation.usecase.graduationrequest.ApproveGraduationRequestService -> com.red_escuela.backend.notification.GraduationRequestApprovedEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *.
 Module 'graduation' depends on module 'notification' via com.red_escuela.backend.graduation.usecase.graduationrequest.RejectGraduationRequestService -> com.red_escuela.backend.notification.GraduationRequestRejectedEvent. Allowed targets: shared, identity :: *, academicstructure :: *, enrollment :: *, attendance :: *, evaluation :: *, billing :: *.
