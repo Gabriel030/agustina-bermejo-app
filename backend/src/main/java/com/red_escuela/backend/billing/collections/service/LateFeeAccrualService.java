@@ -22,15 +22,15 @@ public class LateFeeAccrualService {
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate) {
-        Set<Integer> attempted = new HashSet<>();
+        Set<LocalDate> attempted = new HashSet<>();
         int issued = 0;
-        Optional<Integer> next = candidateFinder.findNextIssuableMonthOrdinal(originInvoiceId, businessDate, attempted);
+        Optional<LocalDate> next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted);
         while (next.isPresent()) {
             attempted.add(next.get());
-            if (issuer.issueLateFeeOfMonthInNewTransaction(originInvoiceId, next.get(), businessDate)) {
+            if (issuer.issueLateFeeOfPeriodInNewTransaction(originInvoiceId, next.get(), businessDate)) {
                 issued++;
             }
-            next = candidateFinder.findNextIssuableMonthOrdinal(originInvoiceId, businessDate, attempted);
+            next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted);
         }
         if (issued > 0) {
             log.info("Recargos conciliados: origen={}, emitidos={}, fecha={}", originInvoiceId, issued, businessDate);

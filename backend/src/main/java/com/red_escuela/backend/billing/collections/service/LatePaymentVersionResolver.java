@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import org.slf4j.Logger;
@@ -17,6 +18,17 @@ public class LatePaymentVersionResolver {
 
     public LatePaymentVersionResolver(BillingConfigurationReader configurationReader) {
         this.configurationReader = configurationReader;
+    }
+
+    public java.util.function.Function<LocalDate, LatePaymentTerms> termsInEffectUpTo(LocalDate lastDay, LatePaymentTerms fallback) {
+        java.util.NavigableMap<LocalDate, LatePaymentVersion> timeline = configurationReader.latePaymentTimelineUpTo(lastDay);
+        return day -> {
+            java.util.Map.Entry<LocalDate, LatePaymentVersion> entry = timeline.floorEntry(day);
+            if (entry != null) {
+                return entry.getValue().terms();
+            }
+            return timeline.isEmpty() ? fallback : timeline.firstEntry().getValue().terms();
+        };
     }
 
     public Optional<LatePaymentVersion> findVersionInEffectOnOrFirst(LocalDate date, Long invoiceId) {

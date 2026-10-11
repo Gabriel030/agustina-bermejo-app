@@ -21,7 +21,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.TreeMap;
 
 @Component
 @Transactional(readOnly = true)
@@ -52,6 +54,14 @@ public class BillingConfigurationReader {
     public Optional<LatePaymentVersion> findLatePaymentVersionEffectiveOn(LocalDate date) {
         ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
         return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date).map(BillingConfigurationReader::toLatePaymentVersion);
+    }
+
+    public NavigableMap<LocalDate, LatePaymentVersion> latePaymentTimelineUpTo(LocalDate date) {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        NavigableMap<LocalDate, LatePaymentVersion> timeline = new TreeMap<>();
+        repository.findVersionsEffectiveUpTo(topic.scope().name(), topic.key(), date)
+                .forEach(version -> timeline.put(version.getEffectiveFrom(), toLatePaymentVersion(version)));
+        return timeline;
     }
 
     public Optional<LatePaymentVersion> findFirstLatePaymentVersion() {

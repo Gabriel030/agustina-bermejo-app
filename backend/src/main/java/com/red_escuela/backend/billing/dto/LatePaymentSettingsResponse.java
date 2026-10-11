@@ -14,7 +14,7 @@ public record LatePaymentSettingsResponse(
     public static LatePaymentSettingsResponse from(ConfigurationVersion version) {
         LatePaymentTerms terms = (LatePaymentTerms) version.values();
         return new LatePaymentSettingsResponse(
-                version.getId(), terms.gracePeriodDays(), terms.monthlyLateFeeRate(),
+                version.getId(), terms.gracePeriodDays(), terms.dailyLateFeeRate(),
                 terms.suspensionAfterDays(), terms.suspensionAfterInvoiceCount(),
                 version.getEffectiveFrom());
     }

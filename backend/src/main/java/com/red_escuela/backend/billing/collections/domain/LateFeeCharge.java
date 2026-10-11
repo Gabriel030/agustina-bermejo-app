@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.domain;
 
+import com.red_escuela.backend.billing.events.LateFeeCutoffKind;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.persistence.PercentageConverter;
@@ -10,6 +11,8 @@ import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -21,6 +24,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Optional;
 
 @Entity
 @Table(name = "late_fee_charge")
@@ -42,8 +46,21 @@ public class LateFeeCharge {
     @Column(name = "student_current_account_id", nullable = false, updatable = false)
     private Long studentCurrentAccountId;
 
-    @Column(name = "month_ordinal", nullable = false, updatable = false)
-    private int monthOrdinal;
+    @Column(name = "period_start", nullable = false, updatable = false)
+    private LocalDate periodStart;
+
+    @Column(name = "period_end", nullable = false, updatable = false)
+    private LocalDate periodEnd;
+
+    @Column(name = "charged_days", nullable = false, updatable = false)
+    private int chargedDays;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cutoff_kind", nullable = false, updatable = false, length = 20)
+    private LateFeeCutoffKind cutoffKind;
+
+    @Column(name = "settlement_allocation_id", updatable = false)
+    private Long settlementAllocationId;
 
     @Column(name = "fact_date", nullable = false, updatable = false)
     private LocalDate factDate;
@@ -52,8 +69,8 @@ public class LateFeeCharge {
     private Long latePaymentVersionId;
 
     @Convert(converter = PercentageConverter.class)
-    @Column(name = "monthly_rate", nullable = false, updatable = false, precision = 8, scale = 6)
-    private Percentage monthlyRate;
+    @Column(name = "daily_rate", nullable = false, updatable = false, precision = 8, scale = 6)
+    private Percentage dailyRate;
 
     @Embedded
     @AttributeOverrides({
@@ -64,22 +81,31 @@ public class LateFeeCharge {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    private LateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, LateFeeMonth month, Long latePaymentVersionId,
-                          Percentage monthlyRate, NonNegativeMoney baseAmount) {
+    private LateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned, Long latePaymentVersionId,
+                          Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
         this.debitNoteId = Objects.requireNonNull(debitNoteId, "debitNoteId");
         this.originInvoiceId = Objects.requireNonNull(originInvoiceId, "originInvoiceId");
         this.studentCurrentAccountId = Objects.requireNonNull(studentCurrentAccountId, "studentCurrentAccountId");
-        this.monthOrdinal = month.ordinal();
-        this.factDate = month.factDate();
+        this.periodStart = planned.period().firstDay();
+        this.periodEnd = planned.period().lastDay();
+        this.chargedDays = planned.chargedDays();
+        this.cutoffKind = planned.kind();
+        this.settlementAllocationId = settlementAllocationId.orElse(null);
+        this.factDate = planned.period().lastDay();
         this.latePaymentVersionId = Objects.requireNonNull(latePaymentVersionId, "latePaymentVersionId");
-        this.monthlyRate = monthlyRate;
+        this.dailyRate = dailyRate;
         this.baseAmount = baseAmount;
         this.createdAt = ApplicationTime.now();
     }
 
-    public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, LateFeeMonth month,
-                                                    Long latePaymentVersionId, Percentage monthlyRate, NonNegativeMoney baseAmount) {
-        return new LateFeeCharge(debitNoteId, originInvoiceId, studentCurrentAccountId, Objects.requireNonNull(month, "month"), latePaymentVersionId,
-                Objects.requireNonNull(monthlyRate, "monthlyRate"), Objects.requireNonNull(baseAmount, "baseAmount"));
+    public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned,
+                                                    Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
+        Objects.requireNonNull(planned, "planned");
+        Objects.requireNonNull(settlementAllocationId, "settlementAllocationId");
+        if ((planned.kind() == LateFeeCutoffKind.SETTLEMENT) != settlementAllocationId.isPresent()) {
+            throw new IllegalArgumentException("Only a settlement late fee records the allocation that cut it");
+        }
+        return new LateFeeCharge(debitNoteId, originInvoiceId, studentCurrentAccountId, planned, latePaymentVersionId,
+                Objects.requireNonNull(dailyRate, "dailyRate"), Objects.requireNonNull(baseAmount, "baseAmount"), settlementAllocationId);
     }
 }

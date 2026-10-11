@@ -1,8 +1,11 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
-import com.red_escuela.backend.billing.collections.domain.LateFeeMonth;
-import com.red_escuela.backend.billing.collections.domain.LateFeeSchedule;
+import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
+import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPlanner;
+import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
+import com.red_escuela.backend.billing.collections.domain.PlannedLateFeePeriod;
 import com.red_escuela.backend.billing.collections.policy.LateFeeDebitNoteDraftFacts;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeOriginFacts;
@@ -19,6 +22,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 @Component
 public class LateFeeContextLoader {
@@ -27,6 +31,7 @@ public class LateFeeContextLoader {
     private final LatePaymentVersionResolver versionResolver;
     private final EnrollmentLifecycleQuery enrollmentLifecycle;
     private final LateFeeCalculationStrategy calculationStrategy;
+    private final LateFeeAccrualPlanner planner = new LateFeeAccrualPlanner();
 
     public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, EnrollmentLifecycleQuery enrollmentLifecycle,
                                 LateFeeCalculationStrategy calculationStrategy) {
@@ -35,7 +40,7 @@ public class LateFeeContextLoader {
         this.calculationStrategy = calculationStrategy;
     }
 
-    public List<LateFeeIssuingContext> loadMissingMonthContexts(Invoice origin, Set<Integer> alreadyChargedOrdinals, LocalDate businessDate) {
+    public List<LateFeeIssuingContext> loadMissingPeriodContexts(Invoice origin, List<LateFeeAccrualPeriod> coveredPeriods, LocalDate businessDate) {
         if (origin.getDocumentStatus() != InvoiceDocumentStatus.ISSUED || !STATUSES_WITH_LATE_FEE_CANDIDATES.contains(origin.getPaymentStatus())) {
             return List.of();
         }
@@ -44,20 +49,20 @@ public class LateFeeContextLoader {
             return List.of();
         }
         LatePaymentTerms dueDateTerms = dueDateVersion.get().terms();
-        List<LateFeeMonth> missingMonths = new LateFeeSchedule(origin.getDueDate(), dueDateTerms.gracePeriodDays()).monthsWithFactDateOnOrBefore(businessDate).stream()
-                .filter(month -> !alreadyChargedOrdinals.contains(month.ordinal())).toList();
-        if (missingMonths.isEmpty()) {
+        DailyLateFeeSchedule schedule = new DailyLateFeeSchedule(origin.getDueDate(), dueDateTerms.gracePeriodDays());
+        if (!schedule.isPastGraceOn(businessDate)) {
             return List.of();
         }
+        LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(businessDate);
         LateFeeOriginFacts facts = originFactsOf(origin);
         Optional<LocalDate> enrollmentEndDate = findEnrollmentEndDate(facts);
-        return missingMonths.stream().map(month -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), month,
-                dueDateVersion.get().versionId(), dueDateTerms, termsInEffectOn(month.factDate(), origin, dueDateTerms), enrollmentEndDate,
-                calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.monthlyLateFeeRate()), businessDate)).toList();
-    }
-
-    private LatePaymentTerms termsInEffectOn(LocalDate factDate, Invoice origin, LatePaymentTerms fallback) {
-        return versionResolver.findVersionInEffectOnOrFirst(factDate, origin.getId()).map(LatePaymentVersion::terms).orElse(fallback);
+        Function<LocalDate, LatePaymentTerms> termsOn = versionResolver.termsInEffectUpTo(cutoff.lastDay(), dueDateTerms);
+        Optional<LocalDate> frozenAfter = termsOn.apply(cutoff.lastDay()).freezeLateFeesOnWithdrawal() ? enrollmentEndDate : Optional.empty();
+        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> termsOn.apply(day).lateFeeChargingEnabled(), frozenAfter);
+        return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
+                dueDateVersion.get().versionId(), dueDateTerms, termsOn.apply(cutoff.lastDay()), enrollmentEndDate,
+                calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
+                Optional.empty())).toList();
     }
 
     private Optional<LocalDate> findEnrollmentEndDate(LateFeeOriginFacts facts) {

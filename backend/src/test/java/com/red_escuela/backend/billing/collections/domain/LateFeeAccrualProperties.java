@@ -22,28 +22,33 @@ import net.jqwik.api.Provide;
 import net.jqwik.api.Tag;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Tag("D-239")
+@Tag("D-330")
+@Tag("D-331")
+@Tag("D-332")
+@Tag("D-288")
 @Tag("D-293")
 @Tag("D-294")
-@Tag("D-288")
 class LateFeeAccrualProperties {
     private static final LocalDate START = LocalDate.of(2027, 1, 1);
     private static final StudentSnapshot RECIPIENT = new StudentSnapshot("Ana Perez", "30111222", null);
     private static final NonNegativeMoney BASE = NonNegativeMoney.of(new BigDecimal("80000.00"), Currency.ARS);
     private static final PolicySet<LateFeeIssuingContext> POLICIES = new CollectionsPolicySetsConfiguration().debitNoteIssuingPolicySet();
-    private static final MonthlySimpleLateFeeCalculator CALCULATOR = new MonthlySimpleLateFeeCalculator();
+    private static final DailySimpleLateFeeCalculator CALCULATOR = new DailySimpleLateFeeCalculator();
+    private static final LateFeeAccrualPlanner PLANNER = new LateFeeAccrualPlanner();
 
-    enum Kind { ADVANCE, CHANGE_RATE, TOGGLE_ENABLED, TOGGLE_FREEZE, END_ENROLLMENT, ENTER_REVIEW, LEAVE_REVIEW }
+    enum Kind { ADVANCE, CHANGE_VERSION, TOGGLE_ENABLED, TOGGLE_FREEZE, END_ENROLLMENT, ENTER_REVIEW, LEAVE_REVIEW }
 
     record Step(Kind kind, int value) {
     }
@@ -51,13 +56,15 @@ class LateFeeAccrualProperties {
     record Scenario(int dueOffsetDays, int graceDays, List<Step> steps) {
     }
 
-    record Issued(int ordinal, LocalDate factDate, LocalDate issuedOn, NonNegativeMoney amount, boolean underReviewWhenIssued) {
+    record Run(LocalDate date, boolean underReview, Optional<LocalDate> endDate) {
     }
 
-    record Outcome(LocalDate dueDate, Map<Integer, Issued> issued, List<Issued> issuedInOrder, Optional<LocalDate> endDate, Map<LocalDate, LatePaymentTerms> timeline,
-                   LatePaymentTerms dueDateTerms) {
+    record Issued(LateFeeAccrualPeriod period, int chargedDays, LocalDate issuedOn, NonNegativeMoney amount) {
+    }
+
+    record Outcome(LocalDate dueDate, List<Issued> issued, List<Run> runs, TreeMap<LocalDate, LatePaymentTerms> timeline, LatePaymentTerms dueDateTerms) {
         LatePaymentTerms termsOn(LocalDate date) {
-            return timeline.entrySet().stream().filter(entry -> !entry.getKey().isAfter(date)).reduce((first, second) -> second).orElseThrow().getValue();
+            return timeline.floorEntry(date).getValue();
         }
     }
 
@@ -67,75 +74,110 @@ class LateFeeAccrualProperties {
         return Combinators.combine(Arbitraries.integers().between(0, 200), Arbitraries.integers().between(0, 15), step.list().ofMinSize(1).ofMaxSize(40)).as(Scenario::new);
     }
 
-    private static LatePaymentTerms terms(int points, boolean enabled, boolean freeze) {
-        return new LatePaymentTerms(5, Percentage.ofPoints(new BigDecimal(points)), 30, 1, true, 10, freeze, enabled);
+    private static LatePaymentTerms terms(int grace, int ratePoints, boolean enabled, boolean freeze) {
+        return new LatePaymentTerms(grace, Percentage.ofPoints(new BigDecimal(ratePoints).movePointLeft(2)), 30, 1, true, 10, freeze, enabled);
     }
 
     private static Outcome simulate(int dueOffsetDays, int graceDays, List<Step> steps) {
         LocalDate dueDate = START.plusDays(dueOffsetDays);
-        LateFeeSchedule schedule = new LateFeeSchedule(dueDate, graceDays);
+        DailyLateFeeSchedule schedule = new DailyLateFeeSchedule(dueDate, graceDays);
         TreeMap<LocalDate, LatePaymentTerms> timeline = new TreeMap<>();
-        LatePaymentTerms initial = terms(5, true, true);
+        LatePaymentTerms initial = terms(graceDays, 20, true, true);
         timeline.put(LocalDate.MIN, initial);
         LocalDate today = dueDate;
         Optional<LocalDate> end = Optional.empty();
         boolean underReview = false;
-        Map<Integer, Issued> issued = new TreeMap<>();
-        List<Issued> inOrder = new ArrayList<>();
+        List<LateFeeAccrualPeriod> covered = new ArrayList<>();
+        List<Issued> issued = new ArrayList<>();
+        List<Run> runs = new ArrayList<>();
         for (Step step : steps) {
             LatePaymentTerms current = timeline.lastEntry().getValue();
             switch (step.kind()) {
                 case ADVANCE -> {
                     today = today.plusDays(step.value());
-                    for (LateFeeMonth month : schedule.monthsWithFactDateOnOrBefore(today)) {
-                        if (issued.containsKey(month.ordinal())) {
-                            continue;
-                        }
-                        LateFeeOriginFacts origin = new LateFeeOriginFacts(1L, "F-00000001", 7L, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT,
-                                underReview ? InvoicePaymentStatus.PAYMENT_UNDER_REVIEW : InvoicePaymentStatus.OVERDUE, dueDate, Currency.ARS, BASE, RECIPIENT, YearMonth.from(dueDate), 3L, null);
-                        LatePaymentTerms factDateTerms = timeline.floorEntry(month.factDate()).getValue();
-                        LateFeeIssuingContext context = new LateFeeIssuingContext(origin, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin), month, 9L, initial, factDateTerms,
-                                end, CALCULATOR.calculateLateFee(BASE, initial.monthlyLateFeeRate()), today);
-                        if (POLICIES.evaluateRulesUntilFirstViolation(context).allowed()) {
-                            Issued entry = new Issued(month.ordinal(), month.factDate(), today, context.lateFeeAmount(), underReview);
-                            issued.put(month.ordinal(), entry);
-                            inOrder.add(entry);
-                        }
-                    }
+                    runs.add(new Run(today, underReview, end));
+                    runSweep(schedule, dueDate, initial, timeline, covered, issued, today, underReview, end);
                 }
-                case CHANGE_RATE -> timeline.put(today.plusDays(1), terms(step.value() % 10 + 1, current.lateFeeChargingEnabled(), current.freezeLateFeesOnWithdrawal()));
-                case TOGGLE_ENABLED -> timeline.put(today.plusDays(1), terms(current.monthlyLateFeeRate().points().intValue(), !current.lateFeeChargingEnabled(), current.freezeLateFeesOnWithdrawal()));
-                case TOGGLE_FREEZE -> timeline.put(today.plusDays(1), terms(current.monthlyLateFeeRate().points().intValue(), current.lateFeeChargingEnabled(), !current.freezeLateFeesOnWithdrawal()));
+                case CHANGE_VERSION -> timeline.put(today.plusDays(1), terms(step.value() % 16, step.value() % 50 + 1, current.lateFeeChargingEnabled(), current.freezeLateFeesOnWithdrawal()));
+                case TOGGLE_ENABLED -> timeline.put(today.plusDays(1), new LatePaymentTerms(current.gracePeriodDays(), current.dailyLateFeeRate(), 30, 1, true, 10,
+                        current.freezeLateFeesOnWithdrawal(), !current.lateFeeChargingEnabled()));
+                case TOGGLE_FREEZE -> timeline.put(today.plusDays(1), new LatePaymentTerms(current.gracePeriodDays(), current.dailyLateFeeRate(), 30, 1, true, 10,
+                        !current.freezeLateFeesOnWithdrawal(), current.lateFeeChargingEnabled()));
                 case END_ENROLLMENT -> end = end.isPresent() ? end : Optional.of(today);
                 case ENTER_REVIEW -> underReview = true;
                 case LEAVE_REVIEW -> underReview = false;
             }
         }
-        return new Outcome(dueDate, issued, inOrder, end, timeline, initial);
+        return new Outcome(dueDate, issued, runs, timeline, initial);
     }
 
-    @Property(tries = 1000, seed = "20261010")
-    void everyRandomSequenceKeepsTheLateFeeInvariantOfTheProductionPolicies(@ForAll("scenarios") Scenario scenario) {
-        LateFeeSchedule schedule = new LateFeeSchedule(START.plusDays(scenario.dueOffsetDays()), scenario.graceDays());
-        Outcome outcome = simulate(scenario.dueOffsetDays(), scenario.graceDays(), scenario.steps());
-
-        assertThat(outcome.issuedInOrder()).extracting(Issued::ordinal).doesNotHaveDuplicates();
-        for (Issued entry : outcome.issuedInOrder()) {
-            assertThat(entry.factDate()).isEqualTo(schedule.lateFeeMonth(entry.ordinal()).factDate());
-            assertThat(entry.factDate()).isAfter(outcome.dueDate());
-            assertThat(entry.issuedOn()).isAfterOrEqualTo(entry.factDate());
-            assertThat(entry.amount()).isEqualTo(CALCULATOR.calculateLateFee(BASE, outcome.dueDateTerms().monthlyLateFeeRate()));
-            LatePaymentTerms onFactDate = outcome.termsOn(entry.factDate());
-            assertThat(onFactDate.lateFeeChargingEnabled()).as("enabled on fact date %s", entry.factDate()).isTrue();
-            assertThat(entry.underReviewWhenIssued()).isFalse();
-            if (onFactDate.freezeLateFeesOnWithdrawal() && outcome.endDate().isPresent()) {
-                assertThat(entry.factDate()).isBeforeOrEqualTo(outcome.endDate().get());
+    private static void runSweep(DailyLateFeeSchedule schedule, LocalDate dueDate, LatePaymentTerms dueTerms, TreeMap<LocalDate, LatePaymentTerms> timeline,
+                                 List<LateFeeAccrualPeriod> covered, List<Issued> issued, LocalDate today, boolean underReview, Optional<LocalDate> end) {
+        if (!schedule.isPastGraceOn(today)) {
+            return;
+        }
+        LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(today);
+        LatePaymentTerms cutoffTerms = timeline.floorEntry(cutoff.lastDay()).getValue();
+        Optional<LocalDate> frozenAfter = cutoffTerms.freezeLateFeesOnWithdrawal() ? end : Optional.empty();
+        List<PlannedLateFeePeriod> planned = PLANNER.planMissingPeriods(schedule, covered, cutoff, day -> timeline.floorEntry(day).getValue().lateFeeChargingEnabled(), frozenAfter);
+        LateFeeOriginFacts origin = new LateFeeOriginFacts(1L, "F-00000001", 7L, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT,
+                underReview ? InvoicePaymentStatus.PAYMENT_UNDER_REVIEW : InvoicePaymentStatus.OVERDUE, dueDate, Currency.ARS, BASE, RECIPIENT, YearMonth.from(dueDate), 3L, null);
+        for (PlannedLateFeePeriod period : planned) {
+            LateFeeIssuingContext context = new LateFeeIssuingContext(origin, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin), period, 9L, dueTerms, cutoffTerms, end,
+                    CALCULATOR.calculateLateFee(BASE, dueTerms.dailyLateFeeRate(), period.chargedDays()), today, Optional.empty());
+            if (POLICIES.evaluateRulesUntilFirstViolation(context).allowed() && !context.lateFeeAmount().value().isZero()) {
+                covered.add(period.period());
+                issued.add(new Issued(period.period(), period.chargedDays(), today, context.lateFeeAmount()));
             }
         }
     }
 
+    private static Set<LocalDate> oracleChargedDays(Outcome outcome, int graceDays) {
+        Set<LocalDate> charged = new HashSet<>();
+        for (Run run : outcome.runs()) {
+            LocalDate cutoffDay = run.date().withDayOfMonth(1).minusDays(1);
+            boolean pastGrace = run.date().isAfter(outcome.dueDate().plusDays(graceDays));
+            if (!pastGrace || run.underReview()) {
+                continue;
+            }
+            boolean freeze = outcome.termsOn(cutoffDay).freezeLateFeesOnWithdrawal();
+            for (LocalDate day = outcome.dueDate().plusDays(1); !day.isAfter(cutoffDay); day = day.plusDays(1)) {
+                boolean frozen = freeze && run.endDate().isPresent() && day.isAfter(run.endDate().get());
+                if (!charged.contains(day) && outcome.termsOn(day).lateFeeChargingEnabled() && !frozen) {
+                    charged.add(day);
+                }
+            }
+        }
+        return charged;
+    }
+
+    @Property(tries = 1000, seed = "20261010")
+    void plannerMatchesTheDayByDayOracleWithoutPayments(@ForAll("scenarios") Scenario scenario) {
+        Outcome outcome = simulate(scenario.dueOffsetDays(), scenario.graceDays(), scenario.steps());
+
+        Set<LocalDate> seen = new HashSet<>();
+        Set<LocalDate> expandedEnabledDays = new HashSet<>();
+        for (Issued entry : outcome.issued()) {
+            assertThat(entry.period().firstDay()).isAfter(outcome.dueDate());
+            assertThat(entry.issuedOn()).isAfter(entry.period().lastDay());
+            int enabled = 0;
+            for (LocalDate day = entry.period().firstDay(); !day.isAfter(entry.period().lastDay()); day = day.plusDays(1)) {
+                assertThat(seen.add(day)).as("day %s covered twice", day).isTrue();
+                if (outcome.termsOn(day).lateFeeChargingEnabled()) {
+                    enabled++;
+                    expandedEnabledDays.add(day);
+                }
+            }
+            assertThat(entry.chargedDays()).isEqualTo(enabled);
+            BigDecimal expectedAmount = BASE.value().amount().multiply(outcome.dueDateTerms().dailyLateFeeRate().fraction()).multiply(BigDecimal.valueOf(entry.chargedDays()))
+                    .setScale(2, RoundingMode.HALF_UP);
+            assertThat(entry.amount().value().amount()).isEqualByComparingTo(expectedAmount);
+        }
+        assertThat(expandedEnabledDays).isEqualTo(oracleChargedDays(outcome, scenario.graceDays()));
+    }
+
     @Property(tries = 500, seed = "20261011")
-    void runningLessOftenNeverChangesWhichMonthsAccrueWhenNothingElseHappens(@ForAll("scenarios") Scenario scenario) {
+    void runningLessOftenNeverChangesWhichPeriodsAreIssuedWhenNothingElseHappens(@ForAll("scenarios") Scenario scenario) {
         int total = scenario.steps().stream().mapToInt(Step::value).sum();
         List<Step> everyDay = new ArrayList<>();
         for (int day = 0; day < total; day++) {
@@ -146,7 +188,7 @@ class LateFeeAccrualProperties {
         Outcome daily = simulate(scenario.dueOffsetDays(), scenario.graceDays(), everyDay);
         Outcome single = simulate(scenario.dueOffsetDays(), scenario.graceDays(), once);
 
-        assertThat(single.issued().keySet()).containsExactlyElementsOf(daily.issued().keySet());
-        single.issued().forEach((ordinal, entry) -> assertThat(entry.factDate()).isEqualTo(daily.issued().get(ordinal).factDate()));
+        assertThat(single.issued()).extracting(Issued::period).containsExactlyElementsOf(daily.issued().stream().map(Issued::period).toList());
+        assertThat(single.issued()).extracting(Issued::amount).containsExactlyElementsOf(daily.issued().stream().map(Issued::amount).toList());
     }
 }
