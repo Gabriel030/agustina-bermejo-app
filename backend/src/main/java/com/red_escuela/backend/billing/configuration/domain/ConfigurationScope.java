@@ -8,5 +8,6 @@ public enum ConfigurationScope {
     ALLOCATION,
     ANNUAL_UPFRONT,
     COURSE_TERMS,
-    IRREGULAR_TERMS
+    IRREGULAR_TERMS,
+    COLLECTION_REMINDERS
 }

@@ -263,6 +263,7 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("D-167")
+    @Tag("D-202")
     void aCreditNoteThatCoversTheWholeUnpaidDebtIsRejectedBecauseThatIsACancellation() throws Exception {
         Scenario scenario = unpaidInvoice("80000.00");
         Staff director = newStaff("DIRECTOR");
@@ -272,7 +273,7 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
                         .content(creditNoteBody("BILLING_ERROR", "Error", 1, "80000.00")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.violations[0].code").value("CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION"))
-                .andExpect(jsonPath("$.violations[0].message").value("Para anular toda la deuda de la factura se usa la cancelación, no una nota de crédito."));
+                .andExpect(jsonPath("$.violations[0].message").value("Para anular toda la deuda de la factura se usa la cancelación (POST /invoices/{id}/cancellations), no una nota de crédito."));
         mockMvc.perform(post(url).header("Authorization", "Bearer " + director.token()).contentType(APPLICATION_JSON)
                 .content(creditNoteBody("LATE_FEE_ANNULMENT", "Mora mal cargada", 1, "80000.00"))).andExpect(status().isConflict());
 

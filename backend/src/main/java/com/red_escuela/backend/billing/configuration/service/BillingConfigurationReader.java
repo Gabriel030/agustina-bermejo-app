@@ -3,8 +3,11 @@ package com.red_escuela.backend.billing.configuration.service;
 import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
+import com.red_escuela.backend.billing.configuration.domain.LatePaymentVersion;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.CourseTerms;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
@@ -46,6 +49,20 @@ public class BillingConfigurationReader {
         return repository.findFirstVersion(topic.scope().name(), topic.key()).map(version -> LatePaymentTerms.class.cast(version.values()));
     }
 
+    public Optional<LatePaymentVersion> findLatePaymentVersionEffectiveOn(LocalDate date) {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        return repository.findEffectiveVersion(topic.scope().name(), topic.key(), date).map(BillingConfigurationReader::toLatePaymentVersion);
+    }
+
+    public Optional<LatePaymentVersion> findFirstLatePaymentVersion() {
+        ConfigurationTopic topic = ConfigurationTopic.ofGlobal(ConfigurationScope.LATE_PAYMENT);
+        return repository.findFirstVersion(topic.scope().name(), topic.key()).map(BillingConfigurationReader::toLatePaymentVersion);
+    }
+
+    private static LatePaymentVersion toLatePaymentVersion(ConfigurationVersion version) {
+        return new LatePaymentVersion(version.getId(), LatePaymentTerms.class.cast(version.values()));
+    }
+
     public Optional<IssuanceSettings> findIssuanceSettingsEffectiveOn(LocalDate date) {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.ISSUANCE), date, IssuanceSettings.class);
     }
@@ -64,6 +81,14 @@ public class BillingConfigurationReader {
 
     public Optional<IrregularTermTypes> findIrregularTermTypesEffectiveOn(LocalDate date) {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), date, IrregularTermTypes.class);
+    }
+
+    public Optional<CollectionReminderSettings> findCollectionReminderSettingsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS), date, CollectionReminderSettings.class);
+    }
+
+    public CollectionReminderSettings collectionReminderSettingsEffectiveOn(LocalDate date) {
+        return findCollectionReminderSettingsEffectiveOn(date).orElse(CollectionReminderSettings.initial());
     }
 
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {

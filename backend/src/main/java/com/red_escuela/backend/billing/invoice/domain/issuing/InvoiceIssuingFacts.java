@@ -11,16 +11,24 @@ public record InvoiceIssuingFacts(
         LocalDate issueDate,
         Currency offeringCurrency,
         NonNegativeMoney chargeAmount,
-        Long priceRevisionId,
+        Long priceVersionId,
         Long existingInvoiceId,
         Integer templateEnrollmentFeeCount,
         StudentSnapshot studentSnapshot,
-        boolean enrollmentMatchesRecipient) {
+        boolean enrollmentMatchesRecipient,
+        NonNegativeMoney marketingDiscountAmount) {
+
+    public InvoiceIssuingFacts(LocalDate issueDate, Currency offeringCurrency, NonNegativeMoney chargeAmount, Long priceVersionId, Long existingInvoiceId,
+                               Integer templateEnrollmentFeeCount, StudentSnapshot studentSnapshot, boolean enrollmentMatchesRecipient) {
+        this(issueDate, offeringCurrency, chargeAmount, priceVersionId, existingInvoiceId, templateEnrollmentFeeCount, studentSnapshot,
+                enrollmentMatchesRecipient, null);
+    }
 
     public InvoiceIssuingFacts {
         Objects.requireNonNull(issueDate, "issueDate");
         Objects.requireNonNull(offeringCurrency, "offeringCurrency");
         Objects.requireNonNull(chargeAmount, "chargeAmount");
         Objects.requireNonNull(studentSnapshot, "studentSnapshot");
+        marketingDiscountAmount = marketingDiscountAmount == null ? NonNegativeMoney.zero(chargeAmount.value().currency()) : marketingDiscountAmount;
     }
 }

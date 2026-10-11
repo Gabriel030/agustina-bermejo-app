@@ -72,8 +72,20 @@ public class InvoiceLine {
     @Column(name = "exam_board_registration_id", updatable = false)
     private Long examBoardRegistrationId;
 
-    @Column(name = "price_revision_id", updatable = false)
-    private Long priceRevisionId;
+    @Column(name = "price_version_id", updatable = false)
+    private Long priceVersionId;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "marketing_discount_amount", nullable = false, updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "currency", nullable = false, insertable = false, updatable = false))})
+    private NonNegativeMoney marketingDiscountAmount;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "list_amount", insertable = false, updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "currency", insertable = false, updatable = false))})
+    private NonNegativeMoney listAmount;
 
     @Column(name = "template_id", updatable = false)
     private Long templateId;
@@ -126,7 +138,8 @@ public class InvoiceLine {
         this.courseEnrollmentId = draft.courseEnrollmentId();
         this.subjectId = draft.subjectId();
         this.examBoardRegistrationId = draft.examBoardRegistrationId();
-        this.priceRevisionId = draft.priceRevisionId();
+        this.priceVersionId = draft.priceVersionId();
+        this.marketingDiscountAmount = draft.marketingDiscountAmount();
         this.templateId = draft.templateId();
         this.enrollmentFeeSlot = draft.enrollmentFeeSlot();
         this.chargeKey = draft.chargeKey();
@@ -153,6 +166,27 @@ public class InvoiceLine {
             throw new InvoiceLinesEnrollmentMismatchException();
         }
         this.courseEnrollmentId = enrollmentId;
+    }
+
+    public boolean getChargeKeyReleased() {
+        return chargeKeyReleasedAt != null;
+    }
+
+    public NonNegativeMoney calculateCancellableAmount() {
+        return NonNegativeMoney.of(calculateNetAmount().minus(creditedAmount));
+    }
+
+    void requireCancellable(NonNegativeMoney offsetPart) {
+        if (offsetPart.value().isGreaterThan(calculateCancellableAmount().value())) {
+            throw new CreditNoteExceedsCreditableAmountException();
+        }
+    }
+
+    void recordCancellationCredit(NonNegativeMoney offsetPart) {
+        requireCancellable(offsetPart);
+        this.creditedAmount = creditedAmount.plus(offsetPart);
+        NonNegativeMoney excess = creditedAmount.plus(freeCreditedAmount).minusNotBelowZero(calculateNetAmount());
+        this.freeCreditedAmount = freeCreditedAmount.minusNotBelowZero(excess);
     }
 
     void releaseChargeKey() {

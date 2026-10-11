@@ -291,7 +291,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
 
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, id)).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("select credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("69999.50");
-        assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("10000.00");
+        assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("0.00");
         invariants.assertAllBillingInvariantsHold();
     }
 }

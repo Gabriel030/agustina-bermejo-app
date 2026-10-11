@@ -5,7 +5,7 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "INVALID_LATE_PAYMENT_SETTINGS", decisions = {"D-061", "D-147", "D-149"})
+@PolicyRule(violationCodes = "INVALID_LATE_PAYMENT_SETTINGS", decisions = {"D-061", "D-147", "D-149", "D-239"})
 public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentTerms> {
     private static final String CODE = "INVALID_LATE_PAYMENT_SETTINGS";
 
@@ -25,12 +25,6 @@ public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentT
         }
         if (terms.suspensionAfterInvoiceCount() < 1) {
             return deny("La cantidad de facturas vencidas para suspender debe ser al menos 1.");
-        }
-        if (terms.lateFeeCapMonths() != null && terms.lateFeeCapMonths() < 1) {
-            return deny("El tope del recargo debe ser de al menos 1 mes.");
-        }
-        if (terms.lateFeeCapPercentage() != null && terms.lateFeeCapPercentage().fraction().signum() <= 0) {
-            return deny("El tope del recargo en porcentaje debe ser mayor que cero.");
         }
         if (terms.lateFeeDebitNoteDueDays() < 0) {
             return deny("Los días de vencimiento de la nota de débito no pueden ser negativos.");

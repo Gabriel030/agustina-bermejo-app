@@ -55,16 +55,34 @@ class ConfigurationModelContractTest {
         List<ConfigurationValues> samples = List.of(
                 new YearBillingTerms(10, 2, 2, 7, 1, 10, 10, true, false, true, true, true, false),
                 new CohortEntryDiscount(Percentage.ofPoints(new BigDecimal("15"))),
-                new LatePaymentTerms(0, Percentage.ofPoints(new BigDecimal("5")), 12, null, 30, 2, true, 10, true),
+                new LatePaymentTerms(0, Percentage.ofPoints(new BigDecimal("5")), 30, 2, true, 10, true, true),
                 new IssuanceSettings(IssuanceMode.REVIEW, true, 2, List.of(1, 3)),
                 new AllocationSettings(true),
                 new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48),
                 new CourseTerms(10),
-                new IrregularTermTypes(List.of("Intensivo", "Verano")));
+                new IrregularTermTypes(List.of("Intensivo", "Verano")),
+                CollectionReminderSettings.initial());
         assertThat(samples.stream().map(ConfigurationValues::scope)).containsExactly(ConfigurationScope.values());
         for (ConfigurationValues sample : samples) {
             assertThat(ConfigurationValuesCodec.fromJson(ConfigurationValuesCodec.toJson(sample))).isEqualTo(sample);
         }
+    }
+
+    @Test
+    @Tag("D-351")
+    void collectionReminderSettingsUseTheirOwnJsonTypeGlobalTopicAndRequireTheEmailWindow() {
+        String json = ConfigurationValuesCodec.toJson(CollectionReminderSettings.initial());
+
+        assertThat(json).contains("\"type\":\"COLLECTION_REMINDERS\"", "\"emailWindowStart\":\"09:00:00\"", "\"dailyEmailCap\":250");
+        assertThat(ConfigurationValuesCodec.fromJson("{\"type\":\"COLLECTION_REMINDERS\",\"emissionReminderEnabled\":true,\"daysAfterIssueReminder\":5,"
+                + "\"daysBeforeDueReminder\":1,\"daysAfterDueReminder\":10,\"daysBeforeSuspensionReminder\":1,\"suspensionNoticeEnabled\":true,"
+                + "\"postWithdrawalSummaryMonths\":6,\"minDaysBetweenEmails\":3,\"maxReminderEmailsPerMonth\":4,\"emailWindowStart\":\"09:00:00\","
+                + "\"emailWindowEnd\":\"11:00:00\",\"dailyEmailCap\":250,\"contactListDaysOverdue\":14,\"contactListOverdueInstallments\":2}"))
+                .isEqualTo(CollectionReminderSettings.initial());
+        assertThat(ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS).key()).isEqualTo("COLLECTION_REMINDERS");
+        assertThatThrownBy(() -> new ConfigurationTopic(ConfigurationScope.COLLECTION_REMINDERS, 1L, null, null, null)).isInstanceOf(InvalidConfigurationValuesException.class);
+        assertThatThrownBy(() -> new CollectionReminderSettings(true, 5, 1, 10, 1, true, 6, 3, 4, null, java.time.LocalTime.of(11, 0), 250, 14, 2))
+                .isInstanceOf(InvalidConfigurationValuesException.class);
     }
 
     @Test

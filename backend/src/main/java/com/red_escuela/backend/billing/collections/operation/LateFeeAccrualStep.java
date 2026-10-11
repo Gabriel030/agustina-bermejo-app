@@ -1,0 +1,56 @@
+package com.red_escuela.backend.billing.collections.operation;
+
+import com.red_escuela.backend.billing.collections.service.LateFeeAccrualService;
+import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class LateFeeAccrualStep {
+    private static final Logger log = LoggerFactory.getLogger(LateFeeAccrualStep.class);
+    private static final int PAGE_SIZE = 200;
+
+    private final PendingInvoiceQueryService overdueInvoiceQueryService;
+    private final LateFeeAccrualService accrualService;
+
+    public LateFeeAccrualStep(PendingInvoiceQueryService overdueInvoiceQueryService, LateFeeAccrualService accrualService) {
+        this.overdueInvoiceQueryService = overdueInvoiceQueryService;
+        this.accrualService = accrualService;
+    }
+
+    public LateFeeAccrualResult accrueLateFees(LocalDate today) {
+        int candidates = 0;
+        int issued = 0;
+        int failed = 0;
+        List<Map<String, Object>> errors = new ArrayList<>();
+        Long lastId = 0L;
+        while (true) {
+            List<Long> batch = overdueInvoiceQueryService.findOverdueLateFeeOriginIdsAfter(lastId, PAGE_SIZE);
+            if (batch.isEmpty()) {
+                break;
+            }
+            candidates += batch.size();
+            for (Long originId : batch) {
+                try {
+                    issued += accrualService.reconcileLateFeesOfInvoice(originId, today);
+                } catch (Exception e) {
+                    failed++;
+                    log.error("Falló la conciliación de recargos para la factura id={}", originId, e);
+                    Map<String, Object> error = new LinkedHashMap<>();
+                    error.put("invoiceId", originId);
+                    error.put("message", e.getMessage());
+                    errors.add(error);
+                }
+            }
+            lastId = batch.get(batch.size() - 1);
+        }
+        return new LateFeeAccrualResult(candidates, issued, failed, errors);
+    }
+}

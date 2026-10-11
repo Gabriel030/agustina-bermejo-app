@@ -69,6 +69,10 @@ GitHub Actions tiene un tope de minutos, así que en el CI solo corre lo barato:
 
 Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca código que PIT muta (los paquetes de `targetClasses` del perfil `mutation`: `shared/domain`, `billing/operation` y los `domain`/`policy` de billing) o el `pom.xml`, y no agrega su fila de PIT, el job `local-tests-log` del CI falla. Si cambiás `targetClasses`, actualizá también el patrón de ese job.
 
+### Qué clases ejecuta `./mvnw clean verify`
+
+El plugin surefire del `pom.xml` declara `<includes>` explícitos: `Test*`, `*Test`, `*Tests`, `*TestCase` (los defaults), más `*IT` (integración con Testcontainers) y `*Properties` (jqwik). Una clase de test con otro sufijo **no corre** ni en local ni en GitHub, sin avisar. `SurefireDiscoversEveryTestClassTest` escanea `src/test/java` y falla si una clase con `@Test`/`@Property` no matchea esos includes; al nombrar una clase nueva, usá uno de esos sufijos. PIT sigue excluyendo el grupo `integration`.
+
 ### Auditoría de dependencias (solo local)
 
 Responde: ¿alguna librería empaquetada tiene un CVE publicado? Corre cuando un PR agrega o sube una dependencia, y antes de cada release.

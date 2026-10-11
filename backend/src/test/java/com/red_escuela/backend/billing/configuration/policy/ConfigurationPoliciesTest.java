@@ -25,8 +25,8 @@ class ConfigurationPoliciesTest {
     private static final LocalDate TODAY = LocalDate.of(2027, 11, 15);
     private static final Percentage FIVE = Percentage.ofPoints(new BigDecimal("5"));
 
-    private static LatePaymentTerms late(int grace, Integer capMonths, Percentage capPct, int suspendDays, int invoices, int ndDays) {
-        return new LatePaymentTerms(grace, FIVE, capMonths, capPct, suspendDays, invoices, true, ndDays, true);
+    private static LatePaymentTerms late(int grace, int suspendDays, int invoices, int ndDays) {
+        return new LatePaymentTerms(grace, FIVE, suspendDays, invoices, true, ndDays, true, true);
     }
 
     private static IssuanceSettings issuance(int attempts, List<Integer> backoff) {
@@ -89,29 +89,22 @@ class ConfigurationPoliciesTest {
     @Tag("D-061")
     @Tag("D-147")
     @Tag("D-149")
-    @ParameterizedTest(name = "gracia {0} tope {1} dias {2} facturas {3} ND {4} permitido={5}")
-    @CsvSource({"0,12,30,1,10,true", "-1,12,30,1,10,false", "31,12,30,1,10,false", "30,12,30,1,10,true", "0,0,30,1,10,false", "0,1,30,1,10,true",
-            "0,12,-1,1,10,false", "0,12,30,0,10,false", "0,12,30,1,-1,false", "0,12,30,1,0,true", "0,12,0,1,10,true"})
-    void lateFeeSettingsCoherence(int grace, int capMonths, int suspendDays, int invoices, int ndDays, boolean allowed) {
-        PolicyVerdict verdict = new LateFeeSettingsCoherencePolicy().evaluateRule(late(grace, capMonths, null, suspendDays, invoices, ndDays));
+    @Tag("D-239")
+    @ParameterizedTest(name = "gracia {0} dias {1} facturas {2} ND {3} permitido={4}")
+    @CsvSource({"0,30,1,10,true", "-1,30,1,10,false", "31,30,1,10,false", "30,30,1,10,true",
+            "0,-1,1,10,false", "0,30,0,10,false", "0,30,1,-1,false", "0,30,1,0,true", "0,0,1,10,true"})
+    void lateFeeSettingsCoherence(int grace, int suspendDays, int invoices, int ndDays, boolean allowed) {
+        PolicyVerdict verdict = new LateFeeSettingsCoherencePolicy().evaluateRule(late(grace, suspendDays, invoices, ndDays));
         assertThat(verdict.allowed()).isEqualTo(allowed);
         assertThat(verdict.code()).isEqualTo(allowed ? null : "INVALID_LATE_PAYMENT_SETTINGS");
     }
 
-    @Tag("D-061")
+    @Tag("D-239")
     @Test
-    void percentageCapMustBePositive() {
-        LateFeeSettingsCoherencePolicy policy = new LateFeeSettingsCoherencePolicy();
-        assertThat(policy.evaluateRule(late(0, null, Percentage.ofPoints(new BigDecimal("50")), 30, 1, 10)).allowed()).isTrue();
-        assertThat(policy.evaluateRule(late(0, null, Percentage.ofPoints(BigDecimal.ZERO), 30, 1, 10)).allowed()).isFalse();
-    }
-
-    @Tag("D-061")
-    @Test
-    void capIsMonthsXorPercentageAndTheRateIsMandatory() {
-        assertThatThrownBy(() -> late(0, 0, Percentage.ofPoints(BigDecimal.ZERO), 30, 1, 10)).isInstanceOf(InvalidConfigurationValuesException.class);
-        assertThatThrownBy(() -> late(0, null, null, 30, 1, 10)).isInstanceOf(InvalidConfigurationValuesException.class);
-        assertThatThrownBy(() -> new LatePaymentTerms(0, null, 12, null, 30, 1, true, 10, true)).isInstanceOf(InvalidConfigurationValuesException.class);
+    void theRateIsMandatoryAndThereIsNoCapToConfigure() {
+        assertThatThrownBy(() -> new LatePaymentTerms(0, null, 30, 1, true, 10, true, false)).isInstanceOf(InvalidConfigurationValuesException.class);
+        assertThat(java.util.Arrays.stream(LatePaymentTerms.class.getRecordComponents()).map(java.lang.reflect.RecordComponent::getName))
+                .noneMatch(name -> name.toLowerCase().contains("cap"));
     }
 
     @Tag("D-053")

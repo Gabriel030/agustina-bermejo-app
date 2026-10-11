@@ -77,7 +77,7 @@ class InvoiceValueObjectsTest {
         assertThat(line.getConcept()).startsWith("Concepto");
         assertThat(line.getPeriod()).isEqualTo(java.time.YearMonth.of(2027, 3));
         assertThat(line.getProgramEnrollmentId()).isEqualTo(123L);
-        assertThat(line.getPriceRevisionId()).isEqualTo(5L);
+        assertThat(line.getPriceVersionId()).isEqualTo(5L);
         assertThat(line.getInvoice()).isSameAs(draft);
         assertThat(line.getCurrency()).isEqualTo(com.red_escuela.backend.shared.domain.Currency.ARS);
         assertThat(line.getChargeKey()).isEqualTo("PE:123:MONTHLY_INSTALLMENT:2027-03");
