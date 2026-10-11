@@ -26,4 +26,9 @@ public class PlainScopeHandlersConfiguration {
     public ConfigurationScopeHandler irregularTermsScopeHandler() {
         return new PlainScopeHandler(ConfigurationScope.IRREGULAR_TERMS);
     }
+
+    @Bean
+    public ConfigurationScopeHandler billingDashboardGoalsScopeHandler() {
+        return new PlainScopeHandler(ConfigurationScope.BILLING_DASHBOARD_GOALS);
+    }
 }
