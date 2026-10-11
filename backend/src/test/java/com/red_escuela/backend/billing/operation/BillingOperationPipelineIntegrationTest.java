@@ -370,12 +370,11 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
         jdbcTemplate.update("update authorization_request set expires_on = ? where id = ?", LocalDate.of(2032, 1, 1), stillOpen);
 
         MutableClock.INSTANCE.setDate(LocalDate.of(2031, 11, 30));
-        long expiredBefore = expirer.expireDueRequests();
+        expirer.expireDueRequests();
+        assertThat(requestRepository.findById(expiring).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.PENDING);
         MutableClock.INSTANCE.setDate(LocalDate.of(2031, 12, 1));
-        long expiredOnTheDate = expirer.expireDueRequests();
+        expirer.expireDueRequests();
 
-        assertThat(expiredBefore).isZero();
-        assertThat(expiredOnTheDate).isGreaterThanOrEqualTo(1);
         assertThat(requestRepository.findById(expiring).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.EXPIRED);
         assertThat(requestRepository.findById(stillOpen).orElseThrow().getStatus()).isEqualTo(AuthorizationRequestStatus.PENDING);
         await().until(() -> notificationsFor(director, "AUTHORIZATION_REQUEST_EXPIRED") >= 1);

@@ -14,10 +14,9 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.MercadoPagoGatewayException;
-import com.red_escuela.backend.billing.entity.PaymentGatewayConfig;
-import com.red_escuela.backend.billing.gateway.exception.PaymentGatewayUnavailableException;
+import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
+import com.red_escuela.backend.billing.payment.gateway.PaymentGatewayRegistry;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
-import com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository;
 import com.red_escuela.backend.shared.UseCase;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -35,19 +34,19 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
     private static final Logger log = LoggerFactory.getLogger(CreateMpPreferenceService.class);
 
     private final InvoiceRepository invoiceRepository;
-    private final PaymentGatewayConfigRepository gatewayConfigRepository;
+    private final PaymentGatewayRegistry gatewayRegistry;
     private final String accessToken;
     private final String frontendBaseUrl;
     private final String backendBaseUrl;
 
     public CreateMpPreferenceService(
             InvoiceRepository invoiceRepository,
-            PaymentGatewayConfigRepository gatewayConfigRepository,
+            PaymentGatewayRegistry gatewayRegistry,
             @Value("${mercadopago.access-token:}") String accessToken,
             @Value("${app.frontend.base-url:http://localhost:5173}") String frontendBaseUrl,
             @Value("${app.backend.base-url:http://localhost:8080}") String backendBaseUrl) {
         this.invoiceRepository = invoiceRepository;
-        this.gatewayConfigRepository = gatewayConfigRepository;
+        this.gatewayRegistry = gatewayRegistry;
         this.accessToken = accessToken;
         this.frontendBaseUrl = frontendBaseUrl;
         this.backendBaseUrl = backendBaseUrl;
@@ -75,12 +74,7 @@ public class CreateMpPreferenceService implements CreateMpPreferenceUseCase {
         if (invoice.currency() != Currency.ARS) {
             throw new GatewayCurrencyNotSupportedException(invoiceId, invoice.currency());
         }
-        boolean gatewayEnabled = gatewayConfigRepository.findFirstByOrderByIdAsc()
-                .map(PaymentGatewayConfig::isMpEnabled)
-                .orElse(false);
-        if (!gatewayEnabled) {
-            throw new PaymentGatewayUnavailableException();
-        }
+        gatewayRegistry.findGatewayByCode(PaymentGatewayCode.MERCADO_PAGO);
         BigDecimal amount = invoice.getAmounts().outstandingAmount().value().amount();
         String title = invoice.getFeeType().name() + " " + invoice.getPeriod();
 

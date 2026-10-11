@@ -11,13 +11,22 @@ public record InvoiceCreditNoteApplication(
         CreditNoteApplicationKind kind,
         NonNegativeMoney offsetAmount,
         NonNegativeMoney freeCreditAmount,
-        List<InvoiceLineCredit> lineCredits) {
+        List<InvoiceLineCredit> lineCredits,
+        boolean releasesChargeKeys) {
+
+    public InvoiceCreditNoteApplication(CreditNoteApplicationKind kind, NonNegativeMoney offsetAmount, NonNegativeMoney freeCreditAmount,
+                                        List<InvoiceLineCredit> lineCredits) {
+        this(kind, offsetAmount, freeCreditAmount, lineCredits, false);
+    }
 
     public InvoiceCreditNoteApplication {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(offsetAmount, "offsetAmount");
         Objects.requireNonNull(freeCreditAmount, "freeCreditAmount");
         lineCredits = List.copyOf(lineCredits);
+        if (releasesChargeKeys && kind != CreditNoteApplicationKind.CANCELLATION) {
+            throw new IllegalArgumentException("Only a cancellation releases the charge keys");
+        }
         Set<Integer> lineNumbers = new HashSet<>();
         for (InvoiceLineCredit lineCredit : lineCredits) {
             if (!lineNumbers.add(lineCredit.lineNumber())) {

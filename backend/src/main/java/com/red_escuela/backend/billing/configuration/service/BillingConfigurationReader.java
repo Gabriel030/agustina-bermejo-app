@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.configuration.service;
 import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
+import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
@@ -80,6 +81,14 @@ public class BillingConfigurationReader {
 
     public Optional<IrregularTermTypes> findIrregularTermTypesEffectiveOn(LocalDate date) {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), date, IrregularTermTypes.class);
+    }
+
+    public Optional<CollectionReminderSettings> findCollectionReminderSettingsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS), date, CollectionReminderSettings.class);
+    }
+
+    public CollectionReminderSettings collectionReminderSettingsEffectiveOn(LocalDate date) {
+        return findCollectionReminderSettingsEffectiveOn(date).orElse(CollectionReminderSettings.initial());
     }
 
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {

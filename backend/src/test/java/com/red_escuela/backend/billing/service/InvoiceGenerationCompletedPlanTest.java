@@ -19,7 +19,6 @@ import com.red_escuela.backend.billing.entity.PaymentMethod;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
@@ -167,14 +166,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(director);
         entityManager.persist(cohort);
 
-        PriceRevision price = new PriceRevision();
-        price.setProgram(program);
-        price.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        price.setDescription("Cuota mensual");
-        price.setMonthlyAmount(ars(10000));
-        price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        price.setCreatedBy(director);
-        entityManager.persist(price);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.MONTHLY_INSTALLMENT, "Cuota mensual", ars(10000), LocalDate.of(2020, 1, 1), director.getId());
 
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);

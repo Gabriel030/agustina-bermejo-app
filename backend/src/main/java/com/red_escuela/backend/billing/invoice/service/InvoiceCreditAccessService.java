@@ -25,8 +25,11 @@ public class InvoiceCreditAccessService {
 
     @Transactional
     public Optional<Invoice> lockInvoice(Long invoiceId) {
-        Optional<Invoice> invoice = invoiceRepository.findByIdForUpdate(invoiceId);
-        invoice.ifPresent(locked -> entityManager.refresh(locked));
+        if (invoiceRepository.lockInvoiceRowById(invoiceId).isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<Invoice> invoice = invoiceRepository.findById(invoiceId);
+        invoice.ifPresent(entityManager::refresh);
         return invoice;
     }
 

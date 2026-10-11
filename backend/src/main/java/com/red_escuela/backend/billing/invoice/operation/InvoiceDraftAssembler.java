@@ -20,8 +20,9 @@ final class InvoiceDraftAssembler {
         InvoiceDraftHeader header = new InvoiceDraftHeader(studentCurrentAccountId, context.facts().offeringCurrency(), InvoiceDocumentType.INVOICE,
                 request.invoiceType(), request.issuingReason(), null);
         InvoiceLineDraft line = new InvoiceLineDraft(request.feeType(), conceptOf(request), request.period(), request.programEnrollmentId(),
-                request.courseEnrollmentId(), request.subjectId(), request.examBoardRegistrationId(), context.facts().priceRevisionId(),
-                context.chargeKey().value(), context.facts().chargeAmount(), request.templateId(), request.enrollmentFeeSlot());
+                request.courseEnrollmentId(), request.subjectId(), request.examBoardRegistrationId(), context.facts().priceVersionId(),
+                context.chargeKey().value(), context.facts().chargeAmount(), request.templateId(), request.enrollmentFeeSlot(),
+                context.facts().marketingDiscountAmount());
         Invoice draft = createDraftOfType(header, line, request);
         context.winningDiscount().ifPresent(winner -> draft.addDiscountToDraftLine(1, winner.toDiscountDraft()));
         return draft;

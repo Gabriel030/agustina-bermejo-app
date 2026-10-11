@@ -13,8 +13,8 @@ import com.red_escuela.backend.identity.entity.Person;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "payment")
+@Entity(name = "LegacyPayment")
+@Table(name = "legacy_payment")
 public class Payment {
     @Id
     @Column(name = "id")

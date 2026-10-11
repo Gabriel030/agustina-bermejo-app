@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.Set;
 
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
@@ -50,9 +51,9 @@ public final class ArchitectureRules {
             ROOT + ".graduation..", ROOT + ".identity..", ROOT + ".notification.."
     };
 
-    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.note..", "..billing.collections.."};
+    static final String[] V2_BILLING_PACKAGES = {"..billing.configuration..", "..billing.operation..", "..billing.authorization..", "..billing.invoice..", "..billing.account..", "..billing.note..", "..billing.collections..", "..billing.payment.."};
 
-    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.note", ROOT + ".billing.collections"};
+    static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.note", ROOT + ".billing.collections", ROOT + ".billing.payment"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
             + "|service\\.legacy\\.[A-Za-z]+"
@@ -71,6 +72,8 @@ public final class ArchitectureRules {
     static final Set<String> ENROLLMENT_POST_LISTENERS = Set.of("ProgramEnrollmentAdmissionPaymentListener", "CourseEnrollmentAdmissionPaymentListener");
 
     static final Set<String> BILLING_SUBDOMAIN_FOLDERS = Set.of("domain", "policy", "operation", "usecase", "service", "repository", "controller", "dto", "exception");
+
+    static final Map<String, Set<String>> BILLING_SUBDOMAIN_EXTRA_FOLDERS = Map.of("payment", Set.of("gateway"));
 
     private static final Pattern BILLING_SUBDOMAIN_REPOSITORY = Pattern.compile("com\\.red_escuela\\.backend\\.billing\\.([a-z]+)\\.repository(\\..*)?");
 
@@ -123,6 +126,26 @@ public final class ArchitectureRules {
                 .that().resideInAPackage("..service..")
                 .should().beAnnotatedWith(ROOT + ".shared.UseCase")
                 .because("@UseCase is reserved for classes in a usecase package");
+    }
+
+    public static ArchRule invoicesAreCancelledOnlyThroughTheCancellationOperation() {
+        return noClasses()
+                .that().resideOutsideOfPackages("..billing.note.service..", "..billing.invoice.domain..", "..billing.note.domain..")
+                .should().callCodeUnitWhere(DescribedPredicate.describe("an application of a credit note to an invoice or of a cancellation",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) ->
+                                call.getTargetOwner().getName().equals(ROOT + ".billing.invoice.domain.Invoice") && call.getTarget().getName().equals("applyCreditNote")))
+                .allowEmptyShould(true)
+                .because("a credit note reaches an invoice only through the note operations");
+    }
+
+    public static ArchRule cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.CancelInvoiceOperation")
+                .should().callCodeUnitWhere(DescribedPredicate.describe("the creation of a cancellation application",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
+                                && call.getTarget().getName().equals("toInvoiceCancellationApplication")))
+                .allowEmptyShould(true)
+                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation");
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
@@ -429,6 +452,15 @@ public final class ArchitectureRules {
                 "issuing of a debit note");
     }
 
+    public static ArchRule gatewaySpecificCodeStaysInItsAdapter(String sdkPackage, String adapterPackage, Set<String> frozenLegacyClasses) {
+        return noClasses()
+                .that().resideOutsideOfPackage(adapterPackage)
+                .and(DescribedPredicate.describe("are not frozen legacy classes", (JavaClass javaClass) -> !frozenLegacyClasses.contains(javaClass.getName())))
+                .should().dependOnClassesThat().resideInAPackage(sdkPackage)
+                .allowEmptyShould(true)
+                .because("a payment provider's SDK is used only inside its own adapter (D-082)");
+    }
+
     public static ArchRule currentAccountIsWrittenOnlyThroughItsService(String serviceClassName, String... repositoryClassNames) {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(serviceClassName)
@@ -465,7 +497,7 @@ public final class ArchitectureRules {
                         } else if (segments.length == 1) {
                             allowed = true;
                         } else {
-                            allowed = BILLING_SUBDOMAIN_FOLDERS.contains(segments[1]);
+                            allowed = BILLING_SUBDOMAIN_FOLDERS.contains(segments[1]) || BILLING_SUBDOMAIN_EXTRA_FOLDERS.getOrDefault(segments[0], Set.of()).contains(segments[1]);
                         }
                         if (!allowed) {
                             events.add(SimpleConditionEvent.violated(javaClass, javaClass.getName() + " is outside the subdomain folders and not a frozen legacy class"));

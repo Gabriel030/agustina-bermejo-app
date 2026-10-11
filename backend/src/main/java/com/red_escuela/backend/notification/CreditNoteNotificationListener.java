@@ -36,6 +36,9 @@ public class CreditNoteNotificationListener {
 
     @ApplicationModuleListener
     public void notifyRequester(CreditNoteIssuedEvent event) {
+        if (event.requestedByPersonId() == null) {
+            return;
+        }
         effectGuard.runEffectOnce(event, REQUESTER_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
                 NotificationType.CREDIT_NOTE_ISSUED,
                 "La nota de crédito " + event.creditNoteNumber() + " que pediste sobre la factura " + event.invoiceNumber() + " quedó emitida.",

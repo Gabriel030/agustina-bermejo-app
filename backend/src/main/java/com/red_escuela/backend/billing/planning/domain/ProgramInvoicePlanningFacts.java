@@ -48,7 +48,7 @@ public record ProgramInvoicePlanningFacts(
     }
 
     public Optional<IssuedEnrollmentFee> feeOf(YearCycle cycle, int slot) {
-        List<IssuedEnrollmentFee> covering = enrollmentFees.stream().filter(f -> f.covers(cycle, slot)).toList();
+        List<IssuedEnrollmentFee> covering = enrollmentFees.stream().filter(f -> !f.chargeKeyReleased() && f.covers(cycle, slot)).toList();
         return covering.stream().filter(IssuedEnrollmentFee::isSettled).findFirst()
                 .or(() -> covering.stream().filter(f -> !f.isCancelled()).findFirst())
                 .or(() -> covering.stream().findFirst());

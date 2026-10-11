@@ -47,7 +47,7 @@ public class CourseInvoicePlanningContextLoader {
         PaymentPlanSelection selection = selectionRepository.findActiveForCourseEnrollment(enrollmentId, month).orElse(null);
         PaymentPlanCadence cadence = selection == null ? null : selection.getPaymentPlanOption().getCadence();
         List<Invoice> recurring = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollmentId).stream()
-                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).toList();
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT && !i.getPrimaryLine().getChargeKeyReleased()).toList();
         Set<YearMonth> periods = recurring.stream().map(Invoice::getPeriod).collect(Collectors.toSet());
         long inTerm = recurring.stream().filter(i -> course.getTerm().contains(i.getPeriod())).count();
         boolean suspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED

@@ -88,7 +88,8 @@ public class InvoicePlanningContextLoader {
 
         List<Invoice> invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentId);
         List<IssuedEnrollmentFee> fees = invoices.stream().filter(i -> i.getFeeType() == FeeType.ENROLLMENT_FEE)
-                .map(i -> new IssuedEnrollmentFee(i.getId(), i.getTemplateId(), i.getEnrollmentFeeSlot(), i.getPeriod(), i.getPaymentStatus(), i.getDueDate())).toList();
+                .map(i -> new IssuedEnrollmentFee(i.getId(), i.getTemplateId(), i.getEnrollmentFeeSlot(), i.getPeriod(), i.getPaymentStatus(), i.getDueDate(),
+                        i.getPrimaryLine().getChargeKeyReleased())).toList();
         Set<YearMonth> recurringPeriods = periods(invoices, FeeType.MONTHLY_INSTALLMENT);
 
         YearMonth entryMonth = enrollment.getProgramCohort() != null ? YearMonth.from(enrollment.getProgramCohort().getCursadaStart())
@@ -115,7 +116,7 @@ public class InvoicePlanningContextLoader {
     }
 
     private Set<YearMonth> periods(List<Invoice> invoices, FeeType type) {
-        return invoices.stream().filter(i -> i.getFeeType() == type).map(Invoice::getPeriod).collect(Collectors.toSet());
+        return invoices.stream().filter(i -> i.getFeeType() == type && !i.getPrimaryLine().getChargeKeyReleased()).map(Invoice::getPeriod).collect(Collectors.toSet());
     }
 
     private Map<String, SlotWindow> windowsOf(Long programId, List<YearCycle> cycles, LocalDate today) {

@@ -146,6 +146,23 @@ class PlanningPoliciesTest {
         assertThat(policy.plannerQuestionNumber()).isEqualTo(7);
     }
 
+    @Test
+    @Tag("B2-16")
+    @Tag("D-245")
+    @Tag("D-202")
+    void aCancelledSlotIsReissuedOnlyWhenItsChargeKeyWasReleased() {
+        EnrollmentFeeSlotNotAlreadyIssuedPolicy policy = new EnrollmentFeeSlotNotAlreadyIssuedPolicy();
+        ProgramYearBillingTemplate template = PlanningFixtures.template(1, 2026, 10, 1, 2, null);
+        YearCycle cycle = com.red_escuela.backend.billing.planning.TestTemplateTerms.cycleOf(template, 2026);
+        java.util.function.BiFunction<InvoicePaymentStatus, Boolean, EnrollmentFeeSlotPlanningContext> withFee = (status, released) -> EnrollmentFeeSlotPlanningContext.of(
+                PlanningFixtures.facts(template, MARCH, MARCH.atDay(1), false, false, null, PaymentPlanCoverage.ofCadence(PaymentPlanCadence.MONTHLY),
+                        List.of(new IssuedEnrollmentFee(5L, 1L, 1, YearMonth.of(2026, 2), status, LocalDate.of(2026, 2, 1), released)), Set.of(), Map.of()), cycle, 1, false);
+
+        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoicePaymentStatus.PENDING, false)), "ALREADY_ISSUED");
+        assertThat(policy.evaluateRule(withFee.apply(InvoicePaymentStatus.CANCELLED, true)).allowed()).isTrue();
+        assertDenies(policy, policy.evaluateRule(withFee.apply(InvoicePaymentStatus.CANCELLED, false)), "FEE_CANCELLED");
+    }
+
     private static MonthlyInstallmentPlanningContext installment(ProgramYearBillingTemplate template, YearMonth month, YearMonth entry, PaymentPlanCoverage coverage,
                                                                 Set<YearMonth> recurring) {
         ProgramInvoicePlanningFacts facts = PlanningFixtures.facts(template, month, month.atDay(1), false, false, entry, coverage, List.of(), recurring, Map.of());
