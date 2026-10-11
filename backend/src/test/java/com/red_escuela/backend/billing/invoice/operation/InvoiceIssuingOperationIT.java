@@ -62,7 +62,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
         assertThat(invoice.getIssueDate()).isEqualTo(LocalDate.of(2027, 3, 1));
         assertThat(invoice.getLines()).hasSize(1);
         assertThat(invoice.getLines().get(0).getChargeKey()).isEqualTo("PE:" + learner.programEnrollmentId() + ":MONTHLY_INSTALLMENT:2027-03");
-        assertThat(invoice.getLines().get(0).getPriceRevisionId()).isNotNull();
+        assertThat(invoice.getLines().get(0).getPriceVersionId()).isNotNull();
         assertThat(invoice.getLines().get(0).getAmount()).isEqualTo(ars("80000.00"));
         assertThat(invoice.getAmounts().total()).isEqualTo(ars("80000.00"));
         assertThat(invoice.getStudentSnapshot().fullName()).startsWith("Persona");
@@ -87,7 +87,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
             expectedBalance = expectedBalance.add(new BigDecimal(amount));
             assertThat(invoice.getInvoiceType().name()).isEqualTo(feeType.name());
             assertThat(invoice.getLines().get(0).getChargeKey()).isEqualTo("AH:" + learner.studentId() + ":" + feeType + ":k-" + feeType + learner.studentId());
-            assertThat(invoice.getLines().get(0).getPriceRevisionId()).isNull();
+            assertThat(invoice.getLines().get(0).getPriceVersionId()).isNull();
             assertThat(invoice.getAmounts().total().value().amount()).isEqualByComparingTo(amount);
             List<Map<String, Object>> entries = entriesOf(learner.studentId(), Currency.ARS);
             assertThat(entries).hasSize(++index);
@@ -218,7 +218,7 @@ class InvoiceIssuingOperationIT extends AbstractInvoiceIssuingIT {
 
         assertThat(old.getAmounts().total()).isEqualTo(ars("80000.00"));
         assertThat(current.getAmounts().total()).isEqualTo(ars("90000.00"));
-        assertThat(old.getLines().get(0).getPriceRevisionId()).isNotEqualTo(current.getLines().get(0).getPriceRevisionId());
+        assertThat(old.getLines().get(0).getPriceVersionId()).isNotEqualTo(current.getLines().get(0).getPriceVersionId());
         assertThat(old.getAmounts().total()).isEqualTo(ars("80000.00"));
     }
 

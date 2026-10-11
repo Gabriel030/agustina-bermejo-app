@@ -10,6 +10,7 @@ public class OperationHandlerRegistry {
 
     public OperationHandlerRegistry(List<OperationPreHandlers> registrations) {
         for (OperationPreHandlers registration : registrations) {
+            requireHandlersThatMustRunFirstToLeadTheChain(registration);
             if (handlersByType.putIfAbsent(registration.type(), registration.ordered()) != null) {
                 throw new IllegalStateException("Pre-processing handlers declared twice for " + registration.type());
             }
@@ -27,5 +28,14 @@ public class OperationHandlerRegistry {
 
     public List<PreProcessingHandler<?>> listPreHandlersFor(BillingOperationType type) {
         return handlersByType.getOrDefault(type, List.of());
+    }
+
+    private static void requireHandlersThatMustRunFirstToLeadTheChain(OperationPreHandlers registration) {
+        List<PreProcessingHandler<?>> ordered = registration.ordered();
+        for (int index = 1; index < ordered.size(); index++) {
+            if (ordered.get(index).mustRunFirst()) {
+                throw new IllegalStateException("A handler that must run first is not the first one for " + registration.type());
+            }
+        }
     }
 }

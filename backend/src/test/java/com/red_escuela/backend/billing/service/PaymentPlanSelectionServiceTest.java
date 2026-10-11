@@ -12,7 +12,6 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -25,7 +24,6 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -85,9 +83,6 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
     private CourseRepository courseRepository;
 
     @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
-    @Autowired
     private CourseEnrollmentRepository courseEnrollmentRepository;
 
     @AfterEach
@@ -139,14 +134,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         course.setDurationMonths(durationMonths);
         course = courseRepository.save(course);
 
-        PriceRevision revision = new PriceRevision();
-        revision.setCourse(course);
-        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(price));
-        revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        revision.setCreatedBy(director);
-        priceRevisionRepository.save(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(price), LocalDate.of(2020, 1, 1), director.getId());
 
         return course;
     }
@@ -418,14 +406,7 @@ class PaymentPlanSelectionServiceTest extends AbstractIntegrationTest {
         course.setDurationMonths(6);
         course = courseRepository.save(course);
 
-        PriceRevision revision = new PriceRevision();
-        revision.setCourse(course);
-        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(12000));
-        revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        revision.setCreatedBy(director);
-        priceRevisionRepository.save(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(12000), LocalDate.of(2020, 1, 1), director.getId());
 
         Student student = persistStudent("82200015");
         CourseEnrollment enrollment = persistCourseEnrollment(student, course);
