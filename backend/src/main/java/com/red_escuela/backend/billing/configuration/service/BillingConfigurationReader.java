@@ -2,6 +2,7 @@ package com.red_escuela.backend.billing.configuration.service;
 
 import com.red_escuela.backend.billing.configuration.domain.AllocationSettings;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
+import com.red_escuela.backend.billing.configuration.domain.BillingDashboardGoals;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
@@ -66,6 +67,10 @@ public class BillingConfigurationReader {
         return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.IRREGULAR_TERMS), date, IrregularTermTypes.class);
     }
 
+    public Optional<BillingDashboardGoals> findBillingDashboardGoalsEffectiveOn(LocalDate date) {
+        return findEffective(ConfigurationTopic.ofGlobal(ConfigurationScope.BILLING_DASHBOARD_GOALS), date, BillingDashboardGoals.class);
+    }
+
     public YearBillingTerms requireYearTermsEffectiveOn(Long programId, Long termId, LocalDate date) {
         return EffectiveConfigurations.requireInEffect(findYearTermsEffectiveOn(programId, termId, date), ConfigurationTopic.ofYearTerms(programId, termId), date);
     }
@@ -84,6 +89,10 @@ public class BillingConfigurationReader {
 
     public IrregularTermTypes irregularTermTypesEffectiveOn(LocalDate date) {
         return findIrregularTermTypesEffectiveOn(date).orElse(new IrregularTermTypes(java.util.List.of()));
+    }
+
+    public BillingDashboardGoals billingDashboardGoalsEffectiveOn(LocalDate date) {
+        return findBillingDashboardGoalsEffectiveOn(date).orElse(BillingDashboardGoals.initial());
     }
 
     private <V extends ConfigurationValues> Optional<V> findEffective(ConfigurationTopic topic, LocalDate date, Class<V> valuesType) {

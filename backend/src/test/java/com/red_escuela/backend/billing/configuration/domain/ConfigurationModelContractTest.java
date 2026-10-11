@@ -60,7 +60,8 @@ class ConfigurationModelContractTest {
                 new AllocationSettings(true),
                 new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48),
                 new CourseTerms(10),
-                new IrregularTermTypes(List.of("Intensivo", "Verano")));
+                new IrregularTermTypes(List.of("Intensivo", "Verano")),
+                new BillingDashboardGoals(Percentage.ofPoints(new BigDecimal("85")), null, 3, null));
         assertThat(samples.stream().map(ConfigurationValues::scope)).containsExactly(ConfigurationScope.values());
         for (ConfigurationValues sample : samples) {
             assertThat(ConfigurationValuesCodec.fromJson(ConfigurationValuesCodec.toJson(sample))).isEqualTo(sample);
