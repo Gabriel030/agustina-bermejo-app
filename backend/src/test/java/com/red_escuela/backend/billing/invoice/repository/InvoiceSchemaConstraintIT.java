@@ -207,7 +207,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         expectViolation(NEGATIVE, () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "discount_amount", 101)));
         expectViolation("ck_invoice_line_credited_within_net", () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "credited_amount", 101)));
         expectViolation("ck_invoice_line_single_enrollment", () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "program_enrollment_id", 1, "course_enrollment_id", 1)));
-        expectViolation("ck_invoice_line_priced_fees_have_price_revision", () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "fee_type", "MONTHLY_INSTALLMENT")));
+        expectViolation("ck_invoice_line_priced_fees_have_price_version", () -> insert("invoice_line", with(line(insert("invoice", draftInvoice(account))), "fee_type", "MONTHLY_INSTALLMENT")));
         expectViolation("uk_invoice_line_number", () -> {
             long invoice = insert("invoice", draftInvoice(account));
             insert("invoice_line", line(invoice));

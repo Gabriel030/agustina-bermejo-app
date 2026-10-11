@@ -86,7 +86,6 @@ com.red_escuela.backend.billing.entity.PaymentPlanCadence
 com.red_escuela.backend.billing.entity.PaymentPlanOption
 com.red_escuela.backend.billing.entity.PaymentPlanSelection
 com.red_escuela.backend.billing.entity.PaymentStatus
-com.red_escuela.backend.billing.entity.PriceRevision
 com.red_escuela.backend.billing.entity.ProgramCohort
 com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate
 com.red_escuela.backend.billing.entity.Promotion
@@ -123,7 +122,6 @@ com.red_escuela.backend.billing.exception.PaymentReceiptAlreadyPendingException
 com.red_escuela.backend.billing.exception.PaymentReceiptFileNotFoundException
 com.red_escuela.backend.billing.exception.PaymentReceiptNotFoundException
 com.red_escuela.backend.billing.exception.PendingDebtException
-com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException
 com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException
 com.red_escuela.backend.billing.exception.ProgramEnrollmentMissingCohortException
 com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException
@@ -148,7 +146,6 @@ com.red_escuela.backend.billing.repository.PaymentGatewayConfigRepository
 com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository
 com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository
 com.red_escuela.backend.billing.repository.PaymentRepository
-com.red_escuela.backend.billing.repository.PriceRevisionRepository
 com.red_escuela.backend.billing.repository.ProgramCohortRepository
 com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository
 com.red_escuela.backend.billing.repository.PromotionBenefitUsage
@@ -179,7 +176,6 @@ com.red_escuela.backend.billing.service.PaymentPlanSelectionInvoiceIssuingServic
 com.red_escuela.backend.billing.service.PaymentReceiptFinder
 com.red_escuela.backend.billing.service.PaymentReceiptPersister
 com.red_escuela.backend.billing.service.PlannedInvoiceIssuingService
-com.red_escuela.backend.billing.service.PriceRevisionService
 com.red_escuela.backend.billing.service.ProgramCohortService
 com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup
 com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService

@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -111,14 +110,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             course.setCapacity(20);
             course.setIsActive(StatusType.ACTIVE);
             entityManager.persist(course);
-            PriceRevision revision = new PriceRevision();
-            revision.setCourse(course);
-            revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-            revision.setDescription("Precio de prueba");
-            revision.setMonthlyAmount(ars(BigDecimal.valueOf(15000)));
-            revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-            revision.setCreatedBy(persistPerson("DIR" + System.nanoTime()));
-            entityManager.persist(revision);
+            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(BigDecimal.valueOf(15000)), LocalDate.now().minusDays(1), persistPerson("DIR" + System.nanoTime()).getId());
             return course;
         });
     }

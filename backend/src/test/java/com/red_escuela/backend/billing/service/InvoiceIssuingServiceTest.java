@@ -56,7 +56,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
             List<Invoice> list = invoices(enrollmentId, type);
             list.forEach(i -> {
                 com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(i).size();
-                i.getPrimaryLine().getPriceRevisionId();
+                i.getPrimaryLine().getPriceVersionId();
             });
             return list;
         });
@@ -90,7 +90,7 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         assertThat(fee.getEnrollmentFeeSlot()).isEqualTo(1);
         assertThat(fee.getTemplateId()).isEqualTo(y27.templateId());
         assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(fee)).isEmpty();
-        assertThat(fee.getPrimaryLine().getPriceRevisionId()).isNotNull();
+        assertThat(fee.getPrimaryLine().getPriceVersionId()).isNotNull();
     }
 
     @Test

@@ -9,7 +9,6 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
@@ -28,7 +27,7 @@ import com.red_escuela.backend.enrollment.exception.DniRequiredException;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException;
+import com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -159,14 +158,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     }
 
     private void persistPriceRevision(Program program, BigDecimal amount, Person createdBy) {
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setFeeType(FeeType.ENROLLMENT_FEE);
-        revision.setDescription("Matrícula de prueba");
-        revision.setMonthlyAmount(ars(amount));
-        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-        revision.setCreatedBy(createdBy);
-        entityManager.persist(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(amount), LocalDate.now().minusDays(1), createdBy.getId());
     }
 
     private ProgramEnrollmentApplication requestApplication(String dni) {
@@ -307,7 +299,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
                 new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
 
         assertThatThrownBy(() -> approveProgramEnrollmentApplicationUseCase.approve(new ApproveProgramEnrollmentApplicationCommand(application.getId(), persistPreceptor())))
-                .isInstanceOf(PriceRevisionNotFoundException.class);
+                .isInstanceOf(NoEffectivePriceException.class);
     }
 
     @Test

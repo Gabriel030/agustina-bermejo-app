@@ -10,7 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -25,7 +24,6 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -98,9 +96,6 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -179,14 +174,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     }
 
     private void persistPriceRevision(Program program, FeeType feeType, BigDecimal amount, Person createdBy) {
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setFeeType(feeType);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(amount));
-        revision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        revision.setCreatedBy(createdBy);
-        priceRevisionRepository.save(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, feeType, "Precio de prueba", ars(amount), LocalDate.of(2020, 1, 1), createdBy.getId());
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student, Program program, ProgramCohort cohort) {

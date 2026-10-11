@@ -11,7 +11,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
@@ -130,14 +129,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistPriceRevision(Course course, BigDecimal amount, Person createdBy) {
-        PriceRevision revision = new PriceRevision();
-        revision.setCourse(course);
-        revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(amount));
-        revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-        revision.setCreatedBy(createdBy);
-        entityManager.persist(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(amount), LocalDate.now().minusDays(1), createdBy.getId());
     }
 
     private MultipartFile receiptFile() {
@@ -252,7 +244,7 @@ class CourseEnrollmentApplicationServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> courseEnrollmentApplicationService.requestWithPayment(
                 student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null), receiptFile()))
-                .isInstanceOf(com.red_escuela.backend.billing.exception.PriceRevisionNotFoundException.class);
+                .isInstanceOf(com.red_escuela.backend.billing.pricing.exception.NoEffectivePriceException.class);
     }
 
     private void persistCourseEnrollment(Student student, Course course, EnrollmentStatus status) {
