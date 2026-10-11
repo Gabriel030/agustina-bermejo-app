@@ -168,6 +168,27 @@ public class InvoiceLine {
         this.courseEnrollmentId = enrollmentId;
     }
 
+    public boolean getChargeKeyReleased() {
+        return chargeKeyReleasedAt != null;
+    }
+
+    public NonNegativeMoney calculateCancellableAmount() {
+        return NonNegativeMoney.of(calculateNetAmount().minus(creditedAmount));
+    }
+
+    void requireCancellable(NonNegativeMoney offsetPart) {
+        if (offsetPart.value().isGreaterThan(calculateCancellableAmount().value())) {
+            throw new CreditNoteExceedsCreditableAmountException();
+        }
+    }
+
+    void recordCancellationCredit(NonNegativeMoney offsetPart) {
+        requireCancellable(offsetPart);
+        this.creditedAmount = creditedAmount.plus(offsetPart);
+        NonNegativeMoney excess = creditedAmount.plus(freeCreditedAmount).minusNotBelowZero(calculateNetAmount());
+        this.freeCreditedAmount = freeCreditedAmount.minusNotBelowZero(excess);
+    }
+
     void releaseChargeKey() {
         this.chargeKeyReleasedAt = ApplicationTime.now();
     }

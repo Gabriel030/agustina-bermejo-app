@@ -314,6 +314,9 @@
 								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
@@ -337,6 +340,9 @@
 								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
 								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifierTest</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcherTest</param>
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>

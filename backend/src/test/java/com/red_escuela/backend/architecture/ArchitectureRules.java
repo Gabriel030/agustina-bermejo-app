@@ -62,6 +62,8 @@ public final class ArchitectureRules {
     static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.usecase.payment.RegisterPaymentService"
             + "," + ROOT + ".billing.account.service.CurrentAccountAllocationService";
 
+    static final String DEBIT_NOTE_ISSUER_CLASS = ROOT + ".billing.invoice.operation.DebitNoteIssuer";
+
     static final Set<String> PAYMENT_BRIDGE_ACCOUNT_METHODS = Set.of(
             "recordPaymentReceivedCredit", "recordCreditNoteIssuedCredit", "consumeUnallocatedCreditForAllocation", "restoreUnallocatedCreditFromReversedAllocation");
 
@@ -124,6 +126,26 @@ public final class ArchitectureRules {
                 .that().resideInAPackage("..service..")
                 .should().beAnnotatedWith(ROOT + ".shared.UseCase")
                 .because("@UseCase is reserved for classes in a usecase package");
+    }
+
+    public static ArchRule invoicesAreCancelledOnlyThroughTheCancellationOperation() {
+        return noClasses()
+                .that().resideOutsideOfPackages("..billing.note.service..", "..billing.invoice.domain..", "..billing.note.domain..")
+                .should().callCodeUnitWhere(DescribedPredicate.describe("an application of a credit note to an invoice or of a cancellation",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) ->
+                                call.getTargetOwner().getName().equals(ROOT + ".billing.invoice.domain.Invoice") && call.getTarget().getName().equals("applyCreditNote")))
+                .allowEmptyShould(true)
+                .because("a credit note reaches an invoice only through the note operations");
+    }
+
+    public static ArchRule cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.CancelInvoiceOperation")
+                .should().callCodeUnitWhere(DescribedPredicate.describe("the creation of a cancellation application",
+                        (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
+                                && call.getTarget().getName().equals("toInvoiceCancellationApplication")))
+                .allowEmptyShould(true)
+                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation");
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {
@@ -422,7 +444,12 @@ public final class ArchitectureRules {
 
     public static ArchRule economicStateIsPersistedOnlyByOperations(String invoiceRepositoryClassName, Class<?> operationType) {
         return methodIsCalledOnlyBy(invoiceRepositoryClassName, name -> name.equals("save"), invoiceRepositoryClassName, operationType,
-                "save of the invoice");
+                "save of the invoice", DEBIT_NOTE_ISSUER_CLASS, Set.of("save"));
+    }
+
+    public static ArchRule debitNotesAreIssuedOnlyThroughOperations(Class<?> operationType) {
+        return methodIsCalledOnlyBy(DEBIT_NOTE_ISSUER_CLASS, name -> name.startsWith("issue"), DEBIT_NOTE_ISSUER_CLASS, operationType,
+                "issuing of a debit note");
     }
 
     public static ArchRule gatewaySpecificCodeStaysInItsAdapter(String sdkPackage, String adapterPackage, Set<String> frozenLegacyClasses) {

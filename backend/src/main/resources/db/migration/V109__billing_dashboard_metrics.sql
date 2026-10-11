@@ -4,14 +4,14 @@ create index ix_bank_transfer_receipt_uploaded_at on bank_transfer_receipt (uplo
 
 alter table configuration_version drop constraint configuration_version_scope_check;
 alter table configuration_version add constraint configuration_version_scope_check check (scope in ('YEAR_TERMS', 'COHORT_ENTRY', 'LATE_PAYMENT', 'ISSUANCE',
-    'ALLOCATION', 'ANNUAL_UPFRONT', 'COURSE_TERMS', 'IRREGULAR_TERMS', 'BILLING_DASHBOARD_GOALS'));
+    'ALLOCATION', 'ANNUAL_UPFRONT', 'COURSE_TERMS', 'IRREGULAR_TERMS', 'COLLECTION_REMINDERS', 'BILLING_DASHBOARD_GOALS'));
 
 alter table configuration_version drop constraint ck_configuration_version_topic;
 alter table configuration_version add constraint ck_configuration_version_topic check (
     (scope in ('YEAR_TERMS', 'ANNUAL_UPFRONT') and program_id is not null and term_id is not null and course_id is null and cohort_id is null)
     or (scope = 'COHORT_ENTRY' and cohort_id is not null and program_id is null and term_id is null and course_id is null)
     or (scope = 'COURSE_TERMS' and course_id is not null and program_id is null and term_id is null and cohort_id is null)
-    or (scope in ('LATE_PAYMENT', 'ISSUANCE', 'ALLOCATION', 'IRREGULAR_TERMS', 'BILLING_DASHBOARD_GOALS')
+    or (scope in ('LATE_PAYMENT', 'ISSUANCE', 'ALLOCATION', 'IRREGULAR_TERMS', 'COLLECTION_REMINDERS', 'BILLING_DASHBOARD_GOALS')
         and program_id is null and term_id is null and course_id is null and cohort_id is null));
 
 create temporary table dashboard_goals_default_actor as

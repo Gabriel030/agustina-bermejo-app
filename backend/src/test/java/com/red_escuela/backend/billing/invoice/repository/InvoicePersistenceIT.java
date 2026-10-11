@@ -18,7 +18,6 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -275,7 +274,6 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
                 assertThat(((com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent) event).invoiceId()).isEqualTo(saved.getId()));
     }
 
-    @Disabled("CI-IT: cancelación total con crédito libre previo + pago revertido choca con InvoiceLine.requireCreditable (V103) — revisar si el test o la regla están mal, deuda técnica #44")
     @Test
     void freeCreditThenReversalThenFullCancellationWorksAndPersists() {
         StudentCurrentAccount account = newAccount();
@@ -293,7 +291,7 @@ class InvoicePersistenceIT extends AbstractIntegrationTest {
 
         assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, id)).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("select credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("69999.50");
-        assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("10000.00");
+        assertThat(jdbc.queryForObject("select free_credited_amount from invoice_line where invoice_id = ?", java.math.BigDecimal.class, id)).isEqualByComparingTo("0.00");
         invariants.assertAllBillingInvariantsHold();
     }
 }

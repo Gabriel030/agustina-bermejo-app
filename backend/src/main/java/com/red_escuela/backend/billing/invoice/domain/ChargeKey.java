@@ -11,6 +11,7 @@ public record ChargeKey(String value) {
     private static final String PROGRAM_ADMISSION_PREFIX = "PA:";
     private static final String COURSE_ADMISSION_PREFIX = "CA:";
     private static final String AD_HOC_PREFIX = "AH:";
+    private static final String LATE_FEE_PREFIX = "LF:";
 
     public ChargeKey {
         Objects.requireNonNull(value, "value");
@@ -47,6 +48,13 @@ public record ChargeKey(String value) {
             throw new IllegalArgumentException("An ad hoc charge needs an idempotency key");
         }
         return new ChargeKey(AD_HOC_PREFIX + required(studentId, "studentId") + ":" + required(feeType, "feeType") + ":" + idempotencyKey.strip());
+    }
+
+    public static ChargeKey forLateFee(Long originInvoiceId, int monthOrdinal) {
+        if (monthOrdinal < 1) {
+            throw new IllegalArgumentException("The late fee month ordinal starts at 1");
+        }
+        return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":M" + monthOrdinal);
     }
 
     private static <T> T required(T value, String name) {

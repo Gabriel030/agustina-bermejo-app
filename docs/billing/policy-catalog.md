@@ -21,6 +21,18 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | SingleOpenProposalPerTopicPolicy | PROPOSAL_ALREADY_OPEN | D-116 |
 
+## Momento COLLECTION_REMINDER_EFFECTIVE_FROM
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CollectionReminderEffectiveFromNextDayPolicy | EFFECTIVE_FROM_BEFORE_NEXT_DAY | D-350 |
+
+## Momento COLLECTION_REMINDER_SETTINGS
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CollectionReminderSettingsCoherencePolicy | INVALID_COLLECTION_REMINDER_SETTINGS | D-351, D-359 |
+
 ## Momento CONFIGURATION_PROPOSAL_APPROVAL
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -63,7 +75,17 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | 7 | CreditNoteRefundWithinPaidAmountPolicy | CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT | D-165 |
 | 8 | CreditNoteWithinOutstandingAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
 | 9 | CreditNoteLinesWithinCreditableAmountPolicy | CREDIT_NOTE_EXCEEDS_CREDITABLE_AMOUNT | D-165 |
-| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167 |
+| 10 | CreditNoteFullDebtRequiresCancellationPolicy | CREDIT_NOTE_FULL_DEBT_REQUIRES_CANCELLATION | D-167, D-202, D-127 |
+
+## Momento DEBIT_NOTE_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | LateFeeAppliesToInvoiceTypePolicy | LATE_FEE_NOT_APPLICABLE | D-289, D-242, D-149, D-155 |
+| 2 | OriginNotUnderPaymentReviewPolicy | ORIGIN_UNDER_PAYMENT_REVIEW | D-153, D-154 |
+| 3 | LateFeeChargingEnabledPolicy | LATE_FEE_CHARGING_DISABLED | D-210, D-294 |
+| 4 | LateFeeNotFrozenPolicy | LATE_FEE_FROZEN | D-148, D-293 |
+| 5 | DebitNoteSameRecipientAsOriginPolicy | DEBIT_NOTE_RECIPIENT_MISMATCH | D-244, D-097 |
 
 ## Momento ENROLLMENT_FEE_PLANNING
 
@@ -94,6 +116,16 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | IdempotencyKeyReuseConsistencyPolicy | IDEMPOTENCY_KEY_CONFLICT | D-136 |
+
+## Momento INVOICE_CANCELLATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CancellationJustificationPolicy | CREDIT_NOTE_JUSTIFICATION_REQUIRED | D-165, D-127 |
+| 2 | CancellationReasonPolicy | INVALID_CREDIT_NOTE_REASON | D-127, D-238 |
+| 3 | SystemInitiatedCancellationPolicy | CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED | D-165, D-229, D-300, D-242, D-311 |
+| 4 | CancellationInvoiceNotUnderReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-127 |
+| 5 | CancellationByFullCreditNotePolicy | ILLEGAL_INVOICE_PAYMENT_STATUS_TRANSITION | D-127, D-091 |
 
 ## Momento INVOICE_DISCOUNT_SELECTION
 
@@ -134,7 +166,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149 |
+| 1 | LateFeeSettingsCoherencePolicy | INVALID_LATE_PAYMENT_SETTINGS | D-061, D-147, D-149, D-239 |
 
 ## Momento MONTHLY_INSTALLMENT_PLANNING
 
@@ -325,9 +357,16 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Eventos que publica: ConfigurationVersionCancelledEvent
 - Post-procesamiento de ConfigurationVersionCancelledEvent: BillingOperationNotificationListener#notifyConfigurationVersionCancelled
 
+## Operación CANCEL_INVOICE
+
+- Validaciones (momentos): INVOICE_CANCELLATION
+- Pre-procesamiento (en orden): DirectorAuthorizationHandler
+- Eventos que publica: CreditNoteIssuedEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
+
 ## Operación CHANGE_BILLING_CONFIGURATION
 
-- Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS
+- Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS, COLLECTION_REMINDER_SETTINGS, COLLECTION_REMINDER_EFFECTIVE_FROM
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: ConfigurationChangeDecidedEvent
 - Post-procesamiento de ConfigurationChangeDecidedEvent: BillingOperationNotificationListener#notifyConfigurationChangeDecided
@@ -354,3 +393,10 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: —
+
+## Operación ISSUE_LATE_FEE_DEBIT_NOTE
+
+- Validaciones (momentos): DEBIT_NOTE_ISSUING
+- Pre-procesamiento (en orden): —
+- Eventos que publica: LateFeeIssuedEvent
+- Post-procesamiento de LateFeeIssuedEvent: LateFeeNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow, LateFeeNotificationListener#notifyStudent

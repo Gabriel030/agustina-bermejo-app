@@ -57,6 +57,19 @@ public class DiscountsMetricQuery implements MetricQuery {
                     series.put("amount." + type, month, new MoneyValue(amount));
                     foregoneByMonth.merge(month, amount, Money::plus);
                 });
+        Map<YearMonth, Money> marketingByMonth = new HashMap<>();
+        jdbc.query("select to_char(i.issue_date, 'YYYY-MM') as month, count(*) as discounts, sum(l.marketing_discount_amount) as amount "
+                        + "from invoice_line l join invoice i on i.id = l.invoice_id "
+                        + "where l.marketing_discount_amount > 0 and i.document_status = 'ISSUED' and i.issue_date >= :from and i.issue_date < :to"
+                        + scope.conditions() + " group by 1 order by 1",
+                scope.parameters(), row -> {
+                    YearMonth month = MonthlyRows.monthOf(row);
+                    Money amount = MonthlyRows.moneyOf(row, "amount", filter.currency());
+                    series.put("count.MARKETING", month, new CountValue(row.getLong("discounts")));
+                    series.put("amount.MARKETING", month, new MoneyValue(amount));
+                    foregoneByMonth.merge(month, amount, Money::plus);
+                    marketingByMonth.put(month, amount);
+                });
         jdbc.query("select to_char(i.issue_date, 'YYYY-MM') as month, coalesce(sum(i.lines_total), 0) as gross "
                         + "from invoice i where i.document_status = 'ISSUED' and i.issue_date >= :from and i.issue_date < :to" + scope.conditions()
                         + " group by 1",
@@ -64,7 +77,8 @@ public class DiscountsMetricQuery implements MetricQuery {
                     YearMonth month = MonthlyRows.monthOf(row);
                     Money foregone = foregoneByMonth.getOrDefault(month, Money.zero(filter.currency()));
                     series.put("totalForegone", month, new MoneyValue(foregone));
-                    MoneyRatio.of(foregone, MonthlyRows.moneyOf(row, "gross", filter.currency()))
+                    Money gross = MonthlyRows.moneyOf(row, "gross", filter.currency()).plus(marketingByMonth.getOrDefault(month, Money.zero(filter.currency())));
+                    MoneyRatio.of(foregone, gross)
                             .ifPresent(percentage -> series.put("percentOfGross", month, new PercentValue(percentage)));
                 });
         return MonthlyMetric.available(panel(), filter.range(), series.build());

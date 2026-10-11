@@ -137,27 +137,39 @@ class MonthlyBillingMetricsIT extends AbstractMonthlyMetricsIT {
 
     @Test
     @Tag("D-356")
-    void theLateFeePanelIsUnavailableWithoutTheLateFeeChargesAndNeverFails() throws Exception {
-        JsonNode body = metric(directorToken, "late-fees", "from=2020-03&to=2020-05&currency=ARS");
+    @Tag("D-325")
+    void theLateFeePanelCountsTheDebitNotesAndFlagsTheOnesIssuedAfterTheFiscalWindow() throws Exception {
+        LocalDate firstOfMarch = LocalDate.of(2021, 3, 1);
+        Long origin = seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "OVERDUE", "100000.00", NO_DISCOUNT, null);
+        seedLateFee(arsAccountId, origin, Currency.ARS, 1, LocalDate.of(2021, 4, 18), LocalDate.of(2021, 4, 21), "5000.00");
+        seedLateFee(arsAccountId, origin, Currency.ARS, 2, LocalDate.of(2021, 3, 18), LocalDate.of(2021, 4, 21), "5000.00");
 
-        assertThat(body.get("available").asBoolean()).isFalse();
-        assertThat(body.get("series")).isEmpty();
-        assertThat(body.get("months")).hasSize(3);
+        JsonNode body = metric(directorToken, "late-fees", "from=2021-04&to=2021-05&currency=ARS");
+
+        assertThat(body.get("available").asBoolean()).isTrue();
+        assertThat(seriesOf(body, "issuedCount").get("values").get(0).asLong()).isEqualTo(2);
+        assertThat(seriesOf(body, "issuedAmount").get("values").get(0).get("amount").asText()).isEqualTo("10000.00");
+        assertThat(seriesOf(body, "issuedLateCount").get("values").get(0).asLong()).isEqualTo(1);
+        assertThat(seriesOf(body, "issuedCount").get("values").get(1).asLong()).isZero();
+        assertThat(seriesOf(body, "annulledAmount").get("values").get(1).get("amount").asText()).isEqualTo("0.00");
     }
 
     @Test
-    @Tag("D-356")
-    void theLateFeePanelBecomesAvailableOnceTheLateFeeChargesExist() throws Exception {
-        jdbc.execute("create table late_fee_charge (id bigint)");
-        try {
-            JsonNode body = metric(directorToken, "late-fees", "from=2020-03&to=2020-04&currency=ARS");
+    @Tag("D-240")
+    void discountsIncludeTheMarketingDiscountOfTheLineAndCountItInTheGrossBilled() throws Exception {
+        LocalDate firstOfMarch = LocalDate.of(2021, 3, 1);
+        Long marketed = seedInvoice(arsAccountId, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch,
+                firstOfMarch.plusDays(9), "PENDING", "100000.00", NO_DISCOUNT, null);
+        seedMarketingDiscount(marketed, Currency.ARS, "100000.00");
+        seedManyInvoices(1, Currency.ARS, InvoiceType.MONTHLY_INSTALLMENT, InvoiceIssuingReason.MONTHLY_RUN, firstOfMarch, "100000.00");
 
-            assertThat(body.get("available").asBoolean()).isTrue();
-            assertThat(seriesOf(body, "issuedCount").get("values").get(0).asLong()).isZero();
-            assertThat(seriesOf(body, "annulledAmount").get("values").get(1).get("amount").asText()).isEqualTo("0.00");
-        } finally {
-            jdbc.execute("drop table late_fee_charge");
-        }
+        JsonNode body = metric(directorToken, "discounts", "from=2021-03&to=2021-03&currency=ARS");
+
+        assertThat(seriesOf(body, "amount.MARKETING").get("values").get(0).get("amount").asText()).isEqualTo("100000.00");
+        assertThat(seriesOf(body, "count.MARKETING").get("values").get(0).asLong()).isEqualTo(1);
+        assertThat(seriesOf(body, "totalForegone").get("values").get(0).get("amount").asText()).isEqualTo("100000.00");
+        assertThat(seriesOf(body, "percentOfGross").get("values").get(0).decimalValue()).isEqualByComparingTo("33.33");
     }
 
     @Test

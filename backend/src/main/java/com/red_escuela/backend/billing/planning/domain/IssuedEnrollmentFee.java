@@ -5,7 +5,13 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
-public record IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate) {
+public record IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate,
+                                boolean chargeKeyReleased) {
+
+    public IssuedEnrollmentFee(Long invoiceId, Long templateId, Integer slot, YearMonth period, InvoicePaymentStatus status, LocalDate dueDate) {
+        this(invoiceId, templateId, slot, period, status, dueDate, false);
+    }
+
 
     public boolean isCancelled() {
         return status == InvoicePaymentStatus.CANCELLED;
