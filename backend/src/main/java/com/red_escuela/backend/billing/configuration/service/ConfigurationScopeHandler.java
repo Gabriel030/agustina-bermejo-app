@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface ConfigurationScopeHandler {
@@ -12,4 +13,7 @@ public interface ConfigurationScopeHandler {
     List<String> validationMoments();
 
     void requireCoherentValues(ConfigurationTopic topic, ConfigurationValues values);
+
+    default void requireAllowedEffectiveFrom(ConfigurationTopic topic, LocalDate effectiveFrom, LocalDate today) {
+    }
 }
