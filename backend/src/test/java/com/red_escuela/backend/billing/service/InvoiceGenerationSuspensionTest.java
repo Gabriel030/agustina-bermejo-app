@@ -13,7 +13,6 @@ import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -29,7 +28,6 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -88,9 +86,6 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
     @Autowired
     private PaymentPlanSelectionRepository paymentPlanSelectionRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     private Student persistStudent(String dni) {
         Institution institution = new Institution();
@@ -189,14 +184,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         CourseEnrollment enrollment = persistCourseEnrollment("99000205", EnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED);
         Person director = persistStudent("99000206").getPerson();
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(enrollment.getCourse());
-        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(ars(1000));
-        priceRevision.setEffectiveFrom(java.time.LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, enrollment.getCourse().getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(1000), java.time.LocalDate.now().minusYears(1), director.getId());
 
         PaymentPlanOption option = new PaymentPlanOption();
         option.setCourse(enrollment.getCourse());

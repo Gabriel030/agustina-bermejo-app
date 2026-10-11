@@ -6,7 +6,6 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -20,7 +19,6 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -80,9 +78,6 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
     private ProgramCohortRepository programCohortRepository;
 
     @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
-    @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
 
     private Person persistPerson(String dni) {
@@ -138,14 +133,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(template.getCreatedBy());
         cohort = programCohortRepository.save(cohort);
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setProgram(program);
-        priceRevision.setFeeType(FeeType.ENROLLMENT_FEE);
-        priceRevision.setDescription("Matrícula de prueba");
-        priceRevision.setMonthlyAmount(ars(10000));
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(template.getCreatedBy());
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(10000), LocalDate.now().minusYears(1), template.getCreatedBy().getId());
 
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);

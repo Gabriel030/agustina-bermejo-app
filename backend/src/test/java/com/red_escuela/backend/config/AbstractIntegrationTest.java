@@ -1,5 +1,6 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -31,5 +32,6 @@ public abstract class AbstractIntegrationTest {
     @AfterEach
     void resetApplicationClock() {
         MutableClock.INSTANCE.reset();
+        ApplicationTime.useClock(MutableClock.INSTANCE);
     }
 }
