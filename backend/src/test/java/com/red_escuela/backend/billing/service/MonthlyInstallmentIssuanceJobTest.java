@@ -17,7 +17,6 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -178,14 +177,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             entityManager.persist(cohort);
 
             for (FeeType feeType : List.of(FeeType.MONTHLY_INSTALLMENT, FeeType.ENROLLMENT_FEE)) {
-                PriceRevision price = new PriceRevision();
-                price.setProgram(program);
-                price.setFeeType(feeType);
-                price.setDescription("Precio");
-                price.setMonthlyAmount(ars(feeType == FeeType.MONTHLY_INSTALLMENT ? 10000 : 5000));
-                price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-                price.setCreatedBy(director);
-                entityManager.persist(price);
+                com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, feeType, "Precio", ars(feeType == FeeType.MONTHLY_INSTALLMENT ? 10000 : 5000), LocalDate.of(2020, 1, 1), director.getId());
             }
 
             ProgramEnrollment enrollment = new ProgramEnrollment();
@@ -479,14 +471,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             course.setIsActive(StatusType.ACTIVE);
             course.setDurationMonths(2);
             entityManager.persist(course);
-            PriceRevision price = new PriceRevision();
-            price.setCourse(course);
-            price.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-            price.setDescription("Precio");
-            price.setMonthlyAmount(ars(7000));
-            price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-            price.setCreatedBy(director);
-            entityManager.persist(price);
+            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio", ars(7000), LocalDate.of(2020, 1, 1), director.getId());
             CourseEnrollment courseEnrollment = new CourseEnrollment();
             courseEnrollment.setStudent(student);
             courseEnrollment.setCourse(course);

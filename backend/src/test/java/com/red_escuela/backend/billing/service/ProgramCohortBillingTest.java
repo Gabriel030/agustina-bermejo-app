@@ -11,7 +11,6 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -27,7 +26,6 @@ import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -99,9 +97,6 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -199,14 +194,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     private void persistPriceRevision(Program program, FeeType feeType, BigDecimal amount, LocalDate effectiveFrom, Person createdBy) {
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setFeeType(feeType);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(ars(amount));
-        revision.setEffectiveFrom(effectiveFrom);
-        revision.setCreatedBy(createdBy);
-        priceRevisionRepository.save(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, feeType, "Precio de prueba", ars(amount), effectiveFrom, createdBy.getId());
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student, Program program, ProgramCohort cohort) {
@@ -400,14 +388,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         course.setDurationMonths(3);
         course = courseRepository.save(course);
 
-        PriceRevision courseRevision = new PriceRevision();
-        courseRevision.setCourse(course);
-        courseRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        courseRevision.setDescription("Precio de prueba");
-        courseRevision.setMonthlyAmount(ars(5000));
-        courseRevision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        courseRevision.setCreatedBy(director);
-        priceRevisionRepository.save(courseRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(5000), LocalDate.of(2020, 1, 1), director.getId());
 
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
