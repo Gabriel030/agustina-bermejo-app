@@ -60,8 +60,8 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
             InvoiceDraftHeader header = new InvoiceDraftHeader(accountId, Currency.ARS, InvoiceDocumentType.INVOICE, InvoiceType.ANNUAL_UPFRONT,
                     InvoiceIssuingReason.ANNUAL_UPFRONT_PAYMENT, null);
             long tag = System.nanoTime();
-            Long revisionId = jdbc.queryForObject("insert into price_revision (fee_type, description, monthly_amount, monthly_amount_currency, effective_from, created_by_id, created_at) "
-                    + "values ('MONTHLY_INSTALLMENT', 'Test', 1000.00, 'ARS', '2027-01-01', ?, now()) returning id", Long.class, person.getId());
+            Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class, "Fixture " + tag);
+            Long revisionId = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(programId, null, com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, "Test", com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("1000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), java.time.LocalDate.of(2027, 1, 1), person.getId());
             List<InvoiceLineDraft> lines = List.of(annualLine(1, tag, revisionId), annualLine(2, tag, revisionId), annualLine(3, tag, revisionId));
             Invoice draft = InvoiceFactory.createAnnualUpfrontInvoiceDraft(header, lines,
                     Map.of(1, discount("1000.00", "333.33"), 2, discount("1000.00", "333.33"), 3, discount("1000.00", "333.34")), ACTOR);
