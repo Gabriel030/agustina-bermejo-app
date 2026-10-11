@@ -12,10 +12,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = AllocationSettings.class, name = "ALLOCATION"),
         @JsonSubTypes.Type(value = AnnualUpfrontSettings.class, name = "ANNUAL_UPFRONT"),
         @JsonSubTypes.Type(value = CourseTerms.class, name = "COURSE_TERMS"),
-        @JsonSubTypes.Type(value = IrregularTermTypes.class, name = "IRREGULAR_TERMS")
+        @JsonSubTypes.Type(value = IrregularTermTypes.class, name = "IRREGULAR_TERMS"),
+        @JsonSubTypes.Type(value = CollectionReminderSettings.class, name = "COLLECTION_REMINDERS")
 })
 public sealed interface ConfigurationValues
-        permits YearBillingTerms, CohortEntryDiscount, LatePaymentTerms, IssuanceSettings, AllocationSettings, AnnualUpfrontSettings, CourseTerms, IrregularTermTypes {
+        permits YearBillingTerms, CohortEntryDiscount, LatePaymentTerms, IssuanceSettings, AllocationSettings, AnnualUpfrontSettings, CourseTerms, IrregularTermTypes, CollectionReminderSettings {
 
     ConfigurationScope scope();
 }

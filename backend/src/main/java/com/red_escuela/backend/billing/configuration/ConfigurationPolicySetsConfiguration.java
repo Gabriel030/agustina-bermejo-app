@@ -1,6 +1,10 @@
 package com.red_escuela.backend.billing.configuration;
 
+import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
+import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromCheck;
+import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromNextDayPolicy;
+import com.red_escuela.backend.billing.configuration.policy.CollectionReminderSettingsCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontSettingsCoherencePolicy;
@@ -117,5 +121,17 @@ public class ConfigurationPolicySetsConfiguration {
     public PolicySet<AnnualUpfrontCheck> annualUpfrontSettingsPolicySet() {
         List<Policy<AnnualUpfrontCheck>> ordered = List.of(new AnnualUpfrontSettingsCoherencePolicy());
         return PolicySet.named("ANNUAL_UPFRONT_SETTINGS", ordered);
+    }
+
+    @Bean
+    public PolicySet<CollectionReminderSettings> collectionReminderSettingsPolicySet() {
+        List<Policy<CollectionReminderSettings>> ordered = List.of(new CollectionReminderSettingsCoherencePolicy());
+        return PolicySet.named("COLLECTION_REMINDER_SETTINGS", ordered);
+    }
+
+    @Bean
+    public PolicySet<CollectionReminderEffectiveFromCheck> collectionReminderEffectiveFromPolicySet() {
+        List<Policy<CollectionReminderEffectiveFromCheck>> ordered = List.of(new CollectionReminderEffectiveFromNextDayPolicy());
+        return PolicySet.named("COLLECTION_REMINDER_EFFECTIVE_FROM", ordered);
     }
 }
