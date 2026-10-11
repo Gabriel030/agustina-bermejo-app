@@ -16,7 +16,6 @@ import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,6 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,11 +46,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
 
     private static final LocalDate DAY = LocalDate.of(2027, 3, 10);
-
-    @AfterEach
-    void restoreApplicationClock() {
-        ApplicationTime.useClock(Clock.systemDefaultZone());
-    }
 
     @PersistenceContext
     private EntityManager entityManager;
