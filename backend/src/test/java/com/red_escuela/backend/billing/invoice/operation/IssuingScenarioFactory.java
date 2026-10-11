@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.Promotion;
 import com.red_escuela.backend.billing.entity.PromotionBenefit;
 import com.red_escuela.backend.billing.entity.PromotionRedemption;
@@ -93,14 +92,7 @@ public class IssuingScenarioFactory {
     }
 
     public void addPrice(Program program, Person director, FeeType type, Currency currency, long amount, LocalDate from) {
-        PriceRevision price = new PriceRevision();
-        price.setProgram(program);
-        price.setFeeType(type);
-        price.setDescription("Precio");
-        price.setMonthlyAmount(Money.of(BigDecimal.valueOf(amount), currency));
-        price.setEffectiveFrom(from);
-        price.setCreatedBy(director);
-        entityManager.persist(price);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, type, "Precio", Money.of(BigDecimal.valueOf(amount), currency), from, director.getId());
     }
 
     public void newPrice(Offering offering, FeeType type, long amount, LocalDate from) {

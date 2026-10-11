@@ -3,7 +3,6 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
-import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -19,18 +18,20 @@ import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import com.red_escuela.backend.billing.service.PriceRevisionService;
+import com.red_escuela.backend.shared.pricing.OfferingFee;
+import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 
 @Service
 public class ProgramService {
 
     private final ProgramRepository programRepository;
-    private final PriceRevisionService priceRevisionService;
+    private final OfferingPriceCatalog offeringPriceCatalog;
     private final CurrentPersonService currentPersonService;
 
-    public ProgramService(ProgramRepository programRepository, PriceRevisionService priceRevisionService, CurrentPersonService currentPersonService) {
+    public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, CurrentPersonService currentPersonService) {
         this.programRepository = programRepository;
-        this.priceRevisionService = priceRevisionService;
+        this.offeringPriceCatalog = offeringPriceCatalog;
         this.currentPersonService = currentPersonService;
     }
 
@@ -52,7 +53,7 @@ public class ProgramService {
                 .currency(currency)
                 .build();
         program = programRepository.save(program);
-        registerInitialPriceRevisions(program);
+        registerInitialOfferingPrices(program);
         return program;
     }
 
@@ -63,10 +64,10 @@ public class ProgramService {
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         if (program.changeRecurringFee(request.getPrice())) {
-            priceRevisionService.registerForProgram(program, FeeType.MONTHLY_INSTALLMENT, request.getPrice(), "Ajuste de precio", actor);
+            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor.getId());
         }
         if (program.changeEnrollmentFee(request.getEnrollmentFeeAmount())) {
-            priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), "Ajuste de matrícula", actor);
+            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor.getId());
         }
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
@@ -112,12 +113,12 @@ public class ProgramService {
         programRepository.save(program);
     }
 
-    private void registerInitialPriceRevisions(Program program) {
+    private void registerInitialOfferingPrices(Program program) {
         Person actor = currentPersonService.resolveCurrentPerson();
         Money tuition = Optional.ofNullable(program.priceAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
-        priceRevisionService.registerForProgram(program, FeeType.MONTHLY_INSTALLMENT, tuition, "Precio inicial", actor);
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.MONTHLY_INSTALLMENT, tuition, actor.getId());
         Money enrollmentFee = Optional.ofNullable(program.enrollmentFeeAsMoney()).orElseGet(() -> Money.zero(program.getCurrency()));
-        priceRevisionService.registerForProgram(program, FeeType.ENROLLMENT_FEE, enrollmentFee, "Matrícula inicial", actor);
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofProgram(program.getId()), OfferingFee.ENROLLMENT_FEE, enrollmentFee, actor.getId());
     }
 
     private static Currency resolveCurrency(Money price, Money enrollmentFee, Currency requested) {

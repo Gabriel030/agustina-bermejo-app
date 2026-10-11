@@ -362,6 +362,8 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     @Test
     @Tag("D-180")
     void aPendingRequestWhoseDateArrivesExpiresAndTellsTheRequester() {
+        MutableClock.INSTANCE.setDate(LocalDate.of(2031, 11, 30));
+        expirer.expireDueRequests();
         MutableClock.INSTANCE.setDate(LocalDate.of(2031, 11, 1));
         AUTHORIZATION_DEMAND.set(PreProcessingResult.requireAuthorizationUntil(AuthorizationRole.DIRECTOR, "r", LocalDate.of(2031, 12, 1)));
         authenticateAs(administrative);

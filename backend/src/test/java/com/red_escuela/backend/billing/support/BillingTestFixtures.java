@@ -202,7 +202,7 @@ public final class BillingTestFixtures {
             Long studentId = (student != null ? student : programEnrollment != null ? programEnrollment.getStudent() : courseEnrollment.getStudent()).getId();
             var person = bean(com.red_escuela.backend.identity.repository.StudentRepository.class).findById(studentId).orElseThrow().getPerson();
             StudentCurrentAccount account = bean(StudentCurrentAccountService.class).findOrOpenAndLockStudentCurrentAccount(studentId, baseAmount.currency());
-            Long priceRevisionId = priceRevisionId(person.getId());
+            Long priceVersionId = priceVersionId(person.getId());
             ChargeKey key = new ChargeKey("FX:" + UUID.randomUUID());
             InvoiceType invoiceType = InvoiceType.valueOf(feeType.name());
             InvoiceIssuingReason reason = feeType == FeeType.MONTHLY_INSTALLMENT ? InvoiceIssuingReason.MONTHLY_RUN
@@ -210,7 +210,7 @@ public final class BillingTestFixtures {
             InvoiceDraftHeader header = new InvoiceDraftHeader(account.getId(), baseAmount.currency(), InvoiceDocumentType.INVOICE, invoiceType, reason, null);
             InvoiceLineDraft line = new InvoiceLineDraft(feeType, feeType == FeeType.MONTHLY_INSTALLMENT ? "Cuota " + period : feeType.name() + " " + period, period,
                     programEnrollment == null ? null : programEnrollment.getId(), courseEnrollment == null ? null : courseEnrollment.getId(), null, null,
-                    priceRevisionId, key.value(), NonNegativeMoney.of(baseAmount));
+                    priceVersionId, key.value(), NonNegativeMoney.of(baseAmount));
             Invoice draft = switch (invoiceType) {
                 case MONTHLY_INSTALLMENT -> InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.empty(), ACTOR);
                 case ENROLLMENT_FEE -> InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
@@ -238,20 +238,23 @@ public final class BillingTestFixtures {
             return result;
         }
 
-        private Long priceRevisionId(Long createdById) {
+        private Long priceVersionId(Long createdById) {
             if (feeType != FeeType.MONTHLY_INSTALLMENT && feeType != FeeType.ENROLLMENT_FEE) {
                 return null;
             }
             JdbcTemplate jdbc = bean(JdbcTemplate.class);
             Long programId = programEnrollment == null ? null : programEnrollment.getProgram().getId();
             Long courseId = courseEnrollment == null ? null : courseEnrollment.getCourse().getId();
-            java.util.List<Long> found = jdbc.queryForList("select id from price_revision where " + (programId != null ? "program_id = ?" : "course_id = ?")
-                    + " order by id limit 1", Long.class, programId != null ? programId : courseId);
+            if (programId == null && courseId == null) {
+                programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, ?) returning id", Long.class,
+                        "Fixture " + System.nanoTime(), baseAmount.currency().name());
+            }
+            java.util.List<Long> found = jdbc.queryForList("select v.id from price_version v join price p on p.id = v.price_id where "
+                    + (programId != null ? "p.program_id = ?" : "p.course_id = ?") + " order by v.id limit 1", Long.class, programId != null ? programId : courseId);
             if (!found.isEmpty()) {
                 return found.get(0);
             }
-            return jdbc.queryForObject("insert into price_revision (program_id, course_id, fee_type, description, monthly_amount, monthly_amount_currency, effective_from, created_by_id, created_at) "
-                    + "values (?, ?, ?, 'Fixture', ?, ?, date '2000-01-01', ?, now()) returning id", Long.class, programId, courseId, feeType.name(), baseAmount.amount(), baseAmount.currency().name(), createdById);
+            return PriceFixtures.persistPriceVersion(programId, courseId, feeType, "Fixture", baseAmount, java.time.LocalDate.of(2000, 1, 1), createdById);
         }
     }
 }

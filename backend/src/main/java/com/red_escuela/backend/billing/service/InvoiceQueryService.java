@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
-import com.red_escuela.backend.billing.entity.PriceRevision;
+import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -34,14 +34,14 @@ public class InvoiceQueryService {
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
-    private final PriceRevisionService priceRevisionService;
+    private final PriceReader priceReader;
     private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
-                               PriceRevisionService priceRevisionService, Clock clock) {
+                               PriceReader priceReader, Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
-        this.priceRevisionService = priceRevisionService;
+        this.priceReader = priceReader;
         this.clock = clock;
     }
 
@@ -96,7 +96,7 @@ public class InvoiceQueryService {
         List<PriceBreakdownPaymentResponse> payments = invoiceViewLoader.loadInvoiceView(invoice).allocations().stream().map(this::toPayment).toList();
         return new PriceBreakdownResponse(
                 invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getAmounts().linesTotal().value(),
-                resolvePriceRevisionDescription(invoice),
+                resolvePriceVersionDescription(invoice),
                 lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice));
     }
 
@@ -138,19 +138,9 @@ public class InvoiceQueryService {
         return false;
     }
 
-    private String resolvePriceRevisionDescription(Invoice invoice) {
-        InvoiceLine line = invoice.getPrimaryLine();
-        if (invoice.findCourseEnrollmentId().isPresent()) {
-            CourseEnrollment enrollment = invoiceViewLoader.findCourseEnrollment(invoice.findCourseEnrollmentId().get()).orElse(null);
-            return enrollment == null ? null : priceRevisionService.findRevisionForCourse(enrollment.getCourse().getId(), line.getFeeType(), invoice.getDueDate())
-                    .map(PriceRevision::getDescription).orElse(null);
-        }
-        if (invoice.findProgramEnrollmentId().isPresent()) {
-            ProgramEnrollment enrollment = invoiceViewLoader.findProgramEnrollment(invoice.findProgramEnrollmentId().get()).orElse(null);
-            return enrollment == null ? null : priceRevisionService.findRevisionForProgram(enrollment.getProgram().getId(), line.getFeeType(), invoice.getDueDate())
-                    .map(PriceRevision::getDescription).orElse(null);
-        }
-        return null;
+    private String resolvePriceVersionDescription(Invoice invoice) {
+        Long priceVersionId = invoice.getPrimaryLine().getPriceVersionId();
+        return priceVersionId == null ? null : priceReader.findPriceDescriptionOfVersion(priceVersionId);
     }
 
     private static String statusNameOf(Invoice invoice) {
