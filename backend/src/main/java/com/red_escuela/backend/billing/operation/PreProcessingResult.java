@@ -18,6 +18,10 @@ public sealed interface PreProcessingResult {
         return new RequiresAuthorization(requiredRole, reason, expiresOn);
     }
 
+    static PreProcessingResult replayStoredOutcome(BillingOperationOutcome<?> storedOutcome) {
+        return new ReplayStoredOutcome(storedOutcome);
+    }
+
     enum Proceed implements PreProcessingResult {
         INSTANCE
     }
@@ -26,6 +30,12 @@ public sealed interface PreProcessingResult {
         public RequiresAuthorization {
             Objects.requireNonNull(requiredRole, "requiredRole");
             Objects.requireNonNull(reason, "reason");
+        }
+    }
+
+    record ReplayStoredOutcome(BillingOperationOutcome<?> storedOutcome) implements PreProcessingResult {
+        public ReplayStoredOutcome {
+            Objects.requireNonNull(storedOutcome, "storedOutcome");
         }
     }
 }
