@@ -27,6 +27,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -299,6 +300,23 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         Invoice reloaded = reload(origin);
         assertThat(reloaded.getPrimaryLine().getAmount().value().amount()).isEqualByComparingTo("100000.00");
         assertThat(reloaded.getPrimaryLine().calculateNetAmount().value().amount()).isEqualByComparingTo("50000.00");
+    }
+
+    @Test
+    @Tag("D-297")
+    @Tag("D-240")
+    void lateFeeBaseIsTheFinalPriceAfterTheMarketingDiscountAndNotTheListPrice() {
+        arrange(2065);
+        publishDefaults(2065);
+        Invoice origin = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(YearMonth.of(2065, 3)).dueOn(LocalDate.of(2065, 3, 12))
+                .withBaseAmount(ars(100000)).withMarketingDiscountOf(ars(100000)).overdue().build();
+
+        reconcile(origin, LocalDate.of(2065, 3, 18));
+
+        Map<String, Object> charge = chargesOf(origin).get(0);
+        assertThat((BigDecimal) charge.get("base_amount")).isEqualByComparingTo("100000.00");
+        assertThat((BigDecimal) charge.get("nd_total")).isEqualByComparingTo("5000.00");
+        assertThat(jdbc.queryForObject("select list_amount from invoice_line where invoice_id = ?", BigDecimal.class, origin.getId())).isEqualByComparingTo("200000.00");
     }
 
     @Test

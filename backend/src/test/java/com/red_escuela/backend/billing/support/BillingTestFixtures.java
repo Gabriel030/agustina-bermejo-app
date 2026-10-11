@@ -131,6 +131,7 @@ public final class BillingTestFixtures {
         private Money baseAmount = Money.of(java.math.BigDecimal.valueOf(10000), com.red_escuela.backend.shared.domain.Currency.ARS);
         private InvoicePaymentStatus status = InvoicePaymentStatus.PENDING;
         private Money scholarshipAmount;
+        private Money marketingDiscountAmount;
         private Consumer<Invoice> customization = invoice -> {
         };
 
@@ -177,6 +178,11 @@ public final class BillingTestFixtures {
             return this;
         }
 
+        public InvoiceFixture withMarketingDiscountOf(Money marketingDiscountAmount) {
+            this.marketingDiscountAmount = marketingDiscountAmount;
+            return this;
+        }
+
         public InvoiceFixture pending() {
             return inState(InvoicePaymentStatus.PENDING);
         }
@@ -216,7 +222,8 @@ public final class BillingTestFixtures {
             InvoiceDraftHeader header = new InvoiceDraftHeader(account.getId(), baseAmount.currency(), InvoiceDocumentType.INVOICE, invoiceType, reason, null);
             InvoiceLineDraft line = new InvoiceLineDraft(feeType, feeType == FeeType.MONTHLY_INSTALLMENT ? "Cuota " + period : feeType.name() + " " + period, period,
                     programEnrollment == null ? null : programEnrollment.getId(), courseEnrollment == null ? null : courseEnrollment.getId(), null, null,
-                    priceVersionId, key.value(), NonNegativeMoney.of(baseAmount));
+                    priceVersionId, key.value(), NonNegativeMoney.of(baseAmount), null, null,
+                    marketingDiscountAmount == null ? null : NonNegativeMoney.of(marketingDiscountAmount));
             Invoice draft = switch (invoiceType) {
                 case MONTHLY_INSTALLMENT -> InvoiceFactory.createMonthlyInstallmentInvoiceDraft(header, line, Optional.empty(), ACTOR);
                 case ENROLLMENT_FEE -> InvoiceFactory.createEnrollmentFeeInvoiceDraft(header, line, Optional.empty(), ACTOR);
@@ -259,6 +266,10 @@ public final class BillingTestFixtures {
             if (programId == null && courseId == null) {
                 programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, ?) returning id", Long.class,
                         "Fixture " + System.nanoTime(), baseAmount.currency().name());
+            }
+            if (marketingDiscountAmount != null) {
+                return PriceFixtures.persistPriceVersion(programId, courseId, feeType, "Fixture con marketing", baseAmount.plus(marketingDiscountAmount),
+                        java.time.LocalDate.of(2000, 1, 1), createdById, "FIXED", marketingDiscountAmount.amount());
             }
             java.util.List<Long> found = jdbc.queryForList("select v.id from price_version v join price p on p.id = v.price_id where "
                     + (programId != null ? "p.program_id = ?" : "p.course_id = ?") + " order by v.id limit 1", Long.class, programId != null ? programId : courseId);
