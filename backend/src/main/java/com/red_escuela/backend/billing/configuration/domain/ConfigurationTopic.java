@@ -10,7 +10,7 @@ public record ConfigurationTopic(ConfigurationScope scope, Long programId, Long 
             case YEAR_TERMS, ANNUAL_UPFRONT -> programId != null && termId != null && courseId == null && cohortId == null;
             case COHORT_ENTRY -> cohortId != null && programId == null && termId == null && courseId == null;
             case COURSE_TERMS -> courseId != null && programId == null && termId == null && cohortId == null;
-            case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS -> programId == null && termId == null && courseId == null && cohortId == null;
+            case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS, BILLING_DASHBOARD_GOALS -> programId == null && termId == null && courseId == null && cohortId == null;
         };
         if (!valid) {
             throw new InvalidConfigurationValuesException("El tema no corresponde al ámbito " + scope);
@@ -42,7 +42,7 @@ public record ConfigurationTopic(ConfigurationScope scope, Long programId, Long 
             case YEAR_TERMS, ANNUAL_UPFRONT -> scope + ":P" + programId + ":T" + termId;
             case COHORT_ENTRY -> scope + ":C" + cohortId;
             case COURSE_TERMS -> scope + ":C" + courseId;
-            case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS -> scope.name();
+            case LATE_PAYMENT, ISSUANCE, ALLOCATION, IRREGULAR_TERMS, COLLECTION_REMINDERS, BILLING_DASHBOARD_GOALS -> scope.name();
         };
     }
 }
