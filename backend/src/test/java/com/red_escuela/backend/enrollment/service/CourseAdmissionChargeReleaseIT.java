@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.PriceRevision;
+import com.red_escuela.backend.billing.support.PriceFixtures;
 import com.red_escuela.backend.billing.exception.DuplicateChargeException;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
@@ -88,14 +88,7 @@ class CourseAdmissionChargeReleaseIT extends AbstractIntegrationTest {
             course.setCapacity(20);
             course.setIsActive(StatusType.ACTIVE);
             entityManager.persist(course);
-            PriceRevision revision = new PriceRevision();
-            revision.setCourse(course);
-            revision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-            revision.setDescription("Precio de prueba");
-            revision.setMonthlyAmount(ars(BigDecimal.valueOf(15000)));
-            revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-            revision.setCreatedBy(persistPerson("DIR" + System.nanoTime()));
-            entityManager.persist(revision);
+            PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(BigDecimal.valueOf(15000)), LocalDate.now().minusDays(1), persistPerson("DIR" + System.nanoTime()).getId());
             return course;
         });
     }

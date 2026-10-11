@@ -228,6 +228,14 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<includes>
+						<include>**/Test*.java</include>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+						<include>**/*TestCase.java</include>
+						<include>**/*IT.java</include>
+						<include>**/*Properties.java</include>
+					</includes>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
 					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
@@ -302,7 +310,14 @@
 								<param>com.red_escuela.backend.billing.planning.policy.*</param>
 								<param>com.red_escuela.backend.billing.planning.domain.*</param>
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher</param>
+								<param>com.red_escuela.backend.billing.payment.domain.*</param>
+								<param>com.red_escuela.backend.billing.payment.policy.*</param>
+								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -319,7 +334,14 @@
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.*</param>
 								<param>com.red_escuela.backend.billing.planning.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
 								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifierTest</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcherTest</param>
+								<param>com.red_escuela.backend.billing.payment.domain.*</param>
+								<param>com.red_escuela.backend.billing.payment.policy.*</param>
+								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>

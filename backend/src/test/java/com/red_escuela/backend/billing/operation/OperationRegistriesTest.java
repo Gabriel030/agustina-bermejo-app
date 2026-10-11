@@ -26,6 +26,26 @@ class OperationRegistriesTest {
     }
 
     @Test
+    void aHandlerThatMustRunFirstIsAcceptedOnlyAtTheHeadOfTheChain() {
+        PreProcessingHandler<ProbeContext> leading = new PreProcessingHandler<>() {
+            @Override
+            public boolean mustRunFirst() {
+                return true;
+            }
+
+            @Override
+            public PreProcessingResult handleBeforeProcessing(BillingOperationType type, ProbeContext context, PriorAuthorization prior) {
+                return PreProcessingResult.proceed();
+            }
+        };
+        PreProcessingHandler<ProbeContext> other = (type, context, prior) -> PreProcessingResult.proceed();
+
+        assertThat(new OperationHandlerRegistry(List.of(new OperationPreHandlers(TYPE, List.of(leading, other)))).listPreHandlersFor(TYPE)).containsExactly(leading, other);
+        assertThatThrownBy(() -> new OperationHandlerRegistry(List.of(new OperationPreHandlers(TYPE, List.of(other, leading)))))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining(TYPE.name());
+    }
+
+    @Test
     void anOperationWithoutDeclaredHandlersHasNone() {
         OperationHandlerRegistry registry = new OperationHandlerRegistry(List.of());
 

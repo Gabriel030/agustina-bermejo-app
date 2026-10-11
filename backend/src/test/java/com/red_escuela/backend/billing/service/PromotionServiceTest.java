@@ -19,7 +19,6 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -36,7 +35,6 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -129,9 +127,6 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private TermRepository termRepository;
 
     @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
-    @Autowired
     private ProgramRepository programRepository;
 
     @Autowired
@@ -182,14 +177,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         course.setIsActive(StatusType.ACTIVE);
         course = courseRepository.save(course);
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(ars(precio));
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(precio), LocalDate.now().minusYears(1), director.getId());
 
         return course;
     }
@@ -260,23 +248,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(director);
         cohort = programCohortRepository.save(cohort);
 
-        PriceRevision recurringFee = new PriceRevision();
-        recurringFee.setProgram(program);
-        recurringFee.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-        recurringFee.setDescription("Cuota mensual de prueba");
-        recurringFee.setMonthlyAmount(ars(10000));
-        recurringFee.setEffectiveFrom(LocalDate.now().minusYears(1));
-        recurringFee.setCreatedBy(director);
-        priceRevisionRepository.save(recurringFee);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(10000), LocalDate.now().minusYears(1), director.getId());
 
-        PriceRevision enrollmentFee = new PriceRevision();
-        enrollmentFee.setProgram(program);
-        enrollmentFee.setFeeType(FeeType.ENROLLMENT_FEE);
-        enrollmentFee.setDescription("Matrícula de prueba");
-        enrollmentFee.setMonthlyAmount(ars(20000));
-        enrollmentFee.setEffectiveFrom(LocalDate.now().minusYears(1));
-        enrollmentFee.setCreatedBy(director);
-        priceRevisionRepository.save(enrollmentFee);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(20000), LocalDate.now().minusYears(1), director.getId());
 
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
