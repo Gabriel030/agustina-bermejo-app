@@ -115,7 +115,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
         inTransaction(() -> {
             StudentCurrentAccount account = service.lockStudentCurrentAccount(accountId);
             service.recordInvoiceIssuedDebit(account, invoiceRepository.findById(invoiceId).orElseThrow(), DAY);
-            service.recordCreditNoteIssuedCredit(account, nextExternalId(), ars("0.00"), ars("40000.00"), DAY, "Nota de crédito");
+            service.recordCreditNoteIssuedCredit(account, newCreditNoteId(accountId, invoiceId, "0.00", "40000.00"), ars("0.00"), ars("40000.00"), DAY, "Nota de crédito");
             return null;
         });
         assertThat(loadAccount(accountId).getUnallocatedCreditAmount()).isEqualTo(ars("40000.00"));
@@ -130,7 +130,7 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
             service.recordInvoiceIssuedDebit(account, invoice, DAY);
             invoice.applyCreditNote(new InvoiceCreditNoteApplication(CreditNoteApplicationKind.CANCELLATION, ars("80000.00"), ars("0.00"),
                     List.of(new InvoiceLineCredit(1, ars("80000.00")))), DAY, ACTOR);
-            service.recordCreditNoteIssuedCredit(account, nextExternalId(), ars("80000.00"), ars("0.00"), DAY, "Cancelación");
+            service.recordCreditNoteIssuedCredit(account, newCreditNoteId(accountId, cancelledId, "80000.00", "0.00"), ars("80000.00"), ars("0.00"), DAY, "Cancelación");
             return null;
         });
 
@@ -301,7 +301,15 @@ class StudentCurrentAccountServiceIT extends AbstractCurrentAccountIT {
                         inTransaction(() -> service.recordInvoiceIssuedDebit(service.lockStudentCurrentAccount(accountId), invoiceRepository.findById(invoiceId).orElseThrow(), today));
                     }
                     case 1 -> paymentEntries.add(inTransaction(() -> service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), id, ars(amount), today, "Pago").getId()));
-                    case 2 -> inTransaction(() -> service.recordCreditNoteIssuedCredit(service.lockStudentCurrentAccount(accountId), id, ars("0.00"), ars(amount), today, "Nota de crédito"));
+                    case 2 -> {
+                        Long creditedInvoiceId = newIssuedInvoiceId(accountId, Currency.ARS, "100.00");
+                        long creditNoteId = newCreditNoteId(accountId, creditedInvoiceId, "0.00", amount);
+                        inTransaction(() -> {
+                            StudentCurrentAccount locked = service.lockStudentCurrentAccount(accountId);
+                            service.recordInvoiceIssuedDebit(locked, invoiceRepository.findById(creditedInvoiceId).orElseThrow(), today);
+                            return service.recordCreditNoteIssuedCredit(locked, creditNoteId, ars("0.00"), ars(amount), today, "Nota de crédito");
+                        });
+                    }
                     case 3 -> {
                         if (!paymentEntries.isEmpty()) {
                             Long target = paymentEntries.get(random.nextInt(paymentEntries.size()));

@@ -143,4 +143,86 @@ class BillingOperationPipelineTest {
         assertThat(calls).containsExactly("validate", "process", "events");
         assertThat(publishedEvents).hasSize(1);
     }
+
+    private PreProcessingHandler<ProbeContext> hookedHandler(String name, PreProcessingResult result) {
+        return new PreProcessingHandler<>() {
+            @Override
+            public PreProcessingResult handleBeforeProcessing(BillingOperationType type, ProbeContext context, PriorAuthorization prior) {
+                calls.add(name + ":before");
+                return result;
+            }
+
+            @Override
+            public void handleAfterProcessing(BillingOperationType type, ProbeContext context, Object processed) {
+                calls.add(name + ":after:" + processed);
+            }
+
+            @Override
+            public void handleAwaitingAuthorization(BillingOperationType type, ProbeContext context, Long authorizationRequestId) {
+                calls.add(name + ":awaiting:" + authorizationRequestId);
+            }
+        };
+    }
+
+    @Test
+    @Tag("D-136")
+    void everyHandlerIsToldTheResultAfterProcessingAndBeforeTheEventsArePublished() {
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.proceed()), hookedHandler("second", PreProcessingResult.proceed()));
+
+        pipeline.runOperation(operation, CONTEXT);
+
+        assertThat(calls).containsExactly("validate", "first:before", "second:before", "process", "first:after:processed-a", "second:after:processed-a", "events", "publish");
+    }
+
+    @Test
+    @Tag("D-136")
+    void everyHandlerIsToldTheAuthorizationRequestWhenTheOperationWaitsForApproval() {
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.proceed()),
+                hookedHandler("second", PreProcessingResult.requireAuthorization(AuthorizationRole.DIRECTOR, "needs approval")));
+
+        BillingOperationOutcome<String> outcome = pipeline.runOperation(operation, CONTEXT);
+
+        assertThat(outcome).isEqualTo(new BillingOperationOutcome.AwaitingAuthorization<String>(77L));
+        assertThat(calls).containsExactly("validate", "first:before", "second:before", "openRequest", "first:awaiting:77", "second:awaiting:77");
+    }
+
+    @Test
+    @Tag("D-136")
+    void handlersThatNeverRanAreNotToldTheOperationIsAwaitingAuthorization() {
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.requireAuthorization(AuthorizationRole.DIRECTOR, "needs approval")),
+                hookedHandler("second", PreProcessingResult.proceed()));
+
+        pipeline.runOperation(operation, CONTEXT);
+
+        assertThat(calls).containsExactly("validate", "first:before", "openRequest", "first:awaiting:77");
+    }
+
+    @Test
+    @Tag("D-136")
+    void aReplayedOutcomeIsReturnedWithoutProcessingPublishingOrTouchingLaterHandlers() {
+        BillingOperationOutcome<String> stored = new BillingOperationOutcome.Processed<>("stored");
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.replayStoredOutcome(stored)), hookedHandler("second", PreProcessingResult.proceed()));
+
+        BillingOperationOutcome<String> outcome = pipeline.runOperation(operation, CONTEXT);
+
+        assertThat(outcome).isSameAs(stored);
+        assertThat(calls).containsExactly("validate", "first:before");
+        assertThat(publishedEvents).isEmpty();
+    }
+
+    @Test
+    @Tag("D-136")
+    void aReplayedAwaitingAuthorizationOutcomeIsReturnedAsTheOriginalOne() {
+        BillingOperationOutcome<String> stored = new BillingOperationOutcome.AwaitingAuthorization<>(55L);
+        BillingOperationPipeline pipeline = pipelineWith(hookedHandler("first", PreProcessingResult.replayStoredOutcome(stored)));
+
+        assertThat(pipeline.runOperation(operation, CONTEXT)).isEqualTo(new BillingOperationOutcome.AwaitingAuthorization<String>(55L));
+        assertThat(calls).doesNotContain("openRequest", "process");
+    }
+
+    @Test
+    @Tag("D-136")
+    void aReplayedOutcomeMustCarryAnOutcome() {
+        assertThatThrownBy(() -> PreProcessingResult.replayStoredOutcome(null)).isInstanceOf(NullPointerException.class);
+    }
 }
