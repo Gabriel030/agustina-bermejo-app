@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Objects;
 
@@ -11,6 +12,7 @@ public record ChargeKey(String value) {
     private static final String PROGRAM_ADMISSION_PREFIX = "PA:";
     private static final String COURSE_ADMISSION_PREFIX = "CA:";
     private static final String AD_HOC_PREFIX = "AH:";
+    private static final String LATE_FEE_PREFIX = "LF:";
 
     public ChargeKey {
         Objects.requireNonNull(value, "value");
@@ -47,6 +49,10 @@ public record ChargeKey(String value) {
             throw new IllegalArgumentException("An ad hoc charge needs an idempotency key");
         }
         return new ChargeKey(AD_HOC_PREFIX + required(studentId, "studentId") + ":" + required(feeType, "feeType") + ":" + idempotencyKey.strip());
+    }
+
+    public static ChargeKey forLateFee(Long originInvoiceId, LocalDate periodStart) {
+        return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":D" + required(periodStart, "periodStart"));
     }
 
     private static <T> T required(T value, String name) {

@@ -8,8 +8,10 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import com.red_escuela.backend.architecture.fixture.billing.configuration.entity.FixtureEntity;
 import jakarta.persistence.Entity;
 import org.junit.jupiter.api.Tag;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ArchitectureTest {
@@ -58,6 +60,38 @@ class ArchitectureTest {
     @Tag("D-051")
     void invoicesAreIssuedOnlyByInvoiceIssuingService() {
         ArchitectureRules.invoicesAreIssuedOnlyByInvoiceIssuingService().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void invoicesAreCancelledOnlyThroughTheCancellationOperation() {
+        ArchitectureRules.invoicesAreCancelledOnlyThroughTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
+        ArchitectureRules.cancellationApplicationsAreBuiltOnlyByTheCancellationOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void cancellationApplicationRuleDetectsABackdoorInTheNoteServicePackage() {
+        assertThatThrownBy(() -> ArchitectureRules.cancellationApplicationsAreBuiltOnlyByTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("NoteServiceBackdoorFixture");
+    }
+
+    @Test
+    @Tag("B2-33")
+    @Tag("D-127")
+    void cancellationRuleDetectsABackdoor() {
+        assertThatThrownBy(() -> ArchitectureRules.invoicesAreCancelledOnlyThroughTheCancellationOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("CancellationBackdoorFixture");
     }
 
     @Test
@@ -239,11 +273,11 @@ class ArchitectureTest {
     @Tag("D-051")
     void academicStructureRuleDetectsABillingDependency() {
         JavaClasses academicStructureToBilling = new ClassFileImporter()
-                .importClasses(com.red_escuela.backend.academicstructure.service.ProgramService.class);
+                .importClasses(com.red_escuela.backend.academicstructure.controller.ProgramController.class);
 
         assertThatThrownBy(() -> ArchitectureRules.academicStructureDoesNotDependOnBilling().check(academicStructureToBilling))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("ProgramService");
+                .hasMessageContaining("ProgramController");
     }
 
     @Test
@@ -286,6 +320,41 @@ class ArchitectureTest {
                 .hasMessageContaining("InvoiceDraftCreatingFixture");
     }
 
+    private static final String PAYMENT_CLASS = "com.red_escuela.backend.billing.payment.domain.Payment";
+    private static final String PAYMENT_STATUS_MACHINE_CLASS = "com.red_escuela.backend.billing.payment.domain.PaymentStatusStateMachine";
+    private static final String PAYMENT_V2_REPOSITORY_CLASS = "com.red_escuela.backend.billing.payment.repository.PaymentRepository";
+    private static final String FIXTURE_PAYMENT_GATEWAY = ArchitectureRules.ROOT + ".architecture.fixture.billing.payment";
+    private static final java.util.Set<String> FROZEN_MERCADO_PAGO_CLASSES = java.util.Set.of(
+            "com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher",
+            "com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceService");
+
+    @Test
+    @Tag("D-082")
+    void paymentStatusChangesOnlyThroughItsTransitionTable() {
+        ArchitectureRules.statusFieldIsWrittenOnlyThroughItsTransitionTable(PAYMENT_CLASS, "status", "changeStatus", PAYMENT_STATUS_MACHINE_CLASS).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void paymentsArePersistedOnlyByOperations() {
+        ArchitectureRules.economicStateIsPersistedOnlyByOperations(PAYMENT_V2_REPOSITORY_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void gatewaySpecificCodeStaysInItsAdapter() {
+        ArchitectureRules.gatewaySpecificCodeStaysInItsAdapter("com.mercadopago..", "com.red_escuela.backend.billing.payment.gateway.mercadopago..", FROZEN_MERCADO_PAGO_CLASSES).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-082")
+    void gatewayAdapterRuleDetectsAProviderSdkUsedOutsideItsAdapterAndAllowsItInside() {
+        assertThatThrownBy(() -> ArchitectureRules.gatewaySpecificCodeStaysInItsAdapter("com.mercadopago..", FIXTURE_PAYMENT_GATEWAY + ".mercadopago..", java.util.Set.of()).check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("StrayMercadoPagoUserFixture")
+                .hasMessageNotContaining("InsideAdapterFixture");
+    }
+
     @Test
     @Tag("D-051")
     void statusChangesOnlyThroughTransitionTables() {
@@ -307,7 +376,7 @@ class ArchitectureTest {
     @Test
     @Tag("D-051")
     void billingV2DoesNotDependOnLegacyBilling() {
-        ArchitectureRules.billingV2DoesNotDependOnLegacyBilling("..billing.invoice..", "..billing.account..").check(MAIN_CLASSES);
+        ArchitectureRules.billingV2DoesNotDependOnLegacyBilling("..billing.invoice..", "..billing.account..", "..billing.note..").check(MAIN_CLASSES);
     }
 
     @Test
@@ -356,6 +425,12 @@ class ArchitectureTest {
     @Tag("D-144")
     void economicStateIsPersistedOnlyByOperations() {
         ArchitectureRules.economicStateIsPersistedOnlyByOperations(INVOICE_REPOSITORY_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-244")
+    void debitNotesAreIssuedOnlyThroughOperations() {
+        ArchitectureRules.debitNotesAreIssuedOnlyThroughOperations(com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
     }
 
     @Test
@@ -428,5 +503,15 @@ class ArchitectureTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("MisplacedBillingClassFixture")
                 .hasMessageContaining("NewLegacyEntityFixture");
+    }
+
+    @Test
+    @Tag("D-288")
+    void collectionsStepsHaveNoCronOfTheirOwn() {
+        noMethods()
+                .that().areDeclaredInClassesThat().resideInAPackage("..billing.collections..")
+                .should().beAnnotatedWith(Scheduled.class)
+                .because("the nightly pipeline calls each collections step from the existing sweeps (V2-11a orchestrates them)")
+                .check(MAIN_CLASSES);
     }
 }

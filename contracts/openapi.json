@@ -800,6 +800,36 @@
         "required" : [ "accessToken", "expiresIn", "refreshToken" ],
         "type" : "object"
       },
+      "AuthorizationRequestDecisionRequest" : {
+        "properties" : {
+          "decisionReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "decisionReason" ],
+        "type" : "object"
+      },
+      "AuthorizationRequestResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "operationType" : {
+            "type" : "string"
+          },
+          "resumeOutcome" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "operationType", "resumeOutcome", "status" ],
+        "type" : "object"
+      },
       "BankTransferReceiptResponse" : {
         "properties" : {
           "filePath" : {
@@ -899,6 +929,21 @@
         "required" : [ "effectiveFrom", "endDay", "id", "startDay" ],
         "type" : "object"
       },
+      "CancelInvoiceRequest" : {
+        "properties" : {
+          "justification" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "reason" : {
+            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "justification", "reason" ],
+        "type" : "object"
+      },
       "CargarAsistenciaRequest" : {
         "properties" : {
           "classDate" : {
@@ -924,6 +969,24 @@
           }
         },
         "required" : [ "classDate", "entries", "observations", "topic" ],
+        "type" : "object"
+      },
+      "ChangeCollectionReminderSettingsRequest" : {
+        "properties" : {
+          "changeReason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "values" : {
+            "$ref" : "#/components/schemas/CollectionReminderSettingsValues"
+          }
+        },
+        "required" : [ "changeReason", "effectiveFrom", "values" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
@@ -1005,6 +1068,114 @@
         "required" : [ "capacity", "id", "name", "status" ],
         "type" : "object"
       },
+      "CollectionReminderSettingsValues" : {
+        "properties" : {
+          "contactListDaysOverdue" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "contactListOverdueInstallments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dailyEmailCap" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "daysAfterDueReminder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "daysAfterIssueReminder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "daysBeforeDueReminder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "daysBeforeSuspensionReminder" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "emailWindowEnd" : {
+            "type" : "string"
+          },
+          "emailWindowStart" : {
+            "type" : "string"
+          },
+          "emissionReminderEnabled" : {
+            "type" : "boolean"
+          },
+          "maxReminderEmailsPerMonth" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minDaysBetweenEmails" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "postWithdrawalSummaryMonths" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "suspensionNoticeEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "daysAfterDueReminder", "daysAfterIssueReminder", "daysBeforeDueReminder", "daysBeforeSuspensionReminder", "emailWindowEnd", "emailWindowStart", "emissionReminderEnabled", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "type" : "object"
+      },
+      "CollectionReminderSettingsVersionResponse" : {
+        "properties" : {
+          "changeReason" : {
+            "type" : "string"
+          },
+          "decidedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "decisionReason" : {
+            "type" : "string"
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "values" : {
+            "$ref" : "#/components/schemas/CollectionReminderSettingsValues"
+          }
+        },
+        "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "status", "values" ],
+        "type" : "object"
+      },
+      "ConfigurationChangeValidationResponse" : {
+        "properties" : {
+          "violations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyViolation"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "violations" ],
+        "type" : "object"
+      },
       "ConfirmProspectRequest" : {
         "properties" : {
           "city" : {
@@ -1061,6 +1232,12 @@
         },
         "required" : [ "corequisiteProgramSubjectId", "corequisiteSubjectCode", "corequisiteSubjectName", "id" ],
         "type" : "object"
+      },
+      "CountValue" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/MetricValue"
+        } ],
+        "format" : "int64"
       },
       "CourseEnrollmentApplicationResponse" : {
         "properties" : {
@@ -1524,19 +1701,24 @@
       },
       "CreateCreditNoteRequest" : {
         "properties" : {
-          "amount" : {
-            "$ref" : "#/components/schemas/Money"
-          },
-          "reason" : {
-            "minLength" : 1,
+          "justification" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
             "type" : "string"
           },
-          "reasonType" : {
-            "enum" : [ "ADMINISTRATIVE_CORRECTION", "OTHER", "EARLY_WITHDRAWAL_UPFRONT_UNUSED", "RETROACTIVE_SCHOLARSHIP" ],
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CreditNoteLineAmountRequest"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "reason" : {
+            "enum" : [ "BILLING_ERROR", "CANCELLATION", "LATE_FEE_ANNULMENT", "WITHDRAWAL" ],
             "type" : "string"
           }
         },
-        "required" : [ "amount", "reason", "reasonType" ],
+        "required" : [ "justification", "lines", "reason" ],
         "type" : "object"
       },
       "CreateCycleSectionRequest" : {
@@ -1725,6 +1907,9 @@
       },
       "CreateLatePaymentSettingsRequest" : {
         "properties" : {
+          "dailyLateFeeRatePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
           "effectiveFrom" : {
             "format" : "date",
             "type" : "string"
@@ -1732,9 +1917,6 @@
           "gracePeriodDays" : {
             "format" : "int32",
             "type" : "integer"
-          },
-          "surchargePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
           },
           "suspensionAfterDays" : {
             "format" : "int32",
@@ -1745,7 +1927,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "effectiveFrom", "gracePeriodDays", "surchargePercent", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
+        "required" : [ "dailyLateFeeRatePercent", "effectiveFrom", "gracePeriodDays", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
         "type" : "object"
       },
       "CreateOwnSectionEnrollmentRequest" : {
@@ -2177,40 +2359,89 @@
         "required" : [ "description", "endDate", "enrollmentEnd", "enrollmentStart", "startDate", "type", "year" ],
         "type" : "object"
       },
-      "CreditNoteResponse" : {
+      "CreditNoteLineAmountRequest" : {
         "properties" : {
           "amount" : {
             "$ref" : "#/components/schemas/Money"
           },
-          "createdAt" : {
-            "format" : "date-time",
+          "lineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "lineNumber" ],
+        "type" : "object"
+      },
+      "CreditNoteLineResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "freePart" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "invoiceLineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "offsetPart" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "amount", "freePart", "invoiceLineNumber", "offsetPart" ],
+        "type" : "object"
+      },
+      "CreditNoteResponse" : {
+        "properties" : {
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "creditNoteNumber" : {
             "type" : "string"
           },
-          "createdByName" : {
+          "factDate" : {
+            "format" : "date",
             "type" : "string"
+          },
+          "freeCreditAmount" : {
+            "$ref" : "#/components/schemas/Money"
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "invoiceNumber" : {
+            "type" : "string"
+          },
+          "issueDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "justification" : {
+            "type" : "string"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CreditNoteLineResponse"
+            },
+            "type" : "array"
+          },
+          "offsetAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
           "reason" : {
             "type" : "string"
           },
-          "reasonType" : {
-            "type" : "string"
-          },
-          "remainingAmount" : {
+          "totalAmount" : {
             "$ref" : "#/components/schemas/Money"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "studentId" : {
-            "format" : "int64",
-            "type" : "integer"
           }
         },
-        "required" : [ "amount", "createdAt", "createdByName", "id", "reason", "reasonType", "remainingAmount", "status", "studentId" ],
+        "required" : [ "authorizationRequestId", "creditNoteNumber", "factDate", "freeCreditAmount", "id", "invoiceId", "invoiceNumber", "issueDate", "justification", "lines", "offsetAmount", "reason", "totalAmount" ],
         "type" : "object"
       },
       "CurrencyTotals" : {
@@ -2268,6 +2499,11 @@
         },
         "required" : [ "capacity", "id", "instructors", "name", "pendingApproval", "slots", "status", "subjectName" ],
         "type" : "object"
+      },
+      "DaysValue" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/MetricValue"
+        } ]
       },
       "DebtorSummaryResponse" : {
         "properties" : {
@@ -2729,6 +2965,33 @@
         "required" : [ "email" ],
         "type" : "object"
       },
+      "GoalResponse" : {
+        "properties" : {
+          "comparator" : {
+            "enum" : [ "AT_LEAST", "AT_MOST" ],
+            "type" : "string"
+          },
+          "evaluation" : {
+            "items" : {
+              "enum" : [ "MET", "BELOW", "NO_DATA" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "indicator" : {
+            "enum" : [ "ON_TIME_PAYMENT", "OVERDUE_RATIO", "RECEIPT_REVIEW_TIME", "REMINDER_PAYMENT_WITHIN_72H" ],
+            "type" : "string"
+          },
+          "thresholdDays" : {
+            "type" : "number"
+          },
+          "thresholdPercent" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "comparator", "evaluation", "indicator", "thresholdDays", "thresholdPercent" ],
+        "type" : "object"
+      },
       "GoogleLoginRequest" : {
         "properties" : {
           "idToken" : {
@@ -3072,6 +3335,9 @@
       },
       "LatePaymentSettingsResponse" : {
         "properties" : {
+          "dailyLateFeeRatePercent" : {
+            "$ref" : "#/components/schemas/Percentage"
+          },
           "effectiveFrom" : {
             "format" : "date",
             "type" : "string"
@@ -3084,9 +3350,6 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "surchargePercent" : {
-            "$ref" : "#/components/schemas/Percentage"
-          },
           "suspensionAfterDays" : {
             "format" : "int32",
             "type" : "integer"
@@ -3096,7 +3359,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "effectiveFrom", "gracePeriodDays", "id", "surchargePercent", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
+        "required" : [ "dailyLateFeeRatePercent", "effectiveFrom", "gracePeriodDays", "id", "suspensionAfterDays", "suspensionAfterInvoiceCount" ],
         "type" : "object"
       },
       "LoginRequest" : {
@@ -3356,6 +3619,7 @@
         "required" : [ "creditedAmount", "currency", "description", "discardedReason", "discountsTotalAmount", "documentStatus", "documentType", "dueDate", "examBoardRegistrationId", "id", "invoiceNumber", "invoiceType", "issueDate", "issuingReason", "lines", "linesTotalAmount", "outstandingAmount", "paidAmount", "paymentDate", "paymentMethod", "paymentStatus", "payments", "productRef", "receipts", "studentDni", "studentId", "subjectId", "totalAmount" ],
         "type" : "object"
       },
+      "MetricValue" : { },
       "ModifySectionRequest" : {
         "properties" : {
           "slots" : {
@@ -3386,22 +3650,55 @@
         "type" : "object"
       },
       "Money" : {
-        "properties" : {
-          "amount" : {
-            "type" : "number"
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/MetricValue"
+        }, {
+          "properties" : {
+            "amount" : {
+              "type" : "number"
+            },
+            "currency" : {
+              "enum" : [ "ARS", "USD" ],
+              "type" : "string"
+            },
+            "negative" : {
+              "type" : "boolean"
+            },
+            "zero" : {
+              "type" : "boolean"
+            }
           },
-          "currency" : {
-            "enum" : [ "ARS", "USD" ],
+          "type" : "object"
+        } ]
+      },
+      "MonthlyMetricResponse" : {
+        "properties" : {
+          "available" : {
+            "type" : "boolean"
+          },
+          "goal" : {
+            "$ref" : "#/components/schemas/GoalResponse"
+          },
+          "months" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "panel" : {
             "type" : "string"
           },
-          "negative" : {
+          "partial" : {
             "type" : "boolean"
           },
-          "zero" : {
-            "type" : "boolean"
+          "series" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SeriesResponse"
+            },
+            "type" : "array"
           }
         },
-        "required" : [ "amount", "currency" ],
+        "required" : [ "available", "goal", "months", "panel", "partial", "series" ],
         "type" : "object"
       },
       "MpPreferenceResponse" : {
@@ -3680,13 +3977,16 @@
         "type" : "object"
       },
       "Percentage" : {
-        "properties" : {
-          "fraction" : {
-            "type" : "number"
-          }
-        },
-        "required" : [ "fraction" ],
-        "type" : "object"
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/MetricValue"
+        }, {
+          "properties" : {
+            "fraction" : {
+              "type" : "number"
+            }
+          },
+          "type" : "object"
+        } ]
       },
       "PersonResponse" : {
         "properties" : {
@@ -4406,7 +4706,7 @@
             "type" : "string"
           },
           "method" : {
-            "enum" : [ "CASH", "TRANSFER", "CARD", "MERCADO_PAGO", "CREDIT_BALANCE" ],
+            "enum" : [ "CASH", "TRANSFER", "CARD", "MERCADO_PAGO" ],
             "type" : "string"
           },
           "notes" : {
@@ -4920,6 +5220,33 @@
           }
         },
         "required" : [ "paymentPlanOptionId", "scopeMonths" ],
+        "type" : "object"
+      },
+      "SeriesResponse" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "unit" : {
+            "enum" : [ "COUNT", "MONEY", "PERCENT", "DAYS" ],
+            "type" : "string"
+          },
+          "values" : {
+            "items" : {
+              "oneOf" : [ {
+                "$ref" : "#/components/schemas/CountValue"
+              }, {
+                "$ref" : "#/components/schemas/DaysValue"
+              }, {
+                "$ref" : "#/components/schemas/Money"
+              }, {
+                "$ref" : "#/components/schemas/Percentage"
+              } ]
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "key", "unit", "values" ],
         "type" : "object"
       },
       "SessionResponse" : {
@@ -7579,6 +7906,210 @@
         "tags" : [ "auth-controller" ]
       }
     },
+    "/authorization-requests/{id}/approve" : {
+      "post" : {
+        "operationId" : "AuthorizationRequest_approve",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AuthorizationRequestDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "authorization-request-controller" ]
+      }
+    },
+    "/authorization-requests/{id}/reject" : {
+      "post" : {
+        "operationId" : "AuthorizationRequest_reject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AuthorizationRequestDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "authorization-request-controller" ]
+      }
+    },
+    "/authorization-requests/{id}/withdraw" : {
+      "post" : {
+        "operationId" : "AuthorizationRequest_withdraw",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthorizationRequestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "authorization-request-controller" ]
+      }
+    },
     "/bank-transfer-receipts" : {
       "get" : {
         "operationId" : "BankTransferReceipt_listPending",
@@ -7832,6 +8363,188 @@
         "tags" : [ "bank-transfer-receipt-controller" ]
       }
     },
+    "/billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS/changes" : {
+      "post" : {
+        "operationId" : "CollectionReminderSettings_proposeOrPublishChange",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeCollectionReminderSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-settings-controller" ]
+      }
+    },
+    "/billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS/validation" : {
+      "post" : {
+        "operationId" : "CollectionReminderSettings_validateChange",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeCollectionReminderSettingsRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConfigurationChangeValidationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-settings-controller" ]
+      }
+    },
+    "/billing-configuration/COLLECTION_REMINDERS/topics/COLLECTION_REMINDERS/versions" : {
+      "get" : {
+        "operationId" : "CollectionReminderSettings_listVersions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CollectionReminderSettingsVersionResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-settings-controller" ]
+      }
+    },
     "/billing-periods" : {
       "post" : {
         "operationId" : "BillingPeriod_create",
@@ -8002,6 +8715,120 @@
           }
         },
         "tags" : [ "billing-configuration-alert-controller" ]
+      }
+    },
+    "/billing/metrics/{panel}" : {
+      "get" : {
+        "operationId" : "BillingMetrics_getPanel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "panel",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "currency",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "programId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "courseId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "invoiceType",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MonthlyMetricResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "billing-metrics-controller" ]
       }
     },
     "/classrooms" : {
@@ -13482,6 +14309,150 @@
         "tags" : [ "invoice-controller" ]
       }
     },
+    "/invoices/{invoiceId}/cancellations" : {
+      "post" : {
+        "operationId" : "InvoiceCancellation_cancelOrRequestInvoiceCancellation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "invoiceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelInvoiceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "invoice-cancellation-controller" ]
+      }
+    },
+    "/invoices/{invoiceId}/credit-notes" : {
+      "post" : {
+        "operationId" : "CreditNote_issueOrRequestCreditNote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "invoiceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateCreditNoteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "credit-note-controller" ]
+      }
+    },
     "/late-payment-settings" : {
       "post" : {
         "operationId" : "LatePaymentSettings_create",
@@ -14337,7 +15308,7 @@
     },
     "/me/credit-notes" : {
       "get" : {
-        "operationId" : "MeInvoice_myCreditNotes",
+        "operationId" : "CreditNote_listMyCreditNotes",
         "responses" : {
           "200" : {
             "content" : {
@@ -14388,7 +15359,7 @@
             "description" : "Bad Gateway"
           }
         },
-        "tags" : [ "me-invoice-controller" ]
+        "tags" : [ "credit-note-controller" ]
       }
     },
     "/me/documents" : {
@@ -23088,141 +24059,6 @@
         "tags" : [ "course-enrollment-controller" ]
       }
     },
-    "/students/{id}/credit-notes" : {
-      "get" : {
-        "operationId" : "Student_creditNotes",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "items" : {
-                    "$ref" : "#/components/schemas/CreditNoteResponse"
-                  },
-                  "type" : "array"
-                }
-              }
-            },
-            "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "description" : "Too Many Requests"
-          },
-          "502" : {
-            "description" : "Bad Gateway"
-          }
-        },
-        "tags" : [ "student-controller" ]
-      },
-      "post" : {
-        "operationId" : "Student_createCreditNote",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateCreditNoteRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CreditNoteResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "description" : "Too Many Requests"
-          },
-          "502" : {
-            "description" : "Bad Gateway"
-          }
-        },
-        "tags" : [ "student-controller" ]
-      }
-    },
     "/students/{id}/documents" : {
       "get" : {
         "operationId" : "Student_getDocuments",
@@ -23541,6 +24377,71 @@
           }
         },
         "tags" : [ "student-controller" ]
+      }
+    },
+    "/students/{studentId}/credit-notes" : {
+      "get" : {
+        "operationId" : "CreditNote_listCreditNotesOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CreditNoteResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "credit-note-controller" ]
       }
     },
     "/students/{studentId}/current-account/allocations" : {

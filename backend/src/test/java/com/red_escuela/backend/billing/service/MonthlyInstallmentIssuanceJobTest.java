@@ -10,8 +10,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.CreditNote;
-import com.red_escuela.backend.billing.entity.CreditNoteReasonType;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -19,10 +17,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
@@ -72,8 +68,6 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-    @Autowired
-    private CreditNoteRepository creditNoteRepository;
 
     @Autowired
     private RequestGraduationUseCase requestGraduationUseCase;
@@ -183,14 +177,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             entityManager.persist(cohort);
 
             for (FeeType feeType : List.of(FeeType.MONTHLY_INSTALLMENT, FeeType.ENROLLMENT_FEE)) {
-                PriceRevision price = new PriceRevision();
-                price.setProgram(program);
-                price.setFeeType(feeType);
-                price.setDescription("Precio");
-                price.setMonthlyAmount(ars(feeType == FeeType.MONTHLY_INSTALLMENT ? 10000 : 5000));
-                price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-                price.setCreatedBy(director);
-                entityManager.persist(price);
+                com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, feeType, "Precio", ars(feeType == FeeType.MONTHLY_INSTALLMENT ? 10000 : 5000), LocalDate.of(2020, 1, 1), director.getId());
             }
 
             ProgramEnrollment enrollment = new ProgramEnrollment();
@@ -484,14 +471,7 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
             course.setIsActive(StatusType.ACTIVE);
             course.setDurationMonths(2);
             entityManager.persist(course);
-            PriceRevision price = new PriceRevision();
-            price.setCourse(course);
-            price.setFeeType(FeeType.MONTHLY_INSTALLMENT);
-            price.setDescription("Precio");
-            price.setMonthlyAmount(ars(7000));
-            price.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-            price.setCreatedBy(director);
-            entityManager.persist(price);
+            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio", ars(7000), LocalDate.of(2020, 1, 1), director.getId());
             CourseEnrollment courseEnrollment = new CourseEnrollment();
             courseEnrollment.setStudent(student);
             courseEnrollment.setCourse(course);
@@ -524,28 +504,4 @@ class MonthlyInstallmentIssuanceJobTest extends AbstractIntegrationTest {
         assertThat(invoices).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2026, 2), MARCH);
     }
 
-    @Test
-    @Tag("D-046")
-    void graduatingWithAnAnnualPaymentCoveringFuturePeriodsGeneratesACreditNote() {
-        Fixture fixture = monthlyFixture("94100131");
-        YearMonth now = YearMonth.now();
-        transactionTemplate.executeWithoutResult(tx -> {
-            for (YearMonth period : List.of(now, now.plusMonths(1), now.plusMonths(2))) {
-                Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(entityManager.getReference(ProgramEnrollment.class, fixture.enrollment().getId())).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(period).dueOn(period.atDay(10)).withBaseAmount(ars(10000)).build();
-                BillingTestFixtures.payInvoiceInFull(invoice);
-            }
-        });
-        addSectionEnrollment(fixture, EnrollmentStatus.APPROVED);
-
-        var request = requestGraduationUseCase.request(fixture.enrollment().getId());
-        SecurityContextHolder.getContext().setAuthentication(
-                new TestingAuthenticationToken(fixture.director().getId().toString(), null));
-        verifyGraduationRequestDebtUseCase.verify(request.getId());
-        approveGraduationRequestUseCase.approve(request.getId());
-
-        List<CreditNote> creditNotes = creditNoteRepository.findByStudentIdOrderByCreatedAtDesc(fixture.student().getId());
-        assertThat(creditNotes).hasSize(1);
-        assertThat(creditNotes.get(0).getReasonType()).isEqualTo(CreditNoteReasonType.EARLY_WITHDRAWAL_UPFRONT_UNUSED);
-        assertThat(creditNotes.get(0).getAmount()).isEqualTo(ars(20000));
-    }
 }

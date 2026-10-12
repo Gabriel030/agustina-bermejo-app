@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public record CreateLatePaymentSettingsRequest(
         @NotNull Integer gracePeriodDays,
-        @NotNull Percentage surchargePercent,
+        @NotNull Percentage dailyLateFeeRatePercent,
         @NotNull Integer suspensionAfterDays,
         @NotNull Integer suspensionAfterInvoiceCount,
         LocalDate effectiveFrom) {

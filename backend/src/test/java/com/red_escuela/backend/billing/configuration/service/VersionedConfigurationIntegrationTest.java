@@ -389,16 +389,30 @@ class VersionedConfigurationIntegrationTest extends AbstractIntegrationTest {
     @Tag("D-095")
     void latePaymentSettingsCreatedThroughTheLegacyUseCaseAreReadByEffectiveDate() {
         authenticateAs(director);
-        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.05")), 30, 2, TODAY));
-        createLatePayment.create(new CreateLatePaymentSettingsRequest(4, Percentage.ofFraction(new BigDecimal("0.07")), 40, 3, DECEMBER_FIRST));
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.002")), 30, 2, TODAY));
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(4, Percentage.ofFraction(new BigDecimal("0.003")), 40, 3, DECEMBER_FIRST));
 
         var today = reader.findLatePaymentSettingsEffectiveOn(TODAY).orElseThrow();
         var december = reader.findLatePaymentSettingsEffectiveOn(DECEMBER_FIRST).orElseThrow();
         assertThat(today.gracePeriodDays()).isEqualTo(3);
-        assertThat(today.monthlyLateFeeRate()).isEqualTo(Percentage.ofFraction(new BigDecimal("0.05")));
-        assertThat(today.lateFeeCapMonths()).isEqualTo(12);
+        assertThat(today.dailyLateFeeRate()).isEqualTo(Percentage.ofFraction(new BigDecimal("0.002")));
+        assertThat(today.lateFeeChargingEnabled()).isFalse();
         assertThat(december.gracePeriodDays()).isEqualTo(4);
         assertThat(december.suspensionAfterInvoiceCount()).isEqualTo(3);
+    }
+
+    @Test
+    @Tag("D-210")
+    @Tag("D-294")
+    void legacyLatePaymentEndpointKeepsTheChargingFlagOfThePreviousVersion() {
+        authenticateAs(director);
+        com.red_escuela.backend.billing.service.LatePaymentTestFixtures.persistLatePayment(versionRepository, director, 5, new BigDecimal("0.05"), 30, 1, 10, true, true, TODAY);
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.003")), 30, 2, TODAY.plusDays(5)));
+        assertThat(reader.findLatePaymentSettingsEffectiveOn(TODAY.plusDays(5)).orElseThrow().lateFeeChargingEnabled()).isTrue();
+
+        com.red_escuela.backend.billing.service.LatePaymentTestFixtures.persistLatePayment(versionRepository, director, 5, new BigDecimal("0.05"), 30, 1, 10, true, false, TODAY.plusDays(10));
+        createLatePayment.create(new CreateLatePaymentSettingsRequest(3, Percentage.ofFraction(new BigDecimal("0.004")), 30, 2, TODAY.plusDays(15)));
+        assertThat(reader.findLatePaymentSettingsEffectiveOn(TODAY.plusDays(15)).orElseThrow().lateFeeChargingEnabled()).isFalse();
     }
 
     @Test

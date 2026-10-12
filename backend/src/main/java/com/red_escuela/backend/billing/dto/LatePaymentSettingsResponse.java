@@ -7,14 +7,14 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import java.time.LocalDate;
 
 public record LatePaymentSettingsResponse(
-        Long id, Integer gracePeriodDays, Percentage surchargePercent,
+        Long id, Integer gracePeriodDays, Percentage dailyLateFeeRatePercent,
         Integer suspensionAfterDays, Integer suspensionAfterInvoiceCount,
         LocalDate effectiveFrom) {
 
     public static LatePaymentSettingsResponse from(ConfigurationVersion version) {
         LatePaymentTerms terms = (LatePaymentTerms) version.values();
         return new LatePaymentSettingsResponse(
-                version.getId(), terms.gracePeriodDays(), terms.monthlyLateFeeRate(),
+                version.getId(), terms.gracePeriodDays(), terms.dailyLateFeeRate(),
                 terms.suspensionAfterDays(), terms.suspensionAfterInvoiceCount(),
                 version.getEffectiveFrom());
     }

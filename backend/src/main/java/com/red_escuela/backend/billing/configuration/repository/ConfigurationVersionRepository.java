@@ -21,6 +21,21 @@ public interface ConfigurationVersionRepository extends JpaRepository<Configurat
             """, nativeQuery = true)
     Optional<ConfigurationVersion> findEffectiveVersion(@Param("scope") String scope, @Param("topicKey") String topicKey, @Param("date") LocalDate date);
 
+    @Query(value = """
+            select * from configuration_version
+            where scope = :scope and topic_key = :topicKey and status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+            order by effective_from asc, decided_at asc, id asc
+            limit 1
+            """, nativeQuery = true)
+    Optional<ConfigurationVersion> findFirstVersion(@Param("scope") String scope, @Param("topicKey") String topicKey);
+
+    @Query(value = """
+            select * from configuration_version
+            where scope = :scope and topic_key = :topicKey and status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and effective_from <= :date
+            order by effective_from asc, decided_at asc, id asc
+            """, nativeQuery = true)
+    List<ConfigurationVersion> findVersionsEffectiveUpTo(@Param("scope") String scope, @Param("topicKey") String topicKey, @Param("date") LocalDate date);
+
     boolean existsByScopeAndTopicKeyAndStatus(ConfigurationScope scope, String topicKey, ConfigurationVersionStatus status);
 
     Optional<ConfigurationVersion> findFirstByScopeAndTopicKeyAndStatus(ConfigurationScope scope, String topicKey, ConfigurationVersionStatus status);

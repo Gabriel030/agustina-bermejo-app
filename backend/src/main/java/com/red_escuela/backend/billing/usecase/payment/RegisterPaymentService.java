@@ -17,11 +17,8 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.CreditApplication;
-import com.red_escuela.backend.billing.entity.CreditNote;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -31,7 +28,6 @@ import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.billing.service.CreditNoteService;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
@@ -52,7 +48,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @UseCase
 public class RegisterPaymentService implements RegisterPaymentUseCase {
@@ -64,7 +62,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository;
     private final InvoiceViewLoader invoiceViewLoader;
     private final CurrentStudentService currentStudentService;
-    private final CreditNoteService creditNoteService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
@@ -72,7 +69,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
                                    StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                    com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository,
                                    InvoiceViewLoader invoiceViewLoader,
-                                   CurrentStudentService currentStudentService, CreditNoteService creditNoteService,
+                                   CurrentStudentService currentStudentService,
                                    ApplicationEventPublisher eventPublisher,
                                    Clock clock) {
         this.paymentRepository = paymentRepository;
@@ -82,7 +79,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         this.allocationRepository = allocationRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.currentStudentService = currentStudentService;
-        this.creditNoteService = creditNoteService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -155,13 +151,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
 
         LocalDate today = LocalDate.now(clock);
         StatusChangeActor actor = new StatusChangeActor(registeredBy.getId(), null);
-        if (request.method() == PaymentMethod.CREDIT_BALANCE) {
-            settleSelectedInvoicesWithLegacyCredit(payment, ordered, lockedInvoices, today, actor);
-            lockedInvoices.forEach(this::publishAdmissionPaidIfApplicable);
-            lockedInvoices.forEach(this::restoreStandingIfNoOverdueDebtLeft);
-        } else {
-            creditAccountsAndAllocate(payment, ordered, lockedInvoices, today, actor);
-        }
+        creditAccountsAndAllocate(payment, ordered, lockedInvoices, today, actor);
         log.info("Pago registrado: pago={}, metodo={}, monto={}, facturas={}",
                 payment.getId(), request.method(), total.amount(), ordered.stream().map(PaymentAllocationRequest::invoiceId).toList());
 
@@ -202,8 +192,9 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         payment = paymentRepository.save(payment);
 
         accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
-        AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditToOldestInvoices(account, today,
-                new StatusChangeActor(registeredBy.getId(), null));
+        Invoice reportedInvoice = invoiceRepository.findById(reportedInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(reportedInvoiceId));
+        AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today,
+                new StatusChangeActor(registeredBy.getId(), null), programAdmissionInvoiceIdsAmong(List.of(reportedInvoice)));
         linkSettledInvoicesToPayment(payment, allocated, received);
         Money unallocatedAfterwards = account.getUnallocatedCreditAmount().value();
         Money leftAsCredit = unallocatedAfterwards.isGreaterThan(received) ? received : unallocatedAfterwards;
@@ -225,32 +216,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
                 .forEach(accountService::lockStudentCurrentAccount);
     }
 
-    private void settleSelectedInvoicesWithLegacyCredit(Payment payment, List<PaymentAllocationRequest> ordered, List<Invoice> lockedInvoices,
-                                                       LocalDate today, StatusChangeActor actor) {
-        Map<Long, Money> appliedByAccount = new TreeMap<>();
-        Map<Long, List<CreditApplication>> creditApplicationsByAccount = new TreeMap<>();
-        for (int i = 0; i < ordered.size(); i++) {
-            Invoice invoice = lockedInvoices.get(i);
-            Money amountApplied = ordered.get(i).amountApplied();
-            invoice.allocateFullInvoicePayment(NonNegativeMoney.of(amountApplied), today, actor);
-            PaymentAllocation allocation = new PaymentAllocation();
-            allocation.setPayment(payment);
-            allocation.setInvoice(invoice);
-            allocation.setAmountApplied(amountApplied);
-            payment.getAllocations().add(allocation);
-            allocationRepository.save(com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice,
-                    NonNegativeMoney.of(amountApplied), today, today, actor));
-            appliedByAccount.merge(invoice.getStudentCurrentAccountId(), amountApplied, Money::plus);
-            creditApplicationsByAccount.computeIfAbsent(invoice.getStudentCurrentAccountId(), accountId -> new ArrayList<>())
-                    .addAll(creditNoteService.consumeForInvoice(resolveOwnerStudentId(invoice), amountApplied, invoice, payment));
-        }
-        for (Map.Entry<Long, Money> applied : appliedByAccount.entrySet()) {
-            StudentCurrentAccount account = accountService.lockStudentCurrentAccount(applied.getKey());
-            bookConsumedLegacyCreditNotes(account, creditApplicationsByAccount.get(applied.getKey()), today);
-            accountService.consumeUnallocatedCreditForAllocation(account, NonNegativeMoney.of(applied.getValue()));
-        }
-    }
-
     private void creditAccountsAndAllocate(Payment payment, List<PaymentAllocationRequest> ordered, List<Invoice> lockedInvoices, LocalDate today,
                                            StatusChangeActor actor) {
         Map<Long, Money> receivedByAccount = new TreeMap<>();
@@ -260,8 +225,16 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         for (Map.Entry<Long, Money> received : receivedByAccount.entrySet()) {
             StudentCurrentAccount account = accountService.lockStudentCurrentAccount(received.getKey());
             accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received.getValue()), today, "Pago " + payment.getId());
-            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditToOldestInvoices(account, today, actor), received.getValue());
+            Set<Long> programAdmissionInvoiceIds = programAdmissionInvoiceIdsAmong(lockedInvoices.stream()
+                    .filter(invoice -> invoice.getStudentCurrentAccountId().equals(account.getId())).toList());
+            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, actor, programAdmissionInvoiceIds),
+                    received.getValue());
         }
+    }
+
+    private Set<Long> programAdmissionInvoiceIdsAmong(List<Invoice> payableInvoices) {
+        return payableInvoices.stream().filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission())
+                .map(Invoice::getId).collect(Collectors.toSet());
     }
 
     private void linkSettledInvoicesToPayment(Payment payment, AccountCreditAllocationResult result, Money contributedByThePayment) {
@@ -278,24 +251,8 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         }
     }
 
-    private void bookConsumedLegacyCreditNotes(StudentCurrentAccount account, List<CreditApplication> applications, LocalDate today) {
-        Map<Long, List<CreditApplication>> applicationsByCreditNote = new TreeMap<>();
-        applications.forEach(application -> applicationsByCreditNote
-                .computeIfAbsent(application.getCreditNote().getId(), creditNoteId -> new ArrayList<>()).add(application));
-        for (Map.Entry<Long, List<CreditApplication>> consumed : applicationsByCreditNote.entrySet()) {
-            if (accountService.isCreditNoteBookedInLedger(consumed.getKey())) {
-                continue;
-            }
-            CreditNote creditNote = consumed.getValue().get(0).getCreditNote();
-            Money consumedNow = consumed.getValue().stream().map(CreditApplication::getAmountApplied).reduce(Money::plus).orElseThrow();
-            NonNegativeMoney availableCredit = NonNegativeMoney.of(creditNote.getRemainingAmount().plus(consumedNow));
-            accountService.recordCreditNoteIssuedCredit(account, creditNote.getId(), NonNegativeMoney.zero(account.getCurrency()), availableCredit,
-                    today, "Nota de crédito " + creditNote.getId());
-        }
-    }
-
     private void publishAdmissionPaidIfApplicable(Invoice invoice) {
-        if ((invoice.getIssuingReason() == InvoiceIssuingReason.PROGRAM_ADMISSION || invoice.getIssuingReason() == InvoiceIssuingReason.COURSE_ADMISSION) && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+        if (invoice.getIssuingReason() != null && invoice.getIssuingReason().isAdmission() && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
             eventPublisher.publishEvent(AdmissionInvoicePaidEvent.paidFor(invoice.getId()));
         }
     }

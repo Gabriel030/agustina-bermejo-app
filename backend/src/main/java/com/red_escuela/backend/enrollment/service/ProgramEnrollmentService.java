@@ -47,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
@@ -65,7 +64,6 @@ public class ProgramEnrollmentService {
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
-    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
@@ -78,7 +76,7 @@ public class ProgramEnrollmentService {
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService,
+            ScholarshipService scholarshipService,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -91,7 +89,6 @@ public class ProgramEnrollmentService {
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
-        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
         this.clock = clock;
     }
 
@@ -159,9 +156,9 @@ public class ProgramEnrollmentService {
                     "La matriculación " + id + " no está ENROLLED/PAUSED, no se puede dar de baja");
         }
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setCompletionDate(LocalDateTime.now(clock));
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
-        enrollmentWithdrawalCreditService.handleProgramEnrollmentWithdrawal(enrollment);
     }
 
     public ProgramEnrollment get(Long id) {

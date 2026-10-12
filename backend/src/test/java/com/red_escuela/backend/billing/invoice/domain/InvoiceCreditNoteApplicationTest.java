@@ -126,11 +126,25 @@ class InvoiceCreditNoteApplicationTest {
 
         assertThat(invoice.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
         assertThat(invoice.getLines().get(0).getFreeCreditedAmount()).isEqualTo(ars("80000.00"));
-        assertThat(invoice.getLines().get(0).calculateFreeCreditableAmount()).isEqualTo(ars("0.00"));
         assertThat(invoice.getLines().get(0).getCreditedAmount()).isEqualTo(ars("0.00"));
-        assertThat(invoice.getLines().get(0).calculateCreditableAmount()).isEqualTo(ars("80000.00"));
+        assertThat(invoice.getLines().get(0).calculateCreditableAmount()).isEqualTo(ars("0.00"));
         assertThat(invoice.getAmounts().creditedAmount()).isEqualTo(ars("0.00"));
         assertThat(invoice.getStatusChanges().get(invoice.getStatusChanges().size() - 1).getEvent()).isEqualTo("CREDIT_NOTE_APPLIED_TO_PAID_INVOICE");
+    }
+
+    @Test
+    void freeCreditAfterAnOffsetReductionIsLimitedToWhatTheLineStillHasUncredited() {
+        Invoice invoice = pending();
+        invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "40000.00", "0.00"), DUE_DATE, ACTOR);
+        invoice.allocateFullInvoicePayment(ars("40000.00"), DUE_DATE, ACTOR);
+
+        assertThatThrownBy(() -> invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "0.00", "80000.00"), DUE_DATE, ACTOR))
+                .isInstanceOf(CreditNoteExceedsCreditableAmountException.class);
+        assertThatThrownBy(() -> invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "0.00", "40000.01"), DUE_DATE, ACTOR))
+                .isInstanceOf(CreditNoteExceedsCreditableAmountException.class);
+        invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "0.00", "40000.00"), DUE_DATE, ACTOR);
+
+        assertThat(invoice.getLines().get(0).calculateCreditableAmount()).isEqualTo(ars("0.00"));
     }
 
     @Test
@@ -230,7 +244,7 @@ class InvoiceCreditNoteApplicationTest {
     }
 
     @Test
-    void freeCreditOnAPaidInvoiceDoesNotBlockALaterCancellationOfTheFullDebt() {
+    void cancellingAfterAFreeCreditAndAReversalAbsorbsTheFreeCreditOfTheLine() {
         Invoice invoice = pending();
         invoice.allocateFullInvoicePayment(ars("80000.00"), DUE_DATE, ACTOR);
         invoice.applyCreditNote(creditNote(DEBT_REDUCTION, "0.00", "10000.00"), DUE_DATE, ACTOR);
@@ -238,10 +252,8 @@ class InvoiceCreditNoteApplicationTest {
 
         invoice.applyCreditNote(creditNote(CANCELLATION, "80000.00", "0.00"), DUE_DATE, ACTOR);
 
-        assertThat(invoice.getPaymentStatus()).isEqualTo(InvoicePaymentStatus.CANCELLED);
-        assertThat(invoice.getAmounts().creditedAmount()).isEqualTo(ars("80000.00"));
         assertThat(invoice.getLines().get(0).getCreditedAmount()).isEqualTo(ars("80000.00"));
-        assertThat(invoice.getLines().get(0).getFreeCreditedAmount()).isEqualTo(ars("10000.00"));
+        assertThat(invoice.getLines().get(0).getFreeCreditedAmount()).isEqualTo(ars("0.00"));
     }
 
     @Test

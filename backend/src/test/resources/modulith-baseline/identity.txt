@@ -1,4 +1,4 @@
-COUNT billing 6
+COUNT billing 2
 COUNT enrollment 4
 Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.auth.RegisterService -> com.red_escuela.backend.academicstructure.repository.InstitutionRepository. Allowed targets: shared.
 Module 'identity' depends on module 'academicstructure' via com.red_escuela.backend.identity.usecase.auth.RegisterWithGoogleService -> com.red_escuela.backend.academicstructure.repository.InstitutionRepository. Allowed targets: shared.

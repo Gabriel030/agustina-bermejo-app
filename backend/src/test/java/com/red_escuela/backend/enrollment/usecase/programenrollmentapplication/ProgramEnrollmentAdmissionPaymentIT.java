@@ -7,7 +7,6 @@ import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
@@ -82,6 +81,8 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private ApplicationEventPublisher eventPublisher;
     @Autowired private AdmissionEnrollmentStalledNotifier stalledNotifier;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
+    @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
     @MockitoSpyBean private ProgramEnrollmentService programEnrollmentService;
 
     private BillingInvariantChecker invariants;
@@ -150,14 +151,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             cohort.setCursadaStart(LocalDate.now());
             cohort.setCreatedBy(director);
             entityManager.persist(cohort);
-            PriceRevision revision = new PriceRevision();
-            revision.setProgram(program);
-            revision.setFeeType(FeeType.ENROLLMENT_FEE);
-            revision.setDescription("Matrícula de prueba");
-            revision.setMonthlyAmount(ars(BigDecimal.valueOf(50000)));
-            revision.setEffectiveFrom(LocalDate.now().minusDays(1));
-            revision.setCreatedBy(director);
-            entityManager.persist(revision);
+            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(BigDecimal.valueOf(50000)), LocalDate.now().minusDays(1), director.getId());
             entityManager.flush();
             return requestUseCase.request(new RequestProgramEnrollmentApplicationCommand(student, program.getId(), cohort.getId()));
         });
@@ -402,6 +396,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-230")
+    @Tag("D-329")
     void aDebtAppearingAfterTheApprovalDoesNotBlockTheEnrollment() {
         ProgramEnrollmentApplication application = requestApplication();
         Invoice invoice = approve(application);
@@ -412,6 +407,68 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
 
         await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
         assertThatInvoice(invoiceRepository.findById(otherDebt.getId()).orElseThrow()).isOverdue();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    private Invoice persistOverdueDebt(ProgramEnrollmentApplication application, long amount) {
+        return BillingTestFixtures.invoice().forStudent(application.getStudent()).ofType(FeeType.ADMINISTRATIVE_FEE)
+                .dueOn(LocalDate.now().minusDays(5)).withBaseAmount(ars(amount)).overdue().build();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aPaymentForAnotherInvoiceStillSettlesTheOldestOverdueDebtWhileTheAdmissionIsOpen() {
+        ProgramEnrollmentApplication application = requestApplication();
+        Invoice admission = approve(application);
+        Invoice olderDebt = persistOverdueDebt(application, 10000);
+        Invoice newerInvoice = BillingTestFixtures.invoice().forStudent(application.getStudent()).ofType(FeeType.ADMINISTRATIVE_FEE)
+                .dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(10000)).build();
+
+        payInFull(newerInvoice);
+
+        assertThatInvoice(invoiceRepository.findById(olderDebt.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(newerInvoice.getId()).orElseThrow()).isPending();
+        assertThatInvoice(invoiceRepository.findById(admission.getId()).orElseThrow()).isPending();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aReceiptForTheProgramAdmissionInvoiceSettlesItEvenWithAnOlderDebtAndIsNotAppliedToDebt() {
+        ProgramEnrollmentApplication application = requestApplication();
+        Invoice admission = approve(application);
+        Invoice olderDebt = persistOverdueDebt(application, 10000);
+        Person reviewer = persistPreceptor();
+        var receipt = uploadPaymentReceiptUseCase.upload(admission.getId(), application.getStudent().getId(),
+                new org.springframework.mock.web.MockMultipartFile("comprobante", "comprobante.pdf", "application/pdf", "contenido de prueba".getBytes()));
+
+        var approved = approvePaymentReceiptUseCase.approve(receipt.getId(), reviewer);
+
+        assertThat(approved.getStatus()).isEqualTo(com.red_escuela.backend.billing.entity.BankTransferReceiptStatus.APPROVED);
+        assertThatInvoice(invoiceRepository.findById(admission.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(olderDebt.getId()).orElseThrow()).isOverdue();
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-329")
+    void aGatewayPaymentForTheProgramAdmissionInvoiceSettlesItEvenWithAnOlderDebt() {
+        ProgramEnrollmentApplication application = requestApplication();
+        Invoice admission = approve(application);
+        Invoice olderDebt = persistOverdueDebt(application, 10000);
+        Person payer = persistPreceptor();
+
+        transactionTemplate.executeWithoutResult(status -> {
+            Invoice managed = invoiceRepository.findById(admission.getId()).orElseThrow();
+            registerPaymentUseCase.creditPaymentToAccountAndSettleInvoiceIfCovered(new RegisterPaymentRequest(
+                    List.of(new PaymentAllocationRequest(managed.getId(), managed.getAmounts().outstandingAmount().value())),
+                    PaymentMethod.TRANSFER, false, null, null, null, null), payer);
+        });
+
+        assertThatInvoice(invoiceRepository.findById(admission.getId()).orElseThrow()).isPaid();
+        assertThatInvoice(invoiceRepository.findById(olderDebt.getId()).orElseThrow()).isOverdue();
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(isEnrolled(application)).isTrue());
         invariants.assertAllBillingInvariantsHold();
     }
 }

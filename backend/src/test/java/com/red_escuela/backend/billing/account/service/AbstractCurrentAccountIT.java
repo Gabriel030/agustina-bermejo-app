@@ -47,7 +47,7 @@ import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.SNA
 @SpringBootTest
 @ActiveProfiles("test")
 @Tag("D-144")
-abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
+public abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
 
     @Autowired
     protected StudentCurrentAccountService service;
@@ -76,6 +76,19 @@ abstract class AbstractCurrentAccountIT extends AbstractIntegrationTest {
 
     protected static long nextExternalId() {
         return EXTERNAL_IDS.incrementAndGet();
+    }
+
+    protected long newCreditNoteId(Long accountId, Long invoiceId, String offset, String free) {
+        java.math.BigDecimal offsetAmount = new java.math.BigDecimal(offset);
+        java.math.BigDecimal freeAmount = new java.math.BigDecimal(free);
+        String number = "NC-" + String.format("%08d", nextExternalId() % 100_000_000L);
+        return jdbc.queryForObject(
+                "insert into credit_note (credit_note_number, student_current_account_id, currency, invoice_id, invoice_number, reason, justification, "
+                        + "offset_amount, offset_amount_currency, free_credit_amount, free_credit_amount_currency, total_amount, total_amount_currency, "
+                        + "issue_date, fact_date, recipient_snapshot, issued_by_process, recorded_at) "
+                        + "select ?, ?, i.currency, i.id, i.invoice_number, 'BILLING_ERROR', 'Nota de prueba', ?, i.currency, ?, i.currency, ?, i.currency, "
+                        + "current_date, current_date, cast('{}' as jsonb), 'TEST', now() from invoice i where i.id = ? returning id",
+                Long.class, number, accountId, offsetAmount, freeAmount, offsetAmount.add(freeAmount), invoiceId);
     }
 
     protected <T> T inTransaction(Supplier<T> work) {

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
+		<version>3.5.16</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.red-escuela</groupId>
@@ -29,12 +29,19 @@
 	<properties>
 		<java.version>21</java.version>
 		<test.forkCount>2</test.forkCount>
+		<test.excludedGroups>docs</test.excludedGroups>
 		<argLine></argLine>
 		<shedlock.version>6.10.0</shedlock.version>
 		<jqwik.version>1.9.3</jqwik.version>
 		<pitest.version>1.20.4</pitest.version>
 		<pitest-junit5.version>1.2.3</pitest-junit5.version>
 		<spring-modulith.version>1.4.13</spring-modulith.version>
+		<dependency-check.version>12.1.3</dependency-check.version>
+		<tomcat.version>10.1.60</tomcat.version>
+		<postgresql.version>42.7.14</postgresql.version>
+		<log4j2.version>2.25.5</log4j2.version>
+		<httpclient5.version>5.6.4</httpclient5.version>
+		<httpcore5.version>5.4.4</httpcore5.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -183,6 +190,20 @@
 			<groupId>com.mercadopago</groupId>
 			<artifactId>sdk-java</artifactId>
 			<version>2.1.28</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.maven</groupId>
+					<artifactId>maven-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.velocity.tools</groupId>
+					<artifactId>velocity-tools-generic</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -232,6 +253,15 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<includes>
+						<include>**/Test*.java</include>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+						<include>**/*TestCase.java</include>
+						<include>**/*IT.java</include>
+						<include>**/*Properties.java</include>
+					</includes>
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
 					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>
@@ -299,11 +329,23 @@
 								<param>com.red_escuela.backend.billing.invoice.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.policy.*</param>
+								<param>com.red_escuela.backend.billing.note.domain.*</param>
+								<param>com.red_escuela.backend.billing.note.policy.*</param>
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.InvoiceDiscountCalculator</param>
 								<param>com.red_escuela.backend.billing.planning.policy.*</param>
 								<param>com.red_escuela.backend.billing.planning.domain.*</param>
 								<param>com.red_escuela.backend.billing.planning.service.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
+								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcher</param>
+								<param>com.red_escuela.backend.billing.payment.domain.*</param>
+								<param>com.red_escuela.backend.billing.payment.policy.*</param>
+								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -315,9 +357,21 @@
 								<param>com.red_escuela.backend.billing.invoice.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.domain.*</param>
 								<param>com.red_escuela.backend.billing.account.policy.*</param>
+								<param>com.red_escuela.backend.billing.note.domain.*</param>
+								<param>com.red_escuela.backend.billing.note.policy.*</param>
 								<param>com.red_escuela.backend.billing.invoice.policy.issuing.*</param>
 								<param>com.red_escuela.backend.billing.invoice.operation.*</param>
 								<param>com.red_escuela.backend.billing.planning.*</param>
+								<param>com.red_escuela.backend.billing.pricing.domain.*</param>
+								<param>com.red_escuela.backend.billing.pricing.policy.*</param>
+								<param>com.red_escuela.backend.billing.collections.policy.*</param>
+								<param>com.red_escuela.backend.billing.reporting.domain.*</param>
+								<param>com.red_escuela.backend.billing.collections.domain.*</param>
+								<param>com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifierTest</param>
+								<param>com.red_escuela.backend.billing.infrastructure.SdkMercadoPagoPaymentFetcherTest</param>
+								<param>com.red_escuela.backend.billing.payment.domain.*</param>
+								<param>com.red_escuela.backend.billing.payment.policy.*</param>
+								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>
@@ -348,6 +402,31 @@
 								</goals>
 							</execution>
 						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>dependency-check</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.owasp</groupId>
+						<artifactId>dependency-check-maven</artifactId>
+						<version>${dependency-check.version}</version>
+						<configuration>
+							<failBuildOnCVSS>7</failBuildOnCVSS>
+							<suppressionFiles>
+								<suppressionFile>dependency-check-suppressions.xml</suppressionFile>
+							</suppressionFiles>
+							<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+							<formats>
+								<format>HTML</format>
+								<format>JSON</format>
+							</formats>
+							<nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+							<assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>

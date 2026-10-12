@@ -54,9 +54,9 @@ public final class BillingInvariantChecker {
         List<String> found = new ArrayList<>();
         found.addAll(violations("I-06 negative allocation", "select 'allocation ' || id from payment_allocation where amount < 0"));
         found.addAll(violations("I-06 negative payment", "select 'payment ' || id from payment where amount < 0"));
-        found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where amount < 0"));
-        found.addAll(violations("I-06 negative credit application", "select 'credit application ' || id from credit_application where amount_applied < 0"));
-        found.addAll(violations("I-06 negative price", "select 'price revision ' || id from price_revision where monthly_amount < 0"));
+        found.addAll(violations("I-06 negative legacy payment", "select 'legacy payment ' || id from legacy_payment where amount < 0"));
+        found.addAll(violations("I-06 negative credit note", "select 'credit note ' || id from credit_note where total_amount < 0"));
+        found.addAll(violations("I-06 negative price", "select 'price version ' || id from price_version where amount < 0"));
         return found;
     }
 
@@ -268,7 +268,7 @@ public final class BillingInvariantChecker {
         return violations("I-03 invoice allocated in part or beyond its total", """
                 select 'invoice ' || i.id
                 from invoice i
-                where @INVOICES@ and i.document_status = 'ISSUED' and %s not in (0, i.total)
+                where @INVOICES@ and i.document_status = 'ISSUED' and %s not in (0, i.total - i.credited_amount)
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
@@ -288,6 +288,77 @@ public final class BillingInvariantChecker {
                 where @INVOICES@ and i.document_status = 'ISSUED'
                   and i.total <> i.outstanding_amount + %s + i.credited_amount
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
+    }
+
+    private static final String ENROLLMENT_END_OF_ORIGIN = """
+            (select coalesce(pe.completion_date, ce.completion_date)::date
+             from invoice_line l
+             left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+             left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+             where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
+
+    private static String frozenOn(String dayExpression) {
+        return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
+    }
+
+    private static String termsOn(String dayExpression) {
+        return """
+            coalesce(
+             (select v.config_values from configuration_version v
+              where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
+                and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED') and v.effective_from <= %1$s
+              order by v.effective_from desc, v.decided_at desc, v.id desc limit 1),
+             (select v.config_values from configuration_version v
+              where v.scope = 'LATE_PAYMENT' and v.topic_key = (select t.topic_key from configuration_version t where t.id = c.late_payment_version_id)
+                and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+              order by v.effective_from asc, v.decided_at asc, v.id asc limit 1))
+            """.formatted(dayExpression);
+    }
+
+    public List<String> lateFeesRespectTheRedefinedI11() {
+        List<String> found = new ArrayList<>();
+        found.addAll(violations("I-11a a day of an origin is covered by two debit notes", """
+                select 'origin ' || a.origin_invoice_id || ' periods ' || a.period_start || ' and ' || b.period_start
+                from late_fee_charge a join late_fee_charge b on b.origin_invoice_id = a.origin_invoice_id and b.id > a.id
+                where greatest(a.debit_note_id, b.debit_note_id) > ? and daterange(a.period_start, a.period_end, '[]') && daterange(b.period_start, b.period_end, '[]')
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11b a period crosses months or starts on or before the due date of its origin", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
+                where c.debit_note_id > ? and (date_trunc('month', c.period_start) <> date_trunc('month', c.period_end) or c.period_start <= o.due_date)
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11c charged days differ from the days with charging enabled and not frozen", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c
+                where c.debit_note_id > %d and c.charged_days <> (
+                    select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
+                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
+                """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"))));
+        found.addAll(violations("I-11d late fee over a debit note or over a charge that does not accrue", """
+                select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
+                from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
+                where c.debit_note_id > ? and (o.document_type <> 'INVOICE' or o.invoice_type not in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE'))
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11e late fee charged for days frozen by the version in effect that day", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c
+                where c.debit_note_id > ? and c.charged_days > (
+                    select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
+                    where not %s)
+                """.formatted(frozenOn("g.day::date")), baselineInvoiceId));
+        found.addAll(violations("I-11f the amount differs from base times daily rate times charged days rounded half up", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c join invoice d on d.id = c.debit_note_id
+                where c.debit_note_id > ? and d.total <> round(c.base_amount * c.daily_rate * c.charged_days, 2)
+                """, baselineInvoiceId));
+        found.addAll(violations("I-11g late fee issued while the origin is under payment review", """
+                select 'debit note ' || c.debit_note_id
+                from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
+                where c.debit_note_id > ? and o.payment_status = 'PAYMENT_UNDER_REVIEW' and c.created_at >= (
+                    select max(sc.occurred_at) from invoice_status_change sc
+                    where sc.invoice_id = o.id and sc.status_kind = 'PAYMENT' and sc.to_status = 'PAYMENT_UNDER_REVIEW')
+                """, baselineInvoiceId));
+        return found;
     }
 
     public void assertAllBillingInvariantsHold() {
@@ -311,6 +382,7 @@ public final class BillingInvariantChecker {
         all.addAll(invoicesAreNeverPartiallyAllocated());
         all.addAll(paidInvoicesAreCoveredByAllocationsOrCreditNotes());
         all.addAll(noDebtDisappearsWithoutADocument());
+        all.addAll(lateFeesRespectTheRedefinedI11());
         if (!all.isEmpty()) {
             throw new AssertionError("Billing invariants violated:\n" + String.join("\n", all));
         }

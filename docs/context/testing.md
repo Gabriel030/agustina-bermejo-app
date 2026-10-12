@@ -30,7 +30,7 @@ prueba encuentra bugs que los demás no ven.
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | Propuesto |
 | OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
 | Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
-| OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Propuesto (parcial) |
+| OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); ZAP y matriz por rol: propuesto |
 
 ## Criterio: qué tests escribir para un cambio
 
@@ -68,6 +68,19 @@ Se decide en dos pasos: el **tipo de cambio** fija la base obligatoria, y cada *
 GitHub Actions tiene un tope de minutos, así que en el CI solo corre lo barato: `./mvnw clean verify` (JUnit, Testcontainers, Karate, ArchUnit, Modulith) y el front (lint, build, Vitest), cada uno solo si cambió su área. **PIT, Playwright, k6 y OWASP Dependency-Check corren solo en local**, mientras se programa, con el semáforo de CI.
 
 Cada corrida local se anota en [`docs/testing/local-test-log.md`](../testing/local-test-log.md): fecha, PR, commit, área, herramienta, comando y resultado. Antes de modificar un área, buscá ahí qué herramientas pesadas la cubren y volvé a correrlas. Si el PR toca código que PIT muta (los paquetes de `targetClasses` del perfil `mutation`: `shared/domain`, `billing/operation` y los `domain`/`policy` de billing) o el `pom.xml`, y no agrega su fila de PIT, el job `local-tests-log` del CI falla. Si cambiás `targetClasses`, actualizá también el patrón de ese job.
+
+### Qué clases ejecuta `./mvnw clean verify`
+
+El plugin surefire del `pom.xml` declara `<includes>` explícitos: `Test*`, `*Test`, `*Tests`, `*TestCase` (los defaults), más `*IT` (integración con Testcontainers) y `*Properties` (jqwik). Una clase de test con otro sufijo **no corre** ni en local ni en GitHub, sin avisar. `SurefireDiscoversEveryTestClassTest` escanea `src/test/java` y falla si una clase con `@Test`/`@Property` no matchea esos includes; al nombrar una clase nueva, usá uno de esos sufijos. PIT sigue excluyendo el grupo `integration`.
+
+### Auditoría de dependencias (solo local)
+
+Responde: ¿alguna librería empaquetada tiene un CVE publicado? Corre cuando un PR agrega o sube una dependencia, y antes de cada release.
+
+- **Backend (OWASP Dependency-Check):** desde `backend/`, con el semáforo de CI: `zsh -ic './mvnw -P dependency-check org.owasp:dependency-check-maven:check'`. Falla con CVSS >= 7. La clave del NVD vive solo en el entorno de quien corre (`NVD_API_KEY` exportada en `~/.zshrc`; el `zsh -ic` la hereda). Nunca se escribe en el repo, en logs ni en reportes, y no hay secret en GitHub. Reporte en `backend/target/dependency-check-report.html` y `.json`. La primera corrida baja el NVD (decenas de minutos); después usa `~/.m2/repository/org/owasp/dependency-check-data`.
+- **Supresiones:** `backend/dependency-check-suppressions.xml`. Cada `<suppress>` lleva `until="AAAA-MM-DDZ"` (máximo 90 días) y un `<notes>` con el motivo y el link al CVE. Ninguna sin `until`.
+- **Front:** `npm run audit:prod` (`npm audit --omit=dev --audit-level=high`, bloqueante al adoptarse) y `npm run audit:all` (incluye devDependencies, informativo). `audit:prod` corre en el job `frontend` del CI de GitHub (queda en verde desde Q11b); `audit:all` y Dependency-Check no están en el CI.
+- Anotar cada corrida en `docs/testing/local-test-log.md`.
 
 ### Paso 3: un test que nunca falló no prueba nada
 
