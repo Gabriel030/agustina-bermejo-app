@@ -1,13 +1,19 @@
 package com.red_escuela.backend.billing.configuration.policy;
 
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
-@PolicyRule(violationCodes = "INVALID_LATE_PAYMENT_SETTINGS", decisions = {"D-061", "D-147", "D-149", "D-239"})
+import java.math.BigDecimal;
+
+@PolicyRule(violationCodes = "INVALID_LATE_PAYMENT_SETTINGS", decisions = {"D-061", "D-147", "D-149", "D-239", "D-330"})
 public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentTerms> {
     private static final String CODE = "INVALID_LATE_PAYMENT_SETTINGS";
+    private static final int MAX_RATE_FRACTION_DECIMALS = 4;
+    private static final Percentage MIN_DAILY_RATE = Percentage.ofPoints(new BigDecimal("0.01"));
+    private static final Percentage MAX_DAILY_RATE = Percentage.ofPoints(new BigDecimal("0.50"));
 
     public String ruleName() {
         return "LateFeeSettingsCoherencePolicy";
@@ -28,6 +34,15 @@ public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentT
         }
         if (terms.lateFeeDebitNoteDueDays() < 0) {
             return deny("Los días de vencimiento de la nota de débito no pueden ser negativos.");
+        }
+        if (terms.dailyLateFeeRate().fraction().stripTrailingZeros().scale() > MAX_RATE_FRACTION_DECIMALS) {
+            return deny("El recargo diario admite hasta 2 decimales de porcentaje.");
+        }
+        if (terms.dailyLateFeeRate().exceeds(MAX_DAILY_RATE)) {
+            return deny("El recargo diario tiene que ser de 0,01 % a 0,50 %.");
+        }
+        if (terms.lateFeeChargingEnabled() && MIN_DAILY_RATE.exceeds(terms.dailyLateFeeRate())) {
+            return deny("El recargo diario tiene que ser de 0,01 % a 0,50 %.");
         }
         return PolicyVerdict.allow(ruleName());
     }

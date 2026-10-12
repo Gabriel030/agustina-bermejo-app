@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,20 +36,25 @@ public class LateFeeCandidateFinder {
     }
 
     @Transactional(readOnly = true)
-    public Optional<Integer> findNextIssuableMonthOrdinal(Long originInvoiceId, LocalDate businessDate, Set<Integer> excludedOrdinals) {
+    public Optional<LocalDate> findNextIssuablePeriodStart(Long originInvoiceId, LocalDate businessDate, Set<LocalDate> excludedPeriodStarts,
+                                                         LatePaymentTimeline timeline) {
         Invoice origin = invoiceAccess.findInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
-        Set<Integer> charged = chargeRepository.findMonthOrdinalsByOriginInvoiceId(originInvoiceId);
-        return contextLoader.loadMissingMonthContexts(origin, charged, businessDate).stream()
-                .filter(context -> !excludedOrdinals.contains(context.month().ordinal()))
+        List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
+        LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(businessDate).lastDay();
+        if (covered.stream().anyMatch(period -> !period.lastDay().isBefore(cutoffDay))) {
+            return Optional.empty();
+        }
+        return contextLoader.loadMissingPeriodContexts(origin, covered, businessDate, timeline).stream()
+                .filter(context -> !excludedPeriodStarts.contains(context.period().period().firstDay()))
                 .filter(context -> !context.lateFeeAmount().value().isZero())
                 .filter(context -> {
                     boolean allowed = issuingPolicies.evaluateRulesUntilFirstViolation(context).allowed();
                     if (!allowed) {
-                        log.debug("Recargo no corresponde: origen={}, mes={}", originInvoiceId, context.month().ordinal());
+                        log.debug("Recargo no corresponde: origen={}, periodo={}", originInvoiceId, context.period().period());
                     }
                     return allowed;
                 })
-                .map(context -> context.month().ordinal())
+                .map(context -> context.period().period().firstDay())
                 .findFirst();
     }
 }

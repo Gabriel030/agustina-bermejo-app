@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<test.forkCount>2</test.forkCount>
+		<test.excludedGroups>docs</test.excludedGroups>
 		<argLine></argLine>
 		<shedlock.version>6.10.0</shedlock.version>
 		<jqwik.version>1.9.3</jqwik.version>
@@ -255,6 +256,7 @@
 						<include>**/*IT.java</include>
 						<include>**/*Properties.java</include>
 					</includes>
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
 					<forkCount>${test.forkCount}</forkCount>
 					<reuseForks>true</reuseForks>
 					<argLine>@{argLine} -XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ReservedCodeCacheSize=512m -Xshare:auto</argLine>

@@ -25,7 +25,7 @@ public class CreateLatePaymentSettingsService implements CreateLatePaymentSettin
 
     @Override
     public ConfigurationVersion create(CreateLatePaymentSettingsRequest request) {
-        CreateLatePaymentSettingsCommand command = new CreateLatePaymentSettingsCommand(request.gracePeriodDays(), request.surchargePercent(),
+        CreateLatePaymentSettingsCommand command = new CreateLatePaymentSettingsCommand(request.gracePeriodDays(), request.dailyLateFeeRatePercent(),
                 request.suspensionAfterDays(), request.suspensionAfterInvoiceCount(), request.effectiveFrom(),
                 currentPersonService.resolveCurrentPerson().getId());
         return pipeline.runOperation(operation, command).resultOrThrowIfAwaitingAuthorization(AuthorizationPendingException::new);

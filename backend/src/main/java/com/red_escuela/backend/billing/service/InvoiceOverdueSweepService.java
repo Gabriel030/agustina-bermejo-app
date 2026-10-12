@@ -54,7 +54,7 @@ public class InvoiceOverdueSweepService {
         OverdueDetectionResult detection = detectionStep.detectOverdueInvoices(today);
         LateFeeAccrualResult accrual = accrualStep.accrueLateFees(today);
         long durationMs = System.currentTimeMillis() - start;
-        log.info("Barrido de mora finalizado: candidatas={}, procesadas={}, omitidas={}, fallidas={}, recargosCandidatas={}, recargosEmitidos={}, recargosFallidos={}, duracion={}ms",
+        log.info("Barrido de mora finalizado: candidatas={}, procesadas={}, omitidas={}, fallidas={}, recargosCandidatas={}, recargosCierre={}, recargosFallidos={}, duracion={}ms",
                 detection.candidates(), detection.marked(), detection.skipped(), detection.failed(), accrual.candidates(), accrual.debitNotesIssued(), accrual.failed(),
                 durationMs);
         int failed = detection.failed() + detection.skipped() + accrual.failed();

@@ -14,8 +14,8 @@ public final class LateFeeChargingEnabledPolicy implements Policy<LateFeeIssuing
 
     @Override
     public PolicyVerdict evaluateRule(LateFeeIssuingContext context) {
-        return context.factDateTerms().lateFeeChargingEnabled()
+        return context.period().chargedDays() > 0
                 ? PolicyVerdict.allow(ruleName())
-                : PolicyVerdict.deny(ruleName(), "LATE_FEE_CHARGING_DISABLED", "El cobro de recargos no estaba habilitado en la fecha del hecho");
+                : PolicyVerdict.deny(ruleName(), "LATE_FEE_CHARGING_DISABLED", "El cobro de recargos no estuvo habilitado en ningún día del período");
     }
 }
