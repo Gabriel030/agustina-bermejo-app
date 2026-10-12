@@ -207,4 +207,45 @@ class AllocationPoliciesTest {
 
         assertThat(verdict.allowed()).isTrue();
     }
+
+    private static AllocationPlanContext contextWithDeclaredAdmission(String credit, List<OpenInvoiceView> open, List<PlannedInvoiceAllocation> plan, Long admissionId) {
+        return new AllocationPlanContext(ACCOUNT, Currency.ARS, ars(credit), open, plan, java.util.Set.of(admissionId));
+    }
+
+    @Test
+    @Tag("D-329")
+    void orderPolicyAllowsTheDeclaredProgramAdmissionInvoiceAheadOfTheOlderDebt() {
+        OpenInvoiceView march = open(1, ACCOUNT, "2027-03-10", ars("80.00"));
+        OpenInvoiceView admission = open(2, ACCOUNT, "2027-04-20", ars("50.00"));
+
+        PolicyVerdict verdict = new OldestOverdueFirstAllocationOrderPolicy()
+                .evaluateRule(contextWithDeclaredAdmission("50.00", List.of(admission, march), List.of(plan(2, ars("50.00"))), 2L));
+
+        assertThat(verdict.allowed()).isTrue();
+    }
+
+    @Test
+    @Tag("D-329")
+    void orderPolicyDeniesAdvancingAnInvoiceThatWasNotDeclaredAsTheProgramAdmission() {
+        OpenInvoiceView march = open(1, ACCOUNT, "2027-03-10", ars("80.00"));
+        OpenInvoiceView admission = open(2, ACCOUNT, "2027-04-20", ars("50.00"));
+
+        PolicyVerdict verdict = new OldestOverdueFirstAllocationOrderPolicy()
+                .evaluateRule(contextWithDeclaredAdmission("50.00", List.of(admission, march), List.of(plan(2, ars("50.00"))), 99L));
+
+        assertThat(verdict.allowed()).isFalse();
+        assertThat(verdict.code()).isEqualTo("ALLOCATION_ORDER_VIOLATED");
+    }
+
+    @Test
+    @Tag("D-329")
+    void orderPolicyDeniesLeavingTheDeclaredProgramAdmissionBehindAnUndeclaredInvoice() {
+        OpenInvoiceView march = open(1, ACCOUNT, "2027-03-10", ars("80.00"));
+        OpenInvoiceView admission = open(2, ACCOUNT, "2027-04-20", ars("50.00"));
+
+        PolicyVerdict verdict = new OldestOverdueFirstAllocationOrderPolicy()
+                .evaluateRule(contextWithDeclaredAdmission("80.00", List.of(march, admission), List.of(plan(1, ars("80.00"))), 2L));
+
+        assertThat(verdict.allowed()).isFalse();
+    }
 }

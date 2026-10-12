@@ -46,9 +46,12 @@ class ProgramAdmissionInvoicePaidFirstAllocationStrategyTest {
     }
 
     @Test
-    void creditThatDoesNotCoverTheAdmissionInvoiceSettlesNothing() {
+    void creditThatDoesNotCoverTheAdmissionInvoiceSettlesNothingEvenIfItCoversTheOlderDebt() {
+        OpenInvoiceView smallerOlderDebt = invoice(1, InvoiceDocumentType.INVOICE, null, "2027-03-10", "2027-03-01", "30000.00");
         AccountCreditAllocationStrategy strategy = new ProgramAdmissionInvoicePaidFirstAllocationStrategy(oldestFirst, Set.of(2L));
 
-        assertThat(plannedIds(strategy, "49999.00")).isEmpty();
+        assertThat(strategy.planFullInvoiceAllocations(ars("40000.00"), List.of(smallerOlderDebt, admission))).isEmpty();
+        assertThat(oldestFirst.planFullInvoiceAllocations(ars("40000.00"), List.of(smallerOlderDebt, admission)))
+                .extracting(PlannedInvoiceAllocation::invoiceId).containsExactly(1L);
     }
 }

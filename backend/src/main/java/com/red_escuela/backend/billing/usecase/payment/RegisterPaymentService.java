@@ -192,9 +192,9 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         payment = paymentRepository.save(payment);
 
         accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
+        Invoice reportedInvoice = invoiceRepository.findById(reportedInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(reportedInvoiceId));
         AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today,
-                new StatusChangeActor(registeredBy.getId(), null), programAdmissionInvoiceIdsAmong(List.of(invoiceRepository.findById(reportedInvoiceId)
-                        .orElseThrow(() -> new InvoiceNotFoundException(reportedInvoiceId)))));
+                new StatusChangeActor(registeredBy.getId(), null), programAdmissionInvoiceIdsAmong(List.of(reportedInvoice)));
         linkSettledInvoicesToPayment(payment, allocated, received);
         Money unallocatedAfterwards = account.getUnallocatedCreditAmount().value();
         Money leftAsCredit = unallocatedAfterwards.isGreaterThan(received) ? received : unallocatedAfterwards;
