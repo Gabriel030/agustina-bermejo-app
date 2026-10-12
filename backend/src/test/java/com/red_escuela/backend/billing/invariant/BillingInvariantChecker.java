@@ -330,10 +330,10 @@ public final class BillingInvariantChecker {
         found.addAll(violations("I-11c charged days differ from the days with charging enabled and not frozen", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
-                where c.debit_note_id > ? and c.charged_days <> (
+                where c.debit_note_id > %d and c.charged_days <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
-                """.formatted(termsOn("g.day::date"), frozenOn("g.day::date")), baselineInvoiceId));
+                """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"))));
         found.addAll(violations("I-11d late fee over a debit note or over a charge that does not accrue", """
                 select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id

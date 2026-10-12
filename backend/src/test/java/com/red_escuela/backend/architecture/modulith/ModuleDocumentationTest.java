@@ -1,6 +1,7 @@
 package com.red_escuela.backend.architecture.modulith;
 
 import com.red_escuela.backend.BackendApplication;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.docs.Documenter;
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Tag("docs")
 class ModuleDocumentationTest {
 
     private static final String UPDATE_PROPERTY = "modulith.docs.update";
