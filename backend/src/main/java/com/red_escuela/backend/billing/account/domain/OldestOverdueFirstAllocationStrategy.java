@@ -25,10 +25,14 @@ public final class OldestOverdueFirstAllocationStrategy implements AccountCredit
 
     @Override
     public List<PlannedInvoiceAllocation> planFullInvoiceAllocations(NonNegativeMoney unallocatedCredit, List<OpenInvoiceView> openInvoices) {
+        return planFullInvoiceAllocationsInGivenOrder(unallocatedCredit, sortInAllocationOrder(openInvoices));
+    }
+
+    static List<PlannedInvoiceAllocation> planFullInvoiceAllocationsInGivenOrder(NonNegativeMoney unallocatedCredit, List<OpenInvoiceView> orderedInvoices) {
         Objects.requireNonNull(unallocatedCredit, "unallocatedCredit");
         Money remaining = unallocatedCredit.value();
         List<PlannedInvoiceAllocation> plan = new ArrayList<>();
-        for (OpenInvoiceView invoice : sortInAllocationOrder(openInvoices)) {
+        for (OpenInvoiceView invoice : orderedInvoices) {
             Money outstanding = invoice.outstandingAmount().value();
             if (outstanding.isZero()) {
                 continue;

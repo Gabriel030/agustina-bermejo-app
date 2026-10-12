@@ -11,5 +11,13 @@ public enum InvoiceIssuingReason {
     COURSE_MONTHLY_RUN,
     COURSE_ADMISSION,
     AD_HOC_CHARGE,
-    LATE_FEE
+    LATE_FEE;
+
+    public boolean isProgramAdmission() {
+        return this == PROGRAM_ADMISSION;
+    }
+
+    public boolean isAdmission() {
+        return this == PROGRAM_ADMISSION || this == COURSE_ADMISSION;
+    }
 }
