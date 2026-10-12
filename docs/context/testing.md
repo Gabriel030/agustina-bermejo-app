@@ -79,7 +79,7 @@ Responde: ¿alguna librería empaquetada tiene un CVE publicado? Corre cuando un
 
 - **Backend (OWASP Dependency-Check):** desde `backend/`, con el semáforo de CI: `zsh -ic './mvnw -P dependency-check org.owasp:dependency-check-maven:check'`. Falla con CVSS >= 7. La clave del NVD vive solo en el entorno de quien corre (`NVD_API_KEY` exportada en `~/.zshrc`; el `zsh -ic` la hereda). Nunca se escribe en el repo, en logs ni en reportes, y no hay secret en GitHub. Reporte en `backend/target/dependency-check-report.html` y `.json`. La primera corrida baja el NVD (decenas de minutos); después usa `~/.m2/repository/org/owasp/dependency-check-data`.
 - **Supresiones:** `backend/dependency-check-suppressions.xml`. Cada `<suppress>` lleva `until="AAAA-MM-DDZ"` (máximo 90 días) y un `<notes>` con el motivo y el link al CVE. Ninguna sin `until`.
-- **Front:** `npm run audit:prod` (`npm audit --omit=dev --audit-level=high`, bloqueante al adoptarse) y `npm run audit:all` (incluye devDependencies, informativo). No están en el CI de GitHub: hoy `audit:prod` falla con vulnerabilidades preexistentes y entraría rojo en todo PR del front; se suma al CI cuando el resultado quede en verde.
+- **Front:** `npm run audit:prod` (`npm audit --omit=dev --audit-level=high`, bloqueante al adoptarse) y `npm run audit:all` (incluye devDependencies, informativo). `audit:prod` corre en el job `frontend` del CI de GitHub (queda en verde desde Q11b); `audit:all` y Dependency-Check no están en el CI.
 - Anotar cada corrida en `docs/testing/local-test-log.md`.
 
 ### Paso 3: un test que nunca falló no prueba nada

@@ -1,4 +1,4 @@
-COUNT billing 6
+COUNT billing 2
 COUNT enrollment 1
 Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.entity.CourseSubjectSection -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
 Module 'academicstructure' depends on module 'evaluation' via com.red_escuela.backend.academicstructure.entity.SubjectSection -> com.red_escuela.backend.evaluation.entity.EvaluationScheme. Allowed targets: shared, identity :: *.
