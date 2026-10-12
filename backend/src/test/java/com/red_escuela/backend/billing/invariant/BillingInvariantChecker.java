@@ -298,7 +298,7 @@ public final class BillingInvariantChecker {
              where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
 
     private static String frozenOn(String dayExpression) {
-        return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(dayExpression), ENROLLMENT_END_OF_ORIGIN, dayExpression);
+        return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
     }
 
     private static String termsOn(String dayExpression) {

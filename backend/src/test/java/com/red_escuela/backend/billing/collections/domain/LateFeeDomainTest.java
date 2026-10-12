@@ -110,14 +110,14 @@ class LateFeeDomainTest {
 
     @Test
     @Tag("D-148")
+    @Tag("D-360")
     @Tag("D-293")
-    void aDayIsFrozenOnlyByTheVersionInEffectThatDayEvenWhenTheFreezeIsTurnedOffLater() {
+    void everyDayAfterTheEndStaysFrozenWhenTheRuleOfTheEndDateFreezes() {
         LocalDate end = LocalDate.of(2027, 3, 20);
-        LocalDate freezeOffFrom = LocalDate.of(2027, 6, 1);
         List<PlannedLateFeePeriod> planned = planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, 0), List.of(),
-                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)), day -> true, day -> day.isAfter(end) && day.isBefore(freezeOffFrom));
+                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)), day -> true, day -> day.isAfter(end));
         assertThat(planned).extracting(PlannedLateFeePeriod::period, PlannedLateFeePeriod::chargedDays).containsExactly(
-                org.assertj.core.groups.Tuple.tuple(period("2027-03-12", "2027-03-20"), 9), org.assertj.core.groups.Tuple.tuple(period("2027-06-01", "2027-06-30"), 30));
+                org.assertj.core.groups.Tuple.tuple(period("2027-03-12", "2027-03-20"), 9));
     }
 
     @Test

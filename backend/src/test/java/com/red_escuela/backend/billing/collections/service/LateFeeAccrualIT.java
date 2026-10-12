@@ -753,6 +753,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-148")
     @Tag("D-293")
+    @Tag("D-360")
     void turningTheFreezeOffAfterTheEndNeverBackfillsTheFrozenDaysOfMarchToMay() {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Invoice origin = installmentWithdrawnOnTheTwentiethAndFreezeTurnedOffOnJune(2131);
@@ -770,10 +771,25 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-148")
     @Tag("D-293")
-    void daysAfterTheVersionThatTurnsTheFreezeOffAreChargedAgain() {
+    @Tag("D-360")
+    void theFreezeDecidedOnTheEndDateHoldsEvenIfALaterVersionTurnsItOff() {
         Invoice origin = installmentWithdrawnOnTheTwentiethAndFreezeTurnedOffOnJune(2133);
 
-        assertThat(summaryOf(origin)).containsExactly("2133-03-12..2133-03-20:9:1800.00", "2133-06-01..2133-06-30:30:6000.00");
+        assertThat(summaryOf(origin)).containsExactly("2133-03-12..2133-03-20:9:1800.00");
+    }
+
+    @Test
+    @Tag("D-360")
+    @Tag("D-148")
+    void aFreezeTurnedOnAfterTheEndDateNeverFreezesADebtThatEndedWithoutFreezing() {
+        arrange(2134);
+        publish(0, "0.002", 10, false, true, d(2134, 1, 1));
+        Invoice origin = installmentDueOn(d(2134, 3, 11), ars(100000));
+        withdrawCourseEnrollmentOn(d(2134, 3, 20));
+        publish(0, "0.002", 10, true, true, d(2134, 4, 15));
+        reconcile(origin, d(2134, 7, 1));
+
+        assertThat(summaryOf(origin)).containsExactly("2134-03-12..2134-03-31:20:4000.00", "2134-04-01..2134-04-30:30:6000.00", "2134-05-01..2134-05-31:31:6200.00", "2134-06-01..2134-06-30:30:6000.00");
     }
 
     @Test

@@ -119,7 +119,7 @@ class LateFeeAccrualProperties {
             return;
         }
         LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(today);
-        Predicate<LocalDate> frozenOn = day -> timeline.floorEntry(day).getValue().freezeLateFeesOnWithdrawal() && end.map(day::isAfter).orElse(false);
+        Predicate<LocalDate> frozenOn = day -> end.map(endDay -> timeline.floorEntry(endDay).getValue().freezeLateFeesOnWithdrawal() && day.isAfter(endDay)).orElse(false);
         List<PlannedLateFeePeriod> planned = PLANNER.planMissingPeriods(schedule, covered, cutoff, day -> timeline.floorEntry(day).getValue().lateFeeChargingEnabled(), frozenOn);
         LateFeeOriginFacts origin = new LateFeeOriginFacts(1L, "F-00000001", 7L, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT,
                 underReview ? InvoicePaymentStatus.PAYMENT_UNDER_REVIEW : InvoicePaymentStatus.OVERDUE, dueDate, Currency.ARS, BASE, RECIPIENT, YearMonth.from(dueDate), 3L, null);
@@ -131,6 +131,10 @@ class LateFeeAccrualProperties {
                 issued.add(new Issued(period.period(), period.chargedDays(), today, context.lateFeeAmount(), end));
             }
         }
+    }
+
+    private static boolean isFrozenByTheRuleOfTheEndDate(Outcome outcome, Optional<LocalDate> endDate, LocalDate day) {
+        return endDate.isPresent() && day.isAfter(endDate.get()) && outcome.termsOn(endDate.get()).freezeLateFeesOnWithdrawal();
     }
 
     private static Set<LocalDate> oracleChargedDays(Outcome outcome, int graceDays) {
@@ -147,7 +151,7 @@ class LateFeeAccrualProperties {
                 continue;
             }
             LatePaymentTerms termsThatDay = outcome.termsOn(day);
-            boolean frozenThatDay = termsThatDay.freezeLateFeesOnWithdrawal() && firstRun.get().endDate().map(day::isAfter).orElse(false);
+            boolean frozenThatDay = isFrozenByTheRuleOfTheEndDate(outcome, firstRun.get().endDate(), day);
             if (termsThatDay.lateFeeChargingEnabled() && !frozenThatDay) {
                 charged.add(day);
             }
@@ -167,7 +171,7 @@ class LateFeeAccrualProperties {
             int enabled = 0;
             for (LocalDate day = entry.period().firstDay(); !day.isAfter(entry.period().lastDay()); day = day.plusDays(1)) {
                 assertThat(seen.add(day)).as("day %s covered twice", day).isTrue();
-                boolean frozen = outcome.termsOn(day).freezeLateFeesOnWithdrawal() && entry.endAtIssue().map(day::isAfter).orElse(false);
+                boolean frozen = isFrozenByTheRuleOfTheEndDate(outcome, entry.endAtIssue(), day);
                 if (outcome.termsOn(day).lateFeeChargingEnabled() && !frozen) {
                     enabled++;
                     expandedEnabledDays.add(day);

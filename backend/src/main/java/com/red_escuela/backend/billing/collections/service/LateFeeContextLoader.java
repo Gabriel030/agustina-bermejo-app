@@ -57,8 +57,8 @@ public class LateFeeContextLoader {
         LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(businessDate);
         LateFeeOriginFacts facts = originFactsOf(origin);
         Optional<LocalDate> enrollmentEndDate = findEnrollmentEndDate(facts);
-        Predicate<LocalDate> frozenOn = day -> timeline.termsOn(day, dueDateTerms).freezeLateFeesOnWithdrawal()
-                && enrollmentEndDate.map(day::isAfter).orElse(false);
+        boolean frozenByRuleOfTheEndDate = enrollmentEndDate.map(end -> timeline.termsOn(end, dueDateTerms).freezeLateFeesOnWithdrawal()).orElse(false);
+        Predicate<LocalDate> frozenOn = day -> frozenByRuleOfTheEndDate && enrollmentEndDate.map(day::isAfter).orElse(false);
         List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled(), frozenOn);
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
                 dueDateVersion.get().versionId(), dueDateTerms, frozenOn, enrollmentEndDate,
