@@ -115,6 +115,73 @@ Correr todo: `./mvnw clean verify` desde `backend/`. Necesita Docker corriendo (
 levanta Postgres) — ver [docs/context/debugging.md](debugging.md) si Docker no
 está arriba.
 
+## Presupuesto de tiempo y pirámide de tests
+
+El CI del backend corre en 4 shards balanceados por tiempo (`.github/scripts/test-shards.py`). Para que ese tiempo no vuelva a crecer, cada PR pasa por presupuestos **bloqueantes** que miden la corrida real.
+
+### Presupuestos
+
+| Qué | Límite | Quién lo hace cumplir |
+|---|---|---|
+| Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
+| Una clase marcada `@SlowTest` | 90 s | ídem |
+| Un shard (suma de las clases que corre) | 240 s | ídem |
+| Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
+| Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |
+
+Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--max-class`, `--max-slow-class`, `--max-shard`, `--max-contexts`). Subirlos es una decisión de producto que va en un PR aparte, con motivo.
+
+### La pirámide de tests
+
+1. **Base, la gran mayoría: tests de dominio puros.** Policies, value objects, cálculos y reglas se testean sin Spring, sin base y sin mocks de infraestructura (JUnit + AssertJ, jqwik donde haya propiedades). Corren en milisegundos. ArchUnit impide que las clases de test de paquetes `..domain..` y `..policy..` usen `@SpringBootTest` o extiendan `AbstractIntegrationTest`.
+2. **Medio: tests de integración solo para persistencia e integración real.** Queries, constraints, transacciones, eventos entre módulos, endpoints. Extienden `AbstractIntegrationTest` (Postgres real, aislamiento por clase con `TestDatabaseIsolation`). No repitas ahí lo que ya cubre un test de dominio.
+3. **Punta: escenarios largos con `@SlowTest`.** Los que recorren meses simulados, concurrencia o varias etapas del pipeline pueden superar 30 s. Se marcan con `@SlowTest(reason = "...")` (`com.red_escuela.backend.testsupport.SlowTest`, que lleva `@Tag("slow")`). El motivo es obligatorio y tiene que explicar por qué no se puede partir en tests más chicos. Aparecen listados en el reporte de cada PR.
+
+### Reglas para no pagar contextos y esperas de más
+
+- **Reutilizá la configuración compartida de mocks.** Cada combinación distinta de `@MockitoBean`/`@MockBean`/`@TestPropertySource`/`@ActiveProfiles` crea un contexto de Spring nuevo (varios segundos de arranque). Si tu test solo necesita mockear el envío de mails o el validador de Google, anotalo con `@SharedMockBeans` (`testsupport/SharedMockBeans.java`): mockea `EmailService` y `GoogleIdTokenService`, y todos los tests que lo usen comparten contexto. Si hace falta un mock común más, se agrega a esa anotación, no se declara de nuevo en cada clase.
+- **No uses `Thread.sleep`.** Usá Awaitility (`await().atMost(...).until(...)`). ArchUnit lo bloquea.
+- **No uses `@DirtiesContext`.** Tira el contexto cacheado y obliga a recrearlo. Si un test deja estado, limpialo en un `@AfterEach` o usá `TestDatabaseIsolation`.
+- **Acotá los procesos globales.** La detección de facturas vencidas y el barrido de mora (`InvoiceOverdueSweepService`), el barrido de cumplimiento (`EnrollmentBillingComplianceSweepService`), la emisión mensual (`MonthlyInstallmentIssuanceJob`), el vencimiento de solicitudes de autorización (`ExpireAuthorizationRequestsJob`), la activación de versiones de configuración (`ActivateDueConfigurationVersionsJob`) y el reenvío de eventos (`EventPublicationResubmissionJob`) recorren toda la base. En un test nuevo, no llames a esos jobs: invocá el caso de uso o el paso que recibe ids explícitos (la cuenta, la factura, la inscripción de tu escenario). ArchUnit lo detecta por llamada directa a esos métodos, con una lista de excepciones legadas que solo puede achicarse. Lo que ArchUnit **no** puede verificar es una llamada indirecta (un helper que invoca el job por reflexión o vía un bean intermedio): ahí manda esta regla y la revisión del PR.
+
+### Listas de excepciones legadas
+
+Las reglas de `TestSuiteRulesTest` usan `FreezingArchRule`, igual que las de `ArchitectureTest`: las violaciones existentes viven en `backend/src/test/resources/archunit-frozen/` y **solo pueden achicarse**. Si arreglás una, el archivo no se actualiza solo (`allowStoreUpdates=false`): borrá la línea a mano en el mismo PR. Nunca agregues líneas para tapar una violación nueva; corregí el test.
+
+### Cómo leer el reporte del PR
+
+El job `test-report` publica un comentario en el PR (se actualiza en cada push, no se duplica) y el mismo contenido en el resumen del job:
+
+- **Tiempo de pared y suma de tests**, con la diferencia contra la última corrida de `develop` que publicó mediciones.
+- **Contextos de Spring distintos** (unión entre shards) contra el tope de 24, con su diferencia.
+- **Top 5 de clases más lentas tocadas por el PR** (o del total si el PR no toca clases de test), con su tiempo en `develop`.
+- **Clases `@SlowTest`** con su tiempo y motivo.
+
+Los tiempos para repartir clases entre shards no se editan a mano: cada push a `develop` regenera `timings.txt` desde los reportes de surefire y lo publica como artifact `test-baseline`; los PR lo usan para repartir y, si no existe, caen al `.github/test-shards/timings.txt` versionado. Las clases nuevas sin medición pesan el promedio de las medidas.
+
+### Reproducir una falla de un shard en local
+
+Cada fallo de CI dice en qué shard ocurrió (`backend-tests (N)`). Para correr exactamente las mismas clases, con el mismo algoritmo y los mismos tiempos que la CI:
+
+```bash
+python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 4)
+python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
+```
+
+`run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y copialo sobre `.github/test-shards/timings.txt` (sin commitearlo).
+
+### Qué hacer si falla un presupuesto
+
+| Falla | Qué hacer |
+|---|---|
+| Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
+| Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
+| Un shard supera 240 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: si el último `develop` ya publicó `test-baseline`, el reparto se corrige solo. |
+| Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
+| ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
+
+Para reproducir en local: `python3 .github/scripts/test-budget.py check-shard --shard 0 --reports backend/target/surefire-reports` contra los reportes de una corrida (`--max-class 5` fuerza el fallo para ver el mensaje). Los contextos de una corrida quedan en `backend/target/spring-contexts/contexts.txt` (los escribe `SpringContextCensusListener`, una línea por configuración distinta).
+
 ## Frontend (Vitest + RTL + MSW, instalado desde la Fase 1)
 
 Stack propuesto: **Vitest** (nativo de Vite, mismo config/transform que el build,

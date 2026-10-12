@@ -1,5 +1,6 @@
 package com.red_escuela.backend.karate;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.intuit.karate.junit5.Karate;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@SlowTest(reason = "Runs the whole Karate HTTP regression suite against a real started application")
 class KarateSuiteTest extends AbstractIntegrationTest {
     @LocalServerPort
     private int port;

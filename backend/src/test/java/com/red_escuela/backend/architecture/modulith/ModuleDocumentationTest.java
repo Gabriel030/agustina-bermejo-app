@@ -1,5 +1,6 @@
 package com.red_escuela.backend.architecture.modulith;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.BackendApplication;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("docs")
+@SlowTest(reason = "Generates the Modulith diagrams and canvases of every module (tag docs, runs only on pushes)")
 class ModuleDocumentationTest {
 
     private static final String UPDATE_PROPERTY = "modulith.docs.update";

@@ -1,4 +1,5 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.shared.mail.EmailService;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@SharedMockBeans
 class PasswordResetTest extends AbstractIntegrationTest {
     @Autowired
     private LoginUseCase loginUseCase;
@@ -66,7 +68,7 @@ class PasswordResetTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     private Person persistPerson(String username, String email, String rawPassword, AuthProvider authProvider) {

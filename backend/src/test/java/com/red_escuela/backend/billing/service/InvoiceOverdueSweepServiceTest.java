@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.Money;
@@ -48,6 +49,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SlowTest(reason = "Sweeps hundreds of overdue installments and re-runs the daily job to prove it is idempotent")
 class InvoiceOverdueSweepServiceTest extends AbstractIntegrationTest {
     @Autowired
     private InvoiceOverdueSweepService sweepService;
