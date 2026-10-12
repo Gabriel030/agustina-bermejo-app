@@ -327,7 +327,7 @@ public final class BillingInvariantChecker {
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
                 where c.debit_note_id > ? and (date_trunc('month', c.period_start) <> date_trunc('month', c.period_end) or c.period_start <= o.due_date)
                 """, baselineInvoiceId));
-        found.addAll(violations("I-11b charged days differ from the days with charging enabled and not frozen", """
+        found.addAll(violations("I-11c charged days differ from the days with charging enabled and not frozen", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
                 where c.debit_note_id > ? and c.charged_days <> (

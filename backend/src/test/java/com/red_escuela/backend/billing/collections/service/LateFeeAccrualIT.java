@@ -722,7 +722,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
             assertThat(violations).anyMatch(v -> v.startsWith("I-11a") && v.contains("origin " + origin.getId()));
             assertThat(violations).anyMatch(v -> v.startsWith("I-11b a period crosses months") && v.contains("debit note " + crossSpare.getId()));
             assertThat(violations).anyMatch(v -> v.startsWith("I-11b a period crosses months") && v.contains("debit note " + beforeDueSpare.getId()));
-            assertThat(violations).anyMatch(v -> v.startsWith("I-11b charged days") && v.contains("debit note " + disabledSpare.getId()));
+            assertThat(violations).anyMatch(v -> v.startsWith("I-11c charged days") && v.contains("debit note " + disabledSpare.getId()));
             assertThat(violations).anyMatch(v -> v.startsWith("I-11d") && v.contains("debit note " + overDebitNoteSpare.getId()));
             assertThat(violations).anyMatch(v -> v.startsWith("I-11e") && v.contains("debit note " + frozenSpare.getId()));
             assertThat(violations).anyMatch(v -> v.startsWith("I-11f") && v.contains("debit note " + overlapSpare.getId()));
@@ -736,6 +736,60 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
                     + "daterange(period_start, period_end, '[]') with &&)");
         }
         clean.assertAllBillingInvariantsHold();
+    }
+
+    private Invoice installmentWithdrawnOnTheTwentiethAndFreezeTurnedOffOnJune(int year) {
+        arrange(year);
+        publishDefaults(year);
+        Invoice origin = installmentDueOn(d(year, 3, 11), ars(100000));
+        withdrawCourseEnrollmentOn(d(year, 3, 20));
+        reconcile(origin, d(year, 4, 1));
+        assertThat(summaryOf(origin)).containsExactly(year + "-03-12.." + year + "-03-20:9:1800.00");
+        publish(0, "0.002", 10, false, true, d(year, 6, 1));
+        reconcile(origin, d(year, 7, 1));
+        return origin;
+    }
+
+    @Test
+    @Tag("D-148")
+    @Tag("D-293")
+    void turningTheFreezeOffAfterTheEndNeverBackfillsTheFrozenDaysOfMarchToMay() {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Invoice origin = installmentWithdrawnOnTheTwentiethAndFreezeTurnedOffOnJune(2131);
+
+        assertThat(chargesOf(origin)).extracting(c -> c.get("period_start") + ".." + c.get("period_end"))
+                .doesNotContain("2131-03-21..2131-03-31", "2131-04-01..2131-04-30", "2131-05-01..2131-05-31");
+        assertThat(chargesOf(origin)).allSatisfy(c -> {
+            LocalDate start = LocalDate.parse(c.get("period_start").toString());
+            LocalDate end = LocalDate.parse(c.get("period_end").toString());
+            assertThat(start.isAfter(d(2131, 5, 31)) || !end.isAfter(d(2131, 3, 20))).as("period %s..%s", start, end).isTrue();
+        });
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-148")
+    @Tag("D-293")
+    void daysAfterTheVersionThatTurnsTheFreezeOffAreChargedAgain() {
+        Invoice origin = installmentWithdrawnOnTheTwentiethAndFreezeTurnedOffOnJune(2133);
+
+        assertThat(summaryOf(origin)).containsExactly("2133-03-12..2133-03-20:9:1800.00", "2133-06-01..2133-06-30:30:6000.00");
+    }
+
+    @Test
+    @Tag("D-294")
+    @Tag("D-210")
+    void disablingChargingAfterTheDaysHappenedNeverRemovesTheDaysThatWereEnabled() {
+        arrange(2132);
+        publishDefaults(2132);
+        Invoice origin = installmentDueOn(d(2132, 3, 11), ars(100000));
+        publish(0, "0.002", 10, true, false, d(2132, 6, 1));
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+
+        reconcile(origin, d(2132, 7, 1));
+
+        assertThat(summaryOf(origin)).containsExactly("2132-03-12..2132-03-31:20:4000.00", "2132-04-01..2132-04-30:30:6000.00", "2132-05-01..2132-05-31:31:6200.00");
+        invariants.assertAllBillingInvariantsHold();
     }
 
     @Test
