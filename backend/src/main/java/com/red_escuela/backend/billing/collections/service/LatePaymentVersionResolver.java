@@ -20,15 +20,8 @@ public class LatePaymentVersionResolver {
         this.configurationReader = configurationReader;
     }
 
-    public java.util.function.Function<LocalDate, LatePaymentTerms> termsInEffectUpTo(LocalDate lastDay, LatePaymentTerms fallback) {
-        java.util.NavigableMap<LocalDate, LatePaymentVersion> timeline = configurationReader.latePaymentTimelineUpTo(lastDay);
-        return day -> {
-            java.util.Map.Entry<LocalDate, LatePaymentVersion> entry = timeline.floorEntry(day);
-            if (entry != null) {
-                return entry.getValue().terms();
-            }
-            return timeline.isEmpty() ? fallback : timeline.firstEntry().getValue().terms();
-        };
+    public LatePaymentTimeline timelineUpTo(LocalDate lastDay) {
+        return new LatePaymentTimeline(configurationReader.latePaymentTimelineUpTo(lastDay));
     }
 
     public Optional<LatePaymentVersion> findVersionInEffectOnOrFirst(LocalDate date, Long invoiceId) {

@@ -45,7 +45,7 @@ class LateFeePoliciesTest {
     private static LateFeeIssuingContext contextWithChargedDays(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, LatePaymentTerms cutoffTerms, Optional<LocalDate> end,
                                                                 int chargedDays) {
         return new LateFeeIssuingContext(origin, draft, new PlannedLateFeePeriod(new LateFeeAccrualPeriod(PERIOD_START, FACT_DATE), chargedDays, LateFeeCutoffKind.MONTH_CLOSE), 9L,
-                terms(true, true), cutoffTerms, end, NonNegativeMoney.of(new BigDecimal("4000.00"), Currency.ARS), LocalDate.of(2027, 6, 18), Optional.empty());
+                terms(true, true), day -> cutoffTerms.freezeLateFeesOnWithdrawal() && end.map(day::isAfter).orElse(false), end, NonNegativeMoney.of(new BigDecimal("4000.00"), Currency.ARS), LocalDate.of(2027, 6, 18), Optional.empty());
     }
 
     private static LateFeeIssuingContext standard() {
@@ -105,11 +105,14 @@ class LateFeePoliciesTest {
         LateFeeNotFrozenPolicy policy = new LateFeeNotFrozenPolicy();
         assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.empty())).allowed()).isTrue();
         assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(FACT_DATE))).allowed()).isTrue();
-        assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(PERIOD_START))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), Optional.of(PERIOD_START), 1)).allowed()).isTrue();
         var frozen = policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(PERIOD_START.minusDays(1))));
         assertThat(frozen.allowed()).isFalse();
         assertThat(frozen.code()).isEqualTo("LATE_FEE_FROZEN");
         assertThat(policy.evaluateRule(context(origin, draft, terms(false, true), Optional.of(PERIOD_START.minusDays(1)))).allowed()).isTrue();
+        Optional<LocalDate> endedMidPeriod = Optional.of(PERIOD_START.plusDays(8));
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), endedMidPeriod, 9)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), endedMidPeriod, 10)).code()).isEqualTo("LATE_FEE_FROZEN");
     }
 
     @Test

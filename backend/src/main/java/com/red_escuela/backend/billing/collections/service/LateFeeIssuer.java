@@ -55,9 +55,9 @@ public class LateFeeIssuer {
         this.ownTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
 
-    public boolean issueLateFeeOfPeriodInNewTransaction(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate) {
+    public boolean issueLateFeeOfPeriodInNewTransaction(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
         try {
-            return Boolean.TRUE.equals(ownTransaction.execute(status -> issueLateFeeUnderLocks(originInvoiceId, periodStart, businessDate)));
+            return Boolean.TRUE.equals(ownTransaction.execute(status -> issueLateFeeUnderLocks(originInvoiceId, periodStart, businessDate, timeline)));
         } catch (DataIntegrityViolationException e) {
             if (!violatesLateFeeUniqueness(e)) {
                 throw e;
@@ -67,12 +67,12 @@ public class LateFeeIssuer {
         }
     }
 
-    private boolean issueLateFeeUnderLocks(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate) {
+    private boolean issueLateFeeUnderLocks(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
         Long accountId = invoiceAccess.findAccountIdOf(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         accountService.lockStudentCurrentAccount(accountId);
         Invoice origin = invoiceAccess.lockInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
-        Optional<LateFeeIssuingContext> context = contextLoader.loadMissingPeriodContexts(origin, covered, businessDate).stream()
+        Optional<LateFeeIssuingContext> context = contextLoader.loadMissingPeriodContexts(origin, covered, businessDate, timeline).stream()
                 .filter(candidate -> candidate.period().period().firstDay().equals(periodStart)).findFirst();
         if (context.isEmpty()) {
             return false;

@@ -14,9 +14,10 @@ public final class LateFeeNotFrozenPolicy implements Policy<LateFeeIssuingContex
 
     @Override
     public PolicyVerdict evaluateRule(LateFeeIssuingContext context) {
-        boolean frozen = context.cutoffTerms().freezeLateFeesOnWithdrawal()
-                && context.enrollmentEndDate().map(endDate -> context.period().period().firstDay().isAfter(endDate)).orElse(false);
-        return frozen ? PolicyVerdict.deny(ruleName(), "LATE_FEE_FROZEN", "La inscripción terminó antes del período: el recargo está congelado")
+        long unfrozenDays = context.period().period().firstDay().datesUntil(context.period().period().lastDay().plusDays(1))
+                .filter(day -> !context.frozenOn().test(day)).count();
+        boolean frozen = unfrozenDays == 0 || context.period().chargedDays() > unfrozenDays;
+        return frozen ? PolicyVerdict.deny(ruleName(), "LATE_FEE_FROZEN", "La inscripción terminó y el recargo estaba congelado en los días del período")
                 : PolicyVerdict.allow(ruleName());
     }
 }

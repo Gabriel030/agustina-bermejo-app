@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.collections.service;
 
+import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,22 +16,32 @@ public class LateFeeAccrualService {
 
     private final LateFeeCandidateFinder candidateFinder;
     private final LateFeeIssuer issuer;
+    private final LatePaymentVersionResolver versionResolver;
 
-    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer) {
+    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver) {
         this.candidateFinder = candidateFinder;
         this.issuer = issuer;
+        this.versionResolver = versionResolver;
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate) {
+        return reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timelineOf(businessDate));
+    }
+
+    public LatePaymentTimeline timelineOf(LocalDate businessDate) {
+        return versionResolver.timelineUpTo(LateFeeCutoff.closingOfMonthBefore(businessDate).lastDay());
+    }
+
+    public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {
         Set<LocalDate> attempted = new HashSet<>();
         int issued = 0;
-        Optional<LocalDate> next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted);
+        Optional<LocalDate> next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted, timeline);
         while (next.isPresent()) {
             attempted.add(next.get());
-            if (issuer.issueLateFeeOfPeriodInNewTransaction(originInvoiceId, next.get(), businessDate)) {
+            if (issuer.issueLateFeeOfPeriodInNewTransaction(originInvoiceId, next.get(), businessDate, timeline)) {
                 issued++;
             }
-            next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted);
+            next = candidateFinder.findNextIssuablePeriodStart(originInvoiceId, businessDate, attempted, timeline);
         }
         if (issued > 0) {
             log.info("Recargos conciliados: origen={}, emitidos={}, fecha={}", originInvoiceId, issued, businessDate);

@@ -26,11 +26,13 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,7 +61,7 @@ class LateFeeAccrualProperties {
     record Run(LocalDate date, boolean underReview, Optional<LocalDate> endDate) {
     }
 
-    record Issued(LateFeeAccrualPeriod period, int chargedDays, LocalDate issuedOn, NonNegativeMoney amount) {
+    record Issued(LateFeeAccrualPeriod period, int chargedDays, LocalDate issuedOn, NonNegativeMoney amount, Optional<LocalDate> endAtIssue) {
     }
 
     record Outcome(LocalDate dueDate, List<Issued> issued, List<Run> runs, TreeMap<LocalDate, LatePaymentTerms> timeline, LatePaymentTerms dueDateTerms) {
@@ -117,35 +119,37 @@ class LateFeeAccrualProperties {
             return;
         }
         LateFeeCutoff cutoff = LateFeeCutoff.closingOfMonthBefore(today);
-        LatePaymentTerms cutoffTerms = timeline.floorEntry(cutoff.lastDay()).getValue();
-        Optional<LocalDate> frozenAfter = cutoffTerms.freezeLateFeesOnWithdrawal() ? end : Optional.empty();
-        List<PlannedLateFeePeriod> planned = PLANNER.planMissingPeriods(schedule, covered, cutoff, day -> timeline.floorEntry(day).getValue().lateFeeChargingEnabled(), frozenAfter);
+        Predicate<LocalDate> frozenOn = day -> timeline.floorEntry(day).getValue().freezeLateFeesOnWithdrawal() && end.map(day::isAfter).orElse(false);
+        List<PlannedLateFeePeriod> planned = PLANNER.planMissingPeriods(schedule, covered, cutoff, day -> timeline.floorEntry(day).getValue().lateFeeChargingEnabled(), frozenOn);
         LateFeeOriginFacts origin = new LateFeeOriginFacts(1L, "F-00000001", 7L, InvoiceDocumentType.INVOICE, InvoiceType.MONTHLY_INSTALLMENT,
                 underReview ? InvoicePaymentStatus.PAYMENT_UNDER_REVIEW : InvoicePaymentStatus.OVERDUE, dueDate, Currency.ARS, BASE, RECIPIENT, YearMonth.from(dueDate), 3L, null);
         for (PlannedLateFeePeriod period : planned) {
-            LateFeeIssuingContext context = new LateFeeIssuingContext(origin, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin), period, 9L, dueTerms, cutoffTerms, end,
+            LateFeeIssuingContext context = new LateFeeIssuingContext(origin, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin), period, 9L, dueTerms, frozenOn, end,
                     CALCULATOR.calculateLateFee(BASE, dueTerms.dailyLateFeeRate(), period.chargedDays()), today, Optional.empty());
             if (POLICIES.evaluateRulesUntilFirstViolation(context).allowed() && !context.lateFeeAmount().value().isZero()) {
                 covered.add(period.period());
-                issued.add(new Issued(period.period(), period.chargedDays(), today, context.lateFeeAmount()));
+                issued.add(new Issued(period.period(), period.chargedDays(), today, context.lateFeeAmount(), end));
             }
         }
     }
 
     private static Set<LocalDate> oracleChargedDays(Outcome outcome, int graceDays) {
         Set<LocalDate> charged = new HashSet<>();
-        for (Run run : outcome.runs()) {
-            LocalDate cutoffDay = run.date().withDayOfMonth(1).minusDays(1);
-            boolean pastGrace = run.date().isAfter(outcome.dueDate().plusDays(graceDays));
-            if (!pastGrace || run.underReview()) {
+        LocalDate lastRun = outcome.runs().stream().map(Run::date).max(Comparator.naturalOrder()).orElse(outcome.dueDate());
+        for (LocalDate day = outcome.dueDate().plusDays(1); !day.isAfter(lastRun); day = day.plusDays(1)) {
+            LocalDate dayOfTheFirstRunThatMayCharge = day;
+            Optional<Run> firstRun = outcome.runs().stream()
+                    .filter(run -> run.date().isAfter(outcome.dueDate().plusDays(graceDays)))
+                    .filter(run -> !run.underReview())
+                    .filter(run -> !run.date().withDayOfMonth(1).minusDays(1).isBefore(dayOfTheFirstRunThatMayCharge))
+                    .findFirst();
+            if (firstRun.isEmpty()) {
                 continue;
             }
-            boolean freeze = outcome.termsOn(cutoffDay).freezeLateFeesOnWithdrawal();
-            for (LocalDate day = outcome.dueDate().plusDays(1); !day.isAfter(cutoffDay); day = day.plusDays(1)) {
-                boolean frozen = freeze && run.endDate().isPresent() && day.isAfter(run.endDate().get());
-                if (!charged.contains(day) && outcome.termsOn(day).lateFeeChargingEnabled() && !frozen) {
-                    charged.add(day);
-                }
+            LatePaymentTerms termsThatDay = outcome.termsOn(day);
+            boolean frozenThatDay = termsThatDay.freezeLateFeesOnWithdrawal() && firstRun.get().endDate().map(day::isAfter).orElse(false);
+            if (termsThatDay.lateFeeChargingEnabled() && !frozenThatDay) {
+                charged.add(day);
             }
         }
         return charged;
@@ -163,7 +167,8 @@ class LateFeeAccrualProperties {
             int enabled = 0;
             for (LocalDate day = entry.period().firstDay(); !day.isAfter(entry.period().lastDay()); day = day.plusDays(1)) {
                 assertThat(seen.add(day)).as("day %s covered twice", day).isTrue();
-                if (outcome.termsOn(day).lateFeeChargingEnabled()) {
+                boolean frozen = outcome.termsOn(day).freezeLateFeesOnWithdrawal() && entry.endAtIssue().map(day::isAfter).orElse(false);
+                if (outcome.termsOn(day).lateFeeChargingEnabled() && !frozen) {
                     enabled++;
                     expandedEnabledDays.add(day);
                 }

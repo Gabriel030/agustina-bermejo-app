@@ -38,7 +38,7 @@ class LateFeeDomainTest {
     }
 
     private List<PlannedLateFeePeriod> planWith(LateFeeCutoffKind kind, int grace, List<LateFeeAccrualPeriod> covered, LocalDate cutoffDay, Optional<LocalDate> frozenAfter) {
-        return planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, grace), covered, new LateFeeCutoff(kind, cutoffDay), day -> true, frozenAfter);
+        return planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, grace), covered, new LateFeeCutoff(kind, cutoffDay), day -> true, day -> frozenAfter.map(day::isAfter).orElse(false));
     }
 
     @Test
@@ -109,17 +109,29 @@ class LateFeeDomainTest {
     }
 
     @Test
+    @Tag("D-148")
+    @Tag("D-293")
+    void aDayIsFrozenOnlyByTheVersionInEffectThatDayEvenWhenTheFreezeIsTurnedOffLater() {
+        LocalDate end = LocalDate.of(2027, 3, 20);
+        LocalDate freezeOffFrom = LocalDate.of(2027, 6, 1);
+        List<PlannedLateFeePeriod> planned = planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, 0), List.of(),
+                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)), day -> true, day -> day.isAfter(end) && day.isBefore(freezeOffFrom));
+        assertThat(planned).extracting(PlannedLateFeePeriod::period, PlannedLateFeePeriod::chargedDays).containsExactly(
+                org.assertj.core.groups.Tuple.tuple(period("2027-03-12", "2027-03-20"), 9), org.assertj.core.groups.Tuple.tuple(period("2027-06-01", "2027-06-30"), 30));
+    }
+
+    @Test
     @Tag("D-294")
     void plannerChargesOnlyTheDaysWithChargingEnabledAndDropsPeriodsWithoutThem() {
         List<PlannedLateFeePeriod> fromTheTwentieth = planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, 0), List.of(),
-                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 4, 30)), day -> !day.isBefore(LocalDate.of(2027, 3, 20)), Optional.empty());
+                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 4, 30)), day -> !day.isBefore(LocalDate.of(2027, 3, 20)), day -> false);
         assertThat(fromTheTwentieth).extracting(PlannedLateFeePeriod::period, PlannedLateFeePeriod::chargedDays).containsExactly(
                 org.assertj.core.groups.Tuple.tuple(period("2027-03-12", "2027-03-31"), 12), org.assertj.core.groups.Tuple.tuple(period("2027-04-01", "2027-04-30"), 30));
         List<PlannedLateFeePeriod> onlyJune = planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, 0), List.of(),
-                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)), day -> !day.isBefore(LocalDate.of(2027, 6, 1)), Optional.empty());
+                new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)), day -> !day.isBefore(LocalDate.of(2027, 6, 1)), day -> false);
         assertThat(onlyJune).extracting(PlannedLateFeePeriod::period).containsExactly(period("2027-06-01", "2027-06-30"));
         assertThat(planner.planMissingPeriods(new DailyLateFeeSchedule(DUE, 0), List.of(), new LateFeeCutoff(LateFeeCutoffKind.MONTH_CLOSE, LocalDate.of(2027, 6, 30)),
-                day -> false, Optional.empty())).isEmpty();
+                day -> false, day -> false)).isEmpty();
     }
 
     @Test

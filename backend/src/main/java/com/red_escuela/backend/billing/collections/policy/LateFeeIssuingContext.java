@@ -7,9 +7,10 @@ import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, PlannedLateFeePeriod period, Long dueDateVersionId,
-                                    LatePaymentTerms dueDateTerms, LatePaymentTerms cutoffTerms, Optional<LocalDate> enrollmentEndDate,
+                                    LatePaymentTerms dueDateTerms, Predicate<LocalDate> frozenOn, Optional<LocalDate> enrollmentEndDate,
                                     NonNegativeMoney lateFeeAmount, LocalDate issueDate, Optional<Long> settlementAllocationId) {
 
     public LateFeeIssuingContext {
@@ -18,7 +19,7 @@ public record LateFeeIssuingContext(LateFeeOriginFacts origin, LateFeeDebitNoteD
         Objects.requireNonNull(period, "period");
         Objects.requireNonNull(dueDateVersionId, "dueDateVersionId");
         Objects.requireNonNull(dueDateTerms, "dueDateTerms");
-        Objects.requireNonNull(cutoffTerms, "cutoffTerms");
+        Objects.requireNonNull(frozenOn, "frozenOn");
         Objects.requireNonNull(enrollmentEndDate, "enrollmentEndDate");
         Objects.requireNonNull(lateFeeAmount, "lateFeeAmount");
         Objects.requireNonNull(issueDate, "issueDate");

@@ -19,8 +19,8 @@ public class PendingInvoiceQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<Long> findOverdueLateFeeOriginIdsAfter(Long afterInvoiceId, int pageSize) {
-        return invoiceRepository.findOverdueLateFeeOriginIdsAfter(afterInvoiceId, PageRequest.of(0, pageSize));
+    public List<Long> findOverdueLateFeeOriginIdsNotCoveredUpToAfter(Long afterInvoiceId, LocalDate cutoffDay, int pageSize) {
+        return invoiceRepository.findOverdueLateFeeOriginIdsNotCoveredUpToAfter(afterInvoiceId, cutoffDay, pageSize);
     }
 
     @Transactional(readOnly = true)

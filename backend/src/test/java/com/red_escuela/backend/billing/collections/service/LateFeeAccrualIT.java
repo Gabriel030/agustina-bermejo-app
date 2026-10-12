@@ -191,7 +191,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     }
 
     private Invoice programInstallmentDueOn(ProgramEnrollment programEnrollment, LocalDate dueDate) {
-        return BillingTestFixtures.invoice().forProgramEnrollment(programEnrollment).forPeriod(YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(80000)).overdue().build();
+        return BillingTestFixtures.invoice().forProgramEnrollment(programEnrollment).forPeriod(YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(100000)).overdue().build();
     }
 
     private List<String> factDatesOf(Invoice origin) {
@@ -249,7 +249,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         publish(0, "0.002", 10, true, true, d(1950, 1, 1));
         Invoice origin = pendingInstallment(d(1950, 3, 11), ars(100000));
         Mockito.doAnswer(call -> (Long) call.getArgument(0) < origin.getId() ? List.of(origin.getId()) : List.<Long>of())
-                .when(pendingInvoiceQueryService).findOverdueLateFeeOriginIdsAfter(Mockito.anyLong(), Mockito.anyInt());
+                .when(pendingInvoiceQueryService).findOverdueLateFeeOriginIdsNotCoveredUpToAfter(Mockito.anyLong(), Mockito.any(LocalDate.class), Mockito.anyInt());
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         for (LocalDate day = d(1950, 3, 11); !day.isAfter(d(1950, 5, 2)); day = day.plusDays(1)) {
@@ -503,7 +503,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from late_fee_charge where origin_invoice_id = ?", Long.class, debitNoteId)).isZero();
         assertThat(summaryOf(enrollmentFee)).containsExactly("2110-03-12..2110-03-31:20:2000.00");
         assertThat(chargesOf(examFee)).isEmpty();
-        assertThat(invoiceRepository.findOverdueLateFeeOriginIdsAfter(0L, org.springframework.data.domain.PageRequest.of(0, 100000))).doesNotContain(examFee.getId());
+        assertThat(invoiceRepository.findOverdueLateFeeOriginIdsNotCoveredUpToAfter(0L, d(2110, 3, 31), 100000)).doesNotContain(examFee.getId());
     }
 
     @Test
@@ -631,7 +631,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
         reconcile(origin, d(2128, 3, 2));
 
-        assertThat(summaryOf(origin)).containsExactly("2127-12-11..2127-12-31:21:3360.00", "2128-01-01..2128-01-31:31:4960.00", "2128-02-01..2128-02-29:29:4640.00");
+        assertThat(summaryOf(origin)).containsExactly("2127-12-11..2127-12-31:21:4200.00", "2128-01-01..2128-01-31:31:6200.00", "2128-02-01..2128-02-29:29:5800.00");
         assertThat(jdbc.queryForList("select charge_key from invoice_line where charge_key like ? order by charge_key", String.class, "LF:" + origin.getId() + ":D%")).hasSize(3);
     }
 
@@ -767,7 +767,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
         reconcile(origin, d(2120, 6, 1));
 
-        assertThat(summaryOf(origin)).containsExactly("2120-03-12..2120-03-20:9:1440.00");
+        assertThat(summaryOf(origin)).containsExactly("2120-03-12..2120-03-20:9:1800.00");
     }
 
     @Test
@@ -783,7 +783,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
         reconcile(origin, d(2121, 6, 1));
 
-        assertThat(summaryOf(origin)).containsExactly("2121-03-12..2121-03-20:9:1440.00");
+        assertThat(summaryOf(origin)).containsExactly("2121-03-12..2121-03-20:9:1800.00");
     }
 
     @Test

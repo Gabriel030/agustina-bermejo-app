@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
@@ -35,10 +36,15 @@ public class LateFeeCandidateFinder {
     }
 
     @Transactional(readOnly = true)
-    public Optional<LocalDate> findNextIssuablePeriodStart(Long originInvoiceId, LocalDate businessDate, Set<LocalDate> excludedPeriodStarts) {
+    public Optional<LocalDate> findNextIssuablePeriodStart(Long originInvoiceId, LocalDate businessDate, Set<LocalDate> excludedPeriodStarts,
+                                                         LatePaymentTimeline timeline) {
         Invoice origin = invoiceAccess.findInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
-        return contextLoader.loadMissingPeriodContexts(origin, covered, businessDate).stream()
+        LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(businessDate).lastDay();
+        if (covered.stream().anyMatch(period -> !period.lastDay().isBefore(cutoffDay))) {
+            return Optional.empty();
+        }
+        return contextLoader.loadMissingPeriodContexts(origin, covered, businessDate, timeline).stream()
                 .filter(context -> !excludedPeriodStarts.contains(context.period().period().firstDay()))
                 .filter(context -> !context.lateFeeAmount().value().isZero())
                 .filter(context -> {

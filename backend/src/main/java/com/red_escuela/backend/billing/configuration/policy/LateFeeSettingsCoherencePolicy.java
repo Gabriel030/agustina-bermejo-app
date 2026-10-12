@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.configuration.policy;
 
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
@@ -11,8 +12,8 @@ import java.math.BigDecimal;
 public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentTerms> {
     private static final String CODE = "INVALID_LATE_PAYMENT_SETTINGS";
     private static final int MAX_RATE_FRACTION_DECIMALS = 4;
-    private static final BigDecimal MIN_DAILY_RATE = new BigDecimal("0.0001");
-    private static final BigDecimal MAX_DAILY_RATE = new BigDecimal("0.005");
+    private static final Percentage MIN_DAILY_RATE = Percentage.ofPoints(new BigDecimal("0.01"));
+    private static final Percentage MAX_DAILY_RATE = Percentage.ofPoints(new BigDecimal("0.50"));
 
     public String ruleName() {
         return "LateFeeSettingsCoherencePolicy";
@@ -37,10 +38,10 @@ public final class LateFeeSettingsCoherencePolicy implements Policy<LatePaymentT
         if (terms.dailyLateFeeRate().fraction().stripTrailingZeros().scale() > MAX_RATE_FRACTION_DECIMALS) {
             return deny("El recargo diario admite hasta 2 decimales de porcentaje.");
         }
-        if (terms.dailyLateFeeRate().fraction().compareTo(MAX_DAILY_RATE) > 0) {
+        if (terms.dailyLateFeeRate().exceeds(MAX_DAILY_RATE)) {
             return deny("El recargo diario tiene que ser de 0,01 % a 0,50 %.");
         }
-        if (terms.lateFeeChargingEnabled() && terms.dailyLateFeeRate().fraction().compareTo(MIN_DAILY_RATE) < 0) {
+        if (terms.lateFeeChargingEnabled() && MIN_DAILY_RATE.exceeds(terms.dailyLateFeeRate())) {
             return deny("El recargo diario tiene que ser de 0,01 % a 0,50 %.");
         }
         return PolicyVerdict.allow(ruleName());

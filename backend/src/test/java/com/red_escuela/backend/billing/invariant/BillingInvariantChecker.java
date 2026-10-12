@@ -290,6 +290,17 @@ public final class BillingInvariantChecker {
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
+    private static final String ENROLLMENT_END_OF_ORIGIN = """
+            (select coalesce(pe.completion_date, ce.completion_date)::date
+             from invoice_line l
+             left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+             left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+             where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
+
+    private static String frozenOn(String dayExpression) {
+        return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(dayExpression), ENROLLMENT_END_OF_ORIGIN, dayExpression);
+    }
+
     private static String termsOn(String dayExpression) {
         return """
             coalesce(
@@ -316,27 +327,25 @@ public final class BillingInvariantChecker {
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
                 where c.debit_note_id > ? and (date_trunc('month', c.period_start) <> date_trunc('month', c.period_end) or c.period_start <= o.due_date)
                 """, baselineInvoiceId));
-        found.addAll(violations("I-11b charged days differ from the days with charging enabled", """
+        found.addAll(violations("I-11b charged days differ from the days with charging enabled and not frozen", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
                 where c.debit_note_id > ? and c.charged_days <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
-                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true')
-                """.formatted(termsOn("g.day::date")), baselineInvoiceId));
+                    where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
+                """.formatted(termsOn("g.day::date"), frozenOn("g.day::date")), baselineInvoiceId));
         found.addAll(violations("I-11d late fee over a debit note or over a charge that does not accrue", """
                 select 'debit note ' || c.debit_note_id || ' origin ' || c.origin_invoice_id
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
                 where c.debit_note_id > ? and (o.document_type <> 'INVOICE' or o.invoice_type not in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE'))
                 """, baselineInvoiceId));
-        found.addAll(violations("I-11e late fee charged after the end of a frozen enrollment", """
+        found.addAll(violations("I-11e late fee charged for days frozen by the version in effect that day", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
-                join invoice_line l on l.invoice_id = c.origin_invoice_id
-                left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
-                left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
-                where c.debit_note_id > ? and %s ->> 'freezeLateFeesOnWithdrawal' = 'true'
-                  and c.period_end > coalesce(pe.completion_date, ce.completion_date)::date
-                """.formatted(termsOn("c.period_end")), baselineInvoiceId));
+                where c.debit_note_id > ? and c.charged_days > (
+                    select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
+                    where not %s)
+                """.formatted(frozenOn("g.day::date")), baselineInvoiceId));
         found.addAll(violations("I-11f the amount differs from base times daily rate times charged days rounded half up", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c join invoice d on d.id = c.debit_note_id

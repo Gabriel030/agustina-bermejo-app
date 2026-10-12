@@ -7,7 +7,7 @@ import com.red_escuela.backend.shared.domain.Percentage;
 import java.time.LocalDate;
 
 public record LatePaymentSettingsResponse(
-        Long id, Integer gracePeriodDays, Percentage surchargePercent,
+        Long id, Integer gracePeriodDays, Percentage dailyLateFeeRatePercent,
         Integer suspensionAfterDays, Integer suspensionAfterInvoiceCount,
         LocalDate effectiveFrom) {
 
