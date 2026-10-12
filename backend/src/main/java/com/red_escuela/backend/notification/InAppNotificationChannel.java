@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class InAppNotificationChannel implements NotificationChannel {
 
+    private static final String ELLIPSIS = "…";
+
     private final NotificationRepository notificationRepository;
 
     public InAppNotificationChannel(NotificationRepository notificationRepository) {
@@ -21,10 +23,21 @@ public class InAppNotificationChannel implements NotificationChannel {
         Notification notification = new Notification();
         notification.setRecipient(recipient);
         notification.setType(event.type());
-        notification.setMessage(event.message());
+        notification.setMessage(abbreviateToColumnLength(event.message()));
         notification.setRelatedEntityType(event.relatedEntityType());
         notification.setRelatedEntityId(event.relatedEntityId());
         notification.setCreatedAt(ApplicationTime.now());
         notificationRepository.save(notification);
+    }
+
+    static String abbreviateToColumnLength(String message) {
+        if (message == null || message.length() <= Notification.MESSAGE_COLUMN_LENGTH) {
+            return message;
+        }
+        int end = Notification.MESSAGE_COLUMN_LENGTH - ELLIPSIS.length();
+        if (Character.isHighSurrogate(message.charAt(end - 1))) {
+            end--;
+        }
+        return message.substring(0, end) + ELLIPSIS;
     }
 }

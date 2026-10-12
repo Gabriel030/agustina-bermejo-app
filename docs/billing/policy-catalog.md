@@ -192,7 +192,7 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | PaymentAllocationSameAccountPolicy | PAYMENT_ALLOCATION_ACCOUNT_MISMATCH | D-097 |
 | 2 | FullInvoicePaymentOnlyPolicy | PARTIAL_PAYMENT_NOT_ALLOWED | D-136 |
-| 3 | OldestOverdueFirstAllocationOrderPolicy | ALLOCATION_ORDER_VIOLATED | D-089, D-128, D-139, D-140 |
+| 3 | OldestOverdueFirstAllocationOrderPolicy | ALLOCATION_ORDER_VIOLATED | D-089, D-128, D-139, D-140, D-329 |
 
 ## Momento PAYMENT_ALLOCATION_REVERSAL
 

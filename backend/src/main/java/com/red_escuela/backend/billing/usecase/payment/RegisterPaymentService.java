@@ -17,7 +17,6 @@ import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
-import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -49,7 +48,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @UseCase
 public class RegisterPaymentService implements RegisterPaymentUseCase {
@@ -191,8 +192,9 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         payment = paymentRepository.save(payment);
 
         accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received), today, "Pago " + payment.getId());
-        AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditToOldestInvoices(account, today,
-                new StatusChangeActor(registeredBy.getId(), null));
+        Invoice reportedInvoice = invoiceRepository.findById(reportedInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(reportedInvoiceId));
+        AccountCreditAllocationResult allocated = allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today,
+                new StatusChangeActor(registeredBy.getId(), null), programAdmissionInvoiceIdsAmong(List.of(reportedInvoice)));
         linkSettledInvoicesToPayment(payment, allocated, received);
         Money unallocatedAfterwards = account.getUnallocatedCreditAmount().value();
         Money leftAsCredit = unallocatedAfterwards.isGreaterThan(received) ? received : unallocatedAfterwards;
@@ -223,8 +225,16 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         for (Map.Entry<Long, Money> received : receivedByAccount.entrySet()) {
             StudentCurrentAccount account = accountService.lockStudentCurrentAccount(received.getKey());
             accountService.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(received.getValue()), today, "Pago " + payment.getId());
-            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditToOldestInvoices(account, today, actor), received.getValue());
+            Set<Long> programAdmissionInvoiceIds = programAdmissionInvoiceIdsAmong(lockedInvoices.stream()
+                    .filter(invoice -> invoice.getStudentCurrentAccountId().equals(account.getId())).toList());
+            linkSettledInvoicesToPayment(payment, allocationService.allocateAccountCreditSettlingProgramAdmissionInvoicesFirst(account, today, actor, programAdmissionInvoiceIds),
+                    received.getValue());
         }
+    }
+
+    private Set<Long> programAdmissionInvoiceIdsAmong(List<Invoice> payableInvoices) {
+        return payableInvoices.stream().filter(invoice -> invoice.getIssuingReason() != null && invoice.getIssuingReason().isProgramAdmission())
+                .map(Invoice::getId).collect(Collectors.toSet());
     }
 
     private void linkSettledInvoicesToPayment(Payment payment, AccountCreditAllocationResult result, Money contributedByThePayment) {
@@ -242,7 +252,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     }
 
     private void publishAdmissionPaidIfApplicable(Invoice invoice) {
-        if ((invoice.getIssuingReason() == InvoiceIssuingReason.PROGRAM_ADMISSION || invoice.getIssuingReason() == InvoiceIssuingReason.COURSE_ADMISSION) && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
+        if (invoice.getIssuingReason() != null && invoice.getIssuingReason().isAdmission() && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
             eventPublisher.publishEvent(AdmissionInvoicePaidEvent.paidFor(invoice.getId()));
         }
     }
