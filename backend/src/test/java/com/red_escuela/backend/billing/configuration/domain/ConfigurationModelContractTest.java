@@ -55,7 +55,7 @@ class ConfigurationModelContractTest {
         List<ConfigurationValues> samples = List.of(
                 new YearBillingTerms(10, 2, 2, 7, 1, 10, 10, true, false, true, true, true, false),
                 new CohortEntryDiscount(Percentage.ofPoints(new BigDecimal("15"))),
-                new LatePaymentTerms(0, Percentage.ofPoints(new BigDecimal("5")), 30, 2, true, 10, true, true),
+                new LatePaymentTerms(0, Percentage.ofPoints(new BigDecimal("0.20")), 30, 2, true, 10, true, true),
                 new IssuanceSettings(IssuanceMode.REVIEW, true, 2, List.of(1, 3)),
                 new AllocationSettings(true),
                 new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 48),

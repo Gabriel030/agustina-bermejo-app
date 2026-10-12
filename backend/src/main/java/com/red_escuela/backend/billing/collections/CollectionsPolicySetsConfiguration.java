@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.collections;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
-import com.red_escuela.backend.billing.collections.domain.MonthlySimpleLateFeeCalculator;
+import com.red_escuela.backend.billing.collections.domain.DailySimpleLateFeeCalculator;
 import com.red_escuela.backend.billing.collections.policy.DebitNoteSameRecipientAsOriginPolicy;
 import com.red_escuela.backend.billing.collections.policy.InvoiceIsPastDueDatePolicy;
 import com.red_escuela.backend.billing.collections.policy.LateFeeAppliesToInvoiceTypePolicy;
@@ -38,6 +38,6 @@ public class CollectionsPolicySetsConfiguration {
 
     @Bean
     public LateFeeCalculationStrategy lateFeeCalculationStrategy() {
-        return new MonthlySimpleLateFeeCalculator();
+        return new DailySimpleLateFeeCalculator();
     }
 }

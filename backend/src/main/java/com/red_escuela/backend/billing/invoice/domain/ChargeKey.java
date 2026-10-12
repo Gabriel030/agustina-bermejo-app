@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.invoice.domain;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Objects;
 
@@ -50,11 +51,8 @@ public record ChargeKey(String value) {
         return new ChargeKey(AD_HOC_PREFIX + required(studentId, "studentId") + ":" + required(feeType, "feeType") + ":" + idempotencyKey.strip());
     }
 
-    public static ChargeKey forLateFee(Long originInvoiceId, int monthOrdinal) {
-        if (monthOrdinal < 1) {
-            throw new IllegalArgumentException("The late fee month ordinal starts at 1");
-        }
-        return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":M" + monthOrdinal);
+    public static ChargeKey forLateFee(Long originInvoiceId, LocalDate periodStart) {
+        return new ChargeKey(LATE_FEE_PREFIX + required(originInvoiceId, "originInvoiceId") + ":D" + required(periodStart, "periodStart"));
     }
 
     private static <T> T required(T value, String name) {

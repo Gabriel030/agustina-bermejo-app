@@ -162,7 +162,7 @@ class BillingOperationPipelineIntegrationTest extends AbstractIntegrationTest {
     }
 
     private CreateLatePaymentSettingsRequest request(int grace, LocalDate effectiveFrom) {
-        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), 30, 2, effectiveFrom);
+        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.002")), 30, 2, effectiveFrom);
     }
 
     private long count(String sql, Object... args) {

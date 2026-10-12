@@ -9,10 +9,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
 public class LateFeeNotificationListener {
+    private static final DateTimeFormatter DAY_MONTH = DateTimeFormatter.ofPattern("dd/MM");
     static final String STUDENT_HANDLER = "LateFeeNotificationListener.notifyStudent";
     static final String SECRETARIAT_HANDLER = "LateFeeNotificationListener.notifySecretariatWhenIssuedAfterFiscalWindow";
 
@@ -31,7 +33,8 @@ public class LateFeeNotificationListener {
         effectGuard.runEffectOnce(event, STUDENT_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
                 NotificationType.LATE_FEE_ISSUED,
                 "Se emitió la nota de débito " + event.debitNoteNumber() + " por " + event.amount().currency() + " " + event.amount().amount()
-                        + " en concepto de recargo por mora de la factura " + event.originInvoiceNumber() + ".",
+                        + " en concepto de recargo por mora del " + DAY_MONTH.format(event.periodStart()) + " al " + DAY_MONTH.format(event.periodEnd()) + " ("
+                        + event.chargedDays() + " días) de la factura " + event.originInvoiceNumber() + ".",
                 List.of(new PersonRecipient(entityManager.getReference(Person.class, event.studentPersonId()))), "Invoice", event.debitNoteId())));
     }
 
@@ -42,8 +45,9 @@ public class LateFeeNotificationListener {
         }
         effectGuard.runEffectOnce(event, SECRETARIAT_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
                 NotificationType.LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW,
-                "La nota de débito " + event.debitNoteNumber() + " (recargo mes " + event.monthOrdinal() + " de la factura " + event.originInvoiceNumber()
-                        + ") tiene fecha del hecho " + event.factDate() + " y se emitió el " + event.issueDate()
+                "La nota de débito " + event.debitNoteNumber() + " (recargo del " + DAY_MONTH.format(event.periodStart()) + " al " + DAY_MONTH.format(event.periodEnd()) + ", "
+                        + event.chargedDays() + " días, de la factura " + event.originInvoiceNumber()
+                        + ") tiene fecha del hecho " + event.periodEnd() + " y se emitió el " + event.issueDate()
                         + ", fuera de los 15 días de la RG 4540. Revisala con el contador.",
                 List.of(NotificationTopic.ENROLLMENT_SECRETARIAT), "Invoice", event.debitNoteId())));
     }
