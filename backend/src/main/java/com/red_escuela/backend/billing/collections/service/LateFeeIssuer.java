@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
+import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.operation.LateFeeDebitNoteIssuingOperation;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
@@ -20,14 +21,16 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class LateFeeIssuer {
     private static final Logger log = LoggerFactory.getLogger(LateFeeIssuer.class);
-    private static final String UNIQUE_VIOLATION = "23505";
-    private static final Set<String> LATE_FEE_UNIQUE_CONSTRAINTS = Set.of("uk_invoice_line_charge_key", "uk_late_fee_charge_origin_month", "uk_late_fee_charge_debit_note");
+    private static final Set<String> UNIQUENESS_SQL_STATES = Set.of("23505", "23P01");
+    private static final Set<String> LATE_FEE_UNIQUE_CONSTRAINTS = Set.of("uk_invoice_line_charge_key", "uk_late_fee_charge_origin_period_start", "uk_late_fee_charge_debit_note",
+            "ex_late_fee_charge_no_overlapping_days");
 
     private final InvoiceCreditAccessService invoiceAccess;
     private final StudentCurrentAccountService accountService;
@@ -52,31 +55,31 @@ public class LateFeeIssuer {
         this.ownTransaction.setPropagationBehavior(Propagation.REQUIRES_NEW.value());
     }
 
-    public boolean issueLateFeeOfMonthInNewTransaction(Long originInvoiceId, int monthOrdinal, LocalDate businessDate) {
+    public boolean issueLateFeeOfPeriodInNewTransaction(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
         try {
-            return Boolean.TRUE.equals(ownTransaction.execute(status -> issueLateFeeUnderLocks(originInvoiceId, monthOrdinal, businessDate)));
+            return Boolean.TRUE.equals(ownTransaction.execute(status -> issueLateFeeUnderLocks(originInvoiceId, periodStart, businessDate, timeline)));
         } catch (DataIntegrityViolationException e) {
             if (!violatesLateFeeUniqueness(e)) {
                 throw e;
             }
-            log.warn("Recargo duplicado detectado por la base: origen={}, mes={}", originInvoiceId, monthOrdinal);
+            log.warn("Recargo duplicado detectado por la base: origen={}, periodo desde={}", originInvoiceId, periodStart);
             return false;
         }
     }
 
-    private boolean issueLateFeeUnderLocks(Long originInvoiceId, int monthOrdinal, LocalDate businessDate) {
+    private boolean issueLateFeeUnderLocks(Long originInvoiceId, LocalDate periodStart, LocalDate businessDate, LatePaymentTimeline timeline) {
         Long accountId = invoiceAccess.findAccountIdOf(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
         accountService.lockStudentCurrentAccount(accountId);
         Invoice origin = invoiceAccess.lockInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
-        Set<Integer> charged = chargeRepository.findMonthOrdinalsByOriginInvoiceId(originInvoiceId);
-        Optional<LateFeeIssuingContext> context = contextLoader.loadMissingMonthContexts(origin, charged, businessDate).stream()
-                .filter(candidate -> candidate.month().ordinal() == monthOrdinal).findFirst();
+        List<LateFeeAccrualPeriod> covered = chargeRepository.findCoveredPeriodsByOriginInvoiceId(originInvoiceId);
+        Optional<LateFeeIssuingContext> context = contextLoader.loadMissingPeriodContexts(origin, covered, businessDate, timeline).stream()
+                .filter(candidate -> candidate.period().period().firstDay().equals(periodStart)).findFirst();
         if (context.isEmpty()) {
             return false;
         }
         PolicyEvaluationResult evaluation = issuingPolicies.evaluateRulesUntilFirstViolation(context.get());
         if (!evaluation.allowed() || context.get().lateFeeAmount().value().isZero()) {
-            log.debug("Recargo no emitido: origen={}, mes={}, codigos={}", originInvoiceId, monthOrdinal, evaluation.describeDenials());
+            log.debug("Recargo no emitido: origen={}, periodo desde={}, codigos={}", originInvoiceId, periodStart, evaluation.describeDenials());
             return false;
         }
         pipeline.runOperation(operation, context.get()).resultOrThrowIfAwaitingAuthorization(requestId -> new IllegalStateException(
@@ -86,7 +89,7 @@ public class LateFeeIssuer {
 
     private static boolean violatesLateFeeUniqueness(DataIntegrityViolationException e) {
         for (Throwable cause = e; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && UNIQUE_VIOLATION.equals(sql.getSQLState()) && sql.getMessage() != null
+            if (cause instanceof SQLException sql && UNIQUENESS_SQL_STATES.contains(sql.getSQLState()) && sql.getMessage() != null
                     && LATE_FEE_UNIQUE_CONSTRAINTS.stream().anyMatch(sql.getMessage()::contains)) {
                 return true;
             }

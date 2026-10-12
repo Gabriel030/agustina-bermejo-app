@@ -370,14 +370,14 @@ class OverdueInvoiceDetectionTest extends AbstractIntegrationTest {
     @Tag("D-288")
     void anInstallmentDueBeforeTheOnlyVersionUsesItAndLogsTheFallbackAgainstPostgres(CapturedOutput output) {
         arrange();
-        publishGrace(5, LocalDate.of(1950, 6, 1));
-        Invoice invoice = invoiceDueOn(LocalDate.of(1950, 3, 10));
+        publishGrace(5, LocalDate.of(1940, 6, 1));
+        Invoice invoice = invoiceDueOn(LocalDate.of(1940, 3, 10));
         var first = configurationVersionRepository.findFirstVersion("LATE_PAYMENT", "LATE_PAYMENT").orElseThrow();
         assertThat(((LatePaymentTerms) first.values()).gracePeriodDays()).isEqualTo(5);
 
-        sweepService.run(LocalDate.of(1950, 3, 15));
+        sweepService.run(LocalDate.of(1940, 3, 15));
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.PENDING);
-        sweepService.run(LocalDate.of(1950, 3, 16));
+        sweepService.run(LocalDate.of(1940, 3, 16));
 
         assertThat(statusOf(invoice)).isEqualTo(InvoicePaymentStatus.OVERDUE);
         assertThat(output.getOut()).contains("antes de la primera versión de mora: se usa la primera versión");

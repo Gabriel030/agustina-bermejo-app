@@ -109,9 +109,9 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
                 + "proposed_at, direct_publication) values ('LATE_PAYMENT', 'LATE_PAYMENT', cast('{}' as jsonb), 'WITHDRAWN', date '2000-01-01', 'Prueba', ?, now(), false) "
                 + "returning id", Long.class, personId);
         seededConfigurationVersionIds.add(versionId);
-        jdbc.update("insert into late_fee_charge (debit_note_id, origin_invoice_id, student_current_account_id, month_ordinal, fact_date, late_payment_version_id, "
-                        + "monthly_rate, base_amount, currency, created_at) values (?, ?, ?, ?, ?, ?, 0.05, 100000.00, ?, now())",
-                debitNoteId, originInvoiceId, accountId, monthOrdinal, factDate, versionId, currency.name());
+        jdbc.update("insert into late_fee_charge (debit_note_id, origin_invoice_id, student_current_account_id, period_start, period_end, charged_days, cutoff_kind, "
+                        + "fact_date, late_payment_version_id, daily_rate, base_amount, currency, created_at) values (?, ?, ?, ?, ?, 1, 'MONTH_CLOSE', ?, ?, 0.002, 100000.00, ?, now())",
+                debitNoteId, originInvoiceId, accountId, factDate, factDate, factDate, versionId, currency.name());
         return debitNoteId;
     }
 

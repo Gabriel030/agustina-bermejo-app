@@ -78,10 +78,10 @@ class CreateLatePaymentSettingsServiceTest extends AbstractIntegrationTest {
         Person director = persistPerson("director.policy1." + System.nanoTime());
         authenticateAs(director);
         ConfigurationVersion today = createLatePaymentSettingsUseCase.create(new CreateLatePaymentSettingsRequest(
-                10, Percentage.ofFraction(BigDecimal.valueOf(0.10)), 30, 2, LocalDate.now()));
+                10, Percentage.ofFraction(BigDecimal.valueOf(0.002)), 30, 2, LocalDate.now()));
 
         createLatePaymentSettingsUseCase.create(new CreateLatePaymentSettingsRequest(
-                5, Percentage.ofFraction(BigDecimal.valueOf(0.20)), 15, 1, LocalDate.now().plusMonths(1)));
+                5, Percentage.ofFraction(BigDecimal.valueOf(0.003)), 15, 1, LocalDate.now().plusMonths(1)));
 
         ConfigurationVersion current = findCurrentLatePaymentSettingsUseCase.findCurrent();
 

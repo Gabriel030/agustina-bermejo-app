@@ -4,6 +4,7 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -12,6 +13,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import java.util.Map;
 
 @Tag("integration")
+@ExtendWith(TestDatabaseIsolation.class)
 @AutoConfigureMockMvc
 public abstract class AbstractIntegrationTest {
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -20,6 +22,7 @@ public abstract class AbstractIntegrationTest {
 
     static {
         postgres.start();
+        TestDatabaseIsolation.initialize(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     @DynamicPropertySource

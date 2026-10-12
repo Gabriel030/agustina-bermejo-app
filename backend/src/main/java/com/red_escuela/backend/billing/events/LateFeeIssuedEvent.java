@@ -11,18 +11,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public record LateFeeIssuedEvent(UUID eventId, String correlationId, Instant occurredAt, Long debitNoteId, String debitNoteNumber, Long originInvoiceId,
-                                 String originInvoiceNumber, Long studentPersonId, int monthOrdinal, LocalDate factDate, LocalDate issueDate,
-                                 Money amount) implements DeduplicableDomainEvent {
+                                 String originInvoiceNumber, Long studentPersonId, LocalDate periodStart, LocalDate periodEnd, int chargedDays,
+                                 LateFeeCutoffKind cutoffKind, LocalDate issueDate, Money amount) implements DeduplicableDomainEvent {
 
     public static final long ISSUING_WINDOW_DAYS = 15;
 
     public static LateFeeIssuedEvent issuedFor(Long debitNoteId, String debitNoteNumber, Long originInvoiceId, String originInvoiceNumber, Long studentPersonId,
-                                               int monthOrdinal, LocalDate factDate, LocalDate issueDate, Money amount) {
+                                               LocalDate periodStart, LocalDate periodEnd, int chargedDays, LateFeeCutoffKind cutoffKind, LocalDate issueDate,
+                                               Money amount) {
         return new LateFeeIssuedEvent(UUID.randomUUID(), CorrelationIds.current(), ApplicationTime.instant(), debitNoteId, debitNoteNumber, originInvoiceId,
-                originInvoiceNumber, studentPersonId, monthOrdinal, factDate, issueDate, amount);
+                originInvoiceNumber, studentPersonId, periodStart, periodEnd, chargedDays, cutoffKind, issueDate, amount);
     }
 
     public boolean issuedAfterFiscalWindow() {
-        return ChronoUnit.DAYS.between(factDate, issueDate) > ISSUING_WINDOW_DAYS;
+        return ChronoUnit.DAYS.between(periodEnd, issueDate) > ISSUING_WINDOW_DAYS;
     }
 }

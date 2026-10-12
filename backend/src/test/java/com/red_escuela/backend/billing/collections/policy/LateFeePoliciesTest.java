@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.collections.policy;
 
-import com.red_escuela.backend.billing.collections.domain.LateFeeMonth;
+import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
+import com.red_escuela.backend.billing.collections.domain.PlannedLateFeePeriod;
+import com.red_escuela.backend.billing.events.LateFeeCutoffKind;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -26,7 +28,7 @@ class LateFeePoliciesTest {
     private static final LocalDate FACT_DATE = LocalDate.of(2027, 6, 18);
 
     private static LatePaymentTerms terms(boolean freeze, boolean enabled) {
-        return new LatePaymentTerms(5, Percentage.ofPoints(new BigDecimal("5")), 30, 1, true, 10, freeze, enabled);
+        return new LatePaymentTerms(5, Percentage.ofPoints(new BigDecimal("0.20")), 30, 1, true, 10, freeze, enabled);
     }
 
     private static LateFeeOriginFacts origin(InvoiceDocumentType documentType, InvoiceType type, InvoicePaymentStatus status) {
@@ -34,9 +36,16 @@ class LateFeePoliciesTest {
                 NonNegativeMoney.of(new BigDecimal("80000.00"), Currency.ARS), RECIPIENT, YearMonth.of(2027, 3), 3L, null);
     }
 
-    private static LateFeeIssuingContext context(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, LatePaymentTerms factDateTerms, Optional<LocalDate> end) {
-        return new LateFeeIssuingContext(origin, draft, new LateFeeMonth(4, FACT_DATE), 9L, terms(true, true), factDateTerms, end,
-                NonNegativeMoney.of(new BigDecimal("4000.00"), Currency.ARS), LocalDate.of(2027, 6, 18));
+    private static final LocalDate PERIOD_START = LocalDate.of(2027, 6, 1);
+
+    private static LateFeeIssuingContext context(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, LatePaymentTerms cutoffTerms, Optional<LocalDate> end) {
+        return contextWithChargedDays(origin, draft, cutoffTerms, end, 18);
+    }
+
+    private static LateFeeIssuingContext contextWithChargedDays(LateFeeOriginFacts origin, LateFeeDebitNoteDraftFacts draft, LatePaymentTerms cutoffTerms, Optional<LocalDate> end,
+                                                                int chargedDays) {
+        return new LateFeeIssuingContext(origin, draft, new PlannedLateFeePeriod(new LateFeeAccrualPeriod(PERIOD_START, FACT_DATE), chargedDays, LateFeeCutoffKind.MONTH_CLOSE), 9L,
+                terms(true, true), day -> cutoffTerms.freezeLateFeesOnWithdrawal() && end.map(day::isAfter).orElse(false), end, NonNegativeMoney.of(new BigDecimal("4000.00"), Currency.ARS), LocalDate.of(2027, 6, 18), Optional.empty());
     }
 
     private static LateFeeIssuingContext standard() {
@@ -77,11 +86,12 @@ class LateFeePoliciesTest {
     @Test
     @Tag("D-210")
     @Tag("D-294")
-    void chargingMustBeEnabledOnTheFactDate() {
+    void chargingNeedsAtLeastOneEnabledDayInThePeriod() {
         LateFeeOriginFacts origin = standard().origin();
         var draft = LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin);
-        assertThat(new LateFeeChargingEnabledPolicy().evaluateRule(context(origin, draft, terms(true, true), Optional.empty())).allowed()).isTrue();
-        var denied = new LateFeeChargingEnabledPolicy().evaluateRule(context(origin, draft, terms(true, false), Optional.empty()));
+        assertThat(new LateFeeChargingEnabledPolicy().evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), Optional.empty(), 12)).allowed()).isTrue();
+        assertThat(new LateFeeChargingEnabledPolicy().evaluateRule(contextWithChargedDays(origin, draft, terms(true, false), Optional.empty(), 1)).allowed()).isTrue();
+        var denied = new LateFeeChargingEnabledPolicy().evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), Optional.empty(), 0));
         assertThat(denied.allowed()).isFalse();
         assertThat(denied.code()).isEqualTo("LATE_FEE_CHARGING_DISABLED");
     }
@@ -89,17 +99,20 @@ class LateFeePoliciesTest {
     @Test
     @Tag("D-148")
     @Tag("D-293")
-    void aLateFeeIsFrozenOnlyWhenTheFactDateIsAfterTheEndAndFreezingIsOn() {
+    void aLateFeeIsFrozenOnlyWhenThePeriodStartsAfterTheEndAndFreezingIsOn() {
         LateFeeOriginFacts origin = standard().origin();
         var draft = LateFeeDebitNoteDraftFacts.addressedLikeOrigin(origin);
         LateFeeNotFrozenPolicy policy = new LateFeeNotFrozenPolicy();
         assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.empty())).allowed()).isTrue();
         assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(FACT_DATE))).allowed()).isTrue();
-        assertThat(policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(FACT_DATE.plusDays(1)))).allowed()).isTrue();
-        var frozen = policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(FACT_DATE.minusDays(1))));
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), Optional.of(PERIOD_START), 1)).allowed()).isTrue();
+        var frozen = policy.evaluateRule(context(origin, draft, terms(true, true), Optional.of(PERIOD_START.minusDays(1))));
         assertThat(frozen.allowed()).isFalse();
         assertThat(frozen.code()).isEqualTo("LATE_FEE_FROZEN");
-        assertThat(policy.evaluateRule(context(origin, draft, terms(false, true), Optional.of(FACT_DATE.minusDays(1)))).allowed()).isTrue();
+        assertThat(policy.evaluateRule(context(origin, draft, terms(false, true), Optional.of(PERIOD_START.minusDays(1)))).allowed()).isTrue();
+        Optional<LocalDate> endedMidPeriod = Optional.of(PERIOD_START.plusDays(8));
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), endedMidPeriod, 9)).allowed()).isTrue();
+        assertThat(policy.evaluateRule(contextWithChargedDays(origin, draft, terms(true, true), endedMidPeriod, 10)).code()).isEqualTo("LATE_FEE_FROZEN");
     }
 
     @Test

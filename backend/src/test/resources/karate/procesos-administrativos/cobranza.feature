@@ -8,7 +8,7 @@ Feature: Cobranza — política de mora y webhook de Mercado Pago
   Scenario Outline: Una política con recargo fuera de 0 a 100 se rechaza — 400
     Given path '/late-payment-settings'
     And header Authorization = 'Bearer ' + directorToken
-    And request { gracePeriodDays: 10, surchargePercent: <recargo>, suspensionAfterDays: 30, suspensionAfterInvoiceCount: 2 }
+    And request { gracePeriodDays: 10, dailyLateFeeRatePercent: <recargo>, suspensionAfterDays: 30, suspensionAfterInvoiceCount: 2 }
     When method post
     Then status 400
 

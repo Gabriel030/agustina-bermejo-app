@@ -7,18 +7,18 @@ import com.red_escuela.backend.shared.domain.Percentage;
 
 import java.util.Map;
 
-public record LatePaymentTerms(int gracePeriodDays, Percentage monthlyLateFeeRate, int suspensionAfterDays, int suspensionAfterInvoiceCount,
+public record LatePaymentTerms(int gracePeriodDays, Percentage dailyLateFeeRate, int suspensionAfterDays, int suspensionAfterInvoiceCount,
                                boolean blockNewEnrollmentsWhenOverdue, int lateFeeDebitNoteDueDays, boolean freezeLateFeesOnWithdrawal,
                                boolean lateFeeChargingEnabled) implements ConfigurationValues {
 
     public LatePaymentTerms {
-        if (monthlyLateFeeRate == null) {
-            throw new InvalidConfigurationValuesException("La tasa mensual de recargo es obligatoria");
+        if (dailyLateFeeRate == null) {
+            throw new InvalidConfigurationValuesException("La tasa diaria de recargo es obligatoria");
         }
     }
 
     @JsonCreator
-    static LatePaymentTerms fromJson(@JsonProperty("gracePeriodDays") int gracePeriodDays, @JsonProperty("monthlyLateFeeRate") Percentage monthlyLateFeeRate,
+    static LatePaymentTerms fromJson(@JsonProperty("gracePeriodDays") int gracePeriodDays, @JsonProperty("dailyLateFeeRate") Percentage dailyLateFeeRate,
                                      @JsonProperty("suspensionAfterDays") int suspensionAfterDays, @JsonProperty("suspensionAfterInvoiceCount") int suspensionAfterInvoiceCount,
                                      @JsonProperty("blockNewEnrollmentsWhenOverdue") boolean blockNewEnrollmentsWhenOverdue,
                                      @JsonProperty("lateFeeDebitNoteDueDays") int lateFeeDebitNoteDueDays,
@@ -27,7 +27,7 @@ public record LatePaymentTerms(int gracePeriodDays, Percentage monthlyLateFeeRat
         if (!unknownProperties.isEmpty()) {
             throw new InvalidConfigurationValuesException("La mora no admite estos campos: " + unknownProperties.keySet());
         }
-        return new LatePaymentTerms(gracePeriodDays, monthlyLateFeeRate, suspensionAfterDays, suspensionAfterInvoiceCount, blockNewEnrollmentsWhenOverdue,
+        return new LatePaymentTerms(gracePeriodDays, dailyLateFeeRate, suspensionAfterDays, suspensionAfterInvoiceCount, blockNewEnrollmentsWhenOverdue,
                 lateFeeDebitNoteDueDays, freezeLateFeesOnWithdrawal, lateFeeChargingEnabled);
     }
 
