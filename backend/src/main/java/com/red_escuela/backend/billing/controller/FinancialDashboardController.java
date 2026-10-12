@@ -26,7 +26,7 @@ public class FinancialDashboardController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTOR')")
+    @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public FinancialDashboardResponse getDashboard() {
         return getFinancialDashboard.execute();
     }
