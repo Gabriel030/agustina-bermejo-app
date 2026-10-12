@@ -32,13 +32,32 @@ jobs:
           relevant=true
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             if changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" 2>/dev/null); then
-              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|\.github/workflows/)'; then
+              if ! printf '%s\n' "$changed" | grep -qE '^(backend/|contracts/|scripts/|\.github/workflows/)'; then
                 relevant=false
               fi
             fi
           fi
           echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
           echo "backend changes: $relevant"
+
+  backend-contract:
+    runs-on: ubuntu-latest
+    needs: backend-changes
+    if: needs.backend-changes.outputs.relevant == 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the OpenAPI contract for breaking changes
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'contract-break-approved') }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          git fetch origin "${{ github.base_ref }}"
+          if ! git show "origin/${{ github.base_ref }}:contracts/openapi.json" > "$RUNNER_TEMP/openapi-base.json" 2>/dev/null; then
+            echo "The base branch has no contracts/openapi.json yet: skipping the breaking-change check"
+            exit 0
+          fi
+          scripts/oasdiff-breaking.sh "$RUNNER_TEMP/openapi-base.json" contracts/openapi.json
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -78,20 +97,20 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
-    needs: [backend-changes, backend-tests]
+    needs: [backend-changes, backend-tests, backend-contract]
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     steps:
       - name: Aggregate the backend results
         shell: bash
         run: |
           set -uo pipefail
-          echo "changes=${{ needs.backend-changes.result }} tests=${{ needs.backend-tests.result }}"
+          echo "changes=${{ needs.backend-changes.result }} tests=${{ needs.backend-tests.result }} contract=${{ needs.backend-contract.result }}"
           if [ "${{ needs.backend-changes.result }}" != "success" ]; then exit 1; fi
           if [ "${{ needs.backend-changes.outputs.relevant }}" != "true" ]; then
             echo "no backend changes"
             exit 0
           fi
-          [ "${{ needs.backend-tests.result }}" = "success" ]
+          [ "${{ needs.backend-tests.result }}" = "success" ] && { [ "${{ needs.backend-contract.result }}" = "success" ] || [ "${{ needs.backend-contract.result }}" = "skipped" ]; }
 
   local-tests-log:
     runs-on: ubuntu-latest
