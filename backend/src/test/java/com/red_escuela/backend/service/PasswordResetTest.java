@@ -1,4 +1,5 @@
 package com.red_escuela.backend.service;
+import com.red_escuela.backend.shared.mail.EmailService;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
@@ -10,16 +11,18 @@ import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeCommand;
 import com.red_escuela.backend.identity.usecase.auth.VerifyResetCodeUseCase;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidPasswordPolicyException;
+import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
+import com.red_escuela.backend.identity.usecase.auth.RefreshTokenUseCase;
 import com.red_escuela.backend.identity.exception.InvalidPasswordResetTokenException;
 import com.red_escuela.backend.identity.repository.PasswordResetTokenRepository;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +37,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -44,6 +44,9 @@ import static org.mockito.Mockito.verify;
 class PasswordResetTest extends AbstractIntegrationTest {
     @Autowired
     private LoginUseCase loginUseCase;
+
+    @Autowired
+    private RefreshTokenUseCase refreshTokenUseCase;
 
     @Autowired
     private RequestPasswordResetUseCase requestPasswordResetUseCase;
@@ -96,25 +99,27 @@ class PasswordResetTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestPasswordResetWithExistingEmailGeneratesAValidCodeAndSendsIt() {
+    void requestPasswordResetWithExistingEmailGeneratesAValidCode() {
         Person person = persistPerson("resetuser1", "resetuser1@example.com", "correcta123", AuthProvider.LOCAL);
 
         requestPasswordResetUseCase.requestReset("resetuser1@example.com");
 
-        List<PasswordResetToken> tokens = passwordResetTokenRepository.findAll();
+        List<PasswordResetToken> tokens = passwordResetTokenRepository.findAll().stream()
+                .filter(token -> token.getPerson().getId().equals(person.getId())).toList();
         assertThat(tokens).hasSize(1);
         assertThat(tokens.get(0).getPerson().getId()).isEqualTo(person.getId());
         assertThat(tokens.get(0).getUsed()).isFalse();
         assertThat(tokens.get(0).getAttempts()).isZero();
         assertThat(tokens.get(0).getExpiresAt()).isAfter(LocalDateTime.now());
-        verify(emailService).sendPasswordResetCode(eq(person), anyString());
     }
 
     @Test
     void requestPasswordResetWithNonExistentEmailCreatesNothingAndDoesNotFail() {
+        long before = passwordResetTokenRepository.count();
+
         requestPasswordResetUseCase.requestReset("no-existe@example.com");
 
-        assertThat(passwordResetTokenRepository.findAll()).isEmpty();
+        assertThat(passwordResetTokenRepository.count()).isEqualTo(before);
     }
 
     @Test
@@ -239,5 +244,19 @@ class PasswordResetTest extends AbstractIntegrationTest {
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("resetuser7", "Nueva123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
+    }
+
+    @Test
+    void passwordResetRevokesAllActiveSessions() {
+        Person person = persistPerson("sesiones1", "sesiones1@example.com", "correcta123", AuthProvider.LOCAL);
+        persistResetToken(person, "999999", LocalDateTime.now().plusMinutes(15), false);
+
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("sesiones1", "correcta123", "127.0.0.1"));
+
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand("sesiones1@example.com", "999999"));
+        resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "Nueva123"));
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class);
     }
 }

@@ -7,7 +7,8 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.exception.DirectorApprovalSubjectRequiredException;
+import com.red_escuela.backend.enrollment.exception.InvalidDirectorApprovalRequestStateException;
 
 @Getter
 @Setter
@@ -58,4 +59,46 @@ public class DirectorApprovalRequest {
 
     @Column(name = "decision_notes", length = 500)
     private String decisionNotes;
+
+    public static DirectorApprovalRequest open(ExceptionType type, ProgramEnrollment programEnrollment, Subject subject,
+                                               String justification, Person requestedBy, LocalDateTime requestedAt) {
+        programEnrollment.requireActive();
+        if (subject == null) {
+            throw new DirectorApprovalSubjectRequiredException(type);
+        }
+        DirectorApprovalRequest request = new DirectorApprovalRequest();
+        request.type = type;
+        request.programEnrollment = programEnrollment;
+        request.subject = subject;
+        request.justification = justification;
+        request.status = DirectorApprovalRequestStatus.REQUESTED;
+        request.requestedBy = requestedBy;
+        request.requestedAt = requestedAt;
+        return request;
+    }
+
+    public void decide(DirectorApprovalRequestStatus decision, Person director, String notes, LocalDateTime decidedAt) {
+        boolean validDecision = decision == DirectorApprovalRequestStatus.APPROVED || decision == DirectorApprovalRequestStatus.REJECTED;
+        if (status != DirectorApprovalRequestStatus.REQUESTED || !validDecision) {
+            throw new InvalidDirectorApprovalRequestStateException(id);
+        }
+        status = decision;
+        decidedBy = director;
+        decisionNotes = notes;
+        this.decidedAt = decidedAt;
+    }
+
+    public Person student() {
+        return programEnrollment.getStudent().getPerson();
+    }
+
+    public String describe() {
+        Person student = student();
+        String description = type.displayName() + " de " + student.getName() + " " + student.getLastname();
+        return subject == null ? description : description + " en " + subject.getName();
+    }
+
+    public boolean hasDecisionNotes() {
+        return decisionNotes != null && !decisionNotes.isBlank();
+    }
 }

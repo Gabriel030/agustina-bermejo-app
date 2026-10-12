@@ -6,8 +6,10 @@ import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
 import { Skeleton } from '@/components/Skeleton';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { useMisCursos, useMisMatriculaciones } from '@/hooks/useAlumno';
-import { useBillingStanding } from '@/hooks/useBilling';
+import { useMisCursos, useMisMatriculaciones } from '@/features/enrollment';
+import { AdmissionInvoicePendingCard } from '@/features/billing';
+import { useEnrollmentPaymentStatus } from '@/hooks/useBilling';
+import { formatDate } from '@/lib/billing';
 
 const STANDING_CONFIG = {
   UP_TO_DATE: { label: 'Al día', tone: 'success' },
@@ -24,24 +26,18 @@ const ENROLLMENT_STATUS_LABELS = {
   SUSPENDED: 'Suspendido',
 };
 
-function formatFecha(date) {
-  if (!date) return '-';
-  const d = new Date(date);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
 export function AlumnoPagos() {
   const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
 
   const { data: cursos, isLoading: cargandoCursos } = useMisCursos();
   const { data: carreras, isLoading: cargandoCarreras } = useMisMatriculaciones();
-  const { data: standings } = useBillingStanding();
+  const { data: standings } = useEnrollmentPaymentStatus();
 
   const cargando = cargandoCursos || cargandoCarreras;
 
   function findStanding(enrollmentType, id) {
-    return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.billingStanding ?? null;
+    return standings?.find((s) => s.enrollmentType === enrollmentType && s.enrollmentId === id)?.paymentStatus ?? null;
   }
 
   const allEnrollments = useMemo(() => [
@@ -88,6 +84,8 @@ export function AlumnoPagos() {
         />
       </div>
 
+      <AdmissionInvoicePendingCard />
+
       <GlassCard className="overflow-hidden p-0">
         {cargando && (
           <div className="flex flex-col divide-y divide-border">
@@ -131,7 +129,7 @@ export function AlumnoPagos() {
                     <TableCell>
                       <StatusPill tone="neutral">{ENROLLMENT_STATUS_LABELS[e.status] ?? e.status ?? '-'}</StatusPill>
                     </TableCell>
-                    <TableCell className="text-ink-faint">{formatFecha(e.enrollmentDate)}</TableCell>
+                    <TableCell className="text-ink-faint">{formatDate(e.enrollmentDate) || '-'}</TableCell>
                     <TableCell>
                       {standingInfo ? (
                         <StatusPill tone={standingInfo.tone}>{standingInfo.label}</StatusPill>

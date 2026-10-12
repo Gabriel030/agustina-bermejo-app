@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase.term;
 
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 
 import java.util.List;
 

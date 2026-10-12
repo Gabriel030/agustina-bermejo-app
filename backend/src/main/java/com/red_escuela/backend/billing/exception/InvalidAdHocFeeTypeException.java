@@ -1,8 +1,10 @@
 package com.red_escuela.backend.billing.exception;
 
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.shared.exception.BadRequestException;
 
-public class InvalidAdHocFeeTypeException extends RuntimeException {
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
+
+public class InvalidAdHocFeeTypeException extends BadRequestException {
     public InvalidAdHocFeeTypeException(FeeType feeType) {
         super("FeeType inválido para un concepto ad-hoc: " + feeType);
     }

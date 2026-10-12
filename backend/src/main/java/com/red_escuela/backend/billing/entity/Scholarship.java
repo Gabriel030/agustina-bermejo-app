@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.entity;
 
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -15,6 +17,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
@@ -46,10 +50,10 @@ public class Scholarship {
     @JoinColumn(name = "program_enrollment_id")
     private ProgramEnrollment programEnrollment;
 
-    @Convert(converter = MonetaryAdjustmentValueConverter.class)
+    @Convert(converter = MonetaryAdjustmentConverter.class)
     @ColumnTransformer(write = "?::jsonb")
     @Column(name = "value", nullable = false, columnDefinition = "jsonb")
-    private MonetaryAdjustmentValue value;
+    private MonetaryAdjustment value;
 
     @Column(name = "reason", length = 500, nullable = false)
     private String reason;
@@ -57,6 +61,10 @@ public class Scholarship {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private ScholarshipStatus status = ScholarshipStatus.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "applies_to", nullable = false)
+    private ScholarshipScope appliesTo = ScholarshipScope.INSTALLMENTS;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "granted_by_id", nullable = false)
@@ -71,7 +79,7 @@ public class Scholarship {
     @PrePersist
     void onCreate() {
         if (this.grantedAt == null) {
-            this.grantedAt = LocalDateTime.now();
+            this.grantedAt = ApplicationTime.now();
         }
     }
 
@@ -93,6 +101,18 @@ public class Scholarship {
             status = ScholarshipStatus.INACTIVE;
         }
         return next;
+    }
+
+    public ScholarshipInstallment consumeInstallmentWithoutLegacyInvoice(Long installmentId) {
+        ScholarshipInstallment installment = installments.stream()
+                .filter(candidate -> candidate.getId().equals(installmentId) && candidate.getStatus() == InstallmentStatus.PENDING)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Scholarship " + id + " has no PENDING installment " + installmentId));
+        installment.markApplied(null);
+        if (installments.stream().noneMatch(candidate -> candidate.getStatus() == InstallmentStatus.PENDING)) {
+            status = ScholarshipStatus.INACTIVE;
+        }
+        return installment;
     }
 
     public void cancelRemaining(String reason) {

@@ -1,20 +1,21 @@
 package com.red_escuela.backend.graduation.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.graduation.entity.CertificateIssuance;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -40,7 +41,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.graduation.service.CertificateService;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -144,14 +145,7 @@ class CertificateServiceTest extends AbstractIntegrationTest {
     }
 
     private void persistInvoice(ProgramEnrollment enrollment, LocalDate dueDate) {
-        Invoice invoice = new Invoice();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.RECURRING_FEE);
-        invoice.setPeriod(java.time.YearMonth.from(dueDate));
-        invoice.setDueDate(dueDate);
-        invoice.setBaseAmount(BigDecimal.valueOf(100));
-        invoice.setStatus(InvoiceStatus.PENDING);
-        entityManager.persist(invoice);
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.from(dueDate)).dueOn(dueDate).withBaseAmount(ars(100)).build();
     }
 
     private void authenticateAsPerson(String dni) {

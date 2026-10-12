@@ -2,92 +2,69 @@ package com.red_escuela.backend.billing.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualResult;
+import com.red_escuela.backend.billing.collections.operation.LateFeeAccrualStep;
+import com.red_escuela.backend.billing.collections.operation.OverdueDetectionResult;
+import com.red_escuela.backend.billing.collections.operation.OverdueInvoiceDetectionStep;
 import com.red_escuela.backend.billing.entity.BatchExecutionLog;
 import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.entity.CollectionsPolicy;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
 import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
-import com.red_escuela.backend.billing.repository.CollectionsPolicyRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
-import org.springframework.data.domain.PageRequest;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class InvoiceOverdueSweepService {
-    private static final int PAGE_SIZE = 200;
+    private static final Logger log = LoggerFactory.getLogger(InvoiceOverdueSweepService.class);
     private static final String JOB_NAME = "InvoiceOverdueSweepService";
 
-    private final InvoiceRepository invoiceRepository;
-    private final CollectionsPolicyRepository collectionsPolicyRepository;
+    private final OverdueInvoiceDetectionStep detectionStep;
+    private final LateFeeAccrualStep accrualStep;
     private final BatchExecutionLogRepository batchExecutionLogRepository;
-    private final InvoiceOverdueRowProcessor rowProcessor;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
-    public InvoiceOverdueSweepService(InvoiceRepository invoiceRepository, CollectionsPolicyRepository collectionsPolicyRepository,
-                                       BatchExecutionLogRepository batchExecutionLogRepository, InvoiceOverdueRowProcessor rowProcessor,
-                                       ObjectMapper objectMapper) {
-        this.invoiceRepository = invoiceRepository;
-        this.collectionsPolicyRepository = collectionsPolicyRepository;
+    public InvoiceOverdueSweepService(OverdueInvoiceDetectionStep detectionStep, LateFeeAccrualStep accrualStep,
+                                       BatchExecutionLogRepository batchExecutionLogRepository, ObjectMapper objectMapper, Clock clock) {
+        this.detectionStep = detectionStep;
+        this.accrualStep = accrualStep;
         this.batchExecutionLogRepository = batchExecutionLogRepository;
-        this.rowProcessor = rowProcessor;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 3 * * *", zone = "${app.timezone}")
+    @SchedulerLock(name = "InvoiceOverdueSweepService", lockAtMostFor = "PT30M")
     public void run() {
-        run(LocalDate.now());
+        run(LocalDate.now(clock));
     }
 
     public void run(LocalDate today) {
-        Optional<CollectionsPolicy> policy = collectionsPolicyRepository.findTopByEffectiveFromLessThanEqualOrderByEffectiveFromDescCreatedAtDescIdDesc(today);
-        if (policy.isEmpty()) {
-            return;
-        }
+        log.info("Barrido de mora iniciado: fecha={}", today);
         long start = System.currentTimeMillis();
-        int candidates = 0;
-        int processed = 0;
-        int failed = 0;
-        List<Map<String, Object>> errors = new ArrayList<>();
-        LocalDate cutoff = today.minusDays(policy.get().getGracePeriodDays());
-
-        Long lastId = 0L;
-        while (true) {
-            List<Invoice> batch = invoiceRepository.findByStatusAndDueDateBeforeAndIdGreaterThanOrderByIdAsc(
-                    InvoiceStatus.PENDING, cutoff, lastId, PageRequest.of(0, PAGE_SIZE));
-            if (batch.isEmpty()) {
-                break;
-            }
-            candidates += batch.size();
-            for (Invoice invoice : batch) {
-                try {
-                    rowProcessor.process(invoice.getId(), policy.get());
-                    processed++;
-                } catch (Exception e) {
-                    failed++;
-                    Map<String, Object> error = new LinkedHashMap<>();
-                    error.put("invoiceId", invoice.getId());
-                    error.put("message", e.getMessage());
-                    errors.add(error);
-                }
-            }
-            lastId = batch.get(batch.size() - 1).getId();
-        }
-
+        OverdueDetectionResult detection = detectionStep.detectOverdueInvoices(today);
+        LateFeeAccrualResult accrual = accrualStep.accrueLateFees(today);
         long durationMs = System.currentTimeMillis() - start;
+        log.info("Barrido de mora finalizado: candidatas={}, procesadas={}, omitidas={}, fallidas={}, recargosCandidatas={}, recargosCierre={}, recargosFallidos={}, duracion={}ms",
+                detection.candidates(), detection.marked(), detection.skipped(), detection.failed(), accrual.candidates(), accrual.debitNotesIssued(), accrual.failed(),
+                durationMs);
+        int failed = detection.failed() + detection.skipped() + accrual.failed();
+        int processed = detection.marked() + accrual.debitNotesIssued();
         BatchExecutionStatus status = failed == 0 ? BatchExecutionStatus.SUCCESS
-                : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
+                : (processed > 0 || detection.failed() + accrual.failed() == 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
+        List<Map<String, Object>> errors = new ArrayList<>(detection.errors());
+        errors.addAll(accrual.errors());
         batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, status, serialize(errors)));
+                JOB_NAME, LocalDateTime.now(clock), detection.candidates() + accrual.candidates(), processed, failed, durationMs, status, serialize(errors)));
     }
 
     private String serialize(List<Map<String, Object>> errors) {

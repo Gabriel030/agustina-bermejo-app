@@ -2,16 +2,16 @@ package com.red_escuela.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -60,6 +61,9 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -77,6 +81,9 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
 
         Person studentPerson = new Person();
         studentPerson.setUsername("alumno.adhoc." + System.nanoTime());
+        studentPerson.setDni(Long.toString(Math.abs((long) ("alumno.adhoc." + System.nanoTime()).hashCode())));
+        studentPerson.setName("Persona");
+        studentPerson.setLastname("Prueba");
         studentPerson.setEmail(studentPerson.getUsername() + "@example.com");
         Address address = new Address();
         entityManager.persist(address);
@@ -118,7 +125,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenPreceptor = tokenWithRole("preceptor.adhoc.test", "PRECEPTOR");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.EXAM_RIGHT, BigDecimal.valueOf(1500), LocalDate.now(), "Derecho de examen", null, null);
+                FeeType.EXAM_FEE, ars(1500), LocalDate.now(), "Derecho de examen", null, null);
         String body = objectMapper.writeValueAsString(request);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
@@ -140,7 +147,7 @@ class AdHocInvoiceControllerTest extends AbstractIntegrationTest {
         String tokenAdministrativo = tokenWithRole("administrativo.adhoc.test", "ADMINISTRATIVO");
 
         CreateAdHocInvoiceRequest request = new CreateAdHocInvoiceRequest(
-                FeeType.DEGREE_ISSUANCE, BigDecimal.valueOf(3000), LocalDate.now(), "Emisión de título", null, null);
+                FeeType.DEGREE_ISSUANCE_FEE, ars(3000), LocalDate.now(), "Emisión de título", null, null);
 
         mockMvc.perform(post("/course-enrollments/{id}/invoices/ad-hoc", enrollment.getId())
                         .contentType(MediaType.APPLICATION_JSON)

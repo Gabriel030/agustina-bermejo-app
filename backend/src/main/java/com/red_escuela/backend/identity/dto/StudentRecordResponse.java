@@ -2,6 +2,7 @@ package com.red_escuela.backend.identity.dto;
 
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
+import com.red_escuela.backend.shared.domain.DocumentType;
 
 public record StudentRecordResponse(
         Long id,
@@ -10,6 +11,7 @@ public record StudentRecordResponse(
         String nombre,
         String apellido,
         String dni,
+        DocumentType documentType,
         String username,
         String email,
         String sexo,
@@ -30,8 +32,9 @@ public record StudentRecordResponse(
                 p.getName(),
                 p.getLastname(),
                 p.getDni(),
+                p.getDocumentType(),
                 p.getUsername(),
-                p.getEmail(),
+                p.emailValue(),
                 p.getSex(),
                 p.getNationality(),
                 p.getPhoneNumber(),

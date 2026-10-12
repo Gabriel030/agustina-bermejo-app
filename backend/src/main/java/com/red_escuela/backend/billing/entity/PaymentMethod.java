@@ -1,5 +1,5 @@
 package com.red_escuela.backend.billing.entity;
 
 public enum PaymentMethod {
-    CASH, TRANSFER, CARD, MERCADO_PAGO, CREDIT_BALANCE
+    CASH, TRANSFER, CARD, MERCADO_PAGO
 }

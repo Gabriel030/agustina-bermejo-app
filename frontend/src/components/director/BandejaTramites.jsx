@@ -1,3 +1,4 @@
+import { StablePageHeight } from '@/components/StablePageHeight';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
@@ -5,8 +6,8 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Buscador } from '@/components/catalogo/Buscador';
-import { Paginador } from '@/components/catalogo/Paginador';
+import { Buscador } from '@/components/Buscador';
+import { Paginador } from '@/components/Paginador';
 
 const POR_PAGINA = 8;
 
@@ -34,10 +35,11 @@ export function BandejaTramites({
   const [hasta, setHasta] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data: pendientes, isLoading: cargandoPendientes } = useListaPendientes();
-  const { data: historial, isLoading: cargandoHistorial } = useListaHistorial();
+  const { data: pendientes, isLoading: cargandoPendientes, isError: pendingFailed } = useListaPendientes();
+  const { data: historial, isLoading: cargandoHistorial, isError: historyFailed } = useListaHistorial();
 
   const cargando = tab === 'pendientes' ? cargandoPendientes : cargandoHistorial;
+  const failed = tab === 'pendientes' ? pendingFailed : historyFailed;
   const lista = useMemo(
     () => (tab === 'pendientes' ? (pendientes ?? []) : (historial ?? [])),
     [tab, pendientes, historial],
@@ -48,7 +50,7 @@ export function BandejaTramites({
     if (desde) {
       resultado = resultado.filter((item) => {
         const fecha = extraerFecha(item, tab);
-        return fecha && fecha >= new Date(desde);
+        return fecha && fecha >= new Date(`${desde}T00:00:00`);
       });
     }
     if (hasta) {
@@ -79,7 +81,7 @@ export function BandejaTramites({
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col gap-4">
+    <div className="flex flex-1 flex-col gap-4">
       <button
         type="button"
         onClick={() => navigate(volverA)}
@@ -106,30 +108,37 @@ export function BandejaTramites({
             <SelectItem value="antiguos">Más antiguos primero</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-2 text-[12.5px] text-ink-faint">
-          Desde
-          <input
-            type="date"
-            value={desde}
-            onChange={(e) => { setDesde(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
-          />
-          Hasta
-          <input
-            type="date"
-            value={hasta}
-            onChange={(e) => { setHasta(e.target.value); setPage(1); }}
-            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
-          />
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-[12.5px] text-ink-faint">
+          <label className="flex items-center gap-2">
+            Desde
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => { setDesde(e.target.value); setPage(1); }}
+              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            Hasta
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => { setHasta(e.target.value); setPage(1); }}
+              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-[12.5px] text-ink"
+            />
+          </label>
         </div>
       </div>
 
+      <StablePageHeight resetKey={`${tab}-${search}-${desde}-${hasta}`}>
       <GlassCard className="flex flex-col gap-1 p-4">
         {cargando ? (
           <div className="flex flex-col gap-2 p-2">
             <Skeleton className="h-12" />
             <Skeleton className="h-12" />
           </div>
+        ) : failed ? (
+          <EmptyState title="No pudimos cargar los trámites" description="Probá recargar la página en un momento." className="py-6" />
         ) : filtrada.length === 0 ? (
           <EmptyState
             title={lista.length === 0 ? (tab === 'pendientes' ? tituloVacioPendientes : tituloVacioHistorial) : 'Nada coincide con la búsqueda'}
@@ -139,6 +148,7 @@ export function BandejaTramites({
           pagina.map((item) => renderFila(item, { esHistorial: tab === 'historial' }))
         )}
       </GlassCard>
+      </StablePageHeight>
 
       <Paginador page={page} totalPages={totalPages} onChange={setPage} />
     </div>

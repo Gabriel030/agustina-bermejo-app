@@ -10,6 +10,8 @@ import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAb
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAbsenceReportUseCase;
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryCommand;
 import com.red_escuela.backend.attendance.usecase.attendance.GetProgramSectionAttendanceHistoryUseCase;
+import com.red_escuela.backend.shared.domain.Percentage;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +82,7 @@ public class AttendanceExportService {
             java.util.function.Supplier<AttendanceHistoryResponse> history,
             java.util.function.Supplier<List<RosterEntryResponse>> absenceReport) {
         return switch (scope) {
-            case "class" -> classTable(history.get(), classDate != null ? classDate : LocalDate.now());
+            case "class" -> classTable(history.get(), classDate != null ? classDate : ApplicationTime.today());
             case "history" -> historyTable(history.get());
             case "absence-report" -> reportTable(absenceReport.get());
             default -> throw new IllegalArgumentException("scope de exportación desconocido: " + scope);
@@ -104,7 +107,7 @@ public class AttendanceExportService {
             List<String> values = new ArrayList<>();
             values.add(row.studentName());
             history.classDates().forEach(date -> values.add(statusOf(row, date)));
-            values.add(row.attendancePercentage() == null ? "-" : Math.round(row.attendancePercentage() * 100) + "%");
+            values.add(formatPercent(row.attendancePercent()));
             return values;
         }).toList();
         return new Table("Historial de asistencia", headers, rows);
@@ -115,13 +118,17 @@ public class AttendanceExportService {
         return cell == null ? "-" : cell.status();
     }
 
+    private String formatPercent(Percentage percentage) {
+        return percentage == null ? "-" : percentage.points().setScale(0, RoundingMode.HALF_UP) + "%";
+    }
+
     private Table reportTable(List<RosterEntryResponse> report) {
         List<String> headers = List.of("Alumno", "DNI", "Ausencias", "% Asistencia");
         List<List<String>> rows = report.stream()
                 .map(entry -> List.of(
                         entry.studentName(), entry.dni() == null ? "-" : entry.dni(),
                         String.valueOf(entry.absenceCount()),
-                        entry.attendancePercentage() == null ? "-" : Math.round(entry.attendancePercentage() * 100) + "%"))
+                        formatPercent(entry.attendancePercent())))
                 .toList();
         return new Table("Reporte de ausencias", headers, rows);
     }

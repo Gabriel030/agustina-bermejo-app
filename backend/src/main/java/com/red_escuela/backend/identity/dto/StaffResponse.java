@@ -12,7 +12,7 @@ public record StaffResponse(
                 person.getLastname(),
                 person.getDni(),
                 person.getUsername(),
-                person.getEmail(),
+                person.emailValue(),
                 person.getPhoneNumber(),
                 role);
     }

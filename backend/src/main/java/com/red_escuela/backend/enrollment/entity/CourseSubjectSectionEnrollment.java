@@ -1,4 +1,8 @@
 package com.red_escuela.backend.enrollment.entity;
+
+import org.springframework.modulith.NamedInterface;
+
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
@@ -23,6 +27,7 @@ import com.red_escuela.backend.evaluation.entity.FinalGradeType;
         )
     }
 )
+@NamedInterface("model")
 public class CourseSubjectSectionEnrollment {
     @Id
     @Column(name = "id")
@@ -60,9 +65,17 @@ public class CourseSubjectSectionEnrollment {
     private Integer attemptNumber;
 
     @Column(name = "final_score")
-    private Double finalScore;
+    private Grade finalScore;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "final_grade_type")
     private FinalGradeType finalGradeType;
+
+    public boolean isRegular() {
+        return status == EnrollmentStatus.REGULAR;
+    }
+
+    public EnrollmentStatus statusAssumingRegularWhen(boolean assumeRegular) {
+        return assumeRegular ? EnrollmentStatus.REGULAR : status;
+    }
 }

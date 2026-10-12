@@ -8,9 +8,10 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AttendanceRiskCalculator {
@@ -30,34 +31,37 @@ public class AttendanceRiskCalculator {
     public AttendanceRiskResponse calculateForProgramEnrollment(Long enrollmentId) {
         SubjectSectionEnrollment enrollment = subjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
-        Double maxAbsencePercentage = enrollment.getSubjectSection().getMaxAbsencePercentage();
-        if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null, null);
+        Percentage maxAbsenceRate = enrollment.getSubjectSection().getMaxAbsenceRate();
+        if (maxAbsenceRate == null) {
+            return evaluate(null, 0, 0);
         }
         long total = attendanceRepository.countByProgramSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByProgramSubjectSectionEnrollmentIdAndStatusIn(
-                enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+                enrollmentId, AttendanceStatus.absenceStatuses());
+        return evaluate(maxAbsenceRate, total, ausentes);
     }
 
     public AttendanceRiskResponse calculateForCourseEnrollment(Long enrollmentId) {
         CourseSubjectSectionEnrollment enrollment = courseSubjectSectionEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
-        Double maxAbsencePercentage = enrollment.getCourseSubjectSection().getMaxAbsencePercentage();
-        if (maxAbsencePercentage == null) {
-            return new AttendanceRiskResponse(false, false, null, null);
+        Percentage maxAbsenceRate = enrollment.getCourseSubjectSection().getMaxAbsenceRate();
+        if (maxAbsenceRate == null) {
+            return evaluate(null, 0, 0);
         }
         long total = attendanceRepository.countByCourseSubjectSectionEnrollmentId(enrollmentId);
         long ausentes = attendanceRepository.countByCourseSubjectSectionEnrollmentIdAndStatusIn(
-                enrollmentId, List.of(AttendanceStatus.ABSENT, AttendanceStatus.JUSTIFICATION_PENDING));
-        return calculateRisk(total, ausentes, maxAbsencePercentage);
+                enrollmentId, AttendanceStatus.absenceStatuses());
+        return evaluate(maxAbsenceRate, total, ausentes);
     }
 
-    private AttendanceRiskResponse calculateRisk(long total, long ausentes, double maxAbsencePercentage) {
-        if (total == 0) {
-            return new AttendanceRiskResponse(true, false, 0.0, maxAbsencePercentage);
+    public AttendanceRiskResponse evaluate(Percentage maxAbsenceRate, long total, long absences) {
+        if (maxAbsenceRate == null) {
+            return new AttendanceRiskResponse(false, false, null, null);
         }
-        double porcentaje = (double) ausentes / total;
-        return new AttendanceRiskResponse(true, porcentaje > maxAbsencePercentage, porcentaje, maxAbsencePercentage);
+        Optional<Percentage> absenceRate = Percentage.ratio(absences, total);
+        if (absenceRate.isEmpty()) {
+            return new AttendanceRiskResponse(true, false, null, maxAbsenceRate);
+        }
+        return new AttendanceRiskResponse(true, absenceRate.get().exceeds(maxAbsenceRate), absenceRate.get(), maxAbsenceRate);
     }
 }

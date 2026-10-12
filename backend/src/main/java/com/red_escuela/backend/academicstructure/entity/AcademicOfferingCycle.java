@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
+import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -49,4 +51,47 @@ public class AcademicOfferingCycle {
 
     @Column(name = "rejection_reason")
     private String rejectionReason;
+
+    public boolean isEditable() {
+        return status == AcademicOfferingCycleStatus.DRAFT || status == AcademicOfferingCycleStatus.REJECTED;
+    }
+
+    public boolean wasApproved() {
+        return status == AcademicOfferingCycleStatus.APPROVED || status == AcademicOfferingCycleStatus.CLOSED;
+    }
+
+    public void ensureEditable() {
+        if (!isEditable()) {
+            throw new CycleNotEditableException(id, status);
+        }
+    }
+
+    public void submitForApproval() {
+        ensureEditable();
+        status = AcademicOfferingCycleStatus.PENDING_APPROVAL;
+        decidedBy = null;
+        decidedAt = null;
+        rejectionReason = null;
+    }
+
+    public void approve(Person director, LocalDateTime decidedAt) {
+        ensurePendingApproval();
+        status = AcademicOfferingCycleStatus.APPROVED;
+        this.decidedBy = director;
+        this.decidedAt = decidedAt;
+    }
+
+    public void reject(Person director, String reason, LocalDateTime decidedAt) {
+        ensurePendingApproval();
+        status = AcademicOfferingCycleStatus.REJECTED;
+        this.decidedBy = director;
+        this.decidedAt = decidedAt;
+        this.rejectionReason = reason;
+    }
+
+    private void ensurePendingApproval() {
+        if (status != AcademicOfferingCycleStatus.PENDING_APPROVAL) {
+            throw new CycleNotPendingApprovalException(id);
+        }
+    }
 }

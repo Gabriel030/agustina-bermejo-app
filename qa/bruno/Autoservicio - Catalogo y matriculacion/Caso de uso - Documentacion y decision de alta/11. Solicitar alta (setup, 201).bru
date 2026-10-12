@@ -1,0 +1,27 @@
+meta {
+  name: 11. Solicitar alta (setup, 201)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdDocAlta}}&cohortId={{cohortIdDocAlta}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("applicationIdDocAlta", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

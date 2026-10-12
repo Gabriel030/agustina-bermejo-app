@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
-import { useMisMatriculaciones, useMisInscripciones } from '@/hooks/useAlumno';
+import { useMisMatriculaciones, useMisInscripciones } from '@/features/enrollment';
 import { useProgramaPlanDeEstudio } from '@/hooks/useCatalogo';
-import { clasificarMateriaDelPlan, ordenarFilasDeMaterias } from '@/lib/notas';
+import { clasificarMateriaDelPlan, inscripcionVigente, ordenarFilasDeMaterias } from '@/lib/notas';
+
+const ESTADO_SIN_PLAN = { APPROVED: 'aprobada', REGULAR: 'regular', FAILED: 'desaprobada' };
 
 // Cruce de plan de estudio + inscripciones reales, compartido por TabMaterias.jsx
 // (browsing → detalle), TabNotas.jsx (grilla de notas, sin navegación) y
@@ -28,7 +30,7 @@ export function useMateriasDelPlan(carreraSeleccionada) {
       const inscripcionesDeEstaCarrera = todasLasInscripciones.filter((i) => i.programEnrollmentId === matricula.id);
       return planDeEstudio
         .map((programSubject) => {
-          const inscripcion = inscripcionesDeEstaCarrera.find((i) => i.subjectId === programSubject.subjectId);
+          const inscripcion = inscripcionVigente(inscripcionesDeEstaCarrera.filter((i) => i.subjectId === programSubject.subjectId));
           const clasificacion = clasificarMateriaDelPlan(programSubject, inscripcion);
           return {
             key: `plan-${programSubject.id}`,
@@ -51,7 +53,7 @@ export function useMateriasDelPlan(carreraSeleccionada) {
         subjectCode: i.subjectCode,
         subjectName: i.subjectName,
         curricularYear: i.curricularYear,
-        estado: i.status === 'APPROVED' ? 'aprobada' : 'en-curso',
+        estado: ESTADO_SIN_PLAN[i.status] ?? 'en-curso',
         inscripcion: i,
       }))
       .sort(ordenarFilasDeMaterias);

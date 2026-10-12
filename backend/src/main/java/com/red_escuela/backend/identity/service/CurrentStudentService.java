@@ -1,13 +1,17 @@
 package com.red_escuela.backend.identity.service;
 
+import org.springframework.modulith.NamedInterface;
+
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@NamedInterface("api")
 @Service
 public class CurrentStudentService {
     private final StudentRepository studentRepository;
@@ -24,7 +28,7 @@ public class CurrentStudentService {
 
     public Optional<Student> findCurrentStudent() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             return Optional.empty();
         }
         Long personId = Long.valueOf(authentication.getName());

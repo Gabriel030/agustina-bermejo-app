@@ -5,7 +5,7 @@ import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.SectionType;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
 import com.red_escuela.backend.announcement.service.SectionMembership;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 

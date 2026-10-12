@@ -1,18 +1,19 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
@@ -20,7 +21,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -34,6 +35,7 @@ import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,8 +49,8 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -315,6 +317,9 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         Address address = new Address();
         entityManager.persist(address);
         director.setUsername("director.matricula." + System.nanoTime());
+        director.setDni(Long.toString(Math.abs((long) ("director.matricula." + System.nanoTime()).hashCode())));
+        director.setName("Persona");
+        director.setLastname("Prueba");
         director.setEmail(director.getUsername() + "@example.com");
         director.setAddress(address);
         director.setStatus(StatusType.ACTIVE);
@@ -323,9 +328,10 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(10);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 10);
         template.setCreatedBy(director);
         entityManager.persist(template);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -349,15 +355,12 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         return enrollment;
     }
 
-    private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoiceStatus status) {
-        Invoice invoice = new Invoice();
-        invoice.setProgramEnrollment(enrollment);
-        invoice.setFeeType(FeeType.ENROLLMENT_FEE);
-        invoice.setPeriod(YearMonth.now());
-        invoice.setDueDate(LocalDate.now());
-        invoice.setBaseAmount(BigDecimal.valueOf(50000));
-        invoice.setStatus(status);
-        entityManager.persist(invoice);
+    private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoicePaymentStatus status) {
+        persistEnrollmentFeeInvoice(enrollment, status, YearMonth.now());
+    }
+
+    private void persistEnrollmentFeeInvoice(ProgramEnrollment enrollment, InvoicePaymentStatus status, YearMonth period) {
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.ENROLLMENT_FEE).forPeriod(period).dueOn(LocalDate.now()).withBaseAmount(ars(50000)).inState(status).build();
     }
 
     @Test
@@ -372,7 +375,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramCohort cohort = persistCohort(program, term);
         ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
-        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PENDING);
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PENDING);
         entityManager.flush();
 
         assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
@@ -392,7 +395,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramCohort cohort = persistCohort(program, term);
         ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
-        persistEnrollmentFeeInvoice(enrollment, InvoiceStatus.PAID);
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PAID);
         entityManager.flush();
 
         SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.enroll(
@@ -402,6 +405,52 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-032")
+    void enrollingWithAnEntryFeeAndAReenrollmentFeeOfTheFollowingYearDoesNotFail() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000021", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaReinscripcion");
+        Program program = persistProgram("CarreraReinscripcion");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PAID, YearMonth.now().minusYears(1));
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PAID, YearMonth.now());
+        entityManager.flush();
+
+        SubjectSectionEnrollment resultado = subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+
+        assertThat(resultado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    @Tag("D-032")
+    void enrollingWithAPaidEntryFeeButAnUnpaidReenrollmentFeeIsRejected() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("60000022", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaReinscripcionImpaga");
+        Program program = persistProgram("CarreraReinscripcionImpaga");
+        persistProgramSubject(program, subject);
+        LocalDateTime now = LocalDateTime.now();
+        Term term = persistTerm(now.minusDays(10), now.plusDays(10));
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramCohort cohort = persistCohort(program, term);
+        ProgramEnrollment enrollment = persistProgramEnrollmentWithCohort(student, program, cohort);
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PAID, YearMonth.now().minusYears(1));
+        persistEnrollmentFeeInvoice(enrollment, InvoicePaymentStatus.PENDING, YearMonth.now());
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
+                enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
+                .isInstanceOf(EnrollmentFeeNotPaidException.class);
+    }
+
+    @Test
+    @Tag("D-007")
     void enrollingWithoutCohortDoesNotRequireFee() {
         Institution institution = persistInstitution();
         Student student = persistStudent("60000011", StatusType.ACTIVE, institution);

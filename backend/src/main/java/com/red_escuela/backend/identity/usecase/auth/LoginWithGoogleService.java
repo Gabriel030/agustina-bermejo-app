@@ -1,12 +1,17 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.GoogleAccountNotLinkedException;
+import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.identity.infrastructure.GoogleIdTokenService;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
+
 
 @UseCase
 public class LoginWithGoogleService implements LoginWithGoogleUseCase {
@@ -28,14 +33,23 @@ public class LoginWithGoogleService implements LoginWithGoogleUseCase {
 
         var byGoogleId = personRepository.findByGoogleSubjectId(profile.subject());
         if (byGoogleId.isPresent()) {
+            requireAllowedToLogIn(byGoogleId.get());
             return authTokenIssuer.issueTokens(byGoogleId.get());
         }
 
-        Person person = personRepository.findByEmail(profile.email())
+        Person person = personRepository.findByEmail(EmailAddress.of(profile.email()))
                 .orElseThrow(() -> new GoogleAccountNotLinkedException(profile.email()));
+        requireAllowedToLogIn(person);
 
         person.setGoogleSubjectId(profile.subject());
         personRepository.save(person);
         return authTokenIssuer.issueTokens(person);
+    }
+
+    private void requireAllowedToLogIn(Person person) {
+        boolean locked = person.getLockedUntil() != null && person.getLockedUntil().isAfter(ApplicationTime.now());
+        if (locked || person.getStatus() != StatusType.ACTIVE) {
+            throw new InvalidCredentialsException();
+        }
     }
 }

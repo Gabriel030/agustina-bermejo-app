@@ -1,0 +1,27 @@
+meta {
+  name: 22. Solicitar alta de nuevo tras el rechazo (setup, 201)
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{baseUrl}}/me/program-enrollment-applications?programId={{programIdDocAlta}}&cohortId={{cohortIdDocAlta}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{alumnoAccessTokenDocAlta}}
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("applicationIdDocAlta2", res.getBody().id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -26,7 +26,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreCurso = 'Curso QA ' + java.lang.System.nanoTime()
     Given path '/courses'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20 }
+    And request { name: '#(nombreCurso)', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def courseId = response.id
@@ -177,7 +177,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión B', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionId = response.id
@@ -206,14 +206,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión C', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionCId = response.id
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión D', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión D', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionDId = response.id
@@ -258,19 +258,20 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
     Given path '/course-subjects', courseSubjectId, 'sections'
     And header Authorization = 'Bearer ' + alumnoToken
-    And request { name: 'Comisión no autorizada', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión no autorizada', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 403
 
   Scenario: Ciclo completo de una comisión de materia del plan de carrera — crear, editar, docente, baja/alta
     * def nombreMateria = 'Materia con comisión ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + preceptorToken
@@ -325,7 +326,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     * def nombreMateria = 'Materia compartida ' + java.lang.System.nanoTime()
     * def nombrePrograma1 = 'Carrera QA comparte 1 ' + java.lang.System.nanoTime()
     * def nombrePrograma2 = 'Carrera QA comparte 2 ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
 
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -333,6 +334,7 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
@@ -375,24 +377,25 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
 
   Scenario: Quitar una asignación de docente de una comisión de materia que no le corresponde — 404
     * def nombreMateria = 'Materia dos comisiones ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión E', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión E', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionEId = response.id
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: 'Comisión F', termId: '#(termId)', capacity: 20 }
+    And request { name: 'Comisión F', termId: '#(termId)', capacity: 20, durationMonths: 3 }
     When method post
     Then status 201
     * def sectionFId = response.id
@@ -418,13 +421,14 @@ Feature: Módulos de curso y comisiones (CourseSubject, CourseSection, SubjectSe
     Then status 404
 
     * def nombreMateria = 'Materia term inexistente ' + java.lang.System.nanoTime()
-    * def codigo = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigo = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigo)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/subjects', subjectId, 'sections'
     And header Authorization = 'Bearer ' + adminToken

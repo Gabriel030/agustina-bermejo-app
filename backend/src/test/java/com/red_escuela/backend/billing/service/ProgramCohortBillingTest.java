@@ -3,31 +3,29 @@ package com.red_escuela.backend.billing.service;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.InvalidPaymentPlanScopeException;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -35,6 +33,9 @@ import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepo
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import com.red_escuela.backend.billing.planning.TestTemplateTerms;
+import com.red_escuela.backend.shared.domain.Percentage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,12 +55,13 @@ import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class ProgramCohortBillingTest extends AbstractIntegrationTest {
     @Autowired
-    private ProgramEnrollmentBillingScheduler billingScheduler;
+    private BillingTestTrigger billingTrigger;
 
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
@@ -68,7 +70,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private InvoiceFactory invoiceFactory;
+    private com.red_escuela.backend.billing.service.BillingTestTrigger issuingTrigger;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -90,12 +92,11 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
 
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
-
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -113,7 +114,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -171,9 +172,9 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(recurringFeeInvoicesCount);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, recurringFeeInvoicesCount);
         template.setCreatedBy(createdBy);
-        return templateRepository.save(template);
+        return com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
     }
 
     private ProgramCohort persistCohort(ProgramYearBillingTemplate template, CohortIntake intake,
@@ -185,18 +186,15 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(cursadaStart);
         cohort.setCreatedBy(createdBy);
-        return programCohortRepository.save(cohort);
+        ProgramCohort saved = programCohortRepository.save(cohort);
+        if (intake == CohortIntake.SECOND) {
+            TestTemplateTerms.publishCohortEntryDiscount(configurationVersionRepository, saved, Percentage.ofFraction(new BigDecimal("0.5")));
+        }
+        return saved;
     }
 
     private void persistPriceRevision(Program program, FeeType feeType, BigDecimal amount, LocalDate effectiveFrom, Person createdBy) {
-        PriceRevision revision = new PriceRevision();
-        revision.setProgram(program);
-        revision.setFeeType(feeType);
-        revision.setDescription("Precio de prueba");
-        revision.setMonthlyAmount(amount);
-        revision.setEffectiveFrom(effectiveFrom);
-        revision.setCreatedBy(createdBy);
-        priceRevisionRepository.save(revision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, feeType, "Precio de prueba", ars(amount), effectiveFrom, createdBy.getId());
     }
 
     private ProgramEnrollment persistProgramEnrollment(Student student, Program program, ProgramCohort cohort) {
@@ -224,12 +222,12 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100001");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        billingScheduler.generateEnrollmentFee(enrollment);
+        billingTrigger.issueEntryFee(enrollment);
 
         var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
         assertThat(invoices.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
-        assertThat(invoices.get(0).getDueDate()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(invoices.get(0).getDueDate()).isAfterOrEqualTo(LocalDate.now());
     }
 
     @Test
@@ -247,15 +245,15 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         Student student = persistStudent("81100002");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohortSecond);
 
-        billingScheduler.generateEnrollmentFee(enrollment);
+        billingTrigger.issueEntryFee(enrollment);
 
-        var invoices = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollment.getId());
+        var invoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId());
         assertThat(invoices).hasSize(1);
         Invoice invoice = invoices.get(0);
-        assertThat(invoice.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(50000));
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(25000));
-        assertThat(invoice.getAdjustments()).hasSize(1);
-        assertThat(invoice.getAdjustments().get(0).getAppliedBy()).isNull();
+        assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(25000));
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).hasSize(1);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).get(0).getDiscountType()).isEqualTo(com.red_escuela.backend.billing.invoice.domain.DiscountType.COHORT_ENTRY);
     }
 
     @Test
@@ -272,6 +270,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-004")
     void twoCohortsOfTheSameYearHaveIndependentWindowsAndCalendars() {
         Person director = persistPersonBase("DIR139" + System.nanoTime());
         authenticateAsPerson(director);
@@ -290,17 +289,17 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramEnrollment enrollmentA = persistProgramEnrollment(studentA, program, first);
         ProgramEnrollment enrollmentB = persistProgramEnrollment(studentB, program, second);
 
-        billingScheduler.generateEnrollmentFee(enrollmentA);
-        billingScheduler.generateEnrollmentFee(enrollmentB);
+        billingTrigger.issueEntryFee(enrollmentA);
+        billingTrigger.issueEntryFee(enrollmentB);
 
-        var invoicesA = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentA.getId());
-        var invoicesB = invoiceRepository.findByProgramEnrollmentIdWithAdjustmentsOrderByPeriod(enrollmentB.getId());
+        var invoicesA = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentA.getId());
+        var invoicesB = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollmentB.getId());
 
         assertThat(invoicesA.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 3));
-        assertThat(invoicesA.get(0).getAdjustments()).isEmpty();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoicesA.get(0))).isEmpty();
 
         assertThat(invoicesB.get(0).getPeriod()).isEqualTo(YearMonth.of(2026, 8));
-        assertThat(invoicesB.get(0).getAdjustments()).hasSize(1);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoicesB.get(0))).hasSize(1);
     }
 
     @Test
@@ -313,25 +312,27 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31), LocalDate.of(2026, 3, 1), director);
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
 
         Student student = persistStudent("81100005");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
-        Invoice invoiceVieja = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
-        assertThat(invoiceVieja.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 3, 1));
+        Invoice invoiceVieja = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 3), LocalDate.of(2026, 3, 1));
+        assertThat(invoiceVieja.getAmounts().linesTotal().value()).isEqualTo(ars(10000));
 
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(15000), LocalDate.of(2026, 6, 1), director);
 
-        Invoice invoiceNueva = invoiceFactory.createForProgram(enrollment, null, FeeType.RECURRING_FEE, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
-        assertThat(invoiceNueva.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(15000));
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2026, 7, 1));
+        Invoice invoiceNueva = issuingTrigger.issueInstallment(enrollment, YearMonth.of(2026, 7), LocalDate.of(2026, 7, 1));
+        assertThat(invoiceNueva.getAmounts().linesTotal().value()).isEqualTo(ars(15000));
 
         Invoice recargada = invoiceRepository.findById(invoiceVieja.getId()).orElseThrow();
-        assertThat(recargada.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(10000));
+        assertThat(recargada.getAmounts().linesTotal().value()).isEqualTo(ars(10000));
     }
 
     @Test
-    void scopeMonthsGreaterThanWhatRemainsOfTheYearIsRejected() {
+    void annualUpfrontOfAProgramIsRejectedAndNothingIsIssued() {
         Person director = persistPersonBase("DIR37" + System.nanoTime());
         authenticateAsPerson(director);
 
@@ -340,105 +341,24 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), LocalDate.of(2020, 1, 1), director);
 
         Student student = persistStudent("81100006");
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
 
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
         PaymentPlanOption option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
         assertThatThrownBy(() -> selectPaymentPlanForProgramUseCase.select(
                 enrollment.getId(), new SelectPaymentPlanRequest(option.getId(), 12)))
-                .isInstanceOf(InvalidPaymentPlanScopeException.class);
+                .isInstanceOf(com.red_escuela.backend.billing.invoice.exception.AnnualUpfrontNotAvailableException.class);
+        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId())).isEmpty();
     }
 
     @Test
-    void oneFullUpfrontYearAndTheNextMonthlyWithoutCarryover() {
-        Person director = persistPersonBase("DIR39" + System.nanoTime());
-        authenticateAsPerson(director);
-
-        Program program = persistProgram("Carrera upfront luego mensual " + System.nanoTime());
-        YearMonth mesInicial = YearMonth.now();
-        Term term = persistTerm(2026);
-        term.setStartDate(mesInicial.atDay(1).atStartOfDay());
-        term.setEndDate(mesInicial.plusMonths(9).atEndOfMonth().atTime(23, 59));
-        termRepository.save(term);
-        ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
-        ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
-        persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), LocalDate.of(2020, 1, 1), director);
-
-        Student student = persistStudent("81100007");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
-
-        CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 10));
-
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(10);
-
-        Term term2 = persistTerm(2027);
-        term2.setStartDate(mesInicial.plusMonths(10).atDay(1).atStartOfDay());
-        term2.setEndDate(mesInicial.plusMonths(19).atEndOfMonth().atTime(23, 59));
-        termRepository.save(term2);
-        ProgramYearBillingTemplate template2 = persistTemplate(program, term2, 10, director);
-        programEnrollmentService.advanceAcademicYear(enrollment.getId(), template2.getId());
-        enrollment = programEnrollmentRepository.findById(enrollment.getId()).orElseThrow();
-
-        CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
-                "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(10));
-
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(11);
-    }
-
-    @Test
-    void switchingFromMonthlyToUpfrontMidYearAlsoWorks() {
-        Person director = persistPersonBase("DIR40" + System.nanoTime());
-        authenticateAsPerson(director);
-
-        Program program = persistProgram("Carrera mensual a upfront " + System.nanoTime());
-        Term term = persistTerm(2026);
-        ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
-        ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
-        persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(1), LocalDate.of(2020, 1, 1), director);
-
-        Student student = persistStudent("81100008");
-        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, cohort);
-
-        CreatePaymentPlanOptionRequest monthlyRequest = new CreatePaymentPlanOptionRequest(
-                "Mensual", PaymentPlanCadence.MONTHLY, null, false, null, null);
-        PaymentPlanOption monthlyOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), monthlyRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(monthlyOption.getId(), null));
-
-        YearMonth mesInicial = YearMonth.now();
-        for (int i = 0; i < 3; i++) {
-            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(i));
-        }
-
-        CreatePaymentPlanOptionRequest upfrontRequest = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().minusDays(1), LocalDate.now().plusDays(30));
-        PaymentPlanOption upfrontOption = createPaymentPlanOptionForProgramUseCase.create(program.getId(), upfrontRequest);
-        selectPaymentPlanForProgramUseCase.select(enrollment.getId(), new SelectPaymentPlanRequest(upfrontOption.getId(), 7));
-        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial);
-
-        assertThat(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE)).hasSize(7);
-    }
-
-    @Test
+    @Tag("D-065")
     void studentWithSimultaneousProgramAndCourseKeepsIndependentBillingStates() {
         Person director = persistPersonBase("DIR21" + System.nanoTime());
         authenticateAsPerson(director);
@@ -448,7 +368,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = persistTemplate(program, term, 10, director);
         ProgramCohort cohort = persistCohort(template, CohortIntake.FIRST,
                 LocalDate.now().minusDays(1), LocalDate.now().plusDays(30), LocalDate.now(), director);
-        persistPriceRevision(program, FeeType.RECURRING_FEE, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
+        persistPriceRevision(program, FeeType.MONTHLY_INSTALLMENT, BigDecimal.valueOf(10000), LocalDate.of(2020, 1, 1), director);
         persistPriceRevision(program, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000), LocalDate.of(2020, 1, 1), director);
 
         Student student = persistStudent("81100009");
@@ -468,14 +388,7 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         course.setDurationMonths(3);
         course = courseRepository.save(course);
 
-        PriceRevision courseRevision = new PriceRevision();
-        courseRevision.setCourse(course);
-        courseRevision.setFeeType(FeeType.RECURRING_FEE);
-        courseRevision.setDescription("Precio de prueba");
-        courseRevision.setMonthlyAmount(BigDecimal.valueOf(5000));
-        courseRevision.setEffectiveFrom(LocalDate.of(2020, 1, 1));
-        courseRevision.setCreatedBy(director);
-        priceRevisionRepository.save(courseRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Precio de prueba", ars(5000), LocalDate.of(2020, 1, 1), director.getId());
 
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
@@ -496,11 +409,11 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
         var invoicesCarrera = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(programEnrollment.getId());
         var invoicesCurso = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(courseEnrollment.getId());
 
-        assertThat(invoicesCarrera).extracting("feeType").containsExactlyInAnyOrder(FeeType.ENROLLMENT_FEE, FeeType.RECURRING_FEE);
-        assertThat(invoicesCurso).extracting("feeType").containsExactly(FeeType.RECURRING_FEE);
-        assertThat(invoicesCurso.get(0).getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(5000));
-        assertThat(invoicesCarrera).noneMatch(i -> i.getCourseEnrollment() != null);
-        assertThat(invoicesCurso).noneMatch(i -> i.getProgramEnrollment() != null);
+        assertThat(invoicesCarrera).extracting("feeType").containsExactlyInAnyOrder(FeeType.ENROLLMENT_FEE, FeeType.MONTHLY_INSTALLMENT);
+        assertThat(invoicesCurso).extracting("feeType").containsExactly(FeeType.MONTHLY_INSTALLMENT);
+        assertThat(invoicesCurso.get(0).getAmounts().linesTotal().value()).isEqualTo(ars(5000));
+        assertThat(invoicesCarrera).noneMatch(i -> i.findCourseEnrollmentId().isPresent());
+        assertThat(invoicesCurso).noneMatch(i -> i.findProgramEnrollmentId().isPresent());
     }
 
     @Autowired

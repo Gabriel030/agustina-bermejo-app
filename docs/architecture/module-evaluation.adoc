@@ -1,0 +1,26 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`com.red_escuela.backend.evaluation`
+|Bean references
+|* `c.r.b.a.service.CurrentInstructorService` (in Academic structure)
+* `c.r.b.i.service.CurrentStudentService` (in Identity)
+* `c.r.b.e.service.SubjectSectionEnrollmentService` (in Enrollment)
+* `c.r.b.i.service.CurrentPersonService` (in Identity)
+* `c.r.b.a.repository.SubjectSectionRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionRepository` (in Academic structure)
+* `c.r.b.e.repository.SubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.e.repository.CourseSubjectSectionEnrollmentRepository` (in Enrollment)
+* `c.r.b.e.repository.DirectorApprovalRequestRepository` (in Enrollment)
+* `c.r.b.a.service.AttendanceRiskCalculator` (in Attendance)
+* `c.r.b.b.service.EnrollmentFeeRequirementService` (in Billing)
+* `c.r.b.a.repository.SubjectRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectRepository` (in Academic structure)
+* `c.r.b.a.repository.TermRepository` (in Academic structure)
+* `c.r.b.a.repository.InstructorRepository` (in Academic structure)
+* `c.r.b.a.repository.HolidayRepository` (in Academic structure)
+* `c.r.b.a.repository.SubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.a.repository.CourseSubjectSectionInstructorRepository` (in Academic structure)
+* `c.r.b.g.service.GraduationRequestAutoRequester` (in Graduation)
+* `c.r.b.a.repository.SectionScheduleSlotRepository` (in Academic structure)
+|===

@@ -2,7 +2,7 @@ package com.red_escuela.backend.identity.usecase.staff;
 
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.exception.PersonNotFoundException;
+import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.StaffRoleAssignmentPolicy;
 import com.red_escuela.backend.shared.UseCase;

@@ -1,5 +1,7 @@
 package com.red_escuela.backend.attendance.entity;
+import com.red_escuela.backend.attendance.exception.AttendanceAlreadyRecordedException;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -64,5 +66,27 @@ public class Attendance {
         if (hasCourse == hasProgram) {
             throw new IllegalStateException("Attendance must reference exactly one enrollment: course OR program.");
         }
+    }
+
+    public boolean belongsTo(Student student) {
+        Student owner = programSubjectSectionEnrollment != null
+                ? programSubjectSectionEnrollment.getStudent()
+                : courseSubjectSectionEnrollment.getStudent();
+        return owner.getId().equals(student.getId());
+    }
+
+    public void applyApprovedChange(AttendanceStatus requestedStatus) {
+        requestedStatus.requireRecordableByInstructor();
+        status = requestedStatus;
+    }
+
+    public void record(AttendanceStatus newStatus) {
+        newStatus.requireRecordableByInstructor();
+        if (status != null && status != newStatus) {
+            Long enrollmentId = programSubjectSectionEnrollment != null
+                    ? programSubjectSectionEnrollment.getId() : courseSubjectSectionEnrollment.getId();
+            throw new AttendanceAlreadyRecordedException(enrollmentId, String.valueOf(classDate));
+        }
+        status = newStatus;
     }
 }

@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.LoginAttempt;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
@@ -8,11 +8,14 @@ import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.domain.DocumentType;
+import com.red_escuela.backend.shared.domain.InvalidEmailAddressException;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @UseCase
@@ -37,11 +40,11 @@ public class LoginService implements LoginUseCase {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthTokens login(LoginCommand command) {
         Optional<Person> personOpt = personRepository.findByUsername(command.username())
-                .or(() -> personRepository.findByEmail(command.username()))
-                .or(() -> personRepository.findByDni(command.username()));
+                .or(() -> findByEmailIfValid(command.username()))
+                .or(() -> personRepository.findByDocumentTypeAndDni(DocumentType.DNI, command.username()));
 
         if (personOpt.isEmpty()) {
             recordAttempt(command.username(), null, false, command.ipAddress());
@@ -69,13 +72,13 @@ public class LoginService implements LoginUseCase {
     }
 
     private boolean isLocked(Person person) {
-        return person.getLockedUntil() != null && person.getLockedUntil().isAfter(LocalDateTime.now());
+        return person.getLockedUntil() != null && person.getLockedUntil().isAfter(ApplicationTime.now());
     }
 
     private void registerFailedAttempt(Person person) {
         int attempts = person.getFailedLoginAttempts() + 1;
         if (attempts >= lockoutMaxAttempts) {
-            person.setLockedUntil(LocalDateTime.now().plusMinutes(lockoutDurationMinutes));
+            person.setLockedUntil(ApplicationTime.now().plusMinutes(lockoutDurationMinutes));
             person.setFailedLoginAttempts(0);
         } else {
             person.setFailedLoginAttempts(attempts);
@@ -95,7 +98,15 @@ public class LoginService implements LoginUseCase {
         attempt.setPerson(person);
         attempt.setSuccessful(successful);
         attempt.setIpAddress(ipAddress);
-        attempt.setAttemptedAt(LocalDateTime.now());
+        attempt.setAttemptedAt(ApplicationTime.now());
         loginAttemptRepository.save(attempt);
+    }
+
+    private Optional<Person> findByEmailIfValid(String candidate) {
+        try {
+            return personRepository.findByEmail(EmailAddress.of(candidate));
+        } catch (InvalidEmailAddressException e) {
+            return Optional.empty();
+        }
     }
 }

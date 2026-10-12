@@ -1,8 +1,14 @@
 package com.red_escuela.backend.enrollment.dto;
 
+import com.red_escuela.backend.billing.api.AdmissionReceiptSummary;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.shared.domain.Money;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.function.Function;
 
 public record ProgramEnrollmentApplicationResponse(
         Long id,
@@ -13,8 +19,30 @@ public record ProgramEnrollmentApplicationResponse(
         String status,
         LocalDateTime requestedAt,
         LocalDateTime decidedAt,
-        String rejectionReason) {
+        String rejectionReason,
+        AdmissionInvoiceSummary admissionInvoice,
+        Long programEnrollmentId) {
+
+    public record AdmissionInvoiceSummary(Long id, Money total, LocalDate dueDate, String paymentStatus, String receiptStatus,
+                                          LocalDateTime receiptUploadedAt) {
+        static AdmissionInvoiceSummary from(Invoice invoice, AdmissionReceiptSummary latestReceipt) {
+            return new AdmissionInvoiceSummary(invoice.getId(), invoice.getAmounts().total().value(), invoice.getDueDate(),
+                    invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name(),
+                    latestReceipt == null ? null : latestReceipt.status(),
+                    latestReceipt == null ? null : latestReceipt.uploadedAt());
+        }
+    }
+
     public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application) {
+        return from(application, invoiceId -> null);
+    }
+
+    public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId) {
+        return from(application, latestReceiptByInvoiceId, applicationId -> null);
+    }
+
+    public static ProgramEnrollmentApplicationResponse from(ProgramEnrollmentApplication application, Function<Long, AdmissionReceiptSummary> latestReceiptByInvoiceId,
+                                                            Function<Long, Long> enrollmentIdByApplicationId) {
         return new ProgramEnrollmentApplicationResponse(
                 application.getId(),
                 application.getStudent().getId(),
@@ -24,6 +52,9 @@ public record ProgramEnrollmentApplicationResponse(
                 application.getStatus().name(),
                 application.getRequestedAt(),
                 application.getDecidedAt(),
-                application.getRejectionReason());
+                application.getRejectionReason(),
+                application.getAdmissionInvoice() == null ? null : AdmissionInvoiceSummary.from(application.getAdmissionInvoice(),
+                        latestReceiptByInvoiceId.apply(application.getAdmissionInvoice().getId())),
+                enrollmentIdByApplicationId.apply(application.getId()));
     }
 }

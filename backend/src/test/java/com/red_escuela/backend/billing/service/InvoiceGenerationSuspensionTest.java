@@ -1,39 +1,38 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanOptionRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -44,12 +43,13 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
     private InvoiceRepository invoiceRepository;
@@ -87,9 +87,6 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     @Autowired
     private PaymentPlanSelectionRepository paymentPlanSelectionRepository;
 
-    @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
     private Student persistStudent(String dni) {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba " + System.nanoTime());
@@ -97,6 +94,9 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(dni);
+        person.setName("Alumno");
+        person.setLastname("Prueba");
+        person.setDni(dni);
         person.setEmail(dni + "@example.com");
         person.setAddress(addressRepository.save(new Address()));
         person.setStatus(StatusType.ACTIVE);
@@ -109,7 +109,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         return studentRepository.save(student);
     }
 
-    private ProgramEnrollment persistProgramEnrollment(String dni, ProgramEnrollmentStatus status, EnrollmentBillingStanding billingStanding) {
+    private ProgramEnrollment persistProgramEnrollment(String dni, ProgramEnrollmentStatus status, EnrollmentPaymentStatus paymentStatus) {
         Student student = persistStudent(dni);
         Program program = new Program();
         program.setName("Carrera de prueba " + System.nanoTime());
@@ -122,11 +122,11 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setBillingStanding(billingStanding);
+        enrollment.setPaymentStatus(paymentStatus);
         return programEnrollmentRepository.save(enrollment);
     }
 
-    private CourseEnrollment persistCourseEnrollment(String dni, EnrollmentStatus status, EnrollmentBillingStanding billingStanding) {
+    private CourseEnrollment persistCourseEnrollment(String dni, EnrollmentStatus status, EnrollmentPaymentStatus paymentStatus) {
         Student student = persistStudent(dni);
         Term term = new Term();
         term.setYear(2026);
@@ -144,13 +144,15 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setCourse(course);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
-        enrollment.setBillingStanding(billingStanding);
+        enrollment.setPaymentStatus(paymentStatus);
         return courseEnrollmentRepository.save(enrollment);
     }
 
     @Test
+    @Tag("D-053")
+    @Tag("D-066")
     void suspendedDoesNotGenerateNewInstallmentTheFollowingMonth() {
-        ProgramEnrollment enrollment = persistProgramEnrollment("99000201", ProgramEnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
+        ProgramEnrollment enrollment = persistProgramEnrollment("99000201", ProgramEnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED);
 
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 
@@ -160,7 +162,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     @Test
     void withdrawnForNonpaymentAlsoGeneratesNothing() {
         ProgramEnrollment enrollment = persistProgramEnrollment(
-                "99000202", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.WITHDRAWN_FOR_NONPAYMENT);
+                "99000202", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
 
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 
@@ -169,7 +171,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
     @Test
     void theSameRuleAppliesToAllThreeBillableTypes() {
-        CourseEnrollment courseEnrollment = persistCourseEnrollment("99000203", EnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
+        CourseEnrollment courseEnrollment = persistCourseEnrollment("99000203", EnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED);
 
         invoiceGenerationService.generateNextInstallmentForCourse(courseEnrollment, YearMonth.now());
 
@@ -177,18 +179,12 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-066")
     void payingOffOldDebtResumesGenerationWithoutRecoveringSkippedMonths() {
-        CourseEnrollment enrollment = persistCourseEnrollment("99000205", EnrollmentStatus.ENROLLED, EnrollmentBillingStanding.SUSPENDED);
+        CourseEnrollment enrollment = persistCourseEnrollment("99000205", EnrollmentStatus.ENROLLED, EnrollmentPaymentStatus.SUSPENDED);
         Person director = persistStudent("99000206").getPerson();
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(enrollment.getCourse());
-        priceRevision.setFeeType(FeeType.RECURRING_FEE);
-        priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(java.math.BigDecimal.valueOf(1000));
-        priceRevision.setEffectiveFrom(java.time.LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, enrollment.getCourse().getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(1000), java.time.LocalDate.now().minusYears(1), director.getId());
 
         PaymentPlanOption option = new PaymentPlanOption();
         option.setCourse(enrollment.getCourse());
@@ -204,7 +200,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         selection.setCreatedBy(director);
         paymentPlanSelectionRepository.save(selection);
 
-        enrollment.setBillingStanding(EnrollmentBillingStanding.UP_TO_DATE);
+        enrollment.setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
         courseEnrollmentRepository.save(enrollment);
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
@@ -216,7 +212,7 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
 
     @Test
     void manualWithdrawalByAdministrativeImmediatelyStopsGeneration() {
-        ProgramEnrollment enrollment = persistProgramEnrollment("99000204", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentBillingStanding.UP_TO_DATE);
+        ProgramEnrollment enrollment = persistProgramEnrollment("99000204", ProgramEnrollmentStatus.WITHDRAWN, EnrollmentPaymentStatus.UP_TO_DATE);
 
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
 

@@ -1,9 +1,10 @@
 package com.red_escuela.backend.identity.usecase.student;
 
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.usecase.person.RevokeAllSessionsUseCase;
 import com.red_escuela.backend.shared.UseCase;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class WithdrawStudentService implements WithdrawStudentUseCase {
 
     private final StudentRepository studentRepository;
+    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
 
-    public WithdrawStudentService(StudentRepository studentRepository) {
+    public WithdrawStudentService(StudentRepository studentRepository, RevokeAllSessionsUseCase revokeAllSessionsUseCase) {
         this.studentRepository = studentRepository;
+        this.revokeAllSessionsUseCase = revokeAllSessionsUseCase;
     }
 
     @Override
@@ -25,5 +28,6 @@ public class WithdrawStudentService implements WithdrawStudentUseCase {
         student.setWithdrawalReason(command.request().reason());
         student.setWithdrawalDetail(command.request().detail());
         studentRepository.save(student);
+        revokeAllSessionsUseCase.revokeAll(student.getPerson());
     }
 }

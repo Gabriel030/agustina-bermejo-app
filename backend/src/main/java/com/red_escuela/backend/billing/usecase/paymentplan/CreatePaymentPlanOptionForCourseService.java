@@ -28,7 +28,7 @@ public class CreatePaymentPlanOptionForCourseService implements CreatePaymentPla
     @Transactional
     public PaymentPlanOption create(Long courseId, CreatePaymentPlanOptionRequest request) {
         Course course = courseRepository.findById(courseId).orElseThrow(() -> new CourseNotFoundException(courseId));
-        PaymentPlanOption option = paymentPlanOptionBuilder.build(request);
+        PaymentPlanOption option = paymentPlanOptionBuilder.build(request, course.getCurrency());
         option.setCourse(course);
         return paymentPlanOptionRepository.save(option);
     }

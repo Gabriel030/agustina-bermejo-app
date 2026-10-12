@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.ConfirmProspectRequest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PasswordResetToken;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -102,6 +102,9 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -154,7 +157,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.dni").doesNotExist());
 
         Student student = studentRepository.findAll().stream()
-                .filter(s -> "juan.perez@example.com".equals(s.getPerson().getEmail()))
+                .filter(s -> "juan.perez@example.com".equals(s.getPerson().emailValue()))
                 .findFirst().orElseThrow();
         assertThat(student.getOnboardingStatus()).isEqualTo(StudentOnboardingStatus.PROSPECTO);
         assertThat(student.getPerson().getUsername()).isNull();
@@ -225,7 +228,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor5", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
-                "30111222", "Calle Falsa", "123", null, "Ciudad", null, null, null);
+                "30111222", null, "Calle Falsa", "123", null, "Ciudad", null, null, null);
 
         mockMvc.perform(post("/prospects/{id}/confirm", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -244,11 +247,11 @@ class ProspectControllerTest extends AbstractIntegrationTest {
 
         String rawPasswordResetCode = "123456";
         PasswordResetToken existing = resetTokens.get(0);
-        existing.setTokenHash(com.red_escuela.backend.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
+        existing.setTokenHash(com.red_escuela.backend.identity.util.TokenHashUtil.sha256Hex(rawPasswordResetCode));
         entityManager.merge(existing);
         entityManager.flush();
 
-        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(confirmado.getPerson().getEmail(), rawPasswordResetCode));
+        String exchangeToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(confirmado.getPerson().emailValue(), rawPasswordResetCode));
         resetPasswordUseCase.reset(new ResetPasswordCommand(exchangeToken, "nuevaPassword123"));
         AuthTokens tokens = loginUseCase.login(new LoginCommand("30111222", "nuevaPassword123", "127.0.0.1"));
         assertThat(tokens.accessToken()).isNotBlank();
@@ -261,7 +264,7 @@ class ProspectControllerTest extends AbstractIntegrationTest {
         String token = tokenWithRole("preceptor6", "PRECEPTOR");
 
         ConfirmProspectRequest request = new ConfirmProspectRequest(
-                "30222333", "Calle Falsa", "123", null, "Ciudad", null, null, null);
+                "30222333", null, "Calle Falsa", "123", null, "Ciudad", null, null, null);
 
         mockMvc.perform(post("/prospects/{id}/confirm", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.CreateStaffRequest;
 import com.red_escuela.backend.identity.dto.UpdateStaffRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
@@ -76,7 +76,7 @@ class StaffControllerTest extends AbstractIntegrationTest {
 
     private CreateStaffRequest staffRequest(String email, String dni, String role) {
         return new CreateStaffRequest(
-                "Nombre", "Apellido", email, dni,
+                "Nombre", "Apellido", email, dni, null,
                 "Calle", "1", null, "Ciudad", null, null, null, role);
     }
 

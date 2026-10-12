@@ -5,13 +5,13 @@ import com.red_escuela.backend.identity.dto.ForgotPasswordRequest;
 import com.red_escuela.backend.identity.dto.GoogleLoginRequest;
 import com.red_escuela.backend.identity.dto.GoogleRegisterRequest;
 import com.red_escuela.backend.identity.dto.LoginRequest;
-import com.red_escuela.backend.dto.LogoutRequest;
+import com.red_escuela.backend.identity.dto.LogoutRequest;
 import com.red_escuela.backend.identity.dto.RefreshRequest;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.identity.dto.ResetPasswordRequest;
-import com.red_escuela.backend.dto.VerifyResetCodeRequest;
-import com.red_escuela.backend.dto.VerifyResetCodeResponse;
-import com.red_escuela.backend.identity.exception.TooManyRequestsException;
+import com.red_escuela.backend.identity.dto.VerifyResetCodeRequest;
+import com.red_escuela.backend.identity.dto.VerifyResetCodeResponse;
+import com.red_escuela.backend.identity.exception.RateLimitExceededException;
 import com.red_escuela.backend.identity.infrastructure.LoginRateLimiter;
 import com.red_escuela.backend.identity.usecase.auth.AuthTokens;
 import com.red_escuela.backend.identity.usecase.auth.LoginCommand;
@@ -71,7 +71,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
-            throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
         }
         AuthTokens tokens = registerUseCase.register(request);
         return AuthResponse.from(tokens);
@@ -81,7 +81,7 @@ public class AuthController {
     public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String ip = httpRequest.getRemoteAddr();
         if (!rateLimiter.tryConsumeLogin(ip)) {
-            throw new TooManyRequestsException("Demasiados intentos de login, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiados intentos de login, esperá un momento antes de reintentar");
         }
         AuthTokens tokens = loginUseCase.login(new LoginCommand(request.username(), request.password(), ip));
         return AuthResponse.from(tokens);
@@ -90,7 +90,7 @@ public class AuthController {
     @PostMapping("/google")
     public AuthResponse loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request, HttpServletRequest httpRequest) {
         if (!rateLimiter.tryConsumeLogin(httpRequest.getRemoteAddr())) {
-            throw new TooManyRequestsException("Demasiados intentos de login, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiados intentos de login, esperá un momento antes de reintentar");
         }
         AuthTokens tokens = loginWithGoogleUseCase.login(request.idToken());
         return AuthResponse.from(tokens);
@@ -100,7 +100,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse registerWithGoogle(@Valid @RequestBody GoogleRegisterRequest request, HttpServletRequest httpRequest) {
         if (!rateLimiter.tryConsumeRegister(httpRequest.getRemoteAddr())) {
-            throw new TooManyRequestsException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiados registros desde esta IP, esperá un momento antes de reintentar");
         }
         AuthTokens tokens = registerWithGoogleUseCase.register(new RegisterWithGoogleCommand(request.idToken(), request.institutionId()));
         return AuthResponse.from(tokens);
@@ -122,7 +122,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
         if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
-            throw new TooManyRequestsException("Demasiadas solicitudes de recuperación, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiadas solicitudes de recuperación, esperá un momento antes de reintentar");
         }
         requestPasswordResetUseCase.requestReset(request.email());
     }
@@ -130,7 +130,7 @@ public class AuthController {
     @PostMapping("/verify-reset-code")
     public VerifyResetCodeResponse verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest request, HttpServletRequest httpRequest) {
         if (!rateLimiter.tryConsumeForgotPassword(httpRequest.getRemoteAddr())) {
-            throw new TooManyRequestsException("Demasiados intentos, esperá un momento antes de reintentar");
+            throw new RateLimitExceededException("Demasiados intentos, esperá un momento antes de reintentar");
         }
         String resetToken = verifyResetCodeUseCase.verify(new VerifyResetCodeCommand(request.email(), request.code()));
         return VerifyResetCodeResponse.from(resetToken);

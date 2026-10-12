@@ -16,7 +16,7 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     * def nombreCarrera = 'Karate - Carrera documentos ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id
@@ -49,14 +49,14 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     # alumno vía fixture (mismo criterio de deuda técnica entrada 6: no repetir carga
     # sobre el rate limiter compartido de /auth/register para algo que este feature no
     # está probando).
-    * def alumnoToken = fixtures.createConfirmedStudent(institutionId).accessToken
+    * def alumnoDni = '' + (40000000 + java.lang.System.nanoTime() % 50000000)
+    * def alumnoToken = fixtures.createConfirmedStudentWithIdentity(institutionId, 'Ana', 'Karate', alumnoDni).accessToken
 
-    # Solicitar — multipart desde Épica 7 Fase 3, comprobante bloqueante.
+    # Solicitar — D-227: sin pago ni comprobante, la matrícula se factura al aprobar.
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And multipart field programId = programId
-    And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And param programId = programId
+    And param cohortId = cohortId
     When method post
     Then status 201
     * def applicationId = response.id
@@ -136,3 +136,71 @@ Feature: Caso de uso — Documentación y decisión de una solicitud de alta
     Then status 200
     * def propiaRechazada = response.filter(function(x){ return x.id == applicationId })[0]
     And match propiaRechazada.status == 'REJECTED'
+
+  Scenario: Solicitar no genera comprobante ni factura, y aprobar emite la factura de matrícula que ve el alumno
+    Given path '/bank-transfer-receipts'
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    * def comprobantes = response.filter(function(x){ return x.studentDni == alumnoDni })
+    And match comprobantes == '#[0]'
+
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def sinFactura = response.filter(function(x){ return x.id == applicationId })[0]
+    And match sinFactura.admissionInvoice == null
+
+    Given path '/program-enrollment-applications', applicationId, 'approve'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 200
+
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def conFactura = response.filter(function(x){ return x.id == applicationId })[0]
+    And match conFactura.admissionInvoice.paymentStatus == 'PENDING'
+    And match conFactura.admissionInvoice.total.amount == '50000.00'
+
+  Scenario: Rechazar la solicitud no deja ninguna factura de matrícula
+    Given path '/program-enrollment-applications', applicationId, 'reject'
+    And header Authorization = 'Bearer ' + preceptorToken
+    And request { reason: 'Documentación ilegible' }
+    When method post
+    Then status 200
+
+    Given path '/me/program-enrollment-applications'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def rechazada = response.filter(function(x){ return x.id == applicationId })[0]
+    And match rechazada.status == 'REJECTED'
+    And match rechazada.admissionInvoice == null
+
+  Scenario: El alumno ve los documentos que ya subió, y solo los propios
+    Given path '/me/documents'
+    When method get
+    Then status 403
+
+    Given path '/me/program-enrollment-applications', applicationId, 'documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And param type = 'DNI_FRENTE'
+    And multipart file file = { value: 'contenido de prueba', filename: 'dni.pdf', contentType: 'application/pdf' }
+    When method post
+    Then status 201
+
+    Given path '/me/documents'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    And match response[*].type contains 'DNI_FRENTE'
+
+    * def otroAlumno = fixtures.createConfirmedStudent(institutionId)
+    Given path '/me/documents'
+    And header Authorization = 'Bearer ' + otroAlumno.accessToken
+    When method get
+    Then status 200
+    And match response == '#[0]'

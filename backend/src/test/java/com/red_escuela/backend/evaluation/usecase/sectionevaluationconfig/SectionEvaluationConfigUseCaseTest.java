@@ -3,10 +3,11 @@ package com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -17,11 +18,14 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.evaluation.exception.EvaluationDateOnHolidayException;
+import com.red_escuela.backend.evaluation.exception.EvaluationDateOutsideTermException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.exception.NotOwnSectionException;
@@ -43,7 +47,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import com.red_escuela.backend.academicstructure.entity.Classroom;
+import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -123,6 +130,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         entityManager.persist(subject);
@@ -295,6 +303,47 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void submissionWindowClosesWhenTheClockReachesTheTermStart() {
+        Subject subject = persistSubject("MateriaVentanaPorReloj");
+        LocalDateTime termStart = LocalDateTime.now().plusDays(30);
+        Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000015");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        entityManager.flush();
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
+
+        MutableClock.INSTANCE.setDateTime(termStart.plusMinutes(1));
+
+        assertThatThrownBy(() -> submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId())))
+                .isInstanceOf(SubmissionWindowClosedException.class);
+    }
+
+    @Test
+    void submissionIsAcceptedWhileTheClockIsBeforeTheTermStart() {
+        Subject subject = persistSubject("MateriaVentanaAbiertaPorReloj");
+        LocalDateTime termStart = LocalDateTime.now().plusDays(30);
+        Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000016");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        entityManager.flush();
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
+
+        MutableClock.INSTANCE.setDateTime(termStart.minusMinutes(1));
+
+        SectionEvaluationConfig submitted = submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+        assertThat(submitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
+        assertThat(submitted.getSubmittedAt()).isEqualTo(termStart.minusMinutes(1).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+    }
+
+    @Test
     void submittingNotifiesDirectorRole() {
         Subject subject = persistSubject("MateriaNotificaDirector");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
@@ -346,6 +395,48 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void approvingCreatesFinalCallsAtTheSectionTimeAndClassroomWithARegistrationWindow() {
+        Subject subject = persistSubject("MateriaMesasCompletas");
+        Term term = persistTerm(LocalDateTime.of(2099, 3, 2, 0, 0), LocalDateTime.of(2099, 12, 11, 0, 0));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000024");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        Person actor = persistPersonWithRole("90000025", "DIRECTOR");
+        LocalDate finalCall1 = LocalDate.of(2099, 12, 2);
+        LocalDate finalCall2 = LocalDate.of(2099, 12, 7);
+        Classroom classroom = new Classroom();
+        classroom.setName("Aula QA 5");
+        classroom.setCapacity(30);
+        entityManager.persist(classroom);
+        SectionScheduleSlot slot = new SectionScheduleSlot();
+        slot.setSubjectSection(section);
+        slot.setClassroom(classroom);
+        slot.setDayOfWeek(finalCall1.getDayOfWeek());
+        slot.setStartTime(LocalTime.of(18, 0));
+        slot.setEndTime(LocalTime.of(20, 0));
+        entityManager.persist(slot);
+        entityManager.flush();
+
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                new UpdateSectionEvaluationConfigRequest(1, LocalDate.of(2099, 4, 24), null, null,
+                        LocalDate.of(2099, 5, 15), LocalDate.of(2099, 9, 11), null, null, finalCall1, finalCall2)));
+        submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+        approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId(), actor));
+
+        List<ExamBoard> examBoards = examBoardRepository.findBySubjectIdAndStatus(subject.getId(), com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED);
+        assertThat(examBoards).extracting(ExamBoard::getExamDate)
+                .containsExactlyInAnyOrder(finalCall1.atTime(18, 0), finalCall2.atTime(18, 0));
+        assertThat(examBoards).extracting(ExamBoard::getClassroom).containsOnly("Aula QA 5");
+        assertThat(examBoards).allSatisfy(board -> {
+            assertThat(board.getRegistrationStart()).isNotNull();
+            assertThat(board.getRegistrationEnd())
+                    .isEqualTo(board.getExamDate().toLocalDate().minusDays(2).atTime(23, 59));
+        });
+    }
+
+    @Test
     void rejectingReturnsToDraftAndAllowsResubmission() {
         Subject subject = persistSubject("MateriaRechazada");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
@@ -368,8 +459,92 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
 
         SectionEvaluationConfig updated = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
                 validRequest(nonHolidayDate(41), nonHolidayDate(61), nonHolidayDate(81))));
-        assertThat(updated.getStatus()).isEqualTo(SectionEvaluationConfigStatus.DRAFT);
-        assertThat(updated.getRejectionReason()).isNull();
+        assertThat(updated.getStatus()).isEqualTo(SectionEvaluationConfigStatus.REJECTED);
+        assertThat(updated.getRejectionReason()).isEqualTo("Faltan fechas de TP");
+
+        SectionEvaluationConfig resubmitted = submitSectionEvaluationConfigForApprovalUseCase.submit(
+                new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+        assertThat(resubmitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
+        assertThat(resubmitted.getRejectionReason()).isNull();
+    }
+
+    private SubjectSection sectionInPastTermWithLead(String subjectName, Instructor leadInstructor) {
+        Subject subject = persistSubject(subjectName);
+        Term term = persistTerm(LocalDateTime.of(2020, 3, 2, 0, 0), LocalDateTime.of(2020, 12, 11, 0, 0));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        entityManager.flush();
+        return section;
+    }
+
+    private UpdateSectionEvaluationConfigRequest requestWithinPastTerm(LocalDate finalCall2) {
+        return new UpdateSectionEvaluationConfigRequest(1, LocalDate.of(2020, 4, 24), null, null,
+                LocalDate.of(2020, 5, 15), LocalDate.of(2020, 9, 11), null, null,
+                LocalDate.of(2020, 12, 2), finalCall2);
+    }
+
+    @Test
+    void rejectedConfigCanBeResubmittedAfterTermStarted() {
+        Instructor leadInstructor = persistInstructor("90000020");
+        SubjectSection section = sectionInPastTermWithLead("MateriaReenvioEnCurso", leadInstructor);
+        SectionEvaluationConfig config = getMySectionEvaluationConfigUseCase.get(
+                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId()));
+        config.setStatus(SectionEvaluationConfigStatus.REJECTED);
+        config.setRejectionReason("Corregí el 2do llamado");
+        entityManager.flush();
+
+        SectionEvaluationConfig saved = saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(
+                section.getId(), leadInstructor.getId(), requestWithinPastTerm(LocalDate.of(2020, 12, 10))));
+        assertThat(saved.getStatus()).isEqualTo(SectionEvaluationConfigStatus.REJECTED);
+        assertThat(saved.getRejectionReason()).isEqualTo("Corregí el 2do llamado");
+
+        SectionEvaluationConfig resubmitted = submitSectionEvaluationConfigForApprovalUseCase.submit(
+                new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+
+        assertThat(resubmitted.getStatus()).isEqualTo(SectionEvaluationConfigStatus.PENDING_APPROVAL);
+        assertThat(resubmitted.getRejectionReason()).isNull();
+        assertThat(resubmitted.getSubmittedAt()).isNotNull();
+    }
+
+    @Test
+    void draftOfAStartedTermCannotBeSubmittedButRejectedOneCan() {
+        Instructor leadInstructor = persistInstructor("90000021");
+        SubjectSection section = sectionInPastTermWithLead("MateriaVentanaCerrada", leadInstructor);
+        SectionEvaluationConfig config = getMySectionEvaluationConfigUseCase.get(
+                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId()));
+        LocalDateTime now = LocalDateTime.of(2020, 6, 1, 10, 0);
+
+        assertThat(config.canBeSubmitted(now)).isFalse();
+        config.setStatus(SectionEvaluationConfigStatus.REJECTED);
+        assertThat(config.canBeSubmitted(now)).isTrue();
+        config.setStatus(SectionEvaluationConfigStatus.PENDING_APPROVAL);
+        assertThat(config.canBeSubmitted(now)).isFalse();
+    }
+
+    @Test
+    void savingADateAfterTermEndReportsItIsOutsideTheTerm() {
+        Instructor leadInstructor = persistInstructor("90000022");
+        SubjectSection section = sectionInPastTermWithLead("MateriaFinalFueraDelCiclo", leadInstructor);
+
+        assertThatThrownBy(() -> saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(
+                section.getId(), leadInstructor.getId(), requestWithinPastTerm(LocalDate.of(2020, 12, 16)))))
+                .isInstanceOf(EvaluationDateOutsideTermException.class);
+    }
+
+    @Test
+    void savingAHolidayDateReportsItFallsOnAHoliday() {
+        Holiday holiday = new Holiday();
+        holiday.setDate(LocalDate.of(2020, 12, 9));
+        holiday.setDescription("Feriado de prueba 2020");
+        entityManager.persist(holiday);
+        Instructor leadInstructor = persistInstructor("90000023");
+        SubjectSection section = sectionInPastTermWithLead("MateriaFinalEnFeriado", leadInstructor);
+
+        assertThatThrownBy(() -> saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(
+                section.getId(), leadInstructor.getId(), requestWithinPastTerm(LocalDate.of(2020, 12, 9)))))
+                .isInstanceOf(EvaluationDateOnHolidayException.class);
     }
 
     @Test

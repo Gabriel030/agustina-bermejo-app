@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
-import com.red_escuela.backend.academicstructure.exception.SubjectInvalidTransitionException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,8 +31,8 @@ public class SubjectService {
                 .weeklyHours(request.weeklyHours())
                 .weeklyHoursLab(request.weeklyHoursLab())
                 .gradeMode(request.gradeMode())
-                .maxFinalExamAttempts(request.maxFinalExamAttempts())
                 .build();
+        subject.setMaxFinalExamAttempts(request.maxFinalExamAttempts());
         try {
             return subjectRepository.saveAndFlush(subject);
         } catch (DataIntegrityViolationException e) {
@@ -44,42 +43,39 @@ public class SubjectService {
     @Transactional
     public Subject update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
+        subject.requireEditable();
+        Optional.ofNullable(request.code()).ifPresent(subject::changeCode);
         Optional.ofNullable(request.name()).ifPresent(subject::setName);
         Optional.ofNullable(request.description()).ifPresent(subject::setDescription);
         Optional.ofNullable(request.weeklyHours()).ifPresent(subject::setWeeklyHours);
         Optional.ofNullable(request.weeklyHoursLab()).ifPresent(subject::setWeeklyHoursLab);
         Optional.ofNullable(request.gradeMode()).ifPresent(subject::setGradeMode);
         Optional.ofNullable(request.maxFinalExamAttempts()).ifPresent(subject::setMaxFinalExamAttempts);
-        return subjectRepository.save(subject);
+        try {
+            return subjectRepository.saveAndFlush(subject);
+        } catch (DataIntegrityViolationException e) {
+            throw new SubjectAlreadyExistsException(subject.getName());
+        }
     }
 
     @Transactional
     public Subject submitForApproval(Long id) {
         Subject subject = findOrThrow(id);
-        if (subject.getStatus() != SubjectStatus.DRAFT && subject.getStatus() != SubjectStatus.REJECTED) {
-            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "enviar a aprobación");
-        }
-        subject.setStatus(SubjectStatus.PENDING_APPROVAL);
+        subject.submitForApproval();
         return subjectRepository.save(subject);
     }
 
     @Transactional
     public Subject approve(Long id) {
         Subject subject = findOrThrow(id);
-        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
-            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "aprobar");
-        }
-        subject.setStatus(SubjectStatus.ACTIVE);
+        subject.approve();
         return subjectRepository.save(subject);
     }
 
     @Transactional
-    public Subject reject(Long id) {
+    public Subject reject(Long id, String reason) {
         Subject subject = findOrThrow(id);
-        if (subject.getStatus() != SubjectStatus.PENDING_APPROVAL) {
-            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "rechazar");
-        }
-        subject.setStatus(SubjectStatus.REJECTED);
+        subject.reject(reason.trim());
         return subjectRepository.save(subject);
     }
 
@@ -94,20 +90,14 @@ public class SubjectService {
     @Transactional
     public void deactivate(Long id) {
         Subject subject = findOrThrow(id);
-        if (subject.getStatus() != SubjectStatus.ACTIVE) {
-            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "desactivar");
-        }
-        subject.setStatus(SubjectStatus.INACTIVE);
+        subject.deactivate();
         subjectRepository.save(subject);
     }
 
     @Transactional
     public void reactivate(Long id) {
         Subject subject = findOrThrow(id);
-        if (subject.getStatus() != SubjectStatus.INACTIVE) {
-            throw new SubjectInvalidTransitionException(id, subject.getStatus(), "reactivar");
-        }
-        subject.setStatus(SubjectStatus.ACTIVE);
+        subject.reactivate();
         subjectRepository.save(subject);
     }
 

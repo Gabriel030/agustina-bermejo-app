@@ -1,11 +1,11 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.LoginAttempt;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidCredentialsException;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.LoginAttemptRepository;
@@ -142,6 +142,18 @@ class AuthFlowTest extends AbstractIntegrationTest {
         AuthTokens tokens = loginUseCase.login(new LoginCommand("desloguable", "correcta123", "127.0.0.1"));
 
         logoutUseCase.logout(tokens.refreshToken());
+
+        assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+    }
+
+    @Test
+    void refreshTokenOfDeactivatedPersonIsRejected() {
+        Person person = persistPerson("baja", "correcta123", AuthProvider.LOCAL);
+        AuthTokens tokens = loginUseCase.login(new LoginCommand("baja", "correcta123", "127.0.0.1"));
+
+        person.setStatus(StatusType.INACTIVE);
+        entityManager.flush();
 
         assertThatThrownBy(() -> refreshTokenUseCase.refresh(tokens.refreshToken()))
                 .isInstanceOf(InvalidRefreshTokenException.class);

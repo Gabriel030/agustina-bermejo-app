@@ -4,35 +4,39 @@ import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.billing.entity.FeeType;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
+import com.red_escuela.backend.shared.domain.Money;
 import java.util.List;
 import java.util.Optional;
-import com.red_escuela.backend.billing.service.PriceRevisionService;
+import com.red_escuela.backend.shared.pricing.OfferingFee;
+import com.red_escuela.backend.shared.pricing.OfferingPriceCatalog;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 
 @Service
 public class CourseService {
 
     private final CourseRepository courseRepository;
     private final TermRepository termRepository;
-    private final PriceRevisionService priceRevisionService;
+    private final OfferingPriceCatalog offeringPriceCatalog;
     private final CurrentPersonService currentPersonService;
 
     public CourseService(CourseRepository courseRepository, TermRepository termRepository,
-                          PriceRevisionService priceRevisionService, CurrentPersonService currentPersonService) {
+                          OfferingPriceCatalog offeringPriceCatalog, CurrentPersonService currentPersonService) {
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
-        this.priceRevisionService = priceRevisionService;
+        this.offeringPriceCatalog = offeringPriceCatalog;
         this.currentPersonService = currentPersonService;
     }
 
@@ -41,24 +45,27 @@ public class CourseService {
         Term term = termRepository.findById(request.termId())
                 .orElseThrow(() -> new TermNotFoundException(request.termId()));
 
+        Currency currency = resolveCurrency(request.price(), request.currency());
         Course course = Course.builder()
                 .name(request.name())
                 .term(term)
                 .schedule(request.schedule())
                 .capacity(request.capacity())
-                .price(request.price())
+                .price(request.price() == null ? null : request.price().amount())
                 .durationMonths(request.durationMonths())
                 .teachingMode(request.teachingMode())
                 .registrationStart(request.registrationStart())
                 .registrationEnd(request.registrationEnd())
                 .isActive(StatusType.ACTIVE)
+                .currency(currency)
                 .build();
-        course = courseRepository.save(course);
+        course.requireValidRegistrationWindow();
+        Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
-        BigDecimal price = course.getPrice() == null ? BigDecimal.ZERO : course.getPrice();
-        priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, price, "Precio inicial", actor);
-        return course;
+        Money price = Optional.ofNullable(saved.priceAsMoney()).orElseGet(() -> Money.zero(saved.getCurrency()));
+        offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, price, actor.getId());
+        return saved;
     }
 
     @Transactional
@@ -67,20 +74,23 @@ public class CourseService {
         Optional.ofNullable(request.name()).ifPresent(course::setName);
         Optional.ofNullable(request.schedule()).ifPresent(course::setSchedule);
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
-        if (request.price() != null && request.price().compareTo(course.getPrice()) != 0) {
-            course.setPrice(request.price());
+        if (course.changePrice(request.price())) {
             Person actor = currentPersonService.resolveCurrentPerson();
-            priceRevisionService.registerForCourse(course, FeeType.RECURRING_FEE, request.price(), "Ajuste de precio", actor);
+            offeringPriceCatalog.adjustOfferingPrice(OfferingReference.ofCourse(course.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.price(), actor.getId());
         }
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
+        course.requireValidRegistrationWindow();
         return courseRepository.save(course);
     }
 
-    public List<Course> list(StatusType status) {
-        return status == null ? courseRepository.findAll() : courseRepository.findByIsActive(status);
+    public List<Course> list(StatusType status, Boolean visibleInCatalog) {
+        return courseRepository.findAll(Sort.by("name", "id")).stream()
+                .filter(course -> status == null || course.getIsActive() == status)
+                .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
+                .toList();
     }
 
     public Course get(Long id) {
@@ -99,6 +109,16 @@ public class CourseService {
         Course course = findOrThrow(id);
         course.setIsActive(StatusType.ACTIVE);
         courseRepository.save(course);
+    }
+
+    private static Currency resolveCurrency(Money price, Currency requested) {
+        if (price == null) {
+            return Optional.ofNullable(requested).orElse(Currency.ARS);
+        }
+        if (requested != null && requested != price.currency()) {
+            throw new CurrencyMismatchException(requested, price.currency());
+        }
+        return price.currency();
     }
 
     private Course findOrThrow(Long id) {

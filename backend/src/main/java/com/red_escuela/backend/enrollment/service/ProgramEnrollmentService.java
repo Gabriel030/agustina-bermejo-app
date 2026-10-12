@@ -1,4 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
+import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.shared.domain.Percentage;
+import java.math.BigDecimal;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
@@ -14,11 +18,12 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
@@ -42,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 import com.red_escuela.backend.attendance.usecase.attendance.CalculateProgramEnrollmentAttendanceRiskUseCase;
@@ -60,10 +64,9 @@ public class ProgramEnrollmentService {
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
-    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
+    private final Clock clock;
 
-    public ProgramEnrollmentService(
-            ProgramEnrollmentRepository programEnrollmentRepository,
+    public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
             StudentRepository studentRepository,
             ProgramRepository programRepository,
             ProgramSubjectRepository programSubjectRepository,
@@ -73,7 +76,8 @@ public class ProgramEnrollmentService {
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
+            ScholarshipService scholarshipService,
+            Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.programRepository = programRepository;
@@ -85,15 +89,34 @@ public class ProgramEnrollmentService {
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
-        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
+        this.clock = clock;
     }
 
     @Transactional
     public ProgramEnrollment enroll(Long studentId, CreateProgramEnrollmentRequest request) {
+        studentDebtResolutionService.verifyNoDebt(studentId);
+        return createEnrollment(studentId, request, true, true, null);
+    }
+
+    @Transactional
+    public ProgramEnrollment enrollAfterAdmissionPayment(Long studentId, CreateProgramEnrollmentRequest request) {
+        return createEnrollment(studentId, request, false, false, null);
+    }
+
+    @Transactional
+    public ProgramEnrollment enrollApplicantAfterAdmissionPayment(ProgramEnrollmentApplication application) {
+        Long cohortId = application.getProgramCohort() == null ? null : application.getProgramCohort().getId();
+        return createEnrollment(application.getStudent().getId(),
+                new CreateProgramEnrollmentRequest(application.getProgram().getId(), cohortId), false, false, application);
+    }
+
+    private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
+                                               boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
-        validateStudentEligible(student);
-        studentDebtResolutionService.verifyNoDebt(studentId);
+        if (validateEligibility) {
+            validateStudentEligible(student);
+        }
 
         Program program = programRepository.findById(request.programId())
                 .orElseThrow(() -> new ProgramNotFoundException(request.programId()));
@@ -102,10 +125,12 @@ public class ProgramEnrollmentService {
         if (request.cohortId() != null) {
             cohort = programCohortRepository.findById(request.cohortId())
                     .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
-            validateAdmissionWindow(cohort);
+            if (validateAdmissionWindow) {
+                validateAdmissionWindow(cohort);
+            }
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
                 studentId, program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED));
         if (!activas.isEmpty()) {
@@ -116,6 +141,7 @@ public class ProgramEnrollmentService {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setProgramCohort(cohort);
+        enrollment.setAdmissionApplication(admissionApplication);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
         return programEnrollmentRepository.save(enrollment);
@@ -130,9 +156,9 @@ public class ProgramEnrollmentService {
                     "La matriculación " + id + " no está ENROLLED/PAUSED, no se puede dar de baja");
         }
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setCompletionDate(LocalDateTime.now(clock));
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
-        enrollmentWithdrawalCreditService.handleProgramEnrollmentWithdrawal(enrollment);
     }
 
     public ProgramEnrollment get(Long id) {
@@ -172,27 +198,57 @@ public class ProgramEnrollmentService {
                 })
                 .toList();
 
-        boolean elegibleParaCompletar = obligatoriasPendientes.isEmpty()
+        boolean studyPlanLoaded = !entradas.isEmpty();
+        boolean elegibleParaCompletar = studyPlanLoaded
+                && obligatoriasPendientes.isEmpty()
                 && creditosAcumulados >= creditosRequeridos
                 && gruposElectivos.stream().allMatch(ElectiveGroupProgressResponse::cumplido);
 
-        var notasFinales = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
+        List<Grade> finalGrades = subjectSectionEnrollmentRepository.findByProgramEnrollmentId(id).stream()
                 .map(SubjectSectionEnrollment::getFinalScore)
                 .filter(java.util.Objects::nonNull)
-                .mapToDouble(Double::doubleValue)
-                .average();
-        Double promedioGeneral = notasFinales.isPresent() ? notasFinales.getAsDouble() : null;
+                .toList();
+        BigDecimal promedioGeneral = Grade.average(finalGrades).map(Grade::value).orElse(null);
 
         return new ProgramProgressResponse(
                 enrollment.getId(), creditosAcumulados, creditosRequeridos,
                 obligatoriasPendientes, gruposElectivos, elegibleParaCompletar, hasActiveEnrollment(id), promedioGeneral);
     }
 
+    public boolean hasOnlyFinalExamsLeft(Long id) {
+        ProgramEnrollment enrollment = findOrThrow(id);
+        Program program = enrollment.getProgram();
+        List<ProgramSubject> entries = programSubjectRepository.findByProgramId(program.getId());
+        if (entries.isEmpty()
+                || subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
+                        id, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))) {
+            return false;
+        }
+        List<ProgramSubject> coursed = entries.stream().filter(entry -> isCoursed(id, entry)).toList();
+        boolean mandatoryPending = entries.stream().anyMatch(entry -> entry.getElectiveGroup() == null && !coursed.contains(entry));
+        int coursedCredits = coursed.stream().mapToInt(ProgramSubject::getCredits).sum();
+        boolean electiveGroupsMet = programElectiveGroupRepository.findByProgramId(program.getId()).stream()
+                .allMatch(group -> coursed.stream()
+                        .filter(entry -> entry.getElectiveGroup() != null
+                                && entry.getElectiveGroup().getId().equals(group.getElectiveGroup().getId()))
+                        .count() >= group.getMinRequired());
+        return !coursed.isEmpty() && program.getTotalCreditsRequired() > 0
+                && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
+    }
+
+    private boolean isCoursed(Long programEnrollmentId, ProgramSubject entry) {
+        return !subjectSectionEnrollmentRepository
+                .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
+                        programEnrollmentId, entry.getSubject().getId(), List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR))
+                .isEmpty();
+    }
+
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
                 .map(enrollment -> {
                     var riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
-                    Double asistencia = riesgo.calculable() ? 100 - riesgo.porcentajeAusentismo() : null;
+                    Percentage asistencia = riesgo.absencePercent() == null ? null
+                            : Percentage.ofFraction(BigDecimal.ONE.subtract(riesgo.absencePercent().fraction()));
                     return new SubjectAttendanceSummaryResponse(
                             enrollment.getSubjectSection().getSubject().getName(), asistencia);
                 })
@@ -226,8 +282,7 @@ public class ProgramEnrollmentService {
                     "La cohorte " + cohort.getId() + " tiene la ventana de admisión mal configurada "
                             + "(admissionStart posterior a admissionEnd)");
         }
-        LocalDate today = LocalDate.now();
-        if (today.isBefore(cohort.getAdmissionStart()) || today.isAfter(cohort.getAdmissionEnd())) {
+        if (!cohort.isAdmissionOpenOn(LocalDate.now(clock))) {
             throw new CohortAdmissionWindowClosedException(cohort.getId());
         }
     }
@@ -242,6 +297,15 @@ public class ProgramEnrollmentService {
         }
         enrollment.setCurrentBillingTemplate(template);
         return programEnrollmentRepository.save(enrollment);
+    }
+
+    public void validateStudentCanEnrollInProgram(Student student, Program program) {
+        validateStudentEligible(student);
+        boolean alreadyEnrolled = !programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
+                student.getId(), program.getId(), List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)).isEmpty();
+        if (alreadyEnrolled) {
+            throw new AlreadyEnrolledInProgramException(student.getId(), program.getId());
+        }
     }
 
     private void validateStudentEligible(Student student) {

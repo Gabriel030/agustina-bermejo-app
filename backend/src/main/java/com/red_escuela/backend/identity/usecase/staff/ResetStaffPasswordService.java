@@ -1,6 +1,6 @@
 package com.red_escuela.backend.identity.usecase.staff;
 
-import com.red_escuela.backend.exception.PersonNotFoundException;
+import com.red_escuela.backend.identity.exception.PersonNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.repository.PersonRepository;
@@ -34,7 +34,7 @@ public class ResetStaffPasswordService implements ResetStaffPasswordUseCase {
         if (!isStaff) {
             throw new PersonNotFoundException(personId);
         }
-        requestPasswordResetUseCase.requestReset(person.getEmail());
+        requestPasswordResetUseCase.requestReset(person.emailValue());
         log.info("Reset de contraseña solicitado: personId={}", personId);
     }
 }

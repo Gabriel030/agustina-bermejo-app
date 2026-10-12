@@ -27,7 +27,7 @@ public class CreatePromotionForCourseService implements CreatePromotionForCourse
     @Transactional
     public Promotion create(Long courseId, CreatePromotionRequest request) {
         Course course = courseRepository.findById(courseId).orElseThrow(() -> new CourseNotFoundException(courseId));
-        Promotion promotion = promotionBuilder.build(request);
+        Promotion promotion = promotionBuilder.build(request, course.getCurrency());
         promotion.setCourse(course);
         return promotionRepository.save(promotion);
     }

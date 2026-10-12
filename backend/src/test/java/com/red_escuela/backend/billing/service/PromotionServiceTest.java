@@ -1,41 +1,40 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
 import com.red_escuela.backend.billing.dto.CreatePromotionBenefitRequest;
 import com.red_escuela.backend.billing.dto.CreatePromotionRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.entity.FeeType;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.billing.entity.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.billing.entity.PriceRevision;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.entity.PromotionStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.InstitutionRepository;
-import com.red_escuela.backend.billing.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.billing.repository.PriceRevisionRepository;
 import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
@@ -59,6 +58,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -74,6 +74,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.promotion.FindActivePromotionsUseCase findActivePromotionsUseCase;
+
+    @Autowired
+    private jakarta.persistence.EntityManagerFactory entityManagerFactory;
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.promotion.FindLostPromotionBenefitsUseCase findLostPromotionBenefitsUseCase;
@@ -94,7 +97,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase selectPaymentPlanForProgramUseCase;
 
     @Autowired
-    private InvoiceGenerationService invoiceGenerationService;
+    private BillingTestTrigger invoiceGenerationService;
 
     @Autowired
     private InvoiceQueryService invoiceQueryService;
@@ -124,13 +127,12 @@ class PromotionServiceTest extends AbstractIntegrationTest {
     private TermRepository termRepository;
 
     @Autowired
-    private PriceRevisionRepository priceRevisionRepository;
-
-    @Autowired
     private ProgramRepository programRepository;
 
     @Autowired
     private ProgramYearBillingTemplateRepository templateRepository;
+    @Autowired
+    private com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository configurationVersionRepository;
 
     @Autowired
     private ProgramCohortRepository programCohortRepository;
@@ -149,6 +151,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         person.setName("Persona");
         person.setLastname(username);
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -174,14 +177,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         course.setIsActive(StatusType.ACTIVE);
         course = courseRepository.save(course);
 
-        PriceRevision priceRevision = new PriceRevision();
-        priceRevision.setCourse(course);
-        priceRevision.setFeeType(FeeType.RECURRING_FEE);
-        priceRevision.setDescription("Cuota mensual de prueba");
-        priceRevision.setMonthlyAmount(precio);
-        priceRevision.setEffectiveFrom(LocalDate.now().minusYears(1));
-        priceRevision.setCreatedBy(director);
-        priceRevisionRepository.save(priceRevision);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(precio), LocalDate.now().minusYears(1), director.getId());
 
         return course;
     }
@@ -239,9 +235,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
         template.setProgram(program);
         template.setTerm(term);
-        template.setRecurringFeeInvoicesCount(11);
+        com.red_escuela.backend.billing.planning.TestTemplateTerms.setRecurringFeeInvoicesCount(template, 11);
         template.setCreatedBy(director);
-        template = templateRepository.save(template);
+        template = com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplate(template);
@@ -252,23 +248,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         cohort.setCreatedBy(director);
         cohort = programCohortRepository.save(cohort);
 
-        PriceRevision recurringFee = new PriceRevision();
-        recurringFee.setProgram(program);
-        recurringFee.setFeeType(FeeType.RECURRING_FEE);
-        recurringFee.setDescription("Cuota mensual de prueba");
-        recurringFee.setMonthlyAmount(BigDecimal.valueOf(10000));
-        recurringFee.setEffectiveFrom(LocalDate.now().minusYears(1));
-        recurringFee.setCreatedBy(director);
-        priceRevisionRepository.save(recurringFee);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.MONTHLY_INSTALLMENT, "Cuota mensual de prueba", ars(10000), LocalDate.now().minusYears(1), director.getId());
 
-        PriceRevision enrollmentFee = new PriceRevision();
-        enrollmentFee.setProgram(program);
-        enrollmentFee.setFeeType(FeeType.ENROLLMENT_FEE);
-        enrollmentFee.setDescription("Matrícula de prueba");
-        enrollmentFee.setMonthlyAmount(BigDecimal.valueOf(20000));
-        enrollmentFee.setEffectiveFrom(LocalDate.now().minusYears(1));
-        enrollmentFee.setCreatedBy(director);
-        priceRevisionRepository.save(enrollmentFee);
+        com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(program.getId(), null, FeeType.ENROLLMENT_FEE, "Matrícula de prueba", ars(20000), LocalDate.now().minusYears(1), director.getId());
 
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
@@ -288,7 +270,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
     private Invoice invoiceConAjustesDe(CourseEnrollment enrollment, int index) {
         List<Invoice> invoices = invoiceRepository.findByCourseEnrollmentIdOrderByPeriod(enrollment.getId());
-        return invoiceRepository.findByIdWithAdjustments(invoices.get(index).getId()).orElseThrow();
+        return invoiceRepository.findInvoiceWithLinesById(invoices.get(index).getId()).orElseThrow();
     }
 
     @Test
@@ -298,15 +280,15 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000108", course, LocalDateTime.now());
         seleccionarPlanMensualCurso(enrollment, director);
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        assertThat(invoice.getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(9000));
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(9000));
     }
 
     @Test
@@ -316,14 +298,14 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(10), LocalDate.now().minusDays(3),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000109", course, LocalDateTime.now());
         seleccionarPlanMensualCurso(enrollment, director);
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
 
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        assertThat(invoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -333,7 +315,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 2))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 2))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000110", course, LocalDateTime.now());
         seleccionarPlanMensualCurso(enrollment, director);
@@ -342,9 +324,9 @@ class PromotionServiceTest extends AbstractIntegrationTest {
             invoiceGenerationService.generateNextInstallmentForCourse(enrollment, mesInicial.plusMonths(i));
         }
 
-        assertThat(invoiceConAjustesDe(enrollment, 0).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(enrollment, 1).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(enrollment, 2).getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 0))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 1))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, 2))).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -354,7 +336,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), null))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), null))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000111", course, LocalDateTime.now());
         seleccionarPlanMensualCurso(enrollment, director);
@@ -364,7 +346,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         }
 
         for (int i = 0; i < 4; i++) {
-            assertThat(invoiceConAjustesDe(enrollment, i).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+            assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(enrollment, i))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
         }
     }
 
@@ -375,7 +357,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         var promotion = createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         CourseEnrollment yaCalificado = persistCourseEnrollment("89000113a", course, LocalDateTime.now());
         seleccionarPlanMensualCurso(yaCalificado, director);
@@ -390,8 +372,8 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForCourse(yaCalificado, YearMonth.now());
         invoiceGenerationService.generateNextInstallmentForCourse(despuesDelCierre, YearMonth.now());
 
-        assertThat(invoiceConAjustesDe(yaCalificado, 0).getAdjustments()).anyMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
-        assertThat(invoiceConAjustesDe(despuesDelCierre, 0).getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(yaCalificado, 0))).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoiceConAjustesDe(despuesDelCierre, 0))).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -401,21 +383,21 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Promo A", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Promo B", LocalDate.now().minusDays(1), LocalDate.now().plusDays(6),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), 3))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000114", course, LocalDateTime.now());
         PaymentPlanSelection selection = seleccionarPlanMensualCurso(enrollment, director);
 
         invoiceGenerationService.generateNextInstallmentForCourse(enrollment, YearMonth.now());
         Invoice invoice = invoiceConAjustesDe(enrollment, 0);
-        long cantidadDeAjustesPromocion = invoice.getAdjustments().stream()
-                .filter(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION).count();
+        long cantidadDeAjustesPromocion = com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(invoice).stream()
+                .filter(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION).count();
         assertThat(cantidadDeAjustesPromocion).isEqualTo(1);
-        assertThat(invoice.getAmountDue()).isEqualByComparingTo(BigDecimal.valueOf(9000));
+        assertThat(invoice.getAmounts().total().value()).isEqualTo(ars(9000));
     }
 
     @Test
@@ -425,7 +407,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         seleccionarPlanMensualCarrera(enrollment, director);
         YearMonth mesInicial = YearMonth.now();
@@ -436,10 +418,10 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, mesInicial.plusMonths(2));
 
         List<Invoice> recurringInvoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE).toList();
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).toList();
         assertThat(recurringInvoices).hasSize(3);
-        Invoice tercera = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(2).getId()).orElseThrow();
-        assertThat(tercera.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+        Invoice tercera = invoiceRepository.findInvoiceWithLinesById(recurringInvoices.get(2).getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(tercera)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -449,7 +431,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         seleccionarPlanMensualCarrera(enrollment, director);
         seleccionarPlanMensualCarrera(enrollment, director);
@@ -457,9 +439,15 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
         List<Invoice> recurringInvoices = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
-                .filter(i -> i.getFeeType() == FeeType.RECURRING_FEE).toList();
-        Invoice invoice = invoiceRepository.findByIdWithAdjustments(recurringInvoices.get(0).getId()).orElseThrow();
-        assertThat(invoice.getAdjustments()).noneMatch(a -> a.getType() == com.red_escuela.backend.billing.entity.InvoiceAdjustmentType.PROMOTION);
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).toList();
+        Invoice firstInvoice = invoiceRepository.findInvoiceWithLinesById(recurringInvoices.get(0).getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(firstInvoice)).anyMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
+
+        invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now().plusMonths(1));
+        Invoice nextInvoice = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(enrollment.getId()).stream()
+                .filter(i -> i.getFeeType() == FeeType.MONTHLY_INSTALLMENT).reduce((first, second) -> second).orElseThrow();
+        nextInvoice = invoiceRepository.findInvoiceWithLinesById(nextInvoice.getId()).orElseThrow();
+        assertThat(com.red_escuela.backend.billing.support.InvoiceViews.discountsOf(nextInvoice)).noneMatch(a -> a.getDiscountType() == com.red_escuela.backend.billing.invoice.domain.DiscountType.PROMOTION);
     }
 
     @Test
@@ -469,7 +457,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         seleccionarPlanMensualCarrera(enrollment, director);
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
@@ -477,7 +465,29 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
         List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos = findLostPromotionBenefitsUseCase.find();
         assertThat(perdidos).anyMatch(p -> p.studentName().equals("Persona 89000122")
-                && p.remaining() == 2 && p.used() == 1 && p.feeType().equals("RECURRING_FEE"));
+                && p.remaining() == 2 && p.used() == 1 && p.feeType().equals("MONTHLY_INSTALLMENT"));
+    }
+
+    @Test
+    void theLostBenefitsReportDoesNotQueryPerRedemption() {
+        Person director = persistPerson("director.promo123." + System.nanoTime());
+        authenticateAs(director);
+        for (int i = 0; i < 3; i++) {
+            ProgramEnrollment enrollment = persistProgramEnrollment("8900013" + i, LocalDateTime.now(), director);
+            createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
+                    "Promo " + i, LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
+                    List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
+            seleccionarPlanMensualCarrera(enrollment, director);
+            invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
+            seleccionarPlanMensualCarrera(enrollment, director);
+        }
+
+        List<com.red_escuela.backend.billing.dto.LostPromotionBenefitResponse> perdidos =
+                com.red_escuela.backend.shared.persistence.QueryCountAssertions.assertAtMostQueries(
+                        entityManagerFactory, 2, () -> findLostPromotionBenefitsUseCase.find());
+
+        assertThat(perdidos).filteredOn(p -> p.studentName().startsWith("Persona 8900013"))
+                .hasSize(3).allMatch(p -> p.used() == 1 && p.remaining() == 2);
     }
 
     @Test
@@ -487,7 +497,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         CourseEnrollment enrollment = persistCourseEnrollment("89000117", course, LocalDateTime.now());
         PaymentPlanSelection selection = seleccionarPlanMensualCurso(enrollment, director);
@@ -509,7 +519,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         authenticateAs(director);
         createPromotionForProgramUseCase.create(enrollment.getProgram().getId(), new CreatePromotionRequest(
                 "Semana del estudiante", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
-                List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3))));
+                List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3))));
 
         seleccionarPlanMensualCarrera(enrollment, director);
         invoiceGenerationService.generateNextInstallmentForProgram(enrollment, YearMonth.now());
@@ -527,8 +537,8 @@ class PromotionServiceTest extends AbstractIntegrationTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                         "Promo con benefits duplicados", LocalDate.now().minusDays(2), LocalDate.now().plusDays(5),
                         List.of(
-                                new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3),
-                                new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.20)), 1)))))
+                                new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3),
+                                new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.20))), 1)))))
                 .isInstanceOf(com.red_escuela.backend.billing.exception.DuplicatePromotionBenefitFeeTypeException.class);
     }
 
@@ -540,7 +550,7 @@ class PromotionServiceTest extends AbstractIntegrationTest {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> createPromotionForCourseUseCase.create(course.getId(), new CreatePromotionRequest(
                         "Promo con fechas invertidas", LocalDate.now().plusDays(5), LocalDate.now().minusDays(2),
-                        List.of(new CreatePromotionBenefitRequest(FeeType.RECURRING_FEE, new MonetaryAdjustmentValueRequest(null, BigDecimal.valueOf(0.10)), 3)))))
+                        List.of(new CreatePromotionBenefitRequest(FeeType.MONTHLY_INSTALLMENT, new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, Percentage.ofFraction(BigDecimal.valueOf(0.10))), 3)))))
                 .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException.class);
     }
 }

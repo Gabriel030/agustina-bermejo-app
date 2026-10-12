@@ -1,17 +1,28 @@
 package com.red_escuela.backend.enrollment.entity;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.identity.entity.Student;
 
 import java.time.LocalDateTime;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 
 public interface BillableEnrollment {
     Student getStudent();
 
-    EnrollmentBillingStanding getBillingStanding();
+    EnrollmentPaymentStatus getPaymentStatus();
 
-    void setBillingStanding(EnrollmentBillingStanding standing);
+    void setPaymentStatus(EnrollmentPaymentStatus standing);
 
-    LocalDateTime getBillingStandingUpdatedAt();
+    LocalDateTime getPaymentStatusUpdatedAt();
 
-    void setBillingStandingUpdatedAt(LocalDateTime updatedAt);
+    void setPaymentStatusUpdatedAt(LocalDateTime updatedAt);
+
+    default boolean settleArrears() {
+        EnrollmentPaymentStatus standing = getPaymentStatus();
+        if (standing != EnrollmentPaymentStatus.OVERDUE && standing != EnrollmentPaymentStatus.SUSPENDED) {
+            return false;
+        }
+        setPaymentStatus(EnrollmentPaymentStatus.UP_TO_DATE);
+        setPaymentStatusUpdatedAt(ApplicationTime.now());
+        return true;
+    }
 }

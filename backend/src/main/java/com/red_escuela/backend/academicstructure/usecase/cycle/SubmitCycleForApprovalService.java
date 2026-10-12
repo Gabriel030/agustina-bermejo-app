@@ -1,6 +1,5 @@
 package com.red_escuela.backend.academicstructure.usecase.cycle;
 
-import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.CycleIncompleteException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
@@ -32,6 +31,7 @@ public class SubmitCycleForApprovalService implements SubmitCycleForApprovalUseC
     public void submit(Long cycleId) {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
+        cycle.ensureEditable();
 
         var subjectSections = subjectSectionRepository.findByAcademicOfferingCycleId(cycleId);
         var courseSections = courseSectionRepository.findByAcademicOfferingCycleId(cycleId);
@@ -52,7 +52,7 @@ public class SubmitCycleForApprovalService implements SubmitCycleForApprovalUseC
             throw new CycleIncompleteException("hay comisiones sin docente titular asignado");
         }
 
-        cycle.setStatus(AcademicOfferingCycleStatus.PENDING_APPROVAL);
+        cycle.submitForApproval();
         cycleRepository.save(cycle);
     }
 }

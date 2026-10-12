@@ -1,7 +1,13 @@
 package com.red_escuela.backend.identity.entity;
-import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.StatusType;
 
+import org.springframework.modulith.NamedInterface;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.DocumentNumber;
+import com.red_escuela.backend.shared.domain.DocumentType;
+import com.red_escuela.backend.shared.domain.StatusType;
+
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.persistence.EmailAddressConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity
@@ -33,10 +40,15 @@ public class Person {
     private String sex;
 
     @Column(name = "email", unique = true)
-    private String email;
+    @Convert(converter = EmailAddressConverter.class)
+    private EmailAddress email;
 
-    @Column(name = "dni", unique = true)
+    @Column(name = "dni")
     private String dni;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false)
+    private DocumentType documentType = DocumentType.DNI;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id", nullable = false)
@@ -88,4 +100,27 @@ public class Person {
     @Column(name = "email_verified")
     private Boolean emailVerified;
 
+    public void setEmail(EmailAddress email) {
+        this.email = email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email == null ? null : EmailAddress.of(email);
+    }
+
+    public String emailValue() {
+        return email == null ? null : email.value();
+    }
+
+    public void changeDocument(DocumentType type, String number) {
+        DocumentType resolved = type == null ? DocumentType.DNI : type;
+        if (number == null || number.isBlank()) {
+            this.documentType = resolved;
+            this.dni = null;
+            return;
+        }
+        DocumentNumber document = DocumentNumber.of(resolved, number);
+        this.documentType = document.type();
+        this.dni = document.value();
+    }
 }

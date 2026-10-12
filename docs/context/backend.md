@@ -29,14 +29,29 @@ referencia completa del patrón — mirala antes de tocar código nuevo.
   entity/  controller/  repository/  dto/  exception/
 ```
 
+**Raíz del paquete (`com.red_escuela.backend`)**: solo `BackendApplication`,
+`config/`, `shared/`, los paquetes de feature y `academicrecord/` (composición:
+solo el controller `MeAcademicRecordController`, sin entidades). No hay
+`entity/`, `service/`, `dto/`, `controller/`, `repository/`, `util/` ni
+`exception/` sueltos en la raíz.
+
+`shared/` contiene lo realmente compartido entre features: `domain/` (Value
+Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
+`persistence/` (convertidores JPA), `serialization/`, `validation/`,
+`exception/` (bases `BadRequestException`, etc., más `ErrorCodeResponse` y
+`GlobalExceptionHandler`), `storage/` (`FileStorageService`,
+`TransactionBoundFileCleanup`, `UnsupportedFileTypeException`) y `mail/`
+(`EmailService`, `BrevoEmailService`).
+
 - **`@UseCase`** (`shared/UseCase.java`) es una anotación real (meta-anotada
   `@Component`), no una convención de carpeta — patrón de Tom Hombergs
   ([buckpal](https://github.com/thombergs/buckpal), *Get Your Hands Dirty on
   Clean Architecture*). Cada operación de negocio real (algo que un actor
   pide hacer, con su propio endpoint) es una interfaz `XxxUseCase` + una
   clase `XxxService implements XxxUseCase` anotada `@UseCase`. El método de
-  la interfaz tiene nombre de dominio (`login`, `withdraw`, `create`), nunca
-  un `execute()` genérico.
+  la interfaz es igual al nombre de la interfaz sin el sufijo, en minúscula
+  inicial (`ApproveBankTransferPaymentUseCase.approveBankTransferPayment(command)`),
+  nunca un `execute()` genérico. Los casos de uso existentes no se renombran.
 - **`Command`** solo cuando el caso de uso necesita 2+ parámetros — un solo
   `Long id` o un DTO existente que ya calza (`CreateStaffRequest`,
   `RegisterRequest`) se pasa directo, sin wrapper artificial.
@@ -71,7 +86,7 @@ estático `from(Entity)` (ver `PersonResponse.from`, `AuthResponse.from`).
 ## Paquete por feature: `billing`
 
 El dominio de facturación (`Invoice`, `Payment`, `PriceRevision`, `Scholarship`,
-`Promotion`, `CollectionsPolicy`, `ProgramCohort`, `ProgramYearBillingTemplate`,
+`Promotion`, `LatePaymentSettings`, `ProgramCohort`, `ProgramYearBillingTemplate`,
 etc. — todo lo de Fase 6.x del roadmap) vive en su propio paquete
 `com.red_escuela.backend.billing.*`. Es ~25% de todo el backend, bastante
 autocontenido — si otro dominio (ej. evaluación y asistencia) llega a crecer
@@ -83,7 +98,7 @@ cases de `billing` para el flujo de baja.
 
 **Migrado al patrón Use Case (2026-09-08)**: `billing/usecase/<subdominio>/`
 (`invoice`, `payment`, `paymentreceipt`, `creditnote`, `scholarship`,
-`promotion`, `paymentplan`, `billingperiod`, `collectionspolicy`, `cohort`)
+`promotion`, `paymentplan`, `billingperiod`, `latepaymentsettings`, `cohort`)
 tiene un `XxxUseCase`+`XxxService`(`@UseCase`) por cada operación que un
 controller invoca directo. Lo que queda en `billing/service/` son
 colaboradores de una sola responsabilidad, no use cases — tres categorías:
@@ -101,6 +116,57 @@ colaboradores de una sola responsabilidad, no use cases — tres categorías:
 Antes de agregar una operación nueva a `billing`, mirá si encaja en un
 subdominio existente de `usecase/` o si necesita uno nuevo — no la agregues
 como método suelto a un colaborador de `service/`.
+
+### Motor de facturación v2: subdominio primero (D-173)
+
+**Corte al modelo nuevo de facturas (V2-02d)**: la factura es el agregado
+`billing.invoice.domain.Invoice` (renglones, descuentos, historial de estados);
+la entidad vieja, los ajustes manuales y la condonación ya no existen. Toda
+factura se emite con `billing.invoice.service.InvoiceIssuingService` (la
+operación `ISSUE_INVOICE`); las lecturas con el JSON de siempre pasan por
+`InvoiceView`/`InvoiceViewLoader`, que es también el único punto de `billing`
+que carga inscripciones. Una factura se paga completa o no se paga (D-136):
+`RegisterPaymentService` es el puente de cobro hasta la fase de pagos.
+
+El código nuevo de facturación nace con el subdominio como primer nivel del
+paquete (`billing.configuration`, `billing.operation`, y los que cree cada fase
+V2), con la misma estructura interna en todos: `domain/`, `policy/`,
+`operation/`, `usecase/`, `service/`, `repository/`, `controller/`, `dto/`,
+`exception/`. Lo existente en `billing/usecase/<subdominio>/`,
+`billing/service/` y `billing/entity/` se mueve en V2-02; hasta entonces
+conviven los dos mapas. Reglas que ArchUnit hace cumplir en los paquetes V2
+(`ArchitectureRules`): las excepciones de negocio solo salen de la evaluación
+de Policies; los casos de uso dependen solo de repositorios, Policies, dominio,
+servicios y DTO de su subdominio; un subdominio no usa el repositorio de otro;
+las entidades no tienen setters públicos y sus montos son `NonNegativeMoney`;
+toda `Policy` declara `@PolicyRule` (códigos de violación y decisiones);
+`academicstructure` no depende de `billing`. `UseCaseBranchingTest` prohíbe
+`if`, `switch` y ternarios en los `*Service` `@UseCase` de esos paquetes.
+
+Pipeline de operación (V2-00c2): toda operación que cambia configuración o
+estado económico implementa `BillingOperation` y corre por
+`BillingOperationPipeline.runOperation` (validación, pre-procesamiento con
+handlers registrados en `OperationPreHandlers`, procesamiento, y publicación de
+eventos de `billing.events` dentro de la misma transacción). Los efectos de post
+son `@ApplicationModuleListener` idempotentes: usan `ProcessedEffectGuard`
+(tabla `processed_effect`, evento `DeduplicableDomainEvent`) porque el registro
+de Spring Modulith entrega al menos una vez. Un handler de pre que pide
+autorización abre un `AuthorizationRequest` (`billing.authorization`) y la
+operación no se procesa hasta que se aprueba.
+
+Puertas de calidad (todas en `./mvnw clean verify`, salvo PIT):
+`BillingDecisionCoverageTest` exige un `@Tag("D-xxx")` por cada decisión
+`implementada`/`parcial` de `docs/billing/decision-registry.md` (fuente de
+verdad, columna Implementación); `PolicyCatalogTest` compara
+`docs/billing/policy-catalog.md` con las Policies declaradas (regenerar con
+`./mvnw test -Dtest=PolicyCatalogTest -Dpolicy-catalog.write=true`); jqwik para
+propiedades de Value Objects (semilla fija); PIT con
+`./mvnw -P mutation test-compile org.pitest:pitest-maven:mutationCoverage`,
+umbral 90 % solo en paquetes de dominio puro, exclusiones únicamente en
+`docs/billing/mutation-exclusions.md`. Los tests de integración heredan
+`@Tag("integration")` de `AbstractIntegrationTest` y PIT los excluye.
+Detalle: Obsidian, "Arquitectura y patrones - Motor de facturación v2" (§1, §2,
+§4) y "Estrategia de pruebas - Motor de facturación v2".
 
 ## Paquete por feature: `academicstructure`
 
@@ -327,26 +393,60 @@ ni controller, parece legacy sin uso real. Pendiente una decisión explícita
 sobre si se elimina.
 
 `EmailService`/`BrevoEmailService`/`FileStorageService` **no** entraron a
-esta feature — son infraestructura genérica ya usada cross-feature
+esta feature — son infraestructura genérica usada cross-feature
 (`EmailService` solo lo llama `identity.usecase.auth.RequestPasswordResetService`,
 nada que ver con el sistema de eventos; `FileStorageService` lo usan
-enrollment/evaluation/billing) y quedan en `service/` a nivel raíz, mismo
-criterio que otros colaboradores verdaderamente compartidos entre features
-que nunca migraron a un paquete propio.
+enrollment/evaluation/billing/identity) y viven en `shared/mail` y
+`shared/storage`.
+
+## Reglas de arquitectura
+
+Tests ArchUnit en `backend/src/test/java/com/red_escuela/backend/architecture/` (`ArchitectureRules` define las reglas, `ArchitectureTest` las ejecuta sobre las clases de `main`). Fallan el build (`verify`):
+
+- Ningún campo de `..entity..` ni `..dto..` es `BigDecimal`/`Double`/`Float`/`double`/`float` si su nombre sugiere plata, porcentaje o nota (`amount`, `price`, `fee`, `grade`, `score`, ...): usar `Money`, `Percentage` o `Grade`. **Congelada** hoy con las violaciones existentes (precios y notas aún sin migrar).
+- Un campo `Percentage` en un `dto` termina en `Percent` o `Rate`.
+- `shared` no depende de ningún paquete de feature. **Congelada** (hoy: `shared/mail` y `GlobalExceptionHandler`).
+- Un `*Service` en `..usecase..` lleva `@UseCase`; una clase en `..service..` no.
+
+Ciclos entre features, imports de repositorios de otra feature y dependencias de controllers no van con ArchUnit: los cubre Spring Modulith.
+
+Las reglas congeladas usan `FreezingArchRule`; el almacén está en `backend/src/test/resources/archunit-frozen/` (config en `archunit.properties`, con `allowStoreUpdates=false`: una violación nueva falla, una arreglada también hasta actualizar el almacén). Para descongelar: corregir el código y borrar del almacén las líneas de esa violación (o poner `freeze.refreeze=true` en `archunit.properties`, correr el test una vez y volverlo a `false`). Una violación nueva no se congela: se arregla.
 
 ## Excepciones
 
 Una excepción de dominio por caso, con nombre descriptivo del problema
 (`InvalidPasswordPolicyException`, `RoleNotAssignableByActorException`, nunca un
-`BusinessException` genérico con un string). Todas se registran en
-`exception/GlobalExceptionHandler.java`, agrupadas por status HTTP
-(`handleBadRequest`, `handleNotFound`, `handleConflict`, `handleForbidden`, etc.).
+`BusinessException` genérico con un string). Cada una extiende una de las siete
+bases abstractas de `com.red_escuela.backend.shared.exception`, que definen el
+status HTTP:
 
-**Los handlers no devuelven body — solo fijan el status.** No hay un DTO de error
-con `message` en el JSON de respuesta; el cliente (frontend) arma el mensaje al
-usuario a partir del código HTTP, no de un body. No agregues un body de error sin
-antes confirmar con el usuario que se quiere ese cambio de contrato — es una
-decisión tomada, no un olvido.
+| Base | Status | Body |
+|---|---|---|
+| `BadRequestException` | 400 | `{ "code": "..." }` |
+| `UnauthorizedException` | 401 | vacío |
+| `ForbiddenException` | 403 | vacío |
+| `NotFoundException` | 404 | vacío |
+| `ConflictException` | 409 | `{ "code": "..." }` |
+| `TooManyRequestsException` | 429 | vacío |
+| `ExternalServiceException` | 502 | vacío |
+
+`shared/exception/GlobalExceptionHandler.java` tiene un `@ExceptionHandler` por base:
+una excepción nueva se agrega extendiendo la base que corresponda, **sin tocar el
+handler**. Ninguna excepción de dominio extiende `RuntimeException` directo; la
+única con handler propio es `InvalidEmailVerificationTokenException` (400 sin
+body, a diferencia del resto de los 400).
+
+**Body de error**: desde #123 los 400 y 409 devuelven `{ "code": "..." }`
+(`ErrorCodeResponse`), derivado del nombre de la clase concreta
+(`InvalidTermDatesException` -> `INVALID_TERM_DATES`). Los 401, 403, 404, 429 y 502
+no devuelven body. El frontend arma el mensaje al usuario a partir del status y,
+cuando existe, del `code`. No cambies un `code` ni agregues body a otros status sin
+confirmar con el usuario: es contrato HTTP.
+
+**Logs**: los 409 (incluidos `IllegalStateException`, `DataIntegrityViolationException`
+y `ObjectOptimisticLockingFailureException`) y los `IllegalArgumentException`
+loguean en `warn`, los 502 en `error`, con el `code` y el `requestId`/`userId` del MDC.
+Los 400, 401, 403, 404 y 429 no loguean. `IllegalStateException` responde 409.
 
 ## Migraciones (Flyway)
 

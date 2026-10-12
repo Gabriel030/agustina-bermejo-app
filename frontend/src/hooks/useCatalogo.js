@@ -12,6 +12,20 @@ export function useCursos() {
   return useQuery({ queryKey: ['cursos'], queryFn: () => apiFetch('/courses?status=ACTIVE') });
 }
 
+export function useCatalogPrograms() {
+  return useQuery({
+    queryKey: ['catalog', 'programs'],
+    queryFn: () => apiFetch('/programs?status=ACTIVE&visibleInCatalog=true'),
+  });
+}
+
+export function useCatalogCourses() {
+  return useQuery({
+    queryKey: ['catalog', 'courses'],
+    queryFn: () => apiFetch('/courses?status=ACTIVE&visibleInCatalog=true'),
+  });
+}
+
 export function usePrograma(id) {
   return useQuery({ queryKey: ['programa', id], queryFn: () => apiFetch(`/programs/${id}`), enabled: !!id });
 }
@@ -28,8 +42,13 @@ export function useCursoPricing(id) {
   return useQuery({ queryKey: ['curso', id, 'pricing'], queryFn: () => apiFetch(`/courses/${id}/pricing`), enabled: !!id });
 }
 
-export function useProgramaCohorts(id) {
-  return useQuery({ queryKey: ['programa', id, 'cohorts'], queryFn: () => apiFetch(`/programs/${id}/cohorts`), enabled: !!id });
+export function useOpenProgramCohorts(id) {
+  return useQuery({
+    queryKey: ['programa', id, 'cohorts'],
+    queryFn: () => apiFetch(`/programs/${id}/cohorts`),
+    enabled: !!id,
+    select: (cohorts) => cohorts.filter((cohort) => cohort.admissionOpen),
+  });
 }
 
 export function useProgramaPlanDeEstudio(id) {
@@ -55,11 +74,10 @@ export function useMisSolicitudesCurso() {
 export function useSolicitarCarrera() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ programId, cohortId, comprobante }) => {
+    mutationFn: ({ programId, cohortId }) => {
       const formData = new FormData();
       formData.append('programId', programId);
       formData.append('cohortId', cohortId);
-      formData.append('comprobante', comprobante);
       return apiFetch('/me/program-enrollment-applications', { method: 'POST', body: formData });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-solicitudes-carrera'] }),

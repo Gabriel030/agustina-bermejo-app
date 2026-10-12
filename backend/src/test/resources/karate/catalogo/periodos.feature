@@ -100,3 +100,39 @@ Feature: Catálogo — Períodos lectivos (TermController)
     And header Authorization = 'Bearer ' + adminToken
     When method get
     Then status 404
+
+  Scenario: Un período que termina antes de empezar se rechaza al crearlo y al editarlo — 400 con código
+    * def descripcionInvertida = 'Karate - Periodo invertido ' + java.lang.System.nanoTime()
+    Given path '/terms'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { year: 2027, description: '#(descripcionInvertida)', type: 'ANUAL', startDate: '2027-12-31T00:00:00', endDate: '2027-01-01T00:00:00' }
+    When method post
+    Then status 400
+    And match response.code == 'INVALID_TERM_DATES'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { endDate: '2026-06-30T00:00:00' }
+    When method put
+    Then status 400
+    And match response.code == 'INVALID_TERM_DATES'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { startDate: '2028-03-01T00:00:00' }
+    When method put
+    Then status 400
+    And match response.code == 'INVALID_TERM_DATES'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    When method get
+    Then status 200
+    And match response.startDate contains '2027-01-01'
+    And match response.endDate contains '2027-12-31'
+
+    Given path '/terms', termId
+    And header Authorization = 'Bearer ' + adminToken
+    And request { startDate: '2027-02-01T00:00:00', endDate: '2027-11-30T00:00:00' }
+    When method put
+    Then status 200

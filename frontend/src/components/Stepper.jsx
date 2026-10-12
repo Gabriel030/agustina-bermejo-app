@@ -50,6 +50,7 @@ export function Stepper({
             <button
               type="button"
               disabled={!navegable}
+              aria-current={i === indiceActual ? 'step' : undefined}
               onClick={() => navegable && onStepClick(paso.key)}
               className={cn('flex flex-col items-center gap-1.5', navegable ? 'cursor-pointer' : 'cursor-default')}
             >
@@ -73,7 +74,7 @@ export function Stepper({
               </div>
               <span
                 className={cn(
-                  'whitespace-nowrap text-[11px] font-semibold',
+                  'text-center text-[11px] font-semibold sm:whitespace-nowrap',
                   state === 'future' || state === 'locked' ? 'text-ink-faint' : 'text-ink',
                 )}
               >

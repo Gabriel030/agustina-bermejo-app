@@ -1,31 +1,38 @@
 package com.red_escuela.backend.billing.dto;
 
+import com.red_escuela.backend.billing.invoice.dto.InvoiceLineResponse;
+import com.red_escuela.backend.billing.entity.PaymentAllocation;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceAmounts;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
+import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.billing.entity.Invoice;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.shared.domain.Money;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import com.red_escuela.backend.dto.ProductRef;
 
 public record InvoiceResponse(
-        Long id, String feeType, String period, LocalDate dueDate, BigDecimal baseAmount,
-        BigDecimal amountDue, BigDecimal remainingBalance, String status,
-        List<InvoiceAdjustmentResponse> adjustments, String fiscalInvoiceStatus,
-        LocalDateTime createdAt, LocalDateTime updatedAt,
-        String cancelledByName, String cancelledReason, LocalDateTime cancelledAt,
+        Long id, String invoiceNumber, String invoiceType, String documentType, String documentStatus,
+        String paymentStatus, LocalDate issueDate, LocalDate dueDate, String currency,
+        Money linesTotalAmount, Money discountsTotalAmount, Money totalAmount, Money paidAmount,
+        Money creditedAmount, Money outstandingAmount, List<InvoiceLineResponse> lines,
+        String issuingReason, String discardedReason,
         Long studentId, String studentDni, ProductRef productRef,
         String description, Long subjectId, Long examBoardRegistrationId,
         LocalDateTime paymentDate, String paymentMethod) {
-    public static InvoiceResponse from(Invoice invoice) {
+
+    public static InvoiceResponse from(InvoiceView view) {
+        Invoice invoice = view.invoice();
+        InvoiceLine line = invoice.getPrimaryLine();
         Long studentId = null;
         String studentDni = null;
         ProductRef productRef = null;
-        CourseEnrollment courseEnrollment = invoice.getCourseEnrollment();
-        ProgramEnrollment programEnrollment = invoice.getProgramEnrollment();
+        CourseEnrollment courseEnrollment = view.courseEnrollment();
+        ProgramEnrollment programEnrollment = view.programEnrollment();
         if (courseEnrollment != null) {
             studentId = courseEnrollment.getStudent().getId();
             studentDni = courseEnrollment.getStudent().getPerson().getDni();
@@ -35,25 +42,18 @@ public record InvoiceResponse(
             studentDni = programEnrollment.getStudent().getPerson().getDni();
             productRef = new ProductRef("PROGRAM", programEnrollment.getProgram().getId(), programEnrollment.getId());
         }
-        LocalDateTime paymentDate = invoice.getAllocations().stream()
-                .map(a -> a.getPayment().getPaidAt())
-                .max(Comparator.naturalOrder()).orElse(null);
-        String paymentMethod = invoice.getAllocations().stream()
-                .max(Comparator.comparing(a -> a.getPayment().getPaidAt()))
-                .map(a -> a.getPayment().getMethod().name())
-                .orElse(null);
+        PaymentAllocation latest = view.allocations().stream().max(Comparator.comparing((PaymentAllocation a) -> a.getPayment().getPaidAt())).orElse(null);
+        InvoiceAmounts amounts = invoice.getAmounts();
         return new InvoiceResponse(
-                invoice.getId(), invoice.getFeeType().name(), invoice.getPeriod().toString(), invoice.getDueDate(),
-                invoice.getBaseAmount(), invoice.getAmountDue(), invoice.getRemainingBalance(), invoice.getStatus().name(),
-                invoice.getAdjustments().stream().map(InvoiceAdjustmentResponse::from).toList(),
-                null,
-                invoice.getCreatedAt(), invoice.getUpdatedAt(),
-                invoice.getCancelledBy() == null ? null : invoice.getCancelledBy().getName() + " " + invoice.getCancelledBy().getLastname(),
-                invoice.getCancelledReason(), invoice.getCancelledAt(),
+                invoice.getId(), invoice.getInvoiceNumber() == null ? null : invoice.getInvoiceNumber().value(),
+                invoice.getInvoiceType().name(), invoice.getDocumentType().name(), invoice.getDocumentStatus().name(),
+                invoice.getPaymentStatus() == null ? null : invoice.getPaymentStatus().name(), invoice.getIssueDate(), invoice.getDueDate(), invoice.currency().name(),
+                amounts.linesTotal().value(), amounts.discountsTotal().value(), amounts.total().value(), amounts.paidAmount().value(),
+                amounts.creditedAmount().value(), amounts.outstandingAmount().value(),
+                invoice.getLines().stream().map(InvoiceLineResponse::from).toList(),
+                invoice.getIssuingReason().name(), invoice.getDiscardedReason(),
                 studentId, studentDni, productRef,
-                invoice.getDescription(),
-                invoice.getSubject() == null ? null : invoice.getSubject().getId(),
-                invoice.getExamBoardRegistration() == null ? null : invoice.getExamBoardRegistration().getId(),
-                paymentDate, paymentMethod);
+                line.getConcept(), line.getSubjectId(), line.getExamBoardRegistrationId(),
+                latest == null ? null : latest.getPayment().getPaidAt(), latest == null ? null : latest.getPayment().getMethod().name());
     }
 }

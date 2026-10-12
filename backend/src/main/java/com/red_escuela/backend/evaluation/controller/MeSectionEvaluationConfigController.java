@@ -4,7 +4,6 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.service.SectionEvaluationConfigInstructorAccess;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.GetMySectionEvaluationConfigUseCase;
@@ -13,7 +12,8 @@ import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSe
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SaveSectionEvaluationConfigDraftUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionevaluationconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
-import com.red_escuela.backend.service.CurrentInstructorService;
+import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,9 +86,8 @@ public class MeSectionEvaluationConfigController {
     private SectionEvaluationConfigResponse toResponse(SectionEvaluationConfig config, Long instructorId) {
         Long sectionId = config.getSubjectSection().getId();
         boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
-        boolean isEditableStatus = config.getStatus() == SectionEvaluationConfigStatus.DRAFT
-                || config.getStatus() == SectionEvaluationConfigStatus.REJECTED;
         return SectionEvaluationConfigResponse.from(
-                config, instructorAccess.listInstructors(sectionId), isLead && isEditableStatus);
+                config, instructorAccess.listInstructors(sectionId),
+                isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()));
     }
 }

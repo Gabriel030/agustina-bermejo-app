@@ -60,19 +60,19 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     And match response == '#[1]'
 
     # 6. Confirmar alta — 200, pasa a CONFIRMADO, otorga ALUMNO
-    * def dniConfirmacion = 'KARATEPROSP' + java.lang.System.nanoTime()
+    * def dniConfirmacion = 'KP' + java.lang.System.nanoTime()
     Given path '/prospects', studentId, 'confirm'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { dni: '#(dniConfirmacion)', street: 'Calle Falsa', city: 'CABA' }
+    And request { documentType: 'OTHER', dni: '#(dniConfirmacion)', street: 'Calle Falsa', city: 'CABA' }
     When method post
     Then status 200
     And match response.onboardingStatus == 'CONFIRMADO'
 
     # 7. Confirmar de nuevo — 409, ya no está PROSPECTO
-    * def dniConfirmacion2 = 'KARATEPROSP2' + java.lang.System.nanoTime()
+    * def dniConfirmacion2 = 'KP2' + java.lang.System.nanoTime()
     Given path '/prospects', studentId, 'confirm'
     And header Authorization = 'Bearer ' + preceptorToken
-    And request { dni: '#(dniConfirmacion2)', street: 'Calle Falsa', city: 'CABA' }
+    And request { documentType: 'OTHER', dni: '#(dniConfirmacion2)', street: 'Calle Falsa', city: 'CABA' }
     When method post
     Then status 409
 

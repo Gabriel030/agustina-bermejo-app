@@ -4,18 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.CreateProspectRequest;
 import com.red_escuela.backend.academicstructure.entity.Institution;
-import com.red_escuela.backend.entity.Address;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.Address;
+import com.red_escuela.backend.shared.domain.EmailAddress;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
-import com.red_escuela.backend.identity.repository.EmailVerificationTokenRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -48,9 +49,6 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     @Autowired
     private StudentRepository studentRepository;
@@ -109,6 +107,12 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
         return clear;
     }
 
+    private List<EmailVerificationToken> verificationTokensOf(String email) {
+        return entityManager.createQuery("select t from EmailVerificationToken t where t.person.email = :email", EmailVerificationToken.class)
+                .setParameter("email", EmailAddress.of(email))
+                .getResultList();
+    }
+
     private String tokenWithRole(String username, String roleName) {
         Address address = new Address();
         entityManager.persist(address);
@@ -140,7 +144,7 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.refresh(student.getPerson());
         assertThat(student.getPerson().getEmailVerified()).isTrue();
-        assertThat(emailVerificationTokenRepository.findAll()).isEmpty();
+        assertThat(verificationTokensOf(student.getPerson().getEmail().value())).isEmpty();
     }
 
     @Test
@@ -171,7 +175,7 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.emailVerified").isEmpty());
 
-        assertThat(emailVerificationTokenRepository.findAll()).hasSize(1);
+        assertThat(verificationTokensOf("carlos.ruiz.ver@example.com")).hasSize(1);
     }
 
     @Test
@@ -187,7 +191,7 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        assertThat(emailVerificationTokenRepository.findAll()).isEmpty();
+        assertThat(verificationTokensOf("luis.garcia.ver@example.com")).isEmpty();
     }
 
     @Test
@@ -241,7 +245,8 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
         Long institutionId = persistInstitution();
         Student student = persistProspecto(institutionId);
         persistVerificationToken(student.getPerson(), false);
-        assertThat(emailVerificationTokenRepository.findAll()).hasSize(1);
+        String studentEmail = student.getPerson().getEmail().value();
+        assertThat(verificationTokensOf(studentEmail)).hasSize(1);
 
         String token = tokenWithRole("preceptor.ver4", "PRECEPTOR");
 
@@ -249,6 +254,6 @@ class VerifyEmailControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
 
-        assertThat(emailVerificationTokenRepository.findAll()).hasSize(1);
+        assertThat(verificationTokensOf(studentEmail)).hasSize(1);
     }
 }

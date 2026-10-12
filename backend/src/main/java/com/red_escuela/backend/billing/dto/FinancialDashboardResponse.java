@@ -1,12 +1,18 @@
 package com.red_escuela.backend.billing.dto;
 
-import java.math.BigDecimal;
+import com.red_escuela.backend.shared.domain.Money;
+
+import java.util.List;
 
 public record FinancialDashboardResponse(
         int studentsInDebt,
         int studentsUpToDate,
-        BigDecimal totalDebt,
-        BigDecimal monthlyProjected,
-        BigDecimal monthlyCollected,
-        BigDecimal monthlyDebt
-) {}
+        List<CurrencyTotals> totalsByCurrency
+) {
+    public record CurrencyTotals(
+            Money totalDebt,
+            Money monthlyProjected,
+            Money monthlyCollected,
+            Money monthlyDebt
+    ) {}
+}

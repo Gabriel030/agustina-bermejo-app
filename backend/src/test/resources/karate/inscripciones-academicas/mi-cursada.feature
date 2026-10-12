@@ -30,13 +30,14 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA mi cursada ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -98,7 +99,7 @@ Feature: Autoservicio de la propia cursada (MeAcademicRecordController)
 
     Given path '/section-enrollments', sectionEnrollmentId, 'grade-items'
     And header Authorization = 'Bearer ' + docente.accessToken
-    And request { type: 'EXAM', date: '2026-03-15T00:00:00', score: 8, maxScore: 10 }
+    And request { type: 'EXAM', date: '2026-03-15T00:00:00', score: 8 }
     When method post
     Then status 201
 

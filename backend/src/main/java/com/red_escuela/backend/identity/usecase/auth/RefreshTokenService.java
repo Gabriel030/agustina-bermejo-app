@@ -1,14 +1,15 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
 import com.red_escuela.backend.identity.entity.RefreshToken;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.exception.InvalidRefreshTokenException;
 import com.red_escuela.backend.identity.repository.RefreshTokenRepository;
 import com.red_escuela.backend.identity.service.AuthTokenIssuer;
 import com.red_escuela.backend.shared.UseCase;
-import com.red_escuela.backend.util.TokenHashUtil;
+import com.red_escuela.backend.identity.util.TokenHashUtil;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class RefreshTokenService implements RefreshTokenUseCase {
@@ -27,7 +28,8 @@ public class RefreshTokenService implements RefreshTokenUseCase {
         String hash = TokenHashUtil.sha256Hex(rawRefreshToken);
         RefreshToken existing = refreshTokenRepository.findByTokenHash(hash)
                 .filter(rt -> !rt.getRevoked())
-                .filter(rt -> rt.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(rt -> rt.getExpiresAt().isAfter(ApplicationTime.now()))
+                .filter(rt -> rt.getPerson().getStatus() == StatusType.ACTIVE)
                 .orElseThrow(InvalidRefreshTokenException::new);
 
         existing.setRevoked(true);

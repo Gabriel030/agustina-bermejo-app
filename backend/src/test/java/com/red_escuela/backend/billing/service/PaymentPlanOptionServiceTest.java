@@ -1,15 +1,16 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest;
-import com.red_escuela.backend.billing.dto.MonetaryAdjustmentValueRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.billing.dto.MonetaryAdjustmentRequest;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.repository.AddressRepository;
+import com.red_escuela.backend.identity.repository.AddressRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +26,7 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -53,6 +55,9 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         Address address = addressRepository.save(new Address());
         Person person = new Person();
         person.setUsername(username);
+        person.setDni(Long.toString(Math.abs((long) (username).hashCode())));
+        person.setName("Persona");
+        person.setLastname("Prueba");
         person.setEmail(username + "@example.com");
         person.setAddress(address);
         person.setStatus(StatusType.ACTIVE);
@@ -76,7 +81,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         authenticateAs(persistDirector("director.plan1." + System.nanoTime()));
         Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, null, null);
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, null, null);
 
         assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
@@ -87,7 +92,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         authenticateAs(persistDirector("director.plan2." + System.nanoTime()));
         Program program = persistProgram();
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, LocalDate.now().plusDays(10), LocalDate.now());
 
         assertThatThrownBy(() -> createPaymentPlanOptionForProgramUseCase.create(program.getId(), request))
                 .isInstanceOf(InvalidWindowConfigurationException.class);
@@ -100,7 +105,7 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
         LocalDate start = LocalDate.now();
         LocalDate end = LocalDate.now().plusDays(30);
         CreatePaymentPlanOptionRequest request = new CreatePaymentPlanOptionRequest(
-                "Pago adelantado", PaymentPlanCadence.UPFRONT, null, true, start, end);
+                "Pago adelantado", PaymentPlanCadence.ANNUAL_UPFRONT, null, true, start, end);
 
         var option = createPaymentPlanOptionForProgramUseCase.create(program.getId(), request);
 
@@ -123,13 +128,13 @@ class PaymentPlanOptionServiceTest extends AbstractIntegrationTest {
 
     @Test
     void bothValuesAtOnceAreRejected() {
-        assertThatThrownBy(() -> new MonetaryAdjustmentValueRequest(BigDecimal.TEN, BigDecimal.valueOf(0.1)).toValue())
+        assertThatThrownBy(() -> new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.NOMINAL, ars(10), Percentage.ofFraction(BigDecimal.valueOf(0.1))).toAdjustment())
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void noValueIsRejected() {
-        assertThatThrownBy(() -> new MonetaryAdjustmentValueRequest(null, null).toValue())
+        assertThatThrownBy(() -> new MonetaryAdjustmentRequest(MonetaryAdjustmentRequest.Type.PROPORTIONAL, null, null).toAdjustment())
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

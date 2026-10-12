@@ -1,5 +1,5 @@
 package com.red_escuela.backend.billing.entity;
 
 public enum PaymentPlanCadence {
-    UPFRONT, MONTHLY
+    ANNUAL_UPFRONT, MONTHLY
 }

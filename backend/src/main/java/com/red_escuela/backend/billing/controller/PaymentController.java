@@ -24,7 +24,7 @@ public class PaymentController {
 
     @PostMapping("/payments")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('ALUMNO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO')")
     public PaymentResponse register(@Valid @RequestBody RegisterPaymentRequest request) {
         return PaymentResponse.from(registerPaymentUseCase.register(request, currentPersonService.resolveCurrentPerson()));
     }

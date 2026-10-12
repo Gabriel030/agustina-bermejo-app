@@ -21,7 +21,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: 50000, enrollmentFeeAmount: 50000, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -52,6 +52,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def cohortId = response.id
 
     # Alumno recién registrado, sin sesión previa
+    * def dniAlumno = '' + (30000000 + java.lang.System.nanoTime() % 60000000)
     * def emailAlumno = 'karate.solicitaralta.' + java.lang.System.nanoTime() + '@example.com'
     Given path '/auth/register'
     And request { nombre: 'QA', apellido: 'SolicitaCarrera', email: '#(emailAlumno)', username: '#(emailAlumno)', password: '#(passwordValida)', institutionId: '#(institutionId)' }
@@ -59,14 +60,18 @@ Feature: Caso de uso — Solicitar alta en carrera
     Then status 201
     * def alumnoToken = response.accessToken
 
+    Given path '/me'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And request { dni: '#(dniAlumno)' }
+    When method put
+    Then status 200
+
   Scenario: Flujo completo — solicitar, ver PENDING, aprobar, ver APPROVED, rol otorgado
-    # Solicitar — 201, PENDING. Épica 7 Fase 3: multipart, el comprobante de la
-    # matrícula viaja en la misma request que la solicitud (paso bloqueante).
+    # Solicitar — 201, PENDING. D-227: sin pago; la matrícula se factura al aprobar.
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And multipart field programId = programId
-    And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And param programId = programId
+    And param cohortId = cohortId
     When method post
     Then status 201
     And match response.status == 'PENDING'
@@ -75,11 +80,11 @@ Feature: Caso de uso — Solicitar alta en carrera
     # Solicitar la misma carrera de nuevo — 409, duplicado pendiente
     Given path '/me/program-enrollment-applications'
     And header Authorization = 'Bearer ' + alumnoToken
-    And multipart field programId = programId
-    And multipart field cohortId = cohortId
-    And multipart file comprobante = { value: 'contenido de prueba', filename: 'comprobante.pdf', contentType: 'application/pdf' }
+    And param programId = programId
+    And param cohortId = cohortId
     When method post
     Then status 409
+    And match response.code == 'ALREADY_HAS_PENDING_APPLICATION'
 
     # Sin rol todavía — solicitar por sí solo no otorga nada
     Given path '/me'
@@ -116,6 +121,8 @@ Feature: Caso de uso — Solicitar alta en carrera
     Then status 200
     * def propiaAprobada = response.filter(function(x){ return x.id == applicationId })[0]
     And match propiaAprobada.status == 'APPROVED'
+    And match propiaAprobada.admissionInvoice.paymentStatus == 'PENDING'
+    * def admissionInvoiceId = propiaAprobada.admissionInvoice.id
 
     # Rol ALUMNO otorgado automáticamente al aprobar — criterio de aceptación clave
     Given path '/me'
@@ -123,3 +130,34 @@ Feature: Caso de uso — Solicitar alta en carrera
     When method get
     Then status 200
     And match response.roles contains 'ALUMNO'
+
+    # Sin pagar la matrícula todavía no hay inscripción
+    Given path '/me/enrollment-payment-status'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    * def inscripcionesAntesDePagar = response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' })
+    And match inscripcionesAntesDePagar == '#[0]'
+
+    # Al pagarla, la inscripción queda confirmada
+    Given path '/payments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { allocations: [{ invoiceId: '#(admissionInvoiceId)', amountApplied: { amount: '50000', currency: 'ARS' } }], method: 'TRANSFER' }
+    When method post
+    Then status 201
+
+    # La inscripción se confirma después del commit del pago, de forma asíncrona
+    * configure retry = { count: 30, interval: 500 }
+    Given path '/me/enrollment-payment-status'
+    And header Authorization = 'Bearer ' + alumnoToken
+    And retry until response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' }).length > 0
+    When method get
+    Then status 200
+    * def matricula = response.filter(function(x){ return x.enrollmentType == 'ProgramEnrollment' })[0]
+
+    Given path '/me/program-enrollments', matricula.enrollmentId, 'invoices'
+    And header Authorization = 'Bearer ' + alumnoToken
+    When method get
+    Then status 200
+    And match response.enrollmentType == 'PROGRAM'
+    And match response.productName == nombreCarrera

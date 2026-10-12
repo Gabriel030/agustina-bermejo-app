@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [loggedOut, setLoggedOut] = useState(false);
 
   const limpiarSesion = useCallback(() => {
     setAccessToken(null);
@@ -54,6 +55,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const perfil = await apiFetch('/me');
     setUsuario(perfil);
+    setLoggedOut(false);
     return perfil;
   }, []);
 
@@ -69,6 +71,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const perfil = await apiFetch('/me');
     setUsuario(perfil);
+    setLoggedOut(false);
     return perfil;
   }, []);
 
@@ -83,6 +86,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const perfil = await apiFetch('/me');
     setUsuario(perfil);
+    setLoggedOut(false);
     return perfil;
   }, []);
 
@@ -95,6 +99,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refreshToken', tokens.refreshToken);
     const perfil = await apiFetch('/me');
     setUsuario(perfil);
+    setLoggedOut(false);
     return perfil;
   }, []);
 
@@ -105,11 +110,13 @@ export function AuthProvider({ children }) {
   const refrescarPerfil = useCallback(async () => {
     const perfil = await apiFetch('/me');
     setUsuario(perfil);
+    setLoggedOut(false);
     return perfil;
   }, []);
 
   const logout = useCallback(async () => {
     const refreshToken = localStorage.getItem('refreshToken');
+    setLoggedOut(true);
     limpiarSesion();
     if (refreshToken) {
       try {
@@ -122,8 +129,8 @@ export function AuthProvider({ children }) {
   }, [limpiarSesion]);
 
   const value = useMemo(
-    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando }),
-    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando],
+    () => ({ usuario, roles: usuario?.roles ?? [], login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut }),
+    [usuario, login, register, loginWithGoogle, registerWithGoogle, refrescarPerfil, logout, cargando, loggedOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

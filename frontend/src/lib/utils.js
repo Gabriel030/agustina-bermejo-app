@@ -9,17 +9,21 @@ export function cn(...inputs) {
 // Detalle de solicitud) — sin librería de fechas nueva, Intl alcanza.
 export function formatFecha(isoString) {
   if (!isoString) return '';
-  return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(
-    new Date(isoString),
-  );
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoString);
+  const date = dateOnly ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])) : new Date(isoString);
+  return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
 }
 
-// Épica 7 Fase 3: montos de matrícula/cuota en el Detalle de carrera/curso y el
-// wizard de pago. null (Director no configuró el precio todavía) se maneja en
-// el componente que lo llama, no acá.
-export function formatMonto(amount) {
-  if (amount == null) return '';
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(
-    amount,
-  );
+export function formatMoney(money) {
+  if (money == null) return '';
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: money.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(money.amount));
+}
+
+export function moneyValue(money) {
+  return money == null ? 0 : Number(money.amount);
 }

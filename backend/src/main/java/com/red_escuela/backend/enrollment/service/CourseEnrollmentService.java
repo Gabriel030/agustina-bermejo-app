@@ -1,4 +1,5 @@
 package com.red_escuela.backend.enrollment.service;
+import java.time.Clock;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
@@ -15,7 +16,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.enrollment.exception.AmbiguousSectionException;
@@ -38,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.red_escuela.backend.billing.service.EnrollmentWithdrawalCreditService;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
@@ -53,17 +53,17 @@ public class CourseEnrollmentService {
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
-    private final EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService;
+    private final Clock clock;
 
-    public CourseEnrollmentService(
-            CourseEnrollmentRepository courseEnrollmentRepository,
+    public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
             StudentRepository studentRepository,
             CourseRepository courseRepository,
             CourseSubjectRepository courseSubjectRepository,
             CourseSubjectSectionRepository courseSubjectSectionRepository,
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
-            ScholarshipService scholarshipService, EnrollmentWithdrawalCreditService enrollmentWithdrawalCreditService) {
+            ScholarshipService scholarshipService,
+            Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
@@ -73,7 +73,7 @@ public class CourseEnrollmentService {
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
-        this.enrollmentWithdrawalCreditService = enrollmentWithdrawalCreditService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -91,7 +91,7 @@ public class CourseEnrollmentService {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CourseNotFoundException(request.courseId()));
         validateCanEnroll(student, course);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         Map<CourseSubject, CourseSubjectSection> resueltas = new LinkedHashMap<>();
         for (CourseSubject courseSubject : courseSubjectRepository.findByCourseIdAndStatusOrderBySortOrder(course.getId(), StatusType.ACTIVE)) {
@@ -122,15 +122,14 @@ public class CourseEnrollmentService {
                     "El curso " + course.getId() + " tiene la ventana de inscripción mal configurada "
                             + "(registrationStart posterior a registrationEnd)");
         }
-        LocalDateTime now = LocalDateTime.now();
-        if (course.getRegistrationStart() != null && now.isBefore(course.getRegistrationStart())
-                || course.getRegistrationEnd() != null && now.isAfter(course.getRegistrationEnd())) {
+        if (!course.isRegistrationOpenAt(LocalDateTime.now(clock))) {
             throw new AdmissionWindowClosedException(
                     "Fuera de la ventana de inscripción del curso " + course.getId());
         }
 
         List<CourseEnrollment> activas = courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(
-                student.getId(), course.getId(), List.of(EnrollmentStatus.ENROLLED));
+                student.getId(), course.getId(),
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.WAITLISTED));
         if (!activas.isEmpty()) {
             throw new AlreadyEnrolledInCourseException(student.getId(), course.getId());
         }
@@ -185,10 +184,12 @@ public class CourseEnrollmentService {
     private EnrollmentStatus calculateStatusByCourseCapacity(Course course) {
         courseRepository.findByIdForUpdate(course.getId())
                 .orElseThrow(() -> new CourseNotFoundException(course.getId()));
-        long occupied = courseEnrollmentRepository
-                .findByCourseIdAndStatusIn(course.getId(), List.of(EnrollmentStatus.ENROLLED))
-                .size();
-        return course.hasCapacityFor(occupied) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+        return course.hasCapacityFor(countOccupiedSeats(course.getId())) ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
+    }
+
+    public long countOccupiedSeats(Long courseId) {
+        return courseEnrollmentRepository.countByCourseIdAndStatusIn(
+                courseId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS));
     }
 
     private EnrollmentStatus calculateStatusByCapacity(CourseSubjectSection section) {
@@ -210,9 +211,9 @@ public class CourseEnrollmentService {
         }
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
+        enrollment.setCompletionDate(LocalDateTime.now(clock));
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
-        enrollmentWithdrawalCreditService.handleCourseEnrollmentWithdrawal(enrollment);
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());
@@ -220,7 +221,7 @@ public class CourseEnrollmentService {
     }
 
     void cancelModuleEnrollments(CourseEnrollment enrollment) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         for (CourseSubjectSectionEnrollment sub : courseSubjectSectionEnrollmentRepository.findByCourseEnrollmentId(enrollment.getId())) {
             EnrollmentStatus estadoAnterior = sub.getStatus();
             if (estadoAnterior == EnrollmentStatus.ENROLLED || estadoAnterior == EnrollmentStatus.IN_PROGRESS

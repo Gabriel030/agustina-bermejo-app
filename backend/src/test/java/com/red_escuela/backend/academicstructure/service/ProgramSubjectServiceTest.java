@@ -12,8 +12,9 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.CorequisiteNotFoundException;
@@ -31,8 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.academicstructure.service.ProgramSubjectService;
-import com.red_escuela.backend.academicstructure.service.ElectiveGroupService;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -57,6 +56,7 @@ class ProgramSubjectServiceTest extends AbstractIntegrationTest {
 
     private Subject persistSubject(String name) {
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName(name);
         entityManager.persist(subject);

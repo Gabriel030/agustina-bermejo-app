@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import java.math.BigDecimal;
+
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,16 +14,18 @@ import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.CurricularTerm;
+import com.red_escuela.backend.academicstructure.entity.GradeMode;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.RequirementType;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -228,10 +232,13 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.persist(program);
 
         Subject subjectA = new Subject();
+
+        subjectA.setStatus(SubjectStatus.ACTIVE);
         subjectA.setCode(TestSubjectCodes.next());
         subjectA.setName("Materia MinGrade A");
         entityManager.persist(subjectA);
         Subject subjectB = new Subject();
+        subjectB.setStatus(SubjectStatus.ACTIVE);
         subjectB.setCode(TestSubjectCodes.next());
         subjectB.setName("Materia MinGrade B");
         entityManager.persist(subjectB);
@@ -256,7 +263,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         AddPrerequisiteRequest request = new AddPrerequisiteRequest(
-                entradaB.getId(), RequirementType.APPROVED, 99.0, null);
+                entradaB.getId(), RequirementType.APPROVED, BigDecimal.valueOf(99.0), null);
 
         mockMvc.perform(post("/program-subjects/{id}/prerequisites", entradaA.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -320,7 +327,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso Baja", term.getId(), null, 20, null, null, null, null, null);
+                "Curso Baja", term.getId(), null, 20, null, 3, null, null, null);
         String body = mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -343,7 +350,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithNonExistentTermReturns404() throws Exception {
         String token = tokenWithRole("admin-curso2", "ADMINISTRATIVO");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin term", 999999L, null, 10, null, null, null, null, null);
+                "Curso sin term", 999999L, null, 10, null, 3, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -356,7 +363,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-curso1", "PRECEPTOR");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin permiso", 1L, null, 10, null, null, null, null, null);
+                "Curso sin permiso", 1L, null, 10, null, 3, null, null, null);
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -405,7 +412,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void deactivatingAndReactivatingSubjectWorksAndTheListingFiltersByStatus() throws Exception {
         String token = tokenWithRole("admin-subject-baja1", "ADMINISTRATIVO");
         String directorToken = tokenWithRole("director-subject-baja1", "DIRECTOR");
-        CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", "MBAJ", null, null, null, null, null);
+        CreateSubjectRequest request = new CreateSubjectRequest("Materia para baja", "MBAJ", null, 4, null, GradeMode.NUMERIC, null);
         String body = mockMvc.perform(post("/subjects")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -451,6 +458,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia ProgramSubject Baja");
         entityManager.persist(subject);
@@ -500,7 +508,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulos", term.getId(), null, 15, null, null, null, null, null))))
+                                "Curso con módulos", term.getId(), null, 15, null, 3, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -543,7 +551,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulo baja", term.getId(), null, 15, null, null, null, null, null))))
+                                "Curso con módulo baja", term.getId(), null, 15, null, 3, null, null, null))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -638,6 +646,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(3);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia del grupo en uso");
         entityManager.persist(subject);
@@ -700,6 +709,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Mandatory");
         entityManager.persist(subject);
@@ -724,6 +734,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         program.setTotalYears(2);
         entityManager.persist(program);
         Subject subject = new Subject();
+        subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia Cat Elective");
         entityManager.persist(subject);

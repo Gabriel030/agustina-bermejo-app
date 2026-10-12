@@ -3,6 +3,8 @@ package com.red_escuela.backend.enrollment.repository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +17,14 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     List<SubjectSectionEnrollment> findByStudentId(Long studentId);
 
     List<SubjectSectionEnrollment> findBySubjectSectionIdAndStatusIn(Long subjectSectionId, List<EnrollmentStatus> statuses);
+
+    @Query("""
+            select e from SubjectSectionEnrollment e
+            join fetch e.student s join fetch s.person join fetch e.subjectSection
+            where e.subjectSection.id = :sectionId and e.status in :statuses
+            """)
+    List<SubjectSectionEnrollment> findWithStudentBySectionIdAndStatusIn(
+            @Param("sectionId") Long sectionId, @Param("statuses") List<EnrollmentStatus> statuses);
 
     Optional<SubjectSectionEnrollment> findFirstBySubjectSectionIdAndStatusOrderByEnrolledAtAsc(
             Long subjectSectionId, EnrollmentStatus status);

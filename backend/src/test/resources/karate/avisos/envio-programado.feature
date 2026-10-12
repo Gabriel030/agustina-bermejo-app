@@ -30,13 +30,14 @@ Feature: Envío programado de avisos (AnnouncementController, MeAnnouncementCont
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA programado ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken

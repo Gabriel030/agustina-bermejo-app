@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 
 @Getter
 @Setter
@@ -67,7 +68,7 @@ public class ClassSession {
     @PrePersist
     private void onCreate() {
         if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
+            this.createdAt = ApplicationTime.now();
         }
         validateSingleSectionTarget();
     }

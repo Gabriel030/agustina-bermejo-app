@@ -1,4 +1,6 @@
 package com.red_escuela.backend.enrollment.entity;
+
+import org.springframework.modulith.NamedInterface;
 import com.red_escuela.backend.identity.entity.Student;
 
 import jakarta.persistence.*;
@@ -9,13 +11,15 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.entity.EnrollmentBillingStanding;
-import com.red_escuela.backend.billing.entity.Invoice;
-import com.red_escuela.backend.billing.entity.InvoiceStatus;
+import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
+import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 
+@NamedInterface("model")
 @Getter
 @Setter
 @Entity
@@ -47,6 +51,10 @@ public class ProgramEnrollment implements BillableEnrollment {
     @JoinColumn(name = "current_billing_template_id")
     private ProgramYearBillingTemplate currentBillingTemplate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admission_application_id")
+    private ProgramEnrollmentApplication admissionApplication;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private ProgramEnrollmentStatus status;
@@ -58,20 +66,32 @@ public class ProgramEnrollment implements BillableEnrollment {
     private LocalDateTime completionDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "billing_standing", nullable = false)
-    private EnrollmentBillingStanding billingStanding = EnrollmentBillingStanding.UP_TO_DATE;
+    @Column(name = "payment_status", nullable = false)
+    private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
 
-    @Column(name = "billing_standing_updated_at")
-    private LocalDateTime billingStandingUpdatedAt;
+    @Column(name = "payment_status_updated_at")
+    private LocalDateTime paymentStatusUpdatedAt;
 
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<SubjectSectionEnrollment> sectionEnrollments;
 
-    public boolean canEnrollInSubjects(Invoice enrollmentFeeInvoice) {
-        if (programCohort == null) {
-            return true;
+    public ProgramYearBillingTemplate effectiveBillingTemplate() {
+        return currentBillingTemplate != null ? currentBillingTemplate : programCohort.getTemplate();
+    }
+
+    public boolean isActive() {
+        return status == ProgramEnrollmentStatus.ENROLLED || status == ProgramEnrollmentStatus.PAUSED;
+    }
+
+    public void requireActive() {
+        if (!isActive()) {
+            throw new ProgramEnrollmentRequiredException(id);
         }
-        return enrollmentFeeInvoice != null
-                && (enrollmentFeeInvoice.getStatus() == InvoiceStatus.PAID || enrollmentFeeInvoice.getStatus() == InvoiceStatus.WAIVED);
+    }
+
+    public void complete(LocalDateTime completedAt) {
+        requireActive();
+        status = ProgramEnrollmentStatus.COMPLETED;
+        completionDate = completedAt;
     }
 }

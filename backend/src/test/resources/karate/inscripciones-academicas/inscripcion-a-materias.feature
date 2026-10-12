@@ -21,19 +21,20 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def nombrePrograma = 'Carrera QA inscripciones ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombrePrograma)', totalYears: 1, totalCreditsRequired: 0 }
+    And request { name: '#(nombrePrograma)', totalYears: 2, totalCreditsRequired: 0 }
     When method post
     Then status 201
     * def programId = response.id
 
     * def nombreMateria = 'Materia QA inscripciones ' + java.lang.System.nanoTime()
-    * def codigoMateria = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoMateria = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateria)', code: '#(codigoMateria)' }
     When method post
     Then status 201
     * def subjectId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -99,13 +100,14 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def programEnrollmentId = response.id
 
     * def nombreMateriaAjena = 'Materia ajena al plan ' + java.lang.System.nanoTime()
-    * def codigoAjena = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoAjena = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaAjena)', code: '#(codigoAjena)' }
     When method post
     Then status 201
     * def subjectAjenoId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAjenoId)
 
     Given path '/subjects', subjectAjenoId, 'sections'
     And header Authorization = 'Bearer ' + adminToken
@@ -124,13 +126,14 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
 
     * def nombreMateriaAvanzada = 'Materia avanzada ' + java.lang.System.nanoTime()
-    * def codigoAvanzada = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoAvanzada = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaAvanzada)', code: '#(codigoAvanzada)' }
     When method post
     Then status 201
     * def subjectAvanzadaId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectAvanzadaId)
 
     Given path '/programs', programId, 'subjects'
     And header Authorization = 'Bearer ' + adminToken
@@ -205,13 +208,14 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     * def sectionCId = response.id
 
     * def nombreMateriaOtra = 'Materia otra para cambio ' + java.lang.System.nanoTime()
-    * def codigoOtra = java.util.UUID.randomUUID().toString().substring(0, 4)
+    * def codigoOtra = Java.type('com.red_escuela.backend.config.TestSubjectCodes').next()
     Given path '/subjects'
     And header Authorization = 'Bearer ' + adminToken
     And request { name: '#(nombreMateriaOtra)', code: '#(codigoOtra)' }
     When method post
     Then status 201
     * def subjectOtraId = response.id
+    * eval Java.type('com.red_escuela.backend.karate.KarateFixtures').activateSubject(subjectOtraId)
 
     Given path '/subjects', subjectOtraId, 'sections'
     And header Authorization = 'Bearer ' + adminToken

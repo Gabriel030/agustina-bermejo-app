@@ -1,12 +1,15 @@
 package com.red_escuela.backend.identity.usecase.person;
 
-import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
+import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.exception.DniAlreadyExistsException;
+import com.red_escuela.backend.shared.domain.DocumentNumber;
+import com.red_escuela.backend.shared.domain.DocumentType;
+import com.red_escuela.backend.identity.exception.EmailAlreadyExistsException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.red_escuela.backend.shared.domain.EmailAddress;
 import org.springframework.transaction.annotation.Transactional;
 
 @UseCase
@@ -26,7 +29,13 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         Person person = currentPersonService.resolveCurrentPerson();
 
         if (request.email() != null) {
-            person.setEmail(request.email());
+            EmailAddress newEmail = EmailAddress.of(request.email());
+            personRepository.findByEmail(newEmail)
+                    .filter(owner -> !owner.getId().equals(person.getId()))
+                    .ifPresent(owner -> {
+                        throw new EmailAlreadyExistsException(request.email());
+                    });
+            person.setEmail(newEmail);
         }
         if (request.telefono() != null) {
             person.setPhoneNumber(request.telefono());
@@ -34,8 +43,15 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
         if (request.sexo() != null) {
             person.setSex(request.sexo());
         }
-        if (request.dni() != null) {
-            person.setDni(request.dni());
+        if (request.dni() != null && !request.dni().isBlank()) {
+            DocumentNumber document = DocumentNumber.of(
+                    request.documentType() == null ? DocumentType.DNI : request.documentType(), request.dni());
+            personRepository.findByDocumentTypeAndDni(document.type(), document.value())
+                    .filter(owner -> !owner.getId().equals(person.getId()))
+                    .ifPresent(owner -> {
+                        throw new DniAlreadyExistsException(document.type(), document.value());
+                    });
+            person.changeDocument(document.type(), document.value());
         }
 
         var address = person.getAddress();
@@ -61,10 +77,6 @@ public class UpdateOwnProfileService implements UpdateOwnProfileUseCase {
             address.setCountry(request.country());
         }
 
-        try {
-            return personRepository.saveAndFlush(person);
-        } catch (DataIntegrityViolationException e) {
-            throw new DniAlreadyExistsException(request.dni());
-        }
+        return personRepository.saveAndFlush(person);
     }
 }

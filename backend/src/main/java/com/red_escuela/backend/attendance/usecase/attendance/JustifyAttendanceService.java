@@ -8,23 +8,28 @@ import com.red_escuela.backend.attendance.service.AttendanceFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentPersonService;
 import com.red_escuela.backend.shared.UseCase;
+import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.attendance.service.AttendanceStatusChangedEvent;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class JustifyAttendanceService implements JustifyAttendanceUseCase {
 
     private final AttendanceRepository attendanceRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final AttendanceFinder attendanceFinder;
     private final CurrentPersonService currentPersonService;
 
     public JustifyAttendanceService(AttendanceRepository attendanceRepository,
                                      AttendanceFinder attendanceFinder,
-                                     CurrentPersonService currentPersonService) {
+                                     CurrentPersonService currentPersonService,
+                                     ApplicationEventPublisher eventPublisher) {
         this.attendanceRepository = attendanceRepository;
         this.attendanceFinder = attendanceFinder;
         this.currentPersonService = currentPersonService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -41,7 +46,9 @@ public class JustifyAttendanceService implements JustifyAttendanceUseCase {
         attendance.setJustificationReason(command.reason());
         attendance.setJustificationAttachmentUrl(command.attachmentUrl());
         attendance.setJustifiedBy(justifiedBy);
-        attendance.setJustifiedAt(LocalDateTime.now());
-        return attendanceRepository.save(attendance);
+        attendance.setJustifiedAt(ApplicationTime.now());
+        Attendance saved = attendanceRepository.save(attendance);
+        eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(saved));
+        return saved;
     }
 }

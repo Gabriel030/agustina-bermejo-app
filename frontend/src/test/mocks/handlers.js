@@ -47,20 +47,20 @@ export const handlers = [
     HttpResponse.json({ id: Number(params.id), name: 'Carrera de prueba', totalYears: 3, totalCreditsRequired: 0 }),
   ),
   http.get(`${API}/programs/:id/pricing`, ({ params }) =>
-    HttpResponse.json({ programId: Number(params.id), matriculaCohorte1: 50000, matriculaCohorte2: 25000, cuotaMensual: 15000 }),
+    HttpResponse.json({ programId: Number(params.id), matriculaCohorte1: { amount: '50000.00', currency: 'ARS' }, matriculaCohorte2: { amount: '25000.00', currency: 'ARS' }, cuotaMensual: { amount: '15000.00', currency: 'ARS' } }),
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
-      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01' },
-      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01' },
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
     ]),
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
-    HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3 }),
+    HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),
-  http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: 8000 })),
+  http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
   http.post(`${API}/me/program-enrollment-applications`, () =>
@@ -72,5 +72,10 @@ export const handlers = [
     HttpResponse.json({ id: 1, paymentStatus: 'PENDING_REVIEW' }, { status: 201 }),
   ),
   http.get(`${API}/me/notifications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/documents`, () => HttpResponse.json([])),
+  http.get(`${API}/me/bank-transfer-receipts`, () => HttpResponse.json([])),
+  http.get(`${API}/payment-config`, () =>
+    HttpResponse.json({ bankAlias: null, bankCbu: null, accountHolder: null, qrImageUrl: null, mpEnabled: false }),
+  ),
   http.post(`${API}/me/notifications/:id/read`, () => new HttpResponse(null, { status: 200 })),
 ];

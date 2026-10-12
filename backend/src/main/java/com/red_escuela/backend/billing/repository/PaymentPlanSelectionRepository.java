@@ -5,6 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import org.springframework.data.domain.Pageable;
+
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -34,4 +39,46 @@ public interface PaymentPlanSelectionRepository extends JpaRepository<PaymentPla
               and (s.effectiveTo is null or s.effectiveTo >= :month)
             """)
     Optional<PaymentPlanSelection> findActiveForProgramEnrollment(@Param("programEnrollmentId") Long programEnrollmentId, @Param("month") YearMonth month);
+
+    @Query("""
+            select distinct s.programEnrollment.id from PaymentPlanSelection s
+            where s.programEnrollment is not null
+              and s.paymentPlanOption.cadence = :cadence
+              and s.programEnrollment.status in :statuses
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+              and s.programEnrollment.id > :lastId
+            order by s.programEnrollment.id
+            """)
+    List<Long> findProgramEnrollmentIdsWithActivePlan(@Param("cadence") PaymentPlanCadence cadence,
+                                                       @Param("statuses") List<ProgramEnrollmentStatus> statuses,
+                                                       @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("""
+            select s.programEnrollment.id, s.effectiveFrom, s.scopeMonths from PaymentPlanSelection s
+            where s.programEnrollment is not null
+              and s.paymentPlanOption.cadence = com.red_escuela.backend.billing.entity.PaymentPlanCadence.ANNUAL_UPFRONT
+              and s.programEnrollment.status in :statuses
+              and s.scopeMonths is not null
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+              and s.programEnrollment.id > :lastId
+            order by s.programEnrollment.id
+            """)
+    List<Object[]> findAnnualUpfrontSelectionsOfProgramEnrollments(@Param("statuses") List<ProgramEnrollmentStatus> statuses,
+                                                                              @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("""
+            select distinct s.courseEnrollment.id from PaymentPlanSelection s
+            where s.courseEnrollment is not null
+              and s.paymentPlanOption.cadence = :cadence
+              and s.courseEnrollment.status = :status
+              and s.effectiveFrom <= :month
+              and (s.effectiveTo is null or s.effectiveTo >= :month)
+              and s.courseEnrollment.id > :lastId
+            order by s.courseEnrollment.id
+            """)
+    List<Long> findCourseEnrollmentIdsWithActivePlan(@Param("cadence") PaymentPlanCadence cadence,
+                                                      @Param("status") EnrollmentStatus status,
+                                                      @Param("month") YearMonth month, @Param("lastId") Long lastId, Pageable pageable);
 }

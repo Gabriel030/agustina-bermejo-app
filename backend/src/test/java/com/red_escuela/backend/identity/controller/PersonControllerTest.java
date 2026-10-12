@@ -2,11 +2,11 @@ package com.red_escuela.backend.identity.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.dto.UpdateOwnProfileRequest;
-import com.red_escuela.backend.entity.Address;
+import com.red_escuela.backend.identity.dto.UpdateOwnProfileRequest;
+import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Role;
-import com.red_escuela.backend.entity.StatusType;
+import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -16,13 +16,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -78,7 +81,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "nuevo.email@example.com", "1155556666", null, null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
+                "nuevo.email@example.com", "1155556666", null, null, null, "Calle Nueva", "10", null, "Ciudad", null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,12 +94,12 @@ class PersonControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         Person propioActualizado = personRepository.findById(propio.getId()).orElseThrow();
-        assertThat(propioActualizado.getEmail()).isEqualTo("nuevo.email@example.com");
+        assertThat(propioActualizado.emailValue()).isEqualTo("nuevo.email@example.com");
         assertThat(propioActualizado.getPhoneNumber()).isEqualTo("1155556666");
         assertThat(propioActualizado.getDni()).isEqualTo("60111222");
 
         Person otroSinCambios = personRepository.findById(otro.getId()).orElseThrow();
-        assertThat(otroSinCambios.getEmail()).isEqualTo("otro1@example.com");
+        assertThat(otroSinCambios.emailValue()).isEqualTo("otro1@example.com");
         assertThat(otroSinCambios.getPhoneNumber()).isNull();
     }
 
@@ -106,7 +109,7 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, null, "60999000", null, null, null, null, null, null, null);
+                null, null, null, "60999000", null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -128,13 +131,50 @@ class PersonControllerTest extends AbstractIntegrationTest {
         String token = jwtService.generateAccessToken(propio);
 
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                null, null, null, "60111333", null, null, null, null, null, null, null);
+                null, null, null, "60111333", null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void putMeWithExistingEmailReportsEmailConflictAndNotDniConflict() throws Exception {
+        persistPersonWithRole("emailowner", "60111444", "ALUMNO");
+        Person propio = persistPersonWithRole("emailrequester", "60222555", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                "emailowner@example.com", null, null, null, null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"));
+    }
+
+    @Test
+    void putMeWithBlankDniKeepsTheCurrentDni() throws Exception {
+        Person propio = persistPersonWithRole("blankdni", "60333666", "ALUMNO");
+        String token = jwtService.generateAccessToken(propio);
+
+        UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
+                null, null, null, "   ", null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dni").value("60333666"));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(personRepository.findById(propio.getId()).orElseThrow().getDni()).isEqualTo("60333666");
     }
 
     @Test
@@ -159,11 +199,99 @@ class PersonControllerTest extends AbstractIntegrationTest {
     @Test
     void putMeWithoutAuthReturns401OrForbidden() throws Exception {
         UpdateOwnProfileRequest request = new UpdateOwnProfileRequest(
-                "x@example.com", null, null, null, null, null, null, null, null, null, null);
+                "x@example.com", null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void rejectedAvatarUploadKeepsThePreviousPhoto() throws Exception {
+        Person owner = persistPersonWithRole("avatar1", "60121212", "ALUMNO");
+        String token = jwtService.generateAccessToken(owner);
+        byte[] previousPhoto = new byte[] {1, 2, 3, 4};
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.png", "image/png", previousPhoto))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(multipart("/me/avatar")
+                        .file(new MockMultipartFile("file", "foto.gif", "image/gif", new byte[] {9, 9}))
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_FILE_TYPE"));
+
+        mockMvc.perform(get("/me/avatar")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(previousPhoto));
+    }
+
+    @Test
+    void getAvatarReturns404WhenTheStoredFileIsMissing() throws Exception {
+        Person owner = persistPersonWithRole("avatar2", "60131313", "ALUMNO");
+        owner.setAvatarPath("avatars/missing-" + owner.getId() + ".png");
+        entityManager.flush();
+        String token = jwtService.generateAccessToken(owner);
+
+        mockMvc.perform(get("/me/avatar")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    private void putMeDocument(String token, String documentType, String number, org.springframework.test.web.servlet.ResultMatcher status, String code) throws Exception {
+        var body = objectMapper.createObjectNode();
+        if (documentType != null) {
+            body.put("documentType", documentType);
+        }
+        body.put("dni", number);
+        var result = mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status);
+        if (code != null) {
+            result.andExpect(jsonPath("$.code").value(code));
+        }
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-233")
+    void putMeAcceptsAPassportAndReturnsItsType() throws Exception {
+        Person own = persistPersonWithRole("passportowner", "60555001", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
+
+        mockMvc.perform(put("/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content("{\"documentType\":\"PASSPORT\",\"dni\":\"ab123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentType").value("PASSPORT"))
+                .andExpect(jsonPath("$.dni").value("AB123456"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-233")
+    void putMeRejectsADniWithLettersAndAPassportWithSymbols() throws Exception {
+        Person own = persistPersonWithRole("badformat", "60555002", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
+
+        putMeDocument(token, "DNI", "1234567A", status().isBadRequest(), "INVALID_DOCUMENT_NUMBER");
+        putMeDocument(token, null, "12.345.678", status().isBadRequest(), "INVALID_DOCUMENT_NUMBER");
+        putMeDocument(token, "PASSPORT", "AB-123", status().isBadRequest(), "INVALID_DOCUMENT_NUMBER");
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-233")
+    void uniquenessIsByTypeAndNumber() throws Exception {
+        persistPersonWithRole("holder", "60555003", "ALUMNO");
+        Person own = persistPersonWithRole("sameNumber", "60555004", "ALUMNO");
+        String token = jwtService.generateAccessToken(own);
+
+        putMeDocument(token, "DNI", "60555003", status().isBadRequest(), "DNI_ALREADY_EXISTS");
+        putMeDocument(token, "OTHER", "60555003", status().isOk(), null);
     }
 }
