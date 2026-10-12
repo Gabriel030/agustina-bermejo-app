@@ -18,6 +18,7 @@ import java.util.Map;
 public class LateFeeAccrualStep {
     private static final Logger log = LoggerFactory.getLogger(LateFeeAccrualStep.class);
     private static final int PAGE_SIZE = 200;
+    private static final int SETTLEMENT_RECOVERY_WINDOW_DAYS = 35;
 
     private final PendingInvoiceQueryService overdueInvoiceQueryService;
     private final LateFeeAccrualService accrualService;
@@ -31,6 +32,7 @@ public class LateFeeAccrualStep {
         int candidates = 0;
         int issued = 0;
         int failed = 0;
+        int recovered = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
         LatePaymentTimeline timeline = accrualService.timelineOf(today);
         LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(today).lastDay();
@@ -55,6 +57,28 @@ public class LateFeeAccrualStep {
             }
             lastId = batch.get(batch.size() - 1);
         }
-        return new LateFeeAccrualResult(candidates, issued, failed, errors);
+        lastId = 0L;
+        LocalDate since = today.minusDays(SETTLEMENT_RECOVERY_WINDOW_DAYS);
+        while (true) {
+            List<Long> batch = overdueInvoiceQueryService.findRecentlySettledLateFeeOriginIdsAfter(lastId, since, PAGE_SIZE);
+            if (batch.isEmpty()) {
+                break;
+            }
+            candidates += batch.size();
+            for (Long originId : batch) {
+                try {
+                    recovered += accrualService.reconcileLateFeesOfInvoice(originId, today, timeline);
+                } catch (Exception e) {
+                    failed++;
+                    log.error("Falló la recuperación del recargo final de la factura id={}", originId, e);
+                    Map<String, Object> error = new LinkedHashMap<>();
+                    error.put("invoiceId", originId);
+                    error.put("message", e.getMessage());
+                    errors.add(error);
+                }
+            }
+            lastId = batch.get(batch.size() - 1);
+        }
+        return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered);
     }
 }

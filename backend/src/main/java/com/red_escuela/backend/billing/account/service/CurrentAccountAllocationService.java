@@ -144,6 +144,7 @@ public class CurrentAccountAllocationService {
                 .throwIfDenied(PaymentAllocationRejectedException::new);
         PaymentAllocation reversal = allocationRepository.save(allocation.recordAllocationReversal(businessDate, reason, actor));
         invoice.reversePaymentAllocation(businessDate, gracePeriodDays, actor, reason);
+        invoice.pullRecordedDomainEvents().forEach(eventPublisher::publishEvent);
         accountService.restoreUnallocatedCreditFromReversedAllocation(lockedAccount, allocation.getAmount());
         log.info("Imputación revertida: cuenta={}, factura={}, monto={}, motivo={}", lockedAccount.getId(), allocation.getInvoiceId(),
                 allocation.getAmount().value().amount(), reason);

@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,11 +16,20 @@ public class LateFeeAccrualService {
     private final LateFeeCandidateFinder candidateFinder;
     private final LateFeeIssuer issuer;
     private final LatePaymentVersionResolver versionResolver;
+    private final LateFeeOverchargeRecorder overchargeRecorder;
 
-    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver) {
+    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver,
+                                 LateFeeOverchargeRecorder overchargeRecorder) {
         this.candidateFinder = candidateFinder;
         this.issuer = issuer;
         this.versionResolver = versionResolver;
+        this.overchargeRecorder = overchargeRecorder;
+    }
+
+    public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate) {
+        int issued = reconcileLateFeesOfInvoice(originInvoiceId, businessDate);
+        overchargeRecorder.recordDaysChargedAfterThePaymentOfInvoice(originInvoiceId);
+        return issued;
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate) {
@@ -29,7 +37,7 @@ public class LateFeeAccrualService {
     }
 
     public LatePaymentTimeline timelineOf(LocalDate businessDate) {
-        return versionResolver.timelineUpTo(LateFeeCutoff.closingOfMonthBefore(businessDate).lastDay());
+        return versionResolver.timelineUpTo(businessDate);
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {

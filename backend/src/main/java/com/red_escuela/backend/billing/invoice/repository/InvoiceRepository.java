@@ -137,6 +137,18 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             """, nativeQuery = true)
     List<Long> findOverdueLateFeeOriginIdsNotCoveredUpToAfter(@Param("lastId") Long lastId, @Param("cutoffDay") LocalDate cutoffDay, @Param("pageSize") int pageSize);
 
+    @Query(value = """
+            select i.id from invoice i
+            join payment_allocation a on a.invoice_id = i.id and a.reverses_allocation_id is null
+              and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
+            where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
+              and i.id > :lastId and a.allocated_on >= :since and a.effective_date > i.due_date
+              and not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date)
+            order by i.id asc
+            limit :pageSize
+            """, nativeQuery = true)
+    List<Long> findRecentlySettledLateFeeOriginIdsAfter(@Param("lastId") Long lastId, @Param("since") LocalDate since, @Param("pageSize") int pageSize);
+
     @Query("select count(distinct i) from Invoice i join i.lines l where l.programEnrollmentId = :enrollmentId and i.paymentStatus = :status")
     long countByProgramEnrollmentIdAndPaymentStatus(@Param("enrollmentId") Long enrollmentId, @Param("status") InvoicePaymentStatus status);
 

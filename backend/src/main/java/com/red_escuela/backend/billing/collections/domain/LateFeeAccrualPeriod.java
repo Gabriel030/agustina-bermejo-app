@@ -22,6 +22,15 @@ public record LateFeeAccrualPeriod(LocalDate firstDay, LocalDate lastDay) {
         return (int) ChronoUnit.DAYS.between(firstDay, lastDay) + 1;
     }
 
+    public int daysAfter(LocalDate day) {
+        Objects.requireNonNull(day, "day");
+        if (!lastDay.isAfter(day)) {
+            return 0;
+        }
+        LocalDate from = firstDay.isAfter(day) ? firstDay : day.plusDays(1);
+        return (int) ChronoUnit.DAYS.between(from, lastDay) + 1;
+    }
+
     public YearMonth accrualMonth() {
         return YearMonth.from(firstDay);
     }
