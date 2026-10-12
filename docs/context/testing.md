@@ -125,7 +125,7 @@ El CI del backend corre en 4 shards balanceados por tiempo (`.github/scripts/tes
 |---|---|---|
 | Una clase de test | 30 s | `test-budget.py check-shard`, en cada shard |
 | Una clase marcada `@SlowTest` | 90 s | ídem |
-| Un shard (suma de las clases que corre) | 210 s | ídem |
+| Un shard (suma de las clases que corre) | 240 s | ídem |
 | Contextos de Spring distintos en toda la corrida | 24 | `test-budget.py aggregate`, job `test-report` |
 | Reglas ArchUnit sobre los tests | sin violaciones nuevas | `TestSuiteRulesTest` |
 
@@ -176,7 +176,7 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 |---|---|
 | Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
 | Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
-| Un shard supera 210 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: si el último `develop` ya publicó `test-baseline`, el reparto se corrige solo. |
+| Un shard supera 240 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: si el último `develop` ya publicó `test-baseline`, el reparto se corrige solo. |
 | Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
