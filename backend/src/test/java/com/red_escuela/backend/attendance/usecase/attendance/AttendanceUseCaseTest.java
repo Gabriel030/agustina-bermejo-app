@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.usecase.attendance;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -62,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@SlowTest(reason = "Boots the first Spring context of its JVM, so its time includes the one-time start-up, and runs the attendance scenarios")
 class AttendanceUseCaseTest extends AbstractIntegrationTest {
     private static final LocalDate CLASS_DAY = LocalDate.of(2025, 9, 15);
 

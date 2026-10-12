@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.note.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.note.domain.CancelInvoiceCommand;
 import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-127")
 @Tag("D-144")
 @Tag("D-245")
+@SlowTest(reason = "Property test that generates random sequences of issues, payments, credit notes and cancellations")
 class CancellationPropertiesIT extends AbstractCreditNoteIT {
 
     private static final int SEQUENCES = 20;

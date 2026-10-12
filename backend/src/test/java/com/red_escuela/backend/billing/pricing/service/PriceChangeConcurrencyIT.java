@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.pricing.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -43,6 +44,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @Tag("D-240")
 @SpringBootTest
 @ActiveProfiles("test")
+@SlowTest(reason = "Races concurrent price changes from several threads and waits on real lock contention")
 class PriceChangeConcurrencyIT extends AbstractIntegrationTest {
     private static final int ROUNDS = 12;
 

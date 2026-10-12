@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.event;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
@@ -49,6 +50,7 @@ import static org.mockito.Mockito.verify;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(EventPublicationRegistryTest.RecordingListenerConfiguration.class)
+@SlowTest(reason = "Boots its own Spring context and waits for the registry to redeliver failed publications")
 class EventPublicationRegistryTest extends AbstractIntegrationTest {
 
     record ProbeEvent(String correlationId, Instant occurredAt, String payload) implements DomainEvent {

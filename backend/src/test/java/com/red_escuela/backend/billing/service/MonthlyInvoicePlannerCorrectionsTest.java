@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+@SlowTest(reason = "Walks the monthly issuance over several simulated months with enrollment corrections")
 class MonthlyInvoicePlannerCorrectionsTest extends AbstractInvoiceSequenceTest {
 
     private static final YearMonth JAN_2026 = YearMonth.of(2026, 1);

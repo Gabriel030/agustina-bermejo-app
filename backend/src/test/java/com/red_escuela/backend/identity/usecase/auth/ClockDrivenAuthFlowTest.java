@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.EmailVerificationToken;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@SharedMockBeans
 class ClockDrivenAuthFlowTest extends AbstractIntegrationTest {
 
     private static final String PASSWORD = "correcta123";
@@ -64,7 +66,7 @@ class ClockDrivenAuthFlowTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     @Value("${auth.lockout.max-attempts}")

@@ -1,5 +1,9 @@
 #
-#Tue Oct 06 23:28:07 ART 2026
+#Mon Oct 12 17:00:21 ART 2026
+Test\ classes\ in\ domain\ and\ policy\ packages\ must\ be\ pure\ unit\ tests\:\ no\ @SpringBootTest\ and\ no\ AbstractIntegrationTest=50d4cbd3-6cb2-4d33-be43-bfac0f731e68
+Tests\ must\ not\ call\ Thread.sleep\:\ use\ Awaitility=04391c8e-19ef-4af9-b65d-d35028b057e2
+Tests\ must\ not\ use\ @DirtiesContext\:\ it\ throws\ away\ a\ cached\ Spring\ context=1613de4b-3901-4776-9101-006f7015fa2c
+Tests\ must\ scope\ global\ processes\:\ call\ a\ use\ case\ or\ step\ with\ explicit\ ids\ instead\ of\ a\ job\ that\ scans\ the\ whole\ database=60e6d7a4-d831-4888-a569-f350727334b8
 no\ classes\ that\ reside\ in\ a\ package\ 'com.red_escuela.backend.academicstructure..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..billing..',\ because\ billing\ plugs\ into\ academic\ structure\ through\ ports\ declared\ there=d4839a31-f3e2-42fd-b15f-66e25c0ffccb
 no\ classes\ that\ reside\ in\ a\ package\ 'com.red_escuela.backend.shared..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['com.red_escuela.backend.academicrecord..',\ 'com.red_escuela.backend.academicstructure..',\ 'com.red_escuela.backend.announcement..',\ 'com.red_escuela.backend.attendance..',\ 'com.red_escuela.backend.billing..',\ 'com.red_escuela.backend.enrollment..',\ 'com.red_escuela.backend.evaluation..',\ 'com.red_escuela.backend.graduation..',\ 'com.red_escuela.backend.identity..',\ 'com.red_escuela.backend.notification..'],\ because\ shared\ is\ the\ common\ base\ and\ must\ not\ depend\ on\ any\ feature=108fbb70-cf71-4546-aea8-c5746ae03c7c
 no\ fields\ that\ are\ declared\ in\ classes\ that\ reside\ in\ any\ package\ ['..entity..',\ '..dto..']\ and\ are\ declared\ in\ classes\ that\ not\ nested\ and\ of\ a\ primitive\ number\ type\ and\ have\ name\ matching\ '(?i).*(amount|price|fee|debt|balance|total|monto|cuota|matricula|percent|percentage|rate|grade|score|nota|promedio).*'\ should\ have\ name\ matching\ '.*',\ because\ money\ must\ be\ Money,\ percentages\ Percentage\ and\ grades\ Grade\ (com.red_escuela.backend.shared.domain),\ never\ BigDecimal/Double/Float=0b9738f4-cdde-4a92-82f7-580eb8cf8e48

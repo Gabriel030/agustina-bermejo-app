@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
 import com.red_escuela.backend.billing.entity.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
@@ -23,6 +24,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@SlowTest(reason = "Simulates month-by-month billing of whole lective years for several intake scenarios")
 class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
 
     @Test

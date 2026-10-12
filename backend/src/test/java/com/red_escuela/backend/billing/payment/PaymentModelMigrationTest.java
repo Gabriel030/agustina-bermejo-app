@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.payment;
 
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Migrates a real database through Flyway step by step to prove legacy payment rows survive")
 class PaymentModelMigrationTest {
 
     private static final String LOCATIONS = "classpath:db/migration";

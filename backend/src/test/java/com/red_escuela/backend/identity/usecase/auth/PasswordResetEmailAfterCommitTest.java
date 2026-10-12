@@ -1,5 +1,6 @@
 package com.red_escuela.backend.identity.usecase.auth;
 
+import com.red_escuela.backend.testsupport.SharedMockBeans;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@SharedMockBeans
 class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
     @Autowired
     private RequestPasswordResetUseCase requestPasswordResetUseCase;
@@ -39,7 +41,7 @@ class PasswordResetEmailAfterCommitTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @MockBean
+    @Autowired
     private EmailService emailService;
 
     private String email;
