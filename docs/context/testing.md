@@ -28,7 +28,7 @@ prueba encuentra bugs que los demás no ven.
 | Awaitility | Procesos asíncronos | ¿El efecto en segundo plano ocurrió? (esperar siempre por el propio eventId, nunca por conteos globales) | En uso |
 | Vitest + RTL + MSW | Front unitario/componente | ¿El componente muestra y reacciona bien ante cada respuesta del backend? | En uso |
 | Playwright | End-to-end en navegador | ¿El usuario real puede completar el flujo crítico en el navegador (CORS, permisos por rol, ruteo)? | Propuesto |
-| OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | Propuesto |
+| OpenAPI + validación en ambos lados | Contrato front-back | ¿El front y el back hablan el mismo idioma, o un cambio del backend rompe al front? | En uso (lado backend: instantánea `contracts/openapi.json` + `oasdiff`); falta la validación de los mocks del front (Q13b) |
 | Gatling o k6 | Carga y rendimiento | ¿Aguanta el volumen real (corrida mensual de miles de alumnos, pipeline nocturno, locks por cuenta)? | Propuesto |
 | OWASP Dependency-Check / ZAP + matriz de autorización por rol | Seguridad | ¿Hay vulnerabilidades conocidas o algún endpoint accesible por un rol que no corresponde? | Dependency-Check y `npm audit`: en uso (solo local); ZAP y matriz por rol: propuesto |
 
@@ -305,6 +305,15 @@ en el PR ni en `BACKFILL.md` — se agrega también como entrada nueva en
 [Deuda técnica y gaps de QA](~/Documentos%20No%20SYNC/Obsidian-vault/agustina-bermejo-app/Roadmap%20frontend/Deuda%20técnica%20y%20gaps%20de%20QA.md)
 (vault de Obsidian, linkeado desde `Roadmap frontend/Indice.md`) — para que
 quede visible en el roadmap y no se pierda en el historial de PRs.
+
+## Contrato OpenAPI (lado backend)
+
+- `contracts/openapi.json` es la instantánea del spec generado por springdoc desde los controllers reales. `OpenApiSnapshotTest` falla si el código cambia el spec sin regenerarlo.
+- Regenerar: `cd backend && ./mvnw test -Dtest=OpenApiSnapshotTest#generatedSpecMatchesCommittedSnapshot -Dopenapi.update=true`, y revisar el diff de `contracts/openapi.json` en el PR.
+- Cambios incompatibles contra otro spec: `scripts/oasdiff-breaking.sh <base.json> <nuevo.json>` (descarga oasdiff 1.33.0 de la release oficial de GitHub y verifica el sha256 de `checksums.txt`). El CI lo corre en cada PR contra el `contracts/openapi.json` de la rama base; se saltea con la etiqueta `contract-break-approved`.
+- Prueba reproducible de que el control detecta un campo borrado: `scripts/oasdiff-probe.sh`.
+- `/v3/api-docs` solo existe con `springdoc.api-docs.enabled=true` (perfiles `local` y `test`); en producción la propiedad es `false` y no hay Swagger UI.
+- Los componentes de un `record` de respuesta son `required` salvo `Optional` o `@Nullable`; las clases con Lombok no reciben ese tratamiento.
 
 ## Antes de dar una tarea por terminada
 
