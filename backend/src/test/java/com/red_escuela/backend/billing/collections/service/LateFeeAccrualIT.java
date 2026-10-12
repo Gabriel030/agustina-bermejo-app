@@ -547,6 +547,8 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
 
         reconcile(origin, d(2112, 4, 1));
         reconcile(origin, d(2112, 4, 1));
+        Mockito.doAnswer(call -> (Long) call.getArgument(1) < origin.getId() ? List.of(origin.getId()) : List.<Long>of())
+                .when(pendingInvoiceQueryService).findPendingInvoiceIdsDueBefore(Mockito.any(), Mockito.anyLong(), Mockito.anyInt());
         detectionStep.detectOverdueInvoices(d(2112, 4, 1));
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(new InvoiceMarkedAsOverdueEvent(origin.getId(), d(2112, 3, 11), d(2112, 4, 1))));
 
