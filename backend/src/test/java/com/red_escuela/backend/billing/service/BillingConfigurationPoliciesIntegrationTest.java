@@ -473,7 +473,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     }
 
     private CreateLatePaymentSettingsRequest policyRequest(int grace, int suspensionDays, int invoiceCount, LocalDate effectiveFrom) {
-        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.10")), suspensionDays, invoiceCount, effectiveFrom);
+        return new CreateLatePaymentSettingsRequest(grace, Percentage.ofFraction(new BigDecimal("0.002")), suspensionDays, invoiceCount, effectiveFrom);
     }
 
     private void authenticateAsNewPerson() {

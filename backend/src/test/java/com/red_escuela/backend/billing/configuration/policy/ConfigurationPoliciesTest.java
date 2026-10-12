@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ConfigurationPoliciesTest {
     private static final LocalDate TODAY = LocalDate.of(2027, 11, 15);
-    private static final Percentage FIVE = Percentage.ofPoints(new BigDecimal("5"));
+    private static final Percentage FIVE = Percentage.ofPoints(new BigDecimal("0.20"));
 
     private static LatePaymentTerms late(int grace, int suspendDays, int invoices, int ndDays) {
         return new LatePaymentTerms(grace, FIVE, suspendDays, invoices, true, ndDays, true, true);
@@ -137,5 +137,17 @@ class ConfigurationPoliciesTest {
         assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2025, 12, 31), 48), termStart)).allowed()).isFalse();
         assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 0), termStart)).allowed()).isFalse();
         assertThat(policy.evaluateRule(new AnnualUpfrontCheck(new AnnualUpfrontSettings(LocalDate.of(2027, 2, 28), 1), termStart)).allowed()).isTrue();
+    }
+
+    @Tag("D-330")
+    @ParameterizedTest(name = "tasa diaria {0} puntos con cobro {1} permitida={2}")
+    @CsvSource({"0.17,true,true", "0.01,true,true", "0.50,true,true", "0.51,true,false", "0.175,true,false", "0.00,true,false", "0.00,false,true", "5,true,false", "0.1667,true,false"})
+    void dailyRateHasAtMostTwoDecimalsAndStaysWithinOneHundredthAndHalfAPercent(String points, boolean enabled, boolean allowed) {
+        LatePaymentTerms terms = new LatePaymentTerms(0, Percentage.ofPoints(new BigDecimal(points)), 30, 1, true, 10, true, enabled);
+        PolicyVerdict verdict = new LateFeeSettingsCoherencePolicy().evaluateRule(terms);
+        assertThat(verdict.allowed()).isEqualTo(allowed);
+        if (!allowed) {
+            assertThat(verdict.code()).isEqualTo("INVALID_LATE_PAYMENT_SETTINGS");
+        }
     }
 }

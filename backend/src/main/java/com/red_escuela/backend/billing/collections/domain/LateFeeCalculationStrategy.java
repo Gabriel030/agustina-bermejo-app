@@ -5,5 +5,5 @@ import com.red_escuela.backend.shared.domain.Percentage;
 
 public interface LateFeeCalculationStrategy {
 
-    NonNegativeMoney calculateLateFee(NonNegativeMoney finalLinePrice, Percentage monthlyRate);
+    NonNegativeMoney calculateLateFee(NonNegativeMoney finalLinePrice, Percentage dailyRate, int chargedDays);
 }

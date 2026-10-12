@@ -89,14 +89,25 @@ class BillingMoneyContractTest {
     @Test
     @Tag("D-099")
     void aSurchargePercentOfTenIsKeptAsTenAndOneHundredFiftyIsRejectedWith400() throws Exception {
-        String body = "{\"gracePeriodDays\":10,\"surchargePercent\":%s,\"suspensionAfterDays\":30,"
+        String body = "{\"gracePeriodDays\":10,\"dailyLateFeeRatePercent\":%s,\"suspensionAfterDays\":30,"
                 + "\"suspensionAfterInvoiceCount\":2}";
         mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(body.formatted("10")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.surchargePercent").value(10));
+                .andExpect(jsonPath("$.dailyLateFeeRatePercent").value(10));
         mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(body.formatted("150")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PERCENTAGE"));
+    }
+
+    @Test
+    @Tag("D-330")
+    void aProposalWithTheMonthlyRateInsteadOfTheDailyOneIsRejectedWith400() throws Exception {
+        String monthly = "{\"gracePeriodDays\":10,\"monthlyLateFeeRate\":{\"fraction\":0.05},\"suspensionAfterDays\":30,\"suspensionAfterInvoiceCount\":2}";
+        mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(monthly))
+                .andExpect(status().isBadRequest());
+        String withoutRate = "{\"gracePeriodDays\":10,\"suspensionAfterDays\":30,\"suspensionAfterInvoiceCount\":2}";
+        mockMvc.perform(post("/contract/policy").contentType(MediaType.APPLICATION_JSON).content(withoutRate))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -113,7 +124,7 @@ class BillingMoneyContractTest {
         String json = objectMapper.writeValueAsString(new LatePaymentSettingsResponse(
                 1L, 10, com.red_escuela.backend.shared.domain.Percentage.ofPoints(new java.math.BigDecimal("10")),
                 30, 2, java.time.LocalDate.of(2026, 1, 1)));
-        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(json).get("surchargePercent").decimalValue())
+        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(json).get("dailyLateFeeRatePercent").decimalValue())
                 .isEqualByComparingTo("10");
     }
 }

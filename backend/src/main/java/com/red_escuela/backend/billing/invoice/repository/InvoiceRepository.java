@@ -127,16 +127,15 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
                                                                                  @Param("dueDate") LocalDate dueDate, @Param("lastId") Long lastId,
                                                                                  Pageable pageable);
 
-    @Query("""
-            select i.id from Invoice i
-            where i.paymentStatus = com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus.OVERDUE
-              and i.documentType = com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentType.INVOICE
-              and i.invoiceType in (com.red_escuela.backend.billing.invoice.domain.InvoiceType.MONTHLY_INSTALLMENT,
-                                    com.red_escuela.backend.billing.invoice.domain.InvoiceType.ENROLLMENT_FEE)
+    @Query(value = """
+            select i.id from invoice i
+            where i.payment_status = 'OVERDUE' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
               and i.id > :lastId
+              and not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= :cutoffDay)
             order by i.id asc
-            """)
-    List<Long> findOverdueLateFeeOriginIdsAfter(@Param("lastId") Long lastId, Pageable pageable);
+            limit :pageSize
+            """, nativeQuery = true)
+    List<Long> findOverdueLateFeeOriginIdsNotCoveredUpToAfter(@Param("lastId") Long lastId, @Param("cutoffDay") LocalDate cutoffDay, @Param("pageSize") int pageSize);
 
     @Query("select count(distinct i) from Invoice i join i.lines l where l.programEnrollmentId = :enrollmentId and i.paymentStatus = :status")
     long countByProgramEnrollmentIdAndPaymentStatus(@Param("enrollmentId") Long enrollmentId, @Param("status") InvoicePaymentStatus status);

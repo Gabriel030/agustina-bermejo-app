@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.collections.operation;
 
+import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import com.red_escuela.backend.billing.collections.service.LateFeeAccrualService;
+import com.red_escuela.backend.billing.collections.service.LatePaymentTimeline;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,16 +32,18 @@ public class LateFeeAccrualStep {
         int issued = 0;
         int failed = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
+        LatePaymentTimeline timeline = accrualService.timelineOf(today);
+        LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(today).lastDay();
         Long lastId = 0L;
         while (true) {
-            List<Long> batch = overdueInvoiceQueryService.findOverdueLateFeeOriginIdsAfter(lastId, PAGE_SIZE);
+            List<Long> batch = overdueInvoiceQueryService.findOverdueLateFeeOriginIdsNotCoveredUpToAfter(lastId, cutoffDay, PAGE_SIZE);
             if (batch.isEmpty()) {
                 break;
             }
             candidates += batch.size();
             for (Long originId : batch) {
                 try {
-                    issued += accrualService.reconcileLateFeesOfInvoice(originId, today);
+                    issued += accrualService.reconcileLateFeesOfInvoice(originId, today, timeline);
                 } catch (Exception e) {
                     failed++;
                     log.error("Falló la conciliación de recargos para la factura id={}", originId, e);
