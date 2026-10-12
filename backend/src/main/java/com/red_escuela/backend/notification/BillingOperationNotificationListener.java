@@ -45,7 +45,7 @@ public class BillingOperationNotificationListener {
                 ? NotificationTopic.DIRECTOR_APPROVALS : NotificationTopic.BILLING_CONFIGURATION_SUPERVISION;
         sendOnce(event, AUTHORIZATION_REQUESTED_HANDLER, new BillingOperationNotification(
                 NotificationType.AUTHORIZATION_REQUESTED,
-                "Hay un pedido de autorización pendiente de decisión: " + event.reason(),
+                "Hay un pedido de autorización pendiente de decisión. Revisá el detalle en el pedido.",
                 List.of(recipient), "AuthorizationRequest", event.authorizationRequestId()));
     }
 
