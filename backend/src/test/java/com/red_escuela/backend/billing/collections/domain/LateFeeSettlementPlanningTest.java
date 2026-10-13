@@ -70,7 +70,6 @@ class LateFeeSettlementPlanningTest {
     }
 
     @Test
-    @Tag("D-308")
     @Tag("D-332")
     void paymentDatedBeforeDaysAlreadyCoveredPlansNothing() {
         List<LateFeeAccrualPeriod> covered = List.of(period("2027-03-12", "2027-03-31"));
@@ -80,7 +79,6 @@ class LateFeeSettlementPlanningTest {
     }
 
     @Test
-    @Tag("D-308")
     @Tag("D-332")
     void paymentDatedBeforeAMissedCloseStopsAtTheMoneyDate() {
         assertThat(summary(settle(0, List.of(), "2027-03-28"))).containsExactly("2027-03-12..2027-03-28:17:SETTLEMENT");

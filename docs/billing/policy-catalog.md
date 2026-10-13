@@ -348,7 +348,7 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Pre-procesamiento (en orden): —
 - Eventos que publica: AccountCreditAllocatedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de AccountCreditAllocatedEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación CANCEL_CONFIGURATION_VERSION
 
@@ -384,7 +384,7 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: CreditNoteIssuedEvent, InvoicePaidDomainEvent
 - Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
-- Post-procesamiento de InvoicePaidDomainEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_INVOICE
 
@@ -392,7 +392,7 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 - Pre-procesamiento (en orden): InvoiceDiscountEnrichmentHandler
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
-- Post-procesamiento de InvoicePaidDomainEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
 
 ## Operación ISSUE_LATE_FEE_DEBIT_NOTE
 

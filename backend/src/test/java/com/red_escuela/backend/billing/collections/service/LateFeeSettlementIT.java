@@ -118,7 +118,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
     @Test
     @Tag("D-243")
-    @Tag("D-308")
     void theMoneyDateAndNotTheAllocationDateCutsTheDays() {
         arrange(2206);
         publishDefaults(2206);
@@ -213,7 +212,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-308")
     @Tag("D-243")
     @Tag("D-332")
     void paymentDatedBeforeAnIssuedCloseIssuesNothingAndRecordsTheExcess() {
@@ -231,7 +229,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-308")
     @Tag("D-332")
     void paymentDatedBeforeAMissedCloseIssuesASingleDebitNoteUpToTheMoneyDate() {
         arrange(2213);
