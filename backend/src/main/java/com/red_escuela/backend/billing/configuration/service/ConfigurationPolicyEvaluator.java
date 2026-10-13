@@ -3,7 +3,9 @@ package com.red_escuela.backend.billing.configuration.service;
 import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSettings;
 import com.red_escuela.backend.billing.configuration.exception.BillingConfigurationFrozenException;
 import com.red_escuela.backend.billing.configuration.exception.EffectiveFromBeforeNextDayException;
+import com.red_escuela.backend.billing.configuration.exception.InvalidCollectionReminderScheduleException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidCollectionReminderSettingsException;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromCheck;
 import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymentSettingsException;
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
@@ -44,6 +46,7 @@ public class ConfigurationPolicyEvaluator {
     private final PolicySet<AnnualUpfrontCheck> annualUpfrontPolicies;
     private final PolicySet<CollectionReminderSettings> collectionReminderSettingsPolicies;
     private final PolicySet<CollectionReminderEffectiveFromCheck> collectionReminderEffectiveFromPolicies;
+    private final PolicySet<ReminderScheduleCheck> collectionReminderSchedulePolicies;
     private final MeterRegistry meterRegistry;
 
     public ConfigurationPolicyEvaluator(PolicySet<YearBillingConfigurationChange> yearBillingConfigurationPolicySet,
@@ -58,6 +61,7 @@ public class ConfigurationPolicyEvaluator {
                                         PolicySet<AnnualUpfrontCheck> annualUpfrontSettingsPolicySet,
                                         PolicySet<CollectionReminderSettings> collectionReminderSettingsPolicySet,
                                         PolicySet<CollectionReminderEffectiveFromCheck> collectionReminderEffectiveFromPolicySet,
+                                        PolicySet<ReminderScheduleCheck> collectionReminderSchedulePolicySet,
                                         MeterRegistry meterRegistry) {
         this.changePolicies = billingConfigurationChangePolicySet;
         this.proposalPolicies = billingConfigurationProposalPolicySet;
@@ -71,6 +75,7 @@ public class ConfigurationPolicyEvaluator {
         this.latePaymentPolicies = latePaymentSettingsPolicySet;
         this.collectionReminderSettingsPolicies = collectionReminderSettingsPolicySet;
         this.collectionReminderEffectiveFromPolicies = collectionReminderEffectiveFromPolicySet;
+        this.collectionReminderSchedulePolicies = collectionReminderSchedulePolicySet;
         this.meterRegistry = meterRegistry;
     }
 
@@ -116,6 +121,10 @@ public class ConfigurationPolicyEvaluator {
 
     public void requireCoherentCollectionReminderSettings(CollectionReminderSettings settings) {
         evaluate(collectionReminderSettingsPolicies, settings, InvalidCollectionReminderSettingsException::new);
+    }
+
+    public void requireCoherentCollectionReminderSchedule(ReminderScheduleCheck check) {
+        evaluate(collectionReminderSchedulePolicies, check, InvalidCollectionReminderScheduleException::new);
     }
 
     public void requireCollectionReminderEffectiveFromNextDay(CollectionReminderEffectiveFromCheck check) {

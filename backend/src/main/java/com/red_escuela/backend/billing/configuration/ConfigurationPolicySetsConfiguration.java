@@ -4,7 +4,11 @@ import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSe
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromCheck;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromNextDayPolicy;
+import com.red_escuela.backend.billing.configuration.policy.CollectionReminderScheduleCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderSettingsCoherencePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleFollowsGroupPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderSendingOverridesCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontSettingsCoherencePolicy;
@@ -127,6 +131,15 @@ public class ConfigurationPolicySetsConfiguration {
     public PolicySet<CollectionReminderSettings> collectionReminderSettingsPolicySet() {
         List<Policy<CollectionReminderSettings>> ordered = List.of(new CollectionReminderSettingsCoherencePolicy());
         return PolicySet.named("COLLECTION_REMINDER_SETTINGS", ordered);
+    }
+
+    @Bean
+    public PolicySet<ReminderScheduleCheck> collectionReminderSchedulePolicySet() {
+        List<Policy<ReminderScheduleCheck>> ordered = List.of(
+                new CollectionReminderScheduleCoherencePolicy(),
+                new ReminderScheduleFollowsGroupPolicy(),
+                new ReminderSendingOverridesCoherencePolicy());
+        return PolicySet.named("COLLECTION_REMINDER_SCHEDULE", ordered);
     }
 
     @Bean
