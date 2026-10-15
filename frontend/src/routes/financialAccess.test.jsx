@@ -56,7 +56,7 @@ describe('Financiero access by role', () => {
     expect(await screen.findByText('Pago a término', { selector: 'div' })).toBeInTheDocument();
   });
 
-  it('d2-02 keeps the administrative menu with a single Facturación entry and no billing sub-menu (D-219)', async () => {
+  it('d2-02 keeps the administrative menu with a single Facturación entry and no billing sub-menu (D-355)', async () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/inicio');
 
     const nav = (await screen.findAllByRole('navigation'))[0];

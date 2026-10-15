@@ -37,11 +37,16 @@ export function previousMonthOf(metric, month) {
   return index > 0 ? metric.months[index - 1] : null;
 }
 
+const DECIMAL_AMOUNT = /^(-?)(\d+)(?:\.(\d+))?$/;
+
 function toCents(amount) {
-  const [whole, fraction = ''] = String(amount).split('.');
-  const negative = whole.startsWith('-');
-  const digits = BigInt(whole.replace('-', '') || '0') * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2));
-  return negative ? -digits : digits;
+  const match = DECIMAL_AMOUNT.exec(String(amount).trim());
+  if (!match) return null;
+  const [, sign, whole, fraction = ''] = match;
+  const padded = fraction.padEnd(3, '0');
+  let cents = BigInt(whole) * 100n + BigInt(padded.slice(0, 2));
+  if (padded[2] >= '5') cents += 1n;
+  return sign ? -cents : cents;
 }
 
 function fromCents(cents) {
@@ -54,8 +59,9 @@ function fromCents(cents) {
 export function sumMoney(values) {
   const present = values.filter((value) => value != null);
   if (present.length === 0) return null;
-  const total = present.reduce((sum, value) => sum + toCents(value.amount), 0n);
-  return { amount: fromCents(total), currency: present[0].currency };
+  const cents = present.map((value) => toCents(value.amount));
+  if (cents.some((value) => value === null)) return null;
+  return { amount: fromCents(cents.reduce((sum, value) => sum + value, 0n)), currency: present[0].currency };
 }
 
 export function sumCounts(values) {

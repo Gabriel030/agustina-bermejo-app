@@ -19,4 +19,16 @@ describe('sumMoney', () => {
     expect(sumMoney([null, null])).toBeNull();
     expect(sumMoney([ars('0.00'), ars('0.00')])).toEqual(ars('0.00'));
   });
+
+  it('rounds half up beyond the cents instead of truncating', () => {
+    expect(sumMoney([ars('0.005')])).toEqual(ars('0.01'));
+    expect(sumMoney([ars('0.004')])).toEqual(ars('0.00'));
+    expect(sumMoney([ars('1.999')])).toEqual(ars('2.00'));
+  });
+
+  it('returns no total instead of throwing for a non decimal amount', () => {
+    expect(sumMoney([ars('1e3'), ars('5.00')])).toBeNull();
+    expect(sumMoney([ars('abc')])).toBeNull();
+    expect(sumMoney([ars('')])).toBeNull();
+  });
 });
