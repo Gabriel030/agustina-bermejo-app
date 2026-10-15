@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.account.domain.InvoiceSettlement;
 import com.red_escuela.backend.billing.account.service.InvoiceSettlementQueryService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
+import com.red_escuela.backend.billing.collections.repository.LateFeeOverchargeMarker;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 public class LateFeeOverchargeRecorder {
-    private static final String HANDLER_NAME = "LateFeeOverchargeRecorder";
     private static final Logger log = LoggerFactory.getLogger(LateFeeOverchargeRecorder.class);
 
     private final InvoiceSettlementQueryService settlementQuery;
@@ -52,6 +51,6 @@ public class LateFeeOverchargeRecorder {
 
     private boolean claimRecordingOf(Long allocationId) {
         return jdbcTemplate.update("insert into processed_effect (event_id, handler_name, processed_at) values (?, ?, now()) on conflict do nothing",
-                new UUID(0L, allocationId), HANDLER_NAME) == 1;
+                LateFeeOverchargeMarker.markerOf(allocationId), LateFeeOverchargeMarker.HANDLER_NAME) == 1;
     }
 }

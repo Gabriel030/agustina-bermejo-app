@@ -207,7 +207,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     }
 
     protected void assertScenarioInvariants(LocalDate today) {
-        invariants.assertLateFeeInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
         invariants.assertLateFeesAreCompleteAt(today);
     }
 

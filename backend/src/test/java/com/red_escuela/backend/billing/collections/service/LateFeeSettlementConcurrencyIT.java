@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,7 +35,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     @Autowired
-    private InvoiceRepository repository;
+    private LateFeeChargeRepository chargeRepository;
     @Autowired
     private MeterRegistry meterRegistry;
 
@@ -145,7 +145,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         assertThat(first.settlementDebitNotesRecovered()).isEqualTo(1);
         assertThat(second.settlementDebitNotesRecovered()).isZero();
         assertThat(summaryOf(origin)).containsExactly("2235-03-12..2235-03-20:9:1800.00");
-        assertThat(repository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2235, 2, 1), 10)).doesNotContain(origin.getId());
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2235, 2, 1), 10)).doesNotContain(origin.getId());
         assertScenarioInvariants(d(2235, 3, 26));
     }
 
@@ -178,7 +178,8 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         Invoice origin = overdueInstallmentDueOn(d(2237, 3, 11));
         BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2237, 3, 20), d(2237, 3, 20));
 
-        assertThat(repository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2237, 3, 1), 50)).doesNotContain(origin.getId());
+        assertThat(chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2237, 3, 1), 50)).doesNotContain(origin.getId());
+        assertScenarioInvariants(d(2237, 3, 20));
     }
 
     @Test
@@ -196,6 +197,8 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
         assertThat(chargesOf(origin).get(0).get("fact_date").toString()).isEqualTo("2238-03-20");
         assertThat(chargesOf(origin).get(0).get("nd_issue").toString()).isEqualTo("2238-05-10");
+        awaitSecretariatNotice(1L);
+        assertScenarioInvariants(d(2238, 5, 10));
     }
 
     @Test
@@ -210,5 +213,50 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         accrualStep.accrueLateFees(d(2239, 3, 21));
 
         invariants.assertLateFeesAreCompleteAt(d(2239, 3, 21));
+    }
+
+    private void awaitSecretariatNotice(long expected) {
+        org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(25)).until(() -> jdbc.queryForObject(
+                "select count(*) from processed_effect where handler_name = 'LateFeeNotificationListener.notifySecretariatWhenIssuedAfterFiscalWindow'", Long.class) >= expected);
+    }
+
+    private void publishChargingDisabledFromTheFifthOfApril(int year) {
+        publishDefaults(year);
+        publish(0, "0.002", 10, true, false, d(year, 4, 5));
+    }
+
+    @Test
+    @Tag("D-294")
+    @Tag("D-332")
+    void aChargingChangeInsideThePaymentMonthIsAppliedWhenTheListenerRunsOnTime() {
+        arrange(2240);
+        publishChargingDisabledFromTheFifthOfApril(2240);
+        Invoice origin = overdueInstallmentDueOn(d(2240, 3, 11));
+        reconcile(origin, d(2240, 4, 1));
+
+        payInFull(origin, d(2240, 4, 9), d(2240, 4, 9));
+        awaitEventsDrained();
+
+        assertThat(summaryOf(origin)).containsExactly("2240-03-12..2240-03-31:20:4000.00", "2240-04-01..2240-04-09:4:800.00");
+        assertScenarioInvariants(d(2240, 4, 9));
+    }
+
+    @Test
+    @Tag("D-294")
+    @Tag("D-332")
+    void aChargingChangeInsideThePaymentMonthGivesTheSameResultWhenTheEventIsRedeliveredLate() {
+        arrange(2241);
+        publishChargingDisabledFromTheFifthOfApril(2241);
+        Invoice origin = overdueInstallmentDueOn(d(2241, 3, 11));
+        reconcile(origin, d(2241, 4, 1));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2241, 4, 9), d(2241, 4, 9));
+        MutableClock.INSTANCE.setDate(d(2241, 5, 20));
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(InvoicePaidDomainEvent.paidFor(origin.getId(),
+                origin.getStudentCurrentAccountId(), InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name(), d(2241, 4, 9))));
+        awaitEventsDrained();
+
+        assertThat(summaryOf(origin)).containsExactly("2241-03-12..2241-03-31:20:4000.00", "2241-04-01..2241-04-09:4:800.00");
+        assertScenarioInvariants(d(2241, 5, 20));
     }
 }

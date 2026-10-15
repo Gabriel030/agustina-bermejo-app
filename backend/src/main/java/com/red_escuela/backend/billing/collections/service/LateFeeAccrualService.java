@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,6 +39,10 @@ public class LateFeeAccrualService {
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate) {
         return reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timelineOf(businessDate));
+    }
+
+    public List<Long> findRecentlySettledOriginIdsAfter(Long afterInvoiceId, LocalDate since, int pageSize) {
+        return candidateFinder.findRecentlySettledOriginIdsAfter(afterInvoiceId, since, pageSize);
     }
 
     public LatePaymentTimeline timelineOf(LocalDate businessDate) {

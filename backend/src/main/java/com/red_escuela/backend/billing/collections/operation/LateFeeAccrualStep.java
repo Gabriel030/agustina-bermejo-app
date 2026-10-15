@@ -61,7 +61,7 @@ public class LateFeeAccrualStep {
         lastId = 0L;
         LocalDate since = today.minusDays(SETTLEMENT_RECOVERY_WINDOW_DAYS);
         while (true) {
-            List<Long> batch = overdueInvoiceQueryService.findRecentlySettledLateFeeOriginIdsAfter(lastId, since, PAGE_SIZE);
+            List<Long> batch = accrualService.findRecentlySettledOriginIdsAfter(lastId, since, PAGE_SIZE);
             if (batch.isEmpty()) {
                 break;
             }

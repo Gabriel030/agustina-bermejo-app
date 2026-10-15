@@ -35,6 +35,11 @@ public class LateFeeCandidateFinder {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> findRecentlySettledOriginIdsAfter(Long afterInvoiceId, LocalDate since, int pageSize) {
+        return chargeRepository.findRecentlySettledLateFeeOriginIdsAfter(afterInvoiceId, since, pageSize);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<LocalDate> findNextIssuablePeriodStart(Long originInvoiceId, LocalDate businessDate, Set<LocalDate> excludedPeriodStarts,
                                                          LatePaymentTimeline timeline) {
         Invoice origin = invoiceAccess.findInvoice(originInvoiceId).orElseThrow(() -> new InvoiceNotFoundException(originInvoiceId));
