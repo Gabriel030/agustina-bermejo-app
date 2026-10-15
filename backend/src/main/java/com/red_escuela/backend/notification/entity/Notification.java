@@ -40,4 +40,7 @@ public class Notification {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "dedup_key", length = 120)
+    private String dedupKey;
 }

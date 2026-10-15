@@ -353,6 +353,9 @@
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
+								<param>com.red_escuela.backend.notification.delivery.domain.*</param>
+								<param>com.red_escuela.backend.notification.delivery.policy.*</param>
+								<param>com.red_escuela.backend.shared.mail.MaskedEmailAddress</param>
 							</targetClasses>
 							<targetTests>
 								<param>com.red_escuela.backend.shared.domain.*</param>
@@ -381,6 +384,9 @@
 								<param>com.red_escuela.backend.billing.payment.domain.*</param>
 								<param>com.red_escuela.backend.billing.payment.policy.*</param>
 								<param>com.red_escuela.backend.billing.payment.gateway.*</param>
+								<param>com.red_escuela.backend.notification.delivery.domain.*</param>
+								<param>com.red_escuela.backend.notification.delivery.policy.*</param>
+								<param>com.red_escuela.backend.shared.mail.MaskedEmailAddressTest</param>
 							</targetTests>
 							<excludedGroups>
 								<param>integration</param>

@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Component
 @ConditionalOnProperty(name = "springdoc.api-docs.enabled", havingValue = "true")
@@ -66,6 +67,8 @@ public class RecordRequiredModelConverter implements ModelConverter {
             }
             if (isNullable(component)) {
                 properties.get(propertyName).setNullable(true);
+            } else if (isDeclaredNotRequired(component)) {
+                continue;
             } else {
                 required.add(propertyName);
             }
@@ -86,6 +89,14 @@ public class RecordRequiredModelConverter implements ModelConverter {
                 || hasNullableAnnotation(component.getAnnotations())
                 || hasNullableAnnotation(component.getAccessor().getAnnotations())
                 || hasNullableAnnotation(declaredField(component).getAnnotations());
+    }
+
+    private boolean isDeclaredNotRequired(RecordComponent component) {
+        return Stream.of(component.getAnnotations(), component.getAccessor().getAnnotations(), declaredField(component).getAnnotations())
+                .flatMap(Arrays::stream)
+                .filter(io.swagger.v3.oas.annotations.media.Schema.class::isInstance)
+                .map(io.swagger.v3.oas.annotations.media.Schema.class::cast)
+                .anyMatch(schema -> schema.requiredMode() == io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED);
     }
 
     private Field declaredField(RecordComponent component) {

@@ -15,7 +15,7 @@ public record CloseDiscountDefinitionCommand(Long discountDefinitionId, String r
 
     @Override
     public String authorizationReason() {
-        return "Cierre de la promoción " + discountDefinitionId + ": " + reason;
+        return "Cierre de la promoción " + discountDefinitionId + ": " + reason.strip();
     }
 
     @Override
