@@ -384,4 +384,22 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(1.0);
         assertScenarioInvariants(d(2252, 4, 2));
     }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-332")
+    void excessOfAPaymentDatedBeforeAnIssuedCloseSkipsTheDaysFrozenByAWithdrawalRegisteredAfterTheClose() {
+        arrange(2254);
+        publishDefaults(2254);
+        Invoice origin = overdueInstallmentDueOn(d(2254, 3, 11));
+        reconcile(origin, d(2254, 4, 1));
+        withdrawCourseEnrollmentOn(d(2254, 3, 25));
+        double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
+
+        payInFull(origin, d(2254, 3, 20), d(2254, 4, 2));
+        awaitEventsDrained();
+
+        assertThat(summaryOf(origin)).containsExactly("2254-03-12..2254-03-31:20:4000.00");
+        assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(5.0);
+    }
 }
