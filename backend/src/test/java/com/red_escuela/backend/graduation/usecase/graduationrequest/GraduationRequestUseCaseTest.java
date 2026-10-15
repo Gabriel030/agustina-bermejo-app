@@ -53,6 +53,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.test.context.event.RecordApplicationEvents
 class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -69,6 +70,12 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private org.springframework.test.context.event.ApplicationEvents applicationEvents;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort withdrawalBillingPort;
 
     @AfterEach
     void clearSecurityContext() {
@@ -364,6 +371,81 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         ProgramEnrollment reloadedEnrollment = entityManager.find(ProgramEnrollment.class, enrollment.getId());
         assertThat(reloadedEnrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
         assertThat(reloadedEnrollment.getCompletionDate()).isNotNull();
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    @org.junit.jupiter.api.Tag("D-296")
+    @org.junit.jupiter.api.Tag("D-142")
+    void approvingAGraduationInOctoberWithPaidFutureInstallmentsEmitsNoCreditNoteAndMovesNothing() {
+        Student student = persistStudent("80000011");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos11");
+        entityManager.flush();
+        BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(java.time.YearMonth.of(2027, 11))
+                .dueOn(LocalDate.of(2027, 11, 10)).withBaseAmount(ars(100)).paid().build();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000011");
+        authenticateAsPerson("DIRECTOR80000011");
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 10, 20));
+        long creditNotesBefore = countRows("credit_note");
+        long entriesBefore = countRows("current_account_entry");
+        long allocationsBefore = countRows("payment_allocation");
+        long authorizationRequestsBefore = countRows("authorization_request");
+
+        approveGraduationRequestUseCase.approve(request.getId());
+        entityManager.flush();
+
+        assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(applicationEvents.stream(com.red_escuela.backend.enrollment.events.ProgramEnrollmentGraduatedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.programEnrollmentId()).isEqualTo(enrollment.getId());
+                    assertThat(event.studentId()).isEqualTo(student.getId());
+                    assertThat(event.effectiveDate()).isEqualTo(LocalDate.of(2027, 10, 20));
+                });
+        assertThat(countRows("credit_note")).isEqualTo(creditNotesBefore);
+        assertThat(countRows("current_account_entry")).isEqualTo(entriesBefore);
+        assertThat(countRows("payment_allocation")).isEqualTo(allocationsBefore);
+        assertThat(countRows("authorization_request")).isEqualTo(authorizationRequestsBefore);
+        assertThat(entityManager.createNativeQuery("select unallocated_credit_amount from student_current_account a where a.student_id = :studentId")
+                .setParameter("studentId", student.getId()).getResultList()).allSatisfy(amount -> assertThat((java.math.BigDecimal) amount).isEqualByComparingTo("0.00"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    @org.junit.jupiter.api.Tag("D-296")
+    void approvingAGraduationRegistersItInBillingWithTheGraduationCause() {
+        Student student = persistStudent("80000012");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos12");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000012");
+        authenticateAsPerson("DIRECTOR80000012");
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 10, 20));
+
+        approveGraduationRequestUseCase.approve(request.getId());
+
+        org.mockito.Mockito.verify(withdrawalBillingPort).registerWithdrawalForBilling(
+                com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts.ofProgramEnrollment(student.getId(), enrollment.getId(), LocalDate.of(2027, 10, 20),
+                        com.red_escuela.backend.enrollment.api.WithdrawalCause.GRADUATION));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    void aFailureOfTheBillingPortAbortsTheGraduationApprovalInTheSameTransaction() {
+        Student student = persistStudent("80000013");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos13");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000013");
+        authenticateAsPerson("DIRECTOR80000013");
+        org.mockito.Mockito.doThrow(new IllegalStateException("billing unavailable")).when(withdrawalBillingPort).registerWithdrawalForBilling(org.mockito.ArgumentMatchers.any());
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId())).hasRootCauseInstanceOf(IllegalStateException.class).hasMessageContaining("billing unavailable");
+
+        org.springframework.test.context.transaction.TestTransaction.flagForCommit();
+        assertThatThrownBy(org.springframework.test.context.transaction.TestTransaction::end)
+                .isInstanceOf(org.springframework.transaction.UnexpectedRollbackException.class);
+    }
+
+    private long countRows(String table) {
+        return ((Number) entityManager.createNativeQuery("select count(*) from " + table).getSingleResult()).longValue();
     }
 
     @Test

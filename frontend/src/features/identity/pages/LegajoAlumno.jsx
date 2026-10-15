@@ -33,7 +33,7 @@ export function LegajoAlumno() {
 
   const rolBase = usuario?.roles[0]?.toLowerCase();
   const puedeAccionar = rolBase === 'preceptor' || rolBase === 'administrativo';
-  const puededarDeBaja = puedeAccionar && legajo?.status !== 'DELETED';
+  const puededarDeBaja = (rolBase === 'administrativo' || rolBase === 'director') && legajo?.status !== 'DELETED';
 
   const badge = ESTADO_STATUS_BADGE[legajo?.status];
 

@@ -15,6 +15,8 @@ import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -64,6 +66,8 @@ public class ProgramEnrollmentService {
     private final CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
+    private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
+    private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
@@ -77,6 +81,8 @@ public class ProgramEnrollmentService {
             CalculateProgramEnrollmentAttendanceRiskUseCase calculateProgramEnrollmentAttendanceRiskUseCase,
             StudentDebtResolutionService studentDebtResolutionService,
             ScholarshipService scholarshipService,
+            EnrollmentWithdrawalDateResolver withdrawalDateResolver,
+            EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -89,6 +95,8 @@ public class ProgramEnrollmentService {
         this.calculateProgramEnrollmentAttendanceRiskUseCase = calculateProgramEnrollmentAttendanceRiskUseCase;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
+        this.withdrawalDateResolver = withdrawalDateResolver;
+        this.withdrawalBillingPort = withdrawalBillingPort;
         this.clock = clock;
     }
 
@@ -112,7 +120,7 @@ public class ProgramEnrollmentService {
 
     private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
                                                boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
-        Student student = studentRepository.findById(studentId)
+        Student student = studentRepository.findByIdForUpdate(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         if (validateEligibility) {
             validateStudentEligible(student);
@@ -148,17 +156,24 @@ public class ProgramEnrollmentService {
     }
 
     @Transactional
-    public void withdraw(Long id) {
+    public void withdrawForNonpayment(Long id) {
+        withdraw(id, EnrollmentWithdrawal.forNonpayment());
+    }
+
+    @Transactional
+    public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
         ProgramEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
                 && enrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
             throw new CannotWithdrawException(
                     "La matriculación " + id + " no está ENROLLED/PAUSED, no se puede dar de baja");
         }
-        enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
-        enrollment.setCompletionDate(LocalDateTime.now(clock));
+        LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
+        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), withdrawal.registeredByPersonId());
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
+        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
+                enrollment.getStudent().getId(), id, effectiveDate, withdrawal.cause()));
     }
 
     public ProgramEnrollment get(Long id) {

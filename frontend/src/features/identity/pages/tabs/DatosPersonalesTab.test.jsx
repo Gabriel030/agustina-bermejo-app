@@ -63,4 +63,31 @@ describe('DatosPersonalesTab', () => {
     expect(await screen.findByDisplayValue('Femenino')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('F')).not.toBeInTheDocument();
   });
+  it('shows only the withdraw action to a role that can withdraw but not reset passwords', async () => {
+    server.use(http.get(`${API}/students/54/documents`, () => HttpResponse.json([])));
+    renderWithProviders(
+      <DatosPersonalesTab
+        legajo={{ id: 54, nombre: 'Ana', apellido: 'Pérez', status: 'ACTIVE' }}
+        puedeAccionar={false}
+        puedeDarDeBaja
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Dar de baja' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resetear contraseña' })).not.toBeInTheDocument();
+  });
+
+  it('shows only the password reset to a role that cannot withdraw', async () => {
+    server.use(http.get(`${API}/students/55/documents`, () => HttpResponse.json([])));
+    renderWithProviders(
+      <DatosPersonalesTab
+        legajo={{ id: 55, nombre: 'Ana', apellido: 'Pérez', status: 'ACTIVE' }}
+        puedeAccionar
+        puedeDarDeBaja={false}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Resetear contraseña' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dar de baja' })).not.toBeInTheDocument();
+  });
 });

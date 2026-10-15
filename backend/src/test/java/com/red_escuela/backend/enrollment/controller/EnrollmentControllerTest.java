@@ -698,7 +698,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         CourseSubject modulo = persistCourseSubject(course, "Módulo19");
         CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, null);
         entityManager.flush();
-        String token = tokenWithRole("preceptor-insc19", "PRECEPTOR");
+        String token = tokenWithRole("administrativo-insc19", "ADMINISTRATIVO");
 
         String primeraMatricula = mockMvc.perform(post("/students/{id}/course-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -735,7 +735,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         CourseSubject modulo = persistCourseSubject(course, "Módulo20");
         CourseSubjectSection seccion = persistCourseSubjectSection(modulo, term, 1);
         entityManager.flush();
-        String token = tokenWithRole("preceptor-insc20", "PRECEPTOR");
+        String token = tokenWithRole("administrativo-insc20", "ADMINISTRATIVO");
 
         String matricula1 = mockMvc.perform(post("/students/{id}/course-enrollments", estudiante1.getId())
                         .contentType(MediaType.APPLICATION_JSON)

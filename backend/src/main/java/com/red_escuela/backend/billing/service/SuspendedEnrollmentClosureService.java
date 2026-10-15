@@ -15,6 +15,8 @@ import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundExc
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
+import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
+import com.red_escuela.backend.shared.exception.ReportsPolicyViolations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -69,10 +71,19 @@ public class SuspendedEnrollmentClosureService {
                     closed++;
                 }
             } catch (RuntimeException e) {
-                log.error("Falló el cierre de la inscripción suspendida: inscripcion={}", id, e);
+                logClosureFailure(id, e);
             }
         }
         return closed;
+    }
+
+    private void logClosureFailure(Long enrollmentId, RuntimeException failure) {
+        if (failure instanceof ReportsPolicyViolations rejection) {
+            log.warn("Baja por mora rechazada por una regla: inscripcion={}, causa={}", enrollmentId,
+                    rejection.violations().stream().map(PolicyViolation::code).toList());
+            return;
+        }
+        log.error("Falló el cierre de la inscripción suspendida: inscripcion={}", enrollmentId, failure);
     }
 
     private boolean closeIfCycleEnded(Long enrollmentId) {
@@ -87,7 +98,7 @@ public class SuspendedEnrollmentClosureService {
             return false;
         }
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        programEnrollmentService.withdraw(enrollmentId);
+        programEnrollmentService.withdrawForNonpayment(enrollmentId);
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());
