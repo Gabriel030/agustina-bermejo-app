@@ -39,7 +39,7 @@ const series = [
 
 function yAxes(container) {
   return [...container.querySelectorAll('.recharts-yAxis-tick-labels')].map((axis) =>
-    [...axis.querySelectorAll('text')].map((node) => node.textContent.replace(/\s/g, '').toLowerCase().replace(/,0(?=\D|$)/g, '')),
+    [...axis.querySelectorAll('text')].map((node) => node.textContent.replace(/\s/g, '').toLowerCase()),
   );
 }
 
