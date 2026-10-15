@@ -275,6 +275,66 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-376")
+    void approvingTheSameReceiptTwiceSequentiallyCreditsTheAccountOnlyOnce() {
+        com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbcTemplate);
+        Person admin = persistPerson("admin.idem1." + System.nanoTime());
+        Student student = persistStudent("97376002");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+
+        assertThatThrownBy(() -> approvePaymentReceiptUseCase.approve(receipt.getId(), admin)).isInstanceOf(InvalidPaymentReceiptStateException.class);
+
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from payment where student_current_account_id = ?", Long.class, accountId)).isEqualTo(1L);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'", Long.class, accountId)).isEqualTo(1L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-376")
+    void twoAdminsApprovingTheSameReceiptAtTheSameTimeCreditTheAccountOnlyOnce() throws Exception {
+        com.red_escuela.backend.billing.invariant.BillingInvariantChecker invariants = com.red_escuela.backend.billing.invariant.BillingInvariantChecker.startingNow(jdbcTemplate);
+        Person admin1 = persistPerson("admin.idem2a." + System.nanoTime());
+        Person admin2 = persistPerson("admin.idem2b." + System.nanoTime());
+        Student student = persistStudent("97376003");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        List<Future<BankTransferReceipt>> attempts = List.of(
+                executor.submit(() -> {
+                    start.await();
+                    return approvePaymentReceiptUseCase.approve(receipt.getId(), admin1);
+                }),
+                executor.submit(() -> {
+                    start.await();
+                    return approvePaymentReceiptUseCase.approve(receipt.getId(), admin2);
+                }));
+        start.countDown();
+        int approvals = 0;
+        for (Future<BankTransferReceipt> attempt : attempts) {
+            try {
+                attempt.get(60, TimeUnit.SECONDS);
+                approvals++;
+            } catch (ExecutionException e) {
+                assertThat(e.getCause()).isInstanceOfAny(org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+                        InvalidPaymentReceiptStateException.class, InvoiceNotPayableException.class);
+            }
+        }
+        executor.shutdownNow();
+
+        assertThat(approvals).isEqualTo(1);
+        Long accountId = invoiceRepository.findById(invoice.getId()).orElseThrow().getStudentCurrentAccountId();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from payment where student_current_account_id = ?", Long.class, accountId)).isEqualTo(1L);
+        assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
     void rejectingWithAReasonAllowsTheStudentToRetry() {
         Person admin = persistPerson("admin.receipt4." + System.nanoTime());
         Student student = persistStudent("97000004");

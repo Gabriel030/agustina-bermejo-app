@@ -192,6 +192,12 @@ public class Invoice {
         return getPrimaryLine().getEnrollmentFeeSlot();
     }
 
+    public void requirePayable() {
+        if (!isPayable()) {
+            throw new com.red_escuela.backend.billing.exception.InvoiceNotPayableException(id, paymentStatus == null ? documentStatus.name() : paymentStatus.name());
+        }
+    }
+
     public boolean isPayable() {
         return documentStatus == InvoiceDocumentStatus.ISSUED && (paymentStatus == InvoicePaymentStatus.PENDING || paymentStatus == InvoicePaymentStatus.OVERDUE);
     }

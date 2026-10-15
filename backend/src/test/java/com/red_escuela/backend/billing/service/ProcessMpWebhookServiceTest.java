@@ -20,8 +20,6 @@ import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.domain.PaymentGatewayCode;
 import com.red_escuela.backend.billing.payment.domain.PaymentStatus;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.billing.payment.service.ApprovedPaymentCreditService;
-import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
@@ -73,16 +71,10 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private StudentCurrentAccountService accountService;
+    private com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
 
     @Autowired
-    private ApprovedPaymentCreditService creditService;
-
-    @Autowired
-    private org.springframework.context.ApplicationEventPublisher eventPublisher;
-
-    @Autowired
-    private java.time.Clock clock;
+    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
 
     @Autowired
     private AddressRepository addressRepository;
@@ -170,7 +162,7 @@ class ProcessMpWebhookServiceTest extends AbstractIntegrationTest {
     }
 
     private ProcessMpWebhookService serviceFetching(com.red_escuela.backend.billing.infrastructure.MercadoPagoPaymentFetcher fetcher, MpWebhookSignatureVerifier verifier) {
-        return new ProcessMpWebhookService(invoiceRepository, paymentRepository, accountService, creditService, fetcher, verifier, eventPublisher, clock);
+        return new ProcessMpWebhookService(invoiceRepository, legacyPaymentRepository, registerPaymentUseCase, fetcher, verifier);
     }
 
     private ProcessMpWebhookService serviceReporting(Long invoiceId, BigDecimal reportedAmount) {

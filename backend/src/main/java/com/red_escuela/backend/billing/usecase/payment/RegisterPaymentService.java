@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.usecase.payment;
 
 import java.time.LocalDate;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
@@ -11,6 +12,7 @@ import com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
+import com.red_escuela.backend.billing.operation.ApprovedPaymentRegistrationPort;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.Payment;
@@ -30,6 +32,7 @@ import com.red_escuela.backend.shared.domain.Money;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -49,13 +52,17 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final StudentCurrentAccountService accountService;
     private final CurrentAccountAllocationService allocationService;
     private final com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository;
+    private final InvoiceViewLoader invoiceViewLoader;
     private final CurrentStudentService currentStudentService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    @Autowired
+    private ApprovedPaymentRegistrationPort registrationPort;
 
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
                                    StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                    com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository,
+                                   InvoiceViewLoader invoiceViewLoader,
                                    CurrentStudentService currentStudentService,
                                    ApplicationEventPublisher eventPublisher,
                                    Clock clock) {
@@ -64,6 +71,7 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.allocationRepository = allocationRepository;
+        this.invoiceViewLoader = invoiceViewLoader;
         this.currentStudentService = currentStudentService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -191,6 +199,23 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         log.info("Pago acreditado en la cuenta corriente: pago={}, metodo={}, monto={}, factura={}, facturas saldadas={}",
                 payment.getId(), request.method(), received.amount(), reportedInvoiceId, allocated.settledInvoices().stream().map(Invoice::getId).toList());
         return payment;
+    }
+
+    @Override
+    public Long registerApprovedMercadoPagoPayment(RegisterPaymentRequest request) {
+        PaymentAllocationRequest reported = request.allocations().get(0);
+        return registrationPort.registerApprovedMercadoPagoPayment(reported.invoiceId(), reported.amountApplied(), request.cardInstallments(), request.cardType(),
+                request.externalReference());
+    }
+
+    @Override
+    public Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId) {
+        return registrationPort.registerApprovedBankTransferPayment(invoiceId, reviewerPersonId);
+    }
+
+    @Override
+    public boolean isMercadoPagoPaymentRegistered(String mercadoPagoPaymentId) {
+        return registrationPort.isMercadoPagoPaymentRegistered(mercadoPagoPaymentId) || paymentRepository.existsByExternalReference(mercadoPagoPaymentId);
     }
 
     private void lockAccountsOfInvoicesInAscendingOrder(List<PaymentAllocationRequest> allocations) {

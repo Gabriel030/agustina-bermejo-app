@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
-import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceFollowUpQueries;
 import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
 import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
@@ -21,13 +21,13 @@ import java.time.YearMonth;
 
 @Component
 public class InvoicePaidFollowUp {
-    private final InvoiceRepository invoiceRepository;
+    private final InvoiceFollowUpQueries invoiceQueries;
     private final InvoiceViewLoader invoiceViewLoader;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
-    public InvoicePaidFollowUp(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader, ApplicationEventPublisher eventPublisher, Clock clock) {
-        this.invoiceRepository = invoiceRepository;
+    public InvoicePaidFollowUp(InvoiceFollowUpQueries invoiceQueries, InvoiceViewLoader invoiceViewLoader, ApplicationEventPublisher eventPublisher, Clock clock) {
+        this.invoiceQueries = invoiceQueries;
         this.invoiceViewLoader = invoiceViewLoader;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -38,7 +38,7 @@ public class InvoicePaidFollowUp {
         if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {
             return;
         }
-        invoiceRepository.findById(event.invoiceId()).ifPresent(invoice -> {
+        invoiceQueries.findInvoice(event.invoiceId()).ifPresent(invoice -> {
             publishAdmissionPaidIfApplicable(invoice);
             restoreStandingIfNoOverdueDebtLeft(invoice);
         });
@@ -53,10 +53,10 @@ public class InvoicePaidFollowUp {
     private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {
         invoice.findCourseEnrollmentId().flatMap(invoiceViewLoader::findCourseEnrollment).ifPresent(enrollment ->
                 restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, enrollment.getId(),
-                        invoiceRepository.countByCourseEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
+                        invoiceQueries.countOverdueOfCourseEnrollment(enrollment.getId())));
         invoice.findProgramEnrollmentId().flatMap(invoiceViewLoader::findProgramEnrollment).ifPresent(enrollment ->
                 restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, enrollment.getId(),
-                        invoiceRepository.countByProgramEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
+                        invoiceQueries.countOverdueOfProgramEnrollment(enrollment.getId())));
     }
 
     private void restoreStanding(BillableEnrollment enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId, long overdueInvoices) {

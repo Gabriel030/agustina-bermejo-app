@@ -8,4 +8,10 @@ public interface RegisterPaymentUseCase {
     Payment register(RegisterPaymentRequest request, Person registeredBy);
 
     Payment creditPaymentToAccountAndSettleInvoiceIfCovered(RegisterPaymentRequest request, Person registeredBy);
+
+    Long registerApprovedMercadoPagoPayment(RegisterPaymentRequest request);
+
+    Long registerApprovedBankTransferPayment(Long invoiceId, Long reviewerPersonId);
+
+    boolean isMercadoPagoPaymentRegistered(String mercadoPagoPaymentId);
 }
