@@ -12,4 +12,9 @@ public record ProgramReminderSchedule(ReminderSchedule schedule) implements Conf
     public ConfigurationScope scope() {
         return ConfigurationScope.PROGRAM_REMINDER_SCHEDULE;
     }
+
+    @Override
+    public ConfigurationValues normalized() {
+        return new ProgramReminderSchedule(schedule.sortedByTimeline());
+    }
 }

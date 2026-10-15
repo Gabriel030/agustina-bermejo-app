@@ -3,6 +3,7 @@ package com.red_escuela.backend.billing.configuration.service;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.ProgramReminderSchedule;
+import com.red_escuela.backend.billing.configuration.domain.ReminderNotice;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleSource;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
@@ -13,6 +14,11 @@ import com.red_escuela.backend.billing.configuration.exception.InvalidCollection
 import com.red_escuela.backend.billing.configuration.exception.ProposalAlreadyOpenException;
 import com.red_escuela.backend.billing.configuration.usecase.ListConfigurationVersionHistoryUseCase;
 import com.red_escuela.backend.billing.configuration.usecase.ProposeBillingConfigurationChangeUseCase;
+import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizationRequestUseCase;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
+import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.AddressRepository;
@@ -34,6 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,6 +57,12 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
     private ListConfigurationVersionHistoryUseCase history;
     @Autowired
     private BillingConfigurationReader reader;
+    @Autowired
+    private ApproveAuthorizationRequestUseCase approveRequest;
+    @Autowired
+    private ConfigurationVersionRepository versionRepository;
+    @Autowired
+    private ConfigurationVersionActivator activator;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -208,5 +221,61 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> publish(ConfigurationTopic.ofReminderScheduleException(TeachingGroup.PROGRAMS, nursingId), programSchedule(5,
                 new ReminderSendingOverrides(null, 0, null, null, null, null, null, null, null)), MARCH_FOURTH)).isInstanceOf(InvalidCollectionReminderScheduleException.class);
         assertThat(jdbcTemplate.queryForObject("select count(*) from configuration_version where proposed_by_id = ?", Long.class, director.getId())).isZero();
+    }
+
+    @Test
+    @Tag("D-351")
+    @Tag("D-350")
+    @Tag("D-368")
+    void aGroupProposalStaysPendingUntilTheDirectorApprovesItAndThenItRulesFromTheNextDay() {
+        Person administrative = transactionTemplate.execute(status -> {
+            Person person = new Person();
+            String username = "administrative." + System.nanoTime();
+            person.setUsername(username);
+            person.setDni(Long.toString(Math.abs((long) username.hashCode())));
+            person.setName("Persona");
+            person.setLastname("Prueba");
+            person.setEmail(username + "@example.com");
+            person.setAddress(addressRepository.save(new Address()));
+            person.setStatus(StatusType.ACTIVE);
+            person.getRoles().add(roleRepository.findByName("ADMINISTRATIVO").orElseThrow());
+            return personRepository.save(person);
+        });
+        try {
+            SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(administrative.getId().toString(), null, "ROLE_ADMINISTRATIVO"));
+            ReminderSchedule changed = ReminderSchedule.initial();
+            List<ReminderNotice> notices = changed.notices().stream()
+                    .map(notice -> notice.noticeKey().equals("before-due") ? new ReminderNotice(notice.noticeKey(), notice.messageType(), notice.milestone(), -2, notice.channels(), null) : notice)
+                    .toList();
+            ConfigurationTopic groupTopic = ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS);
+
+            Long requestId = ((BillingOperationOutcome.AwaitingAuthorization<ConfigurationVersion>) propose.proposeChange(groupTopic,
+                    new ProgramReminderSchedule(new ReminderSchedule(false, notices, null)), MARCH_FOURTH, "motivo")).authorizationRequestId();
+
+            assertThat(versionRepository.findFirstByAuthorizationRequestId(requestId).orElseThrow().getStatus()).isEqualTo(ConfigurationVersionStatus.PROPOSED);
+            assertThat(beforeDueDaysOn(MARCH_FOURTH)).isEqualTo(-1);
+            SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(director.getId().toString(), null, "ROLE_DIRECTOR"));
+            approveRequest.approve(requestId, "de acuerdo");
+            assertThat(versionRepository.findFirstByAuthorizationRequestId(requestId).orElseThrow().getStatus()).isEqualTo(ConfigurationVersionStatus.SCHEDULED);
+            assertThat(beforeDueDaysOn(MARCH_THIRD)).isEqualTo(-1);
+            MutableClock.INSTANCE.setDate(MARCH_FOURTH);
+            activator.activateDueVersions();
+            assertThat(beforeDueDaysOn(MARCH_FOURTH)).isEqualTo(-2);
+        } finally {
+            jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+            jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", administrative.getId());
+            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
+                    administrative.getId());
+            jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", administrative.getId());
+            jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)",
+                    administrative.getId());
+            jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", administrative.getId());
+            jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+        }
+    }
+
+    private int beforeDueDaysOn(LocalDate date) {
+        return reader.reminderScheduleFor(new ReminderScheduleTarget(TeachingGroup.PROGRAMS, null), date).notices().stream()
+                .filter(notice -> notice.noticeKey().equals("before-due")).findFirst().orElseThrow().offsetDays();
     }
 }

@@ -17,7 +17,10 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderMilestoneDat
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleResolver;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
+import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTopicState;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleVersion;
+import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
 import com.red_escuela.backend.billing.configuration.domain.ResolvedReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.IrregularTermTypes;
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
@@ -30,6 +33,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -127,6 +133,23 @@ public class BillingConfigurationReader {
         CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
                 .orElse(CollectionReminderSettings.initial());
         return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null), milestoneDates);
+    }
+
+    public List<ReminderScheduleTopicState> listReminderScheduleTopicsEffectiveOn(TeachingGroup group, LocalDate date) {
+        List<ConfigurationTopic> topics = new ArrayList<>(List.of(ConfigurationTopic.ofReminderScheduleGroup(group)));
+        repository.findTopicsByScope(group.scope()).stream().filter(ConfigurationTopic::isReminderScheduleException)
+                .sorted(Comparator.comparing(ConfigurationTopic::key)).forEach(topics::add);
+        return topics.stream().map(topic -> reminderScheduleTopicState(topic, date)).toList();
+    }
+
+    private ReminderScheduleTopicState reminderScheduleTopicState(ConfigurationTopic topic, LocalDate date) {
+        Optional<ConfigurationVersion> effective = repository.findEffectiveVersion(topic.scope().name(), topic.key(), date);
+        boolean openProposal = repository.existsByScopeAndTopicKeyAndStatus(topic.scope(), topic.key(), ConfigurationVersionStatus.PROPOSED);
+        LocalDate followsGroupFrom = repository.findByScopeAndTopicKeyAndStatus(topic.scope(), topic.key(), ConfigurationVersionStatus.SCHEDULED).stream()
+                .filter(version -> version.getEffectiveFrom().isAfter(date) && reminderScheduleOf(version.values()).followsGroupSchedule())
+                .map(ConfigurationVersion::getEffectiveFrom).min(Comparator.naturalOrder()).orElse(null);
+        return new ReminderScheduleTopicState(topic, effective.map(ConfigurationVersion::getId).orElse(null), effective.map(ConfigurationVersion::getEffectiveFrom).orElse(null),
+                effective.map(version -> reminderScheduleOf(version.values())).orElse(null), openProposal, followsGroupFrom);
     }
 
     private Optional<ReminderScheduleVersion> findReminderScheduleVersion(ConfigurationTopic topic, LocalDate date) {

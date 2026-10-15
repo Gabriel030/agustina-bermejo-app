@@ -4,7 +4,12 @@ import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSe
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromCheck;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromNextDayPolicy;
-import com.red_escuela.backend.billing.configuration.policy.CollectionReminderScheduleCoherencePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderIssuanceNoticePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeChannelsPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeTimingPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeUniquenessPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderRepetitionPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleSizePolicy;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderSettingsCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
 import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleFollowsGroupPolicy;
@@ -136,7 +141,12 @@ public class ConfigurationPolicySetsConfiguration {
     @Bean
     public PolicySet<ReminderScheduleCheck> collectionReminderSchedulePolicySet() {
         List<Policy<ReminderScheduleCheck>> ordered = List.of(
-                new CollectionReminderScheduleCoherencePolicy(),
+                new ReminderScheduleSizePolicy(),
+                new ReminderNoticeTimingPolicy(),
+                new ReminderNoticeChannelsPolicy(),
+                new ReminderIssuanceNoticePolicy(),
+                new ReminderRepetitionPolicy(),
+                new ReminderNoticeUniquenessPolicy(),
                 new ReminderScheduleFollowsGroupPolicy(),
                 new ReminderSendingOverridesCoherencePolicy());
         return PolicySet.named("COLLECTION_REMINDER_SCHEDULE", ordered);

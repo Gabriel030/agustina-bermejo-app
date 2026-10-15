@@ -1003,6 +1003,24 @@
         "required" : [ "currentPassword", "newPassword" ],
         "type" : "object"
       },
+      "ChangeReminderScheduleRequest" : {
+        "properties" : {
+          "changeReason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/ReminderScheduleDto"
+          }
+        },
+        "required" : [ "changeReason", "effectiveFrom", "schedule" ],
+        "type" : "object"
+      },
       "ChangeSectionRequest" : {
         "properties" : {
           "newSectionId" : {
@@ -2915,6 +2933,39 @@
         "required" : [ "classroom", "courseSubjectId", "courseSubjectName", "examDate", "id", "registrationEnd", "registrationStart", "status", "subjectId", "subjectName", "termId", "tribunal", "tribunalInstructorIds" ],
         "type" : "object"
       },
+      "ExceptionPolicy" : {
+        "properties" : {
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "followsGroupFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "group" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          },
+          "hasOpenProposal" : {
+            "type" : "boolean"
+          },
+          "noticeCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "targetId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "versionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "effectiveFrom", "followsGroupFrom", "group", "hasOpenProposal", "noticeCount", "targetId", "versionId" ],
+        "type" : "object"
+      },
       "FinancialDashboardResponse" : {
         "properties" : {
           "studentsInDebt" : {
@@ -3086,6 +3137,31 @@
           }
         },
         "required" : [ "reason", "slot", "templateId" ],
+        "type" : "object"
+      },
+      "GroupPolicy" : {
+        "properties" : {
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "group" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          },
+          "hasOpenProposal" : {
+            "type" : "boolean"
+          },
+          "noticeCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "versionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "effectiveFrom", "group", "hasOpenProposal", "noticeCount", "versionId" ],
         "type" : "object"
       },
       "HistoryCell" : {
@@ -4804,6 +4880,180 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "ReminderNoticeDto" : {
+        "properties" : {
+          "channels" : {
+            "items" : {
+              "enum" : [ "IN_APP", "EMAIL" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "messageType" : {
+            "enum" : [ "ISSUANCE_NOTICE", "AFTER_ISSUE_REMINDER", "BEFORE_DUE_REMINDER", "AFTER_DUE_REMINDER", "BEFORE_SUSPENSION_REMINDER" ],
+            "type" : "string"
+          },
+          "milestone" : {
+            "enum" : [ "ISSUANCE", "DUE_DATE", "SUSPENSION" ],
+            "type" : "string"
+          },
+          "noticeKey" : {
+            "type" : "string"
+          },
+          "offsetDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "repetition" : {
+            "$ref" : "#/components/schemas/ReminderRepetitionDto"
+          }
+        },
+        "required" : [ "channels", "messageType", "milestone", "noticeKey", "offsetDays", "repetition" ],
+        "type" : "object"
+      },
+      "ReminderRepetitionDto" : {
+        "properties" : {
+          "everyDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "until" : {
+            "enum" : [ "ISSUANCE", "DUE_DATE", "SUSPENSION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "everyDays", "until" ],
+        "type" : "object"
+      },
+      "ReminderScheduleDto" : {
+        "properties" : {
+          "followsGroupSchedule" : {
+            "type" : "boolean"
+          },
+          "notices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReminderNoticeDto"
+            },
+            "type" : "array"
+          },
+          "sendingOverrides" : {
+            "$ref" : "#/components/schemas/ReminderSendingOverridesDto"
+          }
+        },
+        "required" : [ "followsGroupSchedule", "notices", "sendingOverrides" ],
+        "type" : "object"
+      },
+      "ReminderSchedulePoliciesResponse" : {
+        "properties" : {
+          "exceptions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExceptionPolicy"
+            },
+            "type" : "array"
+          },
+          "groups" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GroupPolicy"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "exceptions", "groups" ],
+        "type" : "object"
+      },
+      "ReminderScheduleVersionResponse" : {
+        "properties" : {
+          "changeReason" : {
+            "type" : "string"
+          },
+          "decidedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "decisionReason" : {
+            "type" : "string"
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "proposedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/ReminderScheduleDto"
+          },
+          "status" : {
+            "enum" : [ "PROPOSED", "SCHEDULED", "EFFECTIVE", "SUPERSEDED", "REJECTED", "WITHDRAWN", "EXPIRED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "changeReason", "decidedById", "decisionReason", "directPublication", "effectiveFrom", "id", "proposedById", "schedule", "status" ],
+        "type" : "object"
+      },
+      "ReminderSendingOverridesDto" : {
+        "properties" : {
+          "contactListDaysOverdue" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "contactListOverdueInstallments" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dailyEmailCap" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "emailWindowEnd" : {
+            "type" : "string"
+          },
+          "emailWindowStart" : {
+            "type" : "string"
+          },
+          "maxReminderEmailsPerMonth" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minDaysBetweenEmails" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "postWithdrawalSummaryMonths" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "suspensionNoticeEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "contactListDaysOverdue", "contactListOverdueInstallments", "dailyEmailCap", "emailWindowEnd", "emailWindowStart", "maxReminderEmailsPerMonth", "minDaysBetweenEmails", "postWithdrawalSummaryMonths", "suspensionNoticeEnabled" ],
+        "type" : "object"
+      },
+      "RemoveReminderScheduleExceptionRequest" : {
+        "properties" : {
+          "changeReason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "effectiveFrom" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "changeReason", "effectiveFrom" ],
         "type" : "object"
       },
       "ResetPasswordRequest" : {
@@ -8524,6 +8774,581 @@
           }
         },
         "tags" : [ "collection-reminder-settings-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules" : {
+      "get" : {
+        "operationId" : "CollectionReminderSchedule_listPolicies",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReminderSchedulePoliciesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/changes" : {
+      "post" : {
+        "operationId" : "CollectionReminderSchedule_proposeGroupChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeReminderScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/changes" : {
+      "post" : {
+        "operationId" : "CollectionReminderSchedule_proposeExceptionChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "targetId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeReminderScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/removal" : {
+      "post" : {
+        "operationId" : "CollectionReminderSchedule_proposeExceptionRemoval",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "targetId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RemoveReminderScheduleExceptionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/validation" : {
+      "post" : {
+        "operationId" : "CollectionReminderSchedule_validateExceptionChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "targetId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeReminderScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConfigurationChangeValidationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/exceptions/{targetId}/versions" : {
+      "get" : {
+        "operationId" : "CollectionReminderSchedule_listExceptionVersions",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "targetId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReminderScheduleVersionResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/validation" : {
+      "post" : {
+        "operationId" : "CollectionReminderSchedule_validateGroupChange",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeReminderScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConfigurationChangeValidationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
+      }
+    },
+    "/billing-configuration/collection-reminder-schedules/{group}/versions" : {
+      "get" : {
+        "operationId" : "CollectionReminderSchedule_listGroupVersions",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "group",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PROGRAMS", "MONTHLY_COURSES" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReminderScheduleVersionResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "collection-reminder-schedule-controller" ]
       }
     },
     "/billing-periods" : {

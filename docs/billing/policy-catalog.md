@@ -31,9 +31,14 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | CollectionReminderScheduleCoherencePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368, D-344 |
-| 2 | ReminderScheduleFollowsGroupPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
-| 3 | ReminderSendingOverridesCoherencePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-369, D-373 |
+| 1 | ReminderScheduleSizePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 2 | ReminderNoticeTimingPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 3 | ReminderNoticeChannelsPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368, D-344 |
+| 4 | ReminderIssuanceNoticePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368, D-344 |
+| 5 | ReminderRepetitionPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 6 | ReminderNoticeUniquenessPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 7 | ReminderScheduleFollowsGroupPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 8 | ReminderSendingOverridesCoherencePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-369, D-373 |
 
 ## Momento COLLECTION_REMINDER_SETTINGS
 
