@@ -121,19 +121,21 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, onRe
 
       <DocumentosSection studentId={legajo.id} />
 
-      {puedeAccionar && (
+      {(puedeAccionar || puedeDarDeBaja) && (
         <div className="flex flex-col gap-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">Acciones</h3>
           <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-medium text-ink">Resetear contraseña</span>
-                <span className="text-[12px] text-ink-faint">Envía un link de recuperación al email del alumno.</span>
+            {puedeAccionar && (
+              <div className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-medium text-ink">Resetear contraseña</span>
+                  <span className="text-[12px] text-ink-faint">Envía un link de recuperación al email del alumno.</span>
+                </div>
+                <Button variant="gradient" size="sm" onClick={onReset}>
+                  Resetear contraseña
+                </Button>
               </div>
-              <Button variant="gradient" size="sm" onClick={onReset}>
-                Resetear contraseña
-              </Button>
-            </div>
+            )}
             {puedeDarDeBaja && (
               <div className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex flex-col gap-0.5">

@@ -418,3 +418,38 @@ Feature: Inscripción a materias del plan de carrera (SubjectSectionEnrollmentCo
     And header Authorization = 'Bearer ' + adminToken
     When method post
     Then status 204
+
+  Scenario: Baja del legajo con una carrera activa — 409 hasta dar de baja la inscripción; el preceptor no puede dar de baja la inscripción
+    * def alumno = fixtures.createConfirmedStudent(fixtures.createInstitution())
+    * def directorToken = fixtures.tokenForRole('DIRECTOR')
+    * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+
+    Given path '/students', alumno.studentId, 'program-enrollments'
+    And header Authorization = 'Bearer ' + adminToken
+    And request { programId: '#(programId)' }
+    When method post
+    Then status 201
+    * def programEnrollmentId = response.id
+
+    Given path '/program-enrollments', programEnrollmentId, 'withdraw'
+    And header Authorization = 'Bearer ' + preceptorToken
+    When method post
+    Then status 403
+
+    Given path '/students', alumno.studentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'ABANDONO' }
+    When method post
+    Then status 409
+    And match response.code == 'STUDENT_HAS_ACTIVE_ENROLLMENTS'
+
+    Given path '/program-enrollments', programEnrollmentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    When method post
+    Then status 204
+
+    Given path '/students', alumno.studentId, 'withdraw'
+    And header Authorization = 'Bearer ' + directorToken
+    And request { reason: 'ABANDONO' }
+    When method post
+    Then status 204

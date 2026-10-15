@@ -88,16 +88,16 @@ Feature: Caso de uso — Prospecto se convierte en Alumno y se da de baja
     When method get
     Then status 200
 
-    # 9. Un Director NO puede dar de baja (matriz: solo Preceptor/Administrativo) — 403
+    # 9. Un Preceptor NO puede dar de baja el legajo (D-250: solo Administrativo y Director) — 403
     Given path '/students', studentId, 'withdraw'
-    And header Authorization = 'Bearer ' + directorToken
+    And header Authorization = 'Bearer ' + preceptorToken
     And request { reason: 'ABANDONO' }
     When method post
     Then status 403
 
-    # 10. El Preceptor sí puede — 204
+    # 10. El Director sí puede (el alumno no tiene inscripciones activas) — 204
     Given path '/students', studentId, 'withdraw'
-    And header Authorization = 'Bearer ' + preceptorToken
+    And header Authorization = 'Bearer ' + directorToken
     And request { reason: 'ABANDONO', detail: 'Prueba automatizada' }
     When method post
     Then status 204
