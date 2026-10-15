@@ -71,6 +71,9 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @ActiveProfiles("test")
 class PaymentReceiptServiceTest extends AbstractIntegrationTest {
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
 
     @Autowired
@@ -242,6 +245,33 @@ class PaymentReceiptServiceTest extends AbstractIntegrationTest {
 
         assertThat(approved.getStatus()).isEqualTo(BankTransferReceiptStatus.APPROVED);
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
+    }
+
+    @Test
+    @Tag("D-376")
+    void approvingARealReceiptCreatesAnApprovedTransferPaymentLinkedToTheReceiptWithItsAllocationSource() {
+        long legacyPaymentsBefore = jdbcTemplate.queryForObject("select count(*) from legacy_payment", Long.class);
+        Person admin = persistPerson("admin.d376." + System.nanoTime());
+        Student student = persistStudent("97376001");
+        CourseEnrollment enrollment = persistCourseEnrollment(student);
+        Invoice invoice = persistInvoice(enrollment, ars(10000), InvoicePaymentStatus.PENDING);
+        BankTransferReceipt receipt = uploadPaymentReceiptUseCase.upload(invoice.getId(), student.getId(), receiptFile());
+
+        BankTransferReceipt approved = approvePaymentReceiptUseCase.approve(receipt.getId(), admin);
+
+        Long paymentId = approved.getPaymentId();
+        assertThat(paymentId).isNotNull();
+        java.util.Map<String, Object> payment = jdbcTemplate.queryForMap("select status, gateway, method_type, amount, approved_amount, reviewed_by_person_id, registered_by_person_id from payment where id = ?", paymentId);
+        assertThat(payment).containsEntry("status", "APPROVED").containsEntry("gateway", "MANUAL").containsEntry("method_type", "BANK_TRANSFER")
+                .containsEntry("reviewed_by_person_id", admin.getId()).containsEntry("registered_by_person_id", admin.getId());
+        assertThat((java.math.BigDecimal) payment.get("amount")).isEqualByComparingTo("10000");
+        assertThat((java.math.BigDecimal) payment.get("approved_amount")).isEqualByComparingTo("10000");
+        assertThat(jdbcTemplate.queryForList("select s.payment_id, s.amount from payment_allocation_source s join payment_allocation a on a.id = s.payment_allocation_id where a.invoice_id = ?", invoice.getId()))
+                .singleElement().satisfies(source -> {
+                    assertThat(source.get("payment_id")).isEqualTo(paymentId);
+                    assertThat((java.math.BigDecimal) source.get("amount")).isEqualByComparingTo("10000");
+                });
+        assertThat(jdbcTemplate.queryForObject("select count(*) from legacy_payment", Long.class)).isEqualTo(legacyPaymentsBefore);
     }
 
     @Test

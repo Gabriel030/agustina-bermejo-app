@@ -1,7 +1,6 @@
 package com.red_escuela.backend.billing.usecase.payment;
 
 import java.time.LocalDate;
-import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.billing.invoice.exception.PartialPaymentNotAllowedException;
@@ -9,16 +8,11 @@ import com.red_escuela.backend.billing.account.domain.AccountCreditAllocationRes
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.events.PaymentLeftAsAccountCreditEvent;
-import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import java.time.Clock;
 import com.red_escuela.backend.billing.dto.PaymentAllocationRequest;
 import com.red_escuela.backend.billing.dto.RegisterPaymentRequest;
-import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
-import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.Payment;
 import com.red_escuela.backend.billing.entity.PaymentAllocation;
 import com.red_escuela.backend.billing.entity.PaymentMethod;
@@ -28,22 +22,17 @@ import com.red_escuela.backend.billing.exception.InvoiceNotPayableException;
 import com.red_escuela.backend.billing.exception.PaymentExceedsInvoiceBalanceException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.PaymentRepository;
-import com.red_escuela.backend.enrollment.entity.BillableEnrollment;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.service.CurrentStudentService;
-import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
-import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -60,7 +49,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     private final StudentCurrentAccountService accountService;
     private final CurrentAccountAllocationService allocationService;
     private final com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository;
-    private final InvoiceViewLoader invoiceViewLoader;
     private final CurrentStudentService currentStudentService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
@@ -68,7 +56,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
     public RegisterPaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository,
                                    StudentCurrentAccountService accountService, CurrentAccountAllocationService allocationService,
                                    com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository allocationRepository,
-                                   InvoiceViewLoader invoiceViewLoader,
                                    CurrentStudentService currentStudentService,
                                    ApplicationEventPublisher eventPublisher,
                                    Clock clock) {
@@ -77,7 +64,6 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         this.accountService = accountService;
         this.allocationService = allocationService;
         this.allocationRepository = allocationRepository;
-        this.invoiceViewLoader = invoiceViewLoader;
         this.currentStudentService = currentStudentService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -251,50 +237,11 @@ public class RegisterPaymentService implements RegisterPaymentUseCase {
         }
     }
 
-    private void publishAdmissionPaidIfApplicable(Invoice invoice) {
-        if (invoice.getIssuingReason() != null && invoice.getIssuingReason().isAdmission() && invoice.getPaymentStatus() == InvoicePaymentStatus.PAID) {
-            eventPublisher.publishEvent(AdmissionInvoicePaidEvent.paidFor(invoice.getId()));
-        }
-    }
-
-    private void restoreStandingIfNoOverdueDebtLeft(Invoice invoice) {
-        invoice.findCourseEnrollmentId().flatMap(invoiceViewLoader::findCourseEnrollment).ifPresent(enrollment ->
-                restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.COURSE, enrollment.getId(),
-                        invoiceRepository.countByCourseEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
-        invoice.findProgramEnrollmentId().flatMap(invoiceViewLoader::findProgramEnrollment).ifPresent(enrollment ->
-                restoreStanding(enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType.PROGRAM, enrollment.getId(),
-                        invoiceRepository.countByProgramEnrollmentIdAndPaymentStatus(enrollment.getId(), InvoicePaymentStatus.OVERDUE)));
-    }
-
-    private void restoreStanding(BillableEnrollment enrollment, EnrollmentSuspensionLiftedEvent.EnrollmentType enrollmentType, Long enrollmentId, long overdueInvoices) {
-        if (overdueInvoices > 0) {
-            return;
-        }
-        boolean wasSuspended = enrollment.getPaymentStatus() == EnrollmentPaymentStatus.SUSPENDED;
-        LocalDateTime suspendedAt = enrollment.getPaymentStatusUpdatedAt();
-        if (enrollment.settleArrears() && wasSuspended) {
-            YearMonth suspendedSince = suspendedAt != null ? YearMonth.from(suspendedAt) : YearMonth.now(clock);
-            eventPublisher.publishEvent(new SuspensionLiftedEvent(enrollment, suspendedSince, YearMonth.now(clock)));
-            eventPublisher.publishEvent(EnrollmentSuspensionLiftedEvent.liftedFor(enrollmentType, enrollmentId, suspendedSince, YearMonth.now(clock)));
-        }
-    }
-
     private void validateOwnershipIfStudent(Long invoiceId) {
         currentStudentService.findCurrentStudent().ifPresent(student -> {
             if (!student.getId().equals(invoiceRepository.findOwnerStudentIdByInvoiceId(invoiceId).orElse(null))) {
                 throw new InvoiceNotFoundException(invoiceId);
             }
-        });
-    }
-
-    @EventListener
-    public void followUpInvoicePaidByAllocation(InvoicePaidDomainEvent event) {
-        if (!InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name().equals(event.cause())) {
-            return;
-        }
-        invoiceRepository.findById(event.invoiceId()).ifPresent(invoice -> {
-            publishAdmissionPaidIfApplicable(invoice);
-            restoreStandingIfNoOverdueDebtLeft(invoice);
         });
     }
 

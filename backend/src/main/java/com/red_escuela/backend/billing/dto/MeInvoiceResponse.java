@@ -28,8 +28,8 @@ public record MeInvoiceResponse(
     public static MeInvoiceResponse of(InvoiceView view, List<BankTransferReceipt> receipts) {
         InvoiceResponse base = InvoiceResponse.from(view);
         Map<Long, Long> receiptIdByPaymentId = receipts.stream()
-                .filter(receipt -> receipt.getPayment() != null)
-                .collect(Collectors.toMap(receipt -> receipt.getPayment().getId(), BankTransferReceipt::getId, (first, second) -> first));
+                .filter(receipt -> receipt.getPaymentId() != null)
+                .collect(Collectors.toMap(receipt -> receipt.getPaymentId(), BankTransferReceipt::getId, (first, second) -> first));
         List<MeInvoicePaymentResponse> payments = view.allocations().stream()
                 .filter(allocation -> allocation.getPayment().getStatus() == PaymentStatus.CONFIRMED)
                 .sorted(Comparator.comparing((PaymentAllocation a) -> a.getPayment().getPaidAt()).reversed())

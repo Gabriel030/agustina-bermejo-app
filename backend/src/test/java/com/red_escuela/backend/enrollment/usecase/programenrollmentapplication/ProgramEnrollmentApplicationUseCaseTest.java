@@ -66,7 +66,16 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private RejectProgramEnrollmentApplicationUseCase rejectProgramEnrollmentApplicationUseCase;
 
     @Autowired
-    private com.red_escuela.backend.billing.usecase.payment.RegisterPaymentUseCase registerPaymentUseCase;
+    private com.red_escuela.backend.billing.account.service.StudentCurrentAccountService accountService;
+
+    @Autowired
+    private com.red_escuela.backend.billing.payment.service.ApprovedPaymentCreditService creditService;
+
+    @Autowired
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private java.time.Clock clock;
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
@@ -75,7 +84,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
     private com.red_escuela.backend.enrollment.service.ProgramEnrollmentService programEnrollmentService;
 
     @Autowired
-    private com.red_escuela.backend.billing.repository.PaymentRepository paymentRepository;
+    private com.red_escuela.backend.billing.payment.repository.PaymentRepository paymentRepository;
 
     @Autowired
     private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
@@ -311,17 +320,18 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
         String mpPaymentId = "mp-" + System.nanoTime();
         var service = new com.red_escuela.backend.billing.usecase.paymentgateway.ProcessMpWebhookService(invoiceRepository, paymentRepository,
-                registerPaymentUseCase,
+                accountService, creditService,
                 id -> java.util.Optional.of(new com.red_escuela.backend.billing.infrastructure.MercadoPagoApprovedPayment(
                         new PaymentAllocationRequest(invoice.getId(), invoice.getAmounts().outstandingAmount().value()), 1)),
-                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true));
+                new com.red_escuela.backend.billing.infrastructure.MpWebhookSignatureVerifier("", true), eventPublisher, clock);
 
         service.process("", "req", mpPaymentId);
         entityManager.flush();
         entityManager.clear();
 
         assertThatInvoice(invoiceRepository.findById(invoice.getId()).orElseThrow()).isPaid();
-        assertThat(paymentRepository.findAll()).filteredOn(p -> mpPaymentId.equals(p.getExternalReference())).hasSize(1);
+        assertThat(entityManager.createQuery("select count(p) from com.red_escuela.backend.billing.payment.domain.Payment p where p.gatewayPaymentId = :id", Long.class)
+                .setParameter("id", mpPaymentId).getSingleResult()).isEqualTo(1L);
     }
 
     @Test
