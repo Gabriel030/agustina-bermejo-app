@@ -22,6 +22,15 @@ class DeliveryValuesTest {
     }
 
     @Test
+    void aNulCharacterInAnyTextFieldIsRejectedBecausePostgresCannotStoreIt() {
+        assertThatThrownBy(() -> DeliveryContent.forEmail("asu\0nto", "texto", null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> DeliveryContent.forEmail("asunto", "te\0xto", null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> DeliveryContent.forEmail("asunto", "texto", "<p>\0</p>")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> DeliveryContent.forInApp("mensaje\0")).isInstanceOf(IllegalArgumentException.class);
+        assertThatCode(() -> DeliveryContent.forEmail("asunto", "texto", "<p>ok</p>")).doesNotThrowAnyException();
+    }
+
+    @Test
     void anEnvelopeAtTheLimitsOfEveryColumnIsAccepted() {
         assertThatCode(() -> envelope("k".repeat(120), "x".repeat(64), 1, 1L, "t".repeat(60), DAY)).doesNotThrowAnyException();
     }

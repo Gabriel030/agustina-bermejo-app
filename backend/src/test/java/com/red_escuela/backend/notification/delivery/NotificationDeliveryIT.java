@@ -519,8 +519,9 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
             assertThat(firstSendStarted.await(30, TimeUnit.SECONDS)).isTrue();
             Future<?> second = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
-            await().atMost(Duration.ofSeconds(20)).until(() -> jdbc.queryForObject(
-                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and query ilike '%notification_delivery%'", Long.class) > 0);
+            second.get(15, TimeUnit.SECONDS);
+            assertThat(sends.get()).isEqualTo(1);
+            assertThat(deliveryRepository.findById(id).orElseThrow().getStatus()).isEqualTo(DeliveryStatus.QUEUED);
             releaseFirstSend.countDown();
             first.get(30, TimeUnit.SECONDS);
             second.get(30, TimeUnit.SECONDS);

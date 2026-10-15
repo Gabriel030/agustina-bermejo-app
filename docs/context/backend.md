@@ -399,6 +399,16 @@ nada que ver con el sistema de eventos; `FileStorageService` lo usan
 enrollment/evaluation/billing/identity) y viven en `shared/mail` y
 `shared/storage`.
 
+**Mails de cobranza (`notification.delivery`):** el único `TransactionalEmailGateway`
+disponible es `MockTransactionalEmailGateway`, activo con
+`app.mail.transactional.provider=mock` (o sin la propiedad). Con cualquier otro valor
+no hay bean y la aplicación no arranca (falla rápida, a propósito) hasta que exista un
+proveedor real. `EmailDeliveryDispatchJob` despacha solo en días hábiles
+(`BusinessDayCalendar`, tabla `holiday`) y dentro de `EmailDispatchWindow.STANDARD`
+(09:00–11:00, fin exclusivo), y toma cada fila con `for update skip locked`: un worker
+nunca espera a otro. El buzón `GET /notification-deliveries/simulated` existe solo con
+los perfiles `local` o `demo`.
+
 ## Reglas de arquitectura
 
 Tests ArchUnit en `backend/src/test/java/com/red_escuela/backend/architecture/` (`ArchitectureRules` define las reglas, `ArchitectureTest` las ejecuta sobre las clases de `main`). Fallan el build (`verify`):
