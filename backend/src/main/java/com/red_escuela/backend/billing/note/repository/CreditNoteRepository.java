@@ -28,5 +28,8 @@ public interface CreditNoteRepository extends Repository<CreditNote, Long> {
             """)
     List<CreditNote> findByInvoiceIdNewestFirst(@Param("invoiceId") Long invoiceId);
 
+    @Query("select n.creditNoteNumber.value from CreditNote n where n.id = :id")
+    Optional<String> findCreditNoteNumberById(@Param("id") Long id);
+
     boolean existsById(Long id);
 }

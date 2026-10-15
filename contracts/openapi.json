@@ -4579,6 +4579,25 @@
         "required" : [ "id", "minGrade", "notes", "prerequisiteProgramSubjectId", "prerequisiteSubjectCode", "prerequisiteSubjectName", "requirementType" ],
         "type" : "object"
       },
+      "PriceBreakdownCreditNoteResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "creditNoteId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "creditNoteNumber" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "creditNoteId", "creditNoteNumber", "description" ],
+        "type" : "object"
+      },
       "PriceBreakdownLineResponse" : {
         "properties" : {
           "amount" : {
@@ -4635,6 +4654,12 @@
           "baseAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
+          "creditNotesApplied" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceBreakdownCreditNoteResponse"
+            },
+            "type" : "array"
+          },
           "feeType" : {
             "type" : "string"
           },
@@ -4661,7 +4686,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "adjustments", "amountDue", "baseAmount", "feeType", "invoiceId", "paymentsApplied", "period", "priceRevisionDescription", "remainingBalance", "status" ],
+        "required" : [ "adjustments", "amountDue", "baseAmount", "creditNotesApplied", "feeType", "invoiceId", "paymentsApplied", "period", "priceRevisionDescription", "remainingBalance", "status" ],
         "type" : "object"
       },
       "ProductRef" : {

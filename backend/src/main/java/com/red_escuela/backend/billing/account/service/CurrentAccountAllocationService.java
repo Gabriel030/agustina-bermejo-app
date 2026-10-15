@@ -119,8 +119,8 @@ public class CurrentAccountAllocationService {
         for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, creditToAllocate, businessDate)) {
             Invoice invoice = invoicesById.get(scheduled.invoiceId());
             invoice.allocateFullInvoicePayment(scheduled.amount(), businessDate, actor);
-            PaymentAllocation allocation = allocationRepository.save(
-                    PaymentAllocation.recordFullInvoiceAllocation(invoice, scheduled.amount(), scheduled.effectiveDate(), businessDate, actor));
+            PaymentAllocation allocation = allocationRepository.saveWithSources(
+                    PaymentAllocation.recordFullInvoiceAllocation(invoice, scheduled.amount(), scheduled.effectiveDate(), businessDate, actor), scheduled.sources());
             accountService.consumeUnallocatedCreditForAllocation(lockedAccount, scheduled.amount());
             allocations.add(allocation);
             settledInvoices.add(invoice);
@@ -154,7 +154,7 @@ public class CurrentAccountAllocationService {
                 allocation.isReversal() || allocationRepository.existsByReversesAllocationId(allocation.getId()),
                 lockedAccount.getId(), allocation.getStudentCurrentAccountId()))
                 .throwIfDenied(PaymentAllocationRejectedException::new);
-        PaymentAllocation reversal = allocationRepository.save(allocation.recordAllocationReversal(businessDate, reason, actor));
+        PaymentAllocation reversal = allocationRepository.saveReversalWithSourcesOfTheReversedAllocation(allocation.recordAllocationReversal(businessDate, reason, actor));
         invoice.reversePaymentAllocation(businessDate, gracePeriodDays, actor, reason);
         eventPublisher.publishEvent(PaymentAllocationReversedEvent.reversedFor(allocation.getInvoiceId(), lockedAccount.getId(), businessDate));
         accountService.restoreUnallocatedCreditFromReversedAllocation(lockedAccount, allocation.getAmount());

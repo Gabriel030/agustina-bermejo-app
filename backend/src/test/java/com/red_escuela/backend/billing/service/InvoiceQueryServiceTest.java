@@ -127,6 +127,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Person admin = persistPerson("admin.breakdown1." + System.nanoTime());
@@ -146,7 +147,10 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
         assertThat(breakdown.adjustments()).isEmpty();
         assertThat(breakdown.amountDue()).isEqualTo(ars(10000));
-        assertThat(breakdown.paymentsApplied()).hasSize(1);
+        assertThat(breakdown.paymentsApplied()).singleElement().satisfies(payment -> {
+            assertThat(payment.method()).isEqualTo("CASH");
+            assertThat(payment.amount()).isEqualTo(ars(10000));
+        });
         assertThat(breakdown.remainingBalance()).isEqualTo(ars(0));
         assertThat(breakdown.status()).isEqualTo("PAID");
     }

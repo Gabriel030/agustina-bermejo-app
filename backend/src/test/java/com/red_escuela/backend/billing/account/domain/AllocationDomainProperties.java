@@ -20,15 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("D-139")
 class AllocationDomainProperties {
 
-    private static final LocalDate START = LocalDate.of(2027, 1, 1);
-    private static final LocalDate BUSINESS_DATE = LocalDate.of(2028, 1, 1);
+    static final LocalDate START = LocalDate.of(2027, 1, 1);
+    static final LocalDate BUSINESS_DATE = LocalDate.of(2028, 1, 1);
     private static final StatusChangeActor ACTOR = StatusChangeActor.ofProcess("TEST");
 
-    private static NonNegativeMoney ars(long cents) {
+    static NonNegativeMoney ars(long cents) {
         return NonNegativeMoney.of(BigDecimal.valueOf(cents, 2), Currency.ARS);
     }
 
-    private static long cents(NonNegativeMoney money) {
+    static long cents(NonNegativeMoney money) {
         return money.value().amount().movePointRight(2).longValueExact();
     }
 
@@ -42,15 +42,33 @@ class AllocationDomainProperties {
         return Arbitraries.longs().between(0, 5_000_000);
     }
 
-    private static List<CreditContribution> creditsOf(List<Long> creditCents) {
+    static List<CreditContribution> creditsOf(List<Long> creditCents) {
         List<CreditContribution> credits = new ArrayList<>();
         for (int index = 0; index < creditCents.size(); index++) {
-            credits.add(new CreditContribution(START.plusDays(index), ars(creditCents.get(index))));
+            credits.add(new CreditContribution(1000L + index, 2000L + index, null, START.plusDays(index), ars(creditCents.get(index))));
         }
         return credits;
     }
 
-    private static List<PlannedInvoiceAllocation> planOf(List<Long> amounts) {
+    static long totalOf(List<Long> values) {
+        return values.stream().mapToLong(Long::longValue).sum();
+    }
+
+    static List<Long> fitInto(List<Long> amounts, long budget) {
+        List<Long> fitted = new ArrayList<>();
+        long remaining = budget;
+        for (long amount : amounts) {
+            long taken = Math.min(amount, remaining);
+            if (taken <= 0) {
+                break;
+            }
+            fitted.add(taken);
+            remaining -= taken;
+        }
+        return fitted;
+    }
+
+    static List<PlannedInvoiceAllocation> planOf(List<Long> amounts) {
         List<PlannedInvoiceAllocation> plan = new ArrayList<>();
         for (int index = 0; index < amounts.size(); index++) {
             plan.add(new PlannedInvoiceAllocation(100L + index * 7L, ars(amounts.get(index))));
@@ -60,8 +78,9 @@ class AllocationDomainProperties {
 
     @Property(tries = 1000)
     void theScheduleKeepsTheOrderIdsAndAmountsOfThePlan(@ForAll("centAmounts") List<Long> amounts, @ForAll("centAmounts") List<Long> creditCents,
-                                                        @ForAll("credit") long toAllocateCents) {
-        List<PlannedInvoiceAllocation> plan = planOf(amounts);
+                                                        @ForAll("credit") long requestedCents) {
+        long toAllocateCents = Math.min(requestedCents, totalOf(creditCents));
+        List<PlannedInvoiceAllocation> plan = planOf(fitInto(amounts, toAllocateCents));
 
         List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, new CreditContributions(creditsOf(creditCents)),
                 ars(toAllocateCents), BUSINESS_DATE);
@@ -73,17 +92,19 @@ class AllocationDomainProperties {
     @Property(tries = 1000)
     void eachEffectiveDateIsTheCreditThatCoversTheConsumedPlusThePlanSoFar(@ForAll("centAmounts") List<Long> amounts,
                                                                            @ForAll("centAmounts") List<Long> creditCents,
-                                                                           @ForAll("credit") long toAllocateCents) {
-        long total = creditCents.stream().mapToLong(Long::longValue).sum();
+                                                                           @ForAll("credit") long requestedCents) {
+        long total = totalOf(creditCents);
+        long toAllocateCents = Math.min(requestedCents, total);
+        List<Long> fitted = fitInto(amounts, toAllocateCents);
         long consumedBefore = Math.max(total - toAllocateCents, 0);
 
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(amounts), new CreditContributions(creditsOf(creditCents)),
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(fitted), new CreditContributions(creditsOf(creditCents)),
                 ars(toAllocateCents), BUSINESS_DATE);
 
         long target = consumedBefore;
         LocalDate previous = START;
         for (int item = 0; item < schedule.size(); item++) {
-            target += amounts.get(item);
+            target += fitted.get(item);
             LocalDate expected = BUSINESS_DATE;
             long cumulative = 0;
             for (int credit = 0; credit < creditCents.size(); credit++) {

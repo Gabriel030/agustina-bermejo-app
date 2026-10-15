@@ -281,6 +281,24 @@ public final class BillingInvariantChecker {
                 """.formatted(NET_ALLOCATED_OF_INVOICE), baselineInvoiceId, baselineAccountId, baselineEntryId);
     }
 
+    public List<String> everyAllocationIsFundedByItsSources() {
+        List<String> found = new ArrayList<>(violations("I-20 allocation whose sources do not add up to its amount", """
+                select 'allocation ' || a.id
+                from payment_allocation a
+                where a.id > ?
+                  and (select coalesce(sum(s.amount), 0) from payment_allocation_source s where s.payment_allocation_id = a.id) <> a.amount
+                """, baselineAllocationId));
+        found.addAll(violations("I-20 credit entry taken beyond its amount", """
+                select 'entry ' || e.id
+                from current_account_entry e join student_current_account a on a.id = e.student_current_account_id
+                where @ACCOUNTS@
+                  and e.amount < (select coalesce(sum(case when al.reverses_allocation_id is null then s.amount else -s.amount end), 0)
+                                  from payment_allocation_source s join payment_allocation al on al.id = s.payment_allocation_id
+                                  where s.credit_entry_id = e.id)
+                """, baselineAccountId, baselineEntryId));
+        return found;
+    }
+
     public List<String> noDebtDisappearsWithoutADocument() {
         return violations("I-09 total differs from outstanding plus allocations plus credit notes", """
                 select 'invoice ' || i.id
@@ -425,6 +443,7 @@ public final class BillingInvariantChecker {
         all.addAll(accountBalanceIsTheUnallocatedCreditMinusTheOutstandingInvoices());
         all.addAll(invoicesAreNeverPartiallyAllocated());
         all.addAll(paidInvoicesAreCoveredByAllocationsOrCreditNotes());
+        all.addAll(everyAllocationIsFundedByItsSources());
         all.addAll(noDebtDisappearsWithoutADocument());
         all.addAll(lateFeesRespectTheRedefinedI11());
         if (!all.isEmpty()) {

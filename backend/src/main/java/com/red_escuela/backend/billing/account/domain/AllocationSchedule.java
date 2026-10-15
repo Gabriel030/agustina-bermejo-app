@@ -21,7 +21,7 @@ public final class AllocationSchedule {
         List<ScheduledAllocation> schedule = new ArrayList<>();
         for (PlannedInvoiceAllocation planned : plan) {
             LocalDate effectiveDate = AllocationEffectiveDateCalculator.calculateEffectiveDate(credits.asList(), consumedCredit, planned.amount(), businessDate);
-            schedule.add(new ScheduledAllocation(planned.invoiceId(), planned.amount(), effectiveDate));
+            schedule.add(new ScheduledAllocation(planned.invoiceId(), planned.amount(), effectiveDate, credits.sharesCovering(consumedCredit, planned.amount())));
             consumedCredit = consumedCredit.plus(planned.amount());
         }
         return List.copyOf(schedule);

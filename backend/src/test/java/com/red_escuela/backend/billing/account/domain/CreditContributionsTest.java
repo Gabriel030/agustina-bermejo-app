@@ -40,9 +40,11 @@ class CreditContributionsTest {
 
         CreditContributions contributions = CreditContributions.fromEntriesOldestFirst(entries);
 
-        assertThat(contributions.asList()).containsExactly(
-                new CreditContribution(FIRST, ars("100.00")),
-                new CreditContribution(SECOND, ars("50.00")));
+        assertThat(contributions.asList()).extracting(CreditContribution::effectiveDate, CreditContribution::amount).containsExactly(
+                org.assertj.core.api.Assertions.tuple(FIRST, ars("100.00")),
+                org.assertj.core.api.Assertions.tuple(SECOND, ars("50.00")));
+        assertThat(contributions.asList()).extracting(CreditContribution::paymentId, CreditContribution::creditNoteId)
+                .containsExactly(org.assertj.core.api.Assertions.tuple(1L, null), org.assertj.core.api.Assertions.tuple(null, 3L));
     }
 
     @Test

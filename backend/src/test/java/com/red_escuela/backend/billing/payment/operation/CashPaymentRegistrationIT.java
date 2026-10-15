@@ -215,6 +215,32 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         invariants.assertAllBillingInvariantsHold();
     }
 
+    @Autowired
+    com.red_escuela.backend.billing.service.InvoiceQueryService invoiceQueryService;
+
+    @Test
+    @Tag("D-376")
+    void theInvoiceBreakdownShowsTheCashPaymentThatFinancedItWithItsMethodAndAmountTaken() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long march = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
+        JsonNode preview = previewOf(debtor.studentId(), "ARS", "80000.00", administrative);
+
+        MvcResult result = register(debtor.studentId(), "key-source", bodyOf("ARS", "80000.00", null, "R-S", null, preview.get("previewFingerprint").asText()), administrative);
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(201);
+        long paymentId = jsonOf(result).get("paymentId").asLong();
+        com.red_escuela.backend.billing.dto.PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(march);
+        assertThat(breakdown.paymentsApplied()).singleElement().satisfies(payment -> {
+            assertThat(payment.paymentId()).isEqualTo(paymentId);
+            assertThat(payment.method()).isEqualTo("CASH");
+            assertThat(payment.amount()).isEqualTo(ars("80000.00").value());
+            assertThat(payment.paidAt()).isNotNull();
+        });
+        assertThat(breakdown.creditNotesApplied()).isEmpty();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
     @Test
     @Tag("D-319")
     @Tag("D-207")

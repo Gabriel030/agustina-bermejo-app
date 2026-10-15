@@ -4,10 +4,13 @@ import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 
 import com.red_escuela.backend.billing.invoice.service.InvoiceView;
 
+import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownLineResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownPaymentResponse;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
-import com.red_escuela.backend.billing.entity.PaymentAllocation;
+import com.red_escuela.backend.billing.account.domain.PaymentAllocationSource;
+import com.red_escuela.backend.billing.account.service.AllocationSourceQueryService;
+import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
@@ -35,13 +38,23 @@ public class InvoiceQueryService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceViewLoader invoiceViewLoader;
     private final PriceReader priceReader;
+    private final AllocationSourceQueryService allocationSources;
+    private final CreditNoteRepository creditNoteRepository;
+    private final com.red_escuela.backend.billing.payment.repository.PaymentRepository paymentRepository;
+    private final com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
     private final Clock clock;
 
     public InvoiceQueryService(InvoiceRepository invoiceRepository, InvoiceViewLoader invoiceViewLoader,
-                               PriceReader priceReader, Clock clock) {
+                               PriceReader priceReader, AllocationSourceQueryService allocationSources, CreditNoteRepository creditNoteRepository,
+                               com.red_escuela.backend.billing.payment.repository.PaymentRepository paymentRepository,
+                               com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository, Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceViewLoader = invoiceViewLoader;
         this.priceReader = priceReader;
+        this.allocationSources = allocationSources;
+        this.creditNoteRepository = creditNoteRepository;
+        this.paymentRepository = paymentRepository;
+        this.legacyPaymentRepository = legacyPaymentRepository;
         this.clock = clock;
     }
 
@@ -93,11 +106,13 @@ public class InvoiceQueryService {
                 .filter(l -> l.getDiscount() != null)
                 .map(l -> toLine(l.getDiscount()))
                 .toList();
-        List<PriceBreakdownPaymentResponse> payments = invoiceViewLoader.loadInvoiceView(invoice).allocations().stream().map(this::toPayment).toList();
+        List<PaymentAllocationSource> sources = allocationSources.findCurrentSourcesByInvoiceId(List.of(invoiceId)).getOrDefault(invoiceId, List.of());
+        List<PriceBreakdownPaymentResponse> payments = sources.stream().filter(source -> source.getPaymentId() != null).map(this::toPayment).toList();
+        List<PriceBreakdownCreditNoteResponse> creditNotes = sources.stream().filter(source -> source.getCreditNoteId() != null).map(this::toCreditNote).toList();
         return new PriceBreakdownResponse(
                 invoice.getId(), line.getFeeType().name(), line.getPeriod().toString(), invoice.getAmounts().linesTotal().value(),
                 resolvePriceVersionDescription(invoice),
-                lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice));
+                lines, invoice.getAmounts().total().value(), payments, invoice.getAmounts().outstandingAmount().value(), statusNameOf(invoice), creditNotes);
     }
 
     @Transactional(readOnly = true)
@@ -152,10 +167,21 @@ public class InvoiceQueryService {
         return new PriceBreakdownLineResponse(discount.getDiscountType().name(), Money.zero(amount.currency()).minus(amount), discount.getConcept(), "Sistema", null);
     }
 
-    private PriceBreakdownPaymentResponse toPayment(PaymentAllocation allocation) {
-        return new PriceBreakdownPaymentResponse(
-                allocation.getPayment().getId(), allocation.getAmountApplied(),
-                allocation.getPayment().getMethod().name(), allocation.getPayment().getPaidAt());
+    private PriceBreakdownCreditNoteResponse toCreditNote(PaymentAllocationSource source) {
+        String number = creditNoteRepository.findCreditNoteNumberById(source.getCreditNoteId())
+                .orElseThrow(() -> new IllegalStateException("Credit note " + source.getCreditNoteId() + " referenced by an allocation source does not exist"));
+        return new PriceBreakdownCreditNoteResponse(source.getCreditNoteId(), number, source.getAmount().value(), "Nota de crédito " + number);
+    }
+
+    private PriceBreakdownPaymentResponse toPayment(PaymentAllocationSource source) {
+        Money amount = source.getAmount().value();
+        Long paymentId = source.getPaymentId();
+        return paymentRepository.findById(paymentId)
+                .map(payment -> new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethodType().name(),
+                        payment.getPaidOn() == null ? payment.getRegisteredAt() : payment.getPaidOn().atStartOfDay()))
+                .orElseGet(() -> legacyPaymentRepository.findById(paymentId)
+                        .map(payment -> new PriceBreakdownPaymentResponse(paymentId, amount, payment.getMethod().name(), payment.getPaidAt()))
+                        .orElseThrow(() -> new IllegalStateException("Payment " + paymentId + " referenced by an allocation source does not exist")));
     }
 
     private boolean hasAnyUnpaidInstallment(List<Invoice> invoices) {
