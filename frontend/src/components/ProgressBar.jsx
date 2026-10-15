@@ -22,7 +22,7 @@ export function ProgressBar({ value, label, tone = 'accent', showValue = true, c
       )}
       <div
         role="progressbar"
-        aria-label={label}
+        aria-label={label ?? 'Progreso'}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={clamped}
@@ -30,7 +30,7 @@ export function ProgressBar({ value, label, tone = 'accent', showValue = true, c
         className="h-2 w-full overflow-hidden rounded-full bg-neutral-bg"
       >
         <div
-          className={cn('h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none', TONE_CLASSES[tone])}
+          className={cn('h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none', TONE_CLASSES[tone] ?? TONE_CLASSES.accent)}
           style={{ width: `${clamped}%` }}
         />
       </div>

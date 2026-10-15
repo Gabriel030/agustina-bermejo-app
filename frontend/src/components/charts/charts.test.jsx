@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import packageJson from '../../../package.json?raw';
@@ -23,6 +23,12 @@ const series = [
   { key: 'paid', label: 'Pagado' },
   { key: 'due', label: 'Vencido' },
 ];
+
+const originalMatchMedia = window.matchMedia;
+
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+});
 
 function mockReducedMotion(matches) {
   window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} });
@@ -127,10 +133,14 @@ describe('library and theme guardrails', () => {
   });
 
   it('draws series only from design tokens defined for light and dark', () => {
-    for (const color of SERIES_COLORS) {
+    const extraTokens = ['--border', '--ink-faint', '--ink-soft', '--accent-soft'];
+    const seriesTokens = SERIES_COLORS.map((color) => {
       const token = color.match(/^var\((--[\w-]+)\)$/)?.[1];
       expect(token, color).toBeTruthy();
-      expect(tokensCss.split(`${token}:`).length - 1, token).toBeGreaterThanOrEqual(2);
+      return token;
+    });
+    for (const token of [...seriesTokens, ...extraTokens]) {
+      expect(tokensCss.split(`${token}:`).length - 1, token).toBeGreaterThanOrEqual(3);
     }
   });
 });

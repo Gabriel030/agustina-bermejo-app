@@ -15,8 +15,8 @@ export function ChartDataTable({ data, series, categoryLabel = 'Período', unit,
         </TableRow>
       </TableHeader>
       <TableBody>
-        {data.map((row) => (
-          <TableRow key={row.label}>
+        {data.map((row, index) => (
+          <TableRow key={`${row.label}-${index}`}>
             <TableCell className="font-medium">{row.label}</TableCell>
             {series.map((item) => (
               <TableCell key={item.key} className="text-right tabular-nums">
