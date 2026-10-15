@@ -1,12 +1,12 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -17,19 +17,36 @@ public class LateFeeAccrualService {
     private final LateFeeCandidateFinder candidateFinder;
     private final LateFeeIssuer issuer;
     private final LatePaymentVersionResolver versionResolver;
+    private final LateFeeOverchargeRecorder overchargeRecorder;
 
-    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver) {
+    public LateFeeAccrualService(LateFeeCandidateFinder candidateFinder, LateFeeIssuer issuer, LatePaymentVersionResolver versionResolver,
+                                 LateFeeOverchargeRecorder overchargeRecorder) {
         this.candidateFinder = candidateFinder;
         this.issuer = issuer;
         this.versionResolver = versionResolver;
+        this.overchargeRecorder = overchargeRecorder;
+    }
+
+    public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate) {
+        return reconcileLateFeesOfSettledInvoice(originInvoiceId, businessDate, timelineOf(businessDate));
+    }
+
+    public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {
+        int issued = reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timeline);
+        overchargeRecorder.recordDaysChargedAfterThePaymentOfInvoice(originInvoiceId);
+        return issued;
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate) {
         return reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timelineOf(businessDate));
     }
 
+    public List<Long> findRecentlySettledOriginIdsAfter(Long afterInvoiceId, LocalDate since, int pageSize) {
+        return candidateFinder.findRecentlySettledOriginIdsAfter(afterInvoiceId, since, pageSize);
+    }
+
     public LatePaymentTimeline timelineOf(LocalDate businessDate) {
-        return versionResolver.timelineUpTo(LateFeeCutoff.closingOfMonthBefore(businessDate).lastDay());
+        return versionResolver.timelineUpTo(businessDate);
     }
 
     public int reconcileLateFeesOfInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {
