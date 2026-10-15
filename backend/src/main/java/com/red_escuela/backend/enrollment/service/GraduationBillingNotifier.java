@@ -19,6 +19,6 @@ public class GraduationBillingNotifier {
     @EventListener
     public void registerGraduationForBilling(ProgramEnrollmentGraduatedEvent event) {
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
-                event.studentId(), event.programEnrollmentId(), event.effectiveDate(), WithdrawalCause.GRADUATION));
+                event.studentId(), event.programEnrollmentId(), event.effectiveDate(), event.effectiveDate(), WithdrawalCause.GRADUATION));
     }
 }

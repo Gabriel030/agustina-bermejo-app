@@ -84,7 +84,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     void programWithdrawalNotifiesBillingWithTheInformedDateAndTheVoluntaryCause() {
         programService.withdraw(10L, EnrollmentWithdrawal.voluntaryRegisteredBy(LocalDate.of(2027, 4, 28), 99L));
 
-        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(STUDENT_ID, 10L, LocalDate.of(2027, 4, 28), WithdrawalCause.VOLUNTARY));
+        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(STUDENT_ID, 10L, LocalDate.of(2027, 4, 28), LocalDate.of(2027, 5, 15), WithdrawalCause.VOLUNTARY));
         assertThat(programEnrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.WITHDRAWN);
         assertThat(programEnrollment.getWithdrawalEffectiveDate()).isEqualTo(LocalDate.of(2027, 4, 28));
         assertThat(programEnrollment.getWithdrawnByPersonId()).isEqualTo(99L);
@@ -95,7 +95,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     void programWithdrawalForNonpaymentNotifiesBillingWithTheNonpaymentCauseAndNoActor() {
         programService.withdraw(10L, EnrollmentWithdrawal.forNonpayment());
 
-        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(STUDENT_ID, 10L, LocalDate.of(2027, 5, 15), WithdrawalCause.NONPAYMENT));
+        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(STUDENT_ID, 10L, LocalDate.of(2027, 5, 15), LocalDate.of(2027, 5, 15), WithdrawalCause.NONPAYMENT));
         assertThat(programEnrollment.getWithdrawnByPersonId()).isNull();
     }
 
@@ -123,7 +123,7 @@ class EnrollmentWithdrawalBillingPortInvocationTest {
     void courseWithdrawalNotifiesBillingWithTheEffectiveDate() {
         courseService.withdraw(20L, EnrollmentWithdrawal.voluntaryRegisteredBy(null, 99L));
 
-        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(STUDENT_ID, 20L, LocalDate.of(2027, 5, 15), WithdrawalCause.VOLUNTARY));
+        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(STUDENT_ID, 20L, LocalDate.of(2027, 5, 15), LocalDate.of(2027, 5, 15), WithdrawalCause.VOLUNTARY));
         assertThat(courseEnrollment.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
         assertThat(courseEnrollment.getWithdrawalEffectiveDate()).isEqualTo(LocalDate.of(2027, 5, 15));
         assertThat(courseEnrollment.getWithdrawnByPersonId()).isEqualTo(99L);

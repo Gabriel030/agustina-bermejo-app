@@ -33,6 +33,10 @@ public class EnrollmentWithdrawalDateResolver {
         return effectiveDate;
     }
 
+    public LocalDate registrationDate() {
+        return LocalDate.now(clock);
+    }
+
     public LocalDateTime completionMomentOf(LocalDate effectiveDate) {
         return effectiveDate.atTime(LocalDateTime.now(clock).toLocalTime());
     }

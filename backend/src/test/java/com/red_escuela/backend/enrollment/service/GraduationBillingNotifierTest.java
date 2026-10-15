@@ -23,6 +23,6 @@ class GraduationBillingNotifierTest {
 
         notifier.registerGraduationForBilling(ProgramEnrollmentGraduatedEvent.graduatedOn(41L, 10L, LocalDate.of(2027, 10, 20)));
 
-        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(41L, 10L, LocalDate.of(2027, 10, 20), WithdrawalCause.GRADUATION));
+        verify(port).registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(41L, 10L, LocalDate.of(2027, 10, 20), LocalDate.of(2027, 10, 20), WithdrawalCause.GRADUATION));
     }
 }

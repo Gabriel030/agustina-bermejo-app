@@ -163,6 +163,6 @@ class SuspendedEnrollmentClosureServiceTest {
     }
 
     private static WithdrawnEnrollmentFacts nonpaymentOn(LocalDate date) {
-        return WithdrawnEnrollmentFacts.ofProgramEnrollment(41L, ENROLLMENT_ID, date, WithdrawalCause.NONPAYMENT);
+        return WithdrawnEnrollmentFacts.ofProgramEnrollment(41L, ENROLLMENT_ID, date, date, WithdrawalCause.NONPAYMENT);
     }
 }

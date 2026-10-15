@@ -220,11 +220,13 @@ public class CourseEnrollmentService {
         }
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
         LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
-        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), withdrawal.registeredByPersonId());
+        LocalDate registeredOn = withdrawalDateResolver.registrationDate();
+        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
+                withdrawal.registeredByPersonId());
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
-                enrollment.getStudent().getId(), id, effectiveDate, withdrawal.cause()));
+                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());

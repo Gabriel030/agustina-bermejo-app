@@ -330,7 +330,7 @@ public final class BillingInvariantChecker {
         found.addAll(violations("I-11c charged days differ from the days with charging enabled and not frozen", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
-                where c.debit_note_id > %d and c.charged_days <> (
+                where c.debit_note_id > %d and c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) <> (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     where coalesce(%s ->> 'lateFeeChargingEnabled', 'false') = 'true' and not %s)
                 """.formatted(baselineInvoiceId, termsOn("g.day::date"), frozenOn("g.day::date"))));
@@ -351,7 +351,7 @@ public final class BillingInvariantChecker {
         found.addAll(violations("I-11e late fee charged for days frozen by the version in effect that day", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c
-                where c.debit_note_id > ? and c.charged_days > (
+                where c.debit_note_id > ? and c.charged_days - (select coalesce(sum(k.corrected_days), 0) from late_fee_charge_correction k where k.late_fee_charge_id = c.id) > (
                     select count(*) from generate_series(c.period_start, c.period_end, interval '1 day') g(day)
                     where not %s)
                 """.formatted(frozenOn("g.day::date")), baselineInvoiceId));
@@ -360,6 +360,7 @@ public final class BillingInvariantChecker {
                 from late_fee_charge c join invoice d on d.id = c.debit_note_id
                 where c.debit_note_id > ? and d.total <> round(c.base_amount * c.daily_rate * c.charged_days, 2)
                 """, baselineInvoiceId));
+        found.addAll(lateFeeCorrectionsAreConsistent());
         found.addAll(violations("I-11g late fee issued while the origin is under payment review", """
                 select 'debit note ' || c.debit_note_id
                 from late_fee_charge c join invoice o on o.id = c.origin_invoice_id
@@ -368,6 +369,24 @@ public final class BillingInvariantChecker {
                     where sc.invoice_id = o.id and sc.status_kind = 'PAYMENT' and sc.to_status = 'PAYMENT_UNDER_REVIEW')
                 """, baselineInvoiceId));
         return found;
+    }
+
+    public List<String> lateFeeCorrectionsAreConsistent() {
+        return violations("I-11i late fee correction outside its debit note, within the enrollment, or with a credit note that differs from the complement", """
+                select 'correction ' || k.id || ' debit note ' || k.debit_note_id
+                from late_fee_charge_correction k
+                join late_fee_charge c on c.id = k.late_fee_charge_id
+                join credit_note n on n.id = k.credit_note_id
+                join invoice d on d.id = k.debit_note_id
+                where k.debit_note_id > ? and (
+                    k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
+                    or k.first_corrected_day <= %1$s
+                    or n.reason <> 'LATE_FEE_CORRECTION' or n.invoice_id <> k.debit_note_id or n.recipient_snapshot is distinct from d.student_snapshot
+                    or n.total_amount <> round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
+                                                                                                where p.late_fee_charge_id = c.id and p.id < k.id)), 2)
+                                      - round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
+                                                                                                where p.late_fee_charge_id = c.id and p.id <= k.id)), 2))
+                """.formatted(ENROLLMENT_END_OF_ORIGIN), baselineInvoiceId);
     }
 
     public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {

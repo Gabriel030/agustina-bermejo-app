@@ -43,4 +43,20 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
     List<LateFeeCharge> findByOriginInvoiceIdOrderByPeriodStart(Long originInvoiceId);
 
     Optional<LateFeeCharge> findByDebitNoteId(Long debitNoteId);
+
+    Optional<LateFeeCharge> findById(Long id);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
+            where (select l.program_enrollment_id from invoice_line l where l.invoice_id = c.origin_invoice_id order by l.id limit 1) = :programEnrollmentId
+            order by c.id
+            """, nativeQuery = true)
+    List<Long> findChargeIdsOfProgramEnrollment(@Param("programEnrollmentId") Long programEnrollmentId);
+
+    @Query(value = """
+            select c.id from late_fee_charge c
+            where (select l.course_enrollment_id from invoice_line l where l.invoice_id = c.origin_invoice_id order by l.id limit 1) = :courseEnrollmentId
+            order by c.id
+            """, nativeQuery = true)
+    List<Long> findChargeIdsOfCourseEnrollment(@Param("courseEnrollmentId") Long courseEnrollmentId);
 }

@@ -249,6 +249,18 @@ class CreditNoteIssuingFlowIT extends AbstractCreditNoteIT {
     }
 
     @Test
+    @Tag("D-165")
+    @Tag("D-375")
+    void theLateFeeCorrectionReasonIsRejectedOnTheUserEndpoint() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+
+        mockMvc.perform(post("/invoices/" + scenario.invoiceId() + "/credit-notes").header("Authorization", "Bearer " + newStaff("DIRECTOR").token())
+                .contentType(APPLICATION_JSON).content(creditNoteBody("LATE_FEE_CORRECTION", "Correccion", 1, "1000.00")))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_CREDIT_NOTE_REASON"));
+        assertThat(creditNoteCountOf(scenario.invoiceId())).isZero();
+    }
+
+    @Test
     @Tag("D-244")
     void aNationalIdCorrectedAfterIssuanceDoesNotBlockTheCreditNoteAndTheNoteKeepsTheInvoiceRecipient() throws Exception {
         Scenario scenario = unpaidInvoice("80000.00");

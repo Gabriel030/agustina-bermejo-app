@@ -423,7 +423,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         approveGraduationRequestUseCase.approve(request.getId());
 
         org.mockito.Mockito.verify(withdrawalBillingPort).registerWithdrawalForBilling(
-                com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts.ofProgramEnrollment(student.getId(), enrollment.getId(), LocalDate.of(2027, 10, 20),
+                com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts.ofProgramEnrollment(student.getId(), enrollment.getId(), LocalDate.of(2027, 10, 20), LocalDate.of(2027, 10, 20),
                         com.red_escuela.backend.enrollment.api.WithdrawalCause.GRADUATION));
     }
 

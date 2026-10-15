@@ -141,6 +141,7 @@ public final class ArchitectureRules {
     public static ArchRule cancellationApplicationsAreBuiltOnlyByTheCancellationOperation() {
         return noClasses()
                 .that().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.CancelInvoiceOperation")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")
                 .should().callCodeUnitWhere(DescribedPredicate.describe("the creation of a cancellation application",
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
                                 && call.getTarget().getName().equals("toInvoiceCancellationApplication")))
