@@ -89,6 +89,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     private TermRepository termRepository;
 
     protected BillingInvariantChecker invariants;
+    private java.sql.Timestamp scenarioStart;
     protected Person person;
     protected Student student;
     protected Term term;
@@ -96,6 +97,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
 
     protected void arrange(int year) {
         invariants = BillingInvariantChecker.startingNow(jdbc);
+        scenarioStart = jdbc.queryForObject("select now()", java.sql.Timestamp.class);
         String username = "late.fee.settle." + year + "." + System.nanoTime();
         Address address = addressRepository.save(new Address());
         Person created = new Person();
@@ -180,7 +182,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     }
 
     protected void awaitEventsDrained() {
-        await().atMost(Duration.ofSeconds(25)).until(() -> jdbc.queryForObject("select count(*) from event_publication where completion_date is null", Long.class) == 0L);
+        await().atMost(Duration.ofSeconds(25)).until(() -> jdbc.queryForObject("select count(*) from event_publication where completion_date is null and publication_date >= ?", Long.class, scenarioStart) == 0L);
     }
 
     protected List<Map<String, Object>> chargesOf(Invoice origin) {
