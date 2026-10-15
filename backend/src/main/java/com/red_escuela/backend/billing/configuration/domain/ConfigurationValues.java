@@ -14,11 +14,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = CourseTerms.class, name = "COURSE_TERMS"),
         @JsonSubTypes.Type(value = IrregularTermTypes.class, name = "IRREGULAR_TERMS"),
         @JsonSubTypes.Type(value = CollectionReminderSettings.class, name = "COLLECTION_REMINDERS"),
-        @JsonSubTypes.Type(value = BillingDashboardGoals.class, name = "BILLING_DASHBOARD_GOALS")
+        @JsonSubTypes.Type(value = BillingDashboardGoals.class, name = "BILLING_DASHBOARD_GOALS"),
+        @JsonSubTypes.Type(value = ProgramReminderSchedule.class, name = "PROGRAM_REMINDER_SCHEDULE"),
+        @JsonSubTypes.Type(value = CourseReminderSchedule.class, name = "COURSE_REMINDER_SCHEDULE")
 })
 public sealed interface ConfigurationValues
         permits YearBillingTerms, CohortEntryDiscount, LatePaymentTerms, IssuanceSettings, AllocationSettings, AnnualUpfrontSettings, CourseTerms, IrregularTermTypes, CollectionReminderSettings,
-        BillingDashboardGoals {
+        BillingDashboardGoals, ProgramReminderSchedule, CourseReminderSchedule {
 
     ConfigurationScope scope();
 }

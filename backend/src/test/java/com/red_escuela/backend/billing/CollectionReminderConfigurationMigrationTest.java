@@ -19,7 +19,7 @@ class CollectionReminderConfigurationMigrationTest {
 
     @Test
     @Tag("D-351")
-    @Tag("D-359")
+    @Tag("D-368")
     void versionOneIsSeededWithTheDefaultsAndTheChecksAcceptTheGlobalScopeButRejectATopicWithProgram() {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();

@@ -27,11 +27,19 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | CollectionReminderEffectiveFromNextDayPolicy | EFFECTIVE_FROM_BEFORE_NEXT_DAY | D-350 |
 
+## Momento COLLECTION_REMINDER_SCHEDULE
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CollectionReminderScheduleCoherencePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368, D-344 |
+| 2 | ReminderScheduleFollowsGroupPolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-368 |
+| 3 | ReminderSendingOverridesCoherencePolicy | INVALID_COLLECTION_REMINDER_SCHEDULE | D-369, D-373 |
+
 ## Momento COLLECTION_REMINDER_SETTINGS
 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
-| 1 | CollectionReminderSettingsCoherencePolicy | INVALID_COLLECTION_REMINDER_SETTINGS | D-351, D-359 |
+| 1 | CollectionReminderSettingsCoherencePolicy | INVALID_COLLECTION_REMINDER_SETTINGS | D-351, D-373 |
 
 ## Momento CONFIGURATION_PROPOSAL_APPROVAL
 
@@ -366,7 +374,7 @@ Transiciones válidas: 11 de 99. Pares inválidos: (sin estado) × APPROVE_FOR_F
 
 ## Operación CHANGE_BILLING_CONFIGURATION
 
-- Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS, COLLECTION_REMINDER_SETTINGS, COLLECTION_REMINDER_EFFECTIVE_FROM
+- Validaciones (momentos): BILLING_CONFIGURATION_CHANGE, BILLING_CONFIGURATION_PROPOSAL, CONFIGURATION_PROPOSAL_APPROVAL, YEAR_BILLING_CONFIGURATION, YEAR_BILLING_CONFIGURATION_FREEZE, LATE_PAYMENT_TERMS, ISSUANCE_SETTINGS, ANNUAL_UPFRONT_SETTINGS, COLLECTION_REMINDER_SETTINGS, COLLECTION_REMINDER_EFFECTIVE_FROM, COLLECTION_REMINDER_SCHEDULE
 - Pre-procesamiento (en orden): DirectorAuthorizationHandler
 - Eventos que publica: ConfigurationChangeDecidedEvent
 - Post-procesamiento de ConfigurationChangeDecidedEvent: BillingOperationNotificationListener#notifyConfigurationChangeDecided
