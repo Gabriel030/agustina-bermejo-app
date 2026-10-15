@@ -13,6 +13,8 @@ public record AllocationPlanContext(Long studentCurrentAccountId, Currency curre
                                     List<OpenInvoiceView> openInvoicesInAllocationOrder, List<PlannedInvoiceAllocation> plan,
                                     Set<Long> programAdmissionInvoiceIdsBeingPaid) {
 
+    static final int PROBE = 1;
+
     public AllocationPlanContext {
         openInvoicesInAllocationOrder = List.copyOf(openInvoicesInAllocationOrder);
         plan = List.copyOf(plan);
