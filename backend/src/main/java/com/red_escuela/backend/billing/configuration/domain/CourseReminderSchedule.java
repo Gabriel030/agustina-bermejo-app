@@ -12,4 +12,9 @@ public record CourseReminderSchedule(ReminderSchedule schedule) implements Confi
     public ConfigurationScope scope() {
         return ConfigurationScope.COURSE_REMINDER_SCHEDULE;
     }
+
+    @Override
+    public ConfigurationValues normalized() {
+        return new CourseReminderSchedule(schedule.sortedByTimeline());
+    }
 }

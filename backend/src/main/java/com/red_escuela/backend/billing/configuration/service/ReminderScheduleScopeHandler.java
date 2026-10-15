@@ -20,7 +20,7 @@ abstract class ReminderScheduleScopeHandler implements ConfigurationScopeHandler
 
     @Override
     public List<String> validationMoments() {
-        return List.of("COLLECTION_REMINDER_SCHEDULE", "COLLECTION_REMINDER_EFFECTIVE_FROM");
+        return List.of("COLLECTION_REMINDER_SCHEDULE", "COLLECTION_REMINDER_SCHEDULE_CHANGE", "COLLECTION_REMINDER_EFFECTIVE_FROM");
     }
 
     @Override

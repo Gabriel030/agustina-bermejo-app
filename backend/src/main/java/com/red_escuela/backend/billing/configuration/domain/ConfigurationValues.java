@@ -23,4 +23,8 @@ public sealed interface ConfigurationValues
         BillingDashboardGoals, ProgramReminderSchedule, CourseReminderSchedule {
 
     ConfigurationScope scope();
+
+    default ConfigurationValues normalized() {
+        return this;
+    }
 }

@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderNotice;
 import com.red_escuela.backend.billing.configuration.domain.ReminderRepetition;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderSendingOverrides;
+import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 import org.junit.jupiter.api.Tag;
@@ -29,9 +30,15 @@ class CollectionReminderSchedulePoliciesTest {
     private static final Set<ReminderChannel> APP = EnumSet.of(ReminderChannel.IN_APP);
     private static final Set<ReminderChannel> BOTH = EnumSet.allOf(ReminderChannel.class);
 
-    private final CollectionReminderScheduleCoherencePolicy coherence = new CollectionReminderScheduleCoherencePolicy();
+    private final List<Policy<ReminderScheduleCheck>> coherenceRules = List.of(new ReminderScheduleSizePolicy(), new ReminderNoticeTimingPolicy(),
+            new ReminderNoticeChannelsPolicy(), new ReminderIssuanceNoticePolicy(), new ReminderRepetitionPolicy(), new ReminderNoticeUniquenessPolicy());
     private final ReminderScheduleFollowsGroupPolicy followsGroup = new ReminderScheduleFollowsGroupPolicy();
     private final ReminderSendingOverridesCoherencePolicy sending = new ReminderSendingOverridesCoherencePolicy();
+
+    private PolicyVerdict firstCoherenceDenial(ReminderScheduleCheck check) {
+        return coherenceRules.stream().map(rule -> rule.evaluateRule(check)).filter(verdict -> !verdict.allowed()).findFirst()
+                .orElse(PolicyVerdict.allow("coherence"));
+    }
 
     private static ReminderNotice notice(String key, ReminderMessageType type, ReminderMilestone milestone, int days, Set<ReminderChannel> channels) {
         return new ReminderNotice(key, type, milestone, days, channels, null);
@@ -72,9 +79,12 @@ class CollectionReminderSchedulePoliciesTest {
                 invalid("repeat every 61 days", schedule(repeating("a", ReminderMilestone.DUE_DATE, 3, 61, ReminderMilestone.SUSPENSION)), "notices[0].repetition.everyDays"),
                 invalid("repeat until due date from due date plus 3", schedule(repeating("a", ReminderMilestone.DUE_DATE, 3, 7, ReminderMilestone.DUE_DATE)),
                         "notices[0].repetition.until"),
+                invalid("repeat until due date from the due date itself", schedule(repeating("a", ReminderMilestone.DUE_DATE, 0, 7, ReminderMilestone.DUE_DATE)),
+                        "notices[0].repetition.until"),
                 invalid("repeat until suspension from suspension", schedule(repeating("a", ReminderMilestone.SUSPENSION, -2, 1, ReminderMilestone.SUSPENSION)),
                         "notices[0].repetition.until"),
                 invalid("repeat until issuance", schedule(repeating("a", ReminderMilestone.DUE_DATE, 3, 7, ReminderMilestone.ISSUANCE)), "notices[0].repetition.until"),
+                invalid("repeat without until", schedule(repeating("a", ReminderMilestone.DUE_DATE, 3, 7, null)), "notices[0].repetition.until"),
                 invalid("repeated notice key", schedule(notice("a", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -2, BOTH),
                         notice("a", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 5, BOTH)), "notices[1].noticeKey"),
                 invalid("twenty one notices", new ReminderSchedule(false, twentyOne, null), "notices:"));
@@ -84,12 +94,44 @@ class CollectionReminderSchedulePoliciesTest {
     @MethodSource("invalidSchedules")
     @Tag("D-368")
     void invalidListsAreDeniedWithTheNoticePathInTheReason(String name, ReminderSchedule schedule, String expectedPath) {
-        PolicyVerdict verdict = coherence.evaluateRule(new ReminderScheduleCheck(schedule, false));
+        PolicyVerdict verdict = firstCoherenceDenial(new ReminderScheduleCheck(schedule, false));
 
         assertThat(verdict.allowed()).isFalse();
         assertThat(verdict.code()).isEqualTo("INVALID_COLLECTION_REMINDER_SCHEDULE");
-        assertThat(CollectionReminderScheduleCoherencePolicy.class.getAnnotation(PolicyRule.class).violationCodes()).contains(verdict.code());
+        assertThat(coherenceRules).allSatisfy(rule -> assertThat(rule.getClass().getAnnotation(PolicyRule.class).violationCodes()).contains(verdict.code()));
         assertThat(verdict.reason()).startsWith(expectedPath);
+    }
+
+    @Test
+    @Tag("D-368")
+    void everyBrokenRuleReportsItsOwnViolationWithTheNoticeIndex() {
+        ReminderSchedule schedule = schedule(
+                notice("a", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 61, BOTH),
+                notice("b", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 5, Set.of()),
+                repeating("c", ReminderMilestone.DUE_DATE, 9, 0, null),
+                notice("c", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 10, BOTH));
+
+        List<String> reasons = coherenceRules.stream().map(rule -> rule.evaluateRule(new ReminderScheduleCheck(schedule, false)))
+                .filter(verdict -> !verdict.allowed()).map(PolicyVerdict::reason).toList();
+
+        assertThat(reasons).hasSize(4);
+        assertThat(reasons.get(0)).startsWith("notices[0].offsetDays");
+        assertThat(reasons.get(1)).startsWith("notices[1].channels");
+        assertThat(reasons.get(2)).startsWith("notices[2].repetition.everyDays");
+        assertThat(reasons.get(3)).startsWith("notices[3].noticeKey");
+    }
+
+    @Test
+    @Tag("D-368")
+    void aChangeThatAsksToFollowTheGroupIsDeniedAndPointsToRemoval() {
+        ReminderChangeDoesNotFollowGroupPolicy policy = new ReminderChangeDoesNotFollowGroupPolicy();
+
+        PolicyVerdict denied = policy.evaluateRule(new ReminderScheduleChangeCheck(ReminderSchedule.followingGroup()));
+
+        assertThat(denied.allowed()).isFalse();
+        assertThat(denied.code()).isEqualTo("INVALID_COLLECTION_REMINDER_SCHEDULE");
+        assertThat(denied.reason()).contains("/removal");
+        assertThat(policy.evaluateRule(new ReminderScheduleChangeCheck(ReminderSchedule.initial())).allowed()).isTrue();
     }
 
     static Stream<ReminderSchedule> validSchedules() {
@@ -100,6 +142,7 @@ class CollectionReminderSchedulePoliciesTest {
                         .mapToObj(day -> notice("k" + day, ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, day - 30, BOTH)).toList(), null),
                 schedule(repeating("a", ReminderMilestone.DUE_DATE, 1, 7, ReminderMilestone.SUSPENSION)),
                 schedule(repeating("a", ReminderMilestone.DUE_DATE, -5, 2, ReminderMilestone.DUE_DATE)),
+                schedule(repeating("a", ReminderMilestone.DUE_DATE, -1, 2, ReminderMilestone.DUE_DATE)),
                 schedule(repeating("a", ReminderMilestone.ISSUANCE, 3, 2, ReminderMilestone.DUE_DATE)),
                 schedule(notice("a", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 60, APP),
                         notice("b", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -60, APP),
@@ -111,7 +154,7 @@ class CollectionReminderSchedulePoliciesTest {
     @MethodSource("validSchedules")
     @Tag("D-368")
     void validListsAreAllowedIncludingTheEmptyListAndTheBounds(ReminderSchedule schedule) {
-        assertThat(coherence.evaluateRule(new ReminderScheduleCheck(schedule, false)).allowed()).isTrue();
+        assertThat(firstCoherenceDenial(new ReminderScheduleCheck(schedule, false)).allowed()).isTrue();
     }
 
     @Test
@@ -139,7 +182,7 @@ class CollectionReminderSchedulePoliciesTest {
         assertThat(followsGroup.evaluateRule(new ReminderScheduleCheck(followingWithOverrides, true)).allowed()).isFalse();
         assertThat(followsGroup.evaluateRule(new ReminderScheduleCheck(followingWithNotices, true)).code()).isEqualTo("INVALID_COLLECTION_REMINDER_SCHEDULE");
         assertThat(followsGroup.evaluateRule(new ReminderScheduleCheck(ReminderSchedule.initial(), false)).allowed()).isTrue();
-        assertThat(coherence.evaluateRule(new ReminderScheduleCheck(following, true)).allowed()).isTrue();
+        assertThat(firstCoherenceDenial(new ReminderScheduleCheck(following, true)).allowed()).isTrue();
     }
 
     static Stream<Arguments> sendingOverrides() {
