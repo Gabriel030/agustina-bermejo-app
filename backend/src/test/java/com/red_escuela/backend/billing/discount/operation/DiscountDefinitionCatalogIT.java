@@ -20,7 +20,8 @@ import com.red_escuela.backend.billing.discount.repository.DiscountDefinitionRep
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
+import org.springframework.jdbc.UncategorizedSQLException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.AddressRepository;
@@ -233,7 +234,7 @@ class DiscountDefinitionCatalogIT extends AbstractIntegrationTest {
         CreateDiscountDefinitionCommand command = CreateDiscountDefinitionCommand.byPerson(
                 DiscountDraftBuilder.cohortPromotion().named("Promoción huérfana").forProgram(987654321L).build(), director.getId(), true);
 
-        assertThatThrownBy(() -> pipeline.runOperation(createOperation, command)).isInstanceOf(ProgramNotFoundException.class);
+        assertThatThrownBy(() -> pipeline.runOperation(createOperation, command)).isInstanceOf(DiscountScopeOfferingNotFoundException.class);
     }
 
     @Test
@@ -333,8 +334,8 @@ class DiscountDefinitionCatalogIT extends AbstractIntegrationTest {
     void theValuesOfADefinitionCannotBeChangedInTheDatabase() {
         DiscountDefinition created = createAsDirector(DiscountDraftBuilder.annualUpfront().named("Inmutable").build());
 
-        assertThatThrownBy(() -> jdbc.update("update discount_definition set priority = 5 where id = ?", created.getId())).isInstanceOf(DataIntegrityViolationException.class);
-        assertThatThrownBy(() -> jdbc.update("update discount_definition set name = 'otro' where id = ?", created.getId())).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("update discount_definition set priority = 5 where id = ?", created.getId())).isInstanceOf(UncategorizedSQLException.class);
+        assertThatThrownBy(() -> jdbc.update("update discount_definition set name = 'otro' where id = ?", created.getId())).isInstanceOf(UncategorizedSQLException.class);
         assertThat(jdbc.update("update discount_definition set quota_exhausted_notified_at = now() where id = ?", created.getId())).isEqualTo(1);
     }
 

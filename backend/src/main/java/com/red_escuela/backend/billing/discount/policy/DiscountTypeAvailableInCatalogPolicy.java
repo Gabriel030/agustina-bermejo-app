@@ -18,7 +18,8 @@ public final class DiscountTypeAvailableInCatalogPolicy implements Policy<Discou
 
     @Override
     public PolicyVerdict evaluateRule(DiscountDefinitionCheck check) {
-        return NOT_OFFERED.contains(check.draft().discountType())
+        DiscountDefinitionType type = check.draft().discountType();
+        return type != null && NOT_OFFERED.contains(type)
                 ? PolicyVerdict.deny(ruleName(), "DISCOUNT_TYPE_NOT_IN_CATALOG", "Este tipo de promoción no se ofrece en el catálogo.")
                 : PolicyVerdict.allow(ruleName());
     }

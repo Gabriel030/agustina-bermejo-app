@@ -1,12 +1,8 @@
 package com.red_escuela.backend.billing.discount.service;
 
-import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
+import com.red_escuela.backend.academicstructure.api.OfferingCurrencyLookup;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
+import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -25,16 +21,13 @@ import static org.mockito.Mockito.when;
 
 @Tag("D-097")
 class DiscountOfferingScopeResolverTest {
-    private final ProgramRepository programRepository = mock(ProgramRepository.class);
-    private final CourseRepository courseRepository = mock(CourseRepository.class);
+    private final OfferingCurrencyLookup currencyLookup = mock(OfferingCurrencyLookup.class);
     private final ProgramCohortRepository cohortRepository = mock(ProgramCohortRepository.class);
-    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(programRepository, courseRepository, cohortRepository);
+    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(currencyLookup, cohortRepository);
 
     @Test
     void aProgramScopeResolvesTheCurrencyOfTheProgram() {
-        Program program = mock(Program.class);
-        when(program.getCurrency()).thenReturn(Currency.USD);
-        when(programRepository.findById(4L)).thenReturn(Optional.of(program));
+        when(currencyLookup.findProgramCurrency(4L)).thenReturn(Optional.of(Currency.USD));
 
         DiscountDefinitionCheck check = resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forProgram(4L).build());
 
@@ -44,9 +37,7 @@ class DiscountOfferingScopeResolverTest {
 
     @Test
     void aCourseScopeResolvesTheCurrencyOfTheCourse() {
-        Course course = mock(Course.class);
-        when(course.getCurrency()).thenReturn(Currency.ARS);
-        when(courseRepository.findById(9L)).thenReturn(Optional.of(course));
+        when(currencyLookup.findCourseCurrency(9L)).thenReturn(Optional.of(Currency.ARS));
 
         DiscountDefinitionCheck check = resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forCourse(9L).build());
 
@@ -55,9 +46,7 @@ class DiscountOfferingScopeResolverTest {
 
     @Test
     void aCohortScopeResolvesTheProgramTheCohortBelongsTo() {
-        Program program = mock(Program.class);
-        when(program.getCurrency()).thenReturn(Currency.ARS);
-        when(programRepository.findById(4L)).thenReturn(Optional.of(program));
+        when(currencyLookup.findProgramCurrency(4L)).thenReturn(Optional.of(Currency.ARS));
         ProgramCohort cohort = mock(ProgramCohort.class);
         ProgramYearBillingTemplate template = mock(ProgramYearBillingTemplate.class);
         when(template.programId()).thenReturn(77L);
@@ -79,12 +68,12 @@ class DiscountOfferingScopeResolverTest {
 
     @Test
     void missingOfferingsAndCohortsAreNotFound() {
-        when(programRepository.findById(4L)).thenReturn(Optional.empty());
-        when(courseRepository.findById(9L)).thenReturn(Optional.empty());
+        when(currencyLookup.findProgramCurrency(4L)).thenReturn(Optional.empty());
+        when(currencyLookup.findCourseCurrency(9L)).thenReturn(Optional.empty());
         when(cohortRepository.findById(8L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forProgram(4L).build())).isInstanceOf(ProgramNotFoundException.class);
-        assertThatThrownBy(() -> resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forCourse(9L).build())).isInstanceOf(CourseNotFoundException.class);
+        assertThatThrownBy(() -> resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forProgram(4L).build())).isInstanceOf(DiscountScopeOfferingNotFoundException.class);
+        assertThatThrownBy(() -> resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forCourse(9L).build())).isInstanceOf(DiscountScopeOfferingNotFoundException.class);
         assertThatThrownBy(() -> resolver.resolveScopeOf(DiscountDraftBuilder.annualUpfront().forCohort(8L).build())).isInstanceOf(ProgramCohortNotFoundException.class);
     }
 }
