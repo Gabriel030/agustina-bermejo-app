@@ -18,7 +18,7 @@ export const routes = {
     { roles: ['alumno'], path: 'pagos/:invoiceId/seleccion', element: <AlumnoPagarSeleccion /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
-    { roles: ['administrativo'], path: 'facturacion', element: <AdministrativoFacturacion /> },
+    { roles: ['administrativo', 'director'], path: 'facturacion', element: <AdministrativoFacturacion /> },
     { roles: ['administrativo', 'director'], path: 'financiero', element: <FinancialDashboardPage /> },
   ],
 };

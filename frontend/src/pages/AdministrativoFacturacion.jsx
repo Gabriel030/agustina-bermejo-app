@@ -22,12 +22,13 @@ import {
   invoiceTitle,
   isInvoicePayable,
 } from '@/lib/billing';
+import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
 import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
 import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
-import { formatMoney, moneyValue } from '@/lib/utils';
+import { formatMoney } from '@/lib/utils';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
@@ -206,8 +207,7 @@ function outstandingDebtOf(overview) {
   if (invoices.length === 0) return null;
   const currencies = new Set(invoices.map((invoice) => invoice.outstandingAmount?.currency));
   if (currencies.size !== 1) return null;
-  const total = invoices.reduce((sum, invoice) => sum + moneyValue(invoice.outstandingAmount), 0);
-  return { amount: total.toFixed(2), currency: [...currencies][0] };
+  return sumMoney(invoices.map((invoice) => invoice.outstandingAmount));
 }
 
 function TabFacturacion() {
@@ -231,26 +231,26 @@ function TabFacturacion() {
     <div className="flex flex-col gap-5">
       {selectedStudent ? (
         <GlassCard className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="font-semibold text-ink">
                 {selectedStudent.apellido}, {selectedStudent.nombre}
               </p>
               <p className="text-sm text-ink-faint">DNI {selectedStudent.dni}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               {debt && (
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="text-xs text-ink-faint">Deuda</p>
                   <p className="text-lg font-semibold tabular-nums text-ink">{formatMonto(debt)}</p>
                 </div>
               )}
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button variant="gradient" onClick={() => setShowCashPayment(true)} disabled={loadingOverview}>
+                <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={loadingOverview}>
                   <CreditCard size={14} className="mr-1.5" />
                   Cobrar en efectivo
                 </Button>
-                <Button variant="outline" onClick={() => setSelectedStudent(null)}>
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setSelectedStudent(null)}>
                   Cambiar alumno
                 </Button>
               </div>

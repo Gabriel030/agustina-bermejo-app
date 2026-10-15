@@ -342,7 +342,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
     await fillAmountAndReview(user, dialog, '0');
 
-    expect(await within(dialog).findByText('Ingresá un monto mayor a 0.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('El monto debe ser mayor a 0.')).toBeInTheDocument();
     expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/cash-payments'))).toBe(false);
   });
 
@@ -358,6 +358,128 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     expect(await within(dialog).findByText(/No podés cobrar con una fecha de más de 5 días atrás/)).toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Motivo de la fecha retroactiva')).not.toBeInTheDocument();
     expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/cash-payments'))).toBe(false);
+  });
+
+  it('reads an es-AR amount, shows it formatted and sends it exact', async () => {
+    let previewBody;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, async ({ request }) => {
+        previewBody = await request.json();
+        return HttpResponse.json(previewOf());
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    await user.type(within(dialog).getByLabelText('Monto'), '1.500,50');
+    await user.tab();
+    expect(within(dialog).getByLabelText('Monto')).toHaveValue('1.500,50');
+    await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
+
+    await vi.waitFor(() => expect(previewBody).toBeDefined());
+    expect(previewBody).toEqual({ amount: { amount: '1500.50', currency: 'ARS' } });
+  });
+
+  it.each([
+    ['1,234', 'El monto admite hasta 2 decimales.'],
+    ['10.000.000.000', 'El monto supera el máximo permitido (9.999.999.999,99).'],
+    ['', 'Ingresá el monto a cobrar.'],
+    ['abc', 'El monto no es válido. Ejemplo: 1.500,50'],
+  ])('explains an amount of "%s" with its own message', async (typed, message) => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    if (typed) await user.type(within(dialog).getByLabelText('Monto'), typed);
+    await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+  });
+
+  it('fills the amount with the whole debt in es-AR format', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Usar total' }));
+
+    expect(within(dialog).getByLabelText('Monto')).toHaveValue('52.800,00');
+  });
+
+  it('after an unknown outcome asks to check the account, keeps the same key on retry and blocks going back', async () => {
+    const keys = [];
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        if (keys.length === 1) return HttpResponse.json({}, { status: 500 });
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    expect(await within(dialog).findByText(/Revisá el estado de cuenta del alumno antes de volver a cobrar/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Volver' })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cerrar y revisar estado de cuenta' })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Confirmar cobro' }));
+    await vi.waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('closes and reloads the student account after an unknown outcome', async () => {
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.json({}, { status: 500 })),
+    );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const overviewCalls = () => fetchSpy.mock.calls.filter(([url]) => String(url).includes('/billing-overview')).length;
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    const before = overviewCalls();
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+    await user.click(await within(dialog).findByRole('button', { name: 'Cerrar y revisar estado de cuenta' }));
+
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await vi.waitFor(() => expect(overviewCalls()).toBeGreaterThan(before));
+  });
+
+  it('drops the student when the backend says it no longer exists', async () => {
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json({ code: 'STUDENT_NOT_FOUND' }, { status: 404 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByPlaceholderText('Buscar alumno por nombre o DNI…')).toBeInTheDocument();
+  });
+
+  it('warns to check the account when the key was already used with other data, and refreshes the preview', async () => {
+    let previews = 0;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => {
+        previews += 1;
+        return HttpResponse.json(previewOf());
+      }),
+      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.json({ code: 'IDEMPOTENCY_KEY_CONFLICT' }, { status: 409 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    expect(await within(dialog).findByText(/Este cobro ya se había registrado con otros datos/)).toBeInTheDocument();
+    await vi.waitFor(() => expect(previews).toBe(2));
   });
 
   it('lets the director backdate only with a reason, shown just when the date needs it', async () => {

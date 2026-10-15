@@ -10,9 +10,10 @@ Feature: Cobro en efectivo (POST /students/{id}/cash-payments)
     * def adminToken = fixtures.tokenForRole('ADMINISTRATIVO')
     * def directorToken = fixtures.tokenForRole('DIRECTOR')
     * def preceptorToken = fixtures.tokenForRole('PRECEPTOR')
+    * def docenteToken = fixtures.tokenForRole('DOCENTE')
     * def invoiceId = fixtures.createIssuedInvoiceWithLedgerDebit(studentId, '80000.00')
 
-  Scenario: Alumno and preceptor cannot register, preview or list a student's cash payments — 403
+  Scenario: Alumno, preceptor and docente cannot register, preview or list a student's cash payments — 403
     Given path '/students', studentId, 'cash-payments', 'preview'
     And header Authorization = 'Bearer ' + alumnoToken
     And request { amount: { amount: '1.00', currency: 'ARS' } }
@@ -31,6 +32,24 @@ Feature: Cobro en efectivo (POST /students/{id}/cash-payments)
     And header Idempotency-Key = 'karate-forbidden-2'
     And request { amount: { amount: '1.00', currency: 'ARS' }, previewFingerprint: 'x' }
     When method post
+    Then status 403
+
+    Given path '/students', studentId, 'cash-payments'
+    And header Authorization = 'Bearer ' + docenteToken
+    And header Idempotency-Key = 'karate-forbidden-3'
+    And request { amount: { amount: '1.00', currency: 'ARS' }, previewFingerprint: 'x' }
+    When method post
+    Then status 403
+
+    Given path '/students', studentId, 'cash-payments', 'preview'
+    And header Authorization = 'Bearer ' + docenteToken
+    And request { amount: { amount: '1.00', currency: 'ARS' } }
+    When method post
+    Then status 403
+
+    Given path '/students', studentId, 'payments'
+    And header Authorization = 'Bearer ' + docenteToken
+    When method get
     Then status 403
 
     Given path '/students', studentId, 'payments'

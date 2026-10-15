@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,15 +11,15 @@ import { InfoTip } from '@/components/charts/InfoTip';
 import { useAuth } from '@/context/AuthContext';
 import { formatDate } from '@/lib/billing';
 import { formatMoney } from '@/lib/utils';
+import { AMOUNT_ERROR_MESSAGES, formatAmountEsAr, newIdempotencyKey, parseAmountInput } from './cashAmount';
 import { usePreviewCashPayment, useRegisterCashPayment } from '@/hooks/useBilling';
 
 const ADMINISTRATIVE_WINDOW_DAYS = 5;
 const RECEIPT_MAX_LENGTH = 100;
 const REASON_MAX_LENGTH = 500;
-const AMOUNT_PATTERN = /^\d+(\.\d{1,2})?$/;
 
 const FIELD_ERRORS = {
-  CASH_PAYMENT_AMOUNT_INVALID: ['amount', 'Ingresá un monto mayor a 0.'],
+  CASH_PAYMENT_AMOUNT_INVALID: ['amount', AMOUNT_ERROR_MESSAGES.NOT_POSITIVE],
   PAYMENT_DATE_IN_FUTURE: ['paidOn', 'La fecha no puede ser posterior a hoy.'],
   CASH_PAYMENT_DATE_TOO_OLD: ['paidOn', 'No podés cobrar con una fecha de más de 5 días atrás. Pedíselo a la dirección.'],
   CASH_PAYMENT_BACKDATE_REASON_REQUIRED: ['reason', 'Indicá el motivo de la fecha retroactiva.'],
@@ -28,6 +29,8 @@ const FIELD_ERRORS = {
 
 const PREVIEW_OUTDATED_NOTICE = 'La cuenta cambió, revisá el detalle actualizado.';
 const KEY_CONFLICT_NOTICE = 'Este cobro ya se había registrado con otros datos. Revisá el estado de cuenta antes de volver a cobrar.';
+const UNKNOWN_OUTCOME_MESSAGE =
+  'No pudimos confirmar si el cobro se registró. Revisá el estado de cuenta del alumno antes de volver a cobrar. Si reintentás desde acá, no se duplica.';
 const STUDENT_NOT_FOUND_MESSAGE = 'El alumno ya no está disponible. Volvé a buscarlo.';
 
 function toIsoDate(date) {
@@ -40,12 +43,6 @@ function daysAgoIso(days) {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return toIsoDate(date);
-}
-
-function normalizeAmount(text) {
-  const normalized = text.trim().replace(',', '.');
-  if (!AMOUNT_PATTERN.test(normalized) || Number(normalized) <= 0) return null;
-  return Number(normalized).toFixed(2);
 }
 
 function CoveredRows({ invoices, currency }) {
@@ -87,20 +84,23 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   const [notice, setNotice] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [globalError, setGlobalError] = useState('');
+  const [unknownOutcome, setUnknownOutcome] = useState(false);
+  const queryClient = useQueryClient();
   const attempt = useRef({ signature: null, key: null });
 
   const previewMutation = usePreviewCashPayment(student.id);
   const registerMutation = useRegisterCashPayment(student.id);
   const busy = loadingPreview || registerMutation.isPending;
 
-  const normalizedAmount = normalizeAmount(amount);
+  const parsedAmount = parseAmountInput(amount);
+  const normalizedAmount = parsedAmount.value ?? null;
   const isBackdated = paidOn < oldestAdministrativeDate;
   const needsReason = isDirector && isBackdated;
   const studentName = `${student.apellido}, ${student.nombre}`;
 
   function validateForm() {
     const errors = {};
-    if (!normalizedAmount) errors.amount = FIELD_ERRORS.CASH_PAYMENT_AMOUNT_INVALID[1];
+    if (parsedAmount.error) errors.amount = AMOUNT_ERROR_MESSAGES[parsedAmount.error];
     if (!paidOn) errors.paidOn = 'Indicá la fecha del cobro.';
     else if (paidOn > today) errors.paidOn = FIELD_ERRORS.PAYMENT_DATE_IN_FUTURE[1];
     else if (isBackdated && !isDirector) errors.paidOn = FIELD_ERRORS.CASH_PAYMENT_DATE_TOO_OLD[1];
@@ -122,6 +122,15 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
       return;
     }
     setGlobalError(error?.message ?? 'No pudimos completar el cobro. Probá de nuevo.');
+  }
+
+  function isUnknownOutcome(error) {
+    return error?.status === undefined || error.status >= 500;
+  }
+
+  function handleCloseAfterUnknownOutcome() {
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+    onClose(false);
   }
 
   async function requestPreview() {
@@ -156,7 +165,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
     };
     const signature = JSON.stringify(payload);
     if (attempt.current.signature !== signature) {
-      attempt.current = { signature, key: crypto.randomUUID() };
+      attempt.current = { signature, key: newIdempotencyKey() };
     }
     try {
       await registerMutation.mutateAsync({ key: attempt.current.key, payload });
@@ -167,6 +176,11 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
         setNotice(error.code === 'IDEMPOTENCY_KEY_CONFLICT' ? KEY_CONFLICT_NOTICE : PREVIEW_OUTDATED_NOTICE);
         setPreview(null);
         await requestPreview();
+        return;
+      }
+      if (isUnknownOutcome(error)) {
+        setUnknownOutcome(true);
+        setGlobalError(UNKNOWN_OUTCOME_MESSAGE);
         return;
       }
       handleFailure(error);
@@ -214,7 +228,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
               <div className="flex items-center justify-between">
                 <Label htmlFor="cash-payment-amount">Monto</Label>
                 {totalDebt && (
-                  <Button type="button" variant="ghost" size="xs" onClick={() => setAmount(totalDebt.amount)}>
+                  <Button type="button" variant="ghost" size="xs" onClick={() => setAmount(formatAmountEsAr(totalDebt.amount))}>
                     Usar total
                   </Button>
                 )}
@@ -225,6 +239,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
                 autoFocus
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
+                onBlur={() => { if (!parsedAmount.error) setAmount(formatAmountEsAr(parsedAmount.value)); }}
                 placeholder="0,00"
                 aria-invalid={!!fieldErrors.amount}
               />
@@ -357,9 +372,15 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleBack} disabled={busy}>
-                Volver
-              </Button>
+              {unknownOutcome ? (
+                <Button variant="outline" onClick={handleCloseAfterUnknownOutcome} disabled={busy}>
+                  Cerrar y revisar estado de cuenta
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={handleBack} disabled={busy}>
+                  Volver
+                </Button>
+              )}
               <Button variant="gradient" onClick={handleConfirm} loading={registerMutation.isPending} disabled={!preview || loadingPreview}>
                 Confirmar cobro
               </Button>
