@@ -133,7 +133,7 @@ describe('library and theme guardrails', () => {
   });
 
   it('draws series only from design tokens defined for light and dark', () => {
-    const extraTokens = ['--border', '--ink-faint', '--ink-soft', '--accent-soft'];
+    const extraTokens = ['--border', '--ink-faint', '--ink-soft', '--accent-soft', '--warning-ink', '--success-ink'];
     const seriesTokens = SERIES_COLORS.map((color) => {
       const token = color.match(/^var\((--[\w-]+)\)$/)?.[1];
       expect(token, color).toBeTruthy();
