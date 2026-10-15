@@ -74,7 +74,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorCodeResponse> handleNotFound(NotFoundException exception) {
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<?> handleNotFound(NotFoundException exception) {
         return exception instanceof ReportsErrorCode
                 ? ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorCodeResponse.of(exception))
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).build();

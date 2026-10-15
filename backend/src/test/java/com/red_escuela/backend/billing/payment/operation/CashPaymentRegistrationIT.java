@@ -337,7 +337,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         MvcResult replay = register(debtor.studentId(), "key-replay-next-day", body, administrative);
 
         assertThat(replay.getResponse().getStatus()).isEqualTo(201);
-        assertThat(jsonOf(replay).get("paymentId").asLong()).isEqualTo(jsonOf(first).get("paymentId").asLong());
+        assertThat(jsonOf(replay)).isEqualTo(jsonOf(first));
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(1);
         assertThat(meterRegistry.counter("billing.idempotency.replays").count()).isEqualTo(replaysBefore + 1);
         invariants.assertAllBillingInvariantsHold();
@@ -415,6 +415,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
     @Test
     @Tag("D-316")
+    @Tag("D-374")
     @Tag("D-134")
     void theSecondPassPaysTheOnlineInvoiceWithTheRemainingCreditInTheSameOperation() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
@@ -443,6 +444,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
     @Test
     @Tag("D-316")
+    @Tag("D-374")
     void theCashOfAnOnlyOnlineDebtorEndsPayingItInTheSameResponseWhenItCoversTheInvoice() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         Debtor debtor = debtor();
@@ -619,7 +621,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
                 () -> register(debtor.studentId(), "key-two-threads", body, administrative)));
 
         assertThat(results).extracting(result -> result.getResponse().getStatus()).containsOnly(201);
-        assertThat(jsonOf(results.get(0)).get("paymentId").asLong()).isEqualTo(jsonOf(results.get(1)).get("paymentId").asLong());
+        assertThat(jsonOf(results.get(0))).isEqualTo(jsonOf(results.get(1)));
         assertThat(paymentsOf(debtor.accountId())).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from payment_allocation where invoice_id = ?", Long.class, march)).isEqualTo(1L);
         assertThat(jdbc.queryForObject("select count(*) from current_account_entry where student_current_account_id = ? and entry_type = 'PAYMENT_RECEIVED'",
@@ -668,6 +670,51 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
                 .forEach(result -> assertThat(codeOf(result)).isEqualTo("CASH_PAYMENT_PREVIEW_OUTDATED"));
         assertThat(cashResults.stream().filter(result -> result.getResponse().getStatus() == 201).count()).isEqualTo(paymentsOf(debtor.accountId())).isPositive();
         assertThat(jdbc.queryForObject("select count(*) from invoice where student_current_account_id = ?", Long.class, debtor.accountId())).isEqualTo(2L);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Autowired
+    com.red_escuela.backend.billing.invoice.service.InvoiceLockingService invoiceLockingService;
+
+    @Test
+    @Tag("D-136")
+    @Tag("D-144")
+    void aCashPaymentWaitsForTheInvoiceLockOfTheOverdueTransitionInsteadOfFailingWithAnOptimisticConflict() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long march = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
+        ObjectNode body = bodyOf("ARS", "80000.00", null, null, null, fingerprintOf(debtor.studentId(), "80000.00"));
+        java.util.concurrent.CountDownLatch invoiceLocked = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch releaseTransition = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            java.util.concurrent.Future<?> transition = executor.submit(() -> inTransaction(() -> {
+                com.red_escuela.backend.billing.invoice.domain.Invoice invoice = invoiceLockingService.lockInvoiceForUpdate(march);
+                invoice.markInvoiceAsOverdue(TODAY, ACTOR);
+                invoiceLocked.countDown();
+                try {
+                    releaseTransition.await(60, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                }
+                return null;
+            }));
+            assertThat(invoiceLocked.await(60, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            java.util.concurrent.Future<MvcResult> cash = executor.submit(() -> register(debtor.studentId(), "key-invoice-lock", body, administrative));
+
+            org.awaitility.Awaitility.await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> assertThat(jdbc.queryForObject(
+                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class)).isPositive());
+            assertThat(cash.isDone()).isFalse();
+            releaseTransition.countDown();
+            transition.get(60, java.util.concurrent.TimeUnit.SECONDS);
+
+            MvcResult result = cash.get(60, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(result.getResponse().getStatus()).isEqualTo(201);
+            assertThat(statusOfInvoice(march)).isEqualTo("PAID");
+        } finally {
+            releaseTransition.countDown();
+            executor.shutdownNow();
+        }
         invariants.assertAllBillingInvariantsHold();
     }
 }
