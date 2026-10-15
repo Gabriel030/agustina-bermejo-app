@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import shutil
 import tempfile
 import unittest
 
@@ -120,6 +121,7 @@ class ShardTimingsTest(unittest.TestCase):
 
     def tearDown(self):
         shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
 
     def write_history(self, runs, samples):
         directory = os.path.join(self.root, 'baseline')
@@ -160,6 +162,7 @@ class ShardTimingsTest(unittest.TestCase):
 
     def test_missing_baseline_seeds_from_the_versioned_timings(self):
         history = shards.read_history(os.path.join(self.root, 'absent'))
+        self.assertEqual(1, history['runs'])
         self.assertEqual({'a/A': [5.0]}, history['samples'])
 
     def test_use_ignores_a_baseline_with_too_little_history(self):
@@ -179,6 +182,40 @@ class ShardTimingsTest(unittest.TestCase):
         directory = self.write_history(shards.MIN_HISTORY, {'a/A': [10.0, 20.0, 30.0]})
         shards.use(directory)
         self.assertEqual({'a/A': 20.0}, shards.load_timings())
+
+    def write_raw(self, content):
+        directory = os.path.join(self.root, 'raw')
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, 'samples.json'), 'w', encoding='utf-8') as handle:
+            handle.write(content)
+        return directory
+
+    def test_corrupt_history_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{not json'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_history_without_samples_key_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{"runs": 5}'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_use_with_runs_but_no_samples_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{"runs": 5}'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+        self.assertGreater(os.path.getsize(shards.TIMINGS), 0)
+
+    def test_use_with_corrupt_history_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{not json'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_history_never_exceeds_the_window(self):
+        history = {'runs': 1, 'samples': {}}
+        for index in range(shards.WINDOW + 4):
+            history = shards.merge_run(history, {'a/A': float(index)}, {'a/A'})
+        self.assertEqual(shards.WINDOW, len(history['samples']['a/A']))
+        self.assertEqual(float(shards.WINDOW + 3), history['samples']['a/A'][-1])
+        self.assertEqual(shards.WINDOW, history['runs'])
 
 
 if __name__ == '__main__':

@@ -159,15 +159,40 @@ def averages(samples):
     return {name: sum(values) / len(values) for name, values in samples.items() if values}
 
 
+def parse_history(path):
+    try:
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        runs = data['runs']
+        samples = data['samples']
+        if isinstance(runs, bool) or not isinstance(runs, int) or not isinstance(samples, dict) or not samples:
+            raise ValueError('unexpected shape')
+        for values in samples.values():
+            if not isinstance(values, list) or not values:
+                raise ValueError('unexpected shape')
+            for value in values:
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError('unexpected shape')
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print('history ignored (%s): %s' % (path, error))
+        return None
+    return data
+
+
 def read_history(directory):
     if directory:
         history = os.path.join(directory, 'samples.json')
         if os.path.exists(history):
-            with open(history, encoding='utf-8') as handle:
-                return json.load(handle)
-        legacy = os.path.join(directory, 'timings.txt')
-        if os.path.exists(legacy) and os.path.getsize(legacy) > 0:
-            return {'runs': 1, 'samples': {k: [v] for k, v in parse_timings(legacy).items()}}
+            data = parse_history(history)
+            if data is not None:
+                return data
+        else:
+            legacy = os.path.join(directory, 'timings.txt')
+            try:
+                if os.path.exists(legacy) and os.path.getsize(legacy) > 0:
+                    return {'runs': 1, 'samples': {k: [v] for k, v in parse_timings(legacy).items()}}
+            except (OSError, ValueError) as error:
+                print('legacy timings ignored (%s): %s' % (legacy, error))
     return {'runs': 1, 'samples': {k: [v] for k, v in load_timings().items()}}
 
 
@@ -235,13 +260,15 @@ def use(directory):
     if not os.path.exists(history):
         print('baseline ignored: it has no run history, the versioned timings.txt is used')
         return
-    with open(history, encoding='utf-8') as handle:
-        data = json.load(handle)
-    runs = data.get('runs', 0)
+    data = parse_history(history)
+    if data is None:
+        print('baseline ignored: corrupt or unexpected history, the versioned timings.txt is used')
+        return
+    runs = data['runs']
     if runs < MIN_HISTORY:
         print('baseline ignored: %d run(s) of history, %d needed, the versioned timings.txt is used' % (runs, MIN_HISTORY))
         return
-    write_timings(TIMINGS, averages(data.get('samples', {})))
+    write_timings(TIMINGS, averages(data['samples']))
     print('baseline used: average of the last %d run(s)' % runs)
 
 

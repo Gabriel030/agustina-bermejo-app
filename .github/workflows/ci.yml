@@ -279,6 +279,7 @@ jobs:
           fi
 
       - name: Add this run to the timing history
+        continue-on-error: true
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
         run: |
           mkdir -p baseline-out
