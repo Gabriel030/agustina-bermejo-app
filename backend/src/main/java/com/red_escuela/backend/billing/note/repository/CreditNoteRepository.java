@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,9 @@ public interface CreditNoteRepository extends Repository<CreditNote, Long> {
             order by n.issueDate desc, n.id desc
             """)
     List<CreditNote> findByInvoiceIdNewestFirst(@Param("invoiceId") Long invoiceId);
+
+    @Query("select n.id, n.creditNoteNumber.value from CreditNote n where n.id in :ids")
+    List<Object[]> findCreditNoteNumbersByIds(@Param("ids") Collection<Long> ids);
 
     boolean existsById(Long id);
 }

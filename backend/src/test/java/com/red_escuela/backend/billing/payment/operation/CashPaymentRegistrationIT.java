@@ -8,6 +8,8 @@ import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.AbstractCurrentAccountIT;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
+import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
@@ -220,6 +222,32 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
         assertThat(statusOfInvoice(april)).isNotEqualTo("PAID");
         assertThat(amount("select unallocated_credit_amount from student_current_account where id = ?", debtor.accountId())).isEqualByComparingTo("20000.00");
         assertThat(jdbc.queryForObject("select status from payment where id = ?", String.class, response.get("paymentId").asLong())).isEqualTo("APPROVED");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Autowired
+    InvoiceQueryService invoiceQueryService;
+
+    @Test
+    @Tag("D-376")
+    void theInvoiceBreakdownShowsTheCashPaymentThatFinancedItWithItsMethodAndAmountTaken() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long march = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), "80000.00", LocalDate.of(2027, 3, 10));
+        JsonNode preview = previewOf(debtor.studentId(), "ARS", "80000.00", administrative);
+
+        MvcResult result = register(debtor.studentId(), "key-source", bodyOf("ARS", "80000.00", null, "R-S", null, preview.get("previewFingerprint").asText()), administrative);
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(201);
+        long paymentId = jsonOf(result).get("paymentId").asLong();
+        PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(march);
+        assertThat(breakdown.paymentsApplied()).singleElement().satisfies(payment -> {
+            assertThat(payment.paymentId()).isEqualTo(paymentId);
+            assertThat(payment.method()).isEqualTo("CASH");
+            assertThat(payment.amount()).isEqualTo(ars("80000.00").value());
+            assertThat(payment.paidAt()).isNotNull();
+        });
+        assertThat(breakdown.creditNotesUsedAsFreeCredit()).isEmpty();
         invariants.assertAllBillingInvariantsHold();
     }
 
