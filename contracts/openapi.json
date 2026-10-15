@@ -1086,6 +1086,15 @@
         "required" : [ "capacity", "id", "name", "status" ],
         "type" : "object"
       },
+      "CloseDiscountDefinitionRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "CollectionReminderSettingsValues" : {
         "properties" : {
           "contactListDaysOverdue" : {
@@ -1769,6 +1778,75 @@
           }
         },
         "required" : [ "justification", "programEnrollmentId", "subjectId", "type" ],
+        "type" : "object"
+      },
+      "CreateDiscountDefinitionRequest" : {
+        "properties" : {
+          "applicableInvoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "availableFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "availableUntil" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "calculation" : {
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "capPerInvoice" : {
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "discountType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          },
+          "enrollmentWindowFrom" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "enrollmentWindowTo" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "programCohortId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "quota" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "applicableInvoiceType", "availableFrom", "discountType", "name", "priority" ],
         "type" : "object"
       },
       "CreateElectiveGroupRequest" : {
@@ -2586,6 +2664,253 @@
           }
         },
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionCatalogEntryResponse" : {
+        "properties" : {
+          "applicableInvoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "availability" : {
+            "description" : "Calculada por fecha: UPCOMING antes de availableFrom, EXPIRED después de availableUntil. Es independiente del estado CLOSED: el cliente combina ambos.",
+            "enum" : [ "UPCOMING", "AVAILABLE", "EXPIRED" ],
+            "type" : "string"
+          },
+          "availableFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "availableUntil" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "calculation" : {
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "capPerInvoice" : {
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
+          },
+          "closedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "closedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "closureReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "discountType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          },
+          "enrollmentWindowFrom" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "enrollmentWindowTo" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "estimatedQuotaCost" : {
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Solo con estimatedQuotaCostStatus = ESTIMATED; en cualquier otro estado puede venir null"
+          },
+          "estimatedQuotaCostStatus" : {
+            "description" : "ESTIMATED: hay costo. NO_QUOTA: la promoción no tiene cupo. NOT_APPLICABLE: no se puede calcular (sin alcance de oferta, sin cuotas o sin cálculo). NO_EFFECTIVE_PRICE: no hay precio vigente hoy para la oferta y el cargo.",
+            "enum" : [ "ESTIMATED", "NO_QUOTA", "NOT_APPLICABLE", "NO_EFFECTIVE_PRICE" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "programCohortId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "quota" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "quotaUsed" : {
+            "description" : "Provisorio: siempre 0 hasta V2-07c1, cuando existan las promociones otorgadas que ocupan el cupo.",
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "CLOSED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "availability", "estimatedQuotaCostStatus", "quotaUsed" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionPendingAuthorizationResponse" : {
+        "properties" : {
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "authorizationRequestId" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionResponse" : {
+        "properties" : {
+          "applicableInvoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "availableFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "availableUntil" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "calculation" : {
+            "description" : "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas puede venir null",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "capPerInvoice" : {
+            "$ref" : "#/components/schemas/Money",
+            "description" : "Opcional; puede venir null"
+          },
+          "closedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "closedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "closureReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "discountType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          },
+          "enrollmentWindowFrom" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "enrollmentWindowTo" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "programCohortId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "quota" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "CLOSED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "applicableInvoiceType", "availableFrom", "createdAt", "directPublication", "discountType", "id", "name", "priority", "status" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionValidationResponse" : {
+        "properties" : {
+          "violations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyViolation"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "violations" ],
         "type" : "object"
       },
       "ElectiveGroupProgressResponse" : {
@@ -13442,6 +13767,295 @@
           }
         },
         "tags" : [ "director-approval-request-controller" ]
+      }
+    },
+    "/discount-definitions" : {
+      "get" : {
+        "operationId" : "DiscountDefinition_listDiscountDefinitions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "CLOSED" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DiscountDefinitionCatalogEntryResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      },
+      "post" : {
+        "operationId" : "DiscountDefinition_createDiscountDefinition",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionResponse"
+                }
+              }
+            },
+            "description" : "El director publicó la promoción"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionPendingAuthorizationResponse"
+                }
+              }
+            },
+            "description" : "El administrativo dejó un pedido pendiente de aprobación"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/validation" : {
+      "post" : {
+        "operationId" : "DiscountDefinition_validateDiscountDefinition",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionValidationResponse"
+                }
+              }
+            },
+            "description" : "Todas las violaciones de las reglas del catálogo; lista vacía si el borrador es coherente"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Cuerpo que no se puede interpretar: INVALID_PERCENTAGE (porcentaje fuera de 0 a 100), NEGATIVE_ADJUSTMENT_AMOUNT (monto fijo negativo), UNSUPPORTED_CURRENCY. Estos no vuelven como violaciones porque el valor no llega a construirse"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "La carrera, el curso o la cohorte del alcance no existen"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/{id}/closure" : {
+      "post" : {
+        "operationId" : "DiscountDefinition_closeDiscountDefinition",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CloseDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionResponse"
+                }
+              }
+            },
+            "description" : "El director cerró la promoción"
+          },
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionPendingAuthorizationResponse"
+                }
+              }
+            },
+            "description" : "El administrativo dejó un pedido de cierre pendiente de aprobación"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
       }
     },
     "/elective-groups" : {

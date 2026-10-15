@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class IssuingScenarioFactory {
 
+    public static final LocalDate INITIAL_PRICE_FROM = LocalDate.of(2020, 1, 1);
+
     private static final AtomicLong SEQUENCE = new AtomicLong(800_000_000L + java.util.concurrent.ThreadLocalRandom.current().nextLong(0, 90_000_000L));
 
     public record Offering(Long programId, Long directorId, Long institutionId, Currency currency) {
@@ -85,8 +87,8 @@ public class IssuingScenarioFactory {
             program.setTotalCreditsRequired(10);
             program.setCurrency(currency);
             entityManager.persist(program);
-            addPrice(program, director, FeeType.MONTHLY_INSTALLMENT, currency, monthlyPrice, LocalDate.of(2020, 1, 1));
-            addPrice(program, director, FeeType.ENROLLMENT_FEE, currency, enrollmentFeePrice, LocalDate.of(2020, 1, 1));
+            addPrice(program, director, FeeType.MONTHLY_INSTALLMENT, currency, monthlyPrice, INITIAL_PRICE_FROM);
+            addPrice(program, director, FeeType.ENROLLMENT_FEE, currency, enrollmentFeePrice, INITIAL_PRICE_FROM);
             return new Offering(program.getId(), director.getId(), institution.getId(), currency);
         });
     }
