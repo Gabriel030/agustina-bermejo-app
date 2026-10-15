@@ -83,7 +83,6 @@ class CollectionReminderSchedulePoliciesTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidSchedules")
     @Tag("D-368")
-    @Tag("D-344")
     void invalidListsAreDeniedWithTheNoticePathInTheReason(String name, ReminderSchedule schedule, String expectedPath) {
         PolicyVerdict verdict = coherence.evaluateRule(new ReminderScheduleCheck(schedule, false));
 

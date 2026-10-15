@@ -102,7 +102,6 @@ class ReminderScheduleResolverTest {
 
     @Test
     @Tag("D-371")
-    @Tag("D-352")
     void theTemplateDoesNotExceedTheStudentCapsInAStandardMonth() {
         ResolvedReminderSchedule resolved = ReminderScheduleResolver.resolve(Optional.empty(), Optional.empty(), GLOBAL, Optional.of(MARCH));
 
@@ -111,7 +110,6 @@ class ReminderScheduleResolverTest {
 
     @Test
     @Tag("D-371")
-    @Tag("D-352")
     void repetitionsBeyondTheMonthlyMaximumAreExposedAsTrimmed() {
         ReminderNotice weekly = new ReminderNotice("weekly", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 1,
                 EnumSet.allOf(ReminderChannel.class), new ReminderRepetition(3, ReminderMilestone.SUSPENSION));
@@ -130,7 +128,6 @@ class ReminderScheduleResolverTest {
 
     @Test
     @Tag("D-371")
-    @Tag("D-352")
     void aMailTooCloseToThePreviousOneIsDeferredAndTrimmedOnlyWhenItWouldNoLongerApply() {
         ReminderNotice first = new ReminderNotice("first", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -2, EnumSet.of(ReminderChannel.EMAIL), null);
         ReminderNotice second = new ReminderNotice("second", ReminderMessageType.BEFORE_DUE_REMINDER, ReminderMilestone.DUE_DATE, -1, EnumSet.of(ReminderChannel.EMAIL), null);
