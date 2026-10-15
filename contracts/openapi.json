@@ -376,6 +376,19 @@
         "required" : [ "templateId" ],
         "type" : "object"
       },
+      "AllocatedInvoiceResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "invoiceId" ],
+        "type" : "object"
+      },
       "AllocationItem" : {
         "properties" : {
           "allocatedOn" : {
@@ -971,6 +984,75 @@
         "required" : [ "classDate", "entries", "observations", "topic" ],
         "type" : "object"
       },
+      "CashPaymentPreviewRequest" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "amount" ],
+        "type" : "object"
+      },
+      "CashPaymentPreviewResponse" : {
+        "properties" : {
+          "coveredByRemainingCredit" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CoveredInvoiceResponse"
+            },
+            "type" : "array"
+          },
+          "coveredInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CoveredInvoiceResponse"
+            },
+            "type" : "array"
+          },
+          "previewFingerprint" : {
+            "type" : "string"
+          },
+          "unallocatedAfterwards" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "coveredByRemainingCredit", "coveredInvoices", "previewFingerprint", "unallocatedAfterwards" ],
+        "type" : "object"
+      },
+      "CashPaymentResponse" : {
+        "properties" : {
+          "allocatedFromRemainingCredit" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AllocatedInvoiceResponse"
+            },
+            "type" : "array"
+          },
+          "allocatedInvoices" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AllocatedInvoiceResponse"
+            },
+            "type" : "array"
+          },
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "paidOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "paymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "unallocatedCredit" : {
+            "$ref" : "#/components/schemas/Money"
+          }
+        },
+        "required" : [ "allocatedFromRemainingCredit", "allocatedInvoices", "amount", "paidOn", "paymentId", "registeredAt", "unallocatedCredit" ],
+        "type" : "object"
+      },
       "ChangeCollectionReminderSettingsRequest" : {
         "properties" : {
           "changeReason" : {
@@ -1491,6 +1573,26 @@
           }
         },
         "required" : [ "capacity", "courseSubjectId", "id", "name", "schedule", "status", "termId" ],
+        "type" : "object"
+      },
+      "CoveredInvoiceResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "concept" : {
+            "type" : "string"
+          },
+          "dueDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "invoiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "concept", "dueDate", "invoiceId" ],
         "type" : "object"
       },
       "CreateAcademicOfferingCycleRequest" : {
@@ -5071,6 +5173,29 @@
         "required" : [ "refreshToken" ],
         "type" : "object"
       },
+      "RegisterCashPaymentRequest" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "backdateReason" : {
+            "type" : "string"
+          },
+          "paidOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "previewFingerprint" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "receiptNumber" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "backdateReason", "paidOn", "previewFingerprint", "receiptNumber" ],
+        "type" : "object"
+      },
       "RegisterPaymentRequest" : {
         "properties" : {
           "allocations" : {
@@ -5967,6 +6092,45 @@
         "required" : [ "attendancePercent", "cellsByDate", "studentId", "studentName" ],
         "type" : "object"
       },
+      "StudentPaymentResponse" : {
+        "properties" : {
+          "amount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "approvedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "gateway" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "methodType" : {
+            "type" : "string"
+          },
+          "paidOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "receiptNumber" : {
+            "type" : "string"
+          },
+          "refundedAmount" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "registeredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "amount", "approvedAmount", "gateway", "id", "methodType", "paidOn", "receiptNumber", "refundedAmount", "registeredAt", "status" ],
+        "type" : "object"
+      },
       "StudentRecordResponse" : {
         "properties" : {
           "apellido" : {
@@ -6813,6 +6977,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -6874,6 +7045,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -6936,6 +7114,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -6991,6 +7176,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7056,6 +7248,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7121,6 +7320,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7192,6 +7398,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7247,6 +7460,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7302,6 +7522,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7372,6 +7599,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7437,6 +7671,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7503,6 +7744,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7565,6 +7813,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7627,6 +7882,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7689,6 +7951,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7761,6 +8030,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7833,6 +8109,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7895,6 +8178,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -7951,6 +8241,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8014,6 +8311,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8077,6 +8381,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8140,6 +8451,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8196,6 +8514,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8259,6 +8584,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8322,6 +8654,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8378,6 +8717,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8441,6 +8787,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8512,6 +8865,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8583,6 +8943,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8645,6 +9012,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8701,6 +9075,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8763,6 +9144,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8826,6 +9214,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8898,6 +9293,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -8961,6 +9363,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9024,6 +9433,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9080,6 +9496,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9133,6 +9556,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9205,6 +9635,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9285,6 +9722,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9365,6 +9809,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9445,6 +9896,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9518,6 +9976,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9590,6 +10055,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9655,6 +10127,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9718,6 +10197,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9771,6 +10257,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9827,6 +10320,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -9997,6 +10497,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10058,6 +10565,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10113,6 +10627,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10185,6 +10706,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10247,6 +10775,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10309,6 +10844,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10388,6 +10930,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10460,6 +11009,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10522,6 +11078,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10594,6 +11157,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10659,6 +11229,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10714,6 +11291,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10779,6 +11363,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10841,6 +11432,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10906,6 +11504,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -10976,6 +11581,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11031,6 +11643,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11093,6 +11712,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11163,6 +11789,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11218,6 +11851,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11293,6 +11933,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11366,6 +12013,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11451,6 +12105,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11513,6 +12174,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11583,6 +12251,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11646,6 +12321,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11701,6 +12383,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11766,6 +12455,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11836,6 +12532,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11899,6 +12602,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -11964,6 +12674,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12029,6 +12746,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12099,6 +12823,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12171,6 +12902,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12236,6 +12974,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12298,6 +13043,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12368,6 +13120,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12423,6 +13182,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12478,6 +13244,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12551,6 +13324,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12621,6 +13401,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12693,6 +13480,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12754,6 +13548,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12816,6 +13617,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12886,6 +13694,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -12941,6 +13756,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13013,6 +13835,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13068,6 +13897,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13140,6 +13976,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13202,6 +14045,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13274,6 +14124,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13347,6 +14204,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13417,6 +14281,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13482,6 +14353,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13543,6 +14421,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13605,6 +14490,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13676,6 +14568,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13747,6 +14646,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13820,6 +14726,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13891,6 +14804,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -13954,6 +14874,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "La carrera, el curso o la cohorte del alcance no existen"
           },
           "409" : {
@@ -14036,6 +14963,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14092,6 +15026,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14153,6 +15094,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14215,6 +15163,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14285,6 +15240,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14350,6 +15312,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14406,6 +15375,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14467,6 +15443,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14539,6 +15522,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14594,6 +15584,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14659,6 +15656,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14720,6 +15724,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14782,6 +15793,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14837,6 +15855,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14902,6 +15927,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -14972,6 +16004,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15037,6 +16076,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15090,6 +16136,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15155,6 +16208,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15220,6 +16280,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15282,6 +16349,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15344,6 +16418,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15416,6 +16497,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15478,6 +16566,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15534,6 +16629,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15590,6 +16692,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15646,6 +16755,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15708,6 +16824,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15780,6 +16903,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15852,6 +16982,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15915,6 +17052,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -15968,6 +17112,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16021,6 +17172,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16082,6 +17240,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16138,6 +17303,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16194,6 +17366,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16279,6 +17458,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16333,6 +17519,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16393,6 +17586,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16449,6 +17649,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16505,6 +17712,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16561,6 +17775,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16643,6 +17864,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16705,6 +17933,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16761,6 +17996,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16817,6 +18059,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16873,6 +18122,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16929,6 +18185,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -16990,6 +18253,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17045,6 +18315,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17110,6 +18387,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17188,6 +18472,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17250,6 +18541,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17312,6 +18610,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17365,6 +18670,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17426,6 +18738,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17482,6 +18801,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17544,6 +18870,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17600,6 +18933,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17620,6 +18960,69 @@
           }
         },
         "tags" : [ "person-controller" ]
+      }
+    },
+    "/me/payments" : {
+      "get" : {
+        "operationId" : "StudentPayment_listOwnPayments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/StudentPaymentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-payment-controller" ]
       }
     },
     "/me/program-enrollment-applications" : {
@@ -17656,6 +19059,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17724,6 +19134,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17803,6 +19220,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17859,6 +19283,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17922,6 +19353,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -17985,6 +19423,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18050,6 +19495,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18112,6 +19564,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18174,6 +19633,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18236,6 +19702,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18292,6 +19765,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18353,6 +19833,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18418,6 +19905,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18480,6 +19974,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18552,6 +20053,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18617,6 +20125,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18672,6 +20187,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18728,6 +20250,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18790,6 +20319,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18860,6 +20396,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18922,6 +20465,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -18968,6 +20518,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19022,6 +20579,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19077,6 +20641,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19133,6 +20704,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19186,6 +20764,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19247,6 +20832,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19316,6 +20908,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19376,6 +20975,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19439,6 +21045,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19509,6 +21122,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19565,6 +21185,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19627,6 +21254,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19699,6 +21333,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19761,6 +21402,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19833,6 +21481,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19898,6 +21553,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -19963,6 +21625,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20033,6 +21702,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20098,6 +21774,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20163,6 +21846,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20225,6 +21915,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20304,6 +22001,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20376,6 +22080,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20438,6 +22149,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20510,6 +22228,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20575,6 +22300,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20645,6 +22377,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20700,6 +22439,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20762,6 +22508,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20832,6 +22585,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20887,6 +22647,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -20962,6 +22729,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21035,6 +22809,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21120,6 +22901,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21182,6 +22970,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21252,6 +23047,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21315,6 +23117,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21370,6 +23179,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21435,6 +23251,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21505,6 +23328,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21568,6 +23398,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21633,6 +23470,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21688,6 +23532,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21743,6 +23594,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21805,6 +23663,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21875,6 +23740,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21930,6 +23802,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -21995,6 +23874,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22065,6 +23951,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22120,6 +24013,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22185,6 +24085,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22255,6 +24162,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22327,6 +24241,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22388,6 +24309,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22450,6 +24378,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22520,6 +24455,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22575,6 +24517,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22647,6 +24596,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22712,6 +24668,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22767,6 +24730,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22832,6 +24802,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22902,6 +24879,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -22965,6 +24949,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23037,6 +25028,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23099,6 +25097,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23171,6 +25176,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23244,6 +25256,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23314,6 +25333,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23379,6 +25405,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23449,6 +25482,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23514,6 +25554,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23569,6 +25616,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23632,6 +25686,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23697,6 +25758,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23769,6 +25837,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23834,6 +25909,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23918,6 +26000,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -23973,6 +26062,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24029,6 +26125,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24094,6 +26197,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24156,6 +26266,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24228,6 +26345,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24293,6 +26417,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24363,6 +26494,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24418,6 +26556,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24483,6 +26628,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24545,6 +26697,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24607,6 +26766,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24679,6 +26845,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24758,6 +26931,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24819,6 +26999,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24881,6 +27068,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -24951,6 +27145,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25006,6 +27207,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25061,6 +27269,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25116,6 +27331,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25196,6 +27418,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25258,6 +27487,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25323,6 +27559,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25388,6 +27631,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25458,6 +27708,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25523,6 +27780,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25588,6 +27852,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25658,6 +27929,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25713,6 +27991,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25778,6 +28063,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25798,6 +28090,171 @@
           }
         },
         "tags" : [ "student-controller" ]
+      }
+    },
+    "/students/{studentId}/cash-payments" : {
+      "post" : {
+        "operationId" : "StudentPayment_registerCashPayment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterCashPaymentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CashPaymentResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "IDEMPOTENCY_KEY_INVALID, CASH_PAYMENT_AMOUNT_INVALID, CASH_PAYMENT_RECEIPT_NUMBER_INVALID, PAYMENT_DATE_IN_FUTURE, CASH_PAYMENT_DATE_TOO_OLD (más de 5 días atrás para el administrativo), CASH_PAYMENT_BACKDATE_REASON_REQUIRED (director, más de 5 días atrás sin motivo), CASH_PAYMENT_BACKDATE_REASON_INVALID (motivo de más de 500 caracteres)"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "STUDENT_NOT_FOUND: el alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "IDEMPOTENCY_KEY_CONFLICT (misma clave con otro pedido) o CASH_PAYMENT_PREVIEW_OUTDATED (la cuenta cambió desde la vista previa: pedirla de nuevo)"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-payment-controller" ]
+      }
+    },
+    "/students/{studentId}/cash-payments/preview" : {
+      "post" : {
+        "operationId" : "StudentPayment_previewCashPayment",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CashPaymentPreviewRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CashPaymentPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "CASH_PAYMENT_AMOUNT_INVALID"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "El alumno no existe"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-payment-controller" ]
       }
     },
     "/students/{studentId}/credit-notes" : {
@@ -25843,6 +28300,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25905,6 +28369,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -25925,6 +28396,78 @@
           }
         },
         "tags" : [ "current-account-allocation-controller" ]
+      }
+    },
+    "/students/{studentId}/payments" : {
+      "get" : {
+        "operationId" : "StudentPayment_listPaymentsOfStudent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "studentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/StudentPaymentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "student-payment-controller" ]
       }
     },
     "/students/{studentId}/reenrollment/course/{courseId}" : {
@@ -25978,6 +28521,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26051,6 +28601,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26116,6 +28673,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26171,6 +28735,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26236,6 +28807,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26301,6 +28879,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26371,6 +28956,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26443,6 +29035,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26508,6 +29107,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26573,6 +29179,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26634,6 +29247,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26696,6 +29316,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26766,6 +29393,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26821,6 +29455,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26883,6 +29524,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -26938,6 +29586,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27010,6 +29665,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27083,6 +29745,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27153,6 +29822,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27215,6 +29891,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27280,6 +29963,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27341,6 +30031,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27403,6 +30100,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27473,6 +30177,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27528,6 +30239,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27615,6 +30333,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27670,6 +30395,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27725,6 +30457,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27780,6 +30519,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27835,6 +30581,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27889,6 +30642,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -27954,6 +30714,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -28024,6 +30791,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {
@@ -28096,6 +30870,13 @@
             "description" : "Forbidden"
           },
           "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
             "description" : "Not Found"
           },
           "409" : {

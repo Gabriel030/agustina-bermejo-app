@@ -63,6 +63,9 @@ class ExceptionHierarchyContractTest {
                     String expectedCode = ErrorCodeResponse.of(TO_THROW.get()).code();
                     assertThat(result.getContentAsString()).as(type.getSimpleName())
                             .isEqualTo("{\"code\":\"" + expectedCode + "\"}");
+                } else if (ReportsErrorCode.class.isAssignableFrom(type)) {
+                    assertThat(result.getContentAsString()).as(type.getSimpleName())
+                            .isEqualTo("{\"code\":\"" + ErrorCodeResponse.of(TO_THROW.get()).code() + "\"}");
                 } else {
                     assertThat(result.getContentAsString()).as(type.getSimpleName()).isEmpty();
                 }
