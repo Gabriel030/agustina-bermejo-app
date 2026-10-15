@@ -13,7 +13,6 @@ import com.red_escuela.backend.billing.operation.BillingOperationType;
 import com.red_escuela.backend.billing.payment.domain.ApprovedPaymentRegistrationResult;
 import com.red_escuela.backend.billing.payment.domain.Payment;
 import com.red_escuela.backend.billing.payment.repository.PaymentRepository;
-import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.event.DomainEvent;
@@ -74,9 +73,6 @@ public class RegisterGatewayPaymentOperation implements BillingOperation<Registe
     public ApprovedPaymentRegistrationResult processOperation(RegisterGatewayPaymentCommand command) {
         LocalDate today = LocalDate.now(clock);
         StudentCurrentAccount account = accountService.lockStudentCurrentAccount(command.studentCurrentAccountId());
-        if (command.amount().currency() != account.getCurrency()) {
-            throw new CurrencyMismatchException(account.getCurrency(), command.amount().currency());
-        }
         NonNegativeMoney amount = NonNegativeMoney.of(command.amount());
         Payment payment = payments.save(Payment.registerApprovedGatewayPayment(account, amount, command.gateway(), command.details(), command.gatewayPaymentId(),
                 command.rawStatus(), today, command.actor()));
