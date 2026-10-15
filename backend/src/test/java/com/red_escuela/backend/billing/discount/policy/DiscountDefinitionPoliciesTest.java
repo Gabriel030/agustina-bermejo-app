@@ -183,6 +183,12 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @Test
+    void aCapPerInvoiceFitsTheTwelveDigitColumnOrIsRejected() {
+        assertThat(violationsOf(DiscountDraftBuilder.cohortPromotion().withCap("9999999999.99", Currency.ARS).build())).isEmpty();
+        assertThat(codesOf(violationsOf(DiscountDraftBuilder.cohortPromotion().withCap("10000000000.00", Currency.ARS).build()))).containsExactly("INVALID_DISCOUNT_DEFINITION");
+    }
+
+    @Test
     void availableUntilBeforeAvailableFromIsRejected() {
         DiscountDefinitionDraft draft = DiscountDraftBuilder.cohortPromotion().availableFrom(LocalDate.of(2031, 6, 1)).availableUntil(LocalDate.of(2031, 5, 31)).build();
 
@@ -364,9 +370,10 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @Test
-    void closingNeedsAReasonOfUpToOneThousandCharacters() {
+    void closingNeedsAReasonOfUpToFourHundredAndFiftyCharacters() {
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("Se agotó el cupo")).allowed()).isTrue();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(450))).allowed()).isTrue();
+        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck(" ".repeat(100) + "a".repeat(450) + " ".repeat(100))).allowed()).isTrue();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(451))).allowed()).isFalse();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(600))).allowed()).isFalse();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("  ")).allowed()).isFalse();
