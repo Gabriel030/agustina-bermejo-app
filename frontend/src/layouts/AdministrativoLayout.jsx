@@ -1,4 +1,4 @@
-import { Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen } from 'lucide-react';
+import { Home, Users, Receipt, FileText, CalendarCheck, UserCog, BookOpen, BarChart2 } from 'lucide-react';
 import { RoleShell } from '@/layouts/RoleShell';
 
 const ITEMS = [
@@ -6,6 +6,7 @@ const ITEMS = [
   { to: '/administrativo/alumnos', label: 'Alumnos', icon: Users },
   { to: '/administrativo/personal', label: 'Personal', icon: UserCog },
   { to: '/administrativo/facturacion', label: 'Facturación', icon: Receipt },
+  { to: '/administrativo/financiero', label: 'Financiero', icon: BarChart2 },
   { to: '/administrativo/constancias', label: 'Constancias', icon: FileText },
   { to: '/administrativo/solicitudes-de-asistencia', label: 'Solicitudes de asistencia', icon: CalendarCheck },
   { to: '/administrativo/gestion-academica', label: 'Banco de materias', icon: BookOpen },

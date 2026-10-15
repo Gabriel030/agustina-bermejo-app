@@ -19,7 +19,7 @@ export const ROLE_CONFIG = {
   },
   administrativo: {
     Layout: AdministrativoLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'facturacion', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
+    pages: ['inicio', 'alumnos', 'personal', 'facturacion', 'financiero', 'constancias', 'solicitudes-de-asistencia', 'gestion-academica'],
   },
   director: {
     Layout: DirectorLayout,

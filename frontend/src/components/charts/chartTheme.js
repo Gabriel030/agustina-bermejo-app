@@ -9,7 +9,7 @@ export const SERIES_COLORS = [
 ];
 
 export const GRID_COLOR = 'var(--border)';
-export const AXIS_COLOR = 'var(--ink-faint)';
+export const AXIS_COLOR = 'var(--ink-soft)';
 export const GOAL_COLOR = 'var(--ink-soft)';
 
 export function seriesColor(series, index) {
