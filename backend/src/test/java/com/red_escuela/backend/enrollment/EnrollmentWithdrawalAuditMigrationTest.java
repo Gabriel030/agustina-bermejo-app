@@ -19,7 +19,7 @@ class EnrollmentWithdrawalAuditMigrationTest {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
             DriverManagerDataSource dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("113").load().migrate();
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("114").load().migrate();
             JdbcTemplate jdbc = new JdbcTemplate(dataSource);
             jdbc.update("insert into address default values");
             Long addressId = jdbc.queryForObject("select max(id) from address", Long.class);
@@ -46,7 +46,7 @@ class EnrollmentWithdrawalAuditMigrationTest {
             jdbc.update("insert into course_enrollment (student_id, course_id, status, enrollment_date) values (?, ?, 'ENROLLED', timestamp '2027-03-01 10:00:00')", studentId, courseId);
             Long activeCourseEnrollment = jdbc.queryForObject("select max(id) from course_enrollment", Long.class);
 
-            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("114").load().migrate();
+            Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").target("115").load().migrate();
 
             assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from program_enrollment where id = ?", String.class, withdrawnProgramEnrollment)).isEqualTo("2027-05-15");
             assertThat(jdbc.queryForObject("select withdrawal_effective_date::text from course_enrollment where id = ?", String.class, withdrawnCourseEnrollment)).isEqualTo("2027-04-02");

@@ -43,6 +43,9 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
     @Query("select c.term.endDate from CourseEnrollment e join e.course c where e.id = :id")
     java.util.Optional<java.time.LocalDateTime> findCourseTermEndDateByEnrollmentId(@Param("id") Long id);
 
+    @Query("select e.id from CourseEnrollment e where e.id in :ids and e.course.teachingMode = com.red_escuela.backend.academicstructure.entity.TeachingMode.ONLINE")
+    List<Long> findIdsOfOnlineOnlyEnrollments(@Param("ids") Collection<Long> ids);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select e from CourseEnrollment e where e.id = :id")
     java.util.Optional<CourseEnrollment> findByIdForUpdate(@Param("id") Long id);
