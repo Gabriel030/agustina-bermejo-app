@@ -18,7 +18,8 @@ const FEATURES = [
   'workspace',
 ]
 
-const boundaryMessage = 'Una feature solo puede importar de otra a través de su index.js.'
+
+const boundaryMessage ='Una feature solo puede importar de otra a través de su index.js.'
 
 const featureBoundaryRules = FEATURES.map((feature) => ({
   files: [`src/features/${feature}/**/*.{js,jsx}`],
@@ -83,6 +84,19 @@ export default defineConfig([
     },
   },
   ...featureBoundaryRules,
+  {
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/components/charts/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "ImportDeclaration[source.value='recharts']",
+          message: 'Importá los gráficos desde @/components/charts; recharts solo se usa dentro de ese directorio.',
+        },
+      ],
+    },
+  },
   {
     files: ['src/components/**/*.{js,jsx}', 'src/lib/**/*.{js,jsx}', 'src/layouts/**/*.{js,jsx}'],
     ignores: ['**/*.test.{js,jsx}'],
