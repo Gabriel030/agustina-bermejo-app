@@ -9,11 +9,16 @@ Uso:
                                               regenera timings.txt desde TEST-*.xml de surefire (busca recursivo)
   test-shards.py list <indice> [<cantidad>]   lista las clases del shard (cantidad por defecto 5, como la CI)
   test-shards.py run <indice> [<cantidad>]    corre el shard en local con el semaforo (backend/: ./mvnw test -Dtest=...)
-  test-shards.py use <archivo>                copia <archivo> como timings.txt (tiempos medidos en develop)
+  test-shards.py accumulate <dir> [<dir> ...] --out <dir> [--history <dir>]
+                                              suma las medidas de esta corrida (TEST-*.xml) al historial de las ultimas
+                                              WINDOW corridas y escribe samples.json + timings.txt (promedio por clase)
+  test-shards.py use <dir>                    copia el promedio de <dir>/samples.json como timings.txt si hay al menos
+                                              MIN_HISTORY corridas; si no, se queda con el timings.txt versionado
 
 Las clases que no figuran en timings.txt reciben como peso el promedio de las medidas
 (minimo 1 s) y se reparten igual, de modo que ninguna queda afuera.
 """
+import json
 import os
 import re
 import sys
@@ -22,6 +27,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 TEST_ROOT = os.path.join(ROOT, 'backend', 'src', 'test', 'java')
 TIMINGS = os.path.join(ROOT, '.github', 'test-shards', 'timings.txt')
 DEFAULT_WEIGHT = 1.0
+WINDOW = 8
+MIN_HISTORY = 3
 NAME = re.compile(r'(^Test.*|.*Test|.*Tests|.*TestCase|.*IT|.*Properties)\.java$')
 ABSTRACT = re.compile(r'^\s*(public\s+)?abstract\s+class\s', re.M)
 
@@ -41,16 +48,19 @@ def discover():
     return sorted(found)
 
 
-def load_timings():
+def parse_timings(path):
     timings = {}
-    if os.path.exists(TIMINGS):
-        with open(TIMINGS, encoding='utf-8') as handle:
-            for line in handle:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    seconds, name = line.split(None, 1)
-                    timings[name] = float(seconds)
+    with open(path, encoding='utf-8') as handle:
+        for line in handle:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                seconds, name = line.split(None, 1)
+                timings[name] = float(seconds)
     return timings
+
+
+def load_timings():
+    return parse_timings(TIMINGS) if os.path.exists(TIMINGS) else {}
 
 
 def default_weight(timings):
@@ -112,17 +122,11 @@ def update(logs):
                 out.write('%.2f %s\n' % (totals[name], name))
 
 
-def update_xml(args):
+def measure_xml(directories):
     import glob
     import xml.etree.ElementTree as ET
-    out = TIMINGS
-    if '--out' in args:
-        at = args.index('--out')
-        out = args[at + 1]
-        args = args[:at] + args[at + 2:]
-    classes = set(discover())
     totals = {}
-    for directory in args:
+    for directory in directories:
         for path in glob.glob(os.path.join(directory, '**', 'TEST-*.xml'), recursive=True):
             try:
                 suite = ET.parse(path).getroot()
@@ -130,11 +134,94 @@ def update_xml(args):
                 continue
             top = suite.get('name', '').split('$')[0].replace('.', '/')
             totals[top] = totals.get(top, 0.0) + float(suite.get('time', '0') or 0)
-    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    with open(out, 'w', encoding='utf-8') as handle:
-        for name in sorted(totals):
-            if name in classes:
-                handle.write('%.2f %s\n' % (totals[name], name))
+    return totals
+
+
+def write_timings(path, timings):
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as handle:
+        for name in sorted(timings):
+            handle.write('%.2f %s\n' % (timings[name], name))
+
+
+def update_xml(args):
+    out = TIMINGS
+    if '--out' in args:
+        at = args.index('--out')
+        out = args[at + 1]
+        args = args[:at] + args[at + 2:]
+    classes = set(discover())
+    totals = measure_xml(args)
+    write_timings(out, {name: totals[name] for name in totals if name in classes})
+
+
+def averages(samples):
+    return {name: sum(values) / len(values) for name, values in samples.items() if values}
+
+
+def parse_history(path):
+    try:
+        with open(path, encoding='utf-8') as handle:
+            data = json.load(handle)
+        runs = data['runs']
+        samples = data['samples']
+        if isinstance(runs, bool) or not isinstance(runs, int) or not isinstance(samples, dict) or not samples:
+            raise ValueError('unexpected shape')
+        for values in samples.values():
+            if not isinstance(values, list) or not values:
+                raise ValueError('unexpected shape')
+            for value in values:
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise ValueError('unexpected shape')
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        print('history ignored (%s): %s' % (path, error))
+        return None
+    return data
+
+
+def read_history(directory):
+    if directory:
+        history = os.path.join(directory, 'samples.json')
+        if os.path.exists(history):
+            data = parse_history(history)
+            if data is not None:
+                return data
+        else:
+            legacy = os.path.join(directory, 'timings.txt')
+            try:
+                if os.path.exists(legacy) and os.path.getsize(legacy) > 0:
+                    return {'runs': 1, 'samples': {k: [v] for k, v in parse_timings(legacy).items()}}
+            except (OSError, ValueError) as error:
+                print('legacy timings ignored (%s): %s' % (legacy, error))
+    return {'runs': 1, 'samples': {k: [v] for k, v in load_timings().items()}}
+
+
+def merge_run(history, measured, classes, window=WINDOW):
+    samples = {}
+    for name in classes:
+        values = list(history.get('samples', {}).get(name, []))
+        if name in measured:
+            values.append(measured[name])
+        if values:
+            samples[name] = [round(v, 2) for v in values[-window:]]
+    return {'runs': min(window, history.get('runs', 0) + 1), 'samples': samples}
+
+
+def accumulate(args):
+    at = args.index('--out')
+    out = args[at + 1]
+    args = args[:at] + args[at + 2:]
+    history_dir = None
+    if '--history' in args:
+        at = args.index('--history')
+        history_dir = args[at + 1]
+        args = args[:at] + args[at + 2:]
+    merged = merge_run(read_history(history_dir), measure_xml(args), set(discover()))
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, 'samples.json'), 'w', encoding='utf-8') as handle:
+        json.dump(merged, handle, sort_keys=True)
+    write_timings(os.path.join(out, 'timings.txt'), averages(merged['samples']))
+    print('history: %d run(s), %d classes' % (merged['runs'], len(merged['samples'])))
 
 
 def shard_classes(index, count):
@@ -168,10 +255,21 @@ def run_shard(args):
     sys.exit(result.returncode)
 
 
-def use(path):
-    import shutil
-    if os.path.getsize(path) > 0:
-        shutil.copyfile(path, TIMINGS)
+def use(directory):
+    history = os.path.join(directory, 'samples.json')
+    if not os.path.exists(history):
+        print('baseline ignored: it has no run history, the versioned timings.txt is used')
+        return
+    data = parse_history(history)
+    if data is None:
+        print('baseline ignored: corrupt or unexpected history, the versioned timings.txt is used')
+        return
+    runs = data['runs']
+    if runs < MIN_HISTORY:
+        print('baseline ignored: %d run(s) of history, %d needed, the versioned timings.txt is used' % (runs, MIN_HISTORY))
+        return
+    write_timings(TIMINGS, averages(data['samples']))
+    print('baseline used: average of the last %d run(s)' % runs)
 
 
 if __name__ == '__main__':
@@ -186,6 +284,8 @@ if __name__ == '__main__':
         list_shard(sys.argv[2:])
     elif command == 'run':
         run_shard(sys.argv[2:])
+    elif command == 'accumulate':
+        accumulate(sys.argv[2:])
     elif command == 'use':
         use(sys.argv[2])
     elif command == 'update':

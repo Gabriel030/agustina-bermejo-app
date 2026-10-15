@@ -103,14 +103,14 @@ jobs:
       - name: Mark the shard start
         run: echo "SHARD_START=$(date +%s)" >> "$GITHUB_ENV"
 
-      - name: Use the timings measured on the integration branch when available
+      - name: Use the averaged timings of the integration branch when available
         if: needs.backend-changes.outputs.baseline_run != ''
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh run download "${{ needs.backend-changes.outputs.baseline_run }}" --repo "${{ github.repository }}" -n test-baseline -D "$RUNNER_TEMP/baseline"
-          python3 .github/scripts/test-shards.py use "$RUNNER_TEMP/baseline/timings.txt"
+          python3 .github/scripts/test-shards.py use "$RUNNER_TEMP/baseline"
 
       - name: Verify the shard assignment covers every test class once
         run: python3 .github/scripts/test-shards.py verify 5
@@ -278,11 +278,12 @@ jobs:
             gh api --method POST "repos/$repo/issues/$number/comments" -F body=@report-out/report.md > /dev/null
           fi
 
-      - name: Regenerate the timings from this run
+      - name: Add this run to the timing history
+        continue-on-error: true
         if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && needs.backend-tests.result == 'success'
         run: |
           mkdir -p baseline-out
-          python3 .github/scripts/test-shards.py update-xml shards --out baseline-out/timings.txt
+          python3 .github/scripts/test-shards.py accumulate shards --history baseline --out baseline-out
           cp report-out/metrics.json baseline-out/metrics.json
 
       - name: Publish the timings as the baseline for pull requests

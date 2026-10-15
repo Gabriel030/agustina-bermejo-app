@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import shutil
 import tempfile
 import unittest
 
@@ -15,6 +16,7 @@ def load(name, file):
 
 
 budget = load('test_budget', 'test-budget.py')
+shards = load('test_shards', 'test-shards.py')
 
 
 def write_report(directory, name, seconds):
@@ -107,6 +109,113 @@ class BudgetTest(unittest.TestCase):
         self.assertEqual(61, metrics['wall_seconds'])
         self.assertEqual(0, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=22)))
         self.assertEqual(1, budget.aggregate(Args(shards=shards, out=out, test_root=self.sources, max_contexts=17)))
+
+
+class ShardTimingsTest(unittest.TestCase):
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+        self.original = shards.TIMINGS
+        shards.TIMINGS = os.path.join(self.root, 'timings.txt')
+        with open(shards.TIMINGS, 'w', encoding='utf-8') as handle:
+            handle.write('5.00 a/A\n')
+
+    def tearDown(self):
+        shards.TIMINGS = self.original
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def write_history(self, runs, samples):
+        directory = os.path.join(self.root, 'baseline')
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, 'samples.json'), 'w', encoding='utf-8') as handle:
+            json.dump({'runs': runs, 'samples': samples}, handle)
+        return directory
+
+    def test_merge_keeps_only_the_last_window_of_samples(self):
+        history = {'runs': 3, 'samples': {'a/A': [1.0, 2.0, 3.0]}}
+        merged = shards.merge_run(history, {'a/A': 10.0}, {'a/A'}, window=3)
+        self.assertEqual([2.0, 3.0, 10.0], merged['samples']['a/A'])
+        self.assertEqual(3, merged['runs'])
+
+    def test_average_smooths_a_single_noisy_run(self):
+        history = {'runs': 3, 'samples': {'a/A': [4.0, 5.0, 6.0]}}
+        merged = shards.merge_run(history, {'a/A': 29.0}, {'a/A'})
+        self.assertEqual(11.0, shards.averages(merged['samples'])['a/A'])
+
+    def test_merge_drops_classes_that_no_longer_exist(self):
+        history = {'runs': 1, 'samples': {'a/A': [1.0], 'a/Gone': [9.0]}}
+        merged = shards.merge_run(history, {'a/A': 2.0}, {'a/A'})
+        self.assertEqual({'a/A'}, set(merged['samples']))
+
+    def test_class_not_measured_keeps_its_history(self):
+        history = {'runs': 2, 'samples': {'a/A': [1.0, 3.0]}}
+        merged = shards.merge_run(history, {}, {'a/A'})
+        self.assertEqual([1.0, 3.0], merged['samples']['a/A'])
+
+    def test_legacy_baseline_without_history_seeds_one_run(self):
+        directory = os.path.join(self.root, 'legacy')
+        os.makedirs(directory)
+        with open(os.path.join(directory, 'timings.txt'), 'w', encoding='utf-8') as handle:
+            handle.write('7.00 a/A\n')
+        history = shards.read_history(directory)
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [7.0]}, history['samples'])
+
+    def test_missing_baseline_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(os.path.join(self.root, 'absent'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_use_ignores_a_baseline_with_too_little_history(self):
+        directory = self.write_history(shards.MIN_HISTORY - 1, {'a/A': [90.0, 90.0]})
+        shards.use(directory)
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_use_ignores_a_legacy_single_run_baseline(self):
+        directory = os.path.join(self.root, 'legacy')
+        os.makedirs(directory)
+        with open(os.path.join(directory, 'timings.txt'), 'w', encoding='utf-8') as handle:
+            handle.write('90.00 a/A\n')
+        shards.use(directory)
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_use_applies_the_average_once_there_is_enough_history(self):
+        directory = self.write_history(shards.MIN_HISTORY, {'a/A': [10.0, 20.0, 30.0]})
+        shards.use(directory)
+        self.assertEqual({'a/A': 20.0}, shards.load_timings())
+
+    def write_raw(self, content):
+        directory = os.path.join(self.root, 'raw')
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, 'samples.json'), 'w', encoding='utf-8') as handle:
+            handle.write(content)
+        return directory
+
+    def test_corrupt_history_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{not json'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_history_without_samples_key_seeds_from_the_versioned_timings(self):
+        history = shards.read_history(self.write_raw('{"runs": 5}'))
+        self.assertEqual(1, history['runs'])
+        self.assertEqual({'a/A': [5.0]}, history['samples'])
+
+    def test_use_with_runs_but_no_samples_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{"runs": 5}'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+        self.assertGreater(os.path.getsize(shards.TIMINGS), 0)
+
+    def test_use_with_corrupt_history_keeps_the_versioned_timings(self):
+        shards.use(self.write_raw('{not json'))
+        self.assertEqual({'a/A': 5.0}, shards.load_timings())
+
+    def test_history_never_exceeds_the_window(self):
+        history = {'runs': 1, 'samples': {}}
+        for index in range(shards.WINDOW + 4):
+            history = shards.merge_run(history, {'a/A': float(index)}, {'a/A'})
+        self.assertEqual(shards.WINDOW, len(history['samples']['a/A']))
+        self.assertEqual(float(shards.WINDOW + 3), history['samples']['a/A'][-1])
+        self.assertEqual(shards.WINDOW, history['runs'])
 
 
 if __name__ == '__main__':
