@@ -71,7 +71,10 @@ class StudentDiscountStatusTransitionTest {
     private static StudentDiscount discountIn(StudentDiscountStatus status) {
         StudentDiscount discount = grantedDiscount();
         switch (status) {
-            case EXHAUSTED -> discount.recordLastInstallmentConsumed(ACTOR, NOW);
+            case EXHAUSTED -> {
+                ReflectionTestUtils.setField(discount, "installmentsTotal", 3);
+                discount.recordLastInstallmentConsumed(ACTOR, NOW);
+            }
             case REVOKED -> discount.revokeStudentDiscount("motivo", YearMonth.of(2027, 4), ACTOR, NOW);
             case ENDED -> discount.endWithEnrollment(ACTOR, NOW);
             default -> {
@@ -137,5 +140,14 @@ class StudentDiscountStatusTransitionTest {
         discount.endWithEnrollment(ACTOR, NOW);
 
         assertThat(discount.coversPeriod(YearMonth.of(2027, 5))).isFalse();
+    }
+
+    @Test
+    void theLastInstallmentCanOnlyBeConsumedWhenTheDiscountHasAnInstallmentCount() {
+        StudentDiscount withoutCount = grantedDiscount();
+
+        assertThatThrownBy(() -> withoutCount.recordLastInstallmentConsumed(ACTOR, NOW)).isInstanceOf(IllegalStudentDiscountTransitionException.class);
+        assertThat(withoutCount.getStatus()).isEqualTo(ACTIVE);
+        assertThat(withoutCount.getStatusChanges()).hasSize(1);
     }
 }

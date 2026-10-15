@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.domain;
 
+import com.red_escuela.backend.billing.discount.exception.IllegalStudentDiscountTransitionException;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -84,6 +85,9 @@ public class StudentDiscount {
     @Column(name = "priority", nullable = false, updatable = false)
     private int priority;
 
+    @Column(name = "installments_total", updatable = false)
+    private Integer installmentsTotal;
+
     @Column(name = "from_period", nullable = false, updatable = false)
     private YearMonth fromPeriod;
 
@@ -162,6 +166,9 @@ public class StudentDiscount {
     }
 
     public void recordLastInstallmentConsumed(StatusChangeActor actor, Instant now) {
+        if (installmentsTotal == null) {
+            throw new IllegalStudentDiscountTransitionException(status, StudentDiscountEvent.LAST_INSTALLMENT_CONSUMED);
+        }
         moveTo(StudentDiscountEvent.LAST_INSTALLMENT_CONSUMED, actor, now, null);
     }
 

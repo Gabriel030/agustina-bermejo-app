@@ -16,6 +16,7 @@ import com.red_escuela.backend.billing.discount.exception.InvalidScholarshipPeri
 import com.red_escuela.backend.billing.discount.exception.InvalidStudentDiscountException;
 import com.red_escuela.backend.billing.discount.exception.RevocationReasonRequiredException;
 import com.red_escuela.backend.billing.discount.exception.ScholarshipStartBeforeNextInstallmentException;
+import com.red_escuela.backend.billing.discount.exception.StudentDiscountProposalExpiredException;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
@@ -263,13 +264,62 @@ class StudentDiscountGrantingIT extends AbstractIntegrationTest {
 
     @Test
     void anApprovalAfterTheStartMonthWasEmittedIsRejectedByTheRevalidation() {
-        today(LocalDate.of(2027, 3, 1));
-        Long requestId = proposeGrant(scholarship("30", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
+        today(LocalDate.of(2027, 3, 10));
+        Long requestId = proposeGrant(scholarship("30", YearMonth.of(2027, 4), YearMonth.of(2027, 8)));
         emitInstallment(YearMonth.of(2027, 3));
+        emitInstallment(YearMonth.of(2027, 4));
 
         authenticateAs(director);
         assertThatThrownBy(() -> approveRequest.approve(requestId, "ok")).isInstanceOf(ScholarshipStartBeforeNextInstallmentException.class);
         assertThat(discountsOfLearner()).isZero();
+    }
+
+    @Test
+    void aProposalWhoseStartMonthAlreadyBeganIsRejectedWhenProposed() {
+        today(LocalDate.of(2027, 3, 10));
+        long requestsBefore = jdbc.queryForObject("select count(*) from authorization_request where requested_by_id = ?", Long.class, administrative.getId());
+
+        assertThatThrownBy(() -> grant(administrative, scholarship("25", YearMonth.of(2027, 3), YearMonth.of(2027, 6)))).isInstanceOf(StudentDiscountProposalExpiredException.class);
+        grant(administrative, scholarship("25", YearMonth.of(2027, 4), YearMonth.of(2027, 6)));
+
+        assertThat(jdbc.queryForObject("select count(*) from authorization_request where requested_by_id = ?", Long.class, administrative.getId())).isEqualTo(requestsBefore + 1);
+        grantAsDirector(scholarship("25", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
+    }
+
+    @Test
+    void approvingOnTheDeadlineDayIsRejectedEvenBeforeTheExpirationJobRuns() {
+        today(LocalDate.of(2027, 2, 25));
+        Long requestId = proposeGrant(scholarship("25", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
+
+        today(LocalDate.of(2027, 3, 1));
+        authenticateAs(director);
+
+        assertThatThrownBy(() -> approveRequest.approve(requestId, "tarde")).isInstanceOf(StudentDiscountProposalExpiredException.class);
+        assertThat(discountsOfLearner()).isZero();
+    }
+
+    @Test
+    void approvingTheDayBeforeTheDeadlineStillGrantsTheDiscount() {
+        today(LocalDate.of(2027, 2, 25));
+        Long requestId = proposeGrant(scholarship("25", YearMonth.of(2027, 3), YearMonth.of(2027, 6)));
+
+        today(LocalDate.of(2027, 2, 28));
+        authenticateAs(director);
+        approveRequest.approve(requestId, "a tiempo");
+
+        assertThat(discountsOfLearner()).isEqualTo(1L);
+    }
+
+    @Test
+    void aMonthWhoseChargeKeyWasReleasedDoesNotCountAsEmitted() {
+        today(LocalDate.of(2027, 3, 1));
+        emitInstallment(YearMonth.of(2027, 3));
+        today(TODAY);
+        assertThatThrownBy(() -> grant(director, scholarship("50", YearMonth.of(2027, 3), YearMonth.of(2027, 6)))).isInstanceOf(ScholarshipStartBeforeNextInstallmentException.class);
+
+        jdbc.update("update invoice_line set charge_key_released_at = now() where program_enrollment_id = ?", learner.programEnrollmentId());
+
+        assertThat(grantAsDirector(scholarship("50", YearMonth.of(2027, 3), YearMonth.of(2027, 6))).getFromPeriod()).isEqualTo(YearMonth.of(2027, 3));
     }
 
     @Test

@@ -7,11 +7,12 @@ import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.Percentage;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.lang.Nullable;
 
 import java.time.YearMonth;
 
-public record GrantStudentDiscountRequest(@NotNull DiscountType type, Long discountDefinitionId, Percentage percent, Money amount, InvoiceType invoiceType,
-                                          @NotNull YearMonth fromPeriod, YearMonth toPeriod, String reason) {
+public record GrantStudentDiscountRequest(@NotNull DiscountType type, @Nullable Long discountDefinitionId, @Nullable Percentage percent, @Nullable Money amount,
+                                          @Nullable InvoiceType invoiceType, @NotNull YearMonth fromPeriod, @Nullable YearMonth toPeriod, String reason) {
 
     public StudentDiscountGrantRequest toGrantRequest() {
         if ((percent == null) == (amount == null)) {

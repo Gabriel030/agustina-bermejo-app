@@ -110,7 +110,8 @@ public class GrantStudentDiscountOperation implements BillingOperation<GrantStud
         LocalDate today = LocalDate.now(clock);
         StudentDiscountGrantCheck check = new StudentDiscountGrantCheck(request.discountType(), request.invoiceType(), request.calculation(), cap, facts.currency(),
                 request.fromPeriod(), request.toPeriod(), nextInstallmentQuery.findNextMonthlyInstallmentPeriod(command.enrollment(), today),
-                annualUpfrontReader.annualUpfrontCoversAnyMonthOf(command.enrollment(), request.fromPeriod(), request.toPeriod()), request.reason(), resolution.fault());
+                annualUpfrontReader.annualUpfrontCoversAnyMonthOf(command.enrollment(), request.fromPeriod(), request.toPeriod()), request.reason(), resolution.fault(),
+                command.requestedByDirector() ? null : command.authorizationExpiresOn(), today);
         grantPolicies.evaluateAllRules(check).throwIfDenied(StudentDiscountRejections::rejectionOf);
         int priority = definition.map(DiscountDefinition::getPriority).orElse(INDIVIDUAL_DISCOUNT_PRIORITY);
         return new StudentDiscountGrant(command.enrollment(), facts.studentId(), facts.currency(), definition.map(DiscountDefinition::getId).orElse(null),

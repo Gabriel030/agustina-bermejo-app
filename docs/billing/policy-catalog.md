@@ -321,12 +321,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 | Orden | Policy | Códigos de violación | Decisiones |
 |---|---|---|---|
 | 1 | StudentDiscountCoherencePolicy | INVALID_STUDENT_DISCOUNT | D-075, D-384 |
-| 2 | StudentDiscountDefinitionPolicy | INVALID_STUDENT_DISCOUNT, DISCOUNT_DEFINITION_CLOSED | D-217, D-384 |
-| 3 | StudentDiscountInvoiceTypePolicy | DISCOUNT_INVOICE_TYPE_MISMATCH | D-129, D-157, D-384 |
-| 4 | StudentDiscountPeriodRangePolicy | INVALID_SCHOLARSHIP_PERIOD | D-282, D-384 |
-| 5 | StudentDiscountCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
-| 6 | ScholarshipStartsAtNextInstallmentPolicy | SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT | D-238 |
-| 7 | ScholarshipNotAvailableWithAnnualUpfrontPolicy | SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT | D-158, D-388 |
+| 2 | ProposalNotExpiredPolicy | STUDENT_DISCOUNT_PROPOSAL_EXPIRED | D-238, D-180 |
+| 3 | StudentDiscountDefinitionPolicy | INVALID_STUDENT_DISCOUNT, DISCOUNT_DEFINITION_CLOSED | D-217, D-384 |
+| 4 | StudentDiscountInvoiceTypePolicy | DISCOUNT_INVOICE_TYPE_MISMATCH | D-129, D-157, D-384 |
+| 5 | StudentDiscountPeriodRangePolicy | INVALID_SCHOLARSHIP_PERIOD | D-282, D-384 |
+| 6 | StudentDiscountCurrencyPolicy | CURRENCY_MISMATCH | D-097 |
+| 7 | ScholarshipStartsAtNextInstallmentPolicy | SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT | D-238 |
+| 8 | ScholarshipNotAvailableWithAnnualUpfrontPolicy | SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT | D-158, D-388 |
 
 ## Momento STUDENT_DISCOUNT_REVOCATION
 

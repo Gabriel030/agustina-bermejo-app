@@ -8,6 +8,7 @@ import com.red_escuela.backend.billing.discount.exception.InvalidStudentDiscount
 import com.red_escuela.backend.billing.discount.exception.RevocationReasonRequiredException;
 import com.red_escuela.backend.billing.discount.exception.ScholarshipNotAvailableWithAnnualUpfrontException;
 import com.red_escuela.backend.billing.discount.exception.ScholarshipStartBeforeNextInstallmentException;
+import com.red_escuela.backend.billing.discount.exception.StudentDiscountProposalExpiredException;
 import com.red_escuela.backend.shared.domain.policy.PolicyViolation;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public final class StudentDiscountRejections {
             case "SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT" -> new ScholarshipNotAvailableWithAnnualUpfrontException(violations);
             case "INVALID_SCHOLARSHIP_PERIOD" -> new InvalidScholarshipPeriodException(violations);
             case "REVOCATION_REASON_REQUIRED" -> new RevocationReasonRequiredException(violations);
+            case "STUDENT_DISCOUNT_PROPOSAL_EXPIRED" -> new StudentDiscountProposalExpiredException(violations);
             case "DISCOUNT_DEFINITION_CLOSED" -> new DiscountDefinitionClosedException(violations);
             case "CURRENCY_MISMATCH" -> new CurrencyMismatchException(violations);
             default -> new InvalidStudentDiscountException(violations);

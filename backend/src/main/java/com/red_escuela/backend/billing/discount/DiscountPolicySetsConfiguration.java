@@ -9,6 +9,7 @@ import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCoheren
 import com.red_escuela.backend.billing.discount.policy.DiscountScopeMatchesTypePolicy;
 import com.red_escuela.backend.billing.discount.policy.DiscountTypeAvailableInCatalogPolicy;
 import com.red_escuela.backend.billing.discount.policy.InstallmentCountOnlyForMonthlyInstallmentsPolicy;
+import com.red_escuela.backend.billing.discount.policy.ProposalNotExpiredPolicy;
 import com.red_escuela.backend.billing.discount.policy.RevocationReasonRequiredPolicy;
 import com.red_escuela.backend.billing.discount.policy.ScholarshipNotAvailableWithAnnualUpfrontPolicy;
 import com.red_escuela.backend.billing.discount.policy.ScholarshipOnlyForMonthlyInstallmentsPolicy;
@@ -52,6 +53,7 @@ public class DiscountPolicySetsConfiguration {
     public PolicySet<StudentDiscountGrantCheck> studentDiscountGrantingPolicySet() {
         List<Policy<StudentDiscountGrantCheck>> ordered = List.of(
                 new StudentDiscountCoherencePolicy(),
+                new ProposalNotExpiredPolicy(),
                 new StudentDiscountDefinitionPolicy(),
                 new StudentDiscountInvoiceTypePolicy(),
                 new StudentDiscountPeriodRangePolicy(),

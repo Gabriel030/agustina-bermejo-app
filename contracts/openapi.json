@@ -3573,14 +3573,14 @@
           },
           "discountDefinitionId" : {
             "format" : "int64",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "fromPeriod" : {
             "type" : "string"
           },
           "invoiceType" : {
             "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "percent" : {
             "$ref" : "#/components/schemas/Percentage"
@@ -3589,14 +3589,14 @@
             "type" : "string"
           },
           "toPeriod" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "type" : {
             "enum" : [ "SCHOLARSHIP", "PROMOTION", "ANNUAL_UPFRONT", "COHORT_ENTRY", "INDIVIDUAL" ],
             "type" : "string"
           }
         },
-        "required" : [ "amount", "discountDefinitionId", "fromPeriod", "invoiceType", "percent", "reason", "toPeriod", "type" ],
+        "required" : [ "fromPeriod", "reason", "type" ],
         "type" : "object"
       },
       "GroupPolicy" : {

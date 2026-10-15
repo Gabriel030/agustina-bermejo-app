@@ -6,12 +6,14 @@ import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Objects;
 
 public record StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
                                         Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod,
-                                        boolean annualUpfrontCoversRange, String reason, DefinitionFault definitionFault) {
+                                        boolean annualUpfrontCoversRange, String reason, DefinitionFault definitionFault, LocalDate approvalDeadline,
+                                        LocalDate today) {
 
     public enum DefinitionFault {
         NONE,
@@ -23,7 +25,13 @@ public record StudentDiscountGrantCheck(DiscountType discountType, InvoiceType i
 
     public StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
                                      Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod, boolean annualUpfrontCoversRange, String reason) {
-        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, DefinitionFault.NONE);
+        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, DefinitionFault.NONE, null, null);
+    }
+
+    public StudentDiscountGrantCheck(DiscountType discountType, InvoiceType invoiceType, MonetaryAdjustment calculation, NonNegativeMoney capPerInvoice,
+                                     Currency enrollmentCurrency, YearMonth from, YearMonth to, YearMonth nextInstallmentPeriod, boolean annualUpfrontCoversRange, String reason,
+                                     DefinitionFault definitionFault) {
+        this(discountType, invoiceType, calculation, capPerInvoice, enrollmentCurrency, from, to, nextInstallmentPeriod, annualUpfrontCoversRange, reason, definitionFault, null, null);
     }
 
 

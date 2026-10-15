@@ -145,4 +145,20 @@ class StudentDiscountPoliciesTest {
             assertThat(code(policy.evaluateRule(check))).as(fault.name()).isEqualTo(expected);
         }
     }
+
+    @Test
+    void aProposalIsRejectedOnOrAfterItsDeadlineAndAcceptedTheDayBefore() {
+        ProposalNotExpiredPolicy policy = new ProposalNotExpiredPolicy();
+        java.time.LocalDate deadline = java.time.LocalDate.of(2027, 3, 1);
+
+        assertThat(code(policy.evaluateRule(withDeadline(deadline, java.time.LocalDate.of(2027, 2, 28))))).isEqualTo("ALLOWED");
+        assertThat(code(policy.evaluateRule(withDeadline(deadline, deadline)))).isEqualTo("STUDENT_DISCOUNT_PROPOSAL_EXPIRED");
+        assertThat(code(policy.evaluateRule(withDeadline(deadline, java.time.LocalDate.of(2027, 3, 5))))).isEqualTo("STUDENT_DISCOUNT_PROPOSAL_EXPIRED");
+        assertThat(code(policy.evaluateRule(withDeadline(null, java.time.LocalDate.of(2027, 3, 5))))).isEqualTo("ALLOWED");
+    }
+
+    private StudentDiscountGrantCheck withDeadline(java.time.LocalDate deadline, java.time.LocalDate today) {
+        return new StudentDiscountGrantCheck(DiscountType.SCHOLARSHIP, InvoiceType.MONTHLY_INSTALLMENT, HALF, null, Currency.ARS, NEXT, NEXT, NEXT, false, "motivo",
+                StudentDiscountGrantCheck.DefinitionFault.NONE, deadline, today);
+    }
 }

@@ -13,6 +13,7 @@ create table student_discount (
     cap_per_invoice numeric(12, 2) check (cap_per_invoice > 0),
     cap_per_invoice_currency varchar(3) check (cap_per_invoice_currency in ('ARS', 'USD')),
     priority integer not null check (priority >= 1),
+    installments_total integer check (installments_total >= 1),
     from_period date not null,
     to_period date not null,
     status varchar(10) not null check (status in ('ACTIVE', 'EXHAUSTED', 'REVOKED', 'ENDED')),
@@ -30,6 +31,7 @@ create table student_discount (
     constraint ck_student_discount_scholarship_monthly check (discount_type <> 'SCHOLARSHIP' or applicable_invoice_type = 'MONTHLY_INSTALLMENT'),
     constraint ck_student_discount_scholarship_has_definition check (discount_type <> 'SCHOLARSHIP' or discount_definition_id is not null),
     constraint ck_student_discount_individual_no_definition check (discount_type <> 'INDIVIDUAL' or discount_definition_id is null),
+    constraint ck_student_discount_installments_monthly check (installments_total is null or applicable_invoice_type = 'MONTHLY_INSTALLMENT'),
     constraint ck_student_discount_cap_currency check ((cap_per_invoice is null) = (cap_per_invoice_currency is null)),
     constraint ck_student_discount_revocation check ((status = 'REVOKED') = (revoked_at is not null)
         and (revoked_at is null or (revoked_by_id is not null and revocation_reason is not null and revoked_from_period is not null)))
