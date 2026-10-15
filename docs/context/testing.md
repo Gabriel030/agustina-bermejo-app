@@ -165,7 +165,7 @@ El job `test-report` publica un comentario en el PR (se actualiza en cada push, 
 - **Top 5 de clases más lentas tocadas por el PR** (o del total si el PR no toca clases de test), con su tiempo en `develop`.
 - **Clases `@SlowTest`** con su tiempo y motivo.
 
-Los tiempos para repartir clases entre shards no se editan a mano: cada push a `develop` regenera `timings.txt` desde los reportes de surefire y lo publica como artifact `test-baseline`; los PR lo usan para repartir y, si no existe, caen al `.github/test-shards/timings.txt` versionado. Las clases nuevas sin medición pesan el promedio de las medidas.
+Los tiempos para repartir clases entre shards no se editan a mano: cada push a `develop` suma sus medidas de surefire al historial de las últimas 8 corridas (`samples.json`, dentro del artifact `test-baseline`) y publica el promedio por clase como `timings.txt`. Una sola corrida es ruidosa: el costo de arrancar cada contexto de Spring lo paga la primera clase del shard que lo usa, así que cambia de clase cuando cambia el reparto. Por eso el reparto solo usa el baseline si tiene al menos 3 corridas de historial; si no (artifact viejo, sin historial, o ausente) cae al `.github/test-shards/timings.txt` versionado, que es el promedio de 7 corridas. Las clases nuevas sin medición pesan el promedio de las medidas.
 
 ### Reproducir una falla de un shard en local
 
@@ -176,7 +176,7 @@ python3 .github/scripts/test-shards.py list 2     # clases del shard 2 (de 5)
 python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con ./mvnw test
 ```
 
-`run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y copialo sobre `.github/test-shards/timings.txt` (sin commitearlo).
+`run` toma el semáforo de CI (`~/.claude/epica18/ci-slot.sh acquire shard-2`) y lo libera al terminar, también si falla; si ese script no existe en la máquina, corre sin él. El reparto usa el `timings.txt` versionado: la CI usa el medido en la última corrida de `develop`, así que si difiere mucho puede variar la composición. Para reproducir con el reparto exacto, bajá el artifact `test-baseline` de esa corrida y corré `python3 .github/scripts/test-shards.py use <carpeta>` (reescribe `timings.txt`; no lo commitees).
 
 ### Qué hacer si falla un presupuesto
 
@@ -184,7 +184,7 @@ python3 .github/scripts/test-shards.py run 2      # las corre desde backend/ con
 |---|---|
 | Una clase supera 30 s | Primero buscá por qué: contexto nuevo evitable, `Thread.sleep`, un proceso global sin acotar, datos de prueba de más. Si es un escenario largo legítimo, partilo; si no se puede, `@SlowTest(reason = "...")`. |
 | Una `@SlowTest` supera 90 s | Partila. El límite alto no es para que crezca. |
-| Un shard supera 240 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: si el último `develop` ya publicó `test-baseline`, el reparto se corrige solo. |
+| Un shard supera 240 s | Casi siempre es una clase lenta nueva (mirá el top del reporte) o un balanceo desactualizado: con cada push a `develop` el promedio móvil se actualiza solo. Un reparto con tiempos estimados parejos puede dar tiempos reales dispares por el costo de los contextos; mirá si fue una sola corrida antes de tocar nada. |
 | Más de 24 contextos | Mirá el reporte: tu clase nueva trajo una combinación de mocks/propiedades propia. Pasala a `@SharedMockBeans` o alineá sus propiedades con un contexto existente. |
 | ArchUnit en tests | Leé el mensaje: sleep → Awaitility; `@DirtiesContext` → limpiar estado; `@SpringBootTest` en `domain`/`policy` → test puro; job global → caso de uso con ids. |
 
