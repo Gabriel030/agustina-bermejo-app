@@ -30,7 +30,7 @@ public class InAppNotificationChannel implements NotificationChannel {
         notificationRepository.save(notification);
     }
 
-    static String abbreviateToColumnLength(String message) {
+    public static String abbreviateToColumnLength(String message) {
         if (message == null || message.length() <= Notification.MESSAGE_COLUMN_LENGTH) {
             return message;
         }
