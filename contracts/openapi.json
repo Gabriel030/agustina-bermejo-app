@@ -4315,32 +4315,6 @@
         "required" : [ "createdAt", "id", "message", "read", "relatedEntityId", "relatedEntityType", "type" ],
         "type" : "object"
       },
-      "PaymentAllocationRequest" : {
-        "properties" : {
-          "amountApplied" : {
-            "$ref" : "#/components/schemas/Money"
-          },
-          "invoiceId" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "amountApplied", "invoiceId" ],
-        "type" : "object"
-      },
-      "PaymentAllocationResponse" : {
-        "properties" : {
-          "amountApplied" : {
-            "$ref" : "#/components/schemas/Money"
-          },
-          "invoiceId" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "amountApplied", "invoiceId" ],
-        "type" : "object"
-      },
       "PaymentGatewayConfigResponse" : {
         "properties" : {
           "accountHolder" : {
@@ -4411,53 +4385,6 @@
           }
         },
         "required" : [ "effectiveFrom", "effectiveTo", "id", "paymentPlanOptionId", "scopeMonths" ],
-        "type" : "object"
-      },
-      "PaymentResponse" : {
-        "properties" : {
-          "allocations" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PaymentAllocationResponse"
-            },
-            "type" : "array"
-          },
-          "amount" : {
-            "$ref" : "#/components/schemas/Money"
-          },
-          "cardInstallments" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "createdAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "method" : {
-            "type" : "string"
-          },
-          "paidAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "registeredByName" : {
-            "type" : "string"
-          },
-          "rejectionReason" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "updatedAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "required" : [ "allocations", "amount", "cardInstallments", "createdAt", "id", "method", "paidAt", "registeredByName", "rejectionReason", "status", "updatedAt" ],
         "type" : "object"
       },
       "Percentage" : {
@@ -5194,39 +5121,6 @@
           }
         },
         "required" : [ "amount", "backdateReason", "paidOn", "previewFingerprint", "receiptNumber" ],
-        "type" : "object"
-      },
-      "RegisterPaymentRequest" : {
-        "properties" : {
-          "allocations" : {
-            "items" : {
-              "$ref" : "#/components/schemas/PaymentAllocationRequest"
-            },
-            "minItems" : 1,
-            "type" : "array"
-          },
-          "cardInstallments" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "externalReference" : {
-            "type" : "string"
-          },
-          "method" : {
-            "enum" : [ "CASH", "TRANSFER", "CARD", "MERCADO_PAGO" ],
-            "type" : "string"
-          },
-          "notes" : {
-            "type" : "string"
-          },
-          "rejected" : {
-            "type" : "boolean"
-          },
-          "rejectionReason" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "allocations", "cardInstallments", "externalReference", "method", "notes", "rejected", "rejectionReason" ],
         "type" : "object"
       },
       "RegisterRequest" : {
@@ -21021,76 +20915,6 @@
           }
         },
         "tags" : [ "payment-gateway-config-controller" ]
-      }
-    },
-    "/payments" : {
-      "post" : {
-        "operationId" : "Payment_register",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RegisterPaymentRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PaymentResponse"
-                }
-              }
-            },
-            "description" : "Created"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "429" : {
-            "description" : "Too Many Requests"
-          },
-          "502" : {
-            "description" : "Bad Gateway"
-          }
-        },
-        "tags" : [ "payment-controller" ]
       }
     },
     "/payments/mp-webhook" : {

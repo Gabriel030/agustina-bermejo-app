@@ -75,10 +75,22 @@ export function useAdminBillingOverview(studentId) {
   });
 }
 
-export function useRegistrarPago() {
+export function usePreviewCashPayment(studentId) {
+  return useMutation({
+    mutationFn: (amount) =>
+      apiFetch(`/students/${studentId}/cash-payments/preview`, { method: 'POST', body: JSON.stringify({ amount }) }),
+  });
+}
+
+export function useRegisterCashPayment(studentId) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload) => apiFetch('/payments', { method: 'POST', body: JSON.stringify(payload) }),
+    mutationFn: ({ key, payload }) =>
+      apiFetch(`/students/${studentId}/cash-payments`, {
+        method: 'POST',
+        headers: { 'Idempotency-Key': key },
+        body: JSON.stringify(payload),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },

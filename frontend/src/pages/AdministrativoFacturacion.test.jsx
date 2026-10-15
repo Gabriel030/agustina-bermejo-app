@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Toaster } from 'sonner';
@@ -9,6 +9,28 @@ import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
 import { invoiceFixture, money } from '@/test/fixtures/invoices';
 
 const API = 'http://localhost:8080';
+
+const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez', roles: auth.roles }, roles: auth.roles }),
+}));
+
+function isoOf(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function todayIso() {
+  return isoOf(new Date());
+}
+
+function daysAgoIso(days) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return isoOf(date);
+}
 
 const pendingReceipt = {
   id: 7,
@@ -48,7 +70,7 @@ const DEFAULT_MODAL_INVOICES = [
   invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', total: '52800.00', paymentStatus: 'OVERDUE' }),
 ];
 
-async function openRegisterPaymentModal(user, invoices = DEFAULT_MODAL_INVOICES) {
+async function openCashPaymentModal(user, invoices = DEFAULT_MODAL_INVOICES) {
   server.use(
     http.get(`${API}/students/2/billing-overview`, () =>
       HttpResponse.json([
@@ -64,8 +86,25 @@ async function openRegisterPaymentModal(user, invoices = DEFAULT_MODAL_INVOICES)
   );
   await user.type(screen.getByPlaceholderText('Buscar alumno por nombre o DNI…'), 'Acosta');
   await user.click(await screen.findByRole('button', { name: /Acosta, Martina/ }));
-  await user.click(await screen.findByRole('button', { name: /Registrar pago/ }));
+  const entry = await screen.findByRole('button', { name: /Cobrar en efectivo/ });
+  await vi.waitFor(() => expect(entry).toBeEnabled());
+  await user.click(entry);
   return screen.findByRole('dialog');
+}
+
+function previewOf(overrides = {}) {
+  return {
+    coveredInvoices: [{ invoiceId: 61, concept: 'Cuota mensual · sep 2026', dueDate: '2026-09-10', amount: money('52800.00') }],
+    coveredByRemainingCredit: [],
+    unallocatedAfterwards: money('0.00'),
+    previewFingerprint: 'fp-1',
+    ...overrides,
+  };
+}
+
+async function fillAmountAndReview(user, dialog, amount = '52800') {
+  await user.type(within(dialog).getByLabelText('Monto'), amount);
+  await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
 }
 
 afterEach(() => {
@@ -121,105 +160,232 @@ describe('AdministrativoFacturacion — comprobantes', () => {
   });
 });
 
-describe('AdministrativoFacturacion — registrar pago', () => {
-  it('shows each installment with its full amount and offers no field to edit it', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const dialog = await openRegisterPaymentModal(user);
-
-    expect(within(dialog).queryByRole('spinbutton')).not.toBeInTheDocument();
-    expect(within(dialog).getByText('Las cuotas se cobran completas: no se admiten pagos parciales.')).toBeInTheDocument();
-    expect(within(dialog).getByText('Saldo a cobrar')).toBeInTheDocument();
-    expect(within(dialog).getByText('Vence el 10/09/2026')).toBeInTheDocument();
-    expect(within(dialog).getAllByText('$ 52.800,00').length).toBeGreaterThan(0);
+describe('AdministrativoFacturacion — cobro en efectivo', () => {
+  beforeEach(() => {
+    auth.roles = ['ADMINISTRATIVO'];
   });
 
-  it('starts with only the installment closest to its due date selected and sets the receipt-under-review ones apart', async () => {
+  it('shows a single cash payment entry point instead of one per enrollment and no invoice selectors', async () => {
     const user = userEvent.setup();
     renderPage();
-    const dialog = await openRegisterPaymentModal(user, [
-      invoiceFixture({ id: 62, period: '2026-10', dueDate: '2026-10-10', paymentStatus: 'PENDING' }),
-      invoiceFixture({ id: 61, period: '2026-09', dueDate: '2026-09-10', paymentStatus: 'OVERDUE' }),
-      invoiceFixture({
-        id: 63,
-        period: '2026-11',
-        dueDate: '2026-11-10',
-        paymentStatus: 'PENDING',
-        receipts: [{ id: 5, status: 'PENDING_REVIEW', uploadedAt: '2026-10-01T10:00:00' }],
-      }),
-    ]);
+    await openCashPaymentModal(user);
 
-    expect(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · sep 2026' })).toBeChecked();
-    expect(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · oct 2026' })).not.toBeChecked();
-    expect(within(dialog).queryByRole('checkbox', { name: 'Cobrar Cuota mensual · nov 2026' })).not.toBeInTheDocument();
-    expect(within(dialog).getByText('En revisión — resolvelas en Comprobantes')).toBeInTheDocument();
-    expect(within(dialog).getByText('Vencida')).toBeInTheDocument();
-    expect(within(dialog).getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Cobrar en efectivo/, hidden: true })).toHaveLength(1);
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByText('Registrar pago')).not.toBeInTheDocument();
   });
 
-  it('registers the payment for the full outstanding amount of the selected installment', async () => {
-    let body;
+  it('asks for amount, date defaulting to today and an optional receipt, with no invoice or method selectors', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    expect(within(dialog).getByLabelText('Monto')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Fecha del cobro')).toHaveValue(todayIso());
+    expect(within(dialog).getByLabelText('N° de recibo (opcional)')).toHaveAttribute('maxlength', '100');
+    expect(within(dialog).queryByLabelText('Motivo de la fecha retroactiva')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('combobox')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('previews the covered invoices, then registers with the fingerprint and an idempotency key', async () => {
+    let previewBody;
+    let registerBody;
+    let registerKey;
     server.use(
-      http.post(`${API}/payments`, async ({ request }) => {
-        body = await request.json();
-        return HttpResponse.json({ id: 1 }, { status: 201 });
+      http.post(`${API}/students/2/cash-payments/preview`, async ({ request }) => {
+        previewBody = await request.json();
+        return HttpResponse.json(previewOf({ unallocatedAfterwards: money('1200.00') }));
+      }),
+      http.post(`${API}/students/2/cash-payments`, async ({ request }) => {
+        registerBody = await request.json();
+        registerKey = request.headers.get('Idempotency-Key');
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
       }),
     );
     const user = userEvent.setup();
     renderPage();
-    const dialog = await openRegisterPaymentModal(user);
+    const dialog = await openCashPaymentModal(user);
 
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
+    await fillAmountAndReview(user, dialog, '54000');
 
-    await vi.waitFor(() => expect(body).toBeDefined());
-    expect(body.allocations).toEqual([{ invoiceId: 61, amountApplied: { amount: '52800.00', currency: 'ARS' } }]);
+    expect(await within(dialog).findByText('Cuota mensual · sep 2026')).toBeInTheDocument();
+    expect(within(dialog).getByText('Queda a favor')).toBeInTheDocument();
+    expect(previewBody).toEqual({ amount: { amount: '54000.00', currency: 'ARS' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Confirmar cobro' }));
+
+    await vi.waitFor(() => expect(registerBody).toBeDefined());
+    expect(registerBody).toEqual({
+      amount: { amount: '54000.00', currency: 'ARS' },
+      paidOn: todayIso(),
+      previewFingerprint: 'fp-1',
+    });
+    expect(registerKey).toMatch(/\S{8,}/);
+    expect(await screen.findByText('Cobro registrado por $ 54.000,00')).toBeInTheDocument();
   });
 
-  it('asks to pick at least one installment instead of sending an empty payment', async () => {
+  it('shows the invoices paid by the remaining credit apart from the ones paid by the cash', async () => {
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () =>
+        HttpResponse.json(
+          previewOf({
+            coveredByRemainingCredit: [
+              { invoiceId: 77, concept: 'Cuota online · oct 2026', dueDate: '2026-10-10', amount: money('30000.00') },
+            ],
+          }),
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    await fillAmountAndReview(user, dialog, '82800');
+
+    expect(await within(dialog).findByText('Se imputa a')).toBeInTheDocument();
+    expect(within(dialog).getByText(/También se paga con el saldo restante/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Cuota online · oct 2026')).toBeInTheDocument();
+  });
+
+  it('asks for the preview again after an outdated-preview 409, keeps what was typed and uses a new idempotency key', async () => {
+    const keys = [];
+    const fingerprints = [];
+    let previews = 0;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => {
+        previews += 1;
+        return HttpResponse.json(previewOf({ previewFingerprint: `fp-${previews}` }));
+      }),
+      http.post(`${API}/students/2/cash-payments`, async ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        fingerprints.push((await request.json()).previewFingerprint);
+        if (keys.length === 1) return HttpResponse.json({ code: 'CASH_PAYMENT_PREVIEW_OUTDATED' }, { status: 409 });
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    expect(await within(dialog).findByText('La cuenta cambió, revisá el detalle actualizado.')).toBeInTheDocument();
+    await vi.waitFor(() => expect(previews).toBe(2));
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    await vi.waitFor(() => expect(keys).toHaveLength(2));
+    expect(fingerprints).toEqual(['fp-1', 'fp-2']);
+    expect(keys[0]).not.toBe(keys[1]);
+  });
+
+  it('also refreshes the preview on a 409 without a known code', async () => {
+    let previews = 0;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => {
+        previews += 1;
+        return HttpResponse.json(previewOf());
+      }),
+      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.json({}, { status: 409 })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    await vi.waitFor(() => expect(previews).toBe(2));
+  });
+
+  it('reuses the idempotency key when the same payment is retried after a server failure', async () => {
+    const keys = [];
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        if (keys.length === 1) return HttpResponse.json({}, { status: 500 });
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+    await vi.waitFor(() => expect(keys).toHaveLength(1));
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    await vi.waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('translates the backend codes into Spanish messages', async () => {
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, () =>
+        HttpResponse.json({ code: 'CASH_PAYMENT_RECEIPT_NUMBER_INVALID' }, { status: 400 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+
+    expect(await within(dialog).findByText('El número de recibo no puede superar los 100 caracteres.')).toBeInTheDocument();
+  });
+
+  it('refuses an amount that is not positive without calling the backend', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const user = userEvent.setup();
     renderPage();
-    const dialog = await openRegisterPaymentModal(user);
+    const dialog = await openCashPaymentModal(user);
 
-    await user.click(within(dialog).getByRole('checkbox', { name: 'Cobrar Cuota mensual · sep 2026' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
+    await fillAmountAndReview(user, dialog, '0');
 
-    expect(await within(dialog).findByText('Elegí al menos una cuota para cobrar.')).toBeInTheDocument();
-    expect(fetchSpy.mock.calls.some(([url, options]) => String(url).endsWith('/payments') && options?.method === 'POST')).toBe(false);
+    expect(await within(dialog).findByText('Ingresá un monto mayor a 0.')).toBeInTheDocument();
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/cash-payments'))).toBe(false);
   });
 
-  it('explains when the backend rejects a partial payment', async () => {
+  it('stops the administrative from dating the payment more than five days back and asks nothing about a reason', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    fireEvent.change(within(dialog).getByLabelText('Fecha del cobro'), { target: { value: daysAgoIso(6) } });
+    await fillAmountAndReview(user, dialog);
+
+    expect(await within(dialog).findByText(/No podés cobrar con una fecha de más de 5 días atrás/)).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Motivo de la fecha retroactiva')).not.toBeInTheDocument();
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('/cash-payments'))).toBe(false);
+  });
+
+  it('lets the director backdate only with a reason, shown just when the date needs it', async () => {
+    auth.roles = ['DIRECTOR'];
+    let registerBody;
     server.use(
-      http.post(`${API}/payments`, () =>
-        HttpResponse.json({ code: 'PARTIAL_PAYMENT_NOT_ALLOWED' }, { status: 409 }),
-      ),
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, async ({ request }) => {
+        registerBody = await request.json();
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
+      }),
     );
     const user = userEvent.setup();
     renderPage();
-    const dialog = await openRegisterPaymentModal(user);
+    const dialog = await openCashPaymentModal(user);
+    expect(within(dialog).queryByLabelText('Motivo de la fecha retroactiva')).not.toBeInTheDocument();
 
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
+    fireEvent.change(within(dialog).getByLabelText('Fecha del cobro'), { target: { value: daysAgoIso(6) } });
+    await fillAmountAndReview(user, dialog);
+    expect(await within(dialog).findByText('Indicá el motivo de la fecha retroactiva.')).toBeInTheDocument();
 
-    expect(
-      await within(dialog).findByText('Las cuotas se cobran completas: el monto cambió. Actualizá la pantalla y volvé a intentar.'),
-    ).toBeInTheDocument();
-  });
+    await user.type(within(dialog).getByLabelText('Motivo de la fecha retroactiva'), 'Recibo extraviado');
+    await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
 
-  it('explains when the backend rejects the amount for exceeding the balance', async () => {
-    server.use(
-      http.post(`${API}/payments`, () =>
-        HttpResponse.json({ code: 'PAYMENT_EXCEEDS_INVOICE_BALANCE' }, { status: 409 }),
-      ),
-    );
-    const user = userEvent.setup();
-    renderPage();
-    const dialog = await openRegisterPaymentModal(user);
-
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar pago' }));
-
-    expect(
-      await within(dialog).findByText('El monto supera el saldo de la cuota. Actualizá la pantalla y revisá los saldos.'),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(registerBody).toBeDefined());
+    expect(registerBody.backdateReason).toBe('Recibo extraviado');
+    expect(registerBody.paidOn).toBe(daysAgoIso(6));
   });
 });
 
