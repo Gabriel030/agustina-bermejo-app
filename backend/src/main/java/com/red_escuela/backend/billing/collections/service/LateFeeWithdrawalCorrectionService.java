@@ -20,6 +20,20 @@ public class LateFeeWithdrawalCorrectionService {
         this.issuer = issuer;
     }
 
+    public List<Long> findChargeIdsWithUncorrectedDaysAfter(Long afterChargeId, int pageSize) {
+        return chargeRepository.findChargeIdsWithDaysAfterTheEnrollmentEndAfter(afterChargeId, pageSize);
+    }
+
+    public LateFeeCorrectionOutcome correctLateFeeCharge(Long chargeId, LocalDate today) {
+        LocalDate registeredOn = chargeRepository.findEnrollmentEndRegistrationDateOfCharge(chargeId).map(LocalDate::parse).orElse(today);
+        return issuer.correctLateFeeChargeInNewTransaction(chargeId, registeredOn);
+    }
+
+    public LateFeeCorrectionOutcome correctLateFeeOfDebitNote(Long debitNoteId, LocalDate today) {
+        return chargeRepository.findByDebitNoteId(debitNoteId).map(charge -> correctLateFeeCharge(charge.getId(), today))
+                .orElse(LateFeeCorrectionOutcome.NOTHING_TO_CORRECT);
+    }
+
     public int correctLateFeesOfEnrollment(Long programEnrollmentId, Long courseEnrollmentId, LocalDate factDate) {
         List<Long> chargeIds = programEnrollmentId != null ? chargeRepository.findChargeIdsOfProgramEnrollment(programEnrollmentId)
                 : chargeRepository.findChargeIdsOfCourseEnrollment(courseEnrollmentId);

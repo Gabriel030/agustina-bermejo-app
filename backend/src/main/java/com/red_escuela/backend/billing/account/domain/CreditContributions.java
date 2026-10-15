@@ -39,6 +39,10 @@ public record CreditContributions(List<CreditContribution> contributions) {
             }
         }
         Money alreadyLeftTheAccount = available.minus(unallocatedCredit.value());
+        if (alreadyLeftTheAccount.isNegative()) {
+            throw new IllegalStateException("The unallocated credit " + unallocatedCredit.value().amount().toPlainString()
+                    + " exceeds the credit that can be traced to payments and credit notes (" + available.amount().toPlainString() + ")");
+        }
         List<CreditContribution> usable = new ArrayList<>();
         for (CreditContribution contribution : remaining) {
             Money left = contribution.amount().value();

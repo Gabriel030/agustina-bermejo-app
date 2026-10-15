@@ -158,6 +158,8 @@ begin
                 from payment_allocation_source o where o.payment_allocation_id = allocation.reverses_allocation_id order by o.id;
                 update backfill_capacity c set remaining = c.remaining + o.amount
                 from payment_allocation_source o where o.payment_allocation_id = allocation.reverses_allocation_id and c.entry_id = o.credit_entry_id;
+            else
+                raise warning 'reversal % was left without sources because the reversed allocation % has none', allocation.id, allocation.reverses_allocation_id;
             end if;
         else
             pending := allocation.amount;
@@ -165,6 +167,10 @@ begin
                           where lp.invoice_id = allocation.invoice_id order by lp.id loop
                 select * into capacity from backfill_capacity c
                 where c.account_id = allocation.student_current_account_id and c.payment_id = legacy.payment_id and c.remaining > 0;
+                if not found and exists (select 1 from current_account_entry e join current_account_entry r on r.compensates_entry_id = e.id
+                                         where e.payment_id = legacy.payment_id and e.student_current_account_id = allocation.student_current_account_id) then
+                    raise warning 'allocation % was paid by payment % which was reversed later: it is traced to other credit', allocation.id, legacy.payment_id;
+                end if;
                 if found and pending > 0 then
                     taken := least(pending, legacy.amount_applied, capacity.remaining);
                     insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, credit_note_id,

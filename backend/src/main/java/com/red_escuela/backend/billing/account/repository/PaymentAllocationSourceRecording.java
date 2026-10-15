@@ -2,7 +2,6 @@ package com.red_escuela.backend.billing.account.repository;
 
 import com.red_escuela.backend.billing.account.domain.AllocationSourceShare;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
-
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 
 import java.util.List;

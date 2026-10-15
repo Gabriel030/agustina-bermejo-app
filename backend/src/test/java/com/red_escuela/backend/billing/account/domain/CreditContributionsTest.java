@@ -64,6 +64,30 @@ class CreditContributionsTest {
     }
 
     @Test
+    void aReversedPaymentInTheMiddleIsSkippedWhileTheOlderAndNewerOnesStay() {
+        var account = arsAccount();
+        List<CurrentAccountEntry> entries = new ArrayList<>();
+        entries.add(withEntryId(account.recordPaymentReceivedCredit(1L, ars("50.00"), FIRST, "Pago")));
+        CurrentAccountEntry middle = withEntryId(account.recordPaymentReceivedCredit(2L, ars("100.00"), FIRST, "Pago"));
+        entries.add(middle);
+        entries.add(withEntryId(account.recordPaymentReceivedCredit(3L, ars("60.00"), SECOND, "Pago")));
+        entries.add(withEntryId(account.recordPaymentReversalDebit(middle, SECOND, "Rebote")));
+
+        assertThat(available(entries, Map.of(), "110.00").asList()).extracting(CreditContribution::paymentId, CreditContribution::amount)
+                .containsExactly(tuple(1L, ars("50.00")), tuple(3L, ars("60.00")));
+    }
+
+    @Test
+    void unallocatedCreditAboveWhatCanBeTracedFailsEarlyWithAClearMessage() {
+        var account = arsAccount();
+        CurrentAccountEntry payment = withEntryId(account.recordPaymentReceivedCredit(1L, ars("100.00"), FIRST, "Pago"));
+
+        assertThatThrownBy(() -> available(List.of(payment), Map.of(), "100.01")).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("exceeds the credit that can be traced");
+        assertThatThrownBy(() -> available(List.of(), Map.of(), "5.00")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void whatEachEntryAlreadyFundsIsDiscountedFromItsRoom() {
         var account = arsAccount();
         List<CurrentAccountEntry> entries = new ArrayList<>();

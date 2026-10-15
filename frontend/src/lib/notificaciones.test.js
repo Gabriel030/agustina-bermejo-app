@@ -12,6 +12,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.COLLECTION_REMINDER).toBe('warning');
   });
 
+  it('etiqueta y da tono al aviso de correccion de recargo fuera de plazo', () => {
+    expect(TIPO_NOTIFICACION_LABEL.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('Corrección de recargo fuera de plazo');
+    expect(TONO_NOTIFICACION.LATE_FEE_CORRECTION_AFTER_FISCAL_WINDOW).toBe('danger');
+  });
+
   it('todo tipo con etiqueta tiene tono', () => {
     Object.keys(TIPO_NOTIFICACION_LABEL).forEach((tipo) => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();

@@ -4,10 +4,12 @@ import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.collections.domain.LateFeeChargeCorrection;
+import com.red_escuela.backend.billing.collections.domain.LateFeeCorrectionFiscalWindow;
 import com.red_escuela.backend.billing.collections.exception.LateFeeCorrectionRejectedException;
 import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeCorrectionRepository;
 import com.red_escuela.backend.billing.events.CreditNoteIssuedEvent;
+import com.red_escuela.backend.billing.events.LateFeeCorrectionIssuedAfterFiscalWindowEvent;
 import com.red_escuela.backend.billing.exception.InvoiceNotFoundException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.InvoiceCreditAccessService;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,7 +79,7 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
 
     @Override
     public List<Class<? extends DomainEvent>> publishedEventTypes() {
-        return List.of(CreditNoteIssuedEvent.class);
+        return List.of(CreditNoteIssuedEvent.class, LateFeeCorrectionIssuedAfterFiscalWindowEvent.class);
     }
 
     @Override
@@ -118,9 +121,15 @@ public class LateFeeCorrectionCreditNoteOperation implements BillingOperation<Is
         return result.map(issued -> {
             CreditNote note = issued.creditNote();
             Long studentPersonId = invoiceAccess.findAccountOwnerPersonId(note.getInvoiceId()).orElseThrow();
-            return CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
-                    studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate());
-        }).stream().toList();
+            List<DomainEvent> events = new ArrayList<>();
+            events.add(CreditNoteIssuedEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(), note.getInvoiceNumber(),
+                    studentPersonId, null, note.getReason().name(), note.getTotalAmount().value().amount(), note.getCurrency().name(), note.getIssueDate()));
+            if (LateFeeCorrectionFiscalWindow.isOutside(command.factDate(), note.getIssueDate())) {
+                events.add(LateFeeCorrectionIssuedAfterFiscalWindowEvent.issuedFor(note.getId(), note.getCreditNoteNumber().value(), note.getInvoiceId(),
+                        note.getInvoiceNumber(), command.factDate(), note.getIssueDate()));
+            }
+            return events;
+        }).orElse(List.of());
     }
 
     private Invoice findDebitNote(IssueLateFeeCorrectionCommand command) {

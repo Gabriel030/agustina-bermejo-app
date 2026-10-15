@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.invoice.domain.event.InvoiceCancelledEven
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceDiscardedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceIssuedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoiceMarkedAsOverdueEvent;
+import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReviewReleasedEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaymentReversedEvent;
 import com.red_escuela.backend.billing.invoice.exception.CreditNoteExceedsCreditableAmountException;
@@ -308,6 +309,7 @@ public class Invoice {
                 InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED);
         InvoicePaymentStatusStateMachine.resolveNextStatus(paymentStatus, event);
         changePaymentStatus(event, amounts, businessDate, actor, reason);
+        recordedDomainEvents.add(invoiceId -> new InvoicePaymentReviewReleasedEvent(invoiceId, businessDate));
         if (event == InvoicePaymentEvent.BANK_TRANSFER_RECEIPT_REJECTED_AFTER_DUE_DATE_PASSED) {
             recordedDomainEvents.add(invoiceId -> new InvoiceMarkedAsOverdueEvent(invoiceId, dueDate, businessDate));
         }

@@ -1,6 +1,14 @@
 package com.red_escuela.backend.billing.collections.service;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
+import com.red_escuela.backend.billing.note.domain.CreditNoteDestination;
+import com.red_escuela.backend.billing.note.domain.CreditNoteLineAmount;
+import com.red_escuela.backend.billing.note.domain.CreditNoteReason;
+import com.red_escuela.backend.billing.note.domain.IssueCreditNoteCommand;
+import com.red_escuela.backend.billing.note.service.IssueCreditNoteOperation;
+import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
+import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
@@ -11,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.YearMonth;
 import java.util.List;
@@ -29,6 +38,15 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
     private LateFeeWithdrawalCorrectionService correctionService;
     @Autowired
     private io.micrometer.core.instrument.MeterRegistry meterRegistry;
+    @Autowired
+    private BillingOperationPipeline pipeline;
+    @Autowired
+    private IssueCreditNoteOperation issueCreditNoteOperation;
+
+    private void issueManualCreditNote(Long invoiceId, String amount) {
+        pipeline.runOperation(issueCreditNoteOperation, new IssueCreditNoteCommand(invoiceId, CreditNoteReason.BILLING_ERROR, "Error de carga",
+                List.of(new CreditNoteLineAmount(1, Money.of(new BigDecimal(amount), Currency.ARS))), CreditNoteDestination.DEBT_OFFSET, person.getId(), true, null));
+    }
 
     @AfterEach
     void resetClock() {
@@ -78,14 +96,14 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         Invoice origin = overdueInstallmentDueOn(d(2135, 4, 11));
         reconcile(origin, d(2135, 5, 1));
         Long debitNoteId = (Long) chargesOf(origin).get(0).get("debit_note_id");
-        jdbc.update("update invoice_line set credited_amount = 3700.00 where invoice_id = ?", debitNoteId);
+        issueManualCreditNote(debitNoteId, "3700.00");
         double cappedBefore = meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count();
         MutableClock.INSTANCE.setDate(d(2135, 5, 3));
 
         courseEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(d(2135, 4, 28), person.getId()));
         awaitEventsDrained();
 
-        assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ?", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("100.00");
+        assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ? and reason = 'LATE_FEE_CORRECTION'", BigDecimal.class, debitNoteId)).isEqualByComparingTo("100.00");
         assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, debitNoteId)).isEqualTo(2);
         assertThat(meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count()).isGreaterThan(cappedBefore);
         assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
@@ -176,6 +194,25 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         assertThat(violationsAfter("update course_enrollment set status = 'ENROLLED', completion_date = null, withdrawal_effective_date = null, withdrawal_registered_on = null where id = " + enrollment.getId()))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
         assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
+    }
+
+    @Test
+    void aManualCreditNoteIssuedAfterTheCorrectionDoesNotMaskACorrectionCreditedBelowTheComplement() {
+        Long debitNoteId = correctedDebitNote(2137);
+        String correctionBelowTheComplement = "update credit_note set total_amount = 399.00, offset_amount = 399.00 where invoice_id = " + debitNoteId;
+        String manualCreditNoteOverTheRest = "insert into credit_note (credit_note_number, student_current_account_id, currency, invoice_id, invoice_number, reason, justification, "
+                + "offset_amount, offset_amount_currency, free_credit_amount, free_credit_amount_currency, total_amount, total_amount_currency, issue_date, fact_date, "
+                + "recipient_snapshot, issued_by_process, recorded_at) select 'NC-9' || lpad(id::text, 7, '0'), student_current_account_id, currency, invoice_id, invoice_number, "
+                + "'BILLING_ERROR', justification, 3400.00, offset_amount_currency, 0, free_credit_amount_currency, 3400.00, total_amount_currency, issue_date, fact_date, "
+                + "recipient_snapshot, 'Test', recorded_at from credit_note where invoice_id = " + debitNoteId;
+        String manualCreditNoteLine = "insert into credit_note_line (credit_note_id, invoice_line_number, amount, amount_currency, offset_part, offset_part_currency, free_part, "
+                + "free_part_currency) select id, 1, 3400.00, currency, 3400.00, currency, 0, currency from credit_note where invoice_id = " + debitNoteId + " and reason = 'BILLING_ERROR'";
+        String lineFullyCredited = "update invoice_line set credited_amount = 3800.00 where invoice_id = " + debitNoteId;
+
+        assertThat(violationsAfter(correctionBelowTheComplement)).hasSize(1).allMatch(v -> v.startsWith("I-11i"));
+        assertThat(violationsAfter(correctionBelowTheComplement, manualCreditNoteOverTheRest, manualCreditNoteLine, lineFullyCredited))
+                .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
+        assertThat(violationsAfter(manualCreditNoteOverTheRest, manualCreditNoteLine, lineFullyCredited)).isEmpty();
     }
 
     @Test
