@@ -21,7 +21,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     * def nombreCarrera = 'Karate - Carrera ' + java.lang.System.nanoTime()
     Given path '/programs'
     And header Authorization = 'Bearer ' + adminToken
-    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0 }
+    And request { name: '#(nombreCarrera)', totalYears: 3, price: { amount: '50000', currency: 'ARS' }, enrollmentFeeAmount: { amount: '50000', currency: 'ARS' }, totalCreditsRequired: 0, teachingMode: 'IN_PERSON' }
     When method post
     Then status 201
     And match response.status == 'ACTIVE'
@@ -123,6 +123,7 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match propiaAprobada.status == 'APPROVED'
     And match propiaAprobada.admissionInvoice.paymentStatus == 'PENDING'
     * def admissionInvoiceId = propiaAprobada.admissionInvoice.id
+    * def applicantStudentId = propiaAprobada.studentId
 
     # Rol ALUMNO otorgado automáticamente al aprobar — criterio de aceptación clave
     Given path '/me'
@@ -140,11 +141,21 @@ Feature: Caso de uso — Solicitar alta en carrera
     And match inscripcionesAntesDePagar == '#[0]'
 
     # Al pagarla, la inscripción queda confirmada
-    Given path '/payments'
+    Given path '/students', applicantStudentId, 'cash-payments', 'preview'
     And header Authorization = 'Bearer ' + adminToken
-    And request { allocations: [{ invoiceId: '#(admissionInvoiceId)', amountApplied: { amount: '50000', currency: 'ARS' } }], method: 'TRANSFER' }
+    And request { amount: { amount: '50000', currency: 'ARS' } }
+    When method post
+    Then status 200
+    And match response.coveredInvoices[0].invoiceId == admissionInvoiceId
+    * def admissionPreviewFingerprint = response.previewFingerprint
+
+    Given path '/students', applicantStudentId, 'cash-payments'
+    And header Authorization = 'Bearer ' + adminToken
+    And header Idempotency-Key = 'karate-admission-' + java.lang.System.nanoTime()
+    And request { amount: { amount: '50000', currency: 'ARS' }, receiptNumber: 'KARATE-1', previewFingerprint: '#(admissionPreviewFingerprint)' }
     When method post
     Then status 201
+    And match response.allocatedInvoices[0].invoiceId == admissionInvoiceId
 
     # La inscripción se confirma después del commit del pago, de forma asíncrona
     * configure retry = { count: 30, interval: 500 }
