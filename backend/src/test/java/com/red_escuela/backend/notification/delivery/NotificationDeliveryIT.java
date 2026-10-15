@@ -38,11 +38,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import static org.awaitility.Awaitility.await;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.red_escuela.backend.notification.delivery.service.InAppDeliveryChannel;
@@ -498,35 +500,32 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         deliveryService.enqueue(request(student, key, false));
         Long id = deliveryOf(key, DeliveryChannel.EMAIL).getId();
         AtomicInteger sends = new AtomicInteger();
-        TransactionalEmailGateway slow = (TransactionalEmail email) -> {
-            sends.incrementAndGet();
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
+        CountDownLatch firstSendStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstSend = new CountDownLatch(1);
+        TransactionalEmailGateway gated = (TransactionalEmail email) -> {
+            if (sends.incrementAndGet() == 1) {
+                firstSendStarted.countDown();
+                try {
+                    releaseFirstSend.await(30, TimeUnit.SECONDS);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                }
             }
             return gateway.send(email);
         };
-        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, slow);
-        CountDownLatch start = new CountDownLatch(1);
+        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, gated);
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
-            List<Future<?>> runs = List.of(
-                    pool.submit(() -> {
-                        start.await();
-                        transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id));
-                        return null;
-                    }),
-                    pool.submit(() -> {
-                        start.await();
-                        transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id));
-                        return null;
-                    }));
-            start.countDown();
-            for (Future<?> run : runs) {
-                run.get();
-            }
+            Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
+            assertThat(firstSendStarted.await(30, TimeUnit.SECONDS)).isTrue();
+            Future<?> second = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
+            await().atMost(Duration.ofSeconds(20)).until(() -> jdbc.queryForObject(
+                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and query ilike '%notification_delivery%'", Long.class) > 0);
+            releaseFirstSend.countDown();
+            first.get(30, TimeUnit.SECONDS);
+            second.get(30, TimeUnit.SECONDS);
         } finally {
+            releaseFirstSend.countDown();
             pool.shutdownNow();
         }
 
