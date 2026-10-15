@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.collections.service;
 
-import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Tag("D-148")
 @Tag("D-293")
@@ -20,7 +20,7 @@ class EnrollmentWithdrawalLateFeeFreezeIT extends AbstractLateFeeScenarioIT {
     private CourseEnrollmentService courseEnrollmentService;
 
     @Test
-    void aWithdrawalInformedForAprilTwentyEighthFreezesTheLateFeeFromThatDayAndKeepsTheAlreadyIssuedAprilDebitNote() {
+    void aWithdrawalInformedForAprilTwentyEighthFreezesTheLateFeeFromThatDayAndKeepsTheAlreadyIssuedAprilDebitNoteWhichOnlyBreaksTheFrozenDaysInvariants() {
         arrange(2107);
         publishDefaults(2107);
         Invoice origin = overdueInstallmentDueOn(d(2107, 4, 11));
@@ -36,7 +36,9 @@ class EnrollmentWithdrawalLateFeeFreezeIT extends AbstractLateFeeScenarioIT {
         assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2107-04-28");
         assertThat(summaryOf(origin)).containsExactly("2107-04-12..2107-04-30:19:3800.00");
         assertThat(jdbc.queryForObject("select count(*) from invoice where origin_invoice_id = ?", Long.class, origin.getId())).isEqualTo(issuedDebitNotes);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertThatThrownBy(invariants::assertAllBillingInvariantsHold).isInstanceOf(AssertionError.class).satisfies(failure ->
+                assertThat(failure.getMessage().lines().skip(1).toList()).isNotEmpty()
+                        .allMatch(line -> line.startsWith("I-11c charged days differ") || line.startsWith("I-11e late fee charged for days frozen")));
     }
 
     @Test
@@ -52,6 +54,6 @@ class EnrollmentWithdrawalLateFeeFreezeIT extends AbstractLateFeeScenarioIT {
 
         assertThat(jdbc.queryForObject("select completion_date::date::text from course_enrollment where id = ?", String.class, enrollment.getId())).isEqualTo("2108-05-03");
         assertThat(summaryOf(origin)).containsExactly("2108-04-12..2108-04-30:19:3800.00", "2108-05-01..2108-05-03:3:600.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        invariants.assertAllBillingInvariantsHold();
     }
 }

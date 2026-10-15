@@ -47,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
@@ -362,9 +363,9 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         start.countDown();
         List<Integer> statuses = new ArrayList<>();
         for (Future<Integer> answer : answers) {
-            statuses.add(answer.get());
+            statuses.add(answer.get(30, TimeUnit.SECONDS));
         }
-        pool.shutdown();
+        pool.shutdownNow();
 
         assertThat(statuses).containsExactlyInAnyOrder(204, 409);
         assertThat(jdbc.queryForObject("select count(*) from program_enrollment where id = ? and status = 'WITHDRAWN'", Long.class, enrollmentId)).isEqualTo(1L);
@@ -436,19 +437,21 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
             awaitQuietly(releaseEnrollment);
             return null;
         }));
-        enrollmentInserted.await();
+        assertThat(enrollmentInserted.await(30, TimeUnit.SECONDS)).isTrue();
         Future<Integer> withdrawing = pool.submit(() -> mockMvc.perform(post("/students/" + student.studentId() + "/withdraw")
                 .header("Authorization", "Bearer " + administrative.token()).contentType(APPLICATION_JSON)
                 .content("{\"reason\":\"ABANDONO\",\"detail\":\"x\"}")).andReturn().getResponse().getStatus());
+        int withdrawalStatus;
         try {
             await().atMost(Duration.ofSeconds(15)).until(() -> jdbc.queryForObject(
                     "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) > 0);
+            releaseEnrollment.countDown();
+            enrolling.get(30, TimeUnit.SECONDS);
+            withdrawalStatus = withdrawing.get(30, TimeUnit.SECONDS);
         } finally {
             releaseEnrollment.countDown();
+            pool.shutdownNow();
         }
-        enrolling.get();
-        int withdrawalStatus = withdrawing.get();
-        pool.shutdown();
 
         assertThat(withdrawalStatus).isEqualTo(409);
         assertThat(studentPersonStatus(student.studentId())).isEqualTo("ACTIVE");

@@ -2,6 +2,7 @@ package com.red_escuela.backend.identity.domain;
 
 import com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup;
 import com.red_escuela.backend.identity.exception.StudentHasActiveEnrollmentsException;
+import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.policy.StudentWithdrawalContext;
 import com.red_escuela.backend.identity.policy.StudentWithdrawalRequiresNoActiveEnrollmentsPolicy;
 import com.red_escuela.backend.identity.repository.StudentRepository;
@@ -24,8 +25,8 @@ public class StudentWithdrawalGuard {
         this.studentRepository = studentRepository;
     }
 
-    public void requireStudentWithdrawable(Long studentId) {
-        studentRepository.findByIdForUpdate(studentId);
+    public void lockStudentAndRequireWithdrawable(Long studentId) {
+        studentRepository.findByIdForUpdate(studentId).orElseThrow(() -> new StudentNotFoundException(studentId));
         StudentWithdrawalContext context = new StudentWithdrawalContext(studentId, enrollmentActivityLookup.hasActiveEnrollments(studentId));
         STUDENT_WITHDRAWAL_RULES.evaluateAllRules(context).throwIfDenied(StudentHasActiveEnrollmentsException::new);
     }

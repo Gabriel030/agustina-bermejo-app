@@ -74,6 +74,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
     @Autowired
     private org.springframework.test.context.event.ApplicationEvents applicationEvents;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort withdrawalBillingPort;
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
@@ -404,6 +407,41 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         assertThat(countRows("authorization_request")).isEqualTo(authorizationRequestsBefore);
         assertThat(entityManager.createNativeQuery("select unallocated_credit_amount from student_current_account a where a.student_id = :studentId")
                 .setParameter("studentId", student.getId()).getResultList()).allSatisfy(amount -> assertThat((java.math.BigDecimal) amount).isEqualByComparingTo("0.00"));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    @org.junit.jupiter.api.Tag("D-296")
+    void approvingAGraduationRegistersItInBillingWithTheGraduationCause() {
+        Student student = persistStudent("80000012");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos12");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000012");
+        authenticateAsPerson("DIRECTOR80000012");
+        com.red_escuela.backend.shared.time.MutableClock.INSTANCE.setDate(LocalDate.of(2027, 10, 20));
+
+        approveGraduationRequestUseCase.approve(request.getId());
+
+        org.mockito.Mockito.verify(withdrawalBillingPort).registerWithdrawalForBilling(
+                com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts.ofProgramEnrollment(student.getId(), enrollment.getId(), LocalDate.of(2027, 10, 20),
+                        com.red_escuela.backend.enrollment.api.WithdrawalCause.GRADUATION));
+    }
+
+    @Test
+    @org.junit.jupiter.api.Tag("D-236")
+    void aFailureOfTheBillingPortAbortsTheGraduationApprovalInTheSameTransaction() {
+        Student student = persistStudent("80000013");
+        ProgramEnrollment enrollment = persistEnrollmentWithCompletedPlan(student, "CarreraSinRequisitos13");
+        entityManager.flush();
+        GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000013");
+        authenticateAsPerson("DIRECTOR80000013");
+        org.mockito.Mockito.doThrow(new IllegalStateException("billing unavailable")).when(withdrawalBillingPort).registerWithdrawalForBilling(org.mockito.ArgumentMatchers.any());
+
+        assertThatThrownBy(() -> approveGraduationRequestUseCase.approve(request.getId())).hasRootCauseInstanceOf(IllegalStateException.class).hasMessageContaining("billing unavailable");
+
+        org.springframework.test.context.transaction.TestTransaction.flagForCommit();
+        assertThatThrownBy(org.springframework.test.context.transaction.TestTransaction::end)
+                .isInstanceOf(org.springframework.transaction.UnexpectedRollbackException.class);
     }
 
     private long countRows(String table) {
