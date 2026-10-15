@@ -121,6 +121,19 @@ class CollectionReminderSchedulePoliciesTest {
         assertThat(reasons.get(3)).startsWith("notices[3].noticeKey");
     }
 
+    @Test
+    @Tag("D-368")
+    void aChangeThatAsksToFollowTheGroupIsDeniedAndPointsToRemoval() {
+        ReminderChangeDoesNotFollowGroupPolicy policy = new ReminderChangeDoesNotFollowGroupPolicy();
+
+        PolicyVerdict denied = policy.evaluateRule(new ReminderScheduleChangeCheck(ReminderSchedule.followingGroup()));
+
+        assertThat(denied.allowed()).isFalse();
+        assertThat(denied.code()).isEqualTo("INVALID_COLLECTION_REMINDER_SCHEDULE");
+        assertThat(denied.reason()).contains("/removal");
+        assertThat(policy.evaluateRule(new ReminderScheduleChangeCheck(ReminderSchedule.initial())).allowed()).isTrue();
+    }
+
     static Stream<ReminderSchedule> validSchedules() {
         return Stream.of(
                 ReminderSchedule.initial(),

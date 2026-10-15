@@ -23,6 +23,6 @@ public class ValidateReminderScheduleChangeService implements ValidateReminderSc
     @Override
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public List<PolicyViolation> validateChange(ReminderScheduleTarget target, ReminderSchedule schedule, LocalDate effectiveFrom, String changeReason) {
-        return validateChangeUseCase.validateChange(targets.requireExistingTopic(target), targets.valuesOf(target.group(), schedule), effectiveFrom, changeReason);
+        return validateChangeUseCase.validateChange(targets.requireExistingTopic(target), targets.requestedValuesOf(target.group(), schedule), effectiveFrom, changeReason);
     }
 }

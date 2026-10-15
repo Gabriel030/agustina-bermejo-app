@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.configuration.controller;
 
+import com.jayway.jsonpath.JsonPath;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleSource;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
@@ -31,7 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -138,7 +141,7 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
         getFrom("/PROGRAMS/versions", director).andExpect(status().isOk()).andExpect(jsonPath("$[0].status").value("PROPOSED"));
         assertThat(beforeDueDaysFor(TeachingGroup.PROGRAMS, null, TODAY.plusDays(1))).isEqualTo(-1);
 
-        String requestId = com.jayway.jsonpath.JsonPath.read(proposal.getResponse().getContentAsString(), "$.authorizationRequestId").toString();
+        String requestId = JsonPath.read(proposal.getResponse().getContentAsString(), "$.authorizationRequestId").toString();
         mockMvc.perform(post("/authorization-requests/" + requestId + "/approve").header("Authorization", "Bearer " + administrative)).andExpect(status().isForbidden());
     }
 
@@ -177,9 +180,9 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_COLLECTION_REMINDER_SCHEDULE"))
                 .andExpect(jsonPath("$.violations", hasSize(3)))
-                .andExpect(jsonPath("$.violations[0].message").value(org.hamcrest.Matchers.startsWith("notices[0].offsetDays")))
-                .andExpect(jsonPath("$.violations[1].message").value(org.hamcrest.Matchers.startsWith("notices[1].channels")))
-                .andExpect(jsonPath("$.violations[2].message").value(org.hamcrest.Matchers.startsWith("notices[2].repetition.until")));
+                .andExpect(jsonPath("$.violations[0].message").value(startsWith("notices[0].offsetDays")))
+                .andExpect(jsonPath("$.violations[1].message").value(startsWith("notices[1].channels")))
+                .andExpect(jsonPath("$.violations[2].message").value(startsWith("notices[2].repetition.until")));
         postTo("/PROGRAMS/validation", administrative, body(broken, TODAY.plusDays(1)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.violations", hasSize(3)));
         postTo("/PROGRAMS/validation", administrative, body(standardNotices(-2), TODAY.plusDays(1)))
@@ -199,6 +202,28 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
         postTo("/PROGRAMS/changes", administrative, body(standardNotices(-2), TODAY.plusDays(1))).andExpect(status().isAccepted());
         postTo("/MONTHLY_COURSES/changes", administrative, body(standardNotices(-2), TODAY.plusDays(1))).andExpect(status().isAccepted());
         postTo("/PROGRAMS/exceptions/" + radiologyId + "/changes", administrative, body(standardNotices(-3), TODAY.plusDays(1))).andExpect(status().isAccepted());
+    }
+
+    @Test
+    @Tag("D-116")
+    void removalWithAnOpenProposalOnTheExceptionAnswers409() throws Exception {
+        String administrative = tokenWithRole("ADMINISTRATIVO");
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/changes", administrative, body(standardNotices(-1), TODAY.plusDays(1))).andExpect(status().isAccepted());
+
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/removal", administrative, "{\"effectiveFrom\":\"" + TODAY.plusDays(2) + "\",\"changeReason\":\"quitar\"}")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PROPOSAL_ALREADY_OPEN"));
+    }
+
+    @Test
+    @Tag("D-368")
+    void changesRejectAClientThatAsksToFollowTheGroupAndPointToRemoval() throws Exception {
+        String director = tokenWithRole("DIRECTOR");
+        String content = "{\"schedule\":{\"followsGroupSchedule\":true,\"notices\":[]},\"effectiveFrom\":\"" + TODAY.plusDays(1) + "\",\"changeReason\":\"motivo\"}";
+
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/changes", director, content)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.violations[0].message").value(startsWith("followsGroupSchedule: usá /removal")));
+        postTo("/PROGRAMS/exceptions/" + nursingId + "/validation", director, content).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -244,7 +269,7 @@ class CollectionReminderScheduleControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.groups[?(@.group == 'PROGRAMS')].noticeCount").value(4))
                 .andExpect(jsonPath("$.exceptions", hasSize(2)))
                 .andExpect(jsonPath("$.exceptions[?(@.targetId == " + nursingId + ")].followsGroupFrom").value(removalDate.toString()))
-                .andExpect(jsonPath("$.exceptions[?(@.targetId == " + radiologyId + ")].followsGroupFrom").value(org.hamcrest.Matchers.hasItem(nullValue())));
+                .andExpect(jsonPath("$.exceptions[?(@.targetId == " + radiologyId + ")].followsGroupFrom").value(hasItem(nullValue())));
     }
 
     @Test

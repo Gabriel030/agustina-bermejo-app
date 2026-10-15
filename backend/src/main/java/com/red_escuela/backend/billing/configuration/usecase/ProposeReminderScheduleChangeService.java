@@ -23,12 +23,12 @@ public class ProposeReminderScheduleChangeService implements ProposeReminderSche
     @Override
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public BillingOperationOutcome<ConfigurationVersion> proposeChange(ReminderScheduleTarget target, ReminderSchedule schedule, LocalDate effectiveFrom, String changeReason) {
-        return proposeChangeUseCase.proposeChange(targets.requireExistingTopic(target), targets.valuesOf(target.group(), schedule), effectiveFrom, changeReason);
+        return proposeChangeUseCase.proposeChange(targets.requireExistingTopic(target), targets.requestedValuesOf(target.group(), schedule), effectiveFrom, changeReason);
     }
 
     @Override
     @PreAuthorize("hasAnyRole('DIRECTOR', 'ADMINISTRATIVO')")
     public BillingOperationOutcome<ConfigurationVersion> proposeExceptionRemoval(ReminderScheduleTarget target, LocalDate effectiveFrom, String changeReason) {
-        return proposeChange(target, ReminderSchedule.followingGroup(), effectiveFrom, changeReason);
+        return proposeChangeUseCase.proposeChange(targets.requireExistingTopic(target), targets.valuesOf(target.group(), ReminderSchedule.followingGroup()), effectiveFrom, changeReason);
     }
 }

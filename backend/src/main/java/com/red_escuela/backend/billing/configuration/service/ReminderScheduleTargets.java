@@ -9,14 +9,17 @@ import com.red_escuela.backend.billing.configuration.domain.ReminderSchedule;
 import com.red_escuela.backend.billing.configuration.domain.ReminderScheduleTarget;
 import com.red_escuela.backend.billing.configuration.domain.TeachingGroup;
 import com.red_escuela.backend.billing.configuration.exception.ReminderScheduleTargetNotFoundException;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleChangeCheck;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ReminderScheduleTargets {
     private final TeachingTargetLookup teachingTargetLookup;
+    private final ConfigurationPolicyEvaluator policyEvaluator;
 
-    public ReminderScheduleTargets(TeachingTargetLookup teachingTargetLookup) {
+    public ReminderScheduleTargets(TeachingTargetLookup teachingTargetLookup, ConfigurationPolicyEvaluator policyEvaluator) {
         this.teachingTargetLookup = teachingTargetLookup;
+        this.policyEvaluator = policyEvaluator;
     }
 
     public ConfigurationTopic requireExistingTopic(ReminderScheduleTarget target) {
@@ -31,6 +34,11 @@ public class ReminderScheduleTargets {
             throw new ReminderScheduleTargetNotFoundException(target.targetId());
         }
         return ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId());
+    }
+
+    public ConfigurationValues requestedValuesOf(TeachingGroup group, ReminderSchedule schedule) {
+        policyEvaluator.requireReminderScheduleChangeNotToFollowGroup(new ReminderScheduleChangeCheck(schedule));
+        return valuesOf(group, schedule);
     }
 
     public ConfigurationValues valuesOf(TeachingGroup group, ReminderSchedule schedule) {

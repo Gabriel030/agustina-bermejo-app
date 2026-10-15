@@ -4931,6 +4931,7 @@
       "ReminderScheduleDto" : {
         "properties" : {
           "followsGroupSchedule" : {
+            "description" : "Solo en respuestas: true si la excepción volvió a la política del grupo. En /changes y /validation no se acepta true: usar /removal.",
             "type" : "boolean"
           },
           "notices" : {

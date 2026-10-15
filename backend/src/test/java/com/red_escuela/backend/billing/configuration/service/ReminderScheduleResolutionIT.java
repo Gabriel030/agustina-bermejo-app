@@ -102,12 +102,15 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
-        jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
-        jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", director.getId());
-        jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
-                director.getId());
-        jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", director.getId());
-        jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+        try {
+            jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+            jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", director.getId());
+            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
+                    director.getId());
+            jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", director.getId());
+        } finally {
+            jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+        }
         jdbcTemplate.update("delete from program where id in (?, ?)", nursingId, radiologyId);
         SecurityContextHolder.clearContext();
     }
@@ -201,15 +204,18 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
             propose.proposeChange(ConfigurationTopic.ofReminderScheduleGroup(TeachingGroup.PROGRAMS), programSchedule(3, ReminderSendingOverrides.none()), march6, "motivo");
             assertThat(resolveFor(nursingId, MARCH_FOURTH).notices()).hasSize(4);
         } finally {
-            jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
-            jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", administrative.getId());
-            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
-                    administrative.getId());
-            jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", administrative.getId());
-            jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)",
-                    administrative.getId());
-            jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", administrative.getId());
-            jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+            try {
+                jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+                jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", administrative.getId());
+                jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
+                        administrative.getId());
+                jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", administrative.getId());
+                jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)",
+                        administrative.getId());
+                jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", administrative.getId());
+            } finally {
+                jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+            }
         }
     }
 
@@ -262,15 +268,18 @@ class ReminderScheduleResolutionIT extends AbstractIntegrationTest {
             activator.activateDueVersions();
             assertThat(beforeDueDaysOn(MARCH_FOURTH)).isEqualTo(-2);
         } finally {
-            jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
-            jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", administrative.getId());
-            jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
-                    administrative.getId());
-            jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", administrative.getId());
-            jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)",
-                    administrative.getId());
-            jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", administrative.getId());
-            jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+            try {
+                jdbcTemplate.execute("alter table configuration_version_status_change disable trigger trg_configuration_version_status_change_append_only");
+                jdbcTemplate.update("update configuration_version set previous_version_id = null where proposed_by_id = ?", administrative.getId());
+                jdbcTemplate.update("delete from configuration_version_status_change where configuration_version_id in (select id from configuration_version where proposed_by_id = ?)",
+                        administrative.getId());
+                jdbcTemplate.update("delete from configuration_version where proposed_by_id = ?", administrative.getId());
+                jdbcTemplate.update("delete from authorization_request_status_change where authorization_request_id in (select id from authorization_request where requested_by_id = ?)",
+                        administrative.getId());
+                jdbcTemplate.update("delete from authorization_request where requested_by_id = ?", administrative.getId());
+            } finally {
+                jdbcTemplate.execute("alter table configuration_version_status_change enable trigger trg_configuration_version_status_change_append_only");
+            }
         }
     }
 
