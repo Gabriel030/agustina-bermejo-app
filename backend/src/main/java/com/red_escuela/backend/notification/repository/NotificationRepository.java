@@ -13,7 +13,6 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByRecipientIdOrderByCreatedAtDesc(Long recipientId);
-
     @Modifying
     @Query("delete from Notification n where n.relatedEntityType = :type and n.relatedEntityId = :id and n.read = false")
     int deleteUnreadByRelatedEntity(@Param("type") String type, @Param("id") Long id);

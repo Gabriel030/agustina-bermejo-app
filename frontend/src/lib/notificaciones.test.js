@@ -7,6 +7,11 @@ describe('notificaciones', () => {
     expect(TONO_NOTIFICACION.CREDIT_NOTE_ISSUED).toBe('accent2');
   });
 
+  it('etiqueta y da tono al aviso de cobranza', () => {
+    expect(TIPO_NOTIFICACION_LABEL.COLLECTION_REMINDER).toBe('Aviso de cobranza');
+    expect(TONO_NOTIFICACION.COLLECTION_REMINDER).toBe('warning');
+  });
+
   it('todo tipo con etiqueta tiene tono', () => {
     Object.keys(TIPO_NOTIFICACION_LABEL).forEach((tipo) => {
       expect(TONO_NOTIFICACION[tipo], tipo).toBeDefined();

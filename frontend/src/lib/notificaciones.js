@@ -22,6 +22,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   CREDIT_NOTE_ISSUED: 'Nota de crédito emitida',
   LATE_FEE_ISSUED: 'Recargo por mora emitido',
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'Recargo emitido fuera de plazo',
+  COLLECTION_REMINDER: 'Aviso de cobranza',
 };
 
 export const TONO_NOTIFICACION = {
@@ -48,6 +49,7 @@ export const TONO_NOTIFICACION = {
   CREDIT_NOTE_ISSUED: 'accent2',
   LATE_FEE_ISSUED: 'warning',
   LATE_FEE_ISSUED_AFTER_FISCAL_WINDOW: 'danger',
+  COLLECTION_REMINDER: 'warning',
 };
 
 export function tiempoRelativo(fechaIso) {
