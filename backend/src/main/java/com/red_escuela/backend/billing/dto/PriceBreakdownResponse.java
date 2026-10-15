@@ -8,5 +8,5 @@ public record PriceBreakdownResponse(
         Long invoiceId, String feeType, String period, Money baseAmount, String priceRevisionDescription,
         List<PriceBreakdownLineResponse> adjustments,
         Money amountDue, List<PriceBreakdownPaymentResponse> paymentsApplied, Money remainingBalance, String status,
-        List<PriceBreakdownCreditNoteResponse> creditNotesApplied) {
+        List<PriceBreakdownCreditNoteResponse> creditNotesUsedAsFreeCredit) {
 }

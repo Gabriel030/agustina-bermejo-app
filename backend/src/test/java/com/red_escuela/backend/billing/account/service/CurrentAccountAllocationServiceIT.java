@@ -266,9 +266,14 @@ class CurrentAccountAllocationServiceIT extends AbstractCurrentAccountIT {
         receiveCredit("80000.00", TODAY);
         allocateOn(TODAY);
         PaymentAllocation allocation = allocationRepository.findCurrentAllocationByInvoiceId(invoice).orElseThrow();
-        insertRawAllocation(invoice, allocation.getId());
+        jdbc.execute("alter table payment_allocation disable trigger trg_payment_allocation_has_sources");
+        try {
+            insertRawAllocation(invoice, allocation.getId());
 
-        assertThatThrownBy(() -> insertRawAllocation(invoice, allocation.getId())).isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> insertRawAllocation(invoice, allocation.getId())).isInstanceOf(DataIntegrityViolationException.class);
+        } finally {
+            jdbc.execute("alter table payment_allocation enable trigger trg_payment_allocation_has_sources");
+        }
     }
 
     @Test

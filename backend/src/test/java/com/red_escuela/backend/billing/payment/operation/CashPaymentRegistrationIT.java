@@ -8,6 +8,8 @@ import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.AbstractCurrentAccountIT;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
+import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
+import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
@@ -224,7 +226,7 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     }
 
     @Autowired
-    com.red_escuela.backend.billing.service.InvoiceQueryService invoiceQueryService;
+    InvoiceQueryService invoiceQueryService;
 
     @Test
     @Tag("D-376")
@@ -238,14 +240,14 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
         assertThat(result.getResponse().getStatus()).isEqualTo(201);
         long paymentId = jsonOf(result).get("paymentId").asLong();
-        com.red_escuela.backend.billing.dto.PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(march);
+        PriceBreakdownResponse breakdown = invoiceQueryService.priceBreakdown(march);
         assertThat(breakdown.paymentsApplied()).singleElement().satisfies(payment -> {
             assertThat(payment.paymentId()).isEqualTo(paymentId);
             assertThat(payment.method()).isEqualTo("CASH");
             assertThat(payment.amount()).isEqualTo(ars("80000.00").value());
             assertThat(payment.paidAt()).isNotNull();
         });
-        assertThat(breakdown.creditNotesApplied()).isEmpty();
+        assertThat(breakdown.creditNotesUsedAsFreeCredit()).isEmpty();
         invariants.assertAllBillingInvariantsHold();
     }
 

@@ -4581,7 +4581,7 @@
           "baseAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
-          "creditNotesApplied" : {
+          "creditNotesUsedAsFreeCredit" : {
             "items" : {
               "$ref" : "#/components/schemas/PriceBreakdownCreditNoteResponse"
             },
@@ -4613,7 +4613,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "adjustments", "amountDue", "baseAmount", "creditNotesApplied", "feeType", "invoiceId", "paymentsApplied", "period", "priceRevisionDescription", "remainingBalance", "status" ],
+        "required" : [ "adjustments", "amountDue", "baseAmount", "creditNotesUsedAsFreeCredit", "feeType", "invoiceId", "paymentsApplied", "period", "priceRevisionDescription", "remainingBalance", "status" ],
         "type" : "object"
       },
       "ProductRef" : {

@@ -1,3 +1,23 @@
+alter table current_account_entry disable trigger trg_current_account_entry_append_only;
+
+alter table current_account_entry add column allocatable_amount numeric(12, 2);
+alter table current_account_entry add column allocatable_amount_currency varchar(3);
+
+update current_account_entry set allocatable_amount = amount, allocatable_amount_currency = amount_currency where entry_type = 'PAYMENT_RECEIVED';
+update current_account_entry e set allocatable_amount = n.free_credit_amount, allocatable_amount_currency = n.free_credit_amount_currency
+    from credit_note n where e.entry_type = 'CREDIT_NOTE_ISSUED' and n.id = e.credit_note_id;
+update current_account_entry set allocatable_amount = amount, allocatable_amount_currency = amount_currency
+    where entry_type = 'CREDIT_NOTE_ISSUED' and allocatable_amount is null;
+
+alter table current_account_entry enable trigger trg_current_account_entry_append_only;
+
+alter table current_account_entry add constraint ck_current_account_entry_allocatable check (
+    (entry_type in ('PAYMENT_RECEIVED', 'CREDIT_NOTE_ISSUED')) = (allocatable_amount is not null)
+    and (allocatable_amount is null or (allocatable_amount >= 0 and allocatable_amount <= amount
+        and (entry_type = 'CREDIT_NOTE_ISSUED' or allocatable_amount = amount))));
+alter table current_account_entry add constraint ck_current_account_entry_currency_allocatable check (
+    allocatable_amount_currency is not distinct from (case when allocatable_amount is null then null else amount_currency end));
+
 alter table payment_allocation add constraint uk_payment_allocation_id_account unique (id, student_current_account_id);
 alter table payment_allocation add constraint uk_payment_allocation_id_currency unique (id, amount_currency);
 
@@ -42,6 +62,9 @@ begin
         if new.reverses_source_id is not null then
             raise exception 'a source of an allocation cannot reverse another source' using errcode = 'integrity_constraint_violation';
         end if;
+        if exists (select 1 from current_account_entry c where c.compensates_entry_id = new.credit_entry_id) then
+            raise exception 'a reversed payment cannot be the source of an allocation' using errcode = 'integrity_constraint_violation';
+        end if;
     elsif not exists (select 1 from payment_allocation_source o
                       where o.id = new.reverses_source_id and o.reverses_source_id is null and o.payment_allocation_id = allocation_reverses
                         and o.credit_entry_id = new.credit_entry_id and o.amount = new.amount and o.amount_currency = new.amount_currency) then
@@ -57,10 +80,17 @@ create trigger trg_payment_allocation_source_append_only before update or delete
     for each row execute function forbid_append_only_row_change();
 
 create function forbid_allocation_sources_that_differ_from_the_allocation() returns trigger language plpgsql as $$
+declare
+    checked_allocation bigint;
 begin
-    if (select coalesce(sum(s.amount), 0) from payment_allocation_source s where s.payment_allocation_id = new.payment_allocation_id)
-       <> (select a.amount from payment_allocation a where a.id = new.payment_allocation_id) then
-        raise exception 'the sources of allocation % must add up to its amount', new.payment_allocation_id
+    if tg_table_name = 'payment_allocation' then
+        checked_allocation := new.id;
+    else
+        checked_allocation := new.payment_allocation_id;
+    end if;
+    if (select coalesce(sum(s.amount), 0) from payment_allocation_source s where s.payment_allocation_id = checked_allocation)
+       <> (select a.amount from payment_allocation a where a.id = checked_allocation) then
+        raise exception 'the sources of allocation % must add up to its amount', checked_allocation
             using errcode = 'integrity_constraint_violation';
     end if;
     return null;
@@ -69,3 +99,102 @@ $$;
 
 create constraint trigger trg_payment_allocation_source_adds_up after insert on payment_allocation_source
     deferrable initially deferred for each row execute function forbid_allocation_sources_that_differ_from_the_allocation();
+create constraint trigger trg_payment_allocation_has_sources after insert on payment_allocation
+    deferrable initially deferred for each row execute function forbid_allocation_sources_that_differ_from_the_allocation();
+
+create function forbid_credit_entry_taken_beyond_its_allocatable_amount() returns trigger language plpgsql as $$
+begin
+    if (select coalesce(sum(case when s.reverses_source_id is null then s.amount else -s.amount end), 0)
+        from payment_allocation_source s where s.credit_entry_id = new.credit_entry_id)
+       > (select e.allocatable_amount from current_account_entry e where e.id = new.credit_entry_id) then
+        raise exception 'the credit entry % is taken beyond its allocatable amount', new.credit_entry_id
+            using errcode = 'integrity_constraint_violation';
+    end if;
+    return null;
+end;
+$$;
+
+create constraint trigger trg_payment_allocation_source_within_entry after insert on payment_allocation_source
+    deferrable initially deferred for each row execute function forbid_credit_entry_taken_beyond_its_allocatable_amount();
+
+create function forbid_reversing_a_payment_that_still_funds_an_allocation() returns trigger language plpgsql as $$
+begin
+    if new.entry_type = 'PAYMENT_REVERSED' and (select coalesce(sum(case when s.reverses_source_id is null then s.amount else -s.amount end), 0)
+        from payment_allocation_source s where s.credit_entry_id = new.compensates_entry_id) > 0 then
+        raise exception 'the payment of entry % still funds an allocation', new.compensates_entry_id
+            using errcode = 'integrity_constraint_violation';
+    end if;
+    return new;
+end;
+$$;
+
+create trigger trg_current_account_entry_payment_reversal_unfunded before insert on current_account_entry
+    for each row execute function forbid_reversing_a_payment_that_still_funds_an_allocation();
+
+create function backfill_payment_allocation_sources() returns void language plpgsql as $$
+declare
+    allocation record;
+    capacity record;
+    legacy record;
+    pending numeric(12, 2);
+    taken numeric(12, 2);
+begin
+    drop table if exists backfill_capacity;
+    create temporary table backfill_capacity on commit drop as
+    select e.id as entry_id, e.student_current_account_id as account_id, e.sequence_number, e.payment_id, e.credit_note_id,
+           e.allocatable_amount - coalesce((select sum(case when s.reverses_source_id is null then s.amount else -s.amount end)
+                                            from payment_allocation_source s where s.credit_entry_id = e.id), 0) as remaining
+    from current_account_entry e
+    where e.allocatable_amount > 0 and not exists (select 1 from current_account_entry c where c.compensates_entry_id = e.id);
+
+    for allocation in select a.* from payment_allocation a
+                      where not exists (select 1 from payment_allocation_source s where s.payment_allocation_id = a.id) order by a.id loop
+        begin
+        if allocation.reverses_allocation_id is not null then
+            if exists (select 1 from payment_allocation_source o where o.payment_allocation_id = allocation.reverses_allocation_id) then
+                insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, credit_note_id,
+                                                       amount, amount_currency, reverses_source_id, recorded_at)
+                select allocation.id, o.student_current_account_id, o.credit_entry_id, o.payment_id, o.credit_note_id, o.amount, o.amount_currency, o.id, now()
+                from payment_allocation_source o where o.payment_allocation_id = allocation.reverses_allocation_id order by o.id;
+                update backfill_capacity c set remaining = c.remaining + o.amount
+                from payment_allocation_source o where o.payment_allocation_id = allocation.reverses_allocation_id and c.entry_id = o.credit_entry_id;
+            end if;
+        else
+            pending := allocation.amount;
+            for legacy in select lp.payment_id, lp.amount_applied from legacy_payment_allocation lp
+                          where lp.invoice_id = allocation.invoice_id order by lp.id loop
+                select * into capacity from backfill_capacity c
+                where c.account_id = allocation.student_current_account_id and c.payment_id = legacy.payment_id and c.remaining > 0;
+                if found and pending > 0 then
+                    taken := least(pending, legacy.amount_applied, capacity.remaining);
+                    insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, credit_note_id,
+                                                           amount, amount_currency, recorded_at)
+                    values (allocation.id, allocation.student_current_account_id, capacity.entry_id, capacity.payment_id, null, taken,
+                            allocation.amount_currency, now());
+                    update backfill_capacity set remaining = remaining - taken where entry_id = capacity.entry_id;
+                    pending := pending - taken;
+                end if;
+            end loop;
+            for capacity in select * from backfill_capacity c
+                            where c.account_id = allocation.student_current_account_id and c.remaining > 0 order by c.sequence_number loop
+                exit when pending <= 0;
+                taken := least(pending, capacity.remaining);
+                insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, credit_note_id,
+                                                       amount, amount_currency, recorded_at)
+                values (allocation.id, allocation.student_current_account_id, capacity.entry_id, capacity.payment_id, capacity.credit_note_id, taken,
+                        allocation.amount_currency, now());
+                update backfill_capacity set remaining = remaining - taken where entry_id = capacity.entry_id;
+                pending := pending - taken;
+            end loop;
+            if pending > 0 then
+                raise exception 'allocation % could not be fully traced to credit entries (% missing)', allocation.id, pending;
+            end if;
+        end if;
+        exception when others then
+            raise warning 'allocation % was left without sources: %', allocation.id, sqlerrm;
+        end;
+    end loop;
+end;
+$$;
+
+select backfill_payment_allocation_sources();

@@ -33,15 +33,14 @@ class AllocationSourcesProperties {
         return Arbitraries.longs().between(0, 5_000_000);
     }
 
-    @Property(tries = 1000)
+    @Property(tries = 1000, seed = "20261015")
     void theSourcesOfEachAllocationAddUpToItAndEndInTheCreditThatFixesItsEffectiveDate(@ForAll("centAmounts") List<Long> amounts,
                                                                                          @ForAll("centAmounts") List<Long> creditCents,
                                                                                          @ForAll("credit") long requestedCents) {
         long toAllocateCents = Math.min(requestedCents, totalOf(creditCents));
         List<Long> fitted = fitInto(amounts, toAllocateCents);
 
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(fitted), new CreditContributions(creditsOf(creditCents)),
-                ars(toAllocateCents), BUSINESS_DATE);
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(fitted), new CreditContributions(creditsOf(creditCents)), BUSINESS_DATE);
 
         long[] takenFromEntry = new long[creditCents.size()];
         for (ScheduledAllocation allocation : schedule) {

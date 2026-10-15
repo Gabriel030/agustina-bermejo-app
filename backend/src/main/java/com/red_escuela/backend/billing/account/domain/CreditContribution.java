@@ -11,8 +11,4 @@ public record CreditContribution(Long entryId, Long paymentId, Long creditNoteId
         Objects.requireNonNull(effectiveDate, "effectiveDate");
         Objects.requireNonNull(amount, "amount");
     }
-
-    public CreditContribution(LocalDate effectiveDate, NonNegativeMoney amount) {
-        this(null, null, null, effectiveDate, amount);
-    }
 }

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.account.service;
 
+import com.red_escuela.backend.billing.account.domain.CurrentAccountEntry;
 import com.red_escuela.backend.billing.account.domain.PaymentAllocation;
 import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository;
 import com.red_escuela.backend.billing.invoice.dto.PriceBreakdownCreditNoteResponse;
@@ -134,7 +135,7 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
         allocate();
 
         String number = jdbc.queryForObject("select credit_note_number from credit_note where id = ?", String.class, creditNote);
-        List<PriceBreakdownCreditNoteResponse> creditNotes = inTransaction(() -> invoiceQueryService.priceBreakdown(invoice).creditNotesApplied());
+        List<PriceBreakdownCreditNoteResponse> creditNotes = inTransaction(() -> invoiceQueryService.priceBreakdown(invoice).creditNotesUsedAsFreeCredit());
         assertThat(creditNotes).singleElement().satisfies(note -> {
             assertThat(note.creditNoteId()).isEqualTo(creditNote);
             assertThat(note.description()).isEqualTo("Nota de crédito " + number);
@@ -194,30 +195,166 @@ class AllocationSourcesIT extends AbstractCurrentAccountIT {
                 .hasMessageContaining("payment or credit note credit entry");
     }
 
+    private void withTriggerDisabled(String table, String trigger, Runnable work) {
+        jdbc.execute("alter table " + table + " disable trigger " + trigger);
+        try {
+            work.run();
+        } finally {
+            jdbc.execute("alter table " + table + " enable trigger " + trigger);
+        }
+    }
+
+    private CurrentAccountEntry entryOfPayment(long paymentId) {
+        return entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(accountId).stream()
+                .filter(entry -> Long.valueOf(paymentId).equals(entry.getPaymentId())).findFirst().orElseThrow();
+    }
+
+    private List<Object> currentPaymentsOf(Long invoiceId) {
+        return jdbc.queryForList("select s.payment_id from payment_allocation_source s join payment_allocation a on a.id = s.payment_allocation_id "
+                + "where a.invoice_id = ? and a.reverses_allocation_id is null and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id) "
+                + "order by s.id", Object.class, invoiceId);
+    }
+
+    @Test
+    void anOffsetOnlyCreditNoteNeverBecomesTheSourceOfAnAllocationFundedByACashPayment() {
+        issueAdministrativeFeeWithLedgerDebit(accountId, "150.00", LocalDate.of(2027, 6, 10));
+        long payment = receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        Long cancelled = issueAdministrativeFeeWithLedgerDebit(accountId, "150.00", LocalDate.of(2027, 7, 10));
+        long creditNote = newCreditNoteId(accountId, cancelled, "150.00", "0.00");
+        inTransaction(() -> service.recordCreditNoteIssuedCredit(service.lockStudentCurrentAccount(accountId), creditNote, ars("150.00"), ars("0.00"),
+                LocalDate.of(2027, 3, 6), "Anulación"));
+        Long invoice = issue("100.00");
+
+        allocate();
+
+        assertThat(sourcesOf(invoice)).singleElement().satisfies(row -> {
+            assertThat(row.get("payment_id")).isEqualTo(payment);
+            assertThat(row.get("credit_note_id")).isNull();
+        });
+        assertThat(jdbc.queryForObject("select effective_date from payment_allocation where invoice_id = ?", LocalDate.class, invoice)).isEqualTo(LocalDate.of(2027, 3, 5));
+        assertThat(invariants.everyAllocationIsFundedByItsSources()).isEmpty();
+    }
+
+    @Test
+    void reversingAnAllocationAndAllocatingAgainFundsItWithTheCreditItReleasedAndNotWithTheOneOfAnotherInvoice() {
+        Long first = issue("100.00");
+        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "100.00", LocalDate.of(2027, 3, 11));
+        long firstPayment = receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        long secondPayment = receivePayment("100.00", LocalDate.of(2027, 3, 6));
+        allocate();
+        assertThat(currentPaymentsOf(first)).containsExactly(firstPayment);
+        assertThat(currentPaymentsOf(second)).containsExactly(secondPayment);
+        PaymentAllocation allocation = allocationRepository.findById(currentAllocationOf(first)).orElseThrow();
+        inTransaction(() -> allocationService.reverseAllocation(service.lockStudentCurrentAccount(accountId), allocation, TODAY, GRACE_DAYS, "Contracargo", ACTOR));
+
+        allocate();
+
+        assertThat(currentPaymentsOf(first)).containsExactly(firstPayment);
+        assertThat(currentPaymentsOf(second)).containsExactly(secondPayment);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void aReversedPaymentIsNotUsedAsASourceAndTheDatabaseRejectsItAsOne() {
+        long bounced = receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        long good = receivePayment("60.00", LocalDate.of(2027, 3, 6));
+        CurrentAccountEntry bouncedEntry = entryOfPayment(bounced);
+        inTransaction(() -> service.recordPaymentReversalDebit(service.lockStudentCurrentAccount(accountId), bouncedEntry, TODAY, "Rebote"));
+        Long invoice = issue("60.00");
+
+        allocate();
+
+        assertThat(currentPaymentsOf(invoice)).containsExactly(good);
+        Long allocationId = currentAllocationOf(invoice);
+        assertThatThrownBy(() -> inTransaction(() -> jdbc.update("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, "
+                        + "credit_entry_id, payment_id, amount, amount_currency, recorded_at) values (?, ?, ?, ?, 1.00, 'ARS', ?)",
+                allocationId, accountId, bouncedEntry.getId(), bounced, LocalDateTime.now()))).hasMessageContaining("reversed payment cannot be the source");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void bouncingAPaymentThatFundsAnAllocationReversesThatAllocationAndTheDatabaseBlocksBouncingItBefore() {
+        Long first = issue("100.00");
+        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "100.00", LocalDate.of(2027, 3, 11));
+        long bounced = receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        long kept = receivePayment("100.00", LocalDate.of(2027, 3, 6));
+        allocate();
+        receivePayment("100.00", LocalDate.of(2027, 3, 7));
+        CurrentAccountEntry bouncedEntry = entryOfPayment(bounced);
+        assertThatThrownBy(() -> inTransaction(() -> service.recordPaymentReversalDebit(service.lockStudentCurrentAccount(accountId), bouncedEntry, TODAY, "Rebote")))
+                .hasMessageContaining("still funds an allocation");
+
+        inTransaction(() -> {
+            var account = service.lockStudentCurrentAccount(accountId);
+            allocationService.reverseAllocationsFundedByPayment(account, bounced, TODAY, GRACE_DAYS, "Rebote", ACTOR);
+            service.recordPaymentReversalDebit(account, bouncedEntry, TODAY, "Rebote");
+            return null;
+        });
+
+        assertThat(currentPaymentsOf(first)).isEmpty();
+        assertThat(currentPaymentsOf(second)).containsExactly(kept);
+        assertThat(jdbc.queryForObject("select payment_status from invoice where id = ?", String.class, first)).isNotEqualTo("PAID");
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    void theDatabaseRejectsTakingAnEntryBeyondItsAllocatableAmount() {
+        issue("100.00");
+        receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        allocate();
+        Long other = issueAdministrativeFeeWithLedgerDebit(accountId, "50.00", LocalDate.of(2027, 6, 10));
+        Map<String, Object> entry = jdbc.queryForMap("select id, payment_id from current_account_entry where student_current_account_id = ? "
+                + "and entry_type = 'PAYMENT_RECEIVED'", accountId);
+
+        assertThatThrownBy(() -> inTransaction(() -> {
+            Long extra = jdbc.queryForObject("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, "
+                    + "effective_date, allocated_on, actor_process, recorded_at) values (?, ?, 50.00, 'ARS', ?, ?, 'TEST', ?) returning id",
+                    Long.class, accountId, other, TODAY, TODAY, LocalDateTime.now());
+            jdbc.update("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, amount, "
+                    + "amount_currency, recorded_at) values (?, ?, ?, ?, 50.00, 'ARS', ?)", extra, accountId, entry.get("id"), entry.get("payment_id"), LocalDateTime.now());
+            return null;
+        })).hasMessageContaining("taken beyond its allocatable amount");
+    }
+
+    @Test
+    void theDatabaseRejectsAnAllocationWithoutSources() {
+        Long invoice = issue("8000.00");
+
+        assertThatThrownBy(() -> jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, "
+                + "allocated_on, actor_process, recorded_at) values (?, ?, 8000.00, 'ARS', ?, ?, 'TEST', ?)", accountId, invoice, TODAY, TODAY, LocalDateTime.now()))
+                .hasMessageContaining("must add up to its amount");
+    }
+
     @Test
     void theInvariantIsRedWhenAnAllocationHasNoSources() {
         Long invoice = issue("8000.00");
-        jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
-                + "actor_process, recorded_at) values (?, ?, 8000.00, 'ARS', ?, ?, 'TEST', ?)", accountId, invoice, TODAY, TODAY, LocalDateTime.now());
+        withTriggerDisabled("payment_allocation", "trg_payment_allocation_has_sources", () ->
+                jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
+                        + "actor_process, recorded_at) values (?, ?, 8000.00, 'ARS', ?, ?, 'TEST', ?)", accountId, invoice, TODAY, TODAY, LocalDateTime.now()));
 
         assertThat(invariants.everyAllocationIsFundedByItsSources()).singleElement().asString().contains("I-20 allocation whose sources do not add up");
     }
 
     @Test
-    void theInvariantIsRedWhenAnEntryIsTakenBeyondItsAmount() {
-        issue("8000.00");
-        receivePayment("8000.00", LocalDate.of(2027, 3, 5));
+    void sourcesLostBeforeTheMigrationAreRebuiltFromTheLegacyPaymentWhenItIsKnownAndFromTheOldestCreditOtherwise() {
+        Long first = issue("100.00");
+        Long second = issueAdministrativeFeeWithLedgerDebit(accountId, "100.00", LocalDate.of(2027, 3, 11));
+        long olderPayment = receivePayment("100.00", LocalDate.of(2027, 3, 5));
+        long newerPayment = receivePayment("100.00", LocalDate.of(2027, 3, 6));
         allocate();
-        Long other = issueAdministrativeFeeWithLedgerDebit(accountId, "500.00", LocalDate.of(2027, 6, 10));
-        Long allocationOfOther = jdbc.queryForObject("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, "
-                + "effective_date, allocated_on, actor_process, recorded_at) values (?, ?, 500.00, 'ARS', ?, ?, 'TEST', ?) returning id",
-                Long.class, accountId, other, TODAY, TODAY, LocalDateTime.now());
-        Map<String, Object> entry = jdbc.queryForMap("select id, payment_id from current_account_entry where student_current_account_id = ? "
-                + "and entry_type = 'PAYMENT_RECEIVED'", accountId);
-        inTransaction(() -> jdbc.update("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, "
-                + "payment_id, amount, amount_currency, recorded_at) values (?, ?, ?, ?, 500.00, 'ARS', ?)",
-                allocationOfOther, accountId, entry.get("id"), entry.get("payment_id"), LocalDateTime.now()));
+        Long person = newStaffPerson().getId();
+        jdbc.update("insert into legacy_payment (id, version, amount, amount_currency, method, registered_by_id, paid_at, status, created_at, updated_at) "
+                + "values (?, 0, 100.00, 'ARS', 'CASH', ?, now(), 'CONFIRMED', now(), now())", newerPayment, person);
+        jdbc.update("insert into legacy_payment_allocation (payment_id, invoice_id, amount_applied, amount_applied_currency, created_at) "
+                + "values (?, ?, 100.00, 'ARS', now())", newerPayment, first);
+        withTriggerDisabled("payment_allocation_source", "trg_payment_allocation_source_append_only", () ->
+                jdbc.update("delete from payment_allocation_source where student_current_account_id = ?", accountId));
 
-        assertThat(invariants.everyAllocationIsFundedByItsSources()).singleElement().asString().contains("I-20 credit entry taken beyond its amount");
+        inTransaction(() -> jdbc.queryForObject("select backfill_payment_allocation_sources()::text", String.class));
+
+        assertThat(currentPaymentsOf(first)).containsExactly(newerPayment);
+        assertThat(currentPaymentsOf(second)).containsExactly(olderPayment);
+        invariants.assertAllBillingInvariantsHold();
+        assertThat(inTransaction(() -> invoiceQueryService.priceBreakdown(first).paymentsApplied())).hasSize(1);
     }
 }

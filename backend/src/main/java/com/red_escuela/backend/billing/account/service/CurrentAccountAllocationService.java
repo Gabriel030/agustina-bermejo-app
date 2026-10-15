@@ -112,11 +112,11 @@ public class CurrentAccountAllocationService {
             return AccountCreditAllocationResult.nothingAllocated();
         }
         Map<Long, Invoice> invoicesById = openInvoices.stream().collect(Collectors.toMap(Invoice::getId, Function.identity()));
-        CreditContributions credits = CreditContributions.fromEntriesOldestFirst(
-                entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(lockedAccount.getId()));
+        CreditContributions credits = CreditContributions.availableFrom(entryRepository.findByStudentCurrentAccountIdOrderBySequenceNumberAsc(lockedAccount.getId()),
+                allocationRepository.netSourcedByCreditEntry(lockedAccount.getId()), creditToAllocate);
         List<PaymentAllocation> allocations = new ArrayList<>();
         List<Invoice> settledInvoices = new ArrayList<>();
-        for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, creditToAllocate, businessDate)) {
+        for (ScheduledAllocation scheduled : AllocationSchedule.scheduleInvoiceAllocations(plan, credits, businessDate)) {
             Invoice invoice = invoicesById.get(scheduled.invoiceId());
             invoice.allocateFullInvoicePayment(scheduled.amount(), businessDate, actor);
             PaymentAllocation allocation = allocationRepository.saveWithSources(
@@ -143,6 +143,16 @@ public class CurrentAccountAllocationService {
             reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDays, reason, actor));
         }
         lockedAccount.requireUnallocatedCreditCovers(creditToRemove);
+        return reversals;
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<PaymentAllocation> reverseAllocationsFundedByPayment(StudentCurrentAccount lockedAccount, Long paymentId, LocalDate businessDate,
+                                                                    int gracePeriodDays, String reason, StatusChangeActor actor) {
+        List<PaymentAllocation> reversals = new ArrayList<>();
+        for (PaymentAllocation current : allocationRepository.findCurrentAllocationsFundedByPaymentNewestFirst(lockedAccount.getId(), paymentId)) {
+            reversals.add(reverseAllocation(lockedAccount, current, businessDate, gracePeriodDays, reason, actor));
+        }
         return reversals;
     }
 

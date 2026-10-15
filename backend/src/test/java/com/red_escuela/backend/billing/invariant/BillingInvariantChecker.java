@@ -292,9 +292,17 @@ public final class BillingInvariantChecker {
                 select 'entry ' || e.id
                 from current_account_entry e join student_current_account a on a.id = e.student_current_account_id
                 where @ACCOUNTS@
-                  and e.amount < (select coalesce(sum(case when al.reverses_allocation_id is null then s.amount else -s.amount end), 0)
+                  and e.allocatable_amount < (select coalesce(sum(case when al.reverses_allocation_id is null then s.amount else -s.amount end), 0)
                                   from payment_allocation_source s join payment_allocation al on al.id = s.payment_allocation_id
                                   where s.credit_entry_id = e.id)
+                """, baselineAccountId, baselineEntryId));
+        found.addAll(violations("I-20 reversed payment still funds an allocation", """
+                select 'entry ' || e.id
+                from current_account_entry e join student_current_account a on a.id = e.student_current_account_id
+                where @ACCOUNTS@
+                  and exists (select 1 from current_account_entry c where c.compensates_entry_id = e.id)
+                  and (select coalesce(sum(case when s.reverses_source_id is null then s.amount else -s.amount end), 0)
+                       from payment_allocation_source s where s.credit_entry_id = e.id) > 0
                 """, baselineAccountId, baselineEntryId));
         return found;
     }

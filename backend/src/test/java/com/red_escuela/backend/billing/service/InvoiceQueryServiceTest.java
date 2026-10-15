@@ -30,6 +30,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -127,7 +128,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Tag("D-376")
+    @Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Person admin = persistPerson("admin.breakdown1." + System.nanoTime());

@@ -76,32 +76,29 @@ class AllocationDomainProperties {
         return plan;
     }
 
-    @Property(tries = 1000)
+    @Property(tries = 1000, seed = "20261015")
     void theScheduleKeepsTheOrderIdsAndAmountsOfThePlan(@ForAll("centAmounts") List<Long> amounts, @ForAll("centAmounts") List<Long> creditCents,
                                                         @ForAll("credit") long requestedCents) {
         long toAllocateCents = Math.min(requestedCents, totalOf(creditCents));
         List<PlannedInvoiceAllocation> plan = planOf(fitInto(amounts, toAllocateCents));
 
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, new CreditContributions(creditsOf(creditCents)),
-                ars(toAllocateCents), BUSINESS_DATE);
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(plan, new CreditContributions(creditsOf(creditCents)), BUSINESS_DATE);
 
         assertThat(schedule).extracting(ScheduledAllocation::invoiceId).containsExactlyElementsOf(plan.stream().map(PlannedInvoiceAllocation::invoiceId).toList());
         assertThat(schedule).extracting(ScheduledAllocation::amount).containsExactlyElementsOf(plan.stream().map(PlannedInvoiceAllocation::amount).toList());
     }
 
-    @Property(tries = 1000)
-    void eachEffectiveDateIsTheCreditThatCoversTheConsumedPlusThePlanSoFar(@ForAll("centAmounts") List<Long> amounts,
+    @Property(tries = 1000, seed = "20261015")
+    void eachEffectiveDateIsTheCreditThatCoversThePlanSoFar(@ForAll("centAmounts") List<Long> amounts,
                                                                            @ForAll("centAmounts") List<Long> creditCents,
                                                                            @ForAll("credit") long requestedCents) {
         long total = totalOf(creditCents);
         long toAllocateCents = Math.min(requestedCents, total);
         List<Long> fitted = fitInto(amounts, toAllocateCents);
-        long consumedBefore = Math.max(total - toAllocateCents, 0);
 
-        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(fitted), new CreditContributions(creditsOf(creditCents)),
-                ars(toAllocateCents), BUSINESS_DATE);
+        List<ScheduledAllocation> schedule = AllocationSchedule.scheduleInvoiceAllocations(planOf(fitted), new CreditContributions(creditsOf(creditCents)), BUSINESS_DATE);
 
-        long target = consumedBefore;
+        long target = 0;
         LocalDate previous = START;
         for (int item = 0; item < schedule.size(); item++) {
             target += fitted.get(item);
@@ -119,7 +116,7 @@ class AllocationDomainProperties {
         }
     }
 
-    @Property(tries = 1000)
+    @Property(tries = 1000, seed = "20261015")
     void theSelectionIsAMinimalPrefixThatCoversWhatMustBeRemoved(@ForAll("centAmounts") List<Long> amounts, @ForAll("credit") long unallocatedCents,
                                                                   @ForAll("credit") long toRemoveCents) {
         List<PaymentAllocation> newestFirst = new ArrayList<>();

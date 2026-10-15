@@ -134,9 +134,14 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {
-        jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
-                        + "actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now())",
-                accountId, invoiceId, new BigDecimal(amount), currency.name(), effectiveDate, effectiveDate);
+        jdbc.execute("alter table payment_allocation disable trigger trg_payment_allocation_has_sources");
+        try {
+            jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
+                            + "actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now())",
+                    accountId, invoiceId, new BigDecimal(amount), currency.name(), effectiveDate, effectiveDate);
+        } finally {
+            jdbc.execute("alter table payment_allocation enable trigger trg_payment_allocation_has_sources");
+        }
     }
 
     protected void seedOverdueDetection(Long invoiceId, LocalDate businessDate, String occurredAt) {

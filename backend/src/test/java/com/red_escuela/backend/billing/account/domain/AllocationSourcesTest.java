@@ -27,15 +27,15 @@ class AllocationSourcesTest {
         return new CreditContribution(entryId, null, creditNoteId, date, ars(amount));
     }
 
-    private static List<ScheduledAllocation> schedule(CreditContributions credits, String unallocated, PlannedInvoiceAllocation... plan) {
-        return AllocationSchedule.scheduleInvoiceAllocations(List.of(plan), credits, ars(unallocated), BUSINESS_DATE);
+    private static List<ScheduledAllocation> schedule(CreditContributions credits, PlannedInvoiceAllocation... plan) {
+        return AllocationSchedule.scheduleInvoiceAllocations(List.of(plan), credits, BUSINESS_DATE);
     }
 
     @Test
     void twoPaymentsThatFinanceOneInvoiceAreItsTwoSources() {
         CreditContributions credits = new CreditContributions(List.of(payment(1L, 11L, MARCH_5, "3000.00"), payment(2L, 12L, MARCH_12, "5000.00")));
 
-        List<ScheduledAllocation> schedule = schedule(credits, "8000.00", new PlannedInvoiceAllocation(7L, ars("8000.00")));
+        List<ScheduledAllocation> schedule = schedule(credits, new PlannedInvoiceAllocation(7L, ars("8000.00")));
 
         assertThat(schedule).hasSize(1);
         assertThat(schedule.get(0).sources()).extracting(AllocationSourceShare::paymentId, share -> share.amount().value().amount().toPlainString())
@@ -47,7 +47,7 @@ class AllocationSourcesTest {
     void onePaymentThatFinancesTwoInvoicesIsASourceOfBothAndNeverExceedsItself() {
         CreditContributions credits = new CreditContributions(List.of(payment(1L, 11L, MARCH_5, "10000.00")));
 
-        List<ScheduledAllocation> schedule = schedule(credits, "10000.00",
+        List<ScheduledAllocation> schedule = schedule(credits,
                 new PlannedInvoiceAllocation(7L, ars("6000.00")), new PlannedInvoiceAllocation(8L, ars("4000.00")));
 
         assertThat(schedule).extracting(ScheduledAllocation::invoiceId, allocation -> allocation.sources().get(0).paymentId(),
@@ -59,17 +59,17 @@ class AllocationSourcesTest {
     void aCreditNoteAndAPaymentThatFinanceTheSameInvoiceAreBothSources() {
         CreditContributions credits = new CreditContributions(List.of(creditNote(1L, 21L, MARCH_5, "2000.00"), payment(2L, 12L, MARCH_12, "3000.00")));
 
-        List<ScheduledAllocation> schedule = schedule(credits, "5000.00", new PlannedInvoiceAllocation(7L, ars("5000.00")));
+        List<ScheduledAllocation> schedule = schedule(credits, new PlannedInvoiceAllocation(7L, ars("5000.00")));
 
         assertThat(schedule.get(0).sources()).extracting(AllocationSourceShare::creditNoteId, AllocationSourceShare::paymentId)
                 .containsExactly(tuple(21L, null), tuple(null, 12L));
     }
 
     @Test
-    void creditAlreadyConsumedBeforeThePlanIsSkippedInsideAnEntry() {
-        CreditContributions credits = new CreditContributions(List.of(payment(1L, 11L, MARCH_5, "3000.00"), payment(2L, 12L, MARCH_12, "5000.00")));
+    void aPartiallyUsedEntryOffersOnlyWhatIsLeftOfIt() {
+        CreditContributions credits = new CreditContributions(List.of(payment(1L, 11L, MARCH_5, "1500.00"), payment(2L, 12L, MARCH_12, "5000.00")));
 
-        List<ScheduledAllocation> schedule = schedule(credits, "6500.00", new PlannedInvoiceAllocation(7L, ars("6500.00")));
+        List<ScheduledAllocation> schedule = schedule(credits, new PlannedInvoiceAllocation(7L, ars("6500.00")));
 
         assertThat(schedule.get(0).sources()).extracting(AllocationSourceShare::paymentId, share -> share.amount().value().amount().toPlainString())
                 .containsExactly(tuple(11L, "1500.00"), tuple(12L, "5000.00"));
@@ -79,7 +79,7 @@ class AllocationSourcesTest {
     void theNewestCreditIsNeverTakenBeforeAnOlderOneWithRoomLeft() {
         CreditContributions credits = new CreditContributions(List.of(payment(1L, 11L, MARCH_5, "3000.00"), payment(2L, 12L, MARCH_12, "5000.00")));
 
-        List<ScheduledAllocation> schedule = schedule(credits, "8000.00", new PlannedInvoiceAllocation(7L, ars("2000.00")));
+        List<ScheduledAllocation> schedule = schedule(credits, new PlannedInvoiceAllocation(7L, ars("2000.00")));
 
         assertThat(schedule.get(0).sources()).extracting(AllocationSourceShare::paymentId).containsExactly(11L);
         assertThat(schedule.get(0).effectiveDate()).isEqualTo(MARCH_5);
