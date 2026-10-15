@@ -36,8 +36,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.red_escuela.backend.notification.delivery.service.InAppDeliveryChannel;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -70,6 +80,8 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
     private EntityManager entityManager;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private InAppDeliveryChannel inAppChannel;
 
     private Person persistPerson(boolean emailVerified) {
         String dni = "9" + System.nanoTime();
@@ -417,5 +429,131 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> jdbc.update(insert, student.getId(), key)).isInstanceOf(DataIntegrityViolationException.class);
         jdbc.update(insert, student.getId(), null);
         assertThatCode(() -> jdbc.update(insert, student.getId(), null)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @Tag("c08")
+    void theDatabaseRefusesAnEmailWithoutSubjectAndUnknownChannelCategoryOrStatus() {
+        Person student = persistPerson(true);
+        String insert = "insert into notification_delivery (dedup_key, channel, category, kind, priority, recipient_person_id, status, scheduled_for, "
+                + "body_text, subject, created_at) values (?, ?, ?, 'K', 1, ?, ?, current_date, 'x', ?, now())";
+
+        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "EMAIL", "COLLECTION_REMINDER", student.getId(), "QUEUED", null))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "SMS", "COLLECTION_REMINDER", student.getId(), "QUEUED", "a"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "EMAIL", "CAMPAIGN", student.getId(), "QUEUED", "a"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(insert, uniqueKey(), "EMAIL", "COLLECTION_REMINDER", student.getId(), "PENDING", "a"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatCode(() -> jdbc.update(insert, uniqueKey(), "IN_APP", "COLLECTION_REMINDER", student.getId(), "QUEUED", null)).doesNotThrowAnyException();
+        assertThatCode(() -> jdbc.update(insert, uniqueKey(), "EMAIL", "COLLECTION_REMINDER", student.getId(), "QUEUED", "a")).doesNotThrowAnyException();
+    }
+
+    @Test
+    @Tag("c09")
+    @Tag("D-184")
+    void aGenericRuntimeFailureOfTheGatewayCountsAsAnAttemptAndNeverPropagates() {
+        Person student = persistPerson(true);
+        String key = uniqueKey();
+        deliveryService.enqueue(request(student, key, false));
+        Long id = deliveryOf(key, DeliveryChannel.EMAIL).getId();
+        TransactionalEmailGateway broken = (TransactionalEmail email) -> {
+            throw new IllegalStateException("503 del proveedor");
+        };
+        EmailDeliveryChannel brokenChannel = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, broken);
+
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            assertThatCode(() -> transactionTemplate.executeWithoutResult(status -> brokenChannel.dispatchDelivery(id))).doesNotThrowAnyException();
+            assertThat(deliveryRepository.findById(id).orElseThrow().getAttempts()).isEqualTo(attempt);
+        }
+
+        NotificationDelivery failed = deliveryRepository.findById(id).orElseThrow();
+        assertThat(failed.getStatus()).isEqualTo(DeliveryStatus.FAILED);
+        assertThat(failed.getStatusReason()).isEqualTo("PROVIDER_ERROR");
+    }
+
+    @Test
+    @Tag("c09")
+    void aDeferredDeliveryIsSentByTheDispatch() {
+        Person student = persistPerson(true);
+        String key = uniqueKey();
+        deliveryService.enqueue(request(student, key, false));
+        Long id = deliveryOf(key, DeliveryChannel.EMAIL).getId();
+        transactionTemplate.executeWithoutResult(status -> deliveryRepository.findById(id).orElseThrow().defer("DAILY_CAP", Instant.parse("2026-03-10T12:00:00Z")));
+        assertThat(deliveryRepository.findById(id).orElseThrow().getStatus()).isEqualTo(DeliveryStatus.DEFERRED);
+
+        emailChannel.dispatchDelivery(id);
+
+        NotificationDelivery sent = deliveryRepository.findById(id).orElseThrow();
+        assertThat(sent.getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+        assertThat(sent.getStatusReason()).isNull();
+    }
+
+    @Test
+    @Tag("c05")
+    void twoWorkersDispatchingTheSameQueuedMailSendItOnce() throws Exception {
+        Person student = persistPerson(true);
+        String key = uniqueKey();
+        deliveryService.enqueue(request(student, key, false));
+        Long id = deliveryOf(key, DeliveryChannel.EMAIL).getId();
+        AtomicInteger sends = new AtomicInteger();
+        TransactionalEmailGateway slow = (TransactionalEmail email) -> {
+            sends.incrementAndGet();
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            return gateway.send(email);
+        };
+        EmailDeliveryChannel worker = new EmailDeliveryChannel(deliveryRepository, emailRecipientLookup, preferenceQuery, emailDeliveryPolicySet, slow);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<?>> runs = List.of(
+                    pool.submit(() -> {
+                        start.await();
+                        transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id));
+                        return null;
+                    }),
+                    pool.submit(() -> {
+                        start.await();
+                        transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id));
+                        return null;
+                    }));
+            start.countDown();
+            for (Future<?> run : runs) {
+                run.get();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(sends.get()).isEqualTo(1);
+        NotificationDelivery sent = deliveryRepository.findById(id).orElseThrow();
+        assertThat(sent.getStatus()).isEqualTo(DeliveryStatus.SENT_SIMULATED);
+        assertThat(sent.getAttempts()).isZero();
+    }
+
+    @Test
+    @Tag("c05")
+    void aRetryAfterTheSecondChannelFailedSkipsTheFirstOneAndCompletesTheSecond() {
+        Person student = persistPerson(true);
+        String key = uniqueKey();
+        EmailDeliveryChannel brokenEmail = mock(EmailDeliveryChannel.class);
+        DeliveryRequest request = request(student, key, false);
+        doThrow(new IllegalStateException("se cayo el canal de mail")).when(brokenEmail).enqueue(request);
+        NotificationDeliveryService firstAttempt = new NotificationDeliveryService(inAppChannel, brokenEmail, deliveryRepository);
+
+        assertThatThrownBy(() -> firstAttempt.enqueue(request)).isInstanceOf(IllegalStateException.class);
+        assertThat(countDeliveries(key)).isEqualTo(1);
+        assertThat(countNotifications(key)).isEqualTo(1);
+
+        deliveryService.enqueue(request);
+
+        assertThat(countDeliveries(key)).isEqualTo(2);
+        assertThat(countNotifications(key)).isEqualTo(1);
+        assertThat(deliveryOf(key, DeliveryChannel.EMAIL).getStatus()).isEqualTo(DeliveryStatus.QUEUED);
     }
 }

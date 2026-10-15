@@ -145,6 +145,14 @@ class NotificationDeliveryTest {
     }
 
     @Test
+    void deferringWithoutTheInstantItWaitsForIsRejectedAndKeepsTheStatus() {
+        NotificationDelivery delivery = NotificationDelivery.queuedEmail(ENVELOPE, EMAIL, NOW);
+
+        assertThatThrownBy(() -> delivery.defer("DAILY_CAP", null)).isInstanceOf(NullPointerException.class);
+        assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.QUEUED);
+    }
+
+    @Test
     void aSuppressedDeliveryCannotBeSent() {
         NotificationDelivery delivery = NotificationDelivery.suppressedEmail(ENVELOPE, EMAIL, "OPTED_OUT", NOW);
 

@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Getter
 @Entity
@@ -139,6 +140,7 @@ public class NotificationDelivery {
     }
 
     public void defer(String reason, Instant notBefore) {
+        Objects.requireNonNull(notBefore, "notBefore");
         moveTo(DeliveryEvent.DEFER, reason);
         this.notBefore = notBefore;
     }

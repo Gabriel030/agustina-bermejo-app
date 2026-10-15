@@ -55,6 +55,12 @@ class MockTransactionalEmailGatewayTest {
     }
 
     @Test
+    void aReceiptAcceptsAMessageIdAtTheColumnLengthAndRejectsOneOverIt() {
+        assertThat(new EmailDeliveryReceipt("m".repeat(120), false).providerMessageId()).hasSize(120);
+        assertThatThrownBy(() -> new EmailDeliveryReceipt("m".repeat(121), false)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void aReceiptNeedsAMessageId() {
         assertThatThrownBy(() -> new EmailDeliveryReceipt(" ", true)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new EmailDeliveryReceipt(null, true)).isInstanceOf(IllegalArgumentException.class);

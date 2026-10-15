@@ -15,7 +15,6 @@ import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import com.red_escuela.backend.shared.mail.EmailDeliveryReceipt;
 import com.red_escuela.backend.shared.mail.MaskedEmailAddress;
 import com.red_escuela.backend.shared.mail.TransactionalEmail;
-import com.red_escuela.backend.shared.mail.TransactionalEmailDeliveryException;
 import com.red_escuela.backend.shared.mail.TransactionalEmailGateway;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public class EmailDeliveryChannel {
 
     @Transactional
     public void dispatchDelivery(Long deliveryId) {
-        NotificationDelivery delivery = deliveryRepository.findById(deliveryId)
+        NotificationDelivery delivery = deliveryRepository.findByIdForUpdate(deliveryId)
                 .orElseThrow(() -> new NotificationDeliveryNotFoundException(deliveryId));
         if (!delivery.getStatus().isWaitingForDispatch()) {
             return;
@@ -83,11 +82,16 @@ public class EmailDeliveryChannel {
             return;
         }
         TransactionalEmail email = new TransactionalEmail(recipient.get().address(), delivery.getSubject(), delivery.getBodyText(), delivery.getBodyHtml());
+        EmailDeliveryReceipt receipt = null;
         try {
-            EmailDeliveryReceipt receipt = gateway.send(email);
-            delivery.markSent(receipt.providerMessageId(), receipt.simulated(), ApplicationTime.instant());
-        } catch (TransactionalEmailDeliveryException failure) {
+            receipt = gateway.send(email);
+        } catch (RuntimeException failure) {
+            log.warn("El proveedor de mail fallo dedup={} causa={}", delivery.getDedupKey(), failure.getClass().getSimpleName());
+        }
+        if (receipt == null) {
             delivery.recordFailedAttempt(DeliveryStatusReason.PROVIDER_ERROR, MAX_SEND_ATTEMPTS);
+        } else {
+            delivery.markSent(receipt.providerMessageId(), receipt.simulated(), ApplicationTime.instant());
         }
         logOutcome(delivery, MaskedEmailAddress.of(recipient.get().address()));
     }
