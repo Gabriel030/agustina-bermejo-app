@@ -216,6 +216,13 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | IssuanceSettingsCoherencePolicy | INVALID_ISSUANCE_SETTINGS | D-053, D-160 |
 
+## Momento LATE_FEE_CORRECTION_ISSUING
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CorrectionTargetsLiveLateFeeDebitNotePolicy | LATE_FEE_CORRECTION_TARGET_INVALID | D-244, D-375 |
+| 2 | CorrectionDebitNoteNotUnderPaymentReviewPolicy | PENDING_BANK_TRANSFER_ON_INVOICE | D-153, D-375 |
+
 ## Momento LATE_PAYMENT_SETTINGS
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -504,6 +511,13 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Eventos que publica: InvoiceIssuedDomainEvent, InvoicePaidDomainEvent
 - Post-procesamiento de InvoiceIssuedDomainEvent: —
 - Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
+
+## Operación ISSUE_LATE_FEE_CORRECTION_CREDIT_NOTE
+
+- Validaciones (momentos): LATE_FEE_CORRECTION_ISSUING
+- Pre-procesamiento (en orden): —
+- Eventos que publica: CreditNoteIssuedEvent
+- Post-procesamiento de CreditNoteIssuedEvent: CreditNoteNotificationListener#notifyRequester, CreditNoteNotificationListener#notifyStudent
 
 ## Operación ISSUE_LATE_FEE_DEBIT_NOTE
 

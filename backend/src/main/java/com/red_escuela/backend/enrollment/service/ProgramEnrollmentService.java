@@ -169,11 +169,13 @@ public class ProgramEnrollmentService {
                     "La matriculación " + id + " no está ENROLLED/PAUSED, no se puede dar de baja");
         }
         LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
-        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), withdrawal.registeredByPersonId());
+        LocalDate registeredOn = withdrawalDateResolver.registrationDate();
+        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), registeredOn,
+                withdrawal.registeredByPersonId());
         programEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForProgram(id, "Enrollment dado de baja");
         withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
-                enrollment.getStudent().getId(), id, effectiveDate, withdrawal.cause()));
+                enrollment.getStudent().getId(), id, effectiveDate, registeredOn, withdrawal.cause()));
     }
 
     public ProgramEnrollment get(Long id) {

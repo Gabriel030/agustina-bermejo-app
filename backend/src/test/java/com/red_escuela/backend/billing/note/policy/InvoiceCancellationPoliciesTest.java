@@ -78,6 +78,9 @@ class InvoiceCancellationPoliciesTest {
         PolicyVerdict withdrawal = evaluate(policy, command(CreditNoteReason.WITHDRAWAL, "x"), open("1.00"));
         assertThat(withdrawal.allowed()).isFalse();
         assertThat(withdrawal.code()).isEqualTo("INVALID_CREDIT_NOTE_REASON");
+        PolicyVerdict lateFeeCorrection = evaluate(policy, command(CreditNoteReason.LATE_FEE_CORRECTION, "x"), open("1.00"));
+        assertThat(lateFeeCorrection.allowed()).isFalse();
+        assertThat(lateFeeCorrection.code()).isEqualTo("INVALID_CREDIT_NOTE_REASON");
         assertThat(evaluate(policy, command(null, "x"), open("1.00")).code()).isEqualTo("INVALID_CREDIT_NOTE_REASON");
     }
 

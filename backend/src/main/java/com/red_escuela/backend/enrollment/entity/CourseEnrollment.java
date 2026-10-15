@@ -52,6 +52,9 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "withdrawal_effective_date")
     private LocalDate withdrawalEffectiveDate;
 
+    @Column(name = "withdrawal_registered_on")
+    private LocalDate withdrawalRegisteredOn;
+
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
 
@@ -65,9 +68,10 @@ public class CourseEnrollment implements BillableEnrollment {
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;
 
-    public void markWithdrawn(LocalDate effectiveDate, LocalDateTime completionMoment, Long registeredByPersonId) {
+    public void markWithdrawn(LocalDate effectiveDate, LocalDateTime completionMoment, LocalDate registeredOn, Long registeredByPersonId) {
         this.status = EnrollmentStatus.WITHDRAWN;
         this.withdrawalEffectiveDate = effectiveDate;
+        this.withdrawalRegisteredOn = registeredOn;
         this.completionDate = completionMoment;
         this.withdrawnByPersonId = registeredByPersonId;
     }

@@ -2,10 +2,13 @@ package com.red_escuela.backend.billing.collections;
 
 import com.red_escuela.backend.billing.collections.domain.LateFeeCalculationStrategy;
 import com.red_escuela.backend.billing.collections.domain.DailySimpleLateFeeCalculator;
+import com.red_escuela.backend.billing.collections.policy.CorrectionDebitNoteNotUnderPaymentReviewPolicy;
+import com.red_escuela.backend.billing.collections.policy.CorrectionTargetsLiveLateFeeDebitNotePolicy;
 import com.red_escuela.backend.billing.collections.policy.DebitNoteSameRecipientAsOriginPolicy;
 import com.red_escuela.backend.billing.collections.policy.InvoiceIsPastDueDatePolicy;
 import com.red_escuela.backend.billing.collections.policy.LateFeeAppliesToInvoiceTypePolicy;
 import com.red_escuela.backend.billing.collections.policy.LateFeeChargingEnabledPolicy;
+import com.red_escuela.backend.billing.collections.policy.LateFeeCorrectionContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
 import com.red_escuela.backend.billing.collections.policy.LateFeeNotFrozenPolicy;
 import com.red_escuela.backend.billing.collections.policy.OriginNotUnderPaymentReviewPolicy;
@@ -34,6 +37,11 @@ public class CollectionsPolicySetsConfiguration {
                 new LateFeeNotFrozenPolicy(),
                 new DebitNoteSameRecipientAsOriginPolicy());
         return PolicySet.named("DEBIT_NOTE_ISSUING", ordered);
+    }
+
+    @Bean
+    public PolicySet<LateFeeCorrectionContext> lateFeeCorrectionPolicySet() {
+        return PolicySet.named("LATE_FEE_CORRECTION_ISSUING", List.of(new CorrectionTargetsLiveLateFeeDebitNotePolicy(), new CorrectionDebitNoteNotUnderPaymentReviewPolicy()));
     }
 
     @Bean

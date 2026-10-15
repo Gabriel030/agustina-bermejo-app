@@ -14,6 +14,7 @@ import java.util.List;
 @Component
 public class CreditNoteNotificationListener {
     static final String STUDENT_HANDLER = "CreditNoteNotificationListener.notifyStudent";
+    private static final String LATE_FEE_CORRECTION_REASON = "LATE_FEE_CORRECTION";
     static final String REQUESTER_HANDLER = "CreditNoteNotificationListener.notifyRequester";
 
     private final ProcessedEffectGuard effectGuard;
@@ -29,8 +30,7 @@ public class CreditNoteNotificationListener {
     @ApplicationModuleListener
     public void notifyStudent(CreditNoteIssuedEvent event) {
         effectGuard.runEffectOnce(event, STUDENT_HANDLER, () -> eventPublisher.publishEvent(new BillingOperationNotification(
-                NotificationType.CREDIT_NOTE_ISSUED,
-                "Se emitió la nota de crédito " + event.creditNoteNumber() + " por " + event.currency() + " " + event.totalAmount() + " sobre la factura " + event.invoiceNumber() + ".",
+                NotificationType.CREDIT_NOTE_ISSUED, studentMessageOf(event),
                 List.of(new PersonRecipient(entityManager.getReference(Person.class, event.studentPersonId()))), "CreditNote", event.creditNoteId())));
     }
 
@@ -43,5 +43,14 @@ public class CreditNoteNotificationListener {
                 NotificationType.CREDIT_NOTE_ISSUED,
                 "La nota de crédito " + event.creditNoteNumber() + " que pediste sobre la factura " + event.invoiceNumber() + " quedó emitida.",
                 List.of(new PersonRecipient(entityManager.getReference(Person.class, event.requestedByPersonId()))), "CreditNote", event.creditNoteId())));
+    }
+
+    private static String studentMessageOf(CreditNoteIssuedEvent event) {
+        if (LATE_FEE_CORRECTION_REASON.equals(event.reason())) {
+            return "Corregimos el recargo por mora " + event.invoiceNumber() + " por los días posteriores a tu baja: se emitió la nota de crédito "
+                    + event.creditNoteNumber() + " por " + event.currency() + " " + event.totalAmount() + ".";
+        }
+        return "Se emitió la nota de crédito " + event.creditNoteNumber() + " por " + event.currency() + " " + event.totalAmount() + " sobre la factura "
+                + event.invoiceNumber() + ".";
     }
 }

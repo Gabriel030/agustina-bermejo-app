@@ -8,7 +8,10 @@ import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.billing.account.domain.StudentCurrentAccount;
 import com.red_escuela.backend.billing.account.service.AbstractCurrentAccountIT;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
+import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
+import com.red_escuela.backend.billing.service.EnrollmentSuspensionLiftedEvent;
+import com.red_escuela.backend.notification.SuspensionLiftedEvent;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Person;
@@ -24,6 +27,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -38,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@RecordApplicationEvents
 class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
 
     static final LocalDate TODAY = LocalDate.of(2027, 4, 15);
@@ -56,6 +62,8 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
     CurrentAccountAllocationService allocationService;
     @Autowired
     MeterRegistry meterRegistry;
+    @Autowired
+    ApplicationEvents applicationEvents;
     @Autowired
     com.red_escuela.backend.billing.repository.PaymentRepository legacyPaymentRepository;
 
@@ -741,6 +749,92 @@ class CashPaymentRegistrationIT extends AbstractCurrentAccountIT {
             releaseTransition.countDown();
             executor.shutdownNow();
         }
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    Long invoiceOfEnrollment(Debtor debtor, Long enrollmentId, String amount, LocalDate dueDate) {
+        Long invoiceId = issueAdministrativeFeeWithLedgerDebit(debtor.accountId(), amount, dueDate);
+        jdbc.update("update invoice_line set program_enrollment_id = ? where invoice_id = ?", enrollmentId, invoiceId);
+        return invoiceId;
+    }
+
+    void markOverdue(Long invoiceId) {
+        jdbc.update("update invoice set payment_status = 'OVERDUE' where id = ?", invoiceId);
+    }
+
+    long admissionEventsOf(Long invoiceId) {
+        return applicationEvents.stream(AdmissionInvoicePaidEvent.class).filter(event -> event.invoiceId().equals(invoiceId)).count();
+    }
+
+    @Test
+    @Tag("D-231")
+    @Tag("D-136")
+    void payingAnAdmissionInvoiceWithCashPublishesTheAdmissionEventOnceAndAReplayDoesNotRepeatIt() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long admission = invoiceOfOffering(debtor, TeachingMode.IN_PERSON, "80000.00", LocalDate.of(2027, 4, 20));
+        jdbc.update("update invoice set issuing_reason = 'PROGRAM_ADMISSION' where id = ?", admission);
+        Long ordinary = invoiceOfOffering(debtor, TeachingMode.IN_PERSON, "50000.00", LocalDate.of(2027, 4, 25));
+        String fingerprint = fingerprintOf(debtor.studentId(), "80000.00");
+
+        MvcResult first = register(debtor.studentId(), "key-admission", bodyOf("ARS", "80000.00", null, null, null, fingerprint), administrative);
+        MvcResult replay = register(debtor.studentId(), "key-admission", bodyOf("ARS", "80000.00", null, null, null, fingerprint), administrative);
+
+        assertThat(first.getResponse().getStatus()).isEqualTo(201);
+        assertThat(replay.getResponse().getStatus()).isEqualTo(201);
+        assertThat(statusOfInvoice(admission)).isEqualTo("PAID");
+        assertThat(admissionEventsOf(admission)).isEqualTo(1);
+        assertThat(admissionEventsOf(ordinary)).isZero();
+        assertThat(paymentsOf(debtor.accountId())).isEqualTo(1);
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-231")
+    void aPartialCashPaymentOfAnAdmissionInvoiceDoesNotPublishTheAdmissionEvent() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long admission = invoiceOfOffering(debtor, TeachingMode.IN_PERSON, "80000.00", LocalDate.of(2027, 4, 20));
+        jdbc.update("update invoice set issuing_reason = 'PROGRAM_ADMISSION' where id = ?", admission);
+
+        MvcResult result = registerArs(debtor.studentId(), "key-admission-partial", "30000.00", null, null, administrative);
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(201);
+        assertThat(statusOfInvoice(admission)).isNotEqualTo("PAID");
+        assertThat(admissionEventsOf(admission)).isZero();
+        invariants.assertAllBillingInvariantsHold();
+    }
+
+    @Test
+    @Tag("D-231")
+    @Tag("D-134")
+    void payingTheLastOverdueInvoiceLiftsTheSuspensionAndPayingTheFirstOneDoesNot() throws Exception {
+        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
+        Debtor debtor = debtor();
+        Long enrollmentId = programEnrollmentOf(debtor.studentId(), TeachingMode.IN_PERSON);
+        Long march = invoiceOfEnrollment(debtor, enrollmentId, "80000.00", LocalDate.of(2027, 3, 10));
+        Long april = invoiceOfEnrollment(debtor, enrollmentId, "80000.00", LocalDate.of(2027, 4, 10));
+        markOverdue(march);
+        markOverdue(april);
+        jdbc.update("update program_enrollment set payment_status = 'SUSPENDED', payment_status_updated_at = ? where id = ?",
+                LocalDateTime.of(2027, 4, 1, 8, 0), enrollmentId);
+
+        MvcResult first = registerArs(debtor.studentId(), "key-lift-first", "80000.00", null, null, administrative);
+
+        assertThat(first.getResponse().getStatus()).isEqualTo(201);
+        assertThat(statusOfInvoice(march)).isEqualTo("PAID");
+        assertThat(statusOfInvoice(april)).isEqualTo("OVERDUE");
+        assertThat(jdbc.queryForObject("select payment_status from program_enrollment where id = ?", String.class, enrollmentId)).isEqualTo("SUSPENDED");
+        assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isZero();
+
+        MvcResult second = registerArs(debtor.studentId(), "key-lift-second", "80000.00", null, null, administrative);
+
+        assertThat(second.getResponse().getStatus()).isEqualTo(201);
+        assertThat(statusOfInvoice(april)).isEqualTo("PAID");
+        assertThat(jdbc.queryForObject("select payment_status from program_enrollment where id = ?", String.class, enrollmentId)).isEqualTo("UP_TO_DATE");
+        assertThat(applicationEvents.stream(SuspensionLiftedEvent.class).count()).isEqualTo(1);
+        assertThat(applicationEvents.stream(EnrollmentSuspensionLiftedEvent.class)
+                .filter(event -> event.enrollmentId().equals(enrollmentId)).count()).isEqualTo(1);
         invariants.assertAllBillingInvariantsHold();
     }
 }

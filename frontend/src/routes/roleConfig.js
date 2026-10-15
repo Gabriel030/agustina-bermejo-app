@@ -23,6 +23,6 @@ export const ROLE_CONFIG = {
   },
   director: {
     Layout: DirectorLayout,
-    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'financiero'],
+    pages: ['inicio', 'alumnos', 'personal', 'aprobaciones', 'gestion-academica', 'esquemas-evaluacion', 'facturacion', 'financiero'],
   },
 };
