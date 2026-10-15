@@ -34,11 +34,14 @@ import com.red_escuela.backend.academicstructure.repository.CourseSubjectSection
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import com.red_escuela.backend.billing.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.billing.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.billing.service.StudentDebtResolutionService;
 
@@ -53,6 +56,8 @@ public class CourseEnrollmentService {
     private final PersonRoleGranter personRoleGranter;
     private final StudentDebtResolutionService studentDebtResolutionService;
     private final ScholarshipService scholarshipService;
+    private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
+    private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
 
     public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
@@ -63,6 +68,8 @@ public class CourseEnrollmentService {
             CourseSubjectSectionEnrollmentRepository courseSubjectSectionEnrollmentRepository,
             PersonRoleGranter personRoleGranter, StudentDebtResolutionService studentDebtResolutionService,
             ScholarshipService scholarshipService,
+            EnrollmentWithdrawalDateResolver withdrawalDateResolver,
+            EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             Clock clock) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.studentRepository = studentRepository;
@@ -73,6 +80,8 @@ public class CourseEnrollmentService {
         this.personRoleGranter = personRoleGranter;
         this.studentDebtResolutionService = studentDebtResolutionService;
         this.scholarshipService = scholarshipService;
+        this.withdrawalDateResolver = withdrawalDateResolver;
+        this.withdrawalBillingPort = withdrawalBillingPort;
         this.clock = clock;
     }
 
@@ -205,15 +214,22 @@ public class CourseEnrollmentService {
 
     @Transactional
     public void withdraw(Long id) {
+        withdraw(id, EnrollmentWithdrawal.voluntaryBySystem());
+    }
+
+    @Transactional
+    public void withdraw(Long id, EnrollmentWithdrawal withdrawal) {
         CourseEnrollment enrollment = findOrThrow(id);
         if (enrollment.getStatus() != EnrollmentStatus.ENROLLED && enrollment.getStatus() != EnrollmentStatus.WAITLISTED) {
             throw new CannotWithdrawException("La matriculación " + id + " no está ENROLLED/WAITLISTED, no se puede dar de baja");
         }
         boolean liberaCupoDelCurso = enrollment.getStatus() == EnrollmentStatus.ENROLLED;
-        enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
-        enrollment.setCompletionDate(LocalDateTime.now(clock));
+        LocalDate effectiveDate = withdrawalDateResolver.resolveEffectiveDate(withdrawal, enrollment.getEnrollmentDate());
+        enrollment.markWithdrawn(effectiveDate, withdrawalDateResolver.completionMomentOf(effectiveDate), withdrawal.registeredByPersonId());
         courseEnrollmentRepository.save(enrollment);
         scholarshipService.cancelActiveForCourse(id, "Enrollment dado de baja");
+        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofCourseEnrollment(
+                enrollment.getStudent().getId(), id, effectiveDate, withdrawal.cause()));
         cancelModuleEnrollments(enrollment);
         if (liberaCupoDelCurso) {
             promoteNextFromCourseWaitlist(enrollment.getCourse());

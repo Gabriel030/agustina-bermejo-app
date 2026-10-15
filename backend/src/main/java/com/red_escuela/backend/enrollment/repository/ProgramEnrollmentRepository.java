@@ -14,6 +14,8 @@ import java.util.List;
 
 @Repository
 public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnrollment, Long> {
+    boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
+
     List<ProgramEnrollment> findByStudentId(Long studentId);
 
     List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusIn(

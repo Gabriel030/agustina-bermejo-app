@@ -65,6 +65,12 @@ public class ProgramEnrollment implements BillableEnrollment {
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
+    @Column(name = "withdrawal_effective_date")
+    private java.time.LocalDate withdrawalEffectiveDate;
+
+    @Column(name = "withdrawn_by_person_id")
+    private Long withdrawnByPersonId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
     private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
@@ -77,6 +83,13 @@ public class ProgramEnrollment implements BillableEnrollment {
 
     public ProgramYearBillingTemplate effectiveBillingTemplate() {
         return currentBillingTemplate != null ? currentBillingTemplate : programCohort.getTemplate();
+    }
+
+    public void markWithdrawn(java.time.LocalDate effectiveDate, LocalDateTime completionMoment, Long registeredByPersonId) {
+        this.status = ProgramEnrollmentStatus.WITHDRAWN;
+        this.withdrawalEffectiveDate = effectiveDate;
+        this.completionDate = completionMoment;
+        this.withdrawnByPersonId = registeredByPersonId;
     }
 
     public boolean isActive() {

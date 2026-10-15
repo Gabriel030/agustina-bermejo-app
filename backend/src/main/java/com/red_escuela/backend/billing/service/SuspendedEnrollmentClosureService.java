@@ -13,6 +13,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class SuspendedEnrollmentClosureService {
             return false;
         }
         enrollment.setPaymentStatus(EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
-        programEnrollmentService.withdraw(enrollmentId);
+        programEnrollmentService.withdraw(enrollmentId, EnrollmentWithdrawal.forNonpayment());
         enrollment.setPaymentStatusUpdatedAt(today.atStartOfDay());
         programEnrollmentRepository.save(enrollment);
         log.info("Inscripción suspendida dada de baja al cierre de su período: inscripcion={}, cierreAnioLectivo={}", enrollmentId, cycle.get().end());
