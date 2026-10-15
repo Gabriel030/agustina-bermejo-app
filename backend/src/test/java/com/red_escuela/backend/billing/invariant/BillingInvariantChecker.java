@@ -391,6 +391,13 @@ public final class BillingInvariantChecker {
                 """.formatted(cutoff, termsOn("c.due_date"), termsOn("g.day::date"), frozenOn("g.day::date")), today, baselineInvoiceId);
     }
 
+    public void assertLateFeeInvariantsHold() {
+        List<String> found = lateFeesRespectTheRedefinedI11();
+        if (!found.isEmpty()) {
+            throw new AssertionError("Billing invariants violated:\n" + String.join("\n", found));
+        }
+    }
+
     public void assertLateFeesAreCompleteAt(java.time.LocalDate today) {
         List<String> found = lateFeesCoverEveryChargeableDayAt(today);
         if (!found.isEmpty()) {

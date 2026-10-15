@@ -27,7 +27,11 @@ public class LateFeeAccrualService {
     }
 
     public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate) {
-        int issued = reconcileLateFeesOfInvoice(originInvoiceId, businessDate);
+        return reconcileLateFeesOfSettledInvoice(originInvoiceId, businessDate, timelineOf(businessDate));
+    }
+
+    public int reconcileLateFeesOfSettledInvoice(Long originInvoiceId, LocalDate businessDate, LatePaymentTimeline timeline) {
+        int issued = reconcileLateFeesOfInvoice(originInvoiceId, businessDate, timeline);
         overchargeRecorder.recordDaysChargedAfterThePaymentOfInvoice(originInvoiceId);
         return issued;
     }

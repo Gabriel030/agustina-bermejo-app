@@ -9,6 +9,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentEvent;
 import com.red_escuela.backend.billing.invoice.domain.event.InvoicePaidDomainEvent;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
+import com.red_escuela.backend.shared.time.MutableClock;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,8 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
     private ApplicationEventPublisher eventPublisher;
     @Autowired
     private InvoiceRepository repository;
+    @Autowired
+    private MeterRegistry meterRegistry;
 
     private void runInParallel(List<Callable<Object>> tasks) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(tasks.size());
@@ -58,7 +62,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2231-03-12..2231-03-31:20:4000.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2231, 4, 1));
     }
 
     @Test
@@ -76,7 +80,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2232-03-12..2232-03-31:20:4000.00", "2232-04-01..2232-04-01:1:200.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2232, 4, 1));
     }
 
     @Test
@@ -98,7 +102,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         accrualStep.accrueLateFees(d(2233, 3, 21));
 
         assertThat(summaryOf(origin)).containsExactly("2233-03-12..2233-03-20:9:1800.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2233, 3, 21));
     }
 
     @Test
@@ -120,7 +124,7 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         reconcile(origin, d(2234, 5, 1));
 
         assertThat(summaryOf(origin)).containsExactly("2234-03-12..2234-03-31:20:4000.00", "2234-04-01..2234-04-09:9:1800.00", "2234-04-10..2234-04-30:21:4200.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2234, 5, 1));
     }
 
     @Test
@@ -139,5 +143,55 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         assertThat(second.settlementDebitNotesRecovered()).isZero();
         assertThat(summaryOf(origin)).containsExactly("2235-03-12..2235-03-20:9:1800.00");
         assertThat(repository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2235, 2, 1), 10)).doesNotContain(origin.getId());
+        assertScenarioInvariants(d(2235, 3, 26));
+    }
+
+    @Test
+    @Tag("D-332")
+    @Tag("D-243")
+    void aSettlementWithExcessWhoseListenerNeverRanIsRecordedOnceByTheNightlyRun() {
+        arrange(2236);
+        publishDefaults(2236);
+        Invoice origin = overdueInstallmentDueOn(d(2236, 3, 11));
+        reconcile(origin, d(2236, 4, 2));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2236, 3, 28), d(2236, 4, 2));
+        double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
+
+        LateFeeAccrualResult first = accrualStep.accrueLateFees(d(2236, 4, 3));
+        LateFeeAccrualResult second = accrualStep.accrueLateFees(d(2236, 4, 4));
+
+        assertThat(first.settlementCandidates()).isEqualTo(1);
+        assertThat(second.settlementCandidates()).isZero();
+        assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(3.0);
+        assertThat(summaryOf(origin)).containsExactly("2236-03-12..2236-03-31:20:4000.00");
+        assertScenarioInvariants(d(2236, 4, 4));
+    }
+
+    @Test
+    @Tag("D-331")
+    void aPaymentInsideTheGraceIsNotACandidateOfTheNightlyRecovery() {
+        arrange(2237);
+        publish(10, "0.002", 10, true, true, d(2237, 1, 1));
+        Invoice origin = overdueInstallmentDueOn(d(2237, 3, 11));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2237, 3, 20), d(2237, 3, 20));
+
+        assertThat(repository.findRecentlySettledLateFeeOriginIdsAfter(0L, d(2237, 3, 1), 50)).doesNotContain(origin.getId());
+    }
+
+    @Test
+    @Tag("D-325")
+    void aLateRedeliveredPaymentEventIssuesWithTheRealDayButKeepsTheFactDate() {
+        arrange(2238);
+        publishDefaults(2238);
+        Invoice origin = overdueInstallmentDueOn(d(2238, 3, 11));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2238, 3, 20), d(2238, 3, 20));
+        MutableClock.INSTANCE.setDate(d(2238, 5, 10));
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(InvoicePaidDomainEvent.paidFor(origin.getId(),
+                origin.getStudentCurrentAccountId(), InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name(), d(2238, 3, 20))));
+        awaitEventsDrained();
+
+        assertThat(chargesOf(origin).get(0).get("fact_date").toString()).isEqualTo("2238-03-20");
+        assertThat(chargesOf(origin).get(0).get("nd_issue").toString()).isEqualTo("2238-05-10");
     }
 }

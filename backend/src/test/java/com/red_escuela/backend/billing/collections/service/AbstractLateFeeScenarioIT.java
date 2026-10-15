@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.account.repository.PaymentAllocationRepos
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.account.service.StudentCurrentAccountService;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
+import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.service.LatePaymentTestFixtures;
@@ -87,12 +88,14 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     @Autowired
     private TermRepository termRepository;
 
+    protected BillingInvariantChecker invariants;
     protected Person person;
     protected Student student;
     protected Term term;
     protected CourseEnrollment enrollment;
 
     protected void arrange(int year) {
+        invariants = BillingInvariantChecker.startingNow(jdbc);
         String username = "late.fee.settle." + year + "." + System.nanoTime();
         Address address = addressRepository.save(new Address());
         Person created = new Person();
@@ -199,6 +202,11 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
 
     protected static LocalDate d(int year, int month, int day) {
         return LocalDate.of(year, month, day);
+    }
+
+    protected void assertScenarioInvariants(LocalDate today) {
+        invariants.assertLateFeeInvariantsHold();
+        invariants.assertLateFeesAreCompleteAt(today);
     }
 
     protected Money price() {

@@ -36,7 +36,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         arrange(2201);
         publish(0, "0.002", 10, true, true, d(2201, 1, 1));
         Invoice origin = pendingInstallmentDueOn(d(2201, 3, 11));
-        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         payInFull(origin, d(2201, 3, 11), d(2201, 3, 11));
         awaitEventsDrained();
@@ -44,7 +43,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(reload(origin).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
         assertThat(chargesOf(origin)).isEmpty();
-        invariants.assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2201, 4, 1));
     }
 
     @Test
@@ -64,7 +63,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(chargesOf(first)).isEmpty();
         assertThat(chargesOf(second)).isEmpty();
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2202, 5, 1));
     }
 
     @Test
@@ -85,7 +84,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         assertThat(note.get("settlement_allocation_id")).isNotNull();
         assertThat(note.get("nd_issue").toString()).isEqualTo("2203-03-20");
         assertThat(reload(origin).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2203, 3, 20));
     }
 
     @Test
@@ -100,6 +99,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2204-03-12..2204-03-25:14:2800.00");
+        assertScenarioInvariants(d(2204, 3, 25));
     }
 
     @Test
@@ -114,6 +114,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2205-03-12..2205-03-25:14:2800.00");
+        assertScenarioInvariants(d(2205, 3, 25));
     }
 
     @Test
@@ -129,6 +130,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         assertThat(summaryOf(origin)).containsExactly("2206-03-12..2206-03-20:9:1800.00");
         assertThat(chargesOf(origin).get(0).get("nd_issue").toString()).isEqualTo("2206-03-23");
         assertThat(chargesOf(origin).get(0).get("fact_date").toString()).isEqualTo("2206-03-20");
+        assertScenarioInvariants(d(2206, 3, 23));
     }
 
     @Test
@@ -144,7 +146,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2207-03-12..2207-03-31:20:4000.00");
         assertThat(chargesOf(origin).get(0).get("cutoff_kind")).isEqualTo("SETTLEMENT");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2207, 4, 1));
     }
 
     @Test
@@ -160,7 +162,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2208-03-12..2208-03-31:20:4000.00");
         assertThat(chargesOf(origin).get(0).get("cutoff_kind")).isEqualTo("MONTH_CLOSE");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2208, 4, 1));
     }
 
     @Test
@@ -176,7 +178,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2209-03-12..2209-03-31:20:4000.00", "2209-04-01..2209-04-09:9:1800.00");
         assertThat(chargesOf(origin).get(1).get("cutoff_kind")).isEqualTo("SETTLEMENT");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2209, 4, 9));
     }
 
     @Test
@@ -191,6 +193,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2210-03-12..2210-03-31:20:4000.00", "2210-04-01..2210-04-01:1:200.00");
+        assertScenarioInvariants(d(2210, 4, 1));
     }
 
     @Test
@@ -208,7 +211,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         assertThat(summaryOf(origin)).containsExactly("2211-03-12..2211-03-31:20:4000.00", "2211-04-01..2211-04-03:3:600.00");
         assertThat(chargesOf(origin).get(0).get("fact_date").toString()).isEqualTo("2211-03-31");
         assertThat(chargesOf(origin).get(0).get("cutoff_kind")).isEqualTo("SETTLEMENT");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2211, 4, 6));
     }
 
     @Test
@@ -226,6 +229,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2212-03-12..2212-03-31:20:4000.00");
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(3.0);
+        assertScenarioInvariants(d(2212, 4, 2));
     }
 
     @Test
@@ -241,6 +245,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2213-03-12..2213-03-28:17:3400.00");
         assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isZero();
+        assertScenarioInvariants(d(2213, 4, 2));
     }
 
     @Test
@@ -263,7 +268,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(reload(origin).getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
         assertThat(summaryOf(origin)).containsExactly("2214-03-12..2214-03-31:20:4000.00", "2214-04-01..2214-04-09:9:1800.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2214, 4, 9));
     }
 
     @Test
@@ -276,7 +281,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         reconcile(origin, d(2215, 4, 1));
         CurrentAccountEntry credit = payInFull(origin, d(2215, 4, 9), d(2215, 4, 9));
         awaitEventsDrained();
-        BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
 
         reversePayment(origin, credit, d(2215, 4, 15), 0);
         awaitEventsDrained();
@@ -288,8 +292,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         assertThat(summaryOf(origin)).containsExactly("2215-03-12..2215-03-31:20:4000.00", "2215-04-01..2215-04-09:9:1800.00", "2215-04-10..2215-04-30:21:4200.00",
                 "2215-05-01..2215-05-10:10:2000.00");
         assertContiguousCoverage(origin, "2215-03-12", "2215-05-10");
-        invariants.assertAllBillingInvariantsHold();
-        invariants.assertLateFeesAreCompleteAt(d(2215, 5, 10));
+        assertScenarioInvariants(d(2215, 5, 10));
     }
 
     @Test
@@ -308,7 +311,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         reconcile(origin, d(2216, 5, 1));
 
         assertThat(summaryOf(origin)).containsExactly("2216-03-12..2216-03-31:20:4000.00", "2216-04-01..2216-04-30:30:6000.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2216, 5, 1));
     }
 
     @Test
@@ -324,7 +327,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2217-03-12..2217-03-31:20:4000.00", "2217-04-01..2217-04-20:20:4000.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2217, 4, 30));
     }
 
     @Test
@@ -341,6 +344,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2218-03-12..2218-03-31:20:4000.00", "2218-04-01..2218-04-09:9:1800.00");
         assertThat((BigDecimal) chargesOf(origin).get(1).get("daily_rate")).isEqualByComparingTo("0.002");
+        assertScenarioInvariants(d(2218, 4, 9));
     }
 
     @Test
@@ -356,6 +360,6 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
         awaitEventsDrained();
 
         assertThat(summaryOf(origin)).containsExactly("2219-03-12..2219-03-20:5:1000.00");
-        BillingInvariantChecker.startingNow(jdbc).assertAllBillingInvariantsHold();
+        assertScenarioInvariants(d(2219, 3, 20));
     }
 }

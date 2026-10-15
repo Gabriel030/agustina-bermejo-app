@@ -33,6 +33,7 @@ public class LateFeeAccrualStep {
         int issued = 0;
         int failed = 0;
         int recovered = 0;
+        int settlementCandidates = 0;
         List<Map<String, Object>> errors = new ArrayList<>();
         LatePaymentTimeline timeline = accrualService.timelineOf(today);
         LocalDate cutoffDay = LateFeeCutoff.closingOfMonthBefore(today).lastDay();
@@ -64,10 +65,10 @@ public class LateFeeAccrualStep {
             if (batch.isEmpty()) {
                 break;
             }
-            candidates += batch.size();
+            settlementCandidates += batch.size();
             for (Long originId : batch) {
                 try {
-                    recovered += accrualService.reconcileLateFeesOfInvoice(originId, today, timeline);
+                    recovered += accrualService.reconcileLateFeesOfSettledInvoice(originId, today, timeline);
                 } catch (Exception e) {
                     failed++;
                     log.error("Falló la recuperación del recargo final de la factura id={}", originId, e);
@@ -79,6 +80,6 @@ public class LateFeeAccrualStep {
             }
             lastId = batch.get(batch.size() - 1);
         }
-        return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered);
+        return new LateFeeAccrualResult(candidates, issued + recovered, failed, errors, recovered, settlementCandidates);
     }
 }

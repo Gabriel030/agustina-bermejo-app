@@ -142,8 +142,16 @@ public interface InvoiceRepository extends Repository<Invoice, Long> {
             join payment_allocation a on a.invoice_id = i.id and a.reverses_allocation_id is null
               and not exists (select 1 from payment_allocation r where r.reverses_allocation_id = a.id)
             where i.payment_status = 'PAID' and i.document_type = 'INVOICE' and i.invoice_type in ('MONTHLY_INSTALLMENT', 'ENROLLMENT_FEE')
-              and i.id > :lastId and a.allocated_on >= :since and a.effective_date > i.due_date
-              and not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date)
+              and i.id > :lastId and a.allocated_on >= :since
+              and a.effective_date > i.due_date + coalesce((
+                    select (v.config_values ->> 'gracePeriodDays')::int from configuration_version v
+                    where v.scope = 'LATE_PAYMENT' and v.status in ('SCHEDULED', 'EFFECTIVE', 'SUPERSEDED')
+                    order by (v.effective_from <= i.due_date) desc, case when v.effective_from <= i.due_date then v.effective_from end desc nulls last,
+                             v.effective_from asc, v.id desc limit 1), 0)
+              and (not exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end >= a.effective_date)
+                   or (exists (select 1 from late_fee_charge c where c.origin_invoice_id = i.id and c.period_end > a.effective_date)
+                       and not exists (select 1 from processed_effect p where p.handler_name = 'LateFeeOverchargeRecorder'
+                                       and p.event_id = lpad(to_hex(a.id), 32, '0')::uuid)))
             order by i.id asc
             limit :pageSize
             """, nativeQuery = true)
