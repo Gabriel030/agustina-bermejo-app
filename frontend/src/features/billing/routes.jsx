@@ -5,7 +5,7 @@ import { AlumnoPagarTransferencia } from '@/pages/AlumnoPagarTransferencia';
 import { AlumnoPagarOnline } from '@/pages/AlumnoPagarOnline';
 import { AlumnoPagoEstado } from '@/pages/AlumnoPagoEstado';
 import { AdministrativoFacturacion } from '@/pages/AdministrativoFacturacion';
-import { DirectorFinanciero } from '@/pages/DirectorFinanciero';
+import { FinancialDashboardPage } from '@/features/billing/dashboard/FinancialDashboardPage';
 
 export const routes = {
   public: [],
@@ -19,6 +19,6 @@ export const routes = {
     { roles: ['alumno'], path: 'pagos/:invoiceId/transferencia', element: <AlumnoPagarTransferencia /> },
     { roles: ['alumno'], path: 'pagos/:invoiceId/online', element: <AlumnoPagarOnline /> },
     { roles: ['administrativo'], path: 'facturacion', element: <AdministrativoFacturacion /> },
-    { roles: ['director'], path: 'financiero', element: <DirectorFinanciero /> },
+    { roles: ['administrativo', 'director'], path: 'financiero', element: <FinancialDashboardPage /> },
   ],
 };

@@ -17,7 +17,7 @@ export function DirectorAniosLectivos() {
     <PageContainer title="Años lectivos">
       <Link to="/director/financiero" className="-mt-4 flex items-center gap-1 text-[12px] text-ink-faint hover:text-ink">
         <ChevronLeft className="h-3.5 w-3.5" />
-        Resumen financiero
+        Financiero
       </Link>
       {isLoading ? (
         <Skeleton rows={2} />

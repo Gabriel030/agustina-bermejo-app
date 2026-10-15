@@ -55,6 +55,8 @@
   --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
   --color-warning-bg: var(--warning-bg);
+  --color-warning-ink: var(--warning-ink);
+  --color-success-ink: var(--success-ink);
   --color-danger: var(--danger);
   --color-danger-bg: var(--danger-bg);
   --color-neutral-bg: var(--neutral-bg);

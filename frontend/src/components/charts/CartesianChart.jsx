@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -15,15 +16,19 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartFrame } from './ChartFrame';
-import { formatAxisValue, formatChartValue } from './chartFormat';
+import { detectCurrency, formatAxisValue, formatChartValue, normalizeChartData } from './chartFormat';
 import { AXIS_COLOR, GOAL_COLOR, GRID_COLOR, seriesColor, useChartAnimation } from './chartTheme';
 
 const AXIS_TICK = { fill: AXIS_COLOR, fontSize: 12 };
+const AXIS_WIDTH = 64;
+const LEFT_AXIS = 'left';
+const RIGHT_AXIS = 'right';
 
-export function GoalLine({ value, label }) {
+export function GoalLine({ value, label, axis = LEFT_AXIS }) {
   if (value == null) return null;
   return (
     <ReferenceLine
+      yAxisId={axis}
       y={value}
       stroke={GOAL_COLOR}
       strokeDasharray="6 4"
@@ -65,7 +70,8 @@ const CHART_BY_VARIANT = {
 
 function renderSeries(variant, item, index, animation) {
   const color = seriesColor(item, index);
-  const common = { dataKey: item.key, name: item.label, ...animation };
+  const yAxisId = item.axis === RIGHT_AXIS ? RIGHT_AXIS : LEFT_AXIS;
+  const common = { dataKey: item.key, name: item.label, yAxisId, ...animation };
   const kind = variant === 'composed' ? item.type ?? 'bar' : variant;
   if (kind === 'line') {
     return (
@@ -84,80 +90,117 @@ function renderSeries(variant, item, index, animation) {
   if (kind === 'area') {
     return <Area key={item.key} {...common} type="monotone" stackId="stack" stroke={color} fill={color} fillOpacity={0.35} />;
   }
-  return (
-    <Bar
-      key={item.key}
-      {...common}
-      fill={color}
-      stackId={variant === 'stackedBar' ? 'stack' : undefined}
-      radius={variant === 'stackedBar' ? 0 : [6, 6, 0, 0]}
-      maxBarSize={48}
-    />
-  );
+  const stackId = item.stack ?? (variant === 'stackedBar' ? 'stack' : undefined);
+  return <Bar key={item.key} {...common} fill={color} stackId={stackId} radius={stackId ? 0 : [6, 6, 0, 0]} maxBarSize={48} />;
 }
 
 export function CartesianChart({
   variant,
   title,
   subtitle,
+  info,
+  badge,
   ariaLabel,
   data,
-  series,
+  series: requestedSeries,
+  tableSeries,
   unit,
   currency,
   goal,
   loading,
+  error,
+  onRetry,
+  unavailableText,
   height,
   categoryLabel,
   emptyTitle,
   emptyDescription,
   className,
   onCategoryClick,
+  openLabel,
 }) {
   const animation = useChartAnimation();
   const Chart = CHART_BY_VARIANT[variant];
+  const series = useMemo(
+    () => (requestedSeries.some((item) => item.axis !== RIGHT_AXIS) ? requestedSeries : requestedSeries.map((item) => ({ ...item, axis: undefined }))),
+    [requestedSeries],
+  );
+  const goalAxis = series.some((item) => item.axis === RIGHT_AXIS) ? goal?.axis : LEFT_AXIS;
   const showLegend = series.length > 1;
   const unitBySeries = Object.fromEntries(series.filter((item) => item.unit).map((item) => [item.key, item.unit]));
+  const rows = useMemo(() => normalizeChartData(data, series), [data, series]);
+  const resolvedCurrency = currency ?? detectCurrency(data, series) ?? 'ARS';
+  const rightSeries = series.filter((item) => item.axis === RIGHT_AXIS);
+  const leftUnit = unit ?? series.find((item) => item.axis !== RIGHT_AXIS)?.unit;
+  const rightUnit = rightSeries[0]?.unit;
+  const openRow = onCategoryClick ? (row) => onCategoryClick(row) : undefined;
 
   return (
     <ChartFrame
       title={title}
       subtitle={subtitle}
+      info={info}
+      badge={badge}
       ariaLabel={ariaLabel}
       data={data}
       series={series}
-      unit={unit}
-      currency={currency}
+      tableSeries={tableSeries}
+      unit={leftUnit}
+      currency={resolvedCurrency}
       categoryLabel={categoryLabel}
       loading={loading}
+      error={error}
+      onRetry={onRetry}
+      unavailableText={unavailableText}
       height={height}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
       className={className}
+      onRowOpen={openRow}
+      openLabel={openLabel}
     >
       <ResponsiveContainer width="100%" height="100%">
         <Chart
-          data={data}
+          data={rows}
           margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
           accessibilityLayer={false}
-          onClick={onCategoryClick ? (state) => state?.activeLabel != null && onCategoryClick(state.activeLabel) : undefined}
+          onClick={
+            openRow
+              ? (state) => {
+                  const row = rows.find((candidate) => candidate.label === state?.activeLabel);
+                  if (row) openRow(row);
+                }
+              : undefined
+          }
         >
           <CartesianGrid stroke={GRID_COLOR} strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: GRID_COLOR }} />
           <YAxis
+            yAxisId={LEFT_AXIS}
             tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
-            width={64}
-            tickFormatter={(value) => formatAxisValue(value, { unit, currency })}
+            width={AXIS_WIDTH}
+            tickFormatter={(value) => formatAxisValue(value, { unit: leftUnit, currency: resolvedCurrency })}
           />
+          {rightSeries.length > 0 && (
+            <YAxis
+              yAxisId={RIGHT_AXIS}
+              orientation="right"
+              tick={AXIS_TICK}
+              tickLine={false}
+              axisLine={false}
+              width={AXIS_WIDTH}
+              tickFormatter={(value) => formatAxisValue(value, { unit: rightUnit, currency: resolvedCurrency })}
+            />
+          )}
           <Tooltip
             cursor={{ fill: 'var(--accent-soft)', opacity: 0.5 }}
-            content={<ChartTooltip unit={unit} currency={currency} unitBySeries={unitBySeries} />}
+            content={<ChartTooltip unit={leftUnit} currency={resolvedCurrency} unitBySeries={unitBySeries} />}
           />
           {showLegend && <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: AXIS_COLOR }} />}
           {series.map((item, index) => renderSeries(variant, item, index, animation))}
-          {goal && <GoalLine value={goal.value} label={goal.label} />}
+          {goal && <GoalLine value={goal.value} label={goal.label} axis={goalAxis} />}
         </Chart>
       </ResponsiveContainer>
     </ChartFrame>
