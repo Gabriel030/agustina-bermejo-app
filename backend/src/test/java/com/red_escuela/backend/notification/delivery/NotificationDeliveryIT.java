@@ -43,8 +43,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.time.Duration;
-import static org.awaitility.Awaitility.await;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.red_escuela.backend.notification.delivery.service.InAppDeliveryChannel;
@@ -519,8 +517,9 @@ class NotificationDeliveryIT extends AbstractIntegrationTest {
             Future<?> first = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
             assertThat(firstSendStarted.await(30, TimeUnit.SECONDS)).isTrue();
             Future<?> second = pool.submit(() -> transactionTemplate.executeWithoutResult(status -> worker.dispatchDelivery(id)));
-            await().atMost(Duration.ofSeconds(20)).until(() -> jdbc.queryForObject(
-                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and query ilike '%notification_delivery%'", Long.class) > 0);
+            second.get(15, TimeUnit.SECONDS);
+            assertThat(sends.get()).isEqualTo(1);
+            assertThat(deliveryRepository.findById(id).orElseThrow().getStatus()).isEqualTo(DeliveryStatus.QUEUED);
             releaseFirstSend.countDown();
             first.get(30, TimeUnit.SECONDS);
             second.get(30, TimeUnit.SECONDS);

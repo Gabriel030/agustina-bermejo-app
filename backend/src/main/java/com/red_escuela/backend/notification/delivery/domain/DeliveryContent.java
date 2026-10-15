@@ -11,6 +11,13 @@ public record DeliveryContent(String subject, String bodyText, String bodyHtml) 
         if (subject != null && (subject.isBlank() || subject.length() > MAX_SUBJECT_LENGTH)) {
             throw new IllegalArgumentException("A subject is between 1 and " + MAX_SUBJECT_LENGTH + " characters");
         }
+        if (containsNul(subject) || containsNul(bodyText) || containsNul(bodyHtml)) {
+            throw new IllegalArgumentException("A delivery cannot contain NUL characters");
+        }
+    }
+
+    private static boolean containsNul(String value) {
+        return value != null && value.indexOf('\0') >= 0;
     }
 
     public static DeliveryContent forEmail(String subject, String bodyText, String bodyHtml) {
