@@ -1086,6 +1086,15 @@
         "required" : [ "capacity", "id", "name", "status" ],
         "type" : "object"
       },
+      "CloseDiscountDefinitionRequest" : {
+        "properties" : {
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "CollectionReminderSettingsValues" : {
         "properties" : {
           "contactListDaysOverdue" : {
@@ -1769,6 +1778,73 @@
           }
         },
         "required" : [ "justification", "programEnrollmentId", "subjectId", "type" ],
+        "type" : "object"
+      },
+      "CreateDiscountDefinitionRequest" : {
+        "properties" : {
+          "applicableInvoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "availableFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "availableUntil" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "calculation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "capPerInvoice" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "discountType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          },
+          "enrollmentWindowFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "enrollmentWindowTo" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "programCohortId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "quota" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "applicableInvoiceType", "availableFrom", "availableUntil", "calculation", "capPerInvoice", "courseId", "discountType", "enrollmentWindowFrom", "enrollmentWindowTo", "installmentsTotal", "name", "priority", "programCohortId", "programId", "quota" ],
         "type" : "object"
       },
       "CreateElectiveGroupRequest" : {
@@ -2586,6 +2662,130 @@
           }
         },
         "required" : [ "decidedAt", "decisionNotes", "id", "justification", "programEnrollmentId", "programName", "requestedAt", "status", "studentName", "subjectId", "subjectName", "type" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionCatalogEntryResponse" : {
+        "properties" : {
+          "applicableInvoiceType" : {
+            "enum" : [ "MONTHLY_INSTALLMENT", "ANNUAL_UPFRONT", "ENROLLMENT_FEE", "EXAM_FEE", "RETAKEN_SUBJECT_FEE", "DEGREE_ISSUANCE_FEE", "ADMINISTRATIVE_FEE", "LATE_FEE" ],
+            "type" : "string"
+          },
+          "authorizationRequestId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "availability" : {
+            "enum" : [ "UPCOMING", "AVAILABLE", "EXPIRED" ],
+            "type" : "string"
+          },
+          "availableFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "availableUntil" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "calculation" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/Nominal"
+            }, {
+              "$ref" : "#/components/schemas/Proportional"
+            } ]
+          },
+          "capPerInvoice" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "closedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "closedById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "closureReason" : {
+            "type" : "string"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "directPublication" : {
+            "type" : "boolean"
+          },
+          "discountType" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          },
+          "enrollmentWindowFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "enrollmentWindowTo" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "estimatedQuotaCost" : {
+            "$ref" : "#/components/schemas/Money"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "installmentsTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "priority" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "programCohortId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "quota" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quotaUsed" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "CLOSED" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "availability", "estimatedQuotaCost", "quotaUsed" ],
+        "type" : "object"
+      },
+      "DiscountDefinitionValidationResponse" : {
+        "properties" : {
+          "violations" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PolicyViolation"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "violations" ],
         "type" : "object"
       },
       "ElectiveGroupProgressResponse" : {
@@ -13442,6 +13642,275 @@
           }
         },
         "tags" : [ "director-approval-request-controller" ]
+      }
+    },
+    "/discount-definitions" : {
+      "get" : {
+        "operationId" : "DiscountDefinition_listDiscountDefinitions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "SCHOLARSHIP", "COHORT_PROMOTION", "ANNUAL_UPFRONT", "PAYMENT_METHOD", "COHORT_ENTRY" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "CLOSED" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/DiscountDefinitionCatalogEntryResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      },
+      "post" : {
+        "operationId" : "DiscountDefinition_createDiscountDefinition",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/validation" : {
+      "post" : {
+        "operationId" : "DiscountDefinition_validateDiscountDefinition",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DiscountDefinitionValidationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
+      }
+    },
+    "/discount-definitions/{id}/closure" : {
+      "post" : {
+        "operationId" : "DiscountDefinition_closeDiscountDefinition",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CloseDiscountDefinitionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "429" : {
+            "description" : "Too Many Requests"
+          },
+          "502" : {
+            "description" : "Bad Gateway"
+          }
+        },
+        "tags" : [ "discount-definition-controller" ]
       }
     },
     "/elective-groups" : {

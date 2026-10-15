@@ -1,12 +1,14 @@
 package com.red_escuela.backend.billing.discount.domain;
 
 import com.red_escuela.backend.billing.discount.exception.IllegalDiscountDefinitionTransitionException;
+import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
 import com.red_escuela.backend.shared.persistence.MonetaryAdjustmentConverter;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
@@ -162,6 +164,32 @@ public class DiscountDefinition {
         boolean withinEnrollmentWindow = (enrollmentWindowFrom == null || !date.isBefore(enrollmentWindowFrom))
                 && (enrollmentWindowTo == null || !date.isAfter(enrollmentWindowTo));
         return status == DiscountDefinitionStatus.ACTIVE && withinAvailability && withinEnrollmentWindow;
+    }
+
+    public DiscountDefinitionAvailability availabilityOn(LocalDate date) {
+        if (date.isBefore(availableFrom)) {
+            return DiscountDefinitionAvailability.UPCOMING;
+        }
+        return availableUntil != null && date.isAfter(availableUntil) ? DiscountDefinitionAvailability.EXPIRED : DiscountDefinitionAvailability.AVAILABLE;
+    }
+
+    public Optional<OfferingReference> findPricedOffering() {
+        if (programId != null) {
+            return Optional.of(OfferingReference.ofProgram(programId));
+        }
+        return Optional.ofNullable(courseId).map(OfferingReference::ofCourse);
+    }
+
+    public Optional<FeeType> findPricedFeeType() {
+        return switch (applicableInvoiceType) {
+            case MONTHLY_INSTALLMENT -> Optional.of(FeeType.MONTHLY_INSTALLMENT);
+            case ENROLLMENT_FEE -> Optional.of(FeeType.ENROLLMENT_FEE);
+            case EXAM_FEE -> Optional.of(FeeType.EXAM_FEE);
+            case RETAKEN_SUBJECT_FEE -> Optional.of(FeeType.RETAKEN_SUBJECT_FEE);
+            case DEGREE_ISSUANCE_FEE -> Optional.of(FeeType.DEGREE_ISSUANCE_FEE);
+            case ADMINISTRATIVE_FEE -> Optional.of(FeeType.ADMINISTRATIVE_FEE);
+            case ANNUAL_UPFRONT, LATE_FEE -> Optional.empty();
+        };
     }
 
     public Optional<NonNegativeMoney> estimateQuotaCost(NonNegativeMoney finalInstallmentPrice) {

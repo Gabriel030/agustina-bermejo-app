@@ -2,6 +2,8 @@ package com.red_escuela.backend.billing.discount.domain;
 
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.exception.IllegalDiscountDefinitionTransitionException;
+import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
+import com.red_escuela.backend.shared.pricing.OfferingReference;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import com.red_escuela.backend.shared.domain.statemachine.StatusChangeActor;
@@ -206,6 +208,47 @@ class DiscountDefinitionTest {
         assertThat(definition.isAvailableForAcquisitionOn(LocalDate.of(2031, 3, 10))).isTrue();
         assertThat(definition.isAvailableForAcquisitionOn(LocalDate.of(2031, 3, 20))).isTrue();
         assertThat(definition.isAvailableForAcquisitionOn(LocalDate.of(2031, 3, 21))).isFalse();
+    }
+
+    @Test
+    void availabilityIsUpcomingBeforeTheStartAvailableOnBothEdgesAndExpiredAfterTheEnd() {
+        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion()
+                .availableFrom(LocalDate.of(2031, 3, 1)).availableUntil(LocalDate.of(2031, 6, 30)).build(), 1L, NOW);
+
+        assertThat(definition.availabilityOn(LocalDate.of(2031, 2, 28))).isEqualTo(DiscountDefinitionAvailability.UPCOMING);
+        assertThat(definition.availabilityOn(LocalDate.of(2031, 3, 1))).isEqualTo(DiscountDefinitionAvailability.AVAILABLE);
+        assertThat(definition.availabilityOn(LocalDate.of(2031, 6, 30))).isEqualTo(DiscountDefinitionAvailability.AVAILABLE);
+        assertThat(definition.availabilityOn(LocalDate.of(2031, 7, 1))).isEqualTo(DiscountDefinitionAvailability.EXPIRED);
+    }
+
+    @Test
+    void availabilityWithoutAnEndDateNeverExpires() {
+        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().availableFrom(LocalDate.of(2031, 3, 1)).build(), 1L, NOW);
+
+        assertThat(definition.availabilityOn(LocalDate.of(2060, 1, 1))).isEqualTo(DiscountDefinitionAvailability.AVAILABLE);
+    }
+
+    @Test
+    void theCostIsPricedOnTheFeeOfTheInvoiceTypeTheDefinitionAppliesTo() {
+        for (InvoiceType invoiceType : InvoiceType.values()) {
+            if (invoiceType == InvoiceType.LATE_FEE) {
+                continue;
+            }
+            DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().forInvoiceType(invoiceType).withoutInstallments().build(), 1L, NOW);
+
+            assertThat(definition.findPricedFeeType().map(Enum::name)).isEqualTo(invoiceType == InvoiceType.ANNUAL_UPFRONT ? Optional.empty() : Optional.of(invoiceType.name()));
+        }
+    }
+
+    @Test
+    void thePricedOfferingIsTheProgramOrTheCourseOfTheScopeAndNothingWithoutScope() {
+        DiscountDefinition forProgram = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().forProgram(4L).build(), 1L, NOW);
+        DiscountDefinition forCourse = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().forCourse(9L).build(), 1L, NOW);
+        DiscountDefinition withoutScope = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.annualUpfront().build(), 1L, NOW);
+
+        assertThat(forProgram.findPricedOffering()).contains(OfferingReference.ofProgram(4L));
+        assertThat(forCourse.findPricedOffering()).contains(OfferingReference.ofCourse(9L));
+        assertThat(withoutScope.findPricedOffering()).isEmpty();
     }
 
     @Test

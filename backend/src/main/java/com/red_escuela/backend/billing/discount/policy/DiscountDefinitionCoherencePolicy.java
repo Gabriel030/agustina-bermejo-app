@@ -8,12 +8,14 @@ import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicyRule;
 import com.red_escuela.backend.shared.domain.policy.PolicyVerdict;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @PolicyRule(violationCodes = {"INVALID_DISCOUNT_DEFINITION"}, decisions = {"D-075", "D-129", "D-171", "D-240"})
 public final class DiscountDefinitionCoherencePolicy implements Policy<DiscountDefinitionCheck> {
     private static final String CODE = "INVALID_DISCOUNT_DEFINITION";
     private static final int MAX_NAME_LENGTH = 200;
+    private static final BigDecimal MAX_CAP_AMOUNT = new BigDecimal("9999999999.99");
 
     @Override
     public String ruleName() {
@@ -46,6 +48,9 @@ public final class DiscountDefinitionCoherencePolicy implements Policy<DiscountD
         }
         if (draft.capPerInvoice() != null && (draft.capPerInvoice().isNegative() || draft.capPerInvoice().isZero())) {
             return Optional.of("El tope por factura debe ser mayor a cero.");
+        }
+        if (draft.capPerInvoice() != null && draft.capPerInvoice().amount().compareTo(MAX_CAP_AMOUNT) > 0) {
+            return Optional.of("El tope por factura admite hasta 9.999.999.999,99.");
         }
         if (draft.priority() < 1) {
             return Optional.of("La prioridad empieza en 1.");

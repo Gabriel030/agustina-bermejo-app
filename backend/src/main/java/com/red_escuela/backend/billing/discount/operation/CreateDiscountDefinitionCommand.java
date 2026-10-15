@@ -21,7 +21,7 @@ public record CreateDiscountDefinitionCommand(DiscountDefinitionDraft draft, Lon
 
     @Override
     public String authorizationReason() {
-        return "Alta de la promoción " + draft.name();
+        return "Alta de la promoción " + draft.name().strip();
     }
 
     @Override
