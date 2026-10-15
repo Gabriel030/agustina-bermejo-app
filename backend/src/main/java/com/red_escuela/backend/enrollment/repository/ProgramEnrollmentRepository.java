@@ -16,6 +16,9 @@ import java.util.List;
 public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnrollment, Long> {
     List<ProgramEnrollment> findByStudentId(Long studentId);
 
+    @Query("select e.id from ProgramEnrollment e where e.id in :ids and e.program.teachingMode = com.red_escuela.backend.academicstructure.entity.TeachingMode.ONLINE")
+    List<Long> findIdsOfOnlineOnlyEnrollments(@Param("ids") Collection<Long> ids);
+
     List<ProgramEnrollment> findByStudentIdAndProgramIdAndStatusIn(
             Long studentId, Long programId, List<ProgramEnrollmentStatus> statuses);
 

@@ -168,11 +168,16 @@ public class Payment {
 
     public static Payment registerApprovedCashPayment(StudentCurrentAccount account, NonNegativeMoney amount, LocalDate paidOn,
                                                       CashPaymentDetails details, String idempotencyKey, StatusChangeActor actor) {
+        return registerApprovedCashPayment(account, amount, paidOn, details, idempotencyKey, actor, null);
+    }
+
+    public static Payment registerApprovedCashPayment(StudentCurrentAccount account, NonNegativeMoney amount, LocalDate paidOn,
+                                                      CashPaymentDetails details, String idempotencyKey, StatusChangeActor actor, String backdateReason) {
         Objects.requireNonNull(paidOn, "paidOn");
         Payment payment = new Payment(account, amount, PaymentGatewayCode.MANUAL, details, idempotencyKey, actor);
         payment.approvedAmount = amount;
         payment.paidOn = paidOn;
-        payment.changeStatus(PaymentEvent.CASH_PAYMENT_REGISTERED, actor, null, GatewayRawStatus.none());
+        payment.changeStatus(PaymentEvent.CASH_PAYMENT_REGISTERED, actor, backdateReason, GatewayRawStatus.none());
         return payment;
     }
 

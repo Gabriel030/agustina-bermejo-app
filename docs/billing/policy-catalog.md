@@ -21,6 +21,18 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | SingleOpenProposalPerTopicPolicy | PROPOSAL_ALREADY_OPEN | D-116 |
 
+## Momento CASH_PAYMENT_PREVIEW
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CashPaymentPreviewIsCurrentPolicy | CASH_PAYMENT_PREVIEW_OUTDATED | D-319, D-207 |
+
+## Momento CASH_PAYMENT_PREVIEW_REQUEST
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
+
 ## Momento COLLECTION_REMINDER_EFFECTIVE_FROM
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -263,6 +275,17 @@ Generado por `PolicyCatalogTest`; no se edita a mano. Para regenerarlo: `./mvnw 
 |---|---|---|---|
 | 1 | AnnualUpfrontAvailableForProgramPolicy | ANNUAL_UPFRONT_NOT_AVAILABLE | D-131, D-191 |
 
+## Momento PAYMENT_REGISTRATION
+
+| Orden | Policy | Códigos de violación | Decisiones |
+|---|---|---|---|
+| 1 | IdempotencyKeyFormatPolicy | IDEMPOTENCY_KEY_INVALID | D-136 |
+| 2 | CashPaymentAmountPolicy | CASH_PAYMENT_AMOUNT_INVALID | D-136, D-097, D-098 |
+| 3 | CashPaymentReceiptNumberPolicy | CASH_PAYMENT_RECEIPT_NUMBER_INVALID | D-136 |
+| 4 | CashPaymentDateNotInFuturePolicy | PAYMENT_DATE_IN_FUTURE | D-169, D-266 |
+| 5 | CashPaymentDateWithinAdministrativeWindowPolicy | CASH_PAYMENT_DATE_TOO_OLD | D-266, D-270 |
+| 6 | CashPaymentBackdateReasonPolicy | CASH_PAYMENT_BACKDATE_REASON_REQUIRED | D-266, D-270 |
+
 ## Momento PRICE_VERSION
 
 | Orden | Policy | Códigos de violación | Decisiones |
@@ -482,3 +505,12 @@ Transiciones válidas: 15 de 64. Pares inválidos: (sin estado) × SEND_VIA_PROV
 - Pre-procesamiento (en orden): —
 - Eventos que publica: LateFeeIssuedEvent
 - Post-procesamiento de LateFeeIssuedEvent: LateFeeNotificationListener#notifySecretariatWhenIssuedAfterFiscalWindow, LateFeeNotificationListener#notifyStudent
+
+## Operación REGISTER_PAYMENT
+
+- Validaciones (momentos): PAYMENT_REGISTRATION, CASH_PAYMENT_PREVIEW
+- Pre-procesamiento (en orden): IdempotencyKeyHandler
+- Eventos que publica: PaymentApprovedEvent, AccountCreditAllocatedEvent, InvoicePaidDomainEvent
+- Post-procesamiento de PaymentApprovedEvent: —
+- Post-procesamiento de AccountCreditAllocatedEvent: —
+- Post-procesamiento de InvoicePaidDomainEvent: LateFeeOnInvoiceSettledListener#reconcileLateFeesOfSettledInvoice
