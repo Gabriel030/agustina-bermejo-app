@@ -48,12 +48,6 @@ public class CourseEnrollment implements BillableEnrollment {
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
-    @Column(name = "withdrawal_effective_date")
-    private java.time.LocalDate withdrawalEffectiveDate;
-
-    @Column(name = "withdrawn_by_person_id")
-    private Long withdrawnByPersonId;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
     private EnrollmentPaymentStatus paymentStatus = EnrollmentPaymentStatus.UP_TO_DATE;
@@ -63,6 +57,12 @@ public class CourseEnrollment implements BillableEnrollment {
 
     @OneToMany(mappedBy = "courseEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<CourseSubjectSectionEnrollment> sectionEnrollments;
+
+    @Column(name = "withdrawal_effective_date")
+    private java.time.LocalDate withdrawalEffectiveDate;
+
+    @Column(name = "withdrawn_by_person_id")
+    private Long withdrawnByPersonId;
 
     public void markWithdrawn(java.time.LocalDate effectiveDate, LocalDateTime completionMoment, Long registeredByPersonId) {
         this.status = EnrollmentStatus.WITHDRAWN;

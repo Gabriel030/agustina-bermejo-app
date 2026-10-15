@@ -1,6 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.billing.api.WithdrawalCause;
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 
 import java.time.LocalDate;
 import java.util.Objects;

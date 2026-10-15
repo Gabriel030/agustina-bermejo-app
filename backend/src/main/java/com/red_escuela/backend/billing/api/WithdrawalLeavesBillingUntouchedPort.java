@@ -1,7 +1,7 @@
-package com.red_escuela.backend.billing.service;
+package com.red_escuela.backend.billing.api;
 
-import com.red_escuela.backend.billing.api.EnrollmentWithdrawalBillingPort;
-import com.red_escuela.backend.billing.api.WithdrawnEnrollmentFacts;
+import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import org.springframework.stereotype.Service;
 
 @Service

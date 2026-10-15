@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.api;
+package com.red_escuela.backend.enrollment.api;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

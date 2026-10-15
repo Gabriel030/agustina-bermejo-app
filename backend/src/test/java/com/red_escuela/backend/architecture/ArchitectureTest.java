@@ -109,6 +109,16 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-142")
+    @Tag("D-296")
+    void enrollmentLifecycleNeverWritesBillingMoney() {
+        ArchitectureRules.enrollmentLifecycleNeverWritesBillingMoney().check(MAIN_CLASSES);
+        assertThatThrownBy(() -> ArchitectureRules.enrollmentLifecycleNeverWritesBillingMoney().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("WithdrawalWritingBillingFixture");
+    }
+
+    @Test
     @Tag("D-051")
     void policiesAndPlannersArePure() {
         ArchitectureRules.policiesArePure().check(MAIN_CLASSES);

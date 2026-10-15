@@ -6666,6 +6666,16 @@
         "required" : [ "resetToken" ],
         "type" : "object"
       },
+      "WithdrawEnrollmentRequest" : {
+        "properties" : {
+          "effectiveDate" : {
+            "description" : "Fecha de la baja; si no viene, es hoy",
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "WithdrawStudentRequest" : {
         "properties" : {
           "detail" : {
@@ -10693,6 +10703,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"
@@ -20679,6 +20698,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawEnrollmentRequest"
+              }
+            }
+          }
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"

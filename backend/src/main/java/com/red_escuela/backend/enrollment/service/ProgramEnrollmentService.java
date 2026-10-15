@@ -15,8 +15,8 @@ import com.red_escuela.backend.enrollment.dto.ElectiveGroupProgressResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.api.EnrollmentWithdrawalBillingPort;
-import com.red_escuela.backend.billing.api.WithdrawnEnrollmentFacts;
+import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.ProgramElectiveGroup;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -158,6 +158,11 @@ public class ProgramEnrollmentService {
     @Transactional
     public void withdraw(Long id) {
         withdraw(id, EnrollmentWithdrawal.voluntaryBySystem());
+    }
+
+    @Transactional
+    public void withdrawForNonpayment(Long id) {
+        withdraw(id, EnrollmentWithdrawal.forNonpayment());
     }
 
     @Transactional

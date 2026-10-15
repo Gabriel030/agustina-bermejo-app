@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.api;
+package com.red_escuela.backend.enrollment.api;
 
 import java.time.LocalDate;
 import java.util.Objects;

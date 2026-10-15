@@ -161,6 +161,15 @@ public final class ArchitectureRules {
                 .because("a payment allocation must be registered together with its credit in the current account");
     }
 
+    public static ArchRule enrollmentLifecycleNeverWritesBillingMoney() {
+        return noClasses().that().resideInAnyPackage("..enrollment..", "..graduation..")
+                .should().dependOnClassesThat().resideInAnyPackage("..billing.note..", "..billing.account..")
+                .orShould().callMethodWhere(target(owner(assignableTo(Invoice.class)))
+                        .and(target(name("applyCreditNote")).or(target(name("allocateFullInvoicePayment"))).or(target(name("reversePaymentAllocation")))
+                                .or(target(name("markInvoiceAsOverdue"))).or(target(name("issueInvoice")))))
+                .because("a withdrawal or a graduation never touches invoices, credit notes or the current account; billing decides through its port (D-142, D-296)");
+    }
+
     public static ArchRule policiesArePure() {
         return noClasses().that().resideInAnyPackage("..policy..", "..billing.planning..", "..statemachine..")
                 .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "jakarta.persistence..", "..repository..")

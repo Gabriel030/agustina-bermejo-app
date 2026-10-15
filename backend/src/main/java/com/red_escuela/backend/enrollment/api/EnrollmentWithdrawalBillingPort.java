@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.api;
+package com.red_escuela.backend.enrollment.api;
 
 public interface EnrollmentWithdrawalBillingPort {
     void registerWithdrawalForBilling(WithdrawnEnrollmentFacts facts);

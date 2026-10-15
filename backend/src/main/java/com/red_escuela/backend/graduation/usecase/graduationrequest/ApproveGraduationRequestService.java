@@ -1,9 +1,6 @@
 package com.red_escuela.backend.graduation.usecase.graduationrequest;
 
 import java.time.Clock;
-import com.red_escuela.backend.billing.api.EnrollmentWithdrawalBillingPort;
-import com.red_escuela.backend.billing.api.WithdrawalCause;
-import com.red_escuela.backend.billing.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.exception.PendingDebtException;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -19,7 +16,6 @@ import com.red_escuela.backend.shared.UseCase;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @UseCase
@@ -32,7 +28,6 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
     private final InvoiceQueryService invoiceQueryService;
     private final CurrentPersonService currentPersonService;
     private final ApplicationEventPublisher eventPublisher;
-    private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final Clock clock;
 
     public ApproveGraduationRequestService(GraduationRequestRepository graduationRequestRepository,
@@ -42,7 +37,6 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
                                             InvoiceQueryService invoiceQueryService,
                                             CurrentPersonService currentPersonService,
                                             ApplicationEventPublisher eventPublisher,
-                                            EnrollmentWithdrawalBillingPort withdrawalBillingPort,
                                             Clock clock) {
         this.graduationRequestRepository = graduationRequestRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
@@ -51,7 +45,6 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         this.invoiceQueryService = invoiceQueryService;
         this.currentPersonService = currentPersonService;
         this.eventPublisher = eventPublisher;
-        this.withdrawalBillingPort = withdrawalBillingPort;
         this.clock = clock;
     }
 
@@ -73,8 +66,6 @@ public class ApproveGraduationRequestService implements ApproveGraduationRequest
         request.approve(currentPersonService.resolveCurrentPerson(), LocalDateTime.now(clock));
         graduationRequestRepository.save(request);
         programEnrollmentRepository.save(programEnrollment);
-        withdrawalBillingPort.registerWithdrawalForBilling(WithdrawnEnrollmentFacts.ofProgramEnrollment(
-                studentId, programEnrollment.getId(), LocalDate.now(clock), WithdrawalCause.GRADUATION));
 
         eventPublisher.publishEvent(new GraduationRequestApprovedEvent(request, programEnrollment.getStudent().getPerson()));
         return request;

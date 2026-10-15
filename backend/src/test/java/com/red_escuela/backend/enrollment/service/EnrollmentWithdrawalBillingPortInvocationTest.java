@@ -2,9 +2,9 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
-import com.red_escuela.backend.billing.api.EnrollmentWithdrawalBillingPort;
-import com.red_escuela.backend.billing.api.WithdrawalCause;
-import com.red_escuela.backend.billing.api.WithdrawnEnrollmentFacts;
+import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
+import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
 import com.red_escuela.backend.billing.service.ScholarshipService;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;

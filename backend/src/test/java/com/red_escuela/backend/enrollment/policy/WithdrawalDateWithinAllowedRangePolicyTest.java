@@ -10,7 +10,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Tag("D-249")
-@Tag("D-141")
 class WithdrawalDateWithinAllowedRangePolicyTest {
 
     private final WithdrawalDateWithinAllowedRangePolicy policy = new WithdrawalDateWithinAllowedRangePolicy();

@@ -186,8 +186,7 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("C-03")
-    @Tag("D-141")
-    void withdrawingMidMonthWithThePaidYearLeavesAnnualInvoiceAndAccountUntouched() throws Exception {
+        void withdrawingMidMonthWithThePaidYearLeavesAnnualInvoiceAndAccountUntouched() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         StudentWithAccount student = newStudentWithAccount();
         Long enrollmentId = newProgramEnrollment(student.studentId(), ENROLLED_AT);
@@ -337,8 +336,7 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("C-22")
-    @Tag("D-141")
-    void twoSimultaneousWithdrawalsOfTheSameEnrollmentLeaveOneWithdrawalAndAConflict() throws Exception {
+        void twoSimultaneousWithdrawalsOfTheSameEnrollmentLeaveOneWithdrawalAndAConflict() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         StudentWithAccount student = newStudentWithAccount();
         Long enrollmentId = newProgramEnrollment(student.studentId(), ENROLLED_AT);
