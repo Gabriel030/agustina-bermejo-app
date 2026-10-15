@@ -157,12 +157,6 @@ public class DiscountDefinition {
         this.closureReason = reason;
     }
 
-    public void requireCanBeClosed() {
-        if (DiscountDefinitionStateMachine.findTargetStateFor(status, DiscountDefinitionEvent.DEFINITION_CLOSED).isEmpty()) {
-            throw new IllegalDiscountDefinitionTransitionException(status, DiscountDefinitionEvent.DEFINITION_CLOSED);
-        }
-    }
-
     public boolean isAvailableForAcquisitionOn(LocalDate date) {
         boolean withinAvailability = !date.isBefore(availableFrom) && (availableUntil == null || !date.isAfter(availableUntil));
         boolean withinEnrollmentWindow = (enrollmentWindowFrom == null || !date.isBefore(enrollmentWindowFrom))

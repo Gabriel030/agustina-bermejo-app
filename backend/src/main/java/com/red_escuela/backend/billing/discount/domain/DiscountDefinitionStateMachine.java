@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.discount.domain;
 
+import com.red_escuela.backend.billing.discount.exception.IllegalDiscountDefinitionTransitionException;
 import com.red_escuela.backend.shared.domain.statemachine.StateTransitionTable;
 
 import java.util.Optional;
@@ -16,6 +17,12 @@ public final class DiscountDefinitionStateMachine {
                     .buildTransitionTable();
 
     private DiscountDefinitionStateMachine() {
+    }
+
+    public static void requireClosableFrom(DiscountDefinitionStatus from) {
+        if (findTargetStateFor(from, DEFINITION_CLOSED).isEmpty()) {
+            throw new IllegalDiscountDefinitionTransitionException(from, DEFINITION_CLOSED);
+        }
     }
 
     public static Optional<DiscountDefinitionStatus> findTargetStateFor(DiscountDefinitionStatus from, DiscountDefinitionEvent event) {

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.billing.discount.operation;
 
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
+import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionStateMachine;
 import com.red_escuela.backend.billing.discount.exception.DiscountDefinitionNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountClosureCheck;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionRejections;
@@ -59,9 +60,8 @@ public class CloseDiscountDefinitionOperation implements BillingOperation<CloseD
     @Override
     public void requireValidContext(CloseDiscountDefinitionCommand command) {
         closurePolicies.evaluateAllRules(new DiscountClosureCheck(command.reason())).throwIfDenied(DiscountDefinitionRejections::rejectionOf);
-        repository.findById(command.discountDefinitionId())
-                .orElseThrow(() -> new DiscountDefinitionNotFoundException(command.discountDefinitionId()))
-                .requireCanBeClosed();
+        DiscountDefinitionStateMachine.requireClosableFrom(repository.findStatusById(command.discountDefinitionId())
+                .orElseThrow(() -> new DiscountDefinitionNotFoundException(command.discountDefinitionId())));
     }
 
     @Override
