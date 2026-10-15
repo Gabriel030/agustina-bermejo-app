@@ -16,6 +16,16 @@ describe('parseAmountInput', () => {
     ['9.999.999.999,99', '9999999999.99'],
     ['135600.30', '135600.30'],
     ['12345678901234.5', null],
+    ['1 500', '1500.00'],
+    ['1 500 000,5', '1500000.50'],
+    ['  $ 2.000,00  ', '2000.00'],
+    ['0.5', '0.50'],
+    ['1.5', '1.50'],
+    ['1.50', '1.50'],
+    ['15.000', '15000.00'],
+    ['1.500.000,50', '1500000.50'],
+    ['1500,5', '1500.50'],
+    ['500.', '500.00'],
   ])('reads %s as %s', (input, expected) => {
     const result = parseAmountInput(input);
     if (expected === null) expect(result.value).toBeUndefined();
@@ -47,6 +57,22 @@ describe('parseAmountInput', () => {
     ['1.5000,50', 'INVALID'],
     ['1.50.500', 'INVALID'],
     ['-5', 'INVALID'],
+    ['0.500', 'AMBIGUOUS'],
+    ['00.500', 'AMBIGUOUS'],
+    ['000.500', 'AMBIGUOUS'],
+    ['01.500', 'AMBIGUOUS'],
+    ['0.500,00', 'AMBIGUOUS'],
+    ['0.500.000', 'AMBIGUOUS'],
+    ['007', 'AMBIGUOUS'],
+    ['15 00', 'INVALID'],
+    ['1 5', 'INVALID'],
+    ['1$5', 'INVALID'],
+    ['5$', 'INVALID'],
+    ['$$5', 'INVALID'],
+    ['.500', 'TOO_MANY_DECIMALS'],
+    ['1,500.50', 'INVALID'],
+    ['1e3', 'INVALID'],
+    ['0x10', 'INVALID'],
   ])('rejects %s with %s', (input, error) => {
     expect(parseAmountInput(input).error).toBe(error);
   });
@@ -58,6 +84,12 @@ describe('formatAmountEsAr', () => {
     expect(formatAmountEsAr('135600.30')).toBe('135.600,30');
     expect(formatAmountEsAr('0.07')).toBe('0,07');
     expect(formatAmountEsAr('9999999999.99')).toBe('9.999.999.999,99');
+  });
+
+  it('shows nothing for a negative or missing total', () => {
+    expect(formatAmountEsAr('-10.00')).toBe('');
+    expect(formatAmountEsAr(undefined)).toBe('');
+    expect(formatAmountEsAr(null)).toBe('');
   });
 });
 

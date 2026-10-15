@@ -87,6 +87,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   const [unknownOutcome, setUnknownOutcome] = useState(false);
   const queryClient = useQueryClient();
   const attempt = useRef({ signature: null, key: null });
+  const submitting = useRef(false);
 
   const previewMutation = usePreviewCashPayment(student.id);
   const registerMutation = useRegisterCashPayment(student.id);
@@ -133,6 +134,12 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
     onClose(false);
   }
 
+  function requestClose() {
+    if (busy) return;
+    if (unknownOutcome) handleCloseAfterUnknownOutcome();
+    else onClose(false);
+  }
+
   async function requestPreview() {
     setLoadingPreview(true);
     try {
@@ -148,6 +155,16 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   }
 
   async function handleReview() {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await runReview();
+    } finally {
+      submitting.current = false;
+    }
+  }
+
+  async function runReview() {
     setGlobalError('');
     setNotice('');
     if (!validateForm()) return;
@@ -155,6 +172,16 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   }
 
   async function handleConfirm() {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await runConfirm();
+    } finally {
+      submitting.current = false;
+    }
+  }
+
+  async function runConfirm() {
     setGlobalError('');
     const payload = {
       amount: { amount: normalizedAmount, currency },
@@ -197,7 +224,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
   const hasLeftover = preview && Number(preview.unallocatedAfterwards.amount) > 0;
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(false); }}>
+    <Dialog open onOpenChange={(open) => { if (!open) requestClose(); }}>
       <DialogContent
         className="max-h-[90dvh] overflow-y-auto sm:max-w-md"
         showCloseButton={!busy}
@@ -382,7 +409,7 @@ export function CashPaymentDialog({ student, currency, totalDebt, onClose, onStu
                 </Button>
               )}
               <Button variant="gradient" onClick={handleConfirm} loading={registerMutation.isPending} disabled={!preview || loadingPreview}>
-                Confirmar cobro
+                {unknownOutcome ? 'Reintentar cobro' : 'Confirmar cobro'}
               </Button>
             </>
           )}

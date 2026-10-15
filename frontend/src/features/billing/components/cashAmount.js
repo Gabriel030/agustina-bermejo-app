@@ -1,5 +1,4 @@
 const MAX_CENTS = 999999999999n;
-const DECIMALS_PATTERN = /^\d{1,2}$/;
 
 export const AMOUNT_ERROR_MESSAGES = {
   EMPTY: 'Ingresá el monto a cobrar.',
@@ -7,6 +6,7 @@ export const AMOUNT_ERROR_MESSAGES = {
   TOO_MANY_DECIMALS: 'El monto admite hasta 2 decimales.',
   TOO_LARGE: 'El monto supera el máximo permitido (9.999.999.999,99).',
   INVALID: 'El monto no es válido. Ejemplo: 1.500,50',
+  AMBIGUOUS: '¿Quisiste decir 0,50 o 500? Escribí el monto con coma decimal.',
 };
 
 function splitIntegerAndFraction(text) {
@@ -34,14 +34,20 @@ function centsToCanonical(cents) {
 }
 
 export function parseAmountInput(input) {
-  const text = String(input ?? '').replace(/[\s$]/g, '');
+  let text = String(input ?? '').trim();
+  if (text.startsWith('$')) text = text.slice(1).trim();
   if (text === '') return { error: 'EMPTY' };
+  if (/\s/.test(text)) {
+    if (!/^\d{1,3}( \d{3})+(,\d*)?$/.test(text)) return { error: 'INVALID' };
+    text = text.replaceAll(' ', '');
+  }
   if (!/^[\d.,]+$/.test(text)) return { error: 'INVALID' };
+  if (/^0+\.\d{3}(\D|$)/.test(text) || /^0\d/.test(text)) return { error: 'AMBIGUOUS' };
   const parts = splitIntegerAndFraction(text);
   if (!parts || !/^\d*$/.test(parts.integer) || !/^\d*$/.test(parts.fraction) || (parts.integer === '' && parts.fraction === '')) {
     return { error: 'INVALID' };
   }
-  if (parts.fraction.length > 2 && !DECIMALS_PATTERN.test(parts.fraction)) return { error: 'TOO_MANY_DECIMALS' };
+  if (parts.fraction.length > 2) return { error: 'TOO_MANY_DECIMALS' };
   const cents = BigInt(parts.integer || '0') * 100n + BigInt(parts.fraction.padEnd(2, '0') || '0');
   if (cents <= 0n) return { error: 'NOT_POSITIVE' };
   if (cents > MAX_CENTS) return { error: 'TOO_LARGE' };
@@ -49,6 +55,7 @@ export function parseAmountInput(input) {
 }
 
 export function formatAmountEsAr(canonical) {
+  if (!/^\d+(\.\d+)?$/.test(String(canonical ?? ''))) return '';
   const [integerPart, fraction = '00'] = String(canonical).split('.');
   const grouped = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `${grouped},${fraction.padEnd(2, '0').slice(0, 2)}`;

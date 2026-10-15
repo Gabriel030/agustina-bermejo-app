@@ -91,7 +91,7 @@ export function useRegisterCashPayment(studentId) {
         headers: { 'Idempotency-Key': key },
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
   });

@@ -312,7 +312,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     await fillAmountAndReview(user, dialog);
     await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
     await vi.waitFor(() => expect(keys).toHaveLength(1));
-    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+    await user.click(await within(dialog).findByRole('button', { name: 'Reintentar cobro' }));
 
     await vi.waitFor(() => expect(keys).toHaveLength(2));
     expect(keys[1]).toBe(keys[0]);
@@ -426,7 +426,7 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
     expect(await within(dialog).findByText(/Revisá el estado de cuenta del alumno antes de volver a cobrar/)).toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Volver' })).not.toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Cerrar y revisar estado de cuenta' })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Confirmar cobro' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Reintentar cobro' }));
     await vi.waitFor(() => expect(keys).toHaveLength(2));
     expect(keys[1]).toBe(keys[0]);
   });
@@ -480,6 +480,89 @@ describe('AdministrativoFacturacion — cobro en efectivo', () => {
 
     expect(await within(dialog).findByText(/Este cobro ya se había registrado con otros datos/)).toBeInTheDocument();
     await vi.waitFor(() => expect(previews).toBe(2));
+  });
+
+  it('reformats an unformatted amount when leaving the field', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    await user.type(within(dialog).getByLabelText('Monto'), '1500,5');
+    await user.tab();
+
+    expect(within(dialog).getByLabelText('Monto')).toHaveValue('1.500,50');
+  });
+
+  it('rejects an ambiguous amount with a leading zero', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+
+    await user.type(within(dialog).getByLabelText('Monto'), '0.500');
+    await user.click(within(dialog).getByRole('button', { name: 'Revisar cobro' }));
+
+    expect(await within(dialog).findByText(/¿Quisiste decir 0,50 o 500\?/)).toBeInTheDocument();
+  });
+
+  async function failConfirmWithNetworkError(user) {
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, () => HttpResponse.error()),
+    );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const overviewCalls = () => fetchSpy.mock.calls.filter(([url]) => String(url).includes('/billing-overview')).length;
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    await user.click(await within(dialog).findByRole('button', { name: 'Confirmar cobro' }));
+    await within(dialog).findByText(/Revisá el estado de cuenta del alumno antes de volver a cobrar/);
+    return { dialog, overviewCalls };
+  }
+
+  it('reloads the student account when the dialog is closed with the X after an unknown outcome', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const { dialog, overviewCalls } = await failConfirmWithNetworkError(user);
+    const before = overviewCalls();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await vi.waitFor(() => expect(overviewCalls()).toBeGreaterThan(before));
+  });
+
+  it('reloads the student account when the dialog is closed with Escape after an unknown outcome', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const { overviewCalls } = await failConfirmWithNetworkError(user);
+    const before = overviewCalls();
+
+    await user.keyboard('{Escape}');
+
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await vi.waitFor(() => expect(overviewCalls()).toBeGreaterThan(before));
+  });
+
+  it('sends the payment once when the confirm button is tapped twice', async () => {
+    let registers = 0;
+    server.use(
+      http.post(`${API}/students/2/cash-payments/preview`, () => HttpResponse.json(previewOf())),
+      http.post(`${API}/students/2/cash-payments`, async () => {
+        registers += 1;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        return HttpResponse.json({ paymentId: 9 }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    const dialog = await openCashPaymentModal(user);
+    await fillAmountAndReview(user, dialog);
+    const confirm = await within(dialog).findByRole('button', { name: 'Confirmar cobro' });
+
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(registers).toBe(1);
   });
 
   it('lets the director backdate only with a reason, shown just when the date needs it', async () => {
