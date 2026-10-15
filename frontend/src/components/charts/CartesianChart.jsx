@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -101,7 +102,7 @@ export function CartesianChart({
   badge,
   ariaLabel,
   data,
-  series,
+  series: requestedSeries,
   tableSeries,
   unit,
   currency,
@@ -120,9 +121,14 @@ export function CartesianChart({
 }) {
   const animation = useChartAnimation();
   const Chart = CHART_BY_VARIANT[variant];
+  const series = useMemo(
+    () => (requestedSeries.some((item) => item.axis !== RIGHT_AXIS) ? requestedSeries : requestedSeries.map((item) => ({ ...item, axis: undefined }))),
+    [requestedSeries],
+  );
+  const goalAxis = series.some((item) => item.axis === RIGHT_AXIS) ? goal?.axis : LEFT_AXIS;
   const showLegend = series.length > 1;
   const unitBySeries = Object.fromEntries(series.filter((item) => item.unit).map((item) => [item.key, item.unit]));
-  const rows = normalizeChartData(data, series);
+  const rows = useMemo(() => normalizeChartData(data, series), [data, series]);
   const resolvedCurrency = currency ?? detectCurrency(data, series) ?? 'ARS';
   const rightSeries = series.filter((item) => item.axis === RIGHT_AXIS);
   const leftUnit = unit ?? series.find((item) => item.axis !== RIGHT_AXIS)?.unit;
@@ -194,7 +200,7 @@ export function CartesianChart({
           />
           {showLegend && <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: AXIS_COLOR }} />}
           {series.map((item, index) => renderSeries(variant, item, index, animation))}
-          {goal && <GoalLine value={goal.value} label={goal.label} axis={goal.axis} />}
+          {goal && <GoalLine value={goal.value} label={goal.label} axis={goalAxis} />}
         </Chart>
       </ResponsiveContainer>
     </ChartFrame>

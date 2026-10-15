@@ -54,7 +54,6 @@ export function ChartFrame({
               type="button"
               variant="ghost"
               size="sm"
-              aria-pressed={showTable}
               aria-label={toggleLabel}
               onClick={() => setShowTable((current) => !current)}
             >

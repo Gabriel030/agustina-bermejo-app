@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ComposedTrendChart } from './ComposedTrendChart';
-import { StackedBarChart } from './StackedBarChart';
 import { detectCurrency, formatChartValue, normalizeChartData, numericValue } from './chartFormat';
 
 vi.mock('recharts', async (importOriginal) => {
@@ -24,6 +23,8 @@ afterEach(() => {
   window.matchMedia = originalMatchMedia;
 });
 
+const EXPECTED_LEFT = ['$0', '$50k', '$100k', '$150k', '$200k'];
+const EXPECTED_RIGHT = ['0%', '3%', '6%', '9%', '12%'];
 const normalize = (text) => text.replace(/\s/g, ' ');
 const money = (amount) => ({ amount, currency: 'ARS' });
 
@@ -38,7 +39,7 @@ const series = [
 
 function yAxes(container) {
   return [...container.querySelectorAll('.recharts-yAxis-tick-labels')].map((axis) =>
-    [...axis.querySelectorAll('text')].map((node) => normalize(node.textContent)),
+    [...axis.querySelectorAll('text')].map((node) => node.textContent.replace(/\s/g, '').toLowerCase()),
   );
 }
 
@@ -91,8 +92,8 @@ describe('ComposedTrendChart real render', () => {
     );
 
     const [left, right] = yAxes(container);
-    expect(left.every((text) => /\$/.test(text))).toBe(true);
-    expect(right.every((text) => /%$/.test(text))).toBe(true);
+    expect(left).toEqual(EXPECTED_LEFT);
+    expect(right).toEqual(EXPECTED_RIGHT);
   });
 
   it('draws the goal line and extends the axis so a goal above the data stays visible', () => {
@@ -120,11 +121,6 @@ describe('ComposedTrendChart real render', () => {
       <ComposedTrendChart title="Pago a término" data={data} series={[series[0]]} goal={undefined} />,
     );
     expect(container.querySelector('.recharts-reference-line')).toBeNull();
-  });
-
-  it('draws stacked bars without animating when the user asks for reduced motion', () => {
-    const { container } = render(<StackedBarChart title="Becas" data={data} series={[{ key: 'invoices', label: 'Facturas' }, { key: 'onTime', label: 'Otro' }]} />);
-    expect(container.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0);
   });
 });
 

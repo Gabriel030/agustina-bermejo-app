@@ -53,9 +53,10 @@ function FilterSelect({ id, label, value, onChange, options }) {
   );
 }
 
-function DebtorsTable({ data, isLoading }) {
+function DebtorsTable({ data, isLoading, isError, onRetry }) {
   const navigate = useNavigate();
   const rolePrefix = useLocation().pathname.split('/')[1];
+  const openStudent = (studentId) => navigate(`/${rolePrefix}/alumnos/${studentId}`);
 
   if (isLoading) {
     return (
@@ -64,6 +65,20 @@ function DebtorsTable({ data, isLoading }) {
           <Skeleton key={i} className="h-12" />
         ))}
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <EmptyState
+        title="No se pudo cargar"
+        className="py-10"
+        action={
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
 
@@ -87,9 +102,20 @@ function DebtorsTable({ data, isLoading }) {
           <TableRow
             key={`${d.studentId}-${d.totalDebt.currency}`}
             className="cursor-pointer"
-            onClick={() => navigate(`/${rolePrefix}/alumnos/${d.studentId}`)}
+            onClick={() => openStudent(d.studentId)}
           >
-            <TableCell className="pl-4 font-medium text-ink">{d.fullName}</TableCell>
+            <TableCell className="pl-4 font-medium text-ink">
+              <button
+                type="button"
+                className="text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openStudent(d.studentId);
+                }}
+              >
+                {d.fullName}
+              </button>
+            </TableCell>
             <TableCell className="text-ink-soft">{d.dni}</TableCell>
             <TableCell className="text-ink-soft">{d.enrollmentName}</TableCell>
             <TableCell className="text-right font-semibold text-danger">{formatMoney(d.totalDebt) || '—'}</TableCell>
@@ -105,7 +131,7 @@ function DebtorsTable({ data, isLoading }) {
 
 function DebtorsSection() {
   const [sortBy, setSortBy] = useState('DEBT_AGE');
-  const { data, isLoading } = useDebtors(sortBy);
+  const { data, isLoading, isError, refetch } = useDebtors(sortBy);
 
   return (
     <GlassCard>
@@ -113,6 +139,7 @@ function DebtorsSection() {
         <div className="flex items-center gap-2">
           <AlertCircle className="size-4 text-danger" />
           <span className="font-heading text-[14.5px] font-semibold text-ink">Alumnos con deuda vencida</span>
+          <span className="text-xs text-ink-soft">· todas las monedas</span>
         </div>
         <select
           aria-label="Ordenar por"
@@ -127,7 +154,7 @@ function DebtorsSection() {
           ))}
         </select>
       </div>
-      <DebtorsTable data={data} isLoading={isLoading} />
+      <DebtorsTable data={data} isLoading={isLoading} isError={isError} onRetry={() => refetch()} />
     </GlassCard>
   );
 }
@@ -139,6 +166,8 @@ export function FinancialDashboardPage() {
   const [invoiceType, setInvoiceType] = useState(ALL_TYPES);
   const [pickedCurrency, setPickedCurrency] = useState(null);
   const [pickedMonth, setPickedMonth] = useState(null);
+  const [ready, setReady] = useState(false);
+  if (!ready && !dashboard.isLoading) setReady(true);
 
   const currencies = (dashboard.data?.totalsByCurrency ?? []).map((totals) => totals.totalDebt?.currency).filter(Boolean);
   const currency = pickedCurrency ?? currencies[0];
@@ -148,7 +177,6 @@ export function FinancialDashboardPage() {
   for (let month = from; month <= to; month = nextMonth(month)) months.push(month);
   const month = pickedMonth && months.includes(pickedMonth) ? pickedMonth : to;
   const activeFilters = [range !== DEFAULT_RANGE, invoiceType !== ALL_TYPES].filter(Boolean).length;
-  const ready = !dashboard.isLoading;
 
   const toolbar = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -248,7 +276,7 @@ export function FinancialDashboardPage() {
         </Link>
       )}
 
-      <DebtorsSection />
+      {isDirector && <DebtorsSection />}
     </PageContainer>
   );
 }

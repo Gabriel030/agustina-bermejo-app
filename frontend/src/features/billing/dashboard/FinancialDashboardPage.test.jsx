@@ -101,10 +101,10 @@ function emptyMetric(panel, url) {
   return { panel, available: true, partial: false, months: monthsOf(url), series: [] };
 }
 
-function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], requests = [] } = {}) {
+function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, failing = [], requests = [], dashboardStatus = 200, debtorsStatus = 200, debtorRequests = [], discounts } = {}) {
   server.use(
     http.get(`${API}/financial-dashboard`, () =>
-      HttpResponse.json({
+      dashboardStatus !== 200 ? new HttpResponse(null, { status: dashboardStatus }) : HttpResponse.json({
         studentsInDebt: 12,
         studentsUpToDate: 140,
         totalsByCurrency: currencies.map((currency) => ({
@@ -115,12 +115,18 @@ function install({ currencies = ['ARS'], onTime = {}, lateFeesAvailable = true, 
         })),
       }),
     ),
-    http.get(`${API}/financial-dashboard/debtors`, () => HttpResponse.json([])),
+    http.get(`${API}/financial-dashboard/debtors`, () => {
+      debtorRequests.push(1);
+      return debtorsStatus !== 200
+        ? new HttpResponse(null, { status: debtorsStatus })
+        : HttpResponse.json([{ studentId: 7, fullName: 'Ana Pérez', dni: '30111222', enrollmentName: 'Tecnicatura', totalDebt: money('150000.00'), debtAgeDays: 20 }]);
+    }),
     http.get(`${API}/billing/metrics/:panel`, ({ request, params }) => {
       requests.push(new URL(request.url));
       if (failing.includes(params.panel)) return new HttpResponse(null, { status: 500 });
       if (params.panel === 'on-time-payment') return HttpResponse.json(onTimeMetric(request.url, onTime));
       if (params.panel === 'issued-invoices') return HttpResponse.json(issuedMetric(request.url));
+      if (params.panel === 'discounts' && discounts) return HttpResponse.json(discounts(request.url));
       if (params.panel === 'late-fees') return HttpResponse.json(lateFeesMetric(request.url, lateFeesAvailable));
       return HttpResponse.json(emptyMetric(params.panel, request.url));
     }),
@@ -249,12 +255,106 @@ describe('FinancialDashboardPage', () => {
     const { unmount } = renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
 
     expect(await screen.findByText(/1\.743\.500,00/)).toBeInTheDocument();
-    expect(screen.getByText('de 152')).toBeInTheDocument();
+    expect(screen.getByText(/de 152/)).toBeInTheDocument();
+    expect(screen.getByText('Alumnos al día')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Configurar el cobro/ })).toBeInTheDocument();
     unmount();
 
     renderWithProviders(<FinancialDashboardPage />, { route: '/administrativo/financiero' });
     await screen.findByText('Pago a término', { selector: 'h3' });
     expect(screen.queryByRole('link', { name: /Configurar el cobro/ })).not.toBeInTheDocument();
+  });
+
+  it('does not ask the administrative role for the debtors list (director only) nor draw the section', async () => {
+    const debtorRequests = [];
+    install({ debtorRequests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/administrativo/financiero' });
+
+    await screen.findByText('Pago a término', { selector: 'h3' });
+    expect(await screen.findByText('Alumnos al día')).toBeInTheDocument();
+    expect(debtorRequests).toHaveLength(0);
+    expect(screen.queryByLabelText('Ordenar por')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sin alumnos con deuda vencida')).not.toBeInTheDocument();
+  });
+
+  it('asks the director for the debtors list and offers each student as a focusable button', async () => {
+    const debtorRequests = [];
+    install({ debtorRequests });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    const open = await screen.findByRole('button', { name: 'Ana Pérez' });
+    expect(debtorRequests.length).toBeGreaterThan(0);
+    open.focus();
+    expect(open).toHaveFocus();
+  });
+
+  it.each([403, 500])('shows an error with retry, never "no data", when the debtors list answers %i', async (status) => {
+    install({ debtorsStatus: status });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    const sort = await screen.findByLabelText('Ordenar por');
+    const section = sort.parentElement.parentElement;
+    expect(await within(section).findByText('No se pudo cargar')).toBeInTheDocument();
+    expect(within(section).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(screen.queryByText('Sin alumnos con deuda vencida')).not.toBeInTheDocument();
+  });
+
+  it('shows an error with retry instead of zeros when the dashboard of the day fails', async () => {
+    install({ dashboardStatus: 500 });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    const card = (await screen.findByText('Alumnos con deuda vencida', { selector: 'div' })).closest('[class*="p-5"]');
+    expect(await within(card).findByText('No se pudo cargar')).toBeInTheDocument();
+    expect(within(card).queryByText(/^de \d+/)).not.toBeInTheDocument();
+    expect(within(card).queryByText('0')).not.toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('shows an error with retry on the month card whose metric failed', async () => {
+    install({ failing: ['on-time-payment'] });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    const card = (await screen.findByText('Pago a término', { selector: 'div' })).closest('[class*="p-5"]');
+    expect(await within(card).findByText('No se pudo cargar')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+  });
+
+  it('shows the empty state, and no axes, when the range has no values', async () => {
+    install();
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Emisión' }));
+    const card = (await screen.findByText('Vencidas detectadas', { selector: 'h3' })).closest('[class*="p-5"]');
+    expect(await within(card).findByText('Sin datos para mostrar')).toBeInTheDocument();
+    expect(card.querySelector('.recharts-yAxis')).toBeNull();
+  });
+
+  it('shows the empty state when every value of the panel is null', async () => {
+    install({
+      discounts: (url) => {
+        const months = monthsOf(url);
+        return { panel: 'discounts', available: true, partial: false, months, series: [{ key: 'percentOfGross', unit: 'PERCENT', values: months.map(() => null) }] };
+      },
+    });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Emisión' }));
+    const card = (await screen.findByText('Becas y descuentos', { selector: 'h3' })).closest('[class*="p-5"]');
+    expect(await within(card).findByText('Sin datos para mostrar')).toBeInTheDocument();
+  });
+
+  it('draws a discounts panel that only has the percentage series on a single axis', async () => {
+    install({
+      discounts: (url) => {
+        const months = monthsOf(url);
+        return { panel: 'discounts', available: true, partial: false, months, series: [{ key: 'percentOfGross', unit: 'PERCENT', values: months.map(() => 8) }] };
+      },
+    });
+    renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Emisión' }));
+    const card = (await screen.findByText('Becas y descuentos', { selector: 'h3' })).closest('[class*="p-5"]');
+    await waitFor(() => expect(card.querySelectorAll('.recharts-yAxis').length).toBe(1));
+    expect(card.querySelector('.recharts-line')).not.toBeNull();
   });
 });

@@ -37,11 +37,25 @@ export function previousMonthOf(metric, month) {
   return index > 0 ? metric.months[index - 1] : null;
 }
 
+function toCents(amount) {
+  const [whole, fraction = ''] = String(amount).split('.');
+  const negative = whole.startsWith('-');
+  const digits = BigInt(whole.replace('-', '') || '0') * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2));
+  return negative ? -digits : digits;
+}
+
+function fromCents(cents) {
+  const negative = cents < 0n;
+  const absolute = negative ? -cents : cents;
+  const text = absolute.toString().padStart(3, '0');
+  return `${negative ? '-' : ''}${text.slice(0, -2)}.${text.slice(-2)}`;
+}
+
 export function sumMoney(values) {
   const present = values.filter((value) => value != null);
   if (present.length === 0) return null;
-  const cents = present.reduce((total, value) => total + Math.round(Number(value.amount) * 100), 0);
-  return { amount: (cents / 100).toFixed(2), currency: present[0].currency };
+  const total = present.reduce((sum, value) => sum + toCents(value.amount), 0n);
+  return { amount: fromCents(total), currency: present[0].currency };
 }
 
 export function sumCounts(values) {
