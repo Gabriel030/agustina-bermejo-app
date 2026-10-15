@@ -22,15 +22,16 @@ import {
   invoiceTitle,
   isInvoicePayable,
 } from '@/lib/billing';
+import { sumMoney } from '@/features/billing/dashboard/dashboardMetrics';
+import { CashPaymentDialog } from '@/features/billing/components/CashPaymentDialog';
 import { InvoiceAmountCell } from '@/components/billing/InvoiceAmountCell';
 import { InvoiceDetail, InvoiceLinesBreakdown } from '@/components/billing/InvoiceDetail';
 import { PaymentDateCell } from '@/components/billing/PaymentDateCell';
 import { useExpandedRows } from '@/hooks/useExpandedRows';
-import { formatMoney, moneyValue } from '@/lib/utils';
+import { formatMoney } from '@/lib/utils';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import {
   useAdminBillingOverview,
-  useRegistrarPago,
   useComprobantesAdmin,
   useAprobarComprobante,
   useRechazarComprobante,
@@ -52,22 +53,9 @@ const BILLING_STANDING_CONFIG = {
   WITHDRAWN_FOR_NONPAYMENT: { label: 'Dado de baja', tone: 'neutral' },
 };
 
-const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Efectivo' },
-  { value: 'TRANSFER', label: 'Transferencia bancaria' },
-  { value: 'CARD', label: 'Tarjeta' },
-  { value: 'MERCADO_PAGO', label: 'Mercado Pago' },
-];
-
 function formatMonto(money) {
   return formatMoney(money) || '-';
 }
-
-const REGISTER_PAYMENT_ERRORS = {
-  PARTIAL_PAYMENT_NOT_ALLOWED: 'Las cuotas se cobran completas: el monto cambió. Actualizá la pantalla y volvé a intentar.',
-  PAYMENT_EXCEEDS_INVOICE_BALANCE: 'El monto supera el saldo de la cuota. Actualizá la pantalla y revisá los saldos.',
-  INVOICE_NOT_PAYABLE: 'Una de las cuotas ya no admite pagos. Actualizá la pantalla y revisá su estado.',
-};
 
 const APPROVE_RECEIPT_ERRORS = {
   INVOICE_NOT_PAYABLE:
@@ -89,199 +77,6 @@ async function openReceiptFile(receiptId) {
     preview?.close();
     toast.error('No pudimos abrir el comprobante. Probá de nuevo.');
   }
-}
-
-function nearestDueInvoiceId(invoices) {
-  const sorted = [...invoices].sort((a, b) => String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')));
-  return sorted[0]?.id;
-}
-
-function PayableInvoiceRow({ invoice, checked, onToggle }) {
-  const [showLines, setShowLines] = useState(false);
-  const statusInfo = invoiceStatusInfo(invoiceDisplayStatus(invoice));
-  const inputId = `register-payment-${invoice.id}`;
-  const multiLine = (invoice.lines ?? []).length > 1;
-  return (
-    <div className="rounded-xl border border-border p-3">
-      <label htmlFor={inputId} className="flex cursor-pointer items-center gap-3">
-        <input
-          id={inputId}
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          aria-label={`Cobrar ${invoiceTitle(invoice)}`}
-          className="h-4 w-4 accent-brand"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ink">{invoiceTitle(invoice)}</p>
-          <p className="text-xs text-ink-faint">Vence el {formatDate(invoice.dueDate)}</p>
-        </div>
-        <StatusPill tone={statusInfo.tone}>{statusInfo.label}</StatusPill>
-        <div className="flex w-28 flex-col items-end">
-          <span className="font-mono text-sm font-semibold text-ink">{formatMonto(invoice.outstandingAmount)}</span>
-          <span className="text-xs text-ink-faint">Saldo a cobrar</span>
-        </div>
-      </label>
-      {multiLine && (
-        <div className="mt-2 pl-7">
-          <button
-            type="button"
-            aria-expanded={showLines}
-            onClick={() => setShowLines((value) => !value)}
-            className="text-xs font-semibold text-brand hover:underline"
-          >
-            {showLines ? 'Ocultar desglose' : 'Ver desglose'}
-          </button>
-          {showLines && (
-            <div className="mt-2">
-              <InvoiceLinesBreakdown invoice={invoice} />
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RegistrarPagoModal({ invoices, enrollmentName, onClose }) {
-  const underReviewInvoices = invoices.filter((inv) => invoiceDisplayStatus(inv) === 'PAYMENT_UNDER_REVIEW');
-  const payableInvoices = invoices.filter((inv) => isInvoicePayable(inv) && invoiceDisplayStatus(inv) !== 'PAYMENT_UNDER_REVIEW');
-  const [selectedIds, setSelectedIds] = useState(() => new Set([nearestDueInvoiceId(payableInvoices)]));
-  const [method, setMethod] = useState('CASH');
-  const [notes, setNotes] = useState('');
-  const [externalRef, setExternalRef] = useState('');
-  const [error, setError] = useState('');
-  const { mutate, isPending } = useRegistrarPago();
-
-  const selectedInvoices = payableInvoices.filter((inv) => selectedIds.has(inv.id));
-  const total = selectedInvoices.reduce((sum, inv) => sum + moneyValue(inv.outstandingAmount), 0);
-  const totalCurrency = (selectedInvoices[0] ?? payableInvoices[0])?.outstandingAmount?.currency ?? 'ARS';
-
-  function toggleInvoice(id) {
-    setSelectedIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function handleSubmit() {
-    if (!selectedInvoices.length) {
-      setError('Elegí al menos una cuota para cobrar.');
-      return;
-    }
-
-    const allocations = selectedInvoices.map((inv) => ({ invoiceId: inv.id, amountApplied: inv.outstandingAmount }));
-
-    mutate(
-      { allocations, method, notes: notes || undefined, externalReference: externalRef || undefined },
-      {
-        onSuccess: () => onClose(true),
-        onError: (e) => setError(REGISTER_PAYMENT_ERRORS[e?.code] ?? e?.message ?? 'Error al registrar el pago.'),
-      }
-    );
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Registrar pago</DialogTitle>
-          <p className="text-sm text-ink-faint">{enrollmentName}</p>
-        </DialogHeader>
-
-        {underReviewInvoices.length > 0 && (
-          <div className="rounded-xl bg-warning-bg px-3 py-2 text-sm text-warning">
-            <p className="font-semibold">En revisión — resolvelas en Comprobantes</p>
-            <ul className="mt-1 text-xs">
-              {underReviewInvoices.map((inv) => (
-                <li key={inv.id}>
-                  {invoiceTitle(inv)} · vence el {formatDate(inv.dueDate)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {payableInvoices.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-faint">No hay cuotas para cobrar en esta inscripción.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-ink-soft">Las cuotas se cobran completas: no se admiten pagos parciales.</p>
-            <div className="flex flex-col gap-3">
-              {payableInvoices.map((inv) => (
-                <PayableInvoiceRow
-                  key={inv.id}
-                  invoice={inv}
-                  checked={selectedIds.has(inv.id)}
-                  onToggle={() => toggleInvoice(inv.id)}
-                />
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl bg-neutral-bg px-4 py-2">
-              <span className="text-sm font-medium text-ink">Total</span>
-              <span className="font-mono font-semibold text-ink">{formatMonto({ amount: total.toFixed(2), currency: totalCurrency })}</span>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
-                  Método de pago
-                </label>
-                <select
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand"
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
-                  Referencia externa (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={externalRef}
-                  onChange={(e) => setExternalRef(e.target.value)}
-                  placeholder="N° de transferencia, recibo, etc."
-                  className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-faint">
-                  Observaciones (opcional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-            </div>
-
-            {error && <p className="text-sm text-danger">{error}</p>}
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onClose(false)} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button variant="gradient" onClick={handleSubmit} loading={isPending}>
-            {isPending ? 'Registrando…' : 'Confirmar pago'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 function InvoicesTable({ invoices }) {
@@ -353,7 +148,6 @@ function InvoicesTable({ invoices }) {
 
 function EnrollmentCard({ enrollment, defaultExpanded = false }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [showModal, setShowModal] = useState(false);
 
   const standingInfo = BILLING_STANDING_CONFIG[enrollment.paymentStatus] ?? {
     label: enrollment.paymentStatus,
@@ -361,14 +155,8 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
   };
 
   const invoices = enrollment.invoices ?? [];
-  const hasPayable = invoices.some(isInvoicePayable);
 
   const productLabel = `${enrollment.enrollmentType === 'COURSE' ? 'Curso' : 'Carrera'}: ${enrollment.productName ?? enrollment.enrollmentId}`;
-
-  function handleModalClose(paid) {
-    setShowModal(false);
-    if (paid) toast.success('Pago registrado correctamente.');
-  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface">
@@ -398,37 +186,48 @@ function EnrollmentCard({ enrollment, defaultExpanded = false }) {
             <InvoicesTable invoices={invoices} />
           )}
 
-          {hasPayable && (
-            <div className="mt-4 flex justify-end">
-              <Button variant="gradient" onClick={() => setShowModal(true)}>
-                <CreditCard size={14} className="mr-1.5" />
-                Registrar pago
-              </Button>
-            </div>
-          )}
         </div>
-      )}
-
-      {showModal && (
-        <RegistrarPagoModal
-          invoices={invoices}
-          enrollmentName={productLabel}
-          onClose={handleModalClose}
-        />
       )}
     </div>
   );
+}
+
+function payableInvoicesOf(overview) {
+  return (overview ?? []).flatMap((enrollment) => enrollment.invoices ?? []).filter(
+    (invoice) => isInvoicePayable(invoice) && invoiceDisplayStatus(invoice) !== 'PAYMENT_UNDER_REVIEW',
+  );
+}
+
+function cashCurrencyOf(overview) {
+  return payableInvoicesOf(overview)[0]?.outstandingAmount?.currency ?? 'ARS';
+}
+
+function outstandingDebtOf(overview) {
+  const invoices = payableInvoicesOf(overview);
+  if (invoices.length === 0) return null;
+  const currencies = new Set(invoices.map((invoice) => invoice.outstandingAmount?.currency));
+  if (currencies.size !== 1) return null;
+  return sumMoney(invoices.map((invoice) => invoice.outstandingAmount));
 }
 
 function TabFacturacion() {
   const [searchInput, setSearchInput] = useState('');
   const searchDebounced = useDebounce(searchInput, 300);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showCashPayment, setShowCashPayment] = useState(false);
 
   const { data: alumnos, isLoading: loadingAlumnos } = useAlumnos({ search: searchDebounced });
-  const { data: overview, isLoading: loadingOverview } = useAdminBillingOverview(selectedStudent?.id);
+  const {
+    data: overview,
+    isLoading: loadingOverview,
+    isFetching: fetchingOverview,
+    isError: overviewFailed,
+    refetch: refetchOverview,
+  } = useAdminBillingOverview(selectedStudent?.id);
+  const debtIsCurrent = !fetchingOverview && !overviewFailed;
 
   const showResults = searchDebounced.length >= 2;
+  const debt = debtIsCurrent ? outstandingDebtOf(overview) : null;
 
   function handleSelect(alumno) {
     setSelectedStudent(alumno);
@@ -439,16 +238,30 @@ function TabFacturacion() {
     <div className="flex flex-col gap-5">
       {selectedStudent ? (
         <GlassCard className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="font-semibold text-ink">
                 {selectedStudent.apellido}, {selectedStudent.nombre}
               </p>
               <p className="text-sm text-ink-faint">DNI {selectedStudent.dni}</p>
             </div>
-            <Button variant="outline" onClick={() => setSelectedStudent(null)}>
-              Cambiar alumno
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              {debt && (
+                <div className="sm:text-right">
+                  <p className="text-xs text-ink-faint">Deuda</p>
+                  <p className="text-lg font-semibold tabular-nums text-ink">{formatMonto(debt)}</p>
+                </div>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setShowCashPayment(true)} disabled={!debtIsCurrent}>
+                  <CreditCard size={14} className="mr-1.5" />
+                  Cobrar en efectivo
+                </Button>
+                <Button variant="outline" className="w-full sm:w-auto" onClick={() => setSelectedStudent(null)}>
+                  Cambiar alumno
+                </Button>
+              </div>
+            </div>
           </div>
         </GlassCard>
       ) : (
@@ -487,6 +300,28 @@ function TabFacturacion() {
             </div>
           )}
         </GlassCard>
+      )}
+
+      {selectedStudent && overviewFailed && (
+        <div role="alert" className="flex flex-col gap-2 rounded-xl bg-danger-bg px-4 py-3 text-sm text-danger sm:flex-row sm:items-center sm:justify-between">
+          <span>No pudimos actualizar la deuda del alumno. Hasta recargarla no se puede cobrar.</span>
+          <Button variant="outline" onClick={() => refetchOverview()}>
+            Reintentar
+          </Button>
+        </div>
+      )}
+
+      {selectedStudent && showCashPayment && (
+        <CashPaymentDialog
+          student={selectedStudent}
+          currency={cashCurrencyOf(overview)}
+          totalDebt={debt}
+          onClose={() => setShowCashPayment(false)}
+          onStudentGone={() => {
+            setShowCashPayment(false);
+            setSelectedStudent(null);
+          }}
+        />
       )}
 
       {selectedStudent && (
