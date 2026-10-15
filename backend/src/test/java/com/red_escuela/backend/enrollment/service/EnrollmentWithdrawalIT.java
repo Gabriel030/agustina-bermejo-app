@@ -32,6 +32,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
+import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
+import java.time.Duration;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -49,6 +51,7 @@ import java.util.concurrent.Future;
 import static com.red_escuela.backend.billing.account.domain.AccountTestData.ars;
 import static com.red_escuela.backend.billing.invoice.domain.InvoiceTestData.ACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,6 +66,8 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     @Autowired
     private ProgramEnrollmentRepository programEnrollmentRepository;
+    @Autowired
+    private ProgramEnrollmentService programEnrollmentService;
     @Autowired
     private CourseEnrollmentRepository courseEnrollmentRepository;
 
@@ -186,7 +191,7 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("C-03")
-        void withdrawingMidMonthWithThePaidYearLeavesAnnualInvoiceAndAccountUntouched() throws Exception {
+    void withdrawingMidMonthWithThePaidYearLeavesAnnualInvoiceAndAccountUntouched() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         StudentWithAccount student = newStudentWithAccount();
         Long enrollmentId = newProgramEnrollment(student.studentId(), ENROLLED_AT);
@@ -336,7 +341,7 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
 
     @Test
     @Tag("C-22")
-        void twoSimultaneousWithdrawalsOfTheSameEnrollmentLeaveOneWithdrawalAndAConflict() throws Exception {
+    void twoSimultaneousWithdrawalsOfTheSameEnrollmentLeaveOneWithdrawalAndAConflict() throws Exception {
         BillingInvariantChecker invariants = BillingInvariantChecker.startingNow(jdbc);
         StudentWithAccount student = newStudentWithAccount();
         Long enrollmentId = newProgramEnrollment(student.studentId(), ENROLLED_AT);
@@ -390,6 +395,70 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         mockMvc.perform(post("/students/" + student.studentId() + "/withdraw").header("Authorization", "Bearer " + administrative.token())
                 .contentType(APPLICATION_JSON).content(body)).andExpect(status().isNoContent());
         assertThat(studentPersonStatus(student.studentId())).isEqualTo("DELETED");
+    }
+
+    @Test
+    @Tag("C-25")
+    @Tag("D-250")
+    void onlyAdministrativeAndDirectorCanWithdrawAStudentFile() throws Exception {
+        String body = "{\"reason\":\"ABANDONO\",\"detail\":\"Se mudó\"}";
+        Long studentForPreceptor = newStudentId();
+        Long studentForAdministrative = newStudentId();
+        Long studentForDirector = newStudentId();
+
+        mockMvc.perform(post("/students/" + studentForPreceptor + "/withdraw").header("Authorization", "Bearer " + newStaff("PRECEPTOR").token())
+                .contentType(APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/students/" + studentForPreceptor + "/withdraw").header("Authorization", "Bearer " + newStaff("ALUMNO").token())
+                .contentType(APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        assertThat(studentPersonStatus(studentForPreceptor)).isEqualTo("ACTIVE");
+
+        mockMvc.perform(post("/students/" + studentForAdministrative + "/withdraw").header("Authorization", "Bearer " + newStaff("ADMINISTRATIVO").token())
+                .contentType(APPLICATION_JSON).content(body)).andExpect(status().isNoContent());
+        mockMvc.perform(post("/students/" + studentForDirector + "/withdraw").header("Authorization", "Bearer " + newStaff("DIRECTOR").token())
+                .contentType(APPLICATION_JSON).content(body)).andExpect(status().isNoContent());
+        assertThat(studentPersonStatus(studentForAdministrative)).isEqualTo("DELETED");
+        assertThat(studentPersonStatus(studentForDirector)).isEqualTo("DELETED");
+    }
+
+    @Test
+    @Tag("C-25")
+    void anEnrollmentCreatedWhileTheFileWithdrawalWaitsForTheStudentLockKeepsTheFileActive() throws Exception {
+        StudentWithAccount student = newStudentWithAccount();
+        Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class,
+                "Race " + System.nanoTime());
+        Staff administrative = newStaff("ADMINISTRATIVO");
+        CountDownLatch enrollmentInserted = new CountDownLatch(1);
+        CountDownLatch releaseEnrollment = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        Future<Object> enrolling = pool.submit(() -> transactionTemplate.execute(status -> {
+            programEnrollmentService.enrollAfterAdmissionPayment(student.studentId(), new CreateProgramEnrollmentRequest(programId, null));
+            enrollmentInserted.countDown();
+            awaitQuietly(releaseEnrollment);
+            return null;
+        }));
+        enrollmentInserted.await();
+        Future<Integer> withdrawing = pool.submit(() -> mockMvc.perform(post("/students/" + student.studentId() + "/withdraw")
+                .header("Authorization", "Bearer " + administrative.token()).contentType(APPLICATION_JSON)
+                .content("{\"reason\":\"ABANDONO\",\"detail\":\"x\"}")).andReturn().getResponse().getStatus());
+        await().atMost(Duration.ofSeconds(15)).until(() -> jdbc.queryForObject(
+                "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) > 0);
+
+        releaseEnrollment.countDown();
+        enrolling.get();
+        int withdrawalStatus = withdrawing.get();
+        pool.shutdown();
+
+        assertThat(withdrawalStatus).isEqualTo(409);
+        assertThat(studentPersonStatus(student.studentId())).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment where student_id = ? and status = 'ENROLLED'", Long.class, student.studentId())).isEqualTo(1L);
+    }
+
+    private static void awaitQuietly(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private String studentPersonStatus(Long studentId) {

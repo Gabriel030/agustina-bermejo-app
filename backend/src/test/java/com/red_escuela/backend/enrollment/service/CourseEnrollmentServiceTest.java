@@ -152,7 +152,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
         assertThat(primero.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.withdraw(primero.getId());
+        courseEnrollmentService.withdraw(primero.getId(), new com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal(null, null, com.red_escuela.backend.enrollment.api.WithdrawalCause.VOLUNTARY));
 
         CourseEnrollment segundoRecargado = courseEnrollmentRepository.findById(segundo.getId()).orElseThrow();
         assertThat(segundoRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
@@ -169,7 +169,7 @@ class CourseEnrollmentServiceTest extends AbstractIntegrationTest {
                 persistStudent("93000002").getId(), new CreateCourseEnrollmentRequest(course.getId(), null));
         assertThat(segundo.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
 
-        courseEnrollmentService.withdraw(segundo.getId());
+        courseEnrollmentService.withdraw(segundo.getId(), new com.red_escuela.backend.enrollment.service.EnrollmentWithdrawal(null, null, com.red_escuela.backend.enrollment.api.WithdrawalCause.VOLUNTARY));
 
         CourseEnrollment primeroRecargado = courseEnrollmentRepository.findById(primero.getId()).orElseThrow();
         assertThat(primeroRecargado.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);

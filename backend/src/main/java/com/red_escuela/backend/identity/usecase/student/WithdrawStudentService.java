@@ -29,5 +29,13 @@ public class WithdrawStudentService implements WithdrawStudentUseCase {
         student.setWithdrawalDetail(command.request().detail());
         studentRepository.save(student);
         revokeAllSessionsUseCase.revokeAll(student.getPerson());
+        studentWithdrawalGuard.requireStudentWithdrawable(command.studentId());
+    }
+
+    private com.red_escuela.backend.identity.domain.StudentWithdrawalGuard studentWithdrawalGuard;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void useStudentWithdrawalGuard(com.red_escuela.backend.identity.domain.StudentWithdrawalGuard studentWithdrawalGuard) {
+        this.studentWithdrawalGuard = studentWithdrawalGuard;
     }
 }

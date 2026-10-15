@@ -120,7 +120,7 @@ public class ProgramEnrollmentService {
 
     private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
                                                boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
-        Student student = studentRepository.findById(studentId)
+        Student student = studentRepository.findByIdForUpdate(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         if (validateEligibility) {
             validateStudentEligible(student);
@@ -153,11 +153,6 @@ public class ProgramEnrollmentService {
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
         return programEnrollmentRepository.save(enrollment);
-    }
-
-    @Transactional
-    public void withdraw(Long id) {
-        withdraw(id, EnrollmentWithdrawal.voluntaryBySystem());
     }
 
     @Transactional

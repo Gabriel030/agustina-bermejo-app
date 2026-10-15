@@ -94,7 +94,7 @@ public class CourseEnrollmentService {
 
     @Transactional
     public CourseEnrollment enroll(Long studentId, CreateCourseEnrollmentRequest request) {
-        Student student = studentRepository.findById(studentId)
+        Student student = studentRepository.findByIdForUpdate(studentId)
                 .orElseThrow(() -> new StudentNotFoundException(studentId));
         studentDebtResolutionService.verifyNoDebt(studentId);
         Course course = courseRepository.findById(request.courseId())
@@ -210,11 +210,6 @@ public class CourseEnrollmentService {
                 .size();
         return section.getCapacity() == null || ocupadas < section.getCapacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;
-    }
-
-    @Transactional
-    public void withdraw(Long id) {
-        withdraw(id, EnrollmentWithdrawal.voluntaryBySystem());
     }
 
     @Transactional

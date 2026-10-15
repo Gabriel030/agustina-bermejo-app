@@ -6,6 +6,9 @@ alter table course_enrollment
     add column withdrawal_effective_date date,
     add column withdrawn_by_person_id bigint references person (id);
 
+create index idx_program_enrollment_withdrawn_by_person on program_enrollment (withdrawn_by_person_id);
+create index idx_course_enrollment_withdrawn_by_person on course_enrollment (withdrawn_by_person_id);
+
 update program_enrollment
 set withdrawal_effective_date = completion_date::date
 where status = 'WITHDRAWN' and completion_date is not null;

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.exception.WithdrawalDateOutOfAllowedRangeException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class EnrollmentWithdrawalDateResolverTest {
     void withoutInformedDateTheEffectiveDateIsTheLocalDateOfTheClock() {
         EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 6, 1, 0, 30));
 
-        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.voluntaryBySystem(), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 6, 1));
+        assertThat(resolver.resolveEffectiveDate(new EnrollmentWithdrawal(null, null, WithdrawalCause.VOLUNTARY), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 6, 1));
     }
 
     @Test
@@ -51,7 +52,7 @@ class EnrollmentWithdrawalDateResolverTest {
     void unknownEnrollmentDateDoesNotBlockTheWithdrawal() {
         EnrollmentWithdrawalDateResolver resolver = resolverAt(LocalDateTime.of(2027, 5, 3, 9, 0));
 
-        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.voluntaryBySystem(), null)).isEqualTo(LocalDate.of(2027, 5, 3));
+        assertThat(resolver.resolveEffectiveDate(new EnrollmentWithdrawal(null, null, WithdrawalCause.VOLUNTARY), null)).isEqualTo(LocalDate.of(2027, 5, 3));
     }
 
     @Test
@@ -67,6 +68,6 @@ class EnrollmentWithdrawalDateResolverTest {
         EnrollmentWithdrawalDateResolver resolver = new EnrollmentWithdrawalDateResolver(Clock.fixed(lateEveningLocal, ZONE));
 
         assertThat(lateEveningLocal.atZone(ZoneId.of("UTC")).toLocalDate()).isEqualTo(LocalDate.of(2027, 6, 1));
-        assertThat(resolver.resolveEffectiveDate(EnrollmentWithdrawal.voluntaryBySystem(), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 5, 31));
+        assertThat(resolver.resolveEffectiveDate(new EnrollmentWithdrawal(null, null, WithdrawalCause.VOLUNTARY), ENROLLED_AT)).isEqualTo(LocalDate.of(2027, 5, 31));
     }
 }

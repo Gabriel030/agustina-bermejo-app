@@ -15,7 +15,6 @@ import com.red_escuela.backend.identity.usecase.student.ListStudentsCommand;
 import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
 import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
-import com.red_escuela.backend.identity.service.StudentWithdrawalGuard;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import jakarta.validation.Valid;
@@ -38,20 +37,18 @@ public class StudentController {
     private final ListStudentsUseCase listStudentsUseCase;
     private final GetStudentRecordUseCase getStudentRecordUseCase;
     private final WithdrawStudentUseCase withdrawStudentUseCase;
-    private final StudentWithdrawalGuard studentWithdrawalGuard;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
     private final GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase;
     private final StudentRepository studentRepository;
     private final StudentDocumentRepository studentDocumentRepository;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
-                              WithdrawStudentUseCase withdrawStudentUseCase, StudentWithdrawalGuard studentWithdrawalGuard, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
+                              WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
                               GetStudentBillingOverviewUseCase getStudentBillingOverviewUseCase, StudentRepository studentRepository,
                               StudentDocumentRepository studentDocumentRepository) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
-        this.studentWithdrawalGuard = studentWithdrawalGuard;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
         this.getStudentBillingOverviewUseCase = getStudentBillingOverviewUseCase;
         this.studentRepository = studentRepository;
@@ -84,9 +81,8 @@ public class StudentController {
 
     @PostMapping("/{id}/withdraw")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('PRECEPTOR') or hasRole('ADMINISTRATIVO')")
+    @PreAuthorize("hasRole('ADMINISTRATIVO') or hasRole('DIRECTOR')")
     public void withdraw(@PathVariable Long id, @Valid @RequestBody WithdrawStudentRequest request) {
-        studentWithdrawalGuard.requireStudentWithdrawable(id);
         withdrawStudentUseCase.withdraw(new WithdrawStudentCommand(id, request));
     }
 

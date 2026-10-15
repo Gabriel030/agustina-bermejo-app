@@ -16,10 +16,6 @@ public record EnrollmentWithdrawal(LocalDate informedDate, Long registeredByPers
         return new EnrollmentWithdrawal(informedDate, Objects.requireNonNull(personId, "personId"), WithdrawalCause.VOLUNTARY);
     }
 
-    public static EnrollmentWithdrawal voluntaryBySystem() {
-        return new EnrollmentWithdrawal(null, null, WithdrawalCause.VOLUNTARY);
-    }
-
     public static EnrollmentWithdrawal forNonpayment() {
         return new EnrollmentWithdrawal(null, null, WithdrawalCause.NONPAYMENT);
     }

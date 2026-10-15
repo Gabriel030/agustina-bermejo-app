@@ -93,6 +93,7 @@ public class ProgramEnrollment implements BillableEnrollment {
         requireActive();
         status = ProgramEnrollmentStatus.COMPLETED;
         completionDate = completedAt;
+        graduationEvents.add(com.red_escuela.backend.enrollment.events.ProgramEnrollmentGraduatedEvent.graduatedOn(student.getId(), id, completedAt.toLocalDate()));
     }
 
     @Column(name = "withdrawal_effective_date")
@@ -106,5 +107,20 @@ public class ProgramEnrollment implements BillableEnrollment {
         this.withdrawalEffectiveDate = effectiveDate;
         this.completionDate = completionMoment;
         this.withdrawnByPersonId = registeredByPersonId;
+    }
+
+    @Transient
+    @Getter(lombok.AccessLevel.NONE)
+    @Setter(lombok.AccessLevel.NONE)
+    private final java.util.List<Object> graduationEvents = new java.util.ArrayList<>();
+
+    @org.springframework.data.domain.DomainEvents
+    java.util.Collection<Object> publishGraduationEvents() {
+        return java.util.List.copyOf(graduationEvents);
+    }
+
+    @org.springframework.data.domain.AfterDomainEventPublication
+    void clearGraduationEvents() {
+        graduationEvents.clear();
     }
 }

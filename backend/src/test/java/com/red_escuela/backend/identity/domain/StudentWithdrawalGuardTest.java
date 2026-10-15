@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.service;
+package com.red_escuela.backend.identity.domain;
 
 import com.red_escuela.backend.identity.api.StudentEnrollmentActivityLookup;
 import com.red_escuela.backend.identity.exception.StudentHasActiveEnrollmentsException;
@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @Tag("D-142")
@@ -16,7 +17,8 @@ import static org.mockito.Mockito.when;
 class StudentWithdrawalGuardTest {
 
     private final StudentEnrollmentActivityLookup lookup = mock(StudentEnrollmentActivityLookup.class);
-    private final StudentWithdrawalGuard guard = new StudentWithdrawalGuard(lookup);
+    private final com.red_escuela.backend.identity.repository.StudentRepository students = mock(com.red_escuela.backend.identity.repository.StudentRepository.class);
+    private final StudentWithdrawalGuard guard = new StudentWithdrawalGuard(lookup, students);
 
     @Test
     void studentWithActiveEnrollmentsCannotBeWithdrawn() {
@@ -31,5 +33,12 @@ class StudentWithdrawalGuardTest {
         when(lookup.hasActiveEnrollments(7L)).thenReturn(false);
 
         assertThatCode(() -> guard.requireStudentWithdrawable(7L)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void theStudentRowIsLockedBeforeLookingForActiveEnrollments() {
+        guard.requireStudentWithdrawable(7L);
+
+        verify(students).findByIdForUpdate(7L);
     }
 }

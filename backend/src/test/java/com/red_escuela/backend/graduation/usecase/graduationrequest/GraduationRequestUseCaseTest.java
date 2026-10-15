@@ -53,6 +53,7 @@ import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@org.springframework.test.context.event.RecordApplicationEvents
 class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -69,6 +70,9 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private org.springframework.test.context.event.ApplicationEvents applicationEvents;
 
     @AfterEach
     void clearSecurityContext() {
@@ -388,6 +392,12 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThat(entityManager.find(ProgramEnrollment.class, enrollment.getId()).getStatus()).isEqualTo(ProgramEnrollmentStatus.COMPLETED);
+        assertThat(applicationEvents.stream(com.red_escuela.backend.enrollment.events.ProgramEnrollmentGraduatedEvent.class))
+                .singleElement().satisfies(event -> {
+                    assertThat(event.programEnrollmentId()).isEqualTo(enrollment.getId());
+                    assertThat(event.studentId()).isEqualTo(student.getId());
+                    assertThat(event.effectiveDate()).isEqualTo(LocalDate.of(2027, 10, 20));
+                });
         assertThat(countRows("credit_note")).isEqualTo(creditNotesBefore);
         assertThat(countRows("current_account_entry")).isEqualTo(entriesBefore);
         assertThat(countRows("payment_allocation")).isEqualTo(allocationsBefore);
