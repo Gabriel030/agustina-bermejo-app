@@ -304,6 +304,12 @@ public final class BillingInvariantChecker {
              left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
              where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
 
+    private static final String CORRECTION_COMPLEMENT = """
+            (round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
+                                                                       where p.late_fee_charge_id = c.id and p.id < k.id)), 2)
+             - round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
+                                                                       where p.late_fee_charge_id = c.id and p.id <= k.id)), 2))""";
+
     private static String frozenOn(String dayExpression) {
         return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
     }
@@ -391,11 +397,10 @@ public final class BillingInvariantChecker {
                     or %1$s is null or k.first_corrected_day <= %1$s
                     or %2$s is null or d.issue_date > %2$s
                     or n.reason <> 'LATE_FEE_CORRECTION' or n.invoice_id <> k.debit_note_id or n.recipient_snapshot is distinct from d.student_snapshot
-                    or n.total_amount > round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
-                                                                                                where p.late_fee_charge_id = c.id and p.id < k.id)), 2)
-                                      - round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
-                                                                                                where p.late_fee_charge_id = c.id and p.id <= k.id)), 2))
-                """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN), baselineInvoiceId);
+                    or n.total_amount > %3$s
+                    or (n.total_amount < %3$s and exists (select 1 from invoice_line l
+                                                          where l.invoice_id = d.id and (l.amount - l.discount_amount) - l.credited_amount - l.free_credited_amount > 0)))
+                """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN, CORRECTION_COMPLEMENT), baselineInvoiceId);
     }
 
     public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {

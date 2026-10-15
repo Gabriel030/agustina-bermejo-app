@@ -110,6 +110,22 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
+    void theCorrectedDaysColumnAcceptsAWholeThirtyOneDayMonthAndNothingMore() {
+        String insert = "insert into late_fee_charge_correction (late_fee_charge_id, debit_note_id, student_current_account_id, credit_note_id, first_corrected_day, "
+                + "last_corrected_day, corrected_days, cause, enrollment_end_date, created_at) values (1, 1, 1, 999999, '2140-03-01', '2140-03-31', %d, 'BACKDATED_WITHDRAWAL', '2140-02-28', now())";
+
+        transactionTemplate.executeWithoutResult(status -> {
+            jdbc.execute("set local session_replication_role = replica");
+            assertThat(jdbc.update(insert.formatted(31))).isEqualTo(1);
+            status.setRollbackOnly();
+        });
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+            jdbc.execute("set local session_replication_role = replica");
+            jdbc.update(insert.formatted(32));
+        })).isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
     void anOverlappingCorrectionOfTheSameChargeIsRejectedByTheDatabase() {
         Long debitNoteId = correctedDebitNote(2130);
         Map<String, Object> existing = jdbc.queryForMap("select * from late_fee_charge_correction where debit_note_id = ?", debitNoteId);
@@ -152,6 +168,8 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         assertThat(violationsAfter("update credit_note set recipient_snapshot = '{\"name\":\"Otra persona\"}'::jsonb where invoice_id = " + debitNoteId))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
         assertThat(violationsAfter("update credit_note set reason = 'BILLING_ERROR' where invoice_id = " + debitNoteId))
+                .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
+        assertThat(violationsAfter("update credit_note set total_amount = total_amount - 1, offset_amount = offset_amount - 1 where invoice_id = " + debitNoteId))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
         assertThat(violationsAfter("update invoice set issue_date = '2132-05-04' where id = " + debitNoteId))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));

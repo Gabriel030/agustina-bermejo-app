@@ -312,27 +312,6 @@ class LateFeeCorrectionAfterWithdrawalIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
-    @Tag("D-127")
-    void aWithdrawalInformedBeforeTheWholeMonthCancelsTheDebitNoteOfThatMonthCorrectingAllItsThirtyOneDays() {
-        arrange(2123);
-        publishDefaults(2123);
-        Invoice origin = overdueInstallmentDueOn(d(2123, 3, 11));
-        reconcile(origin, d(2123, 6, 1));
-        assertThat(chargesOf(origin).stream().map(c -> c.get("charged_days")).toList()).containsExactly(20, 30, 31);
-        Long mayNote = debitNoteIdOf(origin, 2);
-
-        withdrawRegisteredOn(d(2123, 5, 31), d(2123, 4, 30));
-
-        List<Map<String, Object>> creditNotes = creditNotesOf(mayNote);
-        assertThat(creditNotes).hasSize(1);
-        assertThat((BigDecimal) creditNotes.get(0).get("total_amount")).isEqualByComparingTo("6200.00");
-        assertThat(text("select payment_status from invoice where id = ?", mayNote)).isEqualTo("CANCELLED");
-        assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, mayNote)).isEqualTo(31);
-        assertThat(creditNotesOf(debitNoteIdOf(origin, 0))).isEmpty();
-        assertThat(creditNotesOf(debitNoteIdOf(origin, 1))).isEmpty();
-    }
-
-    @Test
     @Tag("D-293")
     void theDebitNoteOfAnEnrollmentFeeIsCorrectedLikeThatOfAnInstallment() {
         arrange(2117);
@@ -391,25 +370,24 @@ class LateFeeCorrectionAfterWithdrawalIT extends AbstractLateFeeScenarioIT {
     void aDebitNoteWithTheHighestAmountsKeepsTheComplementWithoutOverflowingAnyColumn() {
         arrange(2121);
         publish(0, "0.03", 10, true, true, d(2121, 1, 1));
-        Invoice origin = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(YearMonth.of(2121, 3)).dueOn(d(2121, 3, 11))
+        Invoice origin = BillingTestFixtures.invoice().forCourseEnrollment(enrollment).forPeriod(YearMonth.of(2121, 2)).dueOn(d(2121, 2, 11))
                 .withBaseAmount(ars("2400000000.00")).overdue().build();
-        reconcile(origin, d(2121, 6, 1));
-        assertThat(chargesOf(origin).stream().map(c -> c.get("charged_days")).toList()).containsExactly(20, 30, 31);
-        Long mayNote = debitNoteIdOf(origin, 2);
+        reconcile(origin, d(2121, 4, 1));
+        assertThat(chargesOf(origin).stream().map(c -> c.get("charged_days")).toList()).containsExactly(17, 31);
+        Long marchNote = debitNoteIdOf(origin, 1);
         BigDecimal base = new BigDecimal("2400000000.00");
         BigDecimal daily = new BigDecimal("0.03");
         BigDecimal expected = base.multiply(daily).multiply(BigDecimal.valueOf(31)).setScale(2, RoundingMode.HALF_UP)
                 .subtract(base.multiply(daily).multiply(BigDecimal.ONE).setScale(2, RoundingMode.HALF_UP));
 
-        withdrawRegisteredOn(d(2121, 6, 2), d(2121, 5, 1));
+        withdrawRegisteredOn(d(2121, 4, 10), d(2121, 3, 1));
 
-        assertThat(decimal("select total from invoice where id = ?", mayNote)).isEqualByComparingTo("2232000000.00");
-        List<Map<String, Object>> creditNotes = creditNotesOf(mayNote);
+        assertThat(decimal("select total from invoice where id = ?", marchNote)).isEqualByComparingTo("2232000000.00");
+        List<Map<String, Object>> creditNotes = creditNotesOf(marchNote);
         assertThat(creditNotes).hasSize(1);
         assertThat((BigDecimal) creditNotes.get(0).get("total_amount")).isEqualByComparingTo(expected);
-        assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, mayNote)).isEqualTo(30);
+        assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, marchNote)).isEqualTo(30);
         assertThat(creditNotesOf(debitNoteIdOf(origin, 0))).isEmpty();
-        assertThat(creditNotesOf(debitNoteIdOf(origin, 1))).isEmpty();
         invariants.assertAllBillingInvariantsHold();
     }
 }

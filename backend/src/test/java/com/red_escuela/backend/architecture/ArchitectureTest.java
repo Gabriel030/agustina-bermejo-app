@@ -86,6 +86,14 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-375")
+    void lateFeeCorrectionRuleDetectsAShortcutToTheIssuer() {
+        assertThatThrownBy(() -> ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LateFeeCorrectionShortcutFixture");
+    }
+
+    @Test
     @Tag("B2-33")
     @Tag("D-127")
     void cancellationRuleDetectsABackdoor() {
