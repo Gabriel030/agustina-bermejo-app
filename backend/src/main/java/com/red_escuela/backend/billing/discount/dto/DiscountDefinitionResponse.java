@@ -7,15 +7,19 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Money;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.lang.Nullable;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public record DiscountDefinitionResponse(Long id, String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, MonetaryAdjustment calculation,
-                                         Integer installmentsTotal, LocalDate availableFrom, LocalDate availableUntil, int priority, Money capPerInvoice,
-                                         Long programId, Long programCohortId, Long courseId, LocalDate enrollmentWindowFrom, LocalDate enrollmentWindowTo,
-                                         Integer quota, DiscountDefinitionStatus status, boolean directPublication, Long authorizationRequestId, Long createdById,
-                                         Instant createdAt, Long closedById, Instant closedAt, String closureReason) {
+public record DiscountDefinitionResponse(Long id, String name, DiscountDefinitionType discountType, InvoiceType applicableInvoiceType, @Schema(description = "Obligatorio salvo en becas, donde lo fija cada otorgamiento; en respuestas es nulo para esas becas") MonetaryAdjustment calculation,
+                                         @Nullable Integer installmentsTotal, LocalDate availableFrom, @Nullable LocalDate availableUntil, int priority, @Nullable Money capPerInvoice,
+                                         @Nullable Long programId, @Nullable Long programCohortId, @Nullable Long courseId, @Nullable LocalDate enrollmentWindowFrom,
+                                         @Nullable LocalDate enrollmentWindowTo, @Nullable Integer quota, DiscountDefinitionStatus status, boolean directPublication,
+                                         @Nullable Long authorizationRequestId, @Nullable Long createdById, Instant createdAt, @Nullable Long closedById, @Nullable Instant closedAt,
+                                         @Nullable String closureReason) {
 
     public static DiscountDefinitionResponse from(DiscountDefinition definition) {
         return new DiscountDefinitionResponse(definition.getId(), definition.getName(), definition.getDiscountType(), definition.getApplicableInvoiceType(),

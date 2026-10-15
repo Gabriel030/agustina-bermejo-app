@@ -66,6 +66,7 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
     @Autowired
     private IssuingScenarioFactory factory;
 
+    private Long lastPersonId;
     private String directorToken;
     private String administrativeToken;
 
@@ -91,6 +92,7 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
         person.getRoles().add(roleRepository.findByName(roleName).orElseThrow());
         entityManager.persist(person);
         entityManager.flush();
+        lastPersonId = person.getId();
         return jwtService.generateAccessToken(person);
     }
 
@@ -248,8 +250,11 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
         assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("60000.00");
         assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCost").get("currency").asText()).isEqualTo("ARS");
+        assertThat(entryNamed(today, "a08 con cupo").get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
         assertThat(entryNamed(today, "a08 sin cupo").get("estimatedQuotaCost").isNull()).isTrue();
+        assertThat(entryNamed(today, "a08 sin cupo").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_QUOTA");
         assertThat(entryNamed(today, "a08 sin cuotas").get("estimatedQuotaCost").isNull()).isTrue();
+        assertThat(entryNamed(today, "a08 sin cuotas").get("estimatedQuotaCostStatus").asText()).isEqualTo("NOT_APPLICABLE");
         assertThat(entryNamed(today, "a08 matricula").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("500000.00");
         assertThat(entryNamed(today, "a08 fijo con tope").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("24000.00");
 
@@ -263,13 +268,79 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
 
     @Test
     @Tag("D-240")
-    void definitionsWithoutAPricedOfferingReportNoCostAndNoQuotaUsed() throws Exception {
-        createdAsDirector(annualUpfront("pago anual sin cupo"));
+    void aProgramPromotionWithQuotaWithoutAPriceInForceTodayReportsNoEffectivePriceUntilThePriceStarts() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> body = cohortPromotion("a08 sin precio vigente", offering.programId());
+        body.put("quota", 2);
+        createdAsDirector(body);
 
-        JsonNode entry = entryNamed(catalog(""), "pago anual sin cupo");
+        MutableClock.INSTANCE.setDate(LocalDate.of(2019, 12, 31));
+        JsonNode beforeThePrice = entryNamed(catalog("?type=COHORT_PROMOTION"), "a08 sin precio vigente");
+        MutableClock.INSTANCE.setDate(LocalDate.of(2020, 1, 1));
+        JsonNode onTheFirstDay = entryNamed(catalog("?type=COHORT_PROMOTION"), "a08 sin precio vigente");
 
-        assertThat(entry.get("estimatedQuotaCost").isNull()).isTrue();
-        assertThat(entry.get("quotaUsed").asLong()).isZero();
+        assertThat(beforeThePrice.get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_EFFECTIVE_PRICE");
+        assertThat(beforeThePrice.get("estimatedQuotaCost").isNull()).isTrue();
+        assertThat(onTheFirstDay.get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
+        assertThat(onTheFirstDay.get("estimatedQuotaCost").get("amount").asText()).isEqualTo("60000.00");
+    }
+
+    @Test
+    @Tag("D-240")
+    void aCoursePromotionIsPricedOnTheCoursePriceAndWithoutOneReportsNoEffectivePrice() throws Exception {
+        Long pricedCourseId = persistCourse(true);
+        Long unpricedCourseId = persistCourse(false);
+        Map<String, Object> priced = cohortPromotion("a08 curso con precio", null);
+        priced.put("courseId", pricedCourseId);
+        priced.put("quota", 2);
+        Map<String, Object> unpriced = cohortPromotion("a08 curso sin precio", null);
+        unpriced.put("courseId", unpricedCourseId);
+        unpriced.put("quota", 2);
+        createdAsDirector(priced);
+        createdAsDirector(unpriced);
+
+        JsonNode catalog = catalog("?type=COHORT_PROMOTION");
+
+        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCostStatus").asText()).isEqualTo("ESTIMATED");
+        assertThat(entryNamed(catalog, "a08 curso con precio").get("estimatedQuotaCost").get("amount").asText()).isEqualTo("48000.00");
+        assertThat(entryNamed(catalog, "a08 curso sin precio").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_EFFECTIVE_PRICE");
+    }
+
+    @Test
+    @Tag("D-240")
+    void quotaUsedIsADocumentedStubOfZeroUntilStudentDiscountsExist() throws Exception {
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> body = cohortPromotion("cupo sin usar", offering.programId());
+        body.put("quota", 5);
+        createdAsDirector(body);
+
+        assertThat(entryNamed(catalog(""), "cupo sin usar").get("quotaUsed").asLong()).isZero();
+    }
+
+    @Test
+    @Tag("D-240")
+    void aDefinitionWithoutAnOfferingScopeReportsNotApplicableOrNoQuota() throws Exception {
+        createdAsDirector(annualUpfront("pago anual sin alcance"));
+
+        assertThat(entryNamed(catalog(""), "pago anual sin alcance").get("estimatedQuotaCostStatus").asText()).isEqualTo("NO_QUOTA");
+    }
+
+    private Long persistCourse(boolean withPrice) {
+        com.red_escuela.backend.academicstructure.entity.Term term = new com.red_escuela.backend.academicstructure.entity.Term();
+        term.setYear(2031);
+        term.setStatus(StatusType.ACTIVE);
+        entityManager.persist(term);
+        com.red_escuela.backend.academicstructure.entity.Course course = new com.red_escuela.backend.academicstructure.entity.Course();
+        course.setName("Curso " + System.nanoTime());
+        course.setTerm(term);
+        course.setCapacity(20);
+        course.setIsActive(StatusType.ACTIVE);
+        entityManager.persist(course);
+        if (withPrice) {
+            com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(null, course.getId(), FeeType.MONTHLY_INSTALLMENT, "Cuota del curso",
+                    com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("80000"), Currency.ARS), TODAY.minusDays(1), lastPersonId);
+        }
+        return course.getId();
     }
 
     @Test
@@ -323,6 +394,33 @@ class DiscountDefinitionControllerIT extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.violations", hasSize(org.hamcrest.Matchers.greaterThanOrEqualTo(2))));
 
         assertThat(countDefinitions()).isEqualTo(before);
+    }
+
+    @Test
+    @Tag("D-075")
+    void validationWithAPercentBeyondTheLimitsOrANegativeAmountAnswers400WithTheValueCodeAndNoViolations() throws Exception {
+        Map<String, Object> overOneHundred = annualUpfront("más de cien");
+        overOneHundred.put("calculation", percent("101"));
+        Map<String, Object> negative = annualUpfront("negativo");
+        negative.put("calculation", fixedAmount("-5.00", "ARS"));
+
+        send("POST", "/validation", administrativeToken, overOneHundred).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PERCENTAGE"))
+                .andExpect(jsonPath("$.violations").doesNotExist());
+        send("POST", "/validation", administrativeToken, negative).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("NEGATIVE_ADJUSTMENT_AMOUNT"));
+    }
+
+    @Test
+    @Tag("D-240")
+    void aScopeOfANonexistentProgramOrCohortAnswers404OnValidationAndOnCreation() throws Exception {
+        Map<String, Object> missingProgram = cohortPromotion("programa inexistente", Long.MAX_VALUE);
+        var offering = factory.newProgram(Currency.ARS, 100000, 50000);
+        Map<String, Object> missingCohort = cohortPromotion("cohorte inexistente", offering.programId());
+        missingCohort.put("programCohortId", Long.MAX_VALUE);
+
+        send("POST", "/validation", administrativeToken, missingProgram).andExpect(status().isNotFound());
+        postAs(directorToken, missingProgram).andExpect(status().isNotFound());
+        send("POST", "/validation", administrativeToken, missingCohort).andExpect(status().isNotFound());
+        postAs(directorToken, missingCohort).andExpect(status().isNotFound());
     }
 
     @Test

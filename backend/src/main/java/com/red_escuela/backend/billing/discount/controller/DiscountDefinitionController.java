@@ -14,6 +14,10 @@ import com.red_escuela.backend.billing.discount.usecase.CreateDiscountDefinition
 import com.red_escuela.backend.billing.discount.usecase.ListDiscountDefinitionsUseCase;
 import com.red_escuela.backend.billing.discount.usecase.ValidateDiscountDefinitionUseCase;
 import com.red_escuela.backend.billing.operation.BillingOperationOutcome;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,18 +56,28 @@ public class DiscountDefinitionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "El director publicó la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
+            @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})
     public ResponseEntity<?> createDiscountDefinition(@RequestBody CreateDiscountDefinitionRequest request) {
         return responseOf(createUseCase.createDiscountDefinition(request.toDraft()));
     }
 
     @PostMapping("/validation")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Todas las violaciones de las reglas del catálogo; lista vacía si el borrador es coherente"),
+            @ApiResponse(responseCode = "400", description = "Cuerpo que no se puede interpretar: INVALID_PERCENTAGE (porcentaje fuera de 0 a 100), NEGATIVE_ADJUSTMENT_AMOUNT (monto fijo negativo), UNSUPPORTED_CURRENCY. Estos no vuelven como violaciones porque el valor no llega a construirse"),
+            @ApiResponse(responseCode = "404", description = "La carrera, el curso o la cohorte del alcance no existen")})
     public DiscountDefinitionValidationResponse validateDiscountDefinition(@RequestBody CreateDiscountDefinitionRequest request) {
         return new DiscountDefinitionValidationResponse(validateUseCase.validateDiscountDefinition(request.toDraft()));
     }
 
     @PostMapping("/{id}/closure")
     @PreAuthorize("hasAnyRole('ADMINISTRATIVO', 'DIRECTOR')")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "El director cerró la promoción", content = @Content(schema = @Schema(implementation = DiscountDefinitionResponse.class))),
+            @ApiResponse(responseCode = "202", description = "El administrativo dejó un pedido de cierre pendiente de aprobación", content = @Content(schema = @Schema(implementation = DiscountDefinitionPendingAuthorizationResponse.class)))})
     public ResponseEntity<?> closeDiscountDefinition(@PathVariable Long id, @RequestBody CloseDiscountDefinitionRequest request) {
         return responseOf(closeUseCase.closeDiscountDefinition(id, request.reason()));
     }

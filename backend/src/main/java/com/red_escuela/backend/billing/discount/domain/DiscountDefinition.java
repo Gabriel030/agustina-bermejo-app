@@ -192,9 +192,18 @@ public class DiscountDefinition {
         };
     }
 
+    public boolean hasQuota() {
+        return quota != null;
+    }
+
+    public boolean hasCalculableQuotaCost() {
+        boolean singleCharge = applicableInvoiceType != InvoiceType.MONTHLY_INSTALLMENT;
+        return quota != null && calculation != null && (installmentsTotal != null || singleCharge);
+    }
+
     public Optional<NonNegativeMoney> estimateQuotaCost(NonNegativeMoney finalInstallmentPrice) {
         boolean singleCharge = applicableInvoiceType != InvoiceType.MONTHLY_INSTALLMENT;
-        if (quota == null || calculation == null || (installmentsTotal == null && !singleCharge)) {
+        if (!hasCalculableQuotaCost()) {
             return Optional.empty();
         }
         NonNegativeMoney savingPerInstallment = DiscountSavingCalculator.calculateSavingOnFinalPrice(calculation, finalInstallmentPrice, Optional.ofNullable(capPerInvoice));

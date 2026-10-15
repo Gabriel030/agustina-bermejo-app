@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.discount.service;
 
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinition;
+import com.red_escuela.backend.billing.discount.domain.DiscountQuotaCostEstimate;
+import com.red_escuela.backend.billing.discount.domain.DiscountQuotaCostStatus;
 import com.red_escuela.backend.billing.pricing.domain.PriceVersionResolution;
 import com.red_escuela.backend.billing.pricing.service.PriceReader;
 import com.red_escuela.backend.shared.domain.NonNegativeMoney;
@@ -17,8 +19,18 @@ public class DiscountQuotaCostEstimator {
         this.priceReader = priceReader;
     }
 
-    public Optional<NonNegativeMoney> estimateQuotaCostOn(DiscountDefinition definition, LocalDate today) {
-        return findFinalPriceOn(definition, today).flatMap(definition::estimateQuotaCost);
+    public DiscountQuotaCostEstimate estimateQuotaCostOn(DiscountDefinition definition, LocalDate today) {
+        if (!definition.hasQuota()) {
+            return DiscountQuotaCostEstimate.withoutCost(DiscountQuotaCostStatus.NO_QUOTA);
+        }
+        boolean priceable = definition.hasCalculableQuotaCost() && definition.findPricedOffering().isPresent() && definition.findPricedFeeType().isPresent();
+        if (!priceable) {
+            return DiscountQuotaCostEstimate.withoutCost(DiscountQuotaCostStatus.NOT_APPLICABLE);
+        }
+        return findFinalPriceOn(definition, today)
+                .flatMap(definition::estimateQuotaCost)
+                .map(DiscountQuotaCostEstimate::estimated)
+                .orElseGet(() -> DiscountQuotaCostEstimate.withoutCost(DiscountQuotaCostStatus.NO_EFFECTIVE_PRICE));
     }
 
     private Optional<NonNegativeMoney> findFinalPriceOn(DiscountDefinition definition, LocalDate today) {
