@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -274,6 +275,7 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
     @Test
     @Tag("D-332")
     @Tag("D-290")
+    @Tag("D-379")
     void reversalResumesFromTheDayAfterTheLastCoveredDay() {
         arrange(2215);
         publishDefaults(2215);
@@ -361,5 +363,43 @@ class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
         assertThat(summaryOf(origin)).containsExactly("2219-03-12..2219-03-20:5:1000.00");
         assertScenarioInvariants(d(2219, 3, 20));
+    }
+
+    @Test
+    @Tag("D-332")
+    @Tag("D-380")
+    void excessOfAPaymentDatedBeforeAnIssuedCloseCountsChargedDaysAndNotCalendarDays() {
+        arrange(2252);
+        publish(0, "0.002", 10, true, true, d(2252, 1, 1));
+        publish(0, "0.002", 10, true, false, d(2252, 3, 29));
+        publish(0, "0.002", 10, true, true, d(2252, 3, 31));
+        Invoice origin = overdueInstallmentDueOn(d(2252, 3, 11));
+        reconcile(origin, d(2252, 4, 2));
+        double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
+
+        payInFull(origin, d(2252, 3, 28), d(2252, 4, 2));
+        awaitEventsDrained();
+
+        assertThat(summaryOf(origin)).containsExactly("2252-03-12..2252-03-31:18:3600.00");
+        assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(1.0);
+        assertScenarioInvariants(d(2252, 4, 2));
+    }
+
+    @Test
+    @Tag("D-293")
+    @Tag("D-332")
+    void excessOfAPaymentDatedBeforeAnIssuedCloseSkipsTheDaysFrozenByAWithdrawalRegisteredAfterTheClose() {
+        arrange(2254);
+        publishDefaults(2254);
+        Invoice origin = overdueInstallmentDueOn(d(2254, 3, 11));
+        reconcile(origin, d(2254, 4, 1));
+        withdrawCourseEnrollmentOn(d(2254, 3, 25));
+        double before = meterRegistry.counter("billing_late_fees_overcharged_days_total").count();
+
+        payInFull(origin, d(2254, 3, 20), d(2254, 4, 2));
+        awaitEventsDrained();
+
+        assertThat(summaryOf(origin)).containsExactly("2254-03-12..2254-03-31:20:4000.00");
+        assertThat(meterRegistry.counter("billing_late_fees_overcharged_days_total").count() - before).isEqualTo(5.0);
     }
 }

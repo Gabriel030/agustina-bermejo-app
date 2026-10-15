@@ -288,6 +288,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     @Test
     @Tag("D-331")
     @Tag("D-332")
+    @Tag("D-383")
     void installmentStillInGraceAtMonthCloseIsChargedWhenItBecomesOverdue() {
         arrange(2101);
         publish(10, "0.002", 10, true, true, d(2101, 1, 1));

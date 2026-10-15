@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public record LateFeeAccrualPeriod(LocalDate firstDay, LocalDate lastDay) {
 
@@ -22,13 +23,17 @@ public record LateFeeAccrualPeriod(LocalDate firstDay, LocalDate lastDay) {
         return (int) ChronoUnit.DAYS.between(firstDay, lastDay) + 1;
     }
 
-    public int daysAfter(LocalDate day) {
+    public int chargedDaysAfter(LocalDate day, Predicate<LocalDate> chargedOn) {
         Objects.requireNonNull(day, "day");
-        if (!lastDay.isAfter(day)) {
-            return 0;
-        }
+        Objects.requireNonNull(chargedOn, "chargedOn");
         LocalDate from = firstDay.isAfter(day) ? firstDay : day.plusDays(1);
-        return (int) ChronoUnit.DAYS.between(from, lastDay) + 1;
+        int charged = 0;
+        for (LocalDate current = from; !current.isAfter(lastDay); current = current.plusDays(1)) {
+            if (chargedOn.test(current)) {
+                charged++;
+            }
+        }
+        return charged;
     }
 
     public YearMonth accrualMonth() {
