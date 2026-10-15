@@ -39,6 +39,7 @@ class DailyLateFeeMigrationTest {
     @Test
     @Tag("D-330")
     @Tag("D-210")
+    @Tag("D-382")
     void migrationConvertsMonthlyToDailyRateAndDisablesCharging() {
         try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")) {
             postgres.start();
