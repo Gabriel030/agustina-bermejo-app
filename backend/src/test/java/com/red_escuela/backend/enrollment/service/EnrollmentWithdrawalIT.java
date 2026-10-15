@@ -440,10 +440,12 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         Future<Integer> withdrawing = pool.submit(() -> mockMvc.perform(post("/students/" + student.studentId() + "/withdraw")
                 .header("Authorization", "Bearer " + administrative.token()).contentType(APPLICATION_JSON)
                 .content("{\"reason\":\"ABANDONO\",\"detail\":\"x\"}")).andReturn().getResponse().getStatus());
-        await().atMost(Duration.ofSeconds(15)).until(() -> jdbc.queryForObject(
-                "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) > 0);
-
-        releaseEnrollment.countDown();
+        try {
+            await().atMost(Duration.ofSeconds(15)).until(() -> jdbc.queryForObject(
+                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock' and datname = current_database()", Long.class) > 0);
+        } finally {
+            releaseEnrollment.countDown();
+        }
         enrolling.get();
         int withdrawalStatus = withdrawing.get();
         pool.shutdown();
