@@ -393,7 +393,6 @@
 							<coverageThreshold>0</coverageThreshold>
 							<failWhenNoMutations>false</failWhenNoMutations>
 							<threads>4</threads>
-							<withHistory>true</withHistory>
 							<historyInputFile>${project.build.directory}/pit-history/history.bin</historyInputFile>
 							<historyOutputFile>${project.build.directory}/pit-history/history.bin</historyOutputFile>
 							<outputFormats>

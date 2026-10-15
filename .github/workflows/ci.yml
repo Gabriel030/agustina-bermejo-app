@@ -187,16 +187,28 @@ jobs:
 
       - name: Restore the PIT incremental history
         id: pit-history
-        uses: actions/cache@v4
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
         with:
           path: backend/target/pit-history
-          key: pit-history-${{ github.run_id }}
+          key: pit-history-no-exact-match
           restore-keys: |
-            pit-history-
+            pit-history-pr-${{ github.event.number }}-
+            pit-history-${{ github.base_ref }}-
 
       - name: Run PIT with the 90 percent threshold
         working-directory: backend
-        run: ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage
+        run: |
+          set -o pipefail
+          mkdir -p target/pit-history
+          ./mvnw -B -P mutation test-compile org.pitest:pitest-maven:mutationCoverage 2>&1 | tee "$RUNNER_TEMP/pit.log"
+
+      - name: Save the PIT incremental history
+        if: always() && hashFiles('backend/target/pit-history/history.bin') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: backend/target/pit-history
+          key: pit-history-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Summarize the PIT run
         if: always()
@@ -205,7 +217,8 @@ jobs:
           {
             echo "### PIT mutation testing"
             echo "- Duration: $(( $(date +%s) - PIT_START ))s"
-            echo "- Incremental history restored: ${{ steps.pit-history.outputs.cache-matched-key != '' }}"
+            echo "- Incremental history restored: ${{ steps.pit-history.outputs.cache-matched-key != '' }} (${{ steps.pit-history.outputs.cache-matched-key }})"
+            grep -hE "Incremental analysis reduced|Created [0-9]+ mutation test units$|Generated [0-9]+ mutations|Calculated coverage|Will (read|write) history|run mutation analysis" "$RUNNER_TEMP/pit.log" | sed 's/^/- /' || true
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the PIT report
