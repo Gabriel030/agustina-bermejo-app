@@ -11,7 +11,6 @@ import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepos
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
-import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +26,12 @@ import java.util.concurrent.Future;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SlowTest(reason = "Real payments, reversals and async listeners over a shared Postgres; each scenario needs its own data and the class shares one Spring context, so it cannot be split without a new context")
 class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
     private LateFeeAccrualStep accrualStep;
+    @Autowired
+    private LateFeeOnInvoiceSettledListener settledListener;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     @Autowired
@@ -97,11 +97,8 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
         InvoicePaidDomainEvent again = InvoicePaidDomainEvent.paidFor(origin.getId(), origin.getStudentCurrentAccountId(),
                 InvoicePaymentEvent.FULL_PAYMENT_ALLOCATED.name(), d(2233, 3, 20));
 
-        transactionTemplate.executeWithoutResult(status -> {
-            eventPublisher.publishEvent(again);
-            eventPublisher.publishEvent(again);
-        });
-        awaitEventsDrained();
+        settledListener.reconcileLateFeesOfSettledInvoice(again);
+        settledListener.reconcileLateFeesOfSettledInvoice(again);
         accrualStep.accrueLateFees(d(2233, 3, 21));
 
         assertThat(summaryOf(origin)).containsExactly("2233-03-12..2233-03-20:9:1800.00");
