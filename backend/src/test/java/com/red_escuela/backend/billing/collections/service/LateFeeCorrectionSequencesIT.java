@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -36,7 +37,7 @@ class LateFeeCorrectionSequencesIT extends AbstractLateFeeCorrectionIT {
     private LateFeeChargeRepository chargeRepository;
 
     private List<Long> debitNotesIn(InvoicePaymentStatus... statuses) {
-        List<String> names = java.util.Arrays.stream(statuses).map(Enum::name).toList();
+        List<String> names = Arrays.stream(statuses).map(Enum::name).toList();
         return jdbc.queryForList("select c.debit_note_id from late_fee_charge c join invoice d on d.id = c.debit_note_id "
                 + "join invoice o on o.id = c.origin_invoice_id where o.student_current_account_id = ? and d.payment_status in ("
                 + String.join(",", names.stream().map(name -> "'" + name + "'").toList()) + ") order by c.debit_note_id", Long.class, accountId());

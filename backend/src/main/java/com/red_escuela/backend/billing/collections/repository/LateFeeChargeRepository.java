@@ -56,6 +56,8 @@ public interface LateFeeChargeRepository extends Repository<LateFeeCharge, Long>
                 left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
                 where l.invoice_id = c.origin_invoice_id order by l.id limit 1) e on e.end_date is not null
             where c.id > :lastId and d.document_status = 'ISSUED' and d.payment_status not in ('CANCELLED', 'PAYMENT_UNDER_REVIEW')
+              and exists (select 1 from invoice_line nl where nl.invoice_id = d.id
+                          and (nl.amount - nl.discount_amount) - nl.credited_amount - nl.free_credited_amount > 0)
               and c.charged_days - coalesce((select sum(k.corrected_days) from late_fee_charge_correction k where k.late_fee_charge_id = c.id), 0)
                   > greatest(0, least(c.period_end, e.end_date) - c.period_start + 1)
             order by c.id

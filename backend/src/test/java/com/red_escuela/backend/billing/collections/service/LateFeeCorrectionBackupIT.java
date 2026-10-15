@@ -188,4 +188,17 @@ class LateFeeCorrectionBackupIT extends AbstractLateFeeCorrectionIT {
         assertThat(creditNotesOf(debitNoteId)).hasSize(1);
         assertThat(fiscalWindowNoticesOf(secretariat, debitNoteId)).isZero();
     }
+
+    @Test
+    @Tag("D-375")
+    void aDebitNoteWhoseLineHasNoCreditableBalanceIsNotACandidateOfTheSweep() {
+        Invoice origin = aprilDebitNoteOrigin(2182);
+        Long debitNoteId = debitNoteIdOf(origin, 0);
+        Long chargeId = (Long) chargesOf(origin).get(0).get("id");
+        endEnrollmentSilently("WITHDRAWN", d(2182, 4, 28), d(2182, 5, 3));
+        assertThat(correctionService.findChargeIdsWithUncorrectedDaysAfter(0L, 100_000)).contains(chargeId);
+        jdbc.update("update invoice_line set free_credited_amount = amount where invoice_id = ?", debitNoteId);
+
+        assertThat(correctionService.findChargeIdsWithUncorrectedDaysAfter(0L, 100_000)).doesNotContain(chargeId);
+    }
 }

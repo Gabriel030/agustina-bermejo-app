@@ -103,7 +103,7 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         courseEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(d(2135, 4, 28), person.getId()));
         awaitEventsDrained();
 
-        assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ? and reason = 'LATE_FEE_CORRECTION'", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("100.00");
+        assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ? and reason = 'LATE_FEE_CORRECTION'", BigDecimal.class, debitNoteId)).isEqualByComparingTo("100.00");
         assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, debitNoteId)).isEqualTo(2);
         assertThat(meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count()).isGreaterThan(cappedBefore);
         assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
