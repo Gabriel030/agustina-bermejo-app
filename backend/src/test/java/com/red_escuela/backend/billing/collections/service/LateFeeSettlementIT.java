@@ -5,6 +5,7 @@ import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SlowTest(reason = "Real payments, reversals and async listeners over a shared Postgres; each scenario needs its own data and the class shares one Spring context, so it cannot be split without a new context")
 class LateFeeSettlementIT extends AbstractLateFeeScenarioIT {
 
     @Autowired

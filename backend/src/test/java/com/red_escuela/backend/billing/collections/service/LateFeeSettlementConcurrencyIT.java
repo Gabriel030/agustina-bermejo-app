@@ -11,6 +11,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.shared.time.MutableClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@SlowTest(reason = "Real payments, reversals and async listeners over a shared Postgres; each scenario needs its own data and the class shares one Spring context, so it cannot be split without a new context")
 class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
     @Autowired
@@ -193,5 +196,19 @@ class LateFeeSettlementConcurrencyIT extends AbstractLateFeeScenarioIT {
 
         assertThat(chargesOf(origin).get(0).get("fact_date").toString()).isEqualTo("2238-03-20");
         assertThat(chargesOf(origin).get(0).get("nd_issue").toString()).isEqualTo("2238-05-10");
+    }
+
+    @Test
+    @Tag("D-332")
+    void theCompletenessInvariantDetectsAPaidInstallmentWithoutItsFinalDebitNoteAndPassesOnceRecovered() {
+        arrange(2239);
+        publishDefaults(2239);
+        Invoice origin = overdueInstallmentDueOn(d(2239, 3, 11));
+        BillingTestFixtures.payInvoiceInFullWithMoneyOf(origin, d(2239, 3, 20), d(2239, 3, 20));
+
+        assertThatThrownBy(() -> invariants.assertLateFeesAreCompleteAt(d(2239, 3, 21))).hasMessageContaining("I-11h").hasMessageContaining("2239-03-12");
+        accrualStep.accrueLateFees(d(2239, 3, 21));
+
+        invariants.assertLateFeesAreCompleteAt(d(2239, 3, 21));
     }
 }
