@@ -15,8 +15,8 @@ describe('ADJUSTMENT_TYPE_LABELS', () => {
     ['PROMOTION', 'Promoción'],
     ['ANNUAL_UPFRONT', 'Pago anual'],
     ['COHORT_ENTRY', 'Ingreso de cohorte'],
-,
-,
+    ['MANUAL', 'Manual'],
+    ['INDIVIDUAL', 'Descuento individual'],
   ])('traduce el tipo de descuento %s', (type, label) => {
     expect(ADJUSTMENT_TYPE_LABELS[type]).toBe(label);
   });
