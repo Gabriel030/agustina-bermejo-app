@@ -346,6 +346,10 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         row.put("effective_date", LocalDate.of(2027, 3, 3));
         row.put("recorded_at", LocalDateTime.now());
         row.put("concept", "Movimiento");
+        if (type.equals("PAYMENT_RECEIVED") || type.equals("CREDIT_NOTE_ISSUED")) {
+            row.put("allocatable_amount", amount);
+            row.put("allocatable_amount_currency", "ARS");
+        }
         for (int i = 0; i < source.length; i += 2) {
             row.put((String) source[i], source[i + 1]);
         }

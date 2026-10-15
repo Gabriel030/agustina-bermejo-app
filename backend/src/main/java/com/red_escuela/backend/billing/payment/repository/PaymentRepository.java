@@ -13,5 +13,7 @@ public interface PaymentRepository extends Repository<Payment, Long> {
 
     Optional<Payment> findById(Long id);
 
+    List<Payment> findByIdIn(Collection<Long> ids);
+
     List<Payment> findByStudentCurrentAccountIdInOrderByRegisteredAtDescIdDesc(Collection<Long> studentCurrentAccountIds);
 }
