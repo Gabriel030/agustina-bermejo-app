@@ -88,6 +88,25 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         assertThat(jdbc.queryForObject("select total_amount from credit_note where invoice_id = ?", java.math.BigDecimal.class, debitNoteId)).isEqualByComparingTo("100.00");
         assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, debitNoteId)).isEqualTo(2);
         assertThat(meterRegistry.counter("billing_late_fee_corrections_capped_total", "currency", "ARS").count()).isGreaterThan(cappedBefore);
+        assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
+    }
+
+    @Test
+    void aDebitNoteIssuedWithDaysAfterAnAlreadyRegisteredWithdrawalIsNotMaskedByASecondCorrectionRun() {
+        arrange(2136);
+        publish(0, "0.002", 10, false, true, d(2136, 1, 1));
+        Invoice origin = overdueInstallmentDueOn(d(2136, 4, 11));
+        MutableClock.INSTANCE.setDate(d(2136, 5, 3));
+        courseEnrollmentService.withdraw(enrollment.getId(), EnrollmentWithdrawal.voluntaryRegisteredBy(d(2136, 4, 28), person.getId()));
+        awaitEventsDrained();
+        reconcile(origin, d(2136, 5, 4));
+        publish(0, "0.002", 10, true, true, d(2136, 4, 28));
+        assertThat(summaryOf(origin)).containsExactly("2136-04-12..2136-04-30:19:3800.00");
+
+        int corrected = correctionService.correctLateFeesOfEnrollment(null, enrollment.getId(), d(2136, 5, 4));
+
+        assertThat(corrected).isEqualTo(1);
+        assertThat(invariants.lateFeeCorrectionsAreConsistent()).hasSize(1).allMatch(v -> v.startsWith("I-11i"));
     }
 
     @Test
@@ -133,6 +152,10 @@ class LateFeeCorrectionIntegrityIT extends AbstractLateFeeScenarioIT {
         assertThat(violationsAfter("update credit_note set recipient_snapshot = '{\"name\":\"Otra persona\"}'::jsonb where invoice_id = " + debitNoteId))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
         assertThat(violationsAfter("update credit_note set reason = 'BILLING_ERROR' where invoice_id = " + debitNoteId))
+                .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
+        assertThat(violationsAfter("update invoice set issue_date = '2132-05-04' where id = " + debitNoteId))
+                .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
+        assertThat(violationsAfter("update course_enrollment set status = 'ENROLLED', completion_date = null, withdrawal_effective_date = null, withdrawal_registered_on = null where id = " + enrollment.getId()))
                 .hasSize(1).allMatch(v -> v.startsWith("I-11i"));
         assertThat(invariants.lateFeeCorrectionsAreConsistent()).isEmpty();
     }

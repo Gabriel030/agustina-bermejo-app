@@ -146,7 +146,17 @@ public final class ArchitectureRules {
                         (com.tngtech.archunit.core.domain.JavaCall<?> call) -> call.getTargetOwner().getName().equals(ROOT + ".billing.note.domain.CreditNote")
                                 && call.getTarget().getName().equals("toInvoiceCancellationApplication")))
                 .allowEmptyShould(true)
-                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation");
+                .because("a cancellation reaches an invoice only through the CANCEL_INVOICE operation or the late fee correction issuer, which keeps the charge key");
+    }
+
+    public static ArchRule lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
+        return noClasses()
+                .that().doNotHaveFullyQualifiedName(ROOT + ".billing.collections.operation.LateFeeCorrectionCreditNoteOperation")
+                .and().doNotHaveFullyQualifiedName(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")
+                .should().callMethodWhere(target(owner(assignableTo(ROOT + ".billing.note.service.LateFeeCorrectionCreditNoteIssuer")))
+                        .and(target(name("issueCorrectionCreditNote"))))
+                .allowEmptyShould(true)
+                .because("a late fee correction credit note must go through its operation, which validates the target debit note");
     }
 
     public static ArchRule invoicesAreIssuedOnlyByInvoiceIssuingService() {

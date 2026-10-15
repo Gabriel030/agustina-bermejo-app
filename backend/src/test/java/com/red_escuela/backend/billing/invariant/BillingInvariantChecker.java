@@ -297,6 +297,13 @@ public final class BillingInvariantChecker {
              left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
              where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
 
+    private static final String ENROLLMENT_REGISTRATION_OF_ORIGIN = """
+            (select coalesce(pe.withdrawal_registered_on, ce.withdrawal_registered_on, pe.completion_date::date, ce.completion_date::date)
+             from invoice_line l
+             left join program_enrollment pe on pe.id = l.program_enrollment_id and pe.status in ('COMPLETED', 'WITHDRAWN')
+             left join course_enrollment ce on ce.id = l.course_enrollment_id and ce.status in ('WITHDRAWN', 'APPROVED', 'FAILED', 'WAITLIST_EXPIRED')
+             where l.invoice_id = c.origin_invoice_id order by l.id limit 1)""";
+
     private static String frozenOn(String dayExpression) {
         return "(%1$s ->> 'freezeLateFeesOnWithdrawal' = 'true' and %2$s is not null and %3$s > %2$s)".formatted(termsOn(ENROLLMENT_END_OF_ORIGIN), ENROLLMENT_END_OF_ORIGIN, dayExpression);
     }
@@ -372,21 +379,23 @@ public final class BillingInvariantChecker {
     }
 
     public List<String> lateFeeCorrectionsAreConsistent() {
-        return violations("I-11i late fee correction outside its debit note, within the enrollment, or with a credit note that differs from the complement", """
+        return violations("I-11i late fee correction outside its debit note, within the enrollment, or issued after the withdrawal was registered, or with a credit note above the complement", """
                 select 'correction ' || k.id || ' debit note ' || k.debit_note_id
                 from late_fee_charge_correction k
                 join late_fee_charge c on c.id = k.late_fee_charge_id
                 join credit_note n on n.id = k.credit_note_id
                 join invoice d on d.id = k.debit_note_id
                 where k.debit_note_id > ? and (
-                    k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
-                    or k.first_corrected_day <= %1$s
+                    k.debit_note_id <> c.debit_note_id
+                    or k.first_corrected_day < c.period_start or k.last_corrected_day > c.period_end
+                    or %1$s is null or k.first_corrected_day <= %1$s
+                    or %2$s is null or d.issue_date > %2$s
                     or n.reason <> 'LATE_FEE_CORRECTION' or n.invoice_id <> k.debit_note_id or n.recipient_snapshot is distinct from d.student_snapshot
-                    or n.total_amount <> round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
+                    or n.total_amount > round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
                                                                                                 where p.late_fee_charge_id = c.id and p.id < k.id)), 2)
                                       - round(c.base_amount * c.daily_rate * (c.charged_days - (select coalesce(sum(p.corrected_days), 0) from late_fee_charge_correction p
                                                                                                 where p.late_fee_charge_id = c.id and p.id <= k.id)), 2))
-                """.formatted(ENROLLMENT_END_OF_ORIGIN), baselineInvoiceId);
+                """.formatted(ENROLLMENT_END_OF_ORIGIN, ENROLLMENT_REGISTRATION_OF_ORIGIN), baselineInvoiceId);
     }
 
     public List<String> lateFeesCoverEveryChargeableDayAt(java.time.LocalDate today) {

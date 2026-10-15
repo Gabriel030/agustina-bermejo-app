@@ -113,7 +113,7 @@ public class LateFeeCorrectionIssuer {
         PolicyEvaluationResult evaluation = correctionPolicies.evaluateRulesUntilFirstViolation(new LateFeeCorrectionContext(debitNote.getId(), debitNote.getDocumentType(),
                 debitNote.getInvoiceType(), debitNote.getDocumentStatus(), debitNote.getPaymentStatus()));
         if (!evaluation.allowed()) {
-            log.info("Corrección de recargo diferida: nota de débito={}, codigos={}", debitNote.getInvoiceNumber().value(), evaluation.describeDenials());
+            log.warn("Corrección de recargo diferida hasta que se decida el comprobante o se resuelva la causa: nota de débito={}, codigos={}", debitNote.getInvoiceNumber().value(), evaluation.describeDenials());
             return debitNote.getPaymentStatus() == InvoicePaymentStatus.PAYMENT_UNDER_REVIEW ? LateFeeCorrectionOutcome.DEFERRED : LateFeeCorrectionOutcome.NOTHING_TO_CORRECT;
         }
         IssueLateFeeCorrectionCommand command = new IssueLateFeeCorrectionCommand(lateFeeChargeId, debitNote.getId(), charge.getStudentCurrentAccountId(), planned.get(),

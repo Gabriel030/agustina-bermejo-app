@@ -456,6 +456,12 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-375")
+    void lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
+        ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(MAIN_CLASSES);
+    }
+
+    @Test
     @Tag("D-144")
     void writeRulesDetectCallersThatAreNotOperations() {
         assertThatThrownBy(() -> ArchitectureRules.economicStateIsPersistedOnlyByOperations(INVOICE_REPOSITORY_CLASS, com.red_escuela.backend.architecture.fixture.billing.ledger.FixtureOperation.class).check(fixtureClasses()))

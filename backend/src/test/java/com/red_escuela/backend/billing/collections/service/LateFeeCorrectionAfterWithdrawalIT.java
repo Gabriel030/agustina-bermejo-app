@@ -312,6 +312,27 @@ class LateFeeCorrectionAfterWithdrawalIT extends AbstractLateFeeScenarioIT {
     }
 
     @Test
+    @Tag("D-127")
+    void aWithdrawalInformedBeforeTheWholeMonthCancelsTheDebitNoteOfThatMonthCorrectingAllItsThirtyOneDays() {
+        arrange(2123);
+        publishDefaults(2123);
+        Invoice origin = overdueInstallmentDueOn(d(2123, 3, 11));
+        reconcile(origin, d(2123, 6, 1));
+        assertThat(chargesOf(origin).stream().map(c -> c.get("charged_days")).toList()).containsExactly(20, 30, 31);
+        Long mayNote = debitNoteIdOf(origin, 2);
+
+        withdrawRegisteredOn(d(2123, 5, 31), d(2123, 4, 30));
+
+        List<Map<String, Object>> creditNotes = creditNotesOf(mayNote);
+        assertThat(creditNotes).hasSize(1);
+        assertThat((BigDecimal) creditNotes.get(0).get("total_amount")).isEqualByComparingTo("6200.00");
+        assertThat(text("select payment_status from invoice where id = ?", mayNote)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("select corrected_days from late_fee_charge_correction where debit_note_id = ?", Integer.class, mayNote)).isEqualTo(31);
+        assertThat(creditNotesOf(debitNoteIdOf(origin, 0))).isEmpty();
+        assertThat(creditNotesOf(debitNoteIdOf(origin, 1))).isEmpty();
+    }
+
+    @Test
     @Tag("D-293")
     void theDebitNoteOfAnEnrollmentFeeIsCorrectedLikeThatOfAnInstallment() {
         arrange(2117);
