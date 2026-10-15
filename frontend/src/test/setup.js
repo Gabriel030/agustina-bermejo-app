@@ -45,6 +45,14 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+globalThis.ResizeObserver =
+  globalThis.ResizeObserver ||
+  class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+
 // MSW intercepta a nivel de red (fetch real) — nunca se mockea apiFetch ni los
 // hooks directamente, ver docs/context/testing.md.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

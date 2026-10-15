@@ -31,6 +31,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `Table` `TableHeader` `TableBody` `TableRow` `TableHead` `TableCell` [ui] | Toda tabla, dentro de un `GlassCard` (sin borde propio). Excepción: grillas con rowSpan/colSpan (asistencia) | `TableRow` admite `onClick` |
 | `StatCard` [shared] | KPI/métrica (dentro de `Stagger` en grillas) | `label`, `children` |
+| `ProgressBar` [shared] | barra de un solo valor (avance, porcentaje), `role="progressbar"`; nunca la librería de gráficos | `value` (0-100), `label`, `tone`, `showValue` |
+| `components/charts/*` [shared] | gráficos con Recharts 3.8.0 encapsulado: `TrendBarChart`, `StackedBarChart`, `TrendLineChart`, `StackedAreaChart`, `ComposedTrendChart`, `GoalLine`, `ChartFrame` (título, carga, vacío, "Ver como tabla"); `recharts` solo se importa dentro de ese directorio (ESLint) | `title`, `subtitle`, `ariaLabel`, `data` (`{label, [key]: n}`), `series` (`{key, label, color?, unit?, type?}`), `unit` (`money`/`percent`/`days`/`count`), `currency`, `goal`, `loading`, `onCategoryClick` |
 | `StatusPill` [shared] | Estado con color semántico | `tone`: `success` `warning` `danger` `accent` `neutral`; `dot` |
 | `EstadoSolicitudBadge` [shared] | `StatusPill` ya mapeado para estados de solicitud | `status` |
 | `Badge` [ui] | Sin uso hoy; preferir `StatusPill` | variantes `default` `secondary` `destructive` `outline` `ghost` `link` |
