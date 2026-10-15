@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.collections.domain.DailyLateFeeSchedule;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPeriod;
 import com.red_escuela.backend.billing.collections.domain.LateFeeAccrualPlanner;
 import com.red_escuela.backend.billing.collections.domain.LateFeeCutoff;
+import com.red_escuela.backend.billing.collections.domain.LateFeeFreeze;
 import com.red_escuela.backend.billing.collections.domain.PlannedLateFeePeriod;
 import com.red_escuela.backend.billing.collections.policy.LateFeeDebitNoteDraftFacts;
 import com.red_escuela.backend.billing.collections.policy.LateFeeIssuingContext;
@@ -17,7 +18,6 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceDocumentStatus;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLine;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.enrollment.usecase.EnrollmentLifecycleQuery;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -31,15 +31,15 @@ public class LateFeeContextLoader {
     private static final Set<InvoicePaymentStatus> STATUSES_WITH_LATE_FEE_CANDIDATES = Set.of(InvoicePaymentStatus.OVERDUE, InvoicePaymentStatus.PAYMENT_UNDER_REVIEW, InvoicePaymentStatus.PAID);
 
     private final LatePaymentVersionResolver versionResolver;
-    private final EnrollmentLifecycleQuery enrollmentLifecycle;
+    private final LateFeeFreezeResolver freezeResolver;
     private final LateFeeCalculationStrategy calculationStrategy;
     private final InvoiceSettlementQueryService settlementQuery;
     private final LateFeeAccrualPlanner planner = new LateFeeAccrualPlanner();
 
-    public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, EnrollmentLifecycleQuery enrollmentLifecycle,
+    public LateFeeContextLoader(LatePaymentVersionResolver versionResolver, LateFeeFreezeResolver freezeResolver,
                                 LateFeeCalculationStrategy calculationStrategy, InvoiceSettlementQueryService settlementQuery) {
         this.versionResolver = versionResolver;
-        this.enrollmentLifecycle = enrollmentLifecycle;
+        this.freezeResolver = freezeResolver;
         this.calculationStrategy = calculationStrategy;
         this.settlementQuery = settlementQuery;
     }
@@ -73,24 +73,13 @@ public class LateFeeContextLoader {
             return List.of();
         }
         LateFeeOriginFacts facts = originFactsOf(origin);
-        Optional<LocalDate> enrollmentEndDate = findEnrollmentEndDate(facts);
-        boolean frozenByRuleOfTheEndDate = enrollmentEndDate.map(end -> timeline.termsOn(end, dueDateTerms).freezeLateFeesOnWithdrawal()).orElse(false);
-        Predicate<LocalDate> frozenOn = day -> frozenByRuleOfTheEndDate && enrollmentEndDate.map(day::isAfter).orElse(false);
+        LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
+        Predicate<LocalDate> frozenOn = freeze.frozenOn();
         List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled(), frozenOn);
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
-                dueDateVersion.get().versionId(), dueDateTerms, frozenOn, enrollmentEndDate,
+                dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
                 resolvedCutoff.get().settlementAllocationId())).toList();
-    }
-
-    private Optional<LocalDate> findEnrollmentEndDate(LateFeeOriginFacts facts) {
-        if (facts.programEnrollmentId() != null) {
-            return enrollmentLifecycle.findProgramEnrollmentEndDate(facts.programEnrollmentId());
-        }
-        if (facts.courseEnrollmentId() != null) {
-            return enrollmentLifecycle.findCourseEnrollmentEndDate(facts.courseEnrollmentId());
-        }
-        return Optional.empty();
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {

@@ -247,6 +247,17 @@ class InvoiceCancellationIT extends AbstractInvoiceCancellationIT {
     }
 
     @Test
+    @Tag("D-127")
+    @Tag("D-375")
+    void lateFeeCorrectionReasonIsRejected() throws Exception {
+        Scenario scenario = unpaidInvoice("80000.00");
+
+        MvcResult result = requestCancellation(scenario.invoiceId(), newStaff("DIRECTOR"), cancellationBody("LATE_FEE_CORRECTION", "Correccion"), 400);
+
+        assertThat(result.getResponse().getContentAsString()).contains("INVALID_CREDIT_NOTE_REASON");
+    }
+
+    @Test
     @Tag("B2-12")
     @Tag("D-238")
     void withdrawalReasonIsRejected() throws Exception {

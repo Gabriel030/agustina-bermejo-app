@@ -99,15 +99,19 @@ public class ProgramEnrollment implements BillableEnrollment {
     @Column(name = "withdrawal_effective_date")
     private LocalDate withdrawalEffectiveDate;
 
+    @Column(name = "withdrawal_registered_on")
+    private LocalDate withdrawalRegisteredOn;
+
     @Column(name = "withdrawn_by_person_id")
     private Long withdrawnByPersonId;
 
     @Transient
     private ProgramEnrollmentGraduatedEvent pendingGraduationEvent;
 
-    public void markWithdrawn(LocalDate effectiveDate, LocalDateTime completionMoment, Long registeredByPersonId) {
+    public void markWithdrawn(LocalDate effectiveDate, LocalDateTime completionMoment, LocalDate registeredOn, Long registeredByPersonId) {
         this.status = ProgramEnrollmentStatus.WITHDRAWN;
         this.withdrawalEffectiveDate = effectiveDate;
+        this.withdrawalRegisteredOn = registeredOn;
         this.completionDate = completionMoment;
         this.withdrawnByPersonId = registeredByPersonId;
     }

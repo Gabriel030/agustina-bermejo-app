@@ -15,7 +15,7 @@ class WithdrawnEnrollmentFactsTest {
 
     @Test
     void programEnrollmentFactsExposeOnlyTheProgramEnrollment() {
-        WithdrawnEnrollmentFacts facts = WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, DATE, WithdrawalCause.VOLUNTARY);
+        WithdrawnEnrollmentFacts facts = WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, DATE, DATE, WithdrawalCause.VOLUNTARY);
 
         assertThat(facts.programEnrollment()).contains(10L);
         assertThat(facts.courseEnrollment()).isEmpty();
@@ -23,7 +23,7 @@ class WithdrawnEnrollmentFactsTest {
 
     @Test
     void courseEnrollmentFactsExposeOnlyTheCourseEnrollment() {
-        WithdrawnEnrollmentFacts facts = WithdrawnEnrollmentFacts.ofCourseEnrollment(1L, 20L, DATE, WithdrawalCause.NONPAYMENT);
+        WithdrawnEnrollmentFacts facts = WithdrawnEnrollmentFacts.ofCourseEnrollment(1L, 20L, DATE, DATE, WithdrawalCause.NONPAYMENT);
 
         assertThat(facts.courseEnrollment()).contains(20L);
         assertThat(facts.programEnrollment()).isEmpty();
@@ -31,18 +31,18 @@ class WithdrawnEnrollmentFactsTest {
 
     @Test
     void factsWithBothEnrollmentsAreRejected() {
-        assertThatThrownBy(() -> new WithdrawnEnrollmentFacts(1L, 10L, 20L, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new WithdrawnEnrollmentFacts(1L, 10L, 20L, DATE, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void factsWithNoEnrollmentAreRejected() {
-        assertThatThrownBy(() -> new WithdrawnEnrollmentFacts(1L, null, null, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new WithdrawnEnrollmentFacts(1L, null, null, DATE, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void factsWithoutStudentDateOrCauseAreRejected() {
-        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(null, 10L, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, null, WithdrawalCause.VOLUNTARY)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, DATE, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(null, 10L, DATE, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, null, DATE, WithdrawalCause.VOLUNTARY)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> WithdrawnEnrollmentFacts.ofProgramEnrollment(1L, 10L, DATE, DATE, null)).isInstanceOf(NullPointerException.class);
     }
 }

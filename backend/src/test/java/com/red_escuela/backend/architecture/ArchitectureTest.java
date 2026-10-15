@@ -86,6 +86,14 @@ class ArchitectureTest {
     }
 
     @Test
+    @Tag("D-375")
+    void lateFeeCorrectionRuleDetectsAShortcutToTheIssuer() {
+        assertThatThrownBy(() -> ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(fixtureClasses()))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LateFeeCorrectionShortcutFixture");
+    }
+
+    @Test
     @Tag("B2-33")
     @Tag("D-127")
     void cancellationRuleDetectsABackdoor() {
@@ -453,6 +461,12 @@ class ArchitectureTest {
     @Tag("D-144")
     void currentAccountServiceIsCalledOnlyByOperations() {
         ArchitectureRules.currentAccountServiceIsCalledOnlyByOperations(ACCOUNT_SERVICE_CLASS, com.red_escuela.backend.billing.operation.BillingOperation.class).check(MAIN_CLASSES);
+    }
+
+    @Test
+    @Tag("D-375")
+    void lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation() {
+        ArchitectureRules.lateFeeCorrectionCreditNotesAreIssuedOnlyByTheirOperation().check(MAIN_CLASSES);
     }
 
     @Test

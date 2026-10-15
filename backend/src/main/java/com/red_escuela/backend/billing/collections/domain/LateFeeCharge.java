@@ -98,6 +98,10 @@ public class LateFeeCharge {
         this.createdAt = ApplicationTime.now();
     }
 
+    public LateFeeChargeSnapshot toSnapshot() {
+        return new LateFeeChargeSnapshot(id, debitNoteId, new LateFeeAccrualPeriod(periodStart, periodEnd), chargedDays, baseAmount, dailyRate);
+    }
+
     public static LateFeeCharge recordLateFeeCharge(Long debitNoteId, Long originInvoiceId, Long studentCurrentAccountId, PlannedLateFeePeriod planned,
                                                     Long latePaymentVersionId, Percentage dailyRate, NonNegativeMoney baseAmount, Optional<Long> settlementAllocationId) {
         Objects.requireNonNull(planned, "planned");
