@@ -103,7 +103,7 @@ public class StudentCurrentAccount {
     public CurrentAccountEntry recordPaymentReceivedCredit(Long paymentId, NonNegativeMoney amount, LocalDate paidOn, String concept) {
         Objects.requireNonNull(paymentId, "paymentId");
         requirePositiveAmountInAccountCurrency(amount);
-        CurrentAccountEntry entry = appendEntry(CurrentAccountEntryType.PAYMENT_RECEIVED, amount, paidOn, concept, CurrentAccountEntrySource.ofPayment(paymentId));
+        CurrentAccountEntry entry = appendEntry(CurrentAccountEntryType.PAYMENT_RECEIVED, amount, paidOn, concept, CurrentAccountEntrySource.ofPayment(paymentId), amount);
         unallocatedCreditAmount = unallocatedCreditAmount.plus(amount);
         return entry;
     }
@@ -126,7 +126,8 @@ public class StudentCurrentAccount {
         requireAccountCurrency(freeCreditAmount);
         NonNegativeMoney total = offsetAmount.plus(freeCreditAmount);
         requirePositiveAmountInAccountCurrency(total);
-        CurrentAccountEntry entry = appendEntry(CurrentAccountEntryType.CREDIT_NOTE_ISSUED, total, effectiveDate, concept, CurrentAccountEntrySource.ofCreditNote(creditNoteId));
+        CurrentAccountEntry entry = appendEntry(CurrentAccountEntryType.CREDIT_NOTE_ISSUED, total, effectiveDate, concept, CurrentAccountEntrySource.ofCreditNote(creditNoteId),
+                freeCreditAmount);
         unallocatedCreditAmount = unallocatedCreditAmount.plus(freeCreditAmount);
         return entry;
     }
@@ -190,6 +191,11 @@ public class StudentCurrentAccount {
 
     private CurrentAccountEntry appendEntry(CurrentAccountEntryType entryType, NonNegativeMoney amount, LocalDate effectiveDate, String concept,
                                            CurrentAccountEntrySource source) {
+        return appendEntry(entryType, amount, effectiveDate, concept, source, null);
+    }
+
+    private CurrentAccountEntry appendEntry(CurrentAccountEntryType entryType, NonNegativeMoney amount, LocalDate effectiveDate, String concept,
+                                           CurrentAccountEntrySource source, NonNegativeMoney allocatableAmount) {
         Objects.requireNonNull(effectiveDate, "effectiveDate");
         if (concept == null || concept.isBlank() || concept.length() > MAX_CONCEPT_LENGTH) {
             throw new IllegalArgumentException("The concept must have between 1 and " + MAX_CONCEPT_LENGTH + " characters");
@@ -197,7 +203,7 @@ public class StudentCurrentAccount {
         CurrentAccountBalance nextBalance = balance.applyEntry(entryType.direction(), amount);
         lastEntrySequence = lastEntrySequence + 1;
         balance = nextBalance;
-        return new CurrentAccountEntry(id, currency, lastEntrySequence, entryType, amount, nextBalance, effectiveDate, concept, source);
+        return new CurrentAccountEntry(id, currency, lastEntrySequence, entryType, amount, nextBalance, effectiveDate, concept, source, allocatableAmount);
     }
 
     private void requireAccountCurrency(NonNegativeMoney money) {

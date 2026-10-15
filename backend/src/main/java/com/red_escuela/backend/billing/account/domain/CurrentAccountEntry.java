@@ -68,6 +68,12 @@ public class CurrentAccountEntry {
     @Column(name = "effective_date", nullable = false, updatable = false)
     private LocalDate effectiveDate;
 
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "value.amount", column = @Column(name = "allocatable_amount", updatable = false)),
+            @AttributeOverride(name = "value.currency", column = @Column(name = "allocatable_amount_currency", updatable = false))})
+    private NonNegativeMoney allocatableAmount;
+
     @Column(name = "recorded_at", nullable = false, updatable = false)
     private LocalDateTime recordedAt;
 
@@ -91,13 +97,14 @@ public class CurrentAccountEntry {
 
     CurrentAccountEntry(Long studentCurrentAccountId, Currency currency, long sequenceNumber, CurrentAccountEntryType entryType,
                         NonNegativeMoney amount, CurrentAccountBalance runningBalance, LocalDate effectiveDate, String concept,
-                        CurrentAccountEntrySource source) {
+                        CurrentAccountEntrySource source, NonNegativeMoney allocatableAmount) {
         this.studentCurrentAccountId = studentCurrentAccountId;
         this.currency = currency;
         this.sequenceNumber = sequenceNumber;
         this.direction = entryType.direction();
         this.entryType = entryType;
         this.amount = amount;
+        this.allocatableAmount = allocatableAmount;
         this.runningBalance = runningBalance;
         this.effectiveDate = effectiveDate;
         this.recordedAt = ApplicationTime.now();

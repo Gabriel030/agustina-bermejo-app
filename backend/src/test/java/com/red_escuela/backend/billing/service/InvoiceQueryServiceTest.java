@@ -30,6 +30,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -127,6 +128,7 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @Tag("D-376")
     void breakdownIncludesPaymentsAndTheDescriptionOfTheCurrentPriceRevision() {
         Person director = persistPerson("director.breakdown1." + System.nanoTime());
         Person admin = persistPerson("admin.breakdown1." + System.nanoTime());
@@ -146,7 +148,10 @@ class InvoiceQueryServiceTest extends AbstractIntegrationTest {
         assertThat(breakdown.baseAmount()).isEqualTo(ars(10000));
         assertThat(breakdown.adjustments()).isEmpty();
         assertThat(breakdown.amountDue()).isEqualTo(ars(10000));
-        assertThat(breakdown.paymentsApplied()).hasSize(1);
+        assertThat(breakdown.paymentsApplied()).singleElement().satisfies(payment -> {
+            assertThat(payment.method()).isEqualTo("CASH");
+            assertThat(payment.amount()).isEqualTo(ars(10000));
+        });
         assertThat(breakdown.remainingBalance()).isEqualTo(ars(0));
         assertThat(breakdown.status()).isEqualTo("PAID");
     }

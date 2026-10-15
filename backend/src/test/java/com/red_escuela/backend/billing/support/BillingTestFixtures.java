@@ -103,11 +103,13 @@ public final class BillingTestFixtures {
         allocation.setInvoice(invoice);
         allocation.setAmountApplied(amount);
         payment.getAllocations().add(allocation);
-        bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).save(
-                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), effectiveDate, paidOn, ACTOR));
         StudentCurrentAccountService accounts = bean(StudentCurrentAccountService.class);
         StudentCurrentAccount account = accounts.lockStudentCurrentAccount(invoice.getStudentCurrentAccountId());
-        accounts.recordPaymentReceivedCredit(account, payment.getId(), NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
+        com.red_escuela.backend.billing.account.domain.CurrentAccountEntry credit = accounts.recordPaymentReceivedCredit(account, payment.getId(),
+                NonNegativeMoney.of(amount), paidOn, "Pago de prueba");
+        bean(com.red_escuela.backend.billing.account.repository.PaymentAllocationRepository.class).saveWithSources(
+                com.red_escuela.backend.billing.account.domain.PaymentAllocation.recordFullInvoiceAllocation(invoice, NonNegativeMoney.of(amount), effectiveDate, paidOn, ACTOR),
+                java.util.List.of(new com.red_escuela.backend.billing.account.domain.AllocationSourceShare(credit.getId(), payment.getId(), null, NonNegativeMoney.of(amount))));
         accounts.consumeUnallocatedCreditForAllocation(account, NonNegativeMoney.of(amount));
         bean(InvoiceRepository.class).flush();
         return invoice;
