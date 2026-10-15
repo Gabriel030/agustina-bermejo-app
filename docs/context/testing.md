@@ -148,6 +148,8 @@ Los límites son constantes de `.github/scripts/test-budget.py` (parámetros `--
 
 Las reglas de `TestSuiteRulesTest` usan `FreezingArchRule`, igual que las de `ArchitectureTest`: las violaciones existentes viven en `backend/src/test/resources/archunit-frozen/` y **solo pueden achicarse**. Si arreglás una, el archivo no se actualiza solo (`allowStoreUpdates=false`): borrá la línea a mano en el mismo PR. Nunca agregues líneas para tapar una violación nueva; corregí el test.
 
+**Congelado en CI.** El CI corre con `-Darchunit.freeze.store.default.allowStoreUpdate=false` (la propiedad se llama `allowStoreUpdate`, sin "s"; la `allowStoreUpdates` de `archunit.properties` no existe para ArchUnit y se ignora). Con esa flag, el CI falla si una regla congelada tiene una clave nueva (cambió su lista de paquetes o su `because`, o es una regla nueva) o si el almacén tiene líneas de violaciones ya corregidas. Para regenerar el almacén en local, corré el test **sin** la flag (`./mvnw test -Dtest=<Clase>`): ArchUnit crea las entradas nuevas en `archunit-frozen/` y `stored.rules`; commiteá esos archivos, borrá las líneas obsoletas a mano y revisá en el diff que solo aparezca lo esperado. Para probar como el CI, agregá la flag al comando.
+
 ### Cómo leer el reporte del PR
 
 El job `test-report` publica un comentario en el PR (se actualiza en cada push, no se duplica) y el mismo contenido en el resumen del job:

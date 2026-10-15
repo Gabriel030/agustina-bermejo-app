@@ -66,6 +66,11 @@ class QualityRulesTest {
     }
 
     @Test
+    void cycleRuleAcceptsSubpackagesThatDependOnEachOtherInOneDirection() {
+        QualityRules.subpackagesAreFreeOfCycles(FIXTURE_ROOT + ".acyclic").check(fixtureClasses());
+    }
+
+    @Test
     void externalClientsAreUsedOnlyFromAdaptersAndInfrastructure() {
         FreezingArchRule.freeze(QualityRules.externalClientsAreUsedOnlyFromAdaptersAndInfrastructure()).check(MAIN_CLASSES);
     }

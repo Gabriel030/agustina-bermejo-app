@@ -128,7 +128,7 @@ jobs:
         working-directory: backend
         env:
           EXCLUDED_GROUPS: ${{ github.event_name == 'push' && 'none' || 'docs' }}
-        run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 4)" -Dsurefire.failIfNoSpecifiedTests=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
+        run: ./mvnw -B test "-Dtest=$(python3 ../.github/scripts/test-shards.py select ${{ matrix.shard }} 4)" -Dsurefire.failIfNoSpecifiedTests=false -Darchunit.freeze.store.default.allowStoreUpdate=false "-Dtest.excludedGroups=$EXCLUDED_GROUPS"
 
       - name: Enforce the time budget of the shard
         if: always()
