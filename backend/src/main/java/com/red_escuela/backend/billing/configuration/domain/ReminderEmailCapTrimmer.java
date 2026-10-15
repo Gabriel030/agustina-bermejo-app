@@ -20,7 +20,10 @@ public final class ReminderEmailCapTrimmer {
         LocalDate lastKept = null;
         for (Occurrence occurrence : occurrences) {
             LocalDate earliest = lastKept == null ? occurrence.date() : max(occurrence.date(), lastKept.plusDays(settings.minDaysBetweenEmails()));
-            if (earliest.isAfter(occurrence.deadline())) {
+            LocalDate deadline = deadlineOf(occurrence.date(), dates);
+            if (occurrence.date().isAfter(deadline)) {
+                trimmed.add(new TrimmedReminder(occurrence.noticeKey(), occurrence.date(), TrimmedReminder.TrimReason.OUT_OF_WINDOW));
+            } else if (earliest.isAfter(deadline)) {
                 trimmed.add(new TrimmedReminder(occurrence.noticeKey(), occurrence.date(), TrimmedReminder.TrimReason.MIN_SPACING));
             } else if (keptPerMonth.getOrDefault(YearMonth.from(earliest), 0) >= settings.maxReminderEmailsPerMonth()) {
                 trimmed.add(new TrimmedReminder(occurrence.noticeKey(), occurrence.date(), TrimmedReminder.TrimReason.MONTHLY_CAP));
@@ -39,12 +42,11 @@ public final class ReminderEmailCapTrimmer {
                 continue;
             }
             LocalDate first = notice.firstDateFor(dates);
-            LocalDate deadline = deadlineOf(notice, dates);
-            occurrences.add(new Occurrence(notice.noticeKey(), first, deadline));
+            occurrences.add(new Occurrence(notice.noticeKey(), first));
             if (notice.repetition() != null && notice.repetition().everyDays() > 0) {
                 LocalDate until = dates.dateOf(notice.repetition().until());
                 for (LocalDate next = first.plusDays(notice.repetition().everyDays()); next.isBefore(until); next = next.plusDays(notice.repetition().everyDays())) {
-                    occurrences.add(new Occurrence(notice.noticeKey(), next, deadline));
+                    occurrences.add(new Occurrence(notice.noticeKey(), next));
                 }
             }
         }
@@ -52,14 +54,14 @@ public final class ReminderEmailCapTrimmer {
         return occurrences;
     }
 
-    private static LocalDate deadlineOf(ReminderNotice notice, ReminderMilestoneDates dates) {
-        return notice.isBeforeDueDate(dates) ? dates.dueDate().minusDays(1) : dates.suspensionDate().minusDays(1);
+    private static LocalDate deadlineOf(LocalDate occurrenceDate, ReminderMilestoneDates dates) {
+        return ReminderNotice.isBeforeDueDate(occurrenceDate, dates) ? dates.dueDate().minusDays(1) : dates.suspensionDate().minusDays(1);
     }
 
     private static LocalDate max(LocalDate a, LocalDate b) {
         return a.isAfter(b) ? a : b;
     }
 
-    private record Occurrence(String noticeKey, LocalDate date, LocalDate deadline) {
+    private record Occurrence(String noticeKey, LocalDate date) {
     }
 }

@@ -6,6 +6,7 @@ public record TrimmedReminder(String noticeKey, LocalDate date, TrimReason reaso
 
     public enum TrimReason {
         MIN_SPACING,
-        MONTHLY_CAP
+        MONTHLY_CAP,
+        OUT_OF_WINDOW
     }
 }

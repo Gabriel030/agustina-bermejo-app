@@ -31,10 +31,10 @@ public record ReminderNotice(String noticeKey, ReminderMessageType messageType, 
     }
 
     public boolean isBeforeDueDate(ReminderMilestoneDates dates) {
-        return switch (milestone) {
-            case DUE_DATE -> offsetDays < 0;
-            case ISSUANCE -> firstDateFor(dates).isBefore(dates.dueDate());
-            case SUSPENSION -> false;
-        };
+        return isBeforeDueDate(firstDateFor(dates), dates);
+    }
+
+    public static boolean isBeforeDueDate(LocalDate occurrenceDate, ReminderMilestoneDates dates) {
+        return occurrenceDate.isBefore(dates.dueDate());
     }
 }

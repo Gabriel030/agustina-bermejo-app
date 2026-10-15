@@ -122,7 +122,11 @@ public class BillingConfigurationReader {
         Optional<ReminderScheduleVersion> exception = target.targetId() == null ? Optional.empty()
                 : findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleException(target.group(), target.targetId()), date);
         Optional<ReminderScheduleVersion> group = findReminderScheduleVersion(ConfigurationTopic.ofReminderScheduleGroup(target.group()), date);
-        return ReminderScheduleResolver.resolve(exception, group, collectionReminderSettingsEffectiveOn(date), milestoneDates);
+        ConfigurationTopic globalTopic = ConfigurationTopic.ofGlobal(ConfigurationScope.COLLECTION_REMINDERS);
+        Optional<ConfigurationVersion> globalVersion = repository.findEffectiveVersion(globalTopic.scope().name(), globalTopic.key(), date);
+        CollectionReminderSettings globalSettings = globalVersion.map(version -> CollectionReminderSettings.class.cast(version.values()))
+                .orElse(CollectionReminderSettings.initial());
+        return ReminderScheduleResolver.resolve(exception, group, globalSettings, globalVersion.map(ConfigurationVersion::getId).orElse(null), milestoneDates);
     }
 
     private Optional<ReminderScheduleVersion> findReminderScheduleVersion(ConfigurationTopic topic, LocalDate date) {
