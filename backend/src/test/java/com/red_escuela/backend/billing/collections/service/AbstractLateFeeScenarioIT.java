@@ -202,6 +202,25 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
         accrualService.reconcileLateFeesOfInvoice(origin.getId(), date);
     }
 
+    protected int chargedDaysOf(Invoice origin) {
+        return chargesOf(origin).stream().mapToInt(c -> ((Number) c.get("charged_days")).intValue()).sum();
+    }
+
+    protected void runDays(LocalDate from, LocalDate to, List<Invoice> origins, List<LocalDate> paymentDates) {
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            for (int i = 0; i < origins.size(); i++) {
+                if (paymentDates.get(i).equals(day)) {
+                    payInFull(origins.get(i), day, day);
+                    awaitEventsDrained();
+                }
+                if (day.getDayOfMonth() == 1) {
+                    reconcile(origins.get(i), day);
+                }
+            }
+        }
+        assertScenarioInvariants(to);
+    }
+
     protected static LocalDate d(int year, int month, int day) {
         return LocalDate.of(year, month, day);
     }

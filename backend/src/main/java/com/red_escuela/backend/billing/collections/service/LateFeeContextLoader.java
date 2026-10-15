@@ -73,13 +73,31 @@ public class LateFeeContextLoader {
             return List.of();
         }
         LateFeeOriginFacts facts = originFactsOf(origin);
-        LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
+        ChargingDays chargingDays = resolveChargingDays(facts, dueDateTerms, timeline);
+        LateFeeFreeze freeze = chargingDays.freeze();
         Predicate<LocalDate> frozenOn = freeze.frozenOn();
-        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled(), frozenOn);
+        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, chargingDays.enabledOn(), frozenOn);
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
                 dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
                 resolvedCutoff.get().settlementAllocationId())).toList();
+    }
+
+    public Optional<Predicate<LocalDate>> findChargedDayPredicate(Invoice origin, LatePaymentTimeline timeline) {
+        return versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId())
+                .map(version -> resolveChargingDays(originFactsOf(origin), version.terms(), timeline).chargedOn());
+    }
+
+    private ChargingDays resolveChargingDays(LateFeeOriginFacts facts, LatePaymentTerms dueDateTerms, LatePaymentTimeline timeline) {
+        LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
+        return new ChargingDays(freeze, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled());
+    }
+
+    private record ChargingDays(LateFeeFreeze freeze, Predicate<LocalDate> enabledOn) {
+
+        Predicate<LocalDate> chargedOn() {
+            return day -> enabledOn.test(day) && !freeze.frozenOn().test(day);
+        }
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {

@@ -80,8 +80,9 @@ class LateFeeSettlementProperties {
                         planSettlement(schedule, covered, issuedOn, paidOn, today, enabledOn, frozenOn);
                         oracleSettlement(oracle, due, scenario.graceDays(), paidOn, enabledOn, frozenOn);
                         LocalDate settledOn = paidOn;
-                        overchargedReported = covered.stream().mapToInt(period -> period.daysAfter(settledOn)).sum();
-                        overchargedExpected = (int) covered.stream().flatMap(period -> period.firstDay().datesUntil(period.lastDay().plusDays(1))).filter(day -> day.isAfter(settledOn)).count();
+                        Predicate<LocalDate> chargedOn = day -> enabledOn.test(day) && !frozenOn.test(day);
+                        overchargedReported = covered.stream().mapToInt(period -> period.chargedDaysAfter(settledOn, chargedOn)).sum();
+                        overchargedExpected = (int) covered.stream().flatMap(period -> period.firstDay().datesUntil(period.lastDay().plusDays(1))).filter(day -> day.isAfter(settledOn) && enabledOn.test(day) && !frozenOn.test(day)).count();
                     }
                 }
                 case REVERSE -> {
