@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
 import com.red_escuela.backend.billing.note.service.AbstractCreditNoteIT;
 import com.red_escuela.backend.shared.domain.Currency;
+import com.red_escuela.backend.shared.domain.NonNegativeMoney;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -45,12 +46,13 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
             return;
         }
         String ids = seededInvoiceIds.stream().map(String::valueOf).collect(Collectors.joining(","));
-        List<String> guards = List.of("payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
+        List<String> guards = List.of("payment_allocation_source.trg_payment_allocation_source_append_only", "payment_allocation.trg_payment_allocation_append_only", "invoice_status_change.trg_invoice_status_change_append_only",
                 "invoice_line.trg_invoice_line_immutable_when_issued", "invoice_discount.trg_invoice_discount_immutable_when_issued");
         guards.forEach(guard -> jdbc.execute("alter table " + guard.split("\\.")[0] + " disable trigger " + guard.split("\\.")[1]));
         try {
             jdbc.update("delete from late_fee_charge where debit_note_id in (" + ids + ") or origin_invoice_id in (" + ids + ")");
             jdbc.update("delete from bank_transfer_receipt where invoice_id in (" + ids + ")");
+            jdbc.update("delete from payment_allocation_source where payment_allocation_id in (select id from payment_allocation where invoice_id in (" + ids + "))");
             jdbc.update("delete from payment_allocation where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice_status_change where invoice_id in (" + ids + ")");
             jdbc.update("delete from invoice_discount where invoice_line_id in (select id from invoice_line where invoice_id in (" + ids + "))");
@@ -134,14 +136,17 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected void seedAllocation(Long accountId, Long invoiceId, Currency currency, String amount, LocalDate effectiveDate) {
-        jdbc.execute("alter table payment_allocation disable trigger trg_payment_allocation_has_sources");
-        try {
-            jdbc.update("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, allocated_on, "
-                            + "actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now())",
-                    accountId, invoiceId, new BigDecimal(amount), currency.name(), effectiveDate, effectiveDate);
-        } finally {
-            jdbc.execute("alter table payment_allocation enable trigger trg_payment_allocation_has_sources");
-        }
+        NonNegativeMoney money = NonNegativeMoney.of(new BigDecimal(amount), currency);
+        long paymentId = nextExternalId();
+        inTransaction(() -> {
+            Long entryId = service.recordPaymentReceivedCredit(service.lockStudentCurrentAccount(accountId), paymentId, money, effectiveDate, "Pago de prueba").getId();
+            Long allocationId = jdbc.queryForObject("insert into payment_allocation (student_current_account_id, invoice_id, amount, amount_currency, effective_date, "
+                    + "allocated_on, actor_process, recorded_at) values (?, ?, ?, ?, ?, ?, 'TEST', now()) returning id",
+                    Long.class, accountId, invoiceId, money.value().amount(), currency.name(), effectiveDate, effectiveDate);
+            jdbc.update("insert into payment_allocation_source (payment_allocation_id, student_current_account_id, credit_entry_id, payment_id, amount, "
+                    + "amount_currency, recorded_at) values (?, ?, ?, ?, ?, ?, now())", allocationId, accountId, entryId, paymentId, money.value().amount(), currency.name());
+            return null;
+        });
     }
 
     protected void seedOverdueDetection(Long invoiceId, LocalDate businessDate, String occurredAt) {
