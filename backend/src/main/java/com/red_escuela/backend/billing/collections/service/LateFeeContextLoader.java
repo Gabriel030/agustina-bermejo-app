@@ -75,11 +75,25 @@ public class LateFeeContextLoader {
         LateFeeOriginFacts facts = originFactsOf(origin);
         LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(facts.programEnrollmentId(), facts.courseEnrollmentId(), dueDateTerms, timeline);
         Predicate<LocalDate> frozenOn = freeze.frozenOn();
-        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled(), frozenOn);
+        List<PlannedLateFeePeriod> missing = planner.planMissingPeriods(schedule, coveredPeriods, cutoff, chargingEnabledOn(timeline, dueDateTerms), frozenOn);
         return missing.stream().map(planned -> new LateFeeIssuingContext(facts, LateFeeDebitNoteDraftFacts.addressedLikeOrigin(facts), planned,
                 dueDateVersion.get().versionId(), dueDateTerms, frozenOn, freeze.enrollmentEndDate(),
                 calculationStrategy.calculateLateFee(facts.finalLinePrice(), dueDateTerms.dailyLateFeeRate(), planned.chargedDays()), businessDate,
                 resolvedCutoff.get().settlementAllocationId())).toList();
+    }
+
+    public Optional<Predicate<LocalDate>> findChargedDayPredicate(Invoice origin, LatePaymentTimeline timeline) {
+        return versionResolver.findVersionInEffectOnOrFirst(origin.getDueDate(), origin.getId()).map(version -> {
+            InvoiceLine line = origin.getPrimaryLine();
+            LateFeeFreeze freeze = freezeResolver.resolveFreezeOfEnrollment(line.getProgramEnrollmentId(), line.getCourseEnrollmentId(), version.terms(), timeline);
+            Predicate<LocalDate> enabledOn = chargingEnabledOn(timeline, version.terms());
+            Predicate<LocalDate> frozenOn = freeze.frozenOn();
+            return day -> enabledOn.test(day) && !frozenOn.test(day);
+        });
+    }
+
+    private static Predicate<LocalDate> chargingEnabledOn(LatePaymentTimeline timeline, LatePaymentTerms dueDateTerms) {
+        return day -> timeline.termsOn(day, dueDateTerms).lateFeeChargingEnabled();
     }
 
     private LateFeeOriginFacts originFactsOf(Invoice origin) {
