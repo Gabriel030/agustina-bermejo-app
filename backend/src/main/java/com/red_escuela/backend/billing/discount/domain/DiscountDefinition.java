@@ -157,6 +157,12 @@ public class DiscountDefinition {
         this.closureReason = reason;
     }
 
+    public void requireCanBeClosed() {
+        if (DiscountDefinitionStateMachine.findTargetStateFor(status, DiscountDefinitionEvent.DEFINITION_CLOSED).isEmpty()) {
+            throw new IllegalDiscountDefinitionTransitionException(status, DiscountDefinitionEvent.DEFINITION_CLOSED);
+        }
+    }
+
     public boolean isAvailableForAcquisitionOn(LocalDate date) {
         boolean withinAvailability = !date.isBefore(availableFrom) && (availableUntil == null || !date.isAfter(availableUntil));
         boolean withinEnrollmentWindow = (enrollmentWindowFrom == null || !date.isBefore(enrollmentWindowFrom))
@@ -165,11 +171,13 @@ public class DiscountDefinition {
     }
 
     public Optional<NonNegativeMoney> estimateQuotaCost(NonNegativeMoney finalInstallmentPrice) {
-        if (quota == null || installmentsTotal == null || calculation == null) {
+        boolean singleCharge = applicableInvoiceType != InvoiceType.MONTHLY_INSTALLMENT;
+        if (quota == null || calculation == null || (installmentsTotal == null && !singleCharge)) {
             return Optional.empty();
         }
         NonNegativeMoney savingPerInstallment = DiscountSavingCalculator.calculateSavingOnFinalPrice(calculation, finalInstallmentPrice, Optional.ofNullable(capPerInvoice));
-        BigDecimal installmentsToCover = BigDecimal.valueOf((long) installmentsTotal * quota);
+        long usesPerPerson = singleCharge ? 1L : installmentsTotal;
+        BigDecimal installmentsToCover = BigDecimal.valueOf(usesPerPerson * quota);
         Money total = Money.of(savingPerInstallment.value().amount().multiply(installmentsToCover), savingPerInstallment.value().currency());
         return Optional.of(NonNegativeMoney.of(total));
     }

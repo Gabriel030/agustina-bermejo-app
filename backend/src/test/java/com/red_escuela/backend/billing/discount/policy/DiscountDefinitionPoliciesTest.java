@@ -319,6 +319,15 @@ class DiscountDefinitionPoliciesTest {
     }
 
     @Test
+    void aFixedAmountAndACapInDifferentCurrenciesAreRejectedEvenWithoutAnOffering() {
+        DiscountDefinitionDraft mismatched = DiscountDraftBuilder.annualUpfront().withFixedAmount("10000.00", Currency.ARS).withCap("50.00", Currency.USD).build();
+        DiscountDefinitionDraft aligned = DiscountDraftBuilder.annualUpfront().withFixedAmount("10000.00", Currency.ARS).withCap("5000.00", Currency.ARS).build();
+
+        assertThat(codesOf(violationsOf(mismatched))).containsExactly("CURRENCY_MISMATCH");
+        assertThat(violationsOf(aligned)).isEmpty();
+    }
+
+    @Test
     void aPercentageNeverMismatchesTheOfferingCurrency() {
         assertThat(violationsOf(DiscountDraftBuilder.cohortPromotion().build(), Currency.USD, null)).isEmpty();
     }
@@ -357,8 +366,9 @@ class DiscountDefinitionPoliciesTest {
     @Test
     void closingNeedsAReasonOfUpToOneThousandCharacters() {
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("Se agotó el cupo")).allowed()).isTrue();
-        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(1000))).allowed()).isTrue();
-        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(1001))).allowed()).isFalse();
+        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(450))).allowed()).isTrue();
+        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(451))).allowed()).isFalse();
+        assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("a".repeat(600))).allowed()).isFalse();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck("  ")).allowed()).isFalse();
         assertThat(CLOSURE_POLICIES.evaluateAllRules(new DiscountClosureCheck(null)).violations().get(0).code()).isEqualTo("DISCOUNT_CLOSURE_REASON_REQUIRED");
     }

@@ -59,9 +59,9 @@ public class CloseDiscountDefinitionOperation implements BillingOperation<CloseD
     @Override
     public void requireValidContext(CloseDiscountDefinitionCommand command) {
         closurePolicies.evaluateAllRules(new DiscountClosureCheck(command.reason())).throwIfDenied(DiscountDefinitionRejections::rejectionOf);
-        if (!repository.existsById(command.discountDefinitionId())) {
-            throw new DiscountDefinitionNotFoundException(command.discountDefinitionId());
-        }
+        repository.findById(command.discountDefinitionId())
+                .orElseThrow(() -> new DiscountDefinitionNotFoundException(command.discountDefinitionId()))
+                .requireCanBeClosed();
     }
 
     @Override

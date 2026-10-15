@@ -17,10 +17,16 @@ public final class DiscountCurrencyMatchesOfferingPolicy implements Policy<Disco
 
     @Override
     public PolicyVerdict evaluateRule(DiscountDefinitionCheck check) {
-        boolean mismatch = check.findOfferingCurrency().map(currency -> hasAmountInAnotherCurrency(check.draft(), currency)).orElse(false);
+        boolean mismatch = check.findOfferingCurrency().map(currency -> hasAmountInAnotherCurrency(check.draft(), currency)).orElse(false)
+                || fixedAmountAndCapDisagree(check.draft());
         return mismatch
                 ? PolicyVerdict.deny(ruleName(), "CURRENCY_MISMATCH", "El monto fijo y el tope deben estar en la moneda de la oferta.")
                 : PolicyVerdict.allow(ruleName());
+    }
+
+    private boolean fixedAmountAndCapDisagree(DiscountDefinitionDraft draft) {
+        return draft.calculation() instanceof MonetaryAdjustment.Nominal nominal && draft.capPerInvoice() != null
+                && nominal.amount().currency() != draft.capPerInvoice().currency();
     }
 
     private boolean hasAmountInAnotherCurrency(DiscountDefinitionDraft draft, Currency offeringCurrency) {

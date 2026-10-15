@@ -141,6 +141,24 @@ class DiscountDefinitionTest {
     }
 
     @Test
+    @Tag("D-326")
+    void aSingleChargePromotionCostsOneUsePerPerson() {
+        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().withPercent("20")
+                .forInvoiceType(com.red_escuela.backend.billing.invoice.domain.InvoiceType.ENROLLMENT_FEE).withoutInstallments().withQuota(50).build(), 1L, NOW);
+
+        assertThat(definition.estimateQuotaCost(NonNegativeMoney.of(new BigDecimal("50000.00"), Currency.ARS)))
+                .contains(NonNegativeMoney.of(new BigDecimal("500000.00"), Currency.ARS));
+    }
+
+    @Test
+    void aSingleChargePromotionWithoutQuotaIsUnlimited() {
+        DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion()
+                .forInvoiceType(com.red_escuela.backend.billing.invoice.domain.InvoiceType.ENROLLMENT_FEE).withoutInstallments().build(), 1L, NOW);
+
+        assertThat(definition.estimateQuotaCost(PRICE)).isEmpty();
+    }
+
+    @Test
     void withoutQuotaTheCostIsUnlimited() {
         DiscountDefinition definition = DiscountDefinition.publishDiscountDefinition(DiscountDraftBuilder.cohortPromotion().withInstallments(3).build(), 1L, NOW);
 

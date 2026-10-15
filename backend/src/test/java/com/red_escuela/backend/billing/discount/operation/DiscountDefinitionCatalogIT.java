@@ -298,6 +298,39 @@ class DiscountDefinitionCatalogIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void anAdministrativeClosureOfAClosedDefinitionIsAConflictAndOpensNoRequest() {
+        DiscountDefinition created = createAsDirector(DiscountDraftBuilder.annualUpfront().named("Ya cerrada").build());
+        authenticateAs(director);
+        pipeline.runOperation(closeOperation, new CloseDiscountDefinitionCommand(created.getId(), "primero", director.getId(), true));
+        authenticateAs(administrative);
+
+        assertThatThrownBy(() -> pipeline.runOperation(closeOperation, new CloseDiscountDefinitionCommand(created.getId(), "otra vez", administrative.getId(), false)))
+                .isInstanceOf(IllegalDiscountDefinitionTransitionException.class);
+        assertThat(jdbc.queryForObject("select count(*) from authorization_request where requested_by_id = ?", Long.class, administrative.getId())).isZero();
+    }
+
+    @Test
+    void aClosureReasonLongerThanTheAuthorizationRequestAllowsIsRejectedNotAServerError() {
+        DiscountDefinition created = createAsDirector(DiscountDraftBuilder.annualUpfront().named("Motivo largo").build());
+        authenticateAs(administrative);
+
+        assertThatThrownBy(() -> pipeline.runOperation(closeOperation, new CloseDiscountDefinitionCommand(created.getId(), "m".repeat(600), administrative.getId(), false)))
+                .isInstanceOf(DiscountClosureReasonRequiredException.class);
+        assertThat(jdbc.queryForObject("select count(*) from authorization_request where requested_by_id = ?", Long.class, administrative.getId())).isZero();
+    }
+
+    @Test
+    void aClosureReasonOfTheMaximumLengthFitsTheAuthorizationRequest() {
+        DiscountDefinition created = createAsDirector(DiscountDraftBuilder.annualUpfront().named("Motivo maximo").build());
+        authenticateAs(administrative);
+
+        BillingOperationOutcome<DiscountDefinition> outcome = pipeline.runOperation(closeOperation,
+                new CloseDiscountDefinitionCommand(created.getId(), "m".repeat(450), administrative.getId(), false));
+
+        assertThat(outcome).isInstanceOf(BillingOperationOutcome.AwaitingAuthorization.class);
+    }
+
+    @Test
     void twoSimultaneousClosuresLeaveOneClosureAndOneConflict() throws Exception {
         DiscountDefinition created = createAsDirector(DiscountDraftBuilder.annualUpfront().named("Cierre concurrente").build());
         CountDownLatch start = new CountDownLatch(1);
