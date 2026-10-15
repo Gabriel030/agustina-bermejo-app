@@ -4,11 +4,7 @@ import com.red_escuela.backend.billing.configuration.domain.CollectionReminderSe
 import com.red_escuela.backend.billing.configuration.domain.IssuanceSettings;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromCheck;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderEffectiveFromNextDayPolicy;
-import com.red_escuela.backend.billing.configuration.policy.CollectionReminderScheduleCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.policy.CollectionReminderSettingsCoherencePolicy;
-import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
-import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleFollowsGroupPolicy;
-import com.red_escuela.backend.billing.configuration.policy.ReminderSendingOverridesCoherencePolicy;
 import com.red_escuela.backend.billing.configuration.domain.LatePaymentTerms;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontSettingsCoherencePolicy;
@@ -39,6 +35,17 @@ import com.red_escuela.backend.billing.configuration.policy.SuspensionDaysNotNeg
 import com.red_escuela.backend.billing.configuration.policy.SuspensionInvoiceCountAtLeastOnePolicy;
 import com.red_escuela.backend.billing.configuration.policy.TermHasDatesPolicy;
 import com.red_escuela.backend.billing.configuration.policy.YearBillingConfigurationChange;
+import com.red_escuela.backend.billing.configuration.policy.ReminderChangeDoesNotFollowGroupPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderIssuanceNoticePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeChannelsPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeTimingPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderNoticeUniquenessPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderRepetitionPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleChangeCheck;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleCheck;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleFollowsGroupPolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderScheduleSizePolicy;
+import com.red_escuela.backend.billing.configuration.policy.ReminderSendingOverridesCoherencePolicy;
 import com.red_escuela.backend.shared.domain.policy.Policy;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
 import org.springframework.context.annotation.Bean;
@@ -134,9 +141,20 @@ public class ConfigurationPolicySetsConfiguration {
     }
 
     @Bean
+    public PolicySet<ReminderScheduleChangeCheck> collectionReminderScheduleChangePolicySet() {
+        List<Policy<ReminderScheduleChangeCheck>> ordered = List.of(new ReminderChangeDoesNotFollowGroupPolicy());
+        return PolicySet.named("COLLECTION_REMINDER_SCHEDULE_CHANGE", ordered);
+    }
+
+    @Bean
     public PolicySet<ReminderScheduleCheck> collectionReminderSchedulePolicySet() {
         List<Policy<ReminderScheduleCheck>> ordered = List.of(
-                new CollectionReminderScheduleCoherencePolicy(),
+                new ReminderScheduleSizePolicy(),
+                new ReminderNoticeTimingPolicy(),
+                new ReminderNoticeChannelsPolicy(),
+                new ReminderIssuanceNoticePolicy(),
+                new ReminderRepetitionPolicy(),
+                new ReminderNoticeUniquenessPolicy(),
                 new ReminderScheduleFollowsGroupPolicy(),
                 new ReminderSendingOverridesCoherencePolicy());
         return PolicySet.named("COLLECTION_REMINDER_SCHEDULE", ordered);
